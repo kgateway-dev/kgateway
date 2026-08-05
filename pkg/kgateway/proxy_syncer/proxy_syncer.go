@@ -56,10 +56,11 @@ type ProxySyncer struct {
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
 
-	statusContributions     krt.Collection[reports.StatusContribution]
-	gatewayStatusSnapshots  krt.Collection[GatewayStatusSnapshot]
-	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
-	perclientSnapCollection krt.Collection[XdsSnapWrapper]
+	statusContributions         krt.Collection[reports.StatusContribution]
+	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
+	gatewayStatusSnapshots      krt.Collection[GatewayStatusSnapshot]
+	mostXdsSnapshots            krt.Collection[GatewayXdsResources]
+	perclientSnapCollection     krt.Collection[XdsSnapWrapper]
 
 	statusCollections *statussync.StatusCollections
 	statusWriters     map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
@@ -422,10 +423,14 @@ func (s *ProxySyncer) StatusWriters() map[schema.GroupVersionKind]statussync.Res
 	return s.statusWriters
 }
 
-// GatewayStatusSnapshots returns the Gateway-scoped translation outputs used
-// only to preserve the legacy custom status hook's once-per-Gateway behavior.
-func (s *ProxySyncer) GatewayStatusSnapshots() krt.Collection[GatewayStatusSnapshot] {
-	return s.gatewayStatusSnapshots
+// StatusContributions returns the independently keyed status facts emitted by translation.
+func (s *ProxySyncer) StatusContributions() krt.Collection[reports.StatusContribution] {
+	return s.statusContributions
+}
+
+// StatusContributionsByTarget returns the index used to reduce facts per status owner.
+func (s *ProxySyncer) StatusContributionsByTarget() krt.Index[reports.StatusKey, reports.StatusContribution] {
+	return s.statusContributionsByTarget
 }
 
 // WaitForSync returns a list of functions that can be used to determine if all its informers have synced.

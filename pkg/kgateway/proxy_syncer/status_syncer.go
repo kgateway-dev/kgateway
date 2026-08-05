@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -34,37 +36,50 @@ type StatusSyncer struct {
 	plugins        plug.Plugin
 	controllerName string
 
-	statusCollections      *statussync.StatusCollections
-	writers                map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
-	gatewayStatusSnapshots krt.Collection[GatewayStatusSnapshot]
-	cacheSyncs             []cache.InformerSynced
-
-	customStatusSync func(ctx context.Context, rm reports.ReportMap)
+	statusCollections *statussync.StatusCollections
+	writers           map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
+	cacheSyncs        []cache.InformerSynced
 }
 
 // StatusSyncerConfig holds the dependencies required to construct a StatusSyncer.
 type StatusSyncerConfig struct {
-	Plugins                plug.Plugin
-	ControllerName         string
-	Client                 apiclient.Client
-	StatusCollections      *statussync.StatusCollections
-	StatusWriters          map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
-	GatewayStatusSnapshots krt.Collection[GatewayStatusSnapshot]
-	CacheSyncs             []cache.InformerSynced
+	Plugins                     plug.Plugin
+	ControllerName              string
+	Client                      apiclient.Client
+	StatusCollections           *statussync.StatusCollections
+	StatusWriters               map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
+	StatusContributions         krt.Collection[reports.StatusContribution]
+	StatusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
+	KrtOpts                     krtutil.KrtOptions
+	CacheSyncs                  []cache.InformerSynced
 }
 
 func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *StatusSyncer {
 	optCfg := processStatusSyncerOptions(opts...)
-	return &StatusSyncer{
-		plugins:                cfg.Plugins,
-		istioClient:            cfg.Client,
-		controllerName:         cfg.ControllerName,
-		statusCollections:      cfg.StatusCollections,
-		writers:                cfg.StatusWriters,
-		gatewayStatusSnapshots: cfg.GatewayStatusSnapshots,
-		cacheSyncs:             cfg.CacheSyncs,
-		customStatusSync:       optCfg.CustomStatusSync,
+	syncer := &StatusSyncer{
+		plugins:           cfg.Plugins,
+		istioClient:       cfg.Client,
+		controllerName:    cfg.ControllerName,
+		statusCollections: cfg.StatusCollections,
+		writers:           cfg.StatusWriters,
+		cacheSyncs:        slices.Clone(cfg.CacheSyncs),
 	}
+	for _, register := range optCfg.statusRegistrations {
+		register(StatusRegistrationInputs{
+			Collections:           syncer.statusCollections,
+			StatusContributions:   cfg.StatusContributions,
+			ContributionsByTarget: cfg.StatusContributionsByTarget,
+			KrtOpts:               cfg.KrtOpts,
+			RegisterResourceReports: func(col krt.Collection[statussync.ResourceReports]) {
+				statussync.RegisterResourceReports(syncer.statusCollections, col)
+				syncer.cacheSyncs = append(syncer.cacheSyncs, col.HasSynced)
+			},
+			RegisterWriter: func(gvk schema.GroupVersionKind, writer statussync.ResourceStatusSyncer) {
+				syncer.writers[gvk] = writer
+			},
+		})
+	}
+	return syncer
 }
 
 func (s *StatusSyncer) Start(ctx context.Context) error {
@@ -86,24 +101,6 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 		}
 	}
 
-	if s.customStatusSync != nil {
-		// Aggregate once per Gateway snapshot event, rather than once per
-		// individual contribution emitted by that snapshot.
-		merged := krt.NewSingleton(func(kctx krt.HandlerContext) *customStatusReports {
-			var contributions []reports.StatusContribution
-			for _, snapshot := range krt.Fetch(kctx, s.gatewayStatusSnapshots) {
-				contributions = append(contributions, snapshot.Contributions...)
-			}
-			return &customStatusReports{Report: reports.MergeStatusContributions(contributions)}
-		}, krt.WithStop(ctx.Done()), krt.WithName("CustomStatusReports"))
-		registration := merged.Register(func(event krt.Event[customStatusReports]) {
-			if event.New != nil {
-				s.customStatusSync(ctx, event.New.Report)
-			}
-		})
-		defer registration.UnregisterHandler()
-	}
-
 	pool := statussync.NewWorkerPool(ctx, func(ctx context.Context, resource statussync.Resource) {
 		s.syncStatus(ctx, resource)
 	}, statusSyncMaxWorkers)
@@ -112,18 +109,6 @@ func (s *StatusSyncer) Start(ctx context.Context) error {
 
 	<-ctx.Done()
 	return nil
-}
-
-type customStatusReports struct {
-	Report reports.ReportMap
-}
-
-func (r customStatusReports) ResourceName() string {
-	return "custom-status-reports"
-}
-
-func (r customStatusReports) Equals(other customStatusReports) bool {
-	return reports.EqualReportMaps(r.Report, other.Report)
 }
 
 // syncStatus dispatches one queued status write to the writer registered for its GVK.

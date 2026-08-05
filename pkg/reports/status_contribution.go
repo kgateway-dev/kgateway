@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 // StatusTarget identifies the Kubernetes object that owns a status. Version is
@@ -244,63 +243,4 @@ func warnOnMultipleSingleWriterContributions(kind string, replacement StatusCont
 		"previous_source", previous.String(),
 		"replacement_source", replacement.Source.String(),
 	)
-}
-
-// MergeStatusContributions combines contributions across any number of targets
-// into the legacy report representation. It is reserved for compatibility
-// consumers that still require a whole ReportMap; normal status writers use
-// compact per-target reductions.
-func MergeStatusContributions(contributions []StatusContribution) ReportMap {
-	ordered := slices.Clone(contributions)
-	slices.SortStableFunc(ordered, compareStatusContributions)
-	reportMap := NewReportMap()
-	for _, contribution := range ordered {
-		contribution.StatusReport.addToReportMap(reportMap, contribution.Target)
-	}
-	return reportMap
-}
-
-func (r StatusReport) addToReportMap(reportMap ReportMap, target StatusTarget) {
-	switch {
-	case r.Gateway != nil:
-		reportMap.Gateways[target.NamespacedName] = cloneGatewayReport(r.Gateway)
-	case r.ListenerSet != nil:
-		if reportMap.ListenerSets[target.GroupVersionKind] == nil {
-			reportMap.ListenerSets[target.GroupVersionKind] = make(map[types.NamespacedName]*ListenerSetReport)
-		}
-		reportMap.ListenerSets[target.GroupVersionKind][target.NamespacedName] = cloneListenerSetReport(r.ListenerSet)
-	case r.Route != nil:
-		var routeReports map[types.NamespacedName]*RouteReport
-		switch target.Kind {
-		case wellknown.HTTPRouteKind:
-			routeReports = reportMap.HTTPRoutes
-		case wellknown.GRPCRouteKind:
-			routeReports = reportMap.GRPCRoutes
-		case wellknown.TCPRouteKind:
-			routeReports = reportMap.TCPRoutes
-		case wellknown.TLSRouteKind:
-			routeReports = reportMap.TLSRoutes
-		}
-		if routeReports != nil {
-			if routeReports[target.NamespacedName] == nil {
-				routeReports[target.NamespacedName] = cloneRouteReport(r.Route)
-			} else {
-				mergeParentReports(routeReports[target.NamespacedName], r.Route)
-			}
-		}
-	case r.Policy != nil:
-		key := reporter.PolicyKey{
-			Group:     target.Group,
-			Kind:      target.Kind,
-			Namespace: target.Namespace,
-			Name:      target.Name,
-		}
-		if reportMap.Policies[key] == nil {
-			reportMap.Policies[key] = clonePolicyReport(r.Policy)
-		} else {
-			mergeAncestorReports(reportMap.Policies[key], r.Policy)
-		}
-	case r.Backend != nil:
-		reportMap.Backends[target.NamespacedName] = cloneBackendReport(r.Backend)
-	}
 }

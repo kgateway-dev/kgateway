@@ -10,7 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func TestStatusContributionsMergeRouteParentsAcrossGateways(t *testing.T) {
+func TestStatusContributionsReduceRouteParentsAcrossGateways(t *testing.T) {
 	route := types.NamespacedName{Namespace: "default", Name: "route"}
 	gw1 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-1"}}
 	gw2 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-2"}}
@@ -24,12 +24,12 @@ func TestStatusContributionsMergeRouteParentsAcrossGateways(t *testing.T) {
 		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw-1"}, first),
 		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw-2"}, second)...,
 	)
-	merged := reports.MergeStatusContributions(contributions)
+	reduced := reports.ReduceStatusContributions(contributions)
 
-	require.Equal(t, map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}, gw2: {}}, merged.HTTPRoutes[route].Parents)
+	require.Equal(t, map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}, gw2: {}}, reduced.Route.Parents)
 }
 
-func TestStatusContributionsMergePolicyAncestorsAcrossPaths(t *testing.T) {
+func TestStatusContributionsReducePolicyAncestorsAcrossPaths(t *testing.T) {
 	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
 	gw := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"}}
 	backend := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"}}
@@ -43,9 +43,9 @@ func TestStatusContributionsMergePolicyAncestorsAcrossPaths(t *testing.T) {
 		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw"}, gatewayReport),
 		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.BackendPolicyStatusSource, Name: "default/backend"}, backendReport)...,
 	)
-	merged := reports.MergeStatusContributions(contributions)
+	reduced := reports.ReduceStatusContributions(contributions)
 
-	require.Equal(t, map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}, backend: {}}, merged.Policies[policy].Ancestors)
+	require.Equal(t, map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}, backend: {}}, reduced.Policy.Ancestors)
 }
 
 func TestGatewayTranslationOutputSeparatesStatusFromXdsEquality(t *testing.T) {

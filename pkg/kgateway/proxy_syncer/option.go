@@ -1,16 +1,42 @@
 package proxy_syncer
 
 import (
-	"context"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 type statusSyncerConfig struct {
-	CustomStatusSync func(ctx context.Context, rm reports.ReportMap)
+	statusRegistrations []StatusRegistration
 }
 
 type StatusSyncerOption func(*statusSyncerConfig)
+
+// StatusRegistrationInputs exposes the keyed status pipeline to downstream resource
+// types. Registrations construct per-resource report reductions and writers during
+// controller setup; their event handlers are attached only while this replica is leader.
+type StatusRegistrationInputs struct {
+	// Collections owns the raw-resource and reduced-report event sources that feed the
+	// leader's status queue. Use statussync.RegisterResource to register raw collections.
+	Collections *statussync.StatusCollections
+	// StatusContributions contains all Gateway- and Backend-produced status facts.
+	StatusContributions krt.Collection[reports.StatusContribution]
+	// ContributionsByTarget selects the facts belonging to one status owner.
+	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
+	// KrtOpts supplies the standard collection lifecycle and debugging options.
+	KrtOpts krtutil.KrtOptions
+	// RegisterResourceReports registers a per-resource reduction as an event source and
+	// includes it in the StatusSyncer's cache synchronization barrier.
+	RegisterResourceReports func(krt.Collection[statussync.ResourceReports])
+	// RegisterWriter registers the just-in-time writer for a resource GVK.
+	RegisterWriter func(schema.GroupVersionKind, statussync.ResourceStatusSyncer)
+}
+
+// StatusRegistration adds one resource-scoped status pipeline extension.
+type StatusRegistration func(StatusRegistrationInputs)
 
 func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig {
 	cfg := &statusSyncerConfig{}
@@ -20,10 +46,13 @@ func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig 
 	return cfg
 }
 
-func WithCustomStatusSync(customSync func(ctx context.Context, rm reports.ReportMap)) StatusSyncerOption {
+// WithStatusRegistration registers a downstream resource type with the keyed status
+// pipeline. The registration runs on every replica during controller construction; actual
+// reconciliation handlers and writes remain leader-gated by StatusCollections.
+func WithStatusRegistration(registration StatusRegistration) StatusSyncerOption {
 	return func(cfg *statusSyncerConfig) {
-		if customSync != nil {
-			cfg.CustomStatusSync = customSync
+		if registration != nil {
+			cfg.statusRegistrations = append(cfg.statusRegistrations, registration)
 		}
 	}
 }

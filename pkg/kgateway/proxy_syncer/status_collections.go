@@ -42,9 +42,10 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	cl := s.apiClient
 	f := kclient.Filter{ObjectFilter: cl.ObjectFilter()}
 	controllerName := s.controllerName
-	contributionsByTarget := krtpkg.UnnamedIndex(s.statusContributions, func(contribution reports.StatusContribution) []reports.StatusKey {
+	s.statusContributionsByTarget = krtpkg.UnnamedIndex(s.statusContributions, func(contribution reports.StatusContribution) []reports.StatusKey {
 		return []reports.StatusKey{contribution.Target.Key()}
 	})
+	contributionsByTarget := s.statusContributionsByTarget
 	resourceFor := func(gvk schema.GroupVersionKind, object controllers.Object) statussync.Resource {
 		return statussync.Resource{
 			GroupVersionKind: gvk,
