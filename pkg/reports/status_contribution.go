@@ -2,7 +2,6 @@ package reports
 
 import (
 	"cmp"
-	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -23,7 +22,7 @@ type StatusTarget struct {
 }
 
 func (t StatusTarget) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", t.Group, t.Version, t.Kind, t.Namespace, t.Name)
+	return t.Group + "/" + t.Version + "/" + t.Kind + "/" + t.Namespace + "/" + t.Name
 }
 
 // StatusKey is the version-independent identity of a status owner. Multiple
@@ -34,7 +33,7 @@ type StatusKey struct {
 }
 
 func (k StatusKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Namespace, k.Name)
+	return k.Group + "/" + k.Kind + "/" + k.Namespace + "/" + k.Name
 }
 
 func (t StatusTarget) Key() StatusKey {
@@ -90,7 +89,8 @@ type StatusContribution struct {
 }
 
 func (c StatusContribution) ResourceName() string {
-	return c.Target.Key().String() + "/" + c.Source.String()
+	return c.Target.Group + "/" + c.Target.Kind + "/" + c.Target.Namespace + "/" + c.Target.Name + "/" +
+		string(c.Source.Kind) + "/" + c.Source.Name
 }
 
 func (c StatusContribution) Equals(other StatusContribution) bool {

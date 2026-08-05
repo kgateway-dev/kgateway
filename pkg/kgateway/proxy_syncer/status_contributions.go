@@ -1,7 +1,7 @@
 package proxy_syncer
 
 import (
-	"fmt"
+	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -78,5 +78,5 @@ func backendStatusContributions(
 }
 
 func backendGenerationKey(resourceName string, generation int64) string {
-	return fmt.Sprintf("%s@%d", resourceName, generation)
+	return resourceName + "@" + strconv.FormatInt(generation, 10)
 }
