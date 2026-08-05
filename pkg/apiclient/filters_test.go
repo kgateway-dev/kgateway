@@ -23,8 +23,12 @@ func TestSecretsFieldSelector(t *testing.T) {
 		{"basic auth secret is watched", corev1.SecretTypeBasicAuth, true},
 		{"custom user-defined type is watched", corev1.SecretType("example.com/custom"), true},
 		{"empty type is watched", corev1.SecretType(""), true},
+		{"ssh auth secret is watched", corev1.SecretTypeSSHAuth, true},
 		{"helm release secret is filtered out", corev1.SecretType("helm.sh/release.v1"), false},
 		{"service account token secret is filtered out", corev1.SecretTypeServiceAccountToken, false},
+		{"dockerconfigjson secret is filtered out", corev1.SecretTypeDockerConfigJson, false},
+		{"dockercfg secret is filtered out", corev1.SecretTypeDockercfg, false},
+		{"bootstrap token secret is filtered out", corev1.SecretTypeBootstrapToken, false},
 	}
 
 	for _, tc := range tests {
