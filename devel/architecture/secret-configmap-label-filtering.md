@@ -63,10 +63,11 @@ kgateway labels them itself. Both are labeled in every mode — the label is ine
 mode, and always applying it means switching to `LABELED` needs no migration:
 
 - **The OAuth2 HMAC Secret** (`wellknown.OAuth2HMACSecret`), created by the bootstrap
-  controller and read by the OAuth2 policy. If the Secret predates the label, the bootstrap
-  controller adds it with a merge patch rather than recreating the Secret, which would rotate
-  the key. That controller's own watch is scoped by name, not by label, so it observes the
-  Secret in either mode.
+  controller and read by the OAuth2 policy. If the Secret predates the label, or someone edits
+  the label away, the bootstrap controller adds it back with a merge patch rather than
+  recreating the Secret, which would rotate the key. That controller's own watch is scoped by
+  name, not by label, so it keeps observing the Secret in either mode and can heal it without
+  a restart — which is the whole reason it reconciles on add and update, not just delete.
 - **The per-proxy ConfigMap** rendered by the deployer, labeled in the envoy chart's
   `configmap.yaml`.
 
@@ -91,8 +92,9 @@ A plugin that opens its own Secret or ConfigMap watch bypasses these settings. B
 informers are shared per `{type, labelSelector, fieldSelector}`, an unfiltered plugin watch
 does not reuse the narrowed cache — it creates a second, cluster-wide one, and the operator
 sees no memory improvement at all. Plugins should read through `CommonCollections.Secrets`
-and `CommonCollections.ConfigMaps`, or pass `collections.WatchLabelSelector(mode)` in their
-own filter.
+and `CommonCollections.ConfigMaps`, or pass
+`collections.WatchLabelSelector(commoncol.Settings.ConfigMapDiscoveryMode)` as their filter's
+`LabelSelector`. `examples/plugin/main.go` shows the latter.
 
 ## Known gaps
 

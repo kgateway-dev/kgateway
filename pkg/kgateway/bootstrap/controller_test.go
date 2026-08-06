@@ -79,6 +79,58 @@ func TestReconcileLabelsPreexistingHMACSecret(t *testing.T) {
 		"the existing key must be preserved")
 }
 
+func TestNeedsWatchLabel(t *testing.T) {
+	tests := []struct {
+		name   string
+		labels map[string]string
+		want   bool
+	}{
+		{name: "no labels", labels: nil, want: true},
+		{name: "label absent", labels: map[string]string{"other": "x"}, want: true},
+		{name: "label set to false", labels: map[string]string{wellknown.WatchLabel: "false"}, want: true},
+		{name: "label intact", labels: watchLabel, want: false},
+		{name: "label alongside others", labels: map[string]string{wellknown.WatchLabel: wellknown.WatchLabelValue, "other": "x"}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, needsWatchLabel(hmacSecret(tt.labels)))
+		})
+	}
+}
+
+// TestWatchLabelRemovalIsHealed covers someone editing the watch label off the HMAC Secret
+// while the controller runs. This client is scoped by name so it still sees the Secret, but
+// the label-filtered Secrets collection has dropped it, so the label has to be restored
+// rather than waiting for a controller restart.
+func TestWatchLabelRemovalIsHealed(t *testing.T) {
+	c, client := newSyncedController(t, hmacSecret(watchLabel))
+
+	stop := make(chan struct{})
+	t.Cleanup(func() { close(stop) })
+	go c.queue.Run(stop)
+
+	_, err := client.Kube().CoreV1().
+		Secrets(wellknown.OAuth2HMACSecret.Namespace).
+		Update(t.Context(), hmacSecret(map[string]string{"other": "x"}), metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		secret, err := client.Kube().CoreV1().
+			Secrets(wellknown.OAuth2HMACSecret.Namespace).
+			Get(t.Context(), wellknown.OAuth2HMACSecret.Name, metav1.GetOptions{})
+		return err == nil && secret.Labels[wellknown.WatchLabel] == wellknown.WatchLabelValue
+	}, syncTimeout, syncPoll, "removing the watch label should be healed without a restart")
+
+	secret, err := client.Kube().CoreV1().
+		Secrets(wellknown.OAuth2HMACSecret.Namespace).
+		Get(t.Context(), wellknown.OAuth2HMACSecret.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	require.Equal(t, "x", secret.Labels["other"], "unrelated labels should be preserved")
+	require.Equal(t, []byte("existing-key"), secret.Data[wellknown.OAuth2HMACSecretKey],
+		"healing the label must not rotate the key")
+}
+
 func TestReconcileLeavesAlreadyLabeledHMACSecretAlone(t *testing.T) {
 	c, client := newSyncedController(t, hmacSecret(watchLabel))
 

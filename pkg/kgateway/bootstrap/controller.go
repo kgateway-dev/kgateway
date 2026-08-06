@@ -66,8 +66,16 @@ func NewController(
 				logger.Debug("reconciling bootstrap Secret on deletion", "ref", kubeutils.NamespacedNameFrom(o.Old))
 				c.queue.AddObject(o.Old)
 
-			default:
-				// no-op for Update/Add
+			case controllers.EventAdd, controllers.EventUpdate:
+				// This client is scoped by name rather than by label, so it still observes the
+				// Secret after the watch label is edited away or when the Secret is created by
+				// hand without it. The label-filtered Secrets collection does not: it drops the
+				// Secret and OAuth2 policies stop resolving the key. Re-reconcile to restore the
+				// label. Objects that already carry it are a no-op, so the patch cannot loop.
+				if needsWatchLabel(o.New) {
+					logger.Debug("reconciling bootstrap Secret missing the watch label", "ref", kubeutils.NamespacedNameFrom(o.New))
+					c.queue.AddObject(o.New)
+				}
 			}
 		}))
 
@@ -107,11 +115,17 @@ func (r *controller) reconcile(req types.NamespacedName) error {
 	// only sees labeled objects in LABELED discovery mode. Secrets created by an older
 	// version predate the label, so add it rather than recreating the Secret, which would
 	// rotate the key.
-	if oauthHMACSecret.GetLabels()[wellknown.WatchLabel] != wellknown.WatchLabelValue {
+	if needsWatchLabel(oauthHMACSecret) {
 		logger.Info("adding watch label to OAuth2 HMAC secret", "ref", req.String())
 		return r.labelOAuth2HMACSecret(req)
 	}
 	return nil
+}
+
+// needsWatchLabel reports whether obj is missing the label that keeps it visible to the
+// label-filtered Secrets collection.
+func needsWatchLabel(obj controllers.Object) bool {
+	return obj.GetLabels()[wellknown.WatchLabel] != wellknown.WatchLabelValue
 }
 
 func (r *controller) labelOAuth2HMACSecret(req types.NamespacedName) error {
