@@ -106,6 +106,8 @@ type RouteBackendContext struct {
 	RequestHeadersToRemove  []string
 	ResponseHeadersToAdd    []*envoycorev3.HeaderValueOption
 	ResponseHeadersToRemove []string
+	RouteSource             metav1.Object
+	RouteParentRef          gwv1.ParentReference
 }
 
 type RouteContext struct {

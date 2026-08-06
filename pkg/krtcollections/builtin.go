@@ -740,6 +740,9 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 		if canPostProcessRedirect {
 			applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
 		}
+		if hm, ok := pol.filter.policy.(*headerModifierIr); ok && pCtx.In.Parent != nil {
+			p.reportDroppedHeaders(pCtx.In.Parent.GetSourceObject(), pCtx.In.ParentRef, hm.Dropped)
+		}
 	}
 
 	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
@@ -748,6 +751,21 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 	}
 
 	return errs
+}
+
+func (p *builtinPluginGwPass) reportDroppedHeaders(src metav1.Object, parentRef gwv1.ParentReference, dropped []string) {
+	if len(dropped) == 0 || src == nil {
+		return
+	}
+	p.reporter.Route(src).ParentRef(&parentRef).SetCondition(reporter.RouteCondition{
+		Type:   gwv1.RouteConditionPartiallyInvalid,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.RouteReasonUnsupportedValue,
+		Message: fmt.Sprintf(
+			"Dropped header modifier(s) targeting restricted headers that Envoy refuses to mutate (Host or :-prefixed pseudo-headers): %s",
+			strings.Join(dropped, ", "),
+		),
+	})
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(
@@ -770,6 +788,9 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	}
 	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
 		backendPolicy.applyToBackend(pCtx)
+		if hm, ok := inPolicy.filter.policy.(*headerModifierIr); ok {
+			p.reportDroppedHeaders(pCtx.RouteSource, pCtx.RouteParentRef, hm.Dropped)
+		}
 	} else {
 		logger.Error("filter policy is not supported on backendRef", "filter_type", inPolicy.filter.filterType)
 		// TODO: once we have warnings / non terminal errors we should return it here, so the policy status is updated.
