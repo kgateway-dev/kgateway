@@ -4,7 +4,14 @@ metadata:
   name: example-gateway
 spec:
   gatewayClassName: kgateway
-  listeners: []
+  listeners:
+  - name: http-8080
+    protocol: HTTP
+    port: 8080
+    hostname: "gw.example.com"
+    allowedRoutes:
+      namespaces:
+        from: All
   allowedListeners:
     namespaces:
       from: All
@@ -14,8 +21,8 @@ spec:
 # targeted by a TrafficPolicy. If route-level policy status ancestor
 # reporting is fixed to "whichever ListenerSet built the merged listener
 # first", the policy's status will show the WRONG ListenerSet as ancestor.
-apiVersion: gateway.networking.k8s.io/v1
-kind: ListenerSet
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
 metadata:
   name: a-listenerset
 spec:
@@ -32,8 +39,8 @@ spec:
       namespaces:
         from: All
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: ListenerSet
+apiVersion: gateway.networking.x-k8s.io/v1alpha1
+kind: XListenerSet
 metadata:
   name: b-listenerset
 spec:
@@ -57,8 +64,8 @@ metadata:
 spec:
   parentRefs:
   - name: a-listenerset
-    group: gateway.networking.k8s.io
-    kind: ListenerSet
+    group: gateway.networking.x-k8s.io
+    kind: XListenerSet
   hostnames:
   - "a.example.com"
   rules:
@@ -77,8 +84,8 @@ metadata:
 spec:
   parentRefs:
   - name: b-listenerset
-    group: gateway.networking.k8s.io
-    kind: ListenerSet
+    group: gateway.networking.x-k8s.io
+    kind: XListenerSet
   hostnames:
   - "b.example.com"
   rules:
@@ -100,7 +107,7 @@ spec:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: b-route
-  statPrefix: "b-route-policy"
+  autoHostRewrite: true
 ---
 apiVersion: v1
 kind: Service
