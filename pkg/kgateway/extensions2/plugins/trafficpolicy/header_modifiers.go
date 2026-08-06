@@ -51,9 +51,9 @@ func constructHeaderModifiers(
 	policy *kgateway.TrafficPolicy,
 	secrets *krtcollections.SecretIndex,
 	out *trafficPolicySpecIr,
-) error {
+) ([]string, error) {
 	if policy.Spec.HeaderModifiers == nil {
-		return nil
+		return nil, nil
 	}
 
 	spec := policy.Spec.HeaderModifiers
@@ -68,14 +68,14 @@ func constructHeaderModifiers(
 
 	gwReqFilter, err := pluginutils.ConvertHeaderFilter(krtctx, from, secrets, spec.Request)
 	if err != nil {
-		return fmt.Errorf("request: %w", err)
+		return nil, fmt.Errorf("request: %w", err)
 	}
 	reqMutations := pluginutils.ConvertMutations(gwReqFilter)
 	p.Mutations.RequestMutations = append(p.Mutations.RequestMutations, reqMutations...)
 
 	gwRespFilter, err := pluginutils.ConvertHeaderFilter(krtctx, from, secrets, spec.Response)
 	if err != nil {
-		return fmt.Errorf("response: %w", err)
+		return nil, fmt.Errorf("response: %w", err)
 	}
 	respMutations := pluginutils.ConvertMutations(gwRespFilter)
 	p.Mutations.ResponseMutations = append(p.Mutations.ResponseMutations, respMutations...)
@@ -84,8 +84,10 @@ func constructHeaderModifiers(
 		p.Mutations = nil
 	}
 
+	dropped := append(pluginutils.RestrictedHeaderNames(gwReqFilter), pluginutils.RestrictedHeaderNames(gwRespFilter)...)
+
 	out.headerModifiers = &headerModifiersIR{policy: p}
-	return nil
+	return dropped, nil
 }
 
 // handleHeaderModifiers adds header modifier filters.
