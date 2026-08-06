@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+	"log/slog"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -82,6 +83,17 @@ func NewCommonCollections(
 	options := &option{}
 	for _, fn := range opts {
 		fn(options)
+	}
+	if err := apisettings.ValidateServiceLabelSelector(settings.ServiceLabelSelector); err != nil {
+		return nil, err
+	}
+	if settings.ServiceLabelSelector != "" {
+		slog.Info(
+			"service discovery label selector enabled; non-matching Services will be unavailable as backends",
+			"selector", settings.ServiceLabelSelector,
+			"helmValue", "controller.discovery.serviceLabelSelector",
+			"environmentVariable", "KGW_SERVICE_LABEL_SELECTOR",
+		)
 	}
 
 	// Namespace collection must be initialized first to enable discovery namespace

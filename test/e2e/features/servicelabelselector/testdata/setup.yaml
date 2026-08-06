@@ -1,0 +1,18 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: service-label-selector
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    labels:
+      e2e.kgateway.dev/discovery: enabled
+      e2e.kgateway.dev/excluded: "false"
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+      allowedRoutes:
+        namespaces:
+          from: Same

@@ -8,6 +8,12 @@
 {{- $controllerAffinity := ternary .Values.controller.affinity .Values.affinity (not (kindIs "invalid" .Values.controller.affinity)) }}
 {{- $controllerTolerations := ternary .Values.controller.tolerations .Values.tolerations (not (kindIs "invalid" .Values.controller.tolerations)) }}
 {{- $controllerTopologySpreadConstraints := ternary .Values.controller.topologySpreadConstraints .Values.topologySpreadConstraints (not (kindIs "invalid" .Values.controller.topologySpreadConstraints)) }}
+{{- if not (kindIs "map" .Values.controller.discovery) }}
+{{- fail "controller.discovery must be a map" }}
+{{- end }}
+{{- if not (kindIs "string" .Values.controller.discovery.serviceLabelSelector) }}
+{{- fail "controller.discovery.serviceLabelSelector must be a string containing a Kubernetes label selector" }}
+{{- end }}
 {{- $defaultReadinessProbe := dict "httpGet" (dict "path" "/readyz" "port" .Values.controller.service.ports.health) "initialDelaySeconds" 1 "periodSeconds" 10 }}
 {{- $readinessProbeDefaults := deepCopy $defaultReadinessProbe }}
 {{- $controllerReadinessProbe := deepCopy (.Values.controller.readinessProbe | default dict) }}
@@ -122,8 +128,10 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            {{- with .Values.controller.discovery.serviceLabelSelector }}
             - name: KGW_SERVICE_LABEL_SELECTOR
-              value: {{ .Values.serviceLabelSelector | quote }}
+              value: {{ . | quote }}
+            {{- end }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE

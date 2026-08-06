@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"k8s.io/apimachinery/pkg/labels"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -81,6 +82,18 @@ func (m *DnsLookupFamily) Decode(value string) error {
 
 // GatewayClassParametersRefs maps GatewayClass names to ParametersReference
 type GatewayClassParametersRefs map[string]*gwv1.ParametersReference
+
+// ValidateServiceLabelSelector validates a Kubernetes label selector used for Service discovery.
+func ValidateServiceLabelSelector(selector string) error {
+	if _, err := labels.Parse(selector); err != nil {
+		return fmt.Errorf(
+			"invalid service label selector %q (KGW_SERVICE_LABEL_SELECTOR; Helm controller.discovery.serviceLabelSelector): %w",
+			selector,
+			err,
+		)
+	}
+	return nil
+}
 
 // Decode implements envconfig.Decoder
 func (r *GatewayClassParametersRefs) Decode(value string) error {
@@ -204,9 +217,11 @@ type Settings struct {
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
 	// ServiceLabelSelector is a Kubernetes label selector string used to filter which Services
-	// are included in discovery and sent to Envoy as clusters.
+	// are included in discovery and sent to Envoy as clusters. Non-matching Services are
+	// unavailable as backends even when referenced by a Route.
 	// Defaults to empty, which selects all services.
 	// Uses the same syntax as kubectl -l / --selector (e.g., "app=my-app,tier=frontend").
+	// The Helm value is controller.discovery.serviceLabelSelector.
 	ServiceLabelSelector string `split_words:"true" default:""`
 
 	// EnableEnvoy enables kgateway to send config to Envoy
@@ -264,6 +279,9 @@ type Settings struct {
 func BuildSettings() (*Settings, error) {
 	settings := &Settings{}
 	if err := envconfig.Process("KGW", settings); err != nil {
+		return settings, err
+	}
+	if err := ValidateServiceLabelSelector(settings.ServiceLabelSelector); err != nil {
 		return settings, err
 	}
 	return settings, nil

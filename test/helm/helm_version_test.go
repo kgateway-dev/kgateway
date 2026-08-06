@@ -224,6 +224,113 @@ func TestHelmChartProbeHandlerOverrides(t *testing.T) {
 	require.Equal(t, int32(300), controller.StartupProbe.FailureThreshold)
 }
 
+func TestServiceLabelSelectorEnvironmentVariable(t *testing.T) {
+	testCases := map[string]struct {
+		valuesYAML      string
+		expected        string
+		expectedPresent bool
+	}{
+		"omitted by default": {},
+		"explicit empty value is omitted": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector: ""
+`,
+		},
+		"renders equality selector": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector: app=my-app,tier=frontend
+`,
+			expected:        "app=my-app,tier=frontend",
+			expectedPresent: true,
+		},
+		"preserves set-based selector": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector: "app.kubernetes.io/name in (api,web),environment!=dev"
+`,
+			expected:        "app.kubernetes.io/name in (api,web),environment!=dev",
+			expectedPresent: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			deployment := findDeployment(t, renderHelmTemplate(t, "kgateway", tc.valuesYAML, nil))
+			require.NotEmpty(t, deployment.Spec.Template.Spec.Containers)
+
+			env := deployment.Spec.Template.Spec.Containers[0].Env
+			var actual *string
+			for _, variable := range env {
+				if variable.Name == "KGW_SERVICE_LABEL_SELECTOR" {
+					actual = &variable.Value
+					break
+				}
+			}
+			if !tc.expectedPresent {
+				require.Nil(t, actual, "controller environment should omit KGW_SERVICE_LABEL_SELECTOR")
+				return
+			}
+
+			require.NotNil(t, actual, "controller environment should include KGW_SERVICE_LABEL_SELECTOR")
+			require.Equal(t, tc.expected, *actual)
+		})
+	}
+}
+
+func TestServiceLabelSelectorRejectsNonStringHelmValues(t *testing.T) {
+	testCases := map[string]struct {
+		valuesYAML    string
+		expectedError string
+	}{
+		"discovery must be a map": {
+			valuesYAML: `controller:
+  discovery: true
+`,
+			expectedError: "controller.discovery must be a map",
+		},
+		"selector cannot be a boolean": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector: true
+`,
+			expectedError: "controller.discovery.serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+		"selector cannot be a number": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector: 42
+`,
+			expectedError: "controller.discovery.serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+		"selector cannot be a list": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector:
+      - app=api
+`,
+			expectedError: "controller.discovery.serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+		"selector cannot be a map": {
+			valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector:
+      app: api
+`,
+			expectedError: "controller.discovery.serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", tc.valuesYAML, nil)
+			require.Error(t, err)
+			require.Contains(t, stderr, tc.expectedError)
+		})
+	}
+}
+
 // extractImageLines extracts lines containing "image:" from the output for debugging
 func extractImageLines(output string) string {
 	var lines []string
@@ -236,6 +343,13 @@ func extractImageLines(output string) string {
 }
 
 func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) []byte {
+	t.Helper()
+	output, stderr, err := runHelmTemplate(t, chart, valuesYAML, apiVersions)
+	require.NoError(t, err, "helm template failed: %s", stderr)
+	return output
+}
+
+func runHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) ([]byte, string, error) {
 	t.Helper()
 
 	helmChartPath := filepath.Join("..", "..", "install", "helm", chart)
@@ -270,9 +384,7 @@ func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersio
 	helmCmd.Stderr = &stderr
 
 	err = helmCmd.Run()
-	require.NoError(t, err, "helm template failed: %s", stderr.String())
-
-	return output.Bytes()
+	return output.Bytes(), stderr.String(), err
 }
 
 func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
@@ -324,6 +436,13 @@ var helmChartTemplateCases = []helmTemplateCase{
 		valuesYAML: `controller:
   admin:
     bindAddress: 0.0.0.0
+`,
+	},
+	{
+		name: "service-label-selector",
+		valuesYAML: `controller:
+  discovery:
+    serviceLabelSelector: app=my-app,tier=frontend
 `,
 	},
 	{

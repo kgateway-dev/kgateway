@@ -126,6 +126,76 @@ func TestFailWithNotFoundIfWeHaveRefGrant(t *testing.T) {
 	}
 }
 
+func TestMissingServiceBackendReportsActiveDiscoverySelector(t *testing.T) {
+	const selector = "app.kubernetes.io/expose=true,tier in (api,web)"
+	expectedMessage := `Service default/foo not found; controller Service discovery is restricted by label selector "app.kubernetes.io/expose=true,tier in (api,web)" configured by Helm value controller.discovery.serviceLabelSelector (KGW_SERVICE_LABEL_SELECTOR); verify the Service labels match the selector`
+
+	for _, route := range backends("") {
+		t.Run(fmt.Sprintf("route %T", route), func(t *testing.T) {
+			routeIR := translateRouteWithSettings(t, []any{route}, apisettings.Settings{ServiceLabelSelector: selector})
+			require.NotNil(t, routeIR)
+
+			backend := getBackends(routeIR)[0]
+			require.EqualError(t, backend.Err, expectedMessage)
+
+			var selectorErr *ServiceBackendNotFoundError
+			require.ErrorAs(t, backend.Err, &selectorErr)
+			require.Equal(t, selector, selectorErr.ServiceLabelSelector)
+
+			var notFoundErr *NotFoundError
+			require.ErrorAs(t, backend.Err, &notFoundErr)
+			require.Equal(t, "foo", notFoundErr.NotFoundObj.Name)
+		})
+	}
+}
+
+func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
+	t.Run("empty selector keeps the standard Service not-found error", func(t *testing.T) {
+		routeIR := translateRouteWithSettings(t, []any{httpRouteWithSvcBackendRef("")}, apisettings.Settings{})
+		backend := getBackends(routeIR)[0]
+
+		require.EqualError(t, backend.Err, "Service default/foo not found")
+		var selectorErr *ServiceBackendNotFoundError
+		require.NotErrorAs(t, backend.Err, &selectorErr)
+	})
+
+	t.Run("selector does not decorate missing non-Service backends", func(t *testing.T) {
+		route := httpRouteWithBackendRef("missing-backend", "", nil)
+		routeIR := translateRouteWithSettings(t, []any{route}, apisettings.Settings{ServiceLabelSelector: "app=public"})
+		backend := getBackends(routeIR)[0]
+
+		require.EqualError(t, backend.Err, "Backend default/missing-backend not found")
+		var selectorErr *ServiceBackendNotFoundError
+		require.NotErrorAs(t, backend.Err, &selectorErr)
+	})
+
+	t.Run("all BackendIndex Service resolution paths include the selector", func(t *testing.T) {
+		const selector = "app=public"
+		index := preRouteIndexWithSettings(t, nil, apisettings.Settings{ServiceLabelSelector: selector}).backends
+		source := ir.ObjectSource{Group: gwv1.GroupName, Kind: "HTTPRoute", Namespace: "default", Name: "route"}
+		ref := gwv1.BackendObjectReference{Name: "foo", Port: new(gwv1.PortNumber(8080))}
+
+		resolvers := map[string]func() (*ir.BackendObjectIR, error){
+			"with ReferenceGrant validation": func() (*ir.BackendObjectIR, error) {
+				return index.GetBackendFromRef(krt.TestingDummyContext{}, source, ref)
+			},
+			"without ReferenceGrant validation": func() (*ir.BackendObjectIR, error) {
+				return index.GetBackendFromRefWithoutRefGrantValidation(krt.TestingDummyContext{}, source, ref)
+			},
+		}
+
+		for name, resolve := range resolvers {
+			t.Run(name, func(t *testing.T) {
+				backend, err := resolve()
+				require.Nil(t, backend)
+				var selectorErr *ServiceBackendNotFoundError
+				require.ErrorAs(t, err, &selectorErr)
+				require.Equal(t, selector, selectorErr.ServiceLabelSelector)
+			})
+		}
+	})
+}
+
 func TestFailWitWithRefGrantAndWrongFrom(t *testing.T) {
 	rg := refGrant()
 	rg.Spec.From[0].Kind = gwv1.Kind("NotARoute")
@@ -491,6 +561,10 @@ func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
 }
 
 func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
+	return preRouteIndexWithSettings(t, inputs, apisettings.Settings{})
+}
+
+func preRouteIndexWithSettings(t test.Failer, inputs []any, settings apisettings.Settings) *RoutesIndex {
 	mock := krttest.NewMock(t, inputs)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
@@ -505,7 +579,12 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 		apisettings.Settings{},
 	)
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock))
-	upstreams := NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
+	upstreams := NewBackendIndex(
+		krtutil.KrtOptions{},
+		policies,
+		refgrants,
+		WithServiceLabelSelector(settings.ServiceLabelSelector),
+	)
 	upstreams.AddBackends(svcGk, k8sSvcUpstreams(services))
 	backends := krttest.GetMockCollection[*kgateway.Backend](mock)
 	upstreams.AddBackends(backendGk, backendUpstreams(backends))
@@ -514,7 +593,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, wellknown.DefaultGatewayControllerName, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, wellknown.DefaultGatewayControllerName, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings)
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {
@@ -541,7 +620,11 @@ func getBackends(r ir.Route) []ir.BackendRefIR {
 }
 
 func translateRoute(t *testing.T, inputs []any) ir.Route {
-	rtidx := preRouteIndex(t, inputs)
+	return translateRouteWithSettings(t, inputs, apisettings.Settings{})
+}
+
+func translateRouteWithSettings(t *testing.T, inputs []any, settings apisettings.Settings) ir.Route {
+	rtidx := preRouteIndexWithSettings(t, inputs, settings)
 	tcpGk := schema.GroupKind{
 		Group: gwv1a2.GroupName,
 		Kind:  "TCPRoute",

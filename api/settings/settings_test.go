@@ -36,6 +36,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_INGRESS_USE_WAYPOINTS":                    "false",
 		"KGW_LOG_LEVEL":                                "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":            `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+		"KGW_SERVICE_LABEL_SELECTOR":                   "app=my-app,tier=frontend",
 		"KGW_ENABLE_ENVOY":                             "false",
 		"KGW_WEIGHTED_ROUTE_PRECEDENCE":                "true",
 		"KGW_VALIDATION_MODE":                          string(ValidationStrict),
@@ -91,6 +92,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                  true,
 				LogLevel:                             "info",
 				DiscoveryNamespaceSelectors:          "[]",
+				ServiceLabelSelector:                 "",
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
@@ -130,6 +132,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                  false,
 				LogLevel:                             "debug",
 				DiscoveryNamespaceSelectors:          `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+				ServiceLabelSelector:                 "app=my-app,tier=frontend",
 				EnableEnvoy:                          false,
 				WeightedRoutePrecedence:              true,
 				ValidationMode:                       ValidationStrict,
@@ -203,6 +206,13 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: `time: invalid duration "not-a-duration"`,
 		},
 		{
+			name: "errors on invalid service label selector",
+			envVars: map[string]string{
+				"KGW_SERVICE_LABEL_SELECTOR": "app in (",
+			},
+			expectedErrorStr: `invalid service label selector "app in ("`,
+		},
+		{
 			name: "ignores other env vars",
 			envVars: map[string]string{
 				"KGW_DOES_NOT_EXIST":         "true",
@@ -224,6 +234,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                  true,
 				LogLevel:                             "info",
 				DiscoveryNamespaceSelectors:          "[]",
+				ServiceLabelSelector:                 "",
 				EnableEnvoy:                          true,
 				WeightedRoutePrecedence:              false,
 				ValidationMode:                       ValidationStandard,
@@ -261,6 +272,43 @@ func TestSettings(t *testing.T) {
 
 			diff := cmp.Diff(tc.expectedSettings, s)
 			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
+		})
+	}
+}
+
+func TestValidateServiceLabelSelector(t *testing.T) {
+	validSelectors := map[string]string{
+		"empty selects every Service":     "",
+		"equality requirements":           "app=my-app,tier=frontend",
+		"set requirements":                "app in (api,web),environment notin (dev)",
+		"inequality requirement":          "environment!=dev",
+		"label existence":                 "app",
+		"label non-existence":             "!deprecated",
+		"domain-prefixed label key":       "app.kubernetes.io/name=api",
+		"empty label value is valid":      "environment=",
+		"double-equals operator is valid": "app==api",
+	}
+	for name, selector := range validSelectors {
+		t.Run("valid/"+name, func(t *testing.T) {
+			require.NoError(t, ValidateServiceLabelSelector(selector))
+		})
+	}
+
+	invalidSelectors := map[string]string{
+		"missing set closing parenthesis": "app in (api,web",
+		"missing set opening parenthesis": "app in api,web)",
+		"missing set values":              "app in",
+		"invalid operator":                "app > api",
+		"invalid label value":             "app=front end",
+		"invalid label key":               "(app)=api",
+		"unexpected character":            "app#api",
+		"duplicate comma":                 "app=api,,tier=frontend",
+		"trailing comma":                  "app=api,",
+	}
+	for name, selector := range invalidSelectors {
+		t.Run("invalid/"+name, func(t *testing.T) {
+			err := ValidateServiceLabelSelector(selector)
+			require.ErrorContains(t, err, fmt.Sprintf("invalid service label selector %q", selector))
 		})
 	}
 }

@@ -1,0 +1,3 @@
+controller:
+  discovery:
+    serviceLabelSelector: "e2e.kgateway.dev/discovery=enabled,e2e.kgateway.dev/excluded!=true"

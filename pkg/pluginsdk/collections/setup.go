@@ -178,7 +178,12 @@ func (c *CommonCollections) InitCollections(
 	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](c.Client, wellknown.GRPCRouteGVR, filter), c.KrtOpts.ToOptions("GRPCRoute")...)
 	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
 
-	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
+	backendIndex := krtcollections.NewBackendIndex(
+		c.KrtOpts,
+		policies,
+		c.RefGrants,
+		krtcollections.WithServiceLabelSelector(c.Settings.ServiceLabelSelector),
+	)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 

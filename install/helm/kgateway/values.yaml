@@ -62,6 +62,13 @@ controller:
   priorityClassName: ""
   # -- Set the log level for the controller.
   logLevel: info
+  # -- Configure which Kubernetes resources the controller discovers.
+  discovery:
+    # -- Kubernetes label selector for Services watched by the controller. Services that do not
+    #    match are unavailable to every managed Gateway, even when referenced by a Route. Uses
+    #    kubectl selector syntax (for example, "app=my-app,tier in (api,web)"). Leave empty to
+    #    discover all Services. Changing this value restarts the controller.
+    serviceLabelSelector: ""
   # -- Configure the controller container image.
   image:
     # -- Set the image registry for the controller.
@@ -257,11 +264,6 @@ image:
 
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
-
-# -- Kubernetes label selector string used to filter which Services are included in discovery and
-#    sent to Envoy as clusters. Uses the same syntax as kubectl -l / --selector
-#    (e.g., "app=my-app,tier=frontend"). Defaults to empty, which selects all services.
-serviceLabelSelector: ""
 
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
