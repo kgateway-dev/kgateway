@@ -13,6 +13,7 @@ import (
 
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
 var (
@@ -30,6 +31,9 @@ func ConvertMutations(filter *gwv1.HTTPHeaderFilter) (mutations []*mutation_rule
 	}
 
 	for _, h := range filter.Add {
+		if stringutils.IsRestrictedHeaderName(string(h.Name)) {
+			continue
+		}
 		mutations = append(mutations, &mutation_rulesv3.HeaderMutation{
 			Action: &mutation_rulesv3.HeaderMutation_Append{
 				Append: &envoycorev3.HeaderValueOption{
@@ -44,6 +48,9 @@ func ConvertMutations(filter *gwv1.HTTPHeaderFilter) (mutations []*mutation_rule
 	}
 
 	for _, h := range filter.Set {
+		if stringutils.IsRestrictedHeaderName(string(h.Name)) {
+			continue
+		}
 		mutations = append(mutations, &mutation_rulesv3.HeaderMutation{
 			Action: &mutation_rulesv3.HeaderMutation_Append{
 				Append: &envoycorev3.HeaderValueOption{
@@ -58,6 +65,9 @@ func ConvertMutations(filter *gwv1.HTTPHeaderFilter) (mutations []*mutation_rule
 	}
 
 	for _, h := range filter.Remove {
+		if stringutils.IsRestrictedHeaderName(h) {
+			continue
+		}
 		mutations = append(mutations, &mutation_rulesv3.HeaderMutation{
 			Action: &mutation_rulesv3.HeaderMutation_Remove{
 				Remove: h,
@@ -66,6 +76,29 @@ func ConvertMutations(filter *gwv1.HTTPHeaderFilter) (mutations []*mutation_rule
 	}
 
 	return mutations
+}
+
+func RestrictedHeaderNames(filter *gwv1.HTTPHeaderFilter) []string {
+	if filter == nil {
+		return nil
+	}
+	var dropped []string
+	for _, h := range filter.Add {
+		if stringutils.IsRestrictedHeaderName(string(h.Name)) {
+			dropped = append(dropped, string(h.Name))
+		}
+	}
+	for _, h := range filter.Set {
+		if stringutils.IsRestrictedHeaderName(string(h.Name)) {
+			dropped = append(dropped, string(h.Name))
+		}
+	}
+	for _, h := range filter.Remove {
+		if stringutils.IsRestrictedHeaderName(h) {
+			dropped = append(dropped, h)
+		}
+	}
+	return dropped
 }
 
 func ConvertHeaderFilter(

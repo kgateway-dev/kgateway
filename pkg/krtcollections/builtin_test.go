@@ -17,6 +17,68 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
+func TestConvertHeaderModifierIRDropsRestrictedHeaders(t *testing.T) {
+	tests := []struct {
+		name         string
+		filter       *gwv1.HTTPHeaderFilter
+		expectAdd    []string // header keys expected to survive in the resulting Add list
+		expectRemove []string
+		expectDrop   []string
+	}{
+		{
+			name: "ordinary headers pass through untouched",
+			filter: &gwv1.HTTPHeaderFilter{
+				Add: []gwv1.HTTPHeader{{Name: "X-Add", Value: "v"}},
+				Set: []gwv1.HTTPHeader{{Name: "X-Set", Value: "v"}},
+			},
+			expectAdd: []string{"X-Add", "X-Set"},
+		},
+		{
+			name: "Host in add is dropped",
+			filter: &gwv1.HTTPHeaderFilter{
+				Add: []gwv1.HTTPHeader{{Name: "Host", Value: "evil.example.com"}},
+			},
+			expectAdd:  nil,
+			expectDrop: []string{"Host"},
+		},
+		{
+			name: "host in set is dropped regardless of case",
+			filter: &gwv1.HTTPHeaderFilter{
+				Set: []gwv1.HTTPHeader{
+					{Name: "host", Value: "evil.example.com"},
+					{Name: "HOST", Value: "evil.example.com"},
+					{Name: "HoSt", Value: "evil.example.com"},
+					{Name: "X-Kept", Value: "v"},
+				},
+			},
+			expectAdd:  []string{"X-Kept"},
+			expectDrop: []string{"host", "HOST", "HoSt"},
+		},
+		{
+			name: "restricted names in remove are dropped, others kept",
+			filter: &gwv1.HTTPHeaderFilter{
+				Remove: []string{"Host", ":authority", "X-Kept"},
+			},
+			expectRemove: []string{"X-Kept"},
+			expectDrop:   []string{"Host", ":authority"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ir := convertHeaderModifierIR(nil, tt.filter, true)
+			require.NotNil(t, ir)
+
+			var gotAdd []string
+			for _, h := range ir.Add {
+				gotAdd = append(gotAdd, h.GetHeader().GetKey())
+			}
+			assert.Equal(t, tt.expectAdd, gotAdd)
+			assert.Equal(t, tt.expectRemove, ir.Remove)
+			assert.Equal(t, tt.expectDrop, ir.Dropped)
+		})
+	}
+}
+
 func TestURLRewriteApply(t *testing.T) {
 	tests := []struct {
 		name                string
