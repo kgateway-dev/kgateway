@@ -18,11 +18,11 @@ func convertLocalReplyConfig(
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
-) (*envoy_hcm.LocalReplyConfig, error) {
+) (*envoy_hcm.LocalReplyConfig, []string, error) {
 	config := policy.LocalReplies
 
 	if config == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	envoyConfig := &envoy_hcm.LocalReplyConfig{}
@@ -31,27 +31,29 @@ func convertLocalReplyConfig(
 		GroupKind: parentSrc.GetGroupKind(),
 		Namespace: parentSrc.Namespace,
 	}
+	var dropped []string
 	for _, mapper := range config.Mappers {
-		envoyMapper, err := translateLocalReplyBodyMapper(krtctx, from, commoncol.Secrets, mapper)
+		envoyMapper, mapperDropped, err := translateLocalReplyBodyMapper(krtctx, from, commoncol.Secrets, mapper)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		dropped = append(dropped, mapperDropped...)
 		envoyConfig.Mappers = append(envoyConfig.Mappers, envoyMapper)
 	}
 
 	bodyFormat, err := pluginutils.EnvoyBodyFormat(config.DefaultBodyFormat)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	envoyConfig.BodyFormat = bodyFormat
 
-	return envoyConfig, nil
+	return envoyConfig, dropped, nil
 }
 
-func translateLocalReplyBodyMapper(krtctx krt.HandlerContext, from krtcollections.From, secrets *krtcollections.SecretIndex, mapper kgateway.LocalReplyMapper) (*envoy_hcm.ResponseMapper, error) {
+func translateLocalReplyBodyMapper(krtctx krt.HandlerContext, from krtcollections.From, secrets *krtcollections.SecretIndex, mapper kgateway.LocalReplyMapper) (*envoy_hcm.ResponseMapper, []string, error) {
 	filter, err := convertAccessLogFilter(&mapper.Filter)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	envoyMapper := &envoy_hcm.ResponseMapper{
 		Filter: filter,
@@ -73,21 +75,23 @@ func translateLocalReplyBodyMapper(krtctx krt.HandlerContext, from krtcollection
 
 	bodyFormatOverride, err := pluginutils.EnvoyBodyFormat(mapper.BodyFormatOverride)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	envoyMapper.BodyFormatOverride = bodyFormatOverride
 
+	var dropped []string
 	if mapper.Headers != nil {
 		gwFilter, err := pluginutils.ConvertHeaderFilter(krtctx, from, secrets, mapper.Headers)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		options, err := pluginutils.ConvertMutationsToOptions(pluginutils.ConvertMutations(gwFilter))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		envoyMapper.HeadersToAdd = options
+		dropped = pluginutils.RestrictedHeaderNames(gwFilter)
 	}
 
-	return envoyMapper, nil
+	return envoyMapper, dropped, nil
 }

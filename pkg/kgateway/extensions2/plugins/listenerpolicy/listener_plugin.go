@@ -3,6 +3,7 @@ package listenerpolicy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"maps"
 	"time"
 
@@ -66,9 +67,9 @@ type listenerPolicy struct {
 func newListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
 	objSrc ir.ObjectSource, i *kgateway.ListenerConfig,
-) (listenerPolicy, []error) {
+) (listenerPolicy, []error, []string) {
 	if i == nil {
-		return listenerPolicy{}, nil
+		return listenerPolicy{}, nil, nil
 	}
 	var perConnectionBufferLimitBytes *uint32
 	if i.PerConnectionBufferLimitBytes != nil {
@@ -78,7 +79,7 @@ func newListenerPolicy(
 	if i.TransportSocketConnectTimeout != nil {
 		tsct = durationpb.New(i.TransportSocketConnectTimeout.Duration)
 	}
-	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+	http, errs, dropped := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
@@ -86,22 +87,22 @@ func newListenerPolicy(
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		transportSocketConnectTimeout: tsct,
 		http:                          http,
-	}, errs
+	}, errs, dropped
 }
 
 func newDefaultListenerPolicy(
 	krtctx krt.HandlerContext, commoncol *collections.CommonCollections,
 	objSrc ir.ObjectSource, i *kgateway.ListenerDefaultConfig,
-) (listenerPolicy, []error) {
+) (listenerPolicy, []error, []string) {
 	if i == nil {
-		return listenerPolicy{}, nil
+		return listenerPolicy{}, nil, nil
 	}
 
-	listenerPolicy, errs := newListenerPolicy(krtctx, commoncol, objSrc, &i.ListenerConfig)
+	listenerPolicy, errs, dropped := newListenerPolicy(krtctx, commoncol, objSrc, &i.ListenerConfig)
 
 	listenerPolicy.clientCertificateValidation = convertClientCertificateValidationConfig(objSrc, i.ClientCertificateValidation)
 
-	return listenerPolicy, errs
+	return listenerPolicy, errs, dropped
 }
 
 func (d *ListenerPolicyIR) CreationTime() time.Time {
@@ -222,26 +223,37 @@ func NewListenerPolicyIR(
 	ct time.Time,
 	spec *kgateway.ListenerPolicySpec,
 	objSrc ir.ObjectSource,
-) (*ListenerPolicyIR, []error) {
+) (*ListenerPolicyIR, []error, []error) {
 	if spec == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	errs := []error{}
+	var dropped []string
 	perPort := map[uint32]listenerPolicy{}
 	for _, portConfig := range spec.PerPort {
-		pol, errs2 := newListenerPolicy(krtctx, commoncol, objSrc, &portConfig.Listener)
+		pol, errs2, dropped2 := newListenerPolicy(krtctx, commoncol, objSrc, &portConfig.Listener)
 		perPort[uint32(portConfig.Port)] = pol //nolint:gosec // G115: we have CEL validation that this is at least 1.
 		errs = append(errs, errs2...)
+		dropped = append(dropped, dropped2...)
 	}
 
-	defaultPolicy, errs2 := newDefaultListenerPolicy(krtctx, commoncol, objSrc, spec.Default)
+	defaultPolicy, errs2, dropped2 := newDefaultListenerPolicy(krtctx, commoncol, objSrc, spec.Default)
 	errs = append(errs, errs2...)
+	dropped = append(dropped, dropped2...)
+
+	var warnings []error
+	if len(dropped) > 0 {
+		warnings = append(warnings, fmt.Errorf(
+			"dropped header modifier(s) targeting restricted headers that Envoy refuses to mutate (Host or :-prefixed pseudo-headers): %s",
+			strings.Join(dropped, ", "),
+		))
+	}
 
 	return &ListenerPolicyIR{
 		ct:            ct,
 		defaultPolicy: defaultPolicy,
 		perPortPolicy: perPort,
-	}, errs
+	}, errs, warnings
 }
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sdk.Plugin {
@@ -270,13 +282,14 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			}
 		}
 
-		polIr, errs := NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
+		polIr, errs, warnings := NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
 			PolicyIR:     polIr,
 			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:       errs,
+			Warnings:     warnings,
 		}
 
 		return statusMarker, pol

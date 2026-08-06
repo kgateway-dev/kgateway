@@ -55,7 +55,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				},
 			},
 		}
-		polIr, errs := listenerpolicy.NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &spec, objSrc)
+		polIr, errs, warnings := listenerpolicy.NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &spec, objSrc)
 		polIr.NoOrigin = true
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
@@ -63,6 +63,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			PolicyIR:     polIr,
 			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefs(i.Spec.TargetRefs, i.Spec.TargetSelectors),
 			Errors:       errs,
+			Warnings:     warnings,
 		}
 
 		return statusMarker, pol
