@@ -23,7 +23,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	tlsutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -32,7 +32,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 var logger = logging.New("plugin/backendtlspolicy")
@@ -107,7 +107,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
-			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
+			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
 		}
 		if err != nil {
 			pol.Errors = []error{err}
@@ -122,7 +122,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Policies:       tlsPolicyCol,
 				ProcessBackend: processBackend,
 				MergePolicies:  MergePolicies,
-				RegisterPolicyStatus: tlsutils.RegisterPolicyStatus(
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,
 					cli,
@@ -280,7 +280,7 @@ func buildTranslateFunc(
 					Kind:  refKind,
 				}
 			}
-			tlsContextDefault, err = tlsutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
+			tlsContextDefault, err = pluginutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := &InvalidCACertificateRefError{
 					Ref:   localObjectRefString(refKind, certRef),

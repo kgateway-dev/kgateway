@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt"
@@ -61,11 +62,15 @@ func TestWithStatusRegistration(t *testing.T) {
 			in.KrtOpts.ToOptions("ExampleStatusReports")...,
 		)
 		statussync.RegisterResource(in.Collections, gvk, objects)
-		in.RegisterResourceReports(resourceReports)
+		statussync.RegisterResourceReports(in.Collections, resourceReports)
 		in.RegisterWriter(gvk, testStatusWriter{})
 	}))
 
 	assert.True(t, called)
+	// A single cache sync entry (StatusCollections.HasSynced) covers every reducer
+	// registered through statussync.RegisterResourceReports, including this one.
 	assert.Len(t, statusSyncer.cacheSyncs, 1)
+	assert.Eventually(t, collections.HasSynced, 5*time.Second, 10*time.Millisecond,
+		"registered reducer should be part of the sync barrier")
 	assert.IsType(t, testStatusWriter{}, statusSyncer.writers[gvk])
 }

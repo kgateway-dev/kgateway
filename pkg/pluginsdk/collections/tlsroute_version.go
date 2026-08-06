@@ -19,6 +19,8 @@ import (
 
 var logger = logging.New("pluginsdk/collections")
 
+const tlsRouteCRDName = "tlsroutes.gateway.networking.k8s.io"
+
 var promotedTLSRouteGVR = wellknown.TLSRouteV1GVR
 
 var tlsRouteV1Alpha3GVR = schema.GroupVersionResource{
@@ -63,14 +65,22 @@ func preV1TLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersi
 	return []schema.GroupVersionResource{tlsRouteV1Alpha3GVR, tlsRouteV1Alpha2GVR}
 }
 
-// tlsRouteWriteGVR returns the API version status writes should go through: the
-// promoted v1 version when it is served (or when no served pre-v1 version was
-// resolved), otherwise the preferred served pre-v1 version.
-func tlsRouteWriteGVR(versions servedTLSRouteVersions) schema.GroupVersionResource {
-	if versions.Promoted || versions.PreferredPreV1GVR.Empty() {
-		return promotedTLSRouteGVR
+// tlsRouteWriteGVRs returns the API versions status writes may go through, most preferred
+// first. See tcpRouteWriteGVRs for why a non-authoritative discovery result must not be
+// collapsed to a single guessed version.
+func tlsRouteWriteGVRs(versions servedTLSRouteVersions, watchPreV1 bool) []schema.GroupVersionResource {
+	if versions.Authoritative {
+		if versions.Promoted || versions.PreferredPreV1GVR.Empty() {
+			return []schema.GroupVersionResource{promotedTLSRouteGVR}
+		}
+		return []schema.GroupVersionResource{versions.PreferredPreV1GVR}
 	}
-	return versions.PreferredPreV1GVR
+
+	gvrs := []schema.GroupVersionResource{promotedTLSRouteGVR}
+	if watchPreV1 {
+		gvrs = append(gvrs, preV1TLSRouteWatchGVRs(versions)...)
+	}
+	return gvrs
 }
 
 // getServedTLSRouteVersions resolves which TLSRoute API versions are currently
@@ -82,17 +92,22 @@ func getServedTLSRouteVersions(ctx context.Context, extClient apiextensionsclien
 	if extClient == nil {
 		// If discovery is unavailable, keep both paths enabled and let the delayed
 		// informer logic determine what is actually readable at runtime.
+		slog.Warn("no CRD discovery client for TLSRoute; watching and writing status through every known API version until the CRD is observed")
 		return fallbackTLSRouteVersions()
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, crdLookupTimeout)
 	defer cancel()
 
-	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})
+	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, tlsRouteCRDName, metav1.GetOptions{})
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return fallbackTLSRouteVersions()
-		}
+		// See getServedTCPRouteVersions: the CRD may not be installed yet, and neither the
+		// watch nor the write path can narrow to the served version without a restart.
+		slog.Warn("could not resolve served TLSRoute API versions; watching and writing status through every known API version until restart",
+			"crd", tlsRouteCRDName,
+			"not_found", apierrors.IsNotFound(err),
+			"error", err,
+		)
 		return fallbackTLSRouteVersions()
 	}
 

@@ -70,6 +70,10 @@ type StatusCollections struct {
 	constructors []StatusRegistration
 	active       []krt.HandlerRegistration
 	queue        WorkerQueue
+	// reportSyncs are the HasSynced funcs of every registered report reducer. Tracking
+	// them here rather than at each call site is what makes RegisterResourceReports the
+	// only way to register a reducer: there is no unsafe variant to reach for.
+	reportSyncs []func() bool
 }
 
 func NewStatusCollections() *StatusCollections {
@@ -161,9 +165,30 @@ func registerResource[I controllers.Object](
 	s.Register(reg)
 }
 
+// HasSynced reports whether every registered report reducer has synced. The leader's
+// startup sweep must not write status built from a reducer that has not yet observed its
+// contributions, so this is part of the status syncer's cache-sync barrier. It reads the
+// current registration set on every call, so reducers registered after the barrier was
+// installed are still covered.
+func (s *StatusCollections) HasSynced() bool {
+	s.mu.Lock()
+	syncs := slices.Clone(s.reportSyncs)
+	s.mu.Unlock()
+	for _, hasSynced := range syncs {
+		if !hasSynced() {
+			return false
+		}
+	}
+	return true
+}
+
 // RegisterResourceReports enqueues an owner whenever its reduced contribution
-// set changes. Deletes are ignored because the corresponding raw object is gone.
+// set changes, and records the reducer in the cache-sync barrier reported by HasSynced.
+// Deletes are ignored because the corresponding raw object is gone.
 func RegisterResourceReports(s *StatusCollections, col krt.Collection[ResourceReports]) {
+	s.mu.Lock()
+	s.reportSyncs = append(s.reportSyncs, col.HasSynced)
+	s.mu.Unlock()
 	s.Register(func(statusWriter WorkerQueue) krt.HandlerRegistration {
 		return col.Register(func(event krt.Event[ResourceReports]) {
 			if event.Event == controllers.EventDelete {

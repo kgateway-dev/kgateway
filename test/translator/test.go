@@ -517,7 +517,6 @@ func GetHTTPRouteStatusError(
 
 func GetPolicyStatusError(
 	reportsMap reports.ReportMap,
-	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 	policy *reporter.PolicyKey,
 ) error {
 	for key := range reportsMap.Policies {
@@ -536,7 +535,7 @@ func GetPolicyStatusError(
 	return nil
 }
 
-func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin) error {
+func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
 	err := GetHTTPRouteStatusError(reportsMap, nil)
 	if err != nil {
 		return err
@@ -642,7 +641,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 		}
 	}
 
-	err = GetPolicyStatusError(reportsMap, policyPlugins, nil)
+	err = GetPolicyStatusError(reportsMap, nil)
 	if err != nil {
 		return err
 	}

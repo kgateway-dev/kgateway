@@ -44,18 +44,25 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 	// Condition-derived error metrics only apply to the standard status shape; custom
 	// builders (e.g. BackendTLSPolicy) own their condition semantics.
 	defaultBuild := buildDesired == nil
-	if buildDesired == nil {
-		buildDesired = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
-			key := reporter.PolicyKey{
-				Group:     gvk.Group,
-				Kind:      gvk.Kind,
-				Namespace: pol.GetNamespace(),
-				Name:      pol.GetName(),
-			}
-			return reports.BuildPolicyStatus(context.Background(), report, key, controllerName, getStatus(pol))
-		}
-	}
 	return func(in pluginsdk.PolicyStatusInputs) {
+		desiredFor := buildDesired
+		if desiredFor == nil {
+			// The builder outlives this call, so capture the controller's root context
+			// rather than a request-scoped one.
+			ctx := in.Ctx
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			desiredFor = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
+				key := reporter.PolicyKey{
+					Group:     gvk.Group,
+					Kind:      gvk.Kind,
+					Namespace: pol.GetNamespace(),
+					Name:      pol.GetName(),
+				}
+				return reports.BuildPolicyStatus(ctx, report, key, controllerName, getStatus(pol))
+			}
+		}
 		statusReports := statussync.NewResourceReports(
 			col,
 			in.StatusContributions,
@@ -69,7 +76,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			in.KrtOpts.ToOptions(gvk.Kind+"StatusReports")...,
 		)
 		statussync.RegisterResource(in.Collections, gvk, col)
-		in.RegisterResourceReports(statusReports)
+		statussync.RegisterResourceReports(in.Collections, statusReports)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
 			Name:   gvk.Kind,
 			Client: cl,
@@ -82,7 +89,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 				if rw == nil {
 					return gwv1.PolicyStatus{}, false
 				}
-				status := buildDesired(rw.Report.Policy, pol, controllerName)
+				status := desiredFor(rw.Report.Policy, pol, controllerName)
 				if status == nil {
 					// Merge will clear only ancestors owned by this controller.
 					return gwv1.PolicyStatus{}, true
@@ -105,7 +112,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 					Namespace: res.Namespace,
 					Syncer:    "PolicyStatusSyncer",
 				}, took, statusErr)
-				kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
+				statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
 					Namespace:    res.Namespace,
 					Gateway:      "",
 					ResourceType: gvk.Kind,

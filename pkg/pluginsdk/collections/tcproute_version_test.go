@@ -174,42 +174,54 @@ func TestConvertTCPRouteV1ToV1Alpha2Nil(t *testing.T) {
 	require.Nil(t, convertTCPRouteV1ToV1Alpha2(nil))
 }
 
-func TestTCPRouteWriteGVR(t *testing.T) {
+func TestTCPRouteWriteGVRs(t *testing.T) {
 	testCases := []struct {
-		name     string
-		versions servedTCPRouteVersions
-		want     schema.GroupVersionResource
+		name       string
+		versions   servedTCPRouteVersions
+		watchPreV1 bool
+		want       []schema.GroupVersionResource
 	}{
 		{
 			name:     "promoted v1 served",
 			versions: servedTCPRouteVersions{Promoted: true, Authoritative: true},
-			want:     wellknown.TCPRouteV1GVR,
+			want:     []schema.GroupVersionResource{wellknown.TCPRouteV1GVR},
 		},
 		{
 			name:     "both versions served prefers v1",
 			versions: servedTCPRouteVersions{Promoted: true, PreV1: true, Authoritative: true},
-			want:     wellknown.TCPRouteV1GVR,
+			want:     []schema.GroupVersionResource{wellknown.TCPRouteV1GVR},
 		},
 		{
 			name:     "only pre-v1 served",
 			versions: servedTCPRouteVersions{PreV1: true, Authoritative: true},
-			want:     wellknown.TCPRouteGVR,
+			want:     []schema.GroupVersionResource{wellknown.TCPRouteGVR},
 		},
 		{
-			name:     "discovery fallback prefers v1",
-			versions: fallbackTCPRouteVersions(),
-			want:     wellknown.TCPRouteV1GVR,
-		},
-		{
-			name:     "no served versions falls back to pre-v1",
+			name:     "no served versions falls back to promoted v1",
 			versions: servedTCPRouteVersions{Authoritative: true},
-			want:     wellknown.TCPRouteGVR,
+			want:     []schema.GroupVersionResource{wellknown.TCPRouteV1GVR},
+		},
+		{
+			// The startup guess must not be permanent: a CRD installed later that only
+			// serves v1alpha2 would otherwise get every write sent through the never-served
+			// v1 client, which silently drops them.
+			name:       "discovery fallback keeps every watched version as a candidate",
+			versions:   fallbackTCPRouteVersions(),
+			watchPreV1: true,
+			want:       []schema.GroupVersionResource{wellknown.TCPRouteV1GVR, wellknown.TCPRouteGVR},
+		},
+		{
+			// Without the experimental watch there is no pre-v1 informer, so a pre-v1
+			// candidate could never hold the object.
+			name:     "discovery fallback lists only v1 when pre-v1 is not watched",
+			versions: fallbackTCPRouteVersions(),
+			want:     []schema.GroupVersionResource{wellknown.TCPRouteV1GVR},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, tcpRouteWriteGVR(tc.versions))
+			require.Equal(t, tc.want, tcpRouteWriteGVRs(tc.versions, tc.watchPreV1))
 		})
 	}
 }

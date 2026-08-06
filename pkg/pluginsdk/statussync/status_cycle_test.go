@@ -11,11 +11,14 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 type countingQueue struct {
@@ -43,28 +46,34 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	routesClient := kclient.NewFiltered[*gwv1.HTTPRoute](c, kclient.Filter{})
 	routes := krt.WrapClient(routesClient, krt.WithStop(stop))
 
-	// Fixed desired status so recomputations are byte-identical, mirroring how production
-	// collections normalize desired statuses through the writer's merge.
-	transitionTime := metav1.NewTime(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
-	desired := gwv1.RouteStatus{
-		Parents: []gwv1.RouteParentStatus{{
-			ParentRef:      gwv1.ParentReference{Name: "gw"},
-			ControllerName: controllerName,
-			Conditions: []metav1.Condition{{
-				Type:               string(gwv1.RouteConditionAccepted),
-				Status:             metav1.ConditionTrue,
-				Reason:             string(gwv1.RouteReasonAccepted),
-				LastTransitionTime: transitionTime,
-			}},
-		}},
+	// Build desired status with the real production builder rather than a fixed value. The
+	// no-op skip only holds if rebuilding from the same report against the status we just
+	// wrote reproduces that status exactly; a builder that renormalized anything (condition
+	// order, defaulted parentRef fields, a fresh timestamp) would write forever. Using the
+	// real builder is what makes this a regression guard for #12278 rather than a test of
+	// the skip mechanism alone.
+	routeReport := reports.NewReportMap()
+	reports.NewReporter(&routeReport).
+		Route(&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}).
+		ParentRef(&gwv1.ParentReference{Name: "gw"})
+	buildDesired := func(current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+		status := reports.BuildRouteStatus(
+			ctx,
+			routeReport.HTTPRoutes[types.NamespacedName{Namespace: "default", Name: "route"}],
+			current,
+			controllerName,
+		)
+		if status == nil {
+			return gwv1.RouteStatus{}, false
+		}
+		return *status, true
 	}
+
 	var syncs atomic.Int32
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
-		Name:   "httpRoute",
-		Client: routesClient,
-		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
-			return desired, true
-		},
+		Name:    "httpRoute",
+		Client:  routesClient,
+		Desired: buildDesired,
 		Build: func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 		},
@@ -107,8 +116,25 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	// Phase 1: the create event flows collection -> queue -> writer and persists the status.
 	require.Eventually(t, func() bool {
 		got, err := c.GatewayAPI().GatewayV1().HTTPRoutes("default").Get(ctx, "route", metav1.GetOptions{})
-		return err == nil && krt.Equal(got.Status.RouteStatus, desired)
+		if err != nil || len(got.Status.Parents) != 1 {
+			return false
+		}
+		parent := got.Status.Parents[0]
+		return parent.ControllerName == controllerName &&
+			parent.ParentRef.Name == "gw" &&
+			meta.IsStatusConditionTrue(parent.Conditions, string(gwv1.RouteConditionAccepted))
 	}, 5*time.Second, 10*time.Millisecond, "desired status should be written to the API server")
+
+	// The written status must be a fixed point of the builder: feeding it back in produces
+	// the same value, which is the precondition for the no-op skip asserted below.
+	written := routesClient.Get("route", "default")
+	require.NotNil(t, written)
+	rebuilt, ok := buildDesired(written)
+	require.True(t, ok)
+	require.True(t, krt.Equal(
+		gwv1.RouteStatus{Parents: MergeRouteParentStatuses(controllerName, written.Status.Parents, rebuilt.Parents)},
+		written.Status.RouteStatus,
+	), "rebuilding desired status from what we wrote must be byte-identical, or writes never converge")
 
 	// Phase 2: the informer update from our own write re-enqueues the identity, and the
 	// writer suppresses the API call after rebuilding the same desired status.

@@ -1,6 +1,8 @@
 package reports
 
 import (
+	"bytes"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -61,6 +63,61 @@ func TestReduceStatusContributionsMergesPolicyAncestorsAcrossSources(t *testing.
 	reduced := ReduceStatusContributions(contributions)
 
 	require.Equal(t, map[ParentRefKey]*AncestorRefReport{gw: {}, backend: {}}, reduced.Policy.Ancestors)
+}
+
+// Gateway, ListenerSet and Backend reports are whole-owner snapshots, so a second
+// contributor's report replaces rather than merges. Which one wins must not depend on the
+// order KRT happens to hand us the fragments in, or status would flap between two values
+// with nothing changing upstream.
+func TestReduceStatusContributionsIsDeterministicForSingleWriterKinds(t *testing.T) {
+	target := StatusTarget{
+		GroupVersionKind: wellknown.GatewayGVK,
+		NamespacedName:   types.NamespacedName{Namespace: "default", Name: "gw"},
+	}
+	first := StatusContribution{
+		Target:       target,
+		Source:       StatusSource{Kind: GatewayStatusSource, Name: "default/a"},
+		StatusReport: StatusReport{Gateway: &GatewayReport{attachedListenerSets: 1}},
+	}
+	second := StatusContribution{
+		Target:       target,
+		Source:       StatusSource{Kind: GatewayStatusSource, Name: "default/b"},
+		StatusReport: StatusReport{Gateway: &GatewayReport{attachedListenerSets: 2}},
+	}
+
+	forward := ReduceStatusContributions([]StatusContribution{first, second})
+	reversed := ReduceStatusContributions([]StatusContribution{second, first})
+
+	require.Equal(t, int32(2), forward.Gateway.attachedListenerSets,
+		"the last contribution in source order must win")
+	require.Equal(t, forward.Gateway.attachedListenerSets, reversed.Gateway.attachedListenerSets,
+		"the winner must not depend on input order")
+}
+
+func TestReduceStatusContributionsWarnsOnMultipleSingleWriterContributions(t *testing.T) {
+	target := StatusTarget{
+		GroupVersionKind: wellknown.BackendGVK,
+		NamespacedName:   types.NamespacedName{Namespace: "default", Name: "backend"},
+	}
+	contribution := func(source string) StatusContribution {
+		return StatusContribution{
+			Target:       target,
+			Source:       StatusSource{Kind: BackendStatusSource, Name: source},
+			StatusReport: StatusReport{Backend: &BackendReport{}},
+		}
+	}
+
+	var logged bytes.Buffer
+	restore := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logged, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	t.Cleanup(func() { slog.SetDefault(restore) })
+
+	ReduceStatusContributions([]StatusContribution{contribution("a")})
+	require.Empty(t, logged.String(), "a single writer is the expected topology and must stay quiet")
+
+	ReduceStatusContributions([]StatusContribution{contribution("a"), contribution("b")})
+	require.Contains(t, logged.String(), "multiple status contributions for single-writer report kind",
+		"a second producer silently discarding the first must be visible")
 }
 
 func TestStatusReportEqualsUsesSemanticReportContents(t *testing.T) {

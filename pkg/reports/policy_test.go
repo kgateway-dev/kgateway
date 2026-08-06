@@ -486,3 +486,56 @@ func TestBuildPolicyStatusCapsAncestorsAtAPILimit(t *testing.T) {
 		require.NotEqual(t, gwv1.ObjectName("StatusSummary"), ancestor.AncestorRef.Name)
 	}
 }
+
+// This cap runs before statussync.MergePolicyAncestorStatuses caps the same list again at
+// write time. If it truncated the tail blindly it would decide which of our entries survive
+// before the merge ever saw them, and could drop foreign entries the merge promises to keep.
+func TestBuildPolicyStatusCapTruncatesOurAncestorsBeforeForeignOnes(t *testing.T) {
+	rm := NewReportMap()
+	statusReporter := NewReporter(&rm)
+	key := reporter.PolicyKey{
+		Group:     "example.com",
+		Kind:      "Policy",
+		Namespace: "default",
+		Name:      "example",
+	}
+
+	const ourAncestors = 4
+	policyReporter := statusReporter.Policy(key, 1)
+	for i := range ourAncestors {
+		policyReporter.AncestorRef(gwv1.ParentReference{
+			Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+			Kind:      new(gwv1.Kind("Gateway")),
+			Namespace: new(gwv1.Namespace("default")),
+			// Sorts before every foreign ancestor below, so a tail truncation would keep
+			// all of ours and drop theirs.
+			Name: gwv1.ObjectName(fmt.Sprintf("aaa-our-gw-%02d", i)),
+		}).SetCondition(reporter.PolicyCondition{
+			Type:   string(shared.PolicyConditionAccepted),
+			Status: metav1.ConditionTrue,
+			Reason: string(shared.PolicyReasonValid),
+		})
+	}
+
+	currentStatus := gwv1.PolicyStatus{}
+	for i := range MaxPolicyStatusAncestors {
+		currentStatus.Ancestors = append(currentStatus.Ancestors, gwv1.PolicyAncestorStatus{
+			AncestorRef: gwv1.ParentReference{
+				Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+				Kind:      new(gwv1.Kind("Gateway")),
+				Namespace: new(gwv1.Namespace("default")),
+				Name:      gwv1.ObjectName(fmt.Sprintf("zzz-their-gw-%02d", i)),
+			},
+			ControllerName: "other.example/controller",
+		})
+	}
+
+	gotStatus := rm.BuildPolicyStatus(t.Context(), key, "example-controller", currentStatus)
+
+	require.NotNil(t, gotStatus)
+	require.Len(t, gotStatus.Ancestors, MaxPolicyStatusAncestors)
+	for _, ancestor := range gotStatus.Ancestors {
+		require.Equal(t, gwv1.GatewayController("other.example/controller"), ancestor.ControllerName,
+			"foreign ancestors filling the limit must never be dropped in favor of ours")
+	}
+}

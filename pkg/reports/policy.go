@@ -205,10 +205,51 @@ func BuildPolicyStatus(
 			"total_ancestors", len(status.Ancestors),
 			"dropped_ancestors", len(status.Ancestors)-MaxPolicyStatusAncestors,
 		)
-		status.Ancestors = status.Ancestors[:MaxPolicyStatusAncestors]
+		status.Ancestors = capPolicyStatusAncestors(status.Ancestors, controller, MaxPolicyStatusAncestors)
 	}
 
 	return &status
+}
+
+// capPolicyStatusAncestors truncates an ancestor list to the Gateway API schema limit,
+// dropping entries owned by controller before entries owned by anyone else.
+//
+// This has to match the ownership policy of statussync.MergePolicyAncestorStatuses, which
+// caps the same list again at write time. The two caps see different lists: this one runs
+// on the interleaved, ParentString-sorted list, the merge on a foreign-then-ours list. If
+// this one truncated the tail blindly, it would decide which of our entries survive before
+// the merge ever ran, defeating the merge's "foreign never dropped in favor of ours"
+// guarantee. Relative order is otherwise preserved, so the caller's sort still determines
+// the output order.
+func capPolicyStatusAncestors(ancestors []gwv1.PolicyAncestorStatus, controller string, limit int) []gwv1.PolicyAncestorStatus {
+	if len(ancestors) <= limit {
+		return ancestors
+	}
+
+	foreign := 0
+	for _, ancestor := range ancestors {
+		if ancestor.ControllerName != gwv1.GatewayController(controller) {
+			foreign++
+		}
+	}
+	// Whatever the limit leaves once every foreign entry is accounted for is ours to use.
+	// Foreign entries alone can exceed the limit, in which case none of ours survive.
+	oursBudget := max(limit-foreign, 0)
+
+	out := make([]gwv1.PolicyAncestorStatus, 0, limit)
+	for _, ancestor := range ancestors {
+		if ancestor.ControllerName != gwv1.GatewayController(controller) {
+			if len(out) < limit {
+				out = append(out, ancestor)
+			}
+			continue
+		}
+		if oursBudget > 0 {
+			out = append(out, ancestor)
+			oursBudget--
+		}
+	}
+	return out
 }
 
 // getAncestorRefOrNil returns a ParentRefReport for the given parentRef if and only if

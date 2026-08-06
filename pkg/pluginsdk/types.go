@@ -51,7 +51,12 @@ type PerClientProcessBackend func(
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs struct {
-	// Collections is where the plugin registers its raw policy collection.
+	// Ctx is the controller's root context. It is captured by the plugin's
+	// desired-status builders, which run for the lifetime of the process.
+	Ctx context.Context
+	// Collections is where the plugin registers its raw policy collection with
+	// statussync.RegisterResource and its report reducer with
+	// statussync.RegisterResourceReports.
 	Collections *StatusCollections
 	// StatusContributions contains Gateway- and Backend-produced facts keyed by status owner.
 	StatusContributions krt.Collection[reports.StatusContribution]
@@ -59,9 +64,6 @@ type PolicyStatusInputs struct {
 	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
 	// KrtOpts supplies standard collection lifecycle and debugging options.
 	KrtOpts krtutil.KrtOptions
-	// RegisterResourceReports registers a per-policy reducer as both a status
-	// event source and a cache dependency.
-	RegisterResourceReports func(krt.Collection[statussync.ResourceReports])
 	// RegisterWriter registers the writer that persists this plugin's policy status.
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer)
 }

@@ -202,9 +202,11 @@ func (c *CommonCollections) InitCollections(
 	c.RawTCPRoutes = tcproutes
 	c.RawTLSRoutes = tlsRoutes
 
-	// Resolve which served API versions status writes should go through.
-	c.TCPRouteWriteGVR = tcpRouteWriteGVR(servedTCPRouteVersions)
-	c.TLSRouteWriteGVR = tlsRouteWriteGVR(servedTLSRouteVersions)
+	// Resolve which served API versions status writes may go through. Pre-v1 versions are
+	// only candidates when we actually watch them: a version nothing watches can never
+	// hold the object the writer needs to read.
+	c.TCPRouteWriteGVRs = tcpRouteWriteGVRs(servedTCPRouteVersions, globalSettings.EnableExperimentalGatewayAPIFeatures)
+	c.TLSRouteWriteGVRs = tlsRouteWriteGVRs(servedTLSRouteVersions, globalSettings.EnableExperimentalGatewayAPIFeatures)
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)

@@ -20,7 +20,9 @@ type StatusSyncerOption func(*statusSyncerConfig)
 // controller setup; their event handlers are attached only while this replica is leader.
 type StatusRegistrationInputs struct {
 	// Collections owns the raw-resource and reduced-report event sources that feed the
-	// leader's status queue. Use statussync.RegisterResource to register raw collections.
+	// leader's status queue. Use statussync.RegisterResource to register raw collections
+	// and statussync.RegisterResourceReports to register per-resource reductions; the
+	// latter also enrols the reduction in the StatusSyncer's cache synchronization barrier.
 	Collections *statussync.StatusCollections
 	// StatusContributions contains all Gateway- and Backend-produced status facts.
 	StatusContributions krt.Collection[reports.StatusContribution]
@@ -28,9 +30,6 @@ type StatusRegistrationInputs struct {
 	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
 	// KrtOpts supplies the standard collection lifecycle and debugging options.
 	KrtOpts krtutil.KrtOptions
-	// RegisterResourceReports registers a per-resource reduction as an event source and
-	// includes it in the StatusSyncer's cache synchronization barrier.
-	RegisterResourceReports func(krt.Collection[statussync.ResourceReports])
 	// RegisterWriter registers the just-in-time writer for a resource GVK.
 	RegisterWriter func(schema.GroupVersionKind, statussync.ResourceStatusSyncer)
 }

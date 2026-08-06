@@ -3,6 +3,7 @@ package statussync
 import (
 	"time"
 
+	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
@@ -73,4 +74,19 @@ func RecordStatusSync(labels SyncMetricLabels, took time.Duration, err error) {
 	statusSyncsTotal.Inc(append(labels.toMetricsLabels(),
 		metrics.Label{Name: resultLabel, Value: result},
 	)...)
+}
+
+// EndResourceStatusSyncOnWriteSuccess closes a resource's status sync only when its status
+// write actually landed. A resource whose write failed after every retry still carries a
+// stale status, so its sync must stay open and keep the resources-out-of-sync signal raised
+// until a later attempt persists it; RecordStatusSync separately reports the attempt as
+// result=error.
+//
+// writeErr must be the write error alone, never a condition-derived one: a status carrying
+// invalid conditions was still persisted, so the resource is in sync.
+func EndResourceStatusSyncOnWriteSuccess(writeErr error, details kmetrics.ResourceSyncDetails) {
+	if writeErr != nil {
+		return
+	}
+	kmetrics.EndResourceStatusSync(details)
 }

@@ -297,16 +297,17 @@ func TestConvertUnstructuredTLSRouteToV1Alpha2(t *testing.T) {
 	require.Equal(t, gwv1a2.PortNumber(443), ptr.Deref(converted.Spec.Rules[0].BackendRefs[0].Port, 0))
 }
 
-func TestTLSRouteWriteGVR(t *testing.T) {
+func TestTLSRouteWriteGVRs(t *testing.T) {
 	testCases := []struct {
-		name     string
-		versions servedTLSRouteVersions
-		want     schema.GroupVersionResource
+		name       string
+		versions   servedTLSRouteVersions
+		watchPreV1 bool
+		want       []schema.GroupVersionResource
 	}{
 		{
 			name:     "promoted v1 served",
 			versions: servedTLSRouteVersions{Promoted: true, Authoritative: true},
-			want:     wellknown.TLSRouteV1GVR,
+			want:     []schema.GroupVersionResource{wellknown.TLSRouteV1GVR},
 		},
 		{
 			name: "promoted and pre-v1 served prefers v1",
@@ -316,7 +317,7 @@ func TestTLSRouteWriteGVR(t *testing.T) {
 				PreferredPreV1GVR: tlsRouteV1Alpha3GVR,
 				Authoritative:     true,
 			},
-			want: wellknown.TLSRouteV1GVR,
+			want: []schema.GroupVersionResource{wellknown.TLSRouteV1GVR},
 		},
 		{
 			name: "only v1alpha3 served",
@@ -325,7 +326,7 @@ func TestTLSRouteWriteGVR(t *testing.T) {
 				PreferredPreV1GVR: tlsRouteV1Alpha3GVR,
 				Authoritative:     true,
 			},
-			want: wellknown.TLSRouteV1Alpha3GVR,
+			want: []schema.GroupVersionResource{wellknown.TLSRouteV1Alpha3GVR},
 		},
 		{
 			name: "only v1alpha2 served",
@@ -334,23 +335,35 @@ func TestTLSRouteWriteGVR(t *testing.T) {
 				PreferredPreV1GVR: tlsRouteV1Alpha2GVR,
 				Authoritative:     true,
 			},
-			want: wellknown.TLSRouteGVR,
+			want: []schema.GroupVersionResource{wellknown.TLSRouteGVR},
 		},
 		{
-			name:     "discovery fallback prefers v1",
-			versions: fallbackTLSRouteVersions(),
-			want:     wellknown.TLSRouteV1GVR,
-		},
-		{
-			name:     "no served versions falls back to v1",
+			name:     "no served versions falls back to promoted v1",
 			versions: servedTLSRouteVersions{Authoritative: true},
-			want:     wellknown.TLSRouteV1GVR,
+			want:     []schema.GroupVersionResource{wellknown.TLSRouteV1GVR},
+		},
+		{
+			// See the TCPRoute equivalent: a guessed single version becomes a permanent
+			// silent status outage when the CRD later serves something else.
+			name:       "discovery fallback keeps every watched version as a candidate",
+			versions:   fallbackTLSRouteVersions(),
+			watchPreV1: true,
+			want: []schema.GroupVersionResource{
+				wellknown.TLSRouteV1GVR,
+				wellknown.TLSRouteV1Alpha3GVR,
+				wellknown.TLSRouteGVR,
+			},
+		},
+		{
+			name:     "discovery fallback lists only v1 when pre-v1 is not watched",
+			versions: fallbackTLSRouteVersions(),
+			want:     []schema.GroupVersionResource{wellknown.TLSRouteV1GVR},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, tlsRouteWriteGVR(tc.versions))
+			require.Equal(t, tc.want, tlsRouteWriteGVRs(tc.versions, tc.watchPreV1))
 		})
 	}
 }

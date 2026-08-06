@@ -63,10 +63,13 @@ type CommonCollections struct {
 	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
 	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
 
-	// TCPRouteWriteGVR and TLSRouteWriteGVR identify which served API version status
-	// writes should go through, resolved from CRD discovery at startup.
-	TCPRouteWriteGVR schema.GroupVersionResource
-	TLSRouteWriteGVR schema.GroupVersionResource
+	// TCPRouteWriteGVRs and TLSRouteWriteGVRs identify the served API versions status
+	// writes may go through, most preferred first, resolved from CRD discovery at startup.
+	// Normally one entry. More than one means discovery was not authoritative and the
+	// writer must dispatch to whichever version's informer actually holds the object;
+	// see tcpRouteWriteGVRs.
+	TCPRouteWriteGVRs []schema.GroupVersionResource
+	TLSRouteWriteGVRs []schema.GroupVersionResource
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 

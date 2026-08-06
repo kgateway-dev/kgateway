@@ -64,18 +64,18 @@ func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *Status
 		writers:           cfg.StatusWriters,
 		cacheSyncs:        slices.Clone(cfg.CacheSyncs),
 	}
+	// StatusCollections.HasSynced covers every report reducer registered through
+	// statussync.RegisterResourceReports, including the ones the registrations below add.
+	// It re-reads the registration set on each call, so one entry suffices.
+	syncer.cacheSyncs = append(syncer.cacheSyncs, syncer.statusCollections.HasSynced)
 	for _, register := range optCfg.statusRegistrations {
 		register(StatusRegistrationInputs{
 			Collections:           syncer.statusCollections,
 			StatusContributions:   cfg.StatusContributions,
 			ContributionsByTarget: cfg.StatusContributionsByTarget,
 			KrtOpts:               cfg.KrtOpts,
-			RegisterResourceReports: func(col krt.Collection[statussync.ResourceReports]) {
-				statussync.RegisterResourceReports(syncer.statusCollections, col)
-				syncer.cacheSyncs = append(syncer.cacheSyncs, col.HasSynced)
-			},
 			RegisterWriter: func(gvk schema.GroupVersionKind, writer statussync.ResourceStatusSyncer) {
-				syncer.writers[gvk] = writer
+				registerStatusWriter(syncer.writers, gvk, writer)
 			},
 		})
 	}
