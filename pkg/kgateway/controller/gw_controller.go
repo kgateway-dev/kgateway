@@ -230,10 +230,17 @@ func NewGatewayReconciler(
 // pkg/krtcollections/ondemand exist to avoid -- and would negate that saving
 // entirely. Every object the deployer renders carries the gateway-name label,
 // so selecting on its presence is both server-side and complete.
+// ownedConfigMapSelector matches objects the deployer rendered. It selects on
+// the presence of the gateway-name label rather than on a value: the label is
+// set unconditionally by the Helm templates and cannot be overridden by a user's
+// gatewayLabels, whereas app.kubernetes.io/managed-by carries a configurable
+// value (see Deployer.managedBy) and would be fragile to match on.
+const ownedConfigMapSelector = wellknown.GatewayNameLabel
+
 func ownedConfigMapFilter(client kube.Client) kclient.Filter {
 	return kclient.Filter{
 		ObjectFilter:  client.ObjectFilter(),
-		LabelSelector: wellknown.GatewayNameLabel,
+		LabelSelector: ownedConfigMapSelector,
 	}
 }
 

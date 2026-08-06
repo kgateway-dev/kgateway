@@ -260,11 +260,11 @@ func (c *Cache[T]) onMetadataEvent(o controllers.Event) {
 
 	if referenced {
 		c.queue.Add(key)
-		return
 	}
-	// An object we do not currently reference can still enter the referenced set
-	// by gaining a label that matches a selector ref. Only pay for that check
-	// when a selector ref actually exists.
+	// Selector membership moves in both directions: an object we do not reference
+	// can gain a matching label, and one we do reference can lose it. Re-expand on
+	// either, or a Secret that stopped matching would stay cached forever. Only
+	// pay for this when a selector ref actually exists, which is uncommon.
 	if hasSelectors {
 		c.queue.Add(recomputeKey)
 	}

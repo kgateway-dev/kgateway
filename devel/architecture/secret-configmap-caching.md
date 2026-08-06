@@ -87,6 +87,13 @@ is how `TrafficPolicy`'s API-key `secretSelector` works. Labels are present on
 `PartialObjectMetadata`, so the selector is evaluated against the metadata watch
 and never needs to read a payload to decide what to fetch.
 
+Selector membership moves in both directions, and both are handled: an object
+that gains a matching label is fetched, and one that loses it is evicted. That
+means any metadata event re-expands the selectors while a selector ref exists,
+which is why the cache skips that work entirely when there are none. A broad
+selector still pulls in every matching object cluster-wide, so it benefits less
+from this design than a reference by name does.
+
 ## Consequences worth knowing
 
 - **`NotLoadedError` vs `NotFoundError`.** A lookup that misses is reported as

@@ -375,3 +375,75 @@ func TestBackendTLSPolicyLoadsReferencedConfigMap(t *testing.T) {
 		return !s.configMapLoaded(testNS, "unreferenced-bundle")
 	}, "an unreferenced ConfigMap must never be loaded")
 }
+
+// apiKeySelectorPolicy builds a TrafficPolicy that selects its API-key Secrets
+// by label rather than by name.
+func apiKeySelectorPolicy(name string, matchLabels map[string]string) *kgateway.TrafficPolicy {
+	return &kgateway.TrafficPolicy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       wellknown.TrafficPolicyGVK.Kind,
+			APIVersion: wellknown.TrafficPolicyGVK.GroupVersion().String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: testNS},
+		Spec: kgateway.TrafficPolicySpec{
+			APIKeyAuth: &kgateway.APIKeyAuth{
+				SecretSelector: &kgateway.LabelSelector{MatchLabels: matchLabels},
+			},
+		},
+	}
+}
+
+func labelledSecret(name string, labels map[string]string, key, value string) *corev1.Secret {
+	s := secret(name, map[string]string{key: value})
+	s.Labels = labels
+	return s
+}
+
+// TestSecretSelectorLoadsMatchingSecretsOnly covers TrafficPolicy's api-key
+// secretSelector, the one reference that is expressed as a label query rather
+// than a name. It works because labels are carried on PartialObjectMetadata, so
+// the selector can be resolved against the metadata watch without reading any
+// payload to decide what to fetch.
+func TestSecretSelectorLoadsMatchingSecretsOnly(t *testing.T) {
+	s := newStack(t,
+		apiKeySelectorPolicy("apikeys", map[string]string{"apikey": "true"}),
+		labelledSecret("matching", map[string]string{"apikey": "true"}, "client1", "k-123"),
+		labelledSecret("other", map[string]string{"apikey": "false"}, "client2", "k-456"),
+		secret("htpasswd", map[string]string{".htpasswd": htpasswdBefore}),
+		basicAuthPolicy("auth", "htpasswd"),
+	)
+
+	s.waitFor(func() bool {
+		return s.secretContents(testNS, "matching", "client1") == "k-123"
+	}, "a Secret matching the api-key selector should have its contents loaded")
+
+	s.settleAfterWrites(
+		labelledSecret("other", map[string]string{"apikey": "false"}, "client2", "touched"),
+		"htpasswd")
+	s.assertStaysAbsent(func() bool {
+		return s.secretContents(testNS, "other", "client2") == ""
+	}, "a Secret that does not match the selector must not be loaded")
+}
+
+// TestSecretSelectorFollowsLabelChanges covers selector membership moving in
+// both directions at runtime. Only handling the growing direction would leave
+// payloads cached for Secrets nothing selects any more.
+func TestSecretSelectorFollowsLabelChanges(t *testing.T) {
+	s := newStack(t,
+		apiKeySelectorPolicy("apikeys", map[string]string{"apikey": "true"}),
+		labelledSecret("late", nil, "client1", "k-123"),
+	)
+	s.waitFor(s.commoncol.HasSynced, "collections should sync")
+
+	// Grows: a Secret gains a matching label.
+	s.secrets().update(labelledSecret("late", map[string]string{"apikey": "true"}, "client1", "k-123"))
+	s.waitFor(func() bool {
+		return s.secretContents(testNS, "late", "client1") == "k-123"
+	}, "a Secret that gains a matching label should be fetched")
+
+	// Shrinks: the same Secret loses it again.
+	s.secrets().update(labelledSecret("late", map[string]string{"apikey": "false"}, "client1", "k-123"))
+	s.waitFor(func() bool {
+		return s.secretContents(testNS, "late", "client1") == ""
+	}, "a Secret that stops matching the selector should have its payload evicted")
+}

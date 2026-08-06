@@ -298,3 +298,26 @@ func TestDedupeCollapsesRepeatedRefs(t *testing.T) {
 		t.Fatalf("refs from distinct owners must not be collapsed, got %d", len(both))
 	}
 }
+
+// TestSelectorRetractsWhenLabelsStopMatching is the shrinking half of selector
+// support. A Secret that stops matching must have its payload evicted; if only
+// the growing direction worked, a cluster where labels churn would accumulate
+// payloads for Secrets nothing selects any more.
+func TestSelectorRetractsWhenLabelsStopMatching(t *testing.T) {
+	matching := secret("ns", "matching", map[string]string{"app": "api"}, "v1")
+
+	cache, _, w := setup(t,
+		[]ResourceRef{NewSelectorRef("policy", "Secret", "", map[string]string{"app": "api"})},
+		matching)
+	waitFor(t, cache.HasSynced, "cache should sync")
+	waitFor(t, func() bool {
+		return cache.Collection().GetKey("ns/matching") != nil
+	}, "a Secret matching the selector should be loaded")
+
+	// Relabel it so the selector no longer matches.
+	w.update(secret("ns", "matching", map[string]string{"app": "web"}, "v1"))
+
+	waitFor(t, func() bool {
+		return cache.Collection().GetKey("ns/matching") == nil
+	}, "a Secret that stops matching the selector should have its payload evicted")
+}
