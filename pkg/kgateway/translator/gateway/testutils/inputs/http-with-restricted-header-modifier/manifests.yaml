@@ -1,0 +1,72 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: gw
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /route-level
+    filters:
+    - type: RequestHeaderModifier
+      requestHeaderModifier:
+        set:
+        - name: Host
+          value: rewritten.example.com
+        - name: X-Header-Set
+          value: header-set
+        add:
+        - name: X-Header-Add
+          value: header-add
+        remove:
+        - host
+        - X-Header-Remove
+    backendRefs:
+    - name: example-svc
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /backend-level
+    backendRefs:
+    - name: example-svc
+      port: 8080
+      filters:
+      - type: RequestHeaderModifier
+        requestHeaderModifier:
+          set:
+          - name: host
+            value: rewritten.example.com
+          - name: X-Backend-Header-Set
+            value: backend-set
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    app.kubernetes.io/name: nginx
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http-web-svc
