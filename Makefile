@@ -34,6 +34,12 @@ export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
 BUILDX_BUILD ?= docker buildx build -q
+OSV_SCANNER_IMAGE ?= ghcr.io/google/osv-scanner-action:v2.3.5
+OSV_SCAN_IMAGES ?=
+OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
+# Set to any value to read images from the local Docker daemon (docker save) instead of pulling from a registry.
+# Used by osv-scan-local-images; not set by default so osv-scan always pulls fresh remote images.
+OSV_SCAN_LOCAL ?=
 
 # Helper variable for escaping commas in Make functions
 comma := ,
@@ -61,6 +67,12 @@ else
 	ifneq ($(GOARCH), arm64)
 		GOARCH := amd64
 	endif
+endif
+
+ifeq ($(IS_ARM_MACHINE), )
+	OSV_SCANNER_PLATFORM :=
+else
+	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
 # For v2.2, we use vanilla upstream envoy for arm build and envoy-gloo for x86 build. These are used by goreleaser
@@ -169,6 +181,169 @@ ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
 .PHONY: lint-actions
 lint-actions: ## Lint the GitHub Actions workflows
 	$(ACTION_LINT)
+
+.PHONY: osv-scan
+osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to also scan Docker images
+	@set -euo pipefail; \
+	branch="$$(git rev-parse --abbrev-ref HEAD)"; \
+	if [[ "$$branch" == "HEAD" ]]; then \
+		branch="detached-$$(git rev-parse --short=12 HEAD)"; \
+	fi; \
+	safe_branch="$$(printf '%s' "$$branch" | tr '/.' '--')"; \
+	out_dir="$(OUTPUT_DIR)/osv/$$safe_branch"; \
+	mkdir -p "$$out_dir"; \
+	echo "Running OSV-Scanner for branch: $$branch"; \
+	echo "Writing results to: $$out_dir"; \
+	scanner_status=0; \
+	if docker run --rm \
+		$(OSV_SCANNER_PLATFORM) \
+		--entrypoint /root/osv-scanner \
+		-v "$(ROOTDIR):/workspace" \
+		-v "$(OUTPUT_DIR):/output" \
+		-w /workspace \
+		"$(OSV_SCANNER_IMAGE)" \
+		scan source \
+		--output-file=/output/osv/$$safe_branch/results.json \
+		--format=json \
+		--no-call-analysis=go \
+		--no-call-analysis=rust \
+		--verbosity=warn \
+		-r \
+		./; then \
+		:; \
+	else \
+		scanner_status=$$?; \
+	fi; \
+	if [[ ! -f "$$out_dir/results.json" ]]; then \
+		echo "osv-scanner did not produce $$out_dir/results.json" >&2; \
+		exit 1; \
+	fi; \
+	reporter_status=0; \
+	if docker run --rm \
+		$(OSV_SCANNER_PLATFORM) \
+		--entrypoint /root/osv-reporter \
+		-v "$(ROOTDIR):/workspace" \
+		-v "$(OUTPUT_DIR):/output" \
+		-w /workspace \
+		"$(OSV_SCANNER_IMAGE)" \
+		--output-files=sarif:/output/osv/$$safe_branch/results.sarif \
+		--new=/output/osv/$$safe_branch/results.json \
+		--fail-on-vuln=false; then \
+		:; \
+	else \
+		reporter_status=$$?; \
+	fi; \
+	if [[ ! -f "$$out_dir/results.sarif" ]]; then \
+		echo "osv-reporter did not produce $$out_dir/results.sarif" >&2; \
+		exit 1; \
+	fi; \
+	image_scanner_status=0; \
+	image_reporter_status=0; \
+	if [[ -n "$(strip $(OSV_SCAN_IMAGES))" ]]; then \
+		image_dir="$$out_dir/images"; \
+		mkdir -p "$$image_dir"; \
+		echo "Scanning Docker images: $(OSV_SCAN_IMAGES)"; \
+		for image in $(OSV_SCAN_IMAGES); do \
+			safe_image_base="$$(printf '%s' "$$image" | sed 's/[^A-Za-z0-9_.-]/-/g')"; \
+			image_hash="$$(printf '%s' "$$image" | sha256sum | cut -d' ' -f1)"; \
+			safe_image="$$safe_image_base-$$image_hash"; \
+			image_json="/output/osv/$$safe_branch/images/$$safe_image.json"; \
+			image_sarif="/output/osv/$$safe_branch/images/$$safe_image.sarif"; \
+			image_archive="/output/osv/$$safe_branch/images/$$safe_image.tar"; \
+			host_image_json="$$image_dir/$$safe_image.json"; \
+			host_image_sarif="$$image_dir/$$safe_image.sarif"; \
+			host_image_archive="$$image_dir/$$safe_image.tar"; \
+			image_platform="$(OSV_SCAN_IMAGE_PLATFORM)"; \
+			image_os="$${image_platform%%/*}"; \
+			image_arch="$${image_platform#*/}"; \
+			image_arch="$${image_arch%%/*}"; \
+			rm -f "$$host_image_archive"; \
+			if [[ -n "$(OSV_SCAN_LOCAL)" ]]; then \
+				echo "Saving local image $$image via docker save"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			elif command -v skopeo > /dev/null 2>&1; then \
+				if skopeo copy \
+					--override-os "$$image_os" \
+					--override-arch "$$image_arch" \
+					"docker://$$image" \
+					"docker-archive:$$host_image_archive:$$image"; then \
+					:; \
+				else \
+					echo "skopeo archive export failed for $$image; falling back to docker save"; \
+					rm -f "$$host_image_archive"; \
+					echo "Pulling Docker image $$image for platform $$image_platform"; \
+					docker pull --platform "$$image_platform" "$$image"; \
+					docker save "$$image" -o "$$host_image_archive"; \
+				fi; \
+			else \
+				echo "Pulling Docker image $$image for platform $$image_platform"; \
+				docker pull --platform "$$image_platform" "$$image"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			fi; \
+			echo "Running OSV-Scanner for Docker image: $$image"; \
+			if docker run --rm \
+				$(OSV_SCANNER_PLATFORM) \
+				--entrypoint /root/osv-scanner \
+				-v "$(ROOTDIR):/workspace" \
+				-v "$(OUTPUT_DIR):/output" \
+				-w /workspace \
+				"$(OSV_SCANNER_IMAGE)" \
+				scan image \
+				--archive \
+				--config=/workspace/osv-scanner.toml \
+				--output-file="$$image_json" \
+				--format=json \
+				--verbosity=warn \
+				"$$image_archive"; then \
+				:; \
+			else \
+				image_scanner_status=$$?; \
+			fi; \
+			if [[ ! -f "$$host_image_json" ]]; then \
+				echo "osv-scanner did not produce $$host_image_json" >&2; \
+				exit 1; \
+			fi; \
+			rm -f "$$host_image_archive"; \
+			if docker run --rm \
+				$(OSV_SCANNER_PLATFORM) \
+				--entrypoint /root/osv-reporter \
+				-v "$(ROOTDIR):/workspace" \
+				-v "$(OUTPUT_DIR):/output" \
+				-w /workspace \
+				"$(OSV_SCANNER_IMAGE)" \
+				--output-files="sarif:$$image_sarif" \
+				--new="$$image_json" \
+				--fail-on-vuln=false; then \
+				:; \
+			else \
+				image_reporter_status=$$?; \
+			fi; \
+			if [[ ! -f "$$host_image_sarif" ]]; then \
+				echo "osv-reporter did not produce $$host_image_sarif" >&2; \
+				exit 1; \
+			fi; \
+			echo "Image JSON: $$host_image_json"; \
+			echo "Image SARIF: $$host_image_sarif"; \
+		done; \
+	fi; \
+	docker run --rm \
+		$(OSV_SCANNER_PLATFORM) \
+		--entrypoint /bin/chown \
+		-v "$(OUTPUT_DIR):/output" \
+		"$(OSV_SCANNER_IMAGE)" \
+		-R "$$(id -u):$$(id -g)" "/output/osv/$$safe_branch" > /dev/null; \
+	if [[ "$$scanner_status" -ne 0 || "$$reporter_status" -ne 0 || "$$image_scanner_status" -ne 0 || "$$image_reporter_status" -ne 0 ]]; then \
+		echo "OSV scan completed and wrote results despite non-zero scanner/reporter exit status."; \
+	fi; \
+	echo "JSON: $$out_dir/results.json"; \
+	echo "SARIF: $$out_dir/results.sarif"
+
+.PHONY: osv-scan-local-images
+osv-scan-local-images: ## Build images from the current branch and run OSV-Scanner against them
+	$(MAKE) -B kgateway-docker sds-docker envoy-wrapper-docker
+	$(MAKE) osv-scan \
+		OSV_SCAN_LOCAL=1 \
+		OSV_SCAN_IMAGES="$(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)"
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
