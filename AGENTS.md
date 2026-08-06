@@ -18,6 +18,14 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 - **pkg/krtcollections/**: KRT collections for core resources
 - **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
 
+### Secret and ConfigMap access
+Secrets and ConfigMaps are watched **metadata-only** cluster-wide; only objects the
+configuration references have their contents fetched. Reading one that no `ResourceRef`
+points at fails as if it did not exist, so a new read needs a matching ref (see
+`pluginsdk.Plugin.ContributesResourceRefs`). Ref collections must derive from *raw*
+client collections, never from IR collections that resolve Secrets, or startup deadlocks.
+Full details: `/devel/architecture/secret-configmap-caching.md`.
+
 ### Plugin System
 kgateway translates Kubernetes Gateway API resources into Envoy configuration. Plugins *contribute* to that translation, usually by adding a new CRD (most commonly a Policy CRD) that users create to express their desired configuration. Policy CRDs attach to Gateway API resources via `targetRefs` or `targetSelectors`; kgateway manages the attachment during translation.
 

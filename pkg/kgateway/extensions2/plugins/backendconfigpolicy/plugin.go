@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/ondemand"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -218,6 +219,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				GetPolicyStatus:   getPolicyStatusFn(cli),
 				PatchPolicyStatus: patchPolicyStatusFn(cli),
 			},
+		},
+		ContributesResourceRefs: []krt.Collection[ondemand.ResourceRef]{
+			resourceRefs(col, commoncol.KrtOpts),
 		},
 	}
 }

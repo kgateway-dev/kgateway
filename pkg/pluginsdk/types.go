@@ -15,6 +15,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/ondemand"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -117,6 +118,21 @@ type Plugin struct {
 	ContributesLeaderAction map[schema.GroupKind]func()
 	// extra has sync beyond primary resources in the collections above
 	ExtraHasSynced func() bool
+
+	// ContributesResourceRefs declares the Secrets and ConfigMaps whose contents
+	// this plugin reads.
+	//
+	// kgateway watches Secrets and ConfigMaps cluster-wide with a metadata-only
+	// informer and fetches the full contents of referenced objects only, so an
+	// object no plugin declares here is never loaded and reading it fails as if
+	// it did not exist. Any code path that calls SecretIndex.GetSecret,
+	// ConfigMapIndex.GetConfigMap or similar must have a matching ref here.
+	//
+	// The collections must be derived only from raw resource collections (the
+	// informer-backed policy collection, say), never from an IR collection that
+	// itself resolves Secrets. Doing the latter creates a cycle -- the cache
+	// waits for refs, refs wait for the cache -- that deadlocks startup.
+	ContributesResourceRefs []krt.Collection[ondemand.ResourceRef]
 }
 
 type (

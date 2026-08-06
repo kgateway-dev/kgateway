@@ -12,10 +12,20 @@ import (
 type ConfigMapIndex struct {
 	configmaps krt.Collection[*corev1.ConfigMap]
 	refgrants  *RefGrantIndex
+	// exists reports whether an object is present in the cluster at all, from the
+	// metadata-only watch. See SecretIndex.exists.
+	exists func(namespace, name string) bool
 }
 
 func NewConfigMapIndex(configmaps krt.Collection[*corev1.ConfigMap], refgrants *RefGrantIndex) *ConfigMapIndex {
 	return &ConfigMapIndex{configmaps: configmaps, refgrants: refgrants}
+}
+
+// WithExistenceCheck attaches the cluster-wide existence probe described on the
+// exists field.
+func (c *ConfigMapIndex) WithExistenceCheck(exists func(namespace, name string) bool) *ConfigMapIndex {
+	c.exists = exists
+	return c
 }
 
 func (c *ConfigMapIndex) HasSynced() bool {
@@ -55,6 +65,9 @@ func (c *ConfigMapIndex) GetConfigMap(kctx krt.HandlerContext, from From, config
 	}
 	cmPtr := krt.FetchOne(kctx, c.configmaps, krt.FilterObjectName(nn))
 	if cmPtr == nil {
+		if c.exists != nil && c.exists(toNs, string(configMapRef.Name)) {
+			return nil, &NotLoadedError{Obj: to}
+		}
 		return nil, &NotFoundError{NotFoundObj: to}
 	}
 

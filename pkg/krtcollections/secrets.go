@@ -18,10 +18,31 @@ type From struct {
 type SecretIndex struct {
 	secrets   map[schema.GroupKind]krt.Collection[ir.Secret]
 	refgrants *RefGrantIndex
+	// exists reports whether an object is present in the cluster at all, from the
+	// metadata-only watch. It lets a lookup tell "the user has not created this
+	// Secret" apart from "the Secret is there but its contents have not been
+	// fetched", which are very different things to report. May be nil, in which
+	// case every miss is reported as not found.
+	exists func(namespace, name string) bool
 }
 
 func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refgrants *RefGrantIndex) *SecretIndex {
 	return &SecretIndex{secrets: secrets, refgrants: refgrants}
+}
+
+// WithExistenceCheck attaches the cluster-wide existence probe described on the
+// exists field.
+func (s *SecretIndex) WithExistenceCheck(exists func(namespace, name string) bool) *SecretIndex {
+	s.exists = exists
+	return s
+}
+
+// missing builds the right error for a lookup that found nothing.
+func (s *SecretIndex) missing(to ir.ObjectSource) error {
+	if s.exists != nil && s.exists(to.Namespace, to.Name) {
+		return &NotLoadedError{Obj: to}
+	}
+	return &NotFoundError{NotFoundObj: to}
 }
 
 func (s *SecretIndex) HasSynced() bool {
@@ -34,6 +55,14 @@ func (s *SecretIndex) HasSynced() bool {
 		}
 	}
 	return true
+}
+
+// Collection returns the collection of loaded Secrets of the given kind, or nil
+// if the kind is unknown. It holds only Secrets whose contents were fetched
+// because something references them, so it is not a view of the cluster; use it
+// where the set of loaded Secrets is what you actually want.
+func (s *SecretIndex) Collection(gk schema.GroupKind) krt.Collection[ir.Secret] {
+	return s.secrets[gk]
 }
 
 // GetSecret retrieves a secret from the index, validating reference grants to ensure
@@ -67,7 +96,7 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	}
 	secret := krt.FetchOne(kctx, col, krt.FilterKey(to.ResourceName()))
 	if secret == nil {
-		return nil, &NotFoundError{NotFoundObj: to}
+		return nil, s.missing(to)
 	}
 	return secret, nil
 }

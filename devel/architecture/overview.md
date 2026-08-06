@@ -155,3 +155,10 @@ needed.
 # Diagram of the translation lifecycle
 
 ![](translation.svg)
+
+# Secret and ConfigMap access
+
+Secrets and ConfigMaps are not held in memory in full. kgateway watches them
+cluster-wide with a metadata-only informer and fetches the contents of only
+those objects the configuration references, so reading one requires declaring a
+reference to it. See [secret-configmap-caching.md](secret-configmap-caching.md).

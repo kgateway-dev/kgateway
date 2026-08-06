@@ -27,10 +27,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/ondemand"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -159,7 +161,36 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				PolicyStatusFromGatewayReports:  true,
 			},
 		},
+		ContributesResourceRefs: []krt.Collection[ondemand.ResourceRef]{
+			resourceRefs(col, commoncol.KrtOpts),
+		},
 	}
+}
+
+// resourceRefs declares the CA bundles BackendTLSPolicy reads. Derived from the
+// raw policy collection, never from the translated one, which reads the caches
+// these refs feed.
+func resourceRefs(
+	policies krt.Collection[*gwv1.BackendTLSPolicy],
+	opts krtutil.KrtOptions,
+) krt.Collection[ondemand.ResourceRef] {
+	return krt.NewManyCollection(policies, func(kctx krt.HandlerContext, p *gwv1.BackendTLSPolicy) []ondemand.ResourceRef {
+		src := "BackendTLSPolicy/" + p.Namespace + "/" + p.Name
+		refs := make([]ondemand.ResourceRef, 0, len(p.Spec.Validation.CACertificateRefs))
+		for _, certRef := range p.Spec.Validation.CACertificateRefs {
+			// Defaults to ConfigMap, matching buildTranslateFunc.
+			kind := kgwellknown.ConfigMapKind
+			if certRef.Kind != "" {
+				kind = string(certRef.Kind)
+			}
+			if kind != kgwellknown.ConfigMapKind && kind != kgwellknown.SecretKind {
+				continue
+			}
+			// CACertificateRefs are LocalObjectReferences: always same-namespace.
+			refs = append(refs, ondemand.NewRef(src, kind, p.Namespace, string(certRef.Name)))
+		}
+		return ondemand.Dedupe(refs)
+	}, opts.ToOptions("BackendTLSPolicyResourceRefs")...)
 }
 
 func processBackend(ctx context.Context, polir ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {

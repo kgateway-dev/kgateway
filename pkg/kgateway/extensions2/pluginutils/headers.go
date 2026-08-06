@@ -12,7 +12,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	sharedv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/ondemand"
 )
 
 var (
@@ -188,4 +190,30 @@ func ConvertMutationsToOptions(mutations []*mutation_rulesv3.HeaderMutation) (op
 	}
 
 	return options, nil
+}
+
+// HeaderFilterResourceRefs returns the Secrets a header filter reads.
+//
+// It must stay in step with resolveHeader: kgateway only loads the contents of
+// Secrets some ref points at, so a value this misses is a Secret the resolver
+// will fail to find.
+func HeaderFilterResourceRefs(
+	source, defaultNamespace string,
+	filter *sharedv1alpha1.HTTPHeaderFilter,
+) []ondemand.ResourceRef {
+	if filter == nil {
+		return nil
+	}
+	var refs []ondemand.ResourceRef
+	for _, h := range slices.Concat(filter.Add, filter.Set) {
+		if h.SecretRef == nil {
+			continue
+		}
+		ns := defaultNamespace
+		if h.SecretRef.Namespace != nil {
+			ns = string(*h.SecretRef.Namespace)
+		}
+		refs = append(refs, ondemand.NewRef(source, wellknown.SecretKind, ns, string(h.SecretRef.Name)))
+	}
+	return refs
 }

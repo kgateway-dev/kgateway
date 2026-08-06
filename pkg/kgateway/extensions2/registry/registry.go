@@ -66,6 +66,7 @@ func MergePlugins(plug ...sdk.Plugin) sdk.Plugin {
 		if p.ExtraHasSynced != nil {
 			hasSynced = append(hasSynced, p.ExtraHasSynced)
 		}
+		ret.ContributesResourceRefs = append(ret.ContributesResourceRefs, p.ContributesResourceRefs...)
 	}
 	ret.ContributesGwTranslator = mergedGw(funcs)
 	ret.ExtraHasSynced = mergeSynced(hasSynced)
