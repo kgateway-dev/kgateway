@@ -49,6 +49,17 @@ func reportPolicyAcceptanceStatus(
 			continue
 		}
 
+		if len(policy.Warnings) > 0 {
+			r.SetCondition(reporter.PolicyCondition{
+				Type:               string(shared.PolicyConditionAccepted),
+				Status:             metav1.ConditionTrue,
+				Reason:             string(shared.PolicyReasonPartiallyValid),
+				Message:            policy.FormatWarnings(),
+				ObservedGeneration: policy.Generation,
+			})
+			continue
+		}
+
 		r.SetCondition(reporter.PolicyCondition{
 			Type:               string(shared.PolicyConditionAccepted),
 			Status:             metav1.ConditionTrue,

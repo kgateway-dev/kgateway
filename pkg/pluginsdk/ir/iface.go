@@ -295,6 +295,11 @@ type PolicyWrapper struct {
 	// Instead use a well defined error such as ErrInvalidConfig
 	Errors []error
 
+	// Warnings are non-fatal issues detected while processing the policy. The policy
+	// is still accepted, but is reported as PartiallyValid so users can see what was
+	// dropped or ignored.
+	Warnings []error
+
 	// The IR of the policy objects. ideally with structural errors removed.
 	// Opaque to us other than metadata.
 	PolicyIR PolicyIR

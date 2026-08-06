@@ -87,6 +87,10 @@ type PolicyAtt struct {
 	// Instead use a well defined error such as ErrInvalidConfig
 	Errors []error
 
+	// Warnings are non-fatal issues detected while processing the policy. The policy
+	// is still accepted, but is reported as PartiallyValid.
+	Warnings []error
+
 	// HierarchicalPriority is the priority of the policy in an inheritance hierarchy.
 	// A higher value means higher priority. It is used to accurately merge policies
 	// that are at different levels in the config tree hierarchy.
@@ -114,6 +118,14 @@ func (c PolicyAtt) FormatErrors() string {
 	return strings.Join(errs, "; ")
 }
 
+func (c PolicyAtt) FormatWarnings() string {
+	warns := make([]string, len(c.Warnings))
+	for i, w := range c.Warnings {
+		warns[i] = w.Error()
+	}
+	return strings.Join(warns, "; ")
+}
+
 type PolicyAttachmentOpts func(*PolicyAtt)
 
 func WithInheritedPolicyPriority(priority apiannotations.InheritedPolicyPriorityValue) PolicyAttachmentOpts {
@@ -131,7 +143,24 @@ func (c PolicyAtt) TargetRef() *AttachedPolicyRef {
 }
 
 func (c PolicyAtt) Equals(in PolicyAtt) bool {
-	if !slices.EqualFunc(c.Errors, in.Errors, func(e1, e2 error) bool {
+	if !errorSlicesEqual(c.Errors, in.Errors) {
+		return false
+	}
+	if !errorSlicesEqual(c.Warnings, in.Warnings) {
+		return false
+	}
+
+	return c.GroupKind == in.GroupKind &&
+		c.Generation == in.Generation &&
+		c.PolicyIr.Equals(in.PolicyIr) &&
+		ptrEquals(c.PolicyRef, in.PolicyRef) &&
+		c.InheritedPolicyPriority == in.InheritedPolicyPriority &&
+		c.HierarchicalPriority == in.HierarchicalPriority &&
+		c.PrecedenceWeight == in.PrecedenceWeight
+}
+
+func errorSlicesEqual(a, b []error) bool {
+	return slices.EqualFunc(a, b, func(e1, e2 error) bool {
 		if e1 == nil && e2 != nil {
 			return false
 		}
@@ -143,17 +172,7 @@ func (c PolicyAtt) Equals(in PolicyAtt) bool {
 		}
 
 		return true
-	}) {
-		return false
-	}
-
-	return c.GroupKind == in.GroupKind &&
-		c.Generation == in.Generation &&
-		c.PolicyIr.Equals(in.PolicyIr) &&
-		ptrEquals(c.PolicyRef, in.PolicyRef) &&
-		c.InheritedPolicyPriority == in.InheritedPolicyPriority &&
-		c.HierarchicalPriority == in.HierarchicalPriority &&
-		c.PrecedenceWeight == in.PrecedenceWeight
+	})
 }
 
 func ptrEquals[T comparable](a, b *T) bool {
