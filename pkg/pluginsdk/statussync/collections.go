@@ -4,6 +4,7 @@ package statussync
 
 import (
 	"sync"
+	"time"
 
 	"istio.io/istio/pkg/config"
 	"istio.io/istio/pkg/kube/controllers"
@@ -163,6 +164,21 @@ func registerResource[I controllers.Object](
 		})
 	}
 	s.Register(reg)
+}
+
+// Requeue schedules another reconciliation of res after delay, satisfying RequeueFunc.
+// When status writing is disabled the request is dropped: this replica is not the leader,
+// and acquiring leadership replays every resource. The queue is captured at schedule time,
+// so a requeue that fires after leadership is lost lands on the old (shut down) queue and
+// is discarded there.
+func (s *StatusCollections) Requeue(res Resource, delay time.Duration) {
+	s.mu.Lock()
+	queue := s.queue
+	s.mu.Unlock()
+	if queue == nil {
+		return
+	}
+	time.AfterFunc(delay, func() { queue.Push(res) })
 }
 
 // HasSynced reports whether every registered report reducer has synced. The leader's

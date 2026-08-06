@@ -98,6 +98,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			},
 			Build:     build,
 			GetStatus: getStatus,
+			NotReady:  in.NotReady,
 			Merge: func(current T, desired gwv1.PolicyStatus) gwv1.PolicyStatus {
 				desired.Ancestors = statussync.MergePolicyAncestorStatuses(controllerName, getStatus(current).Ancestors, desired.Ancestors)
 				return desired

@@ -64,6 +64,10 @@ type PolicyStatusInputs struct {
 	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
 	// KrtOpts supplies standard collection lifecycle and debugging options.
 	KrtOpts krtutil.KrtOptions
+	// NotReady re-queues policies whose client cannot see them yet. Plugins reading through
+	// a delayed client must pass it to their writer, or a policy enqueued before that
+	// client's informer loads silently never gets status.
+	NotReady *statussync.NotReadyRequeuer
 	// RegisterWriter registers the writer that persists this plugin's policy status.
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer)
 }

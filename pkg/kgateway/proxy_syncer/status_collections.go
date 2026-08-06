@@ -39,6 +39,10 @@ import (
 func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.statusCollections = statussync.NewStatusCollections()
 	s.statusWriters = map[schema.GroupVersionKind]statussync.ResourceStatusSyncer{}
+	// Every writer below reads through a delayed client, whose Get returns nil until its own
+	// informer loads. Nothing upstream re-fires at that point, so writers hand those
+	// resources to the requeuer rather than mistaking a not-ready client for a deletion.
+	notReady := statussync.NewNotReadyRequeuer(s.statusCollections.Requeue)
 
 	cl := s.apiClient
 	f := kclient.Filter{ObjectFilter: cl.ObjectFilter()}
@@ -89,6 +93,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		GetStatus: func(o *gwv1.Gateway) gwv1.GatewayStatus { return o.Status },
 		Merge:     mergeGatewayStatusAddresses,
 		OnSync:    gatewayStatusMetricsHook(),
+		NotReady:  notReady,
 	}
 
 	httpRouteReports := statussync.NewResourceReports(
@@ -141,6 +146,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		},
 		func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		func(o *gwv1.HTTPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+		notReady,
 	)
 	s.statusWriters[wellknown.GRPCRouteGVK] = routeWriter[*gwv1.GRPCRoute](ctx, cl, f, grpcRouteReports, wellknown.GRPCRouteGVK, "grpcRoute", wellknown.GRPCRouteGVR, wellknown.GRPCRouteKind, controllerName,
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.GRPCRoute {
@@ -148,6 +154,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		},
 		func(o *gwv1.GRPCRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		func(o *gwv1.GRPCRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+		notReady,
 	)
 
 	// TCP and TLS route statuses are written through a served API version resolved from CRD
@@ -163,6 +170,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 					},
 					func(o *gwv1.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+					notReady,
 				)
 			}
 			return routeWriter[*gwv1a2.TCPRoute](ctx, cl, f, tcpRouteReports, tcpGVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
@@ -171,6 +179,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 				},
 				func(o *gwv1a2.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 				func(o *gwv1a2.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+				notReady,
 			)
 		})...)
 	s.statusWriters[wellknown.TCPRouteGVK] = tcpWriter
@@ -186,6 +195,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 					},
 					func(o *gwv1.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+					notReady,
 				)
 			case wellknown.TLSRouteV1Alpha3GVR:
 				return routeWriter[*gwv1a3.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
@@ -194,6 +204,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 					},
 					func(o *gwv1a3.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1a3.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+					notReady,
 				)
 			default:
 				return routeWriter[*gwv1a2.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
@@ -202,6 +213,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 					},
 					func(o *gwv1a2.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1a2.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+					notReady,
 				)
 			}
 		})...)
@@ -263,6 +275,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		},
 		GetStatus: func(o *kgateway.Backend) kgateway.BackendStatus { return o.Status },
 		OnSync:    simpleStatusMetricsHook[*kgateway.Backend, kgateway.BackendStatus]("BackendStatusSyncer", wellknown.BackendGVK.Kind),
+		NotReady:  notReady,
 	}
 
 	policyStatusInputs := plug.PolicyStatusInputs{
@@ -271,6 +284,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		StatusContributions:   s.statusContributions,
 		ContributionsByTarget: contributionsByTarget,
 		KrtOpts:               krtopts,
+		NotReady:              notReady,
 		RegisterWriter: func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer) {
 			registerStatusWriter(s.statusWriters, gvk, syncer)
 		},
@@ -347,6 +361,7 @@ func routeWriter[T controllers.ComparableObject](
 	build func(om metav1.ObjectMeta, st gwv1.RouteStatus) T,
 	getStatus func(T) gwv1.RouteStatus,
 	parentRefs func(T) []gwv1.ParentReference,
+	notReady *statussync.NotReadyRequeuer,
 ) statussync.Writer[T, gwv1.RouteStatus] {
 	return statussync.Writer[T, gwv1.RouteStatus]{
 		Name:   name,
@@ -373,7 +388,8 @@ func routeWriter[T controllers.ComparableObject](
 			desired.Parents = statussync.MergeRouteParentStatuses(controllerName, getStatus(current).Parents, desired.Parents)
 			return desired
 		},
-		OnSync: routeStatusMetricsHook(kind, controllerName, parentRefs),
+		OnSync:   routeStatusMetricsHook(kind, controllerName, parentRefs),
+		NotReady: notReady,
 	}
 }
 

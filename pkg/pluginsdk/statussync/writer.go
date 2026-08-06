@@ -71,6 +71,11 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	// true. current is the last object read from the informer and status the last merged
 	// status. Used to record status sync metrics.
 	OnSync func(res Resource, current O, status S, took time.Duration, err error)
+
+	// NotReady, when set, re-queues resources this writer's client cannot see yet. Required
+	// for correctness whenever Client is a delayed client, because its Get returns nil until
+	// its own informer loads and nothing upstream re-fires afterwards. See NotReadyRequeuer.
+	NotReady *NotReadyRequeuer
 }
 
 var (
@@ -123,9 +128,11 @@ func (s firstPresentSyncer) ApplyStatus(ctx context.Context, obj Resource) {
 		candidate.ApplyStatus(ctx, obj)
 		return
 	}
-	// No candidate holds the object: either it was deleted, or no informer has synced yet.
-	// Fall through to the preferred version so the usual not-found handling still runs and
-	// a synced-but-empty informer is not mistaken for a missing API version.
+	// No candidate holds the object: either it was deleted, or no informer has loaded yet.
+	// Delegating to the preferred version is what makes the second case recoverable — its
+	// writer routes this through NotReadyRequeuer, which re-queues until some candidate can
+	// see the object or the budget runs out. Dropping it here instead would strand the
+	// resource, since nothing upstream re-fires once a writer's informer finally loads.
 	logger.Debug("no candidate API version holds the object; using the preferred version",
 		"kind", s.name, "resource", obj.NamespacedName.String())
 	s.candidates[0].ApplyStatus(ctx, obj)
@@ -154,16 +161,21 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	var lastCurrent O
 	var lastMerged S
 	hasDesired := false
+	invisible := false
 	err := RetryStatusWrite(ctx, func() error {
 		hasDesired = false
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
 		current := w.Client.Get(obj.Name, obj.Namespace)
 		if controllers.IsNil(current) {
-			// Harmless race: status write after resource was deleted.
+			// Either the resource was deleted (a harmless race) or this client's informer
+			// has not loaded yet. The two are indistinguishable here, so hand it to the
+			// requeuer, which bounds how long we keep waiting.
+			invisible = true
 			log.Debug("resource not found, skipping status update")
 			return nil
 		}
+		invisible = false
 		lastCurrent = current
 
 		desired, ok := w.Desired(current)
@@ -210,6 +222,11 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	})
 	if err != nil {
 		log.Error("failed to sync status after retries", "error", err)
+	}
+	if invisible {
+		w.NotReady.Schedule(obj)
+	} else {
+		w.NotReady.Done(obj)
 	}
 	if hasDesired && w.OnSync != nil {
 		w.OnSync(obj, lastCurrent, lastMerged, time.Since(start), err)
