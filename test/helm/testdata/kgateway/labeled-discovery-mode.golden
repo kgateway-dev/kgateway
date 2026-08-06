@@ -384,9 +384,9 @@ spec:
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
               value: "[]"
             - name: KGW_SECRET_DISCOVERY_MODE
-              value: "ALL"
+              value: "LABELED"
             - name: KGW_CONFIG_MAP_DISCOVERY_MODE
-              value: "ALL"
+              value: "LABELED"
             - name: KGW_POLICY_MERGE
               value: "{}"
             - name: KGW_VALIDATION_MODE
@@ -403,7 +403,3 @@ spec:
                   fieldPath: metadata.namespace
           resources:
             {}
-      tolerations:
-        - effect: NoSchedule
-          key: top-level
-          operator: Exists

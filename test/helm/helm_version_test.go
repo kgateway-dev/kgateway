@@ -450,6 +450,12 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "labeled-discovery-mode",
+		valuesYAML: `secretDiscoveryMode: LABELED
+configMapDiscoveryMode: labeled
+`,
+	},
+	{
 		name: "additional-labels",
 		valuesYAML: `commonLabels:
     extra-label-key: extra-label-value

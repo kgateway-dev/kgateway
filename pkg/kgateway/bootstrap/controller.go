@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
@@ -99,6 +100,32 @@ func (r *controller) reconcile(req types.NamespacedName) error {
 		if err := r.createOAuth2HMACSecret(); err != nil {
 			return err
 		}
+		return nil
+	}
+
+	// This Secret is created by kgateway and read back through the Secrets collection, which
+	// only sees labeled objects in LABELED discovery mode. Secrets created by an older
+	// version predate the label, so add it rather than recreating the Secret, which would
+	// rotate the key.
+	if oauthHMACSecret.GetLabels()[wellknown.WatchLabel] != wellknown.WatchLabelValue {
+		logger.Info("adding watch label to OAuth2 HMAC secret", "ref", req.String())
+		return r.labelOAuth2HMACSecret(req)
+	}
+	return nil
+}
+
+func (r *controller) labelOAuth2HMACSecret(req types.NamespacedName) error {
+	// A merge patch on labels only adds the key it names, so any other labels on the Secret
+	// are preserved.
+	patch, err := json.Marshal(map[string]any{"metadata": map[string]any{
+		"labels": map[string]string{wellknown.WatchLabel: wellknown.WatchLabelValue},
+	}})
+	if err != nil {
+		return err
+	}
+	if _, err := r.secretClient.Patch(req.Name, req.Namespace, types.MergePatchType, patch); err != nil {
+		logger.Error("error labeling OAuth2 HMAC secret", "ref", req.String(), "error", err)
+		return err
 	}
 	return nil
 }
@@ -120,6 +147,9 @@ func (r *controller) createOAuth2HMACSecret() error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      wellknown.OAuth2HMACSecret.Name,
 			Namespace: wellknown.OAuth2HMACSecret.Namespace,
+			// Always labeled, whatever the Secret discovery mode is: the label costs nothing
+			// in ALL mode and means switching to LABELED needs no migration of this Secret.
+			Labels: map[string]string{wellknown.WatchLabel: wellknown.WatchLabelValue},
 		},
 		Data: map[string][]byte{
 			wellknown.OAuth2HMACSecretKey: secretKey,

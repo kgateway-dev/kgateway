@@ -20,10 +20,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
+
+var logger = logging.New("pluginsdk/collections")
 
 type CommonCollections struct {
 	Client            apiclient.Client
@@ -56,6 +59,15 @@ type CommonCollections struct {
 	ControllerName string
 
 	options *option
+}
+
+// WatchLabelSelector returns the label selector that a watch in the given discovery mode
+// must push to the API server, or the empty string for an unfiltered watch.
+func WatchLabelSelector(mode apisettings.DiscoveryMode) string {
+	if mode != apisettings.DiscoveryLabeled {
+		return ""
+	}
+	return wellknown.WatchLabel + "=" + wellknown.WatchLabelValue
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -106,10 +118,22 @@ func NewCommonCollections(
 		kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
 	}
 
+	// In LABELED mode the watch label is pushed to the API server as a watch selector, so
+	// objects kgateway is not expected to resolve never reach the informer cache.
+	secretWatchSelector := WatchLabelSelector(settings.SecretDiscoveryMode)
+	configMapWatchSelector := WatchLabelSelector(settings.ConfigMapDiscoveryMode)
+	if secretWatchSelector != "" {
+		logger.Info("watching only labeled Secrets", "selector", secretWatchSelector)
+	}
+	if configMapWatchSelector != "" {
+		logger.Info("watching only labeled ConfigMaps", "selector", configMapWatchSelector)
+	}
+
 	secretClient := kclient.NewFiltered[*corev1.Secret](
 		client,
 		kclient.Filter{
 			FieldSelector: apiclient.SecretsFieldSelector,
+			LabelSelector: secretWatchSelector,
 			ObjectFilter:  client.ObjectFilter(),
 		},
 	)
@@ -163,7 +187,10 @@ func NewCommonCollections(
 
 	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		kclient.Filter{
+			LabelSelector: configMapWatchSelector,
+			ObjectFilter:  client.ObjectFilter(),
+		},
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 

@@ -127,7 +127,12 @@ func ourPolicies(commoncol *collections.CommonCollections) krt.Collection[ir.Pol
 	// collection with common options and a name. It's important so that the collection appears in
 	// the krt debug page.
 
-	// Use the default discovery namespace filter to filter configmaps not in the list of discovery namespaces
+	// Use the default discovery namespace filter to filter configmaps not in the list of discovery namespaces.
+	// Note this watch is cluster-wide: if the install sets configMapDiscoveryMode to LABELED,
+	// prefer commoncol.ConfigMaps or pass
+	// collections.WatchLabelSelector(commoncol.Settings.ConfigMapDiscoveryMode) as the filter's
+	// LabelSelector, otherwise this informer caches every ConfigMap in the cluster and negates
+	// that setting.
 	filter := kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()}
 
 	// get a configmap client going
