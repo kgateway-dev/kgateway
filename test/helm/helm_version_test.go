@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -263,7 +264,7 @@ func extractImageLines(output string) string {
 	return strings.Join(lines, "\n")
 }
 
-func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) []byte {
+func runHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) ([]byte, string, error) {
 	t.Helper()
 
 	helmChartPath := filepath.Join("..", "..", "install", "helm", chart)
@@ -298,9 +299,15 @@ func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersio
 	helmCmd.Stderr = &stderr
 
 	err = helmCmd.Run()
-	require.NoError(t, err, "helm template failed: %s", stderr.String())
+	return output.Bytes(), stderr.String(), err
+}
 
-	return output.Bytes()
+func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) []byte {
+	t.Helper()
+
+	output, stderr, err := runHelmTemplate(t, chart, valuesYAML, apiVersions)
+	require.NoError(t, err, "helm template failed: %s", stderr)
+	return output
 }
 
 func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
@@ -322,6 +329,131 @@ func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
 
 	t.Fatal("deployment not found in rendered manifests")
 	return appsv1.Deployment{}
+}
+
+func findContainerEnvVar(t *testing.T, container corev1.Container, name string) corev1.EnvVar {
+	t.Helper()
+
+	for _, envVar := range container.Env {
+		if envVar.Name == name {
+			return envVar
+		}
+	}
+
+	t.Fatalf("environment variable %q not found", name)
+	return corev1.EnvVar{}
+}
+
+func TestControllerGoMemLimitPercent(t *testing.T) {
+	t.Run("computes a static byte value from controller resources", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  resources:
+    limits:
+      memory: 2Gi
+  goMemLimitPercent: 80
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Equal(t, "1717986918", memoryLimit.Value)
+		require.Nil(t, memoryLimit.ValueFrom)
+	})
+
+	t.Run("uses deprecated top-level resources when controller resources are unset", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `resources:
+  limits:
+    memory: 1Gi
+controller:
+  goMemLimitPercent: 80
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Equal(t, "858993459", memoryLimit.Value)
+		require.Nil(t, memoryLimit.ValueFrom)
+	})
+
+	t.Run("preserves resourceFieldRef when percentage calculation is disabled", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  goMemLimitPercent: 0
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Empty(t, memoryLimit.Value)
+		require.NotNil(t, memoryLimit.ValueFrom)
+		require.NotNil(t, memoryLimit.ValueFrom.ResourceFieldRef)
+		require.Equal(t, "limits.memory", memoryLimit.ValueFrom.ResourceFieldRef.Resource)
+	})
+
+	t.Run("allows extraEnv to override the generated fallback", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  extraEnv:
+    GOMEMLIMIT: 700MiB
+`, nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		memoryLimit := findContainerEnvVar(t, container, "GOMEMLIMIT")
+		require.Equal(t, "700MiB", memoryLimit.Value)
+		require.Nil(t, memoryLimit.ValueFrom)
+
+		count := 0
+		for _, envVar := range container.Env {
+			if envVar.Name == "GOMEMLIMIT" {
+				count++
+			}
+		}
+		require.Equal(t, 1, count)
+	})
+
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		message    string
+	}{
+		{
+			name: "requires an explicit memory limit",
+			valuesYAML: `controller:
+  goMemLimitPercent: 80
+`,
+			message: "controller.resources.limits.memory must be set when controller.goMemLimitPercent is set",
+		},
+		{
+			name: "rejects a percentage above 100",
+			valuesYAML: `controller:
+  resources:
+    limits:
+      memory: 2Gi
+  goMemLimitPercent: 101
+`,
+			message: "goMemLimitPercent must be between 1 and 100",
+		},
+		{
+			name: "rejects an unsupported memory quantity",
+			valuesYAML: `controller:
+  resources:
+    limits:
+      memory: 512Zi
+  goMemLimitPercent: 80
+`,
+			message: "unsupported memory quantity \"512Zi\"",
+		},
+		{
+			name: "rejects a custom GOMEMLIMIT conflict",
+			valuesYAML: `controller:
+  resources:
+    limits:
+      memory: 2Gi
+  goMemLimitPercent: 80
+  extraEnv:
+    GOMEMLIMIT: 700MiB
+`,
+			message: "controller.goMemLimitPercent and controller.extraEnv.GOMEMLIMIT cannot both be set",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			require.Error(t, err)
+			require.Contains(t, stderr, test.message)
+		})
+	}
 }
 
 // helmTemplateCase is a single `helm template` scenario, shared by the golden
