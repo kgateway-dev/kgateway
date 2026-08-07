@@ -27,6 +27,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -199,7 +200,7 @@ func TestEndpointUpdatesFlowWhileAnotherClusterErrored(t *testing.T) {
 // in for the per-client cluster and endpoint collections.
 type erroredClusterFixture struct {
 	ucc         ir.UniquelyConnectedClient
-	clusterCol  krt.StaticCollection[uccWithCluster]
+	clusterCols *testClusterCols
 	endpointCol krt.StaticCollection[UccWithEndpoints]
 	snapshots   krt.Collection[XdsSnapWrapper]
 }
@@ -229,10 +230,13 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 
 	f := &erroredClusterFixture{ucc: ucc}
 
-	f.clusterCol = krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+	// Neither cluster varies per client, so both are resolved shared bases with
+	// no overlay; breakCluster/restoreCluster swap the base row in place.
+	pcc, cols := newTestPerClientClusters([]uccWithCluster{
 		edsCluster(ucc, reproHealthyCluster, 1),
 		edsCluster(ucc, reproBrokenCluster, 2),
 	})
+	f.clusterCols = cols
 	f.endpointCol = krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		f.endpointsFor(reproHealthyCluster, 1),
 		f.endpointsFor(reproBrokenCluster, 1),
@@ -248,12 +252,7 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		PerClientEnvoyClusters{
-			clusters: f.clusterCol,
-			index: krtpkg.UnnamedIndex(f.clusterCol, func(c uccWithCluster) []string {
-				return []string{c.Client.ResourceName()}
-			}),
-		},
+		pcc,
 	)
 
 	return f
@@ -266,11 +265,11 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 func (f *erroredClusterFixture) breakCluster(name string) {
 	c := edsCluster(f.ucc, name, 99)
 	c.Error = errors.New(reproValidationErr)
-	f.clusterCol.UpdateObject(c)
+	f.clusterCols.bases.UpdateObject(baseFromCluster(c))
 }
 
 func (f *erroredClusterFixture) restoreCluster(name string) {
-	f.clusterCol.UpdateObject(edsCluster(f.ucc, name, 100))
+	f.clusterCols.bases.UpdateObject(baseFromCluster(edsCluster(f.ucc, name, 100)))
 }
 
 func (f *erroredClusterFixture) updateEndpoints(name string, localities int) {
@@ -292,7 +291,7 @@ func (f *erroredClusterFixture) endpointsFor(name string, localities int) UccWit
 
 	return UccWithEndpoints{
 		Client:        f.ucc,
-		Endpoints:     &envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps},
+		Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps}),
 		EndpointsHash: hash,
 		endpointsName: name,
 	}
@@ -534,7 +533,7 @@ func edsCluster(ucc ir.UniquelyConnectedClient, name string, version uint64) ucc
 	return uccWithCluster{
 		Client: ucc,
 		Name:   name,
-		Cluster: &envoyclusterv3.Cluster{
+		Cluster: sharedproto.Wrap(&envoyclusterv3.Cluster{
 			Name:                 name,
 			ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS},
 			EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{
@@ -543,7 +542,7 @@ func edsCluster(ucc ir.UniquelyConnectedClient, name string, version uint64) ucc
 					ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{Ads: &envoycorev3.AggregatedConfigSource{}},
 				},
 			},
-		},
+		}),
 		ClusterVersion: version,
 	}
 }

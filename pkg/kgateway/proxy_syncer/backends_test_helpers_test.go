@@ -54,6 +54,21 @@ func newTestPerClientClustersRaw(
 	}
 }
 
+// baseFromCluster projects a flat cluster entry onto a resolved shared base.
+// The zero Fingerprint is deliberate and load-bearing: the delta sets built
+// alongside it carry the same zero fingerprint, so a base row swapped in later
+// (see testClusterCols.bases) still reads as the current generation.
+func baseFromCluster(cluster uccWithCluster) baseEnvoyCluster {
+	return baseEnvoyCluster{
+		Name:              cluster.Name,
+		Cluster:           cluster.Cluster,
+		ClusterVersion:    cluster.ClusterVersion,
+		Error:             cluster.Error,
+		BackendSource:     cluster.BackendSource,
+		BackendGeneration: cluster.BackendGeneration,
+	}
+}
+
 // newTestPerClientClusters builds a PerClientEnvoyClusters from flat cluster
 // entries. These snapshot tests do not exercise overlays, so each entry is a
 // resolved shared base and each distinct client is included in the client set.
@@ -61,14 +76,7 @@ func newTestPerClientClusters(initial []uccWithCluster) (PerClientEnvoyClusters,
 	basesByName := make(map[string]baseEnvoyCluster)
 	clientsByName := make(map[string]ir.UniquelyConnectedClient)
 	for _, cluster := range initial {
-		basesByName[cluster.Name] = baseEnvoyCluster{
-			Name:              cluster.Name,
-			Cluster:           cluster.Cluster,
-			ClusterVersion:    cluster.ClusterVersion,
-			Error:             cluster.Error,
-			BackendSource:     cluster.BackendSource,
-			BackendGeneration: cluster.BackendGeneration,
-		}
+		basesByName[cluster.Name] = baseFromCluster(cluster)
 		clientsByName[cluster.Client.ResourceName()] = cluster.Client
 	}
 
