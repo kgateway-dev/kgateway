@@ -2,7 +2,6 @@ package policy
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 
@@ -156,7 +155,7 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatc
 
 	// Test the regex pattern to make sure it is a valid RE2 pattern
 	if err := regexutils.CheckRegexString(regexPattern); err != nil {
-		slog.Error("failed to convert origin to regex pattern", "origin", origin, "error", err)
+		logger.Error("failed to convert origin to regex pattern", "origin", origin, "error", err)
 		return nil
 	}
 

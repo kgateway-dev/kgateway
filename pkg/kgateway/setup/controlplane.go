@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
@@ -99,7 +100,7 @@ func NewControlPlane(
 	certWatcher *certwatcher.CertWatcher,
 	orderedADS bool,
 ) envoycache.SnapshotCache {
-	baseLogger := slog.Default().With("component", "envoy-controlplane")
+	baseLogger := logging.New("envoy-controlplane")
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
 	lnc := newLogNackCallback()
 	allCallbacks := chainCallbacks(callbacks, lnc)
@@ -150,7 +151,7 @@ func getGRPCServerOpts(
 			grpc_middleware.ChainStreamServer(
 				grpc_zap.StreamServerInterceptor(zap.NewNop()),
 				func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-					slog.Debug("gRPC call", "method", info.FullMethod)
+					logger.Debug("gRPC call", "method", info.FullMethod)
 					if xdsAuth {
 						xdsAuthRequestTotal.Inc()
 						am := authenticationManager{
@@ -164,10 +165,10 @@ func getGRPCServerOpts(
 							})
 						}
 						xdsAuthFailureTotal.Inc()
-						slog.Error("authentication failed", "reasons", am.authFailMsgs)
+						logger.Error("authentication failed", "reasons", am.authFailMsgs)
 						return fmt.Errorf("authentication failed: %v", am.authFailMsgs)
 					} else {
-						slog.Warn("xDS authentication is disabled")
+						logger.Warn("xDS authentication is disabled")
 						return handler(srv, ss)
 					}
 				},

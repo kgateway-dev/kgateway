@@ -82,6 +82,8 @@ linters:
           msg: use apiclient.Client instead of controller-runtime's client.Client
         - pattern: (\bt|\bT\(\))\.Cleanup
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
+        - pattern: ^slog\.(Debug|DebugContext|Info|InfoContext|Warn|WarnContext|Error|ErrorContext|Log|LogAttrs)$
+          msg: use a package-level logger created with logging.New instead of the global slog logger
     gomodguard:
       blocked:
         modules:

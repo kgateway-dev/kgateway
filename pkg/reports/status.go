@@ -3,7 +3,6 @@ package reports
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"strings"
 
@@ -468,7 +467,7 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 ) *gwv1.RouteStatus {
 	routeReport := r.route(obj)
 	if routeReport == nil {
-		slog.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
+		logger.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		return nil
 	}
 
@@ -479,7 +478,7 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 	// avoids freezing observedGeneration on a cache skew.
 	observedGeneration := routeReport.observedGeneration
 
-	slog.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
+	logger.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
 	var existingStatus gwv1.RouteStatus
 	// Default to using spec.ParentRefs when building the parent statuses for a route.
@@ -525,7 +524,7 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	default:
-		slog.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
+		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
 		return nil
 	}
 	if defaultParentRef {

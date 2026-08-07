@@ -7,16 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
+
+var logger = logging.New("e2e/cluster")
 
 const (
 	// TODO(npolshak): Add support for other profiles (ambient, etc.)
@@ -29,7 +31,7 @@ func GetIstioctl(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
-	slog.Info("using Istio binary", "path", istioctlBinary)
+	logger.Info("using Istio binary", "path", istioctlBinary)
 
 	return istioctlBinary, nil
 }
@@ -120,13 +122,13 @@ func getIstioVersion() string {
 // Download istioctl binary from istio.io/downloadIstio and returns the path to the binary
 func downloadIstio(version string) (string, error) {
 	if version == "" {
-		slog.Info("ISTIO_VERSION not specified, using istioctl from PATH")
+		logger.Info("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")
 		if err != nil {
 			return "", errors.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
 		}
 
-		slog.Info("using istioctl", "path", binaryPath)
+		logger.Info("using istioctl", "path", binaryPath)
 
 		return binaryPath, nil
 	}

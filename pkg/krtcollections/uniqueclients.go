@@ -58,7 +58,7 @@ func xdsFirstConnectDelay() time.Duration {
 			if err == nil {
 				d = parsed
 			} else {
-				slog.Warn("invalid KGW_XDS_FIRST_CONNECT_DELAY; using default", "value", v, "default", time.Second, "error", err)
+				logger.Warn("invalid KGW_XDS_FIRST_CONNECT_DELAY; using default", "value", v, "default", time.Second, "error", err)
 			}
 		}
 		xdsFirstConnectDelayNanos.Store(int64(d))

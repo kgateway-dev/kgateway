@@ -9,7 +9,6 @@ import (
 	"hash"
 	"hash/fnv"
 	"log"
-	"log/slog"
 	"math"
 	"net"
 	"os"
@@ -24,7 +23,11 @@ import (
 	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/mitchellh/hashstructure"
 	"google.golang.org/grpc"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("sds/server")
 
 var grpcOptions = []grpc.ServerOption{
 	grpc.MaxConcurrentStreams(10000),
@@ -87,7 +90,7 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("sds server listening", "address", s.address)
+	logger.Info("sds server listening", "address", s.address)
 
 	// Create channels for synchronization
 	serveStarted := make(chan struct{})
@@ -109,7 +112,7 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 
 		// Now wait for context cancellation
 		<-ctx.Done()
-		slog.Info("stopping sds server", "address", s.address)
+		logger.Info("stopping sds server", "address", s.address)
 		s.grpcServer.GracefulStop()
 		serverStopped <- struct{}{}
 	}()
@@ -132,10 +135,10 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
 	if err != nil {
-		slog.Error("error getting snapshot version", "error", err)
+		logger.Error("error getting snapshot version", "error", err)
 		return err
 	}
-	slog.Info("updating SDS config", "client", s.sdsClient, "snapshot_version", snapshotVersion)
+	logger.Info("updating SDS config", "client", s.sdsClient, "snapshot_version", snapshotVersion)
 
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
@@ -208,7 +211,7 @@ func readAndValidateSecret(ctx context.Context, sec Secret) ([][]byte, []cache_t
 	}
 
 	if attempts > 1 {
-		slog.Info(
+		logger.Info(
 			"recovered SDS secret after retrying torn cert rotation",
 			"server_cert", sec.ServerCert,
 			"attempts", attempts,
