@@ -51,7 +51,7 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 
 	err = grepCmd.Wait()
 	if err != nil {
-		exitErr := &exec.ExitError{}
+		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			// No matches found - output will be empty. Diff will fail; test will fail.
 		} else {
