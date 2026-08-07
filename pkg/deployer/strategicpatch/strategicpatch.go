@@ -107,7 +107,7 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply overlay to %s/%s: %w", gvk.Kind, obj.GetName(), err)
 		}
-		objs[i] = patched
+		objs[i] = patched //nolint:gosec // G602: i comes from range objs, always in bounds
 	}
 
 	// Create PDB if overlay is present

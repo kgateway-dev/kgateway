@@ -200,12 +200,12 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte(objSrc.Name))
 	h.Write([]byte{0})
 	h.Write([]byte(objSrc.Namespace))
-	for k, v := range labels {
+	for _, k := range slices.Sorted(maps.Keys(labels)) {
 		h.Write([]byte{0})
-		h.Write([]byte(k + "=" + v))
+		h.Write([]byte(k + "=" + labels[k]))
 	}
 	h.Write([]byte{0})
-	h.Write([]byte{byte(us.TrafficDistribution)})
+	h.Write([]byte{byte(us.TrafficDistribution)}) //nolint:gosec // G115: TrafficDistribution is an enum with values 0-3, always fits in byte
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{

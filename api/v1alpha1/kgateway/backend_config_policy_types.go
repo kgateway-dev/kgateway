@@ -895,7 +895,6 @@ type UpstreamProxyProtocol struct {
 	// Version is the PROXY protocol version to use.
 	// +optional
 	// +kubebuilder:default=V1
-	// +kubebuilder:validation:Enum=V1;V2
 	Version *ProxyProtocolVersion `json:"version,omitempty"`
 }
 

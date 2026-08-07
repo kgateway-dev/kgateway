@@ -1153,15 +1153,11 @@ spec:
                   See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
                 properties:
                   version:
-                    allOf:
-                    - enum:
-                      - V1
-                      - V2
-                    - enum:
-                      - V1
-                      - V2
                     default: V1
                     description: Version is the PROXY protocol version to use.
+                    enum:
+                    - V1
+                    - V2
                     type: string
                 type: object
             type: object

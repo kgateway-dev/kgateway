@@ -40,9 +40,9 @@ func TestGatewayExtensionRecoversFromOIDCDiscoveryFailure(t *testing.T) {
 	// Serve the 521 from the issue report until the test marks the provider healthy, mirroring
 	// an IdP that is still starting up while the control plane translates.
 	var healthy atomic.Bool
-	var requestCount int64
+	var requestCount atomic.Int64
 	idp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		requestCount.Add(1)
 		if !healthy.Load() {
 			w.WriteHeader(521)
 			return
@@ -152,7 +152,7 @@ func TestGatewayExtensionRecoversFromOIDCDiscoveryFailure(t *testing.T) {
 	cfg := getIR().OAuth2.cfg.GetConfig()
 	require.Equal(t, "https://idp.example.com/token", cfg.GetTokenEndpoint().GetUri())
 	require.Equal(t, "https://idp.example.com/auth", cfg.GetAuthorizationEndpoint())
-	require.Greater(t, atomic.LoadInt64(&requestCount), int64(1), "discovery should have been retried")
+	require.Greater(t, requestCount.Load(), int64(1), "discovery should have been retried")
 }
 
 // TestOIDCDiscovererRunStopsOnContextCancel replaces the coverage lost with the old
@@ -160,9 +160,9 @@ func TestGatewayExtensionRecoversFromOIDCDiscoveryFailure(t *testing.T) {
 func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 	r := require.New(t)
 
-	var requestCount int64
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		requestCount.Add(1)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(oidcProviderConfig{
 			TokenEndpoint:         "https://example.com/token",
@@ -190,7 +190,7 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 
 	// Wait until the loop is demonstrably polling.
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt64(&requestCount) > 2
+		return requestCount.Load() > 2
 	}, 5*time.Second, 5*time.Millisecond, "refresh loop should be polling")
 
 	cancel()
@@ -208,7 +208,7 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 	// would never produce two equal samples a settle period apart.
 	var countAfterStop int64
 	require.Eventually(t, func() bool {
-		count := atomic.LoadInt64(&requestCount)
+		count := requestCount.Load()
 		settled := count == countAfterStop
 		countAfterStop = count
 		return settled
@@ -216,7 +216,7 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 
 	// And it stays stopped.
 	time.Sleep(50 * time.Millisecond)
-	r.Equal(countAfterStop, atomic.LoadInt64(&requestCount), "no polling should happen after cancellation")
+	r.Equal(countAfterStop, requestCount.Load(), "no polling should happen after cancellation")
 }
 
 // TestProviderBlipDoesNotBreakHealthyExtension is the same scenario driven through the real
