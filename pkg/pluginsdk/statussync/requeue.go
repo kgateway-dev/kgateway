@@ -59,15 +59,22 @@ func (r *NotReadyRequeuer) Schedule(res Resource) {
 	r.mu.Lock()
 	attempt := r.attempts[res]
 	exhausted := attempt >= notReadyRequeueLimit
-	if !exhausted {
+	if exhausted {
+		// Drop the entry rather than leaving a tombstone. A resource deleted before its
+		// write is never seen again, so Done would never clear it and the map would grow
+		// without bound across create/delete churn.
+		//
+		// Forgetting the budget cannot restart this chain: the next Schedule for a resource
+		// only happens because this one re-queued, and we are about to not re-queue. It only
+		// means a later, independent enqueue starts fresh, which is what we want — a new
+		// upstream event is new evidence the resource may be visible now.
+		delete(r.attempts, res)
+	} else {
 		r.attempts[res] = attempt + 1
 	}
 	r.mu.Unlock()
 
 	if exhausted {
-		// Treat the object as gone rather than retrying forever. The entry is kept so
-		// further enqueues stay cheap no-ops; Done clears it if the resource ever becomes
-		// visible again, which is also what bounds the map for anything still in use.
 		logger.Warn("giving up waiting for a client that can see this resource; its status was not written",
 			"gvk", res.GroupVersionKind.String(),
 			"resource", res.NamespacedName.String(),

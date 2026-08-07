@@ -40,14 +40,15 @@ func (r *requeueRecorder) recorded() []recordedRequeue {
 	return append([]recordedRequeue(nil), r.calls...)
 }
 
-func TestNotReadyRequeuerBacksOffAndGivesUp(t *testing.T) {
+// A chain is what production actually produces: each requeue leads to another write pass,
+// which schedules again while the resource stays invisible. The chain must terminate.
+func TestNotReadyRequeuerChainBacksOffAndGivesUp(t *testing.T) {
 	rec := &requeueRecorder{}
 	requeuer := NewNotReadyRequeuer(rec.fn)
 	res := testRouteResource()
+	rec.replay = func(r Resource) { requeuer.Schedule(r) }
 
-	for range notReadyRequeueLimit + 3 {
-		requeuer.Schedule(res)
-	}
+	requeuer.Schedule(res)
 
 	calls := rec.recorded()
 	require.Len(t, calls, notReadyRequeueLimit,
@@ -55,6 +56,29 @@ func TestNotReadyRequeuerBacksOffAndGivesUp(t *testing.T) {
 	require.Equal(t, notReadyRequeueDelay, calls[0].delay)
 	require.Equal(t, notReadyRequeueDelay*2, calls[1].delay, "each requeue must back off")
 	require.Greater(t, calls[len(calls)-1].delay, calls[0].delay)
+
+	requeuer.mu.Lock()
+	defer requeuer.mu.Unlock()
+	require.Empty(t, requeuer.attempts,
+		"an exhausted resource must not leave a tombstone: a resource deleted before its write "+
+			"is never seen again, so nothing would ever clear it")
+}
+
+// Only the chain is capped, not the resource. A later enqueue is new evidence that the
+// resource may be visible now, and must get a fresh budget rather than being blacklisted.
+func TestNotReadyRequeuerGivesLaterEnqueuesAFreshBudget(t *testing.T) {
+	rec := &requeueRecorder{}
+	requeuer := NewNotReadyRequeuer(rec.fn)
+	res := testRouteResource()
+	rec.replay = func(r Resource) { requeuer.Schedule(r) }
+
+	requeuer.Schedule(res)
+	require.Len(t, rec.recorded(), notReadyRequeueLimit)
+
+	requeuer.Schedule(res)
+	require.Len(t, rec.recorded(), 2*notReadyRequeueLimit)
+	require.Equal(t, notReadyRequeueDelay, rec.recorded()[notReadyRequeueLimit].delay,
+		"the second chain must start from the base delay")
 }
 
 func TestNotReadyRequeuerResetsAfterResourceBecomesVisible(t *testing.T) {
