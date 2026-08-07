@@ -421,7 +421,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// membership — and is left to a follow-up.
 			}
 
-			kmetrics.EndResourceXDSSync(ctx, kmetrics.ResourceSyncDetails{
+			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
 				Namespace:    cd.Namespace,
 				Gateway:      cd.Gateway,
 				ResourceName: cd.Gateway,

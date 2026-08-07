@@ -229,7 +229,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 
 				defer func() {
 					for _, gatewayName := range gatewayNames {
-						metrics.EndResourceStatusSync(ctx, metrics.ResourceSyncDetails{
+						metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 							Namespace:    routeKey.Namespace,
 							Gateway:      gatewayName,
 							ResourceType: routeType,
@@ -563,7 +563,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 		}
 
 		// Record metrics for this gateway
-		metrics.EndResourceStatusSync(ctx, metrics.ResourceSyncDetails{
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    gwnn.Namespace,
 			Gateway:      gwnn.Name,
 			ResourceType: wellknown.GatewayKind,
@@ -629,7 +629,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 						logger.Debug("skipping k8s ls status update, status equal", "listenerset", lsnn.String(), "gvk", gvk.String())
 					}
 
-					metrics.EndResourceStatusSync(ctx, metrics.ResourceSyncDetails{
+					metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 						Namespace: ls.Namespace,
 						Gateway:   string(ls.Spec.ParentRef.Name),
 						// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
@@ -820,7 +820,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 			continue
 		}
 
-		metrics.EndResourceStatusSync(ctx, metrics.ResourceSyncDetails{
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    nsName.Namespace,
 			Gateway:      "",
 			ResourceType: gk.Kind,
@@ -867,7 +867,7 @@ func (s *StatusSyncer) syncBackendStatus(ctx context.Context, rm reports.ReportM
 			continue
 		}
 
-		metrics.EndResourceStatusSync(ctx, metrics.ResourceSyncDetails{
+		metrics.EndResourceStatusSync(metrics.ResourceSyncDetails{
 			Namespace:    nsName.Namespace,
 			Gateway:      "",
 			ResourceType: wellknown.BackendGVK.Kind,

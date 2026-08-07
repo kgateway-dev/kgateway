@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"log/slog"
 	"sync"
 	"time"
 
@@ -256,7 +255,7 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 // Returns true if the sync was added to the channel, false if the channel is full.
 // If the channel is full, an error is logged to call attention to the issue.
 // The caller is not expected to handle this case.
-func EndResourceStatusSync(ctx context.Context, details ResourceSyncDetails) bool {
+func EndResourceStatusSync(details ResourceSyncDetails) bool {
 	if !metrics.Active() {
 		return true
 	}
@@ -278,7 +277,7 @@ func EndResourceStatusSync(ctx context.Context, details ResourceSyncDetails) boo
 	default:
 		syncChLock.RUnlock()
 
-		logger.Log(ctx, slog.LevelError,
+		logger.Error(
 			"resource metrics sync channel is full, dropping end sync metrics update",
 			"gateway", details.Gateway,
 			"namespace", details.Namespace,
@@ -295,7 +294,7 @@ func EndResourceStatusSync(ctx context.Context, details ResourceSyncDetails) boo
 // Returns true if the sync was added to the channel, false if the channel is full.
 // If the channel is full, an error is logged to call attention to the issue.
 // The caller is not expected to handle this case.
-func EndResourceXDSSync(ctx context.Context, details ResourceSyncDetails) bool {
+func EndResourceXDSSync(details ResourceSyncDetails) bool {
 	if !metrics.Active() {
 		return true
 	}
@@ -317,7 +316,7 @@ func EndResourceXDSSync(ctx context.Context, details ResourceSyncDetails) bool {
 	default:
 		syncChLock.RUnlock()
 
-		logger.Log(ctx, slog.LevelError,
+		logger.Error(
 			"resource metrics sync channel is full, dropping end sync metrics update",
 			"gateway", details.Gateway,
 			"namespace", details.Namespace,
@@ -626,7 +625,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 
 				// There will not be a status sync for a deleted resource,
 				// so end the resource status sync immediately.
-				EndResourceStatusSync(context.Background(), ResourceSyncDetails{
+				EndResourceStatusSync(ResourceSyncDetails{
 					Gateway:      name,
 					Namespace:    namespace,
 					ResourceType: resourceType,
