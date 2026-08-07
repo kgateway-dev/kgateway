@@ -472,6 +472,109 @@ func TestOIDCConfigDiscoveryRetriesFailureAndRecovers(t *testing.T) {
 	r.Equal("https://example.com/keys", cfg.JWKSURI)
 }
 
+// TestProviderBlipKeepsCachedConfig is the mirror image of
+// TestOIDCConfigDiscoveryRetriesFailureAndRecovers: the provider starts healthy and then blips.
+// A refresh failure must not withdraw a configuration that was discovered successfully -- it
+// should keep serving the last known good config and just retry.
+func TestProviderBlipKeepsCachedConfig(t *testing.T) {
+	r := require.New(t)
+
+	var healthy atomic.Bool
+	healthy.Store(true)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !healthy.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(oidcProviderConfig{
+			TokenEndpoint:         "https://example.com/token",
+			AuthorizationEndpoint: "https://example.com/auth",
+		})
+	}))
+	defer server.Close()
+
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+
+	// Steady state: discovery succeeded, translation is serving a real config.
+	cfg, err := o.get(context.Background(), issuer)
+	r.NoError(err)
+	r.Equal("https://example.com/token", cfg.TokenEndpoint)
+
+	// The provider blips and a refresh pass lands in the window.
+	healthy.Store(false)
+	r.False(o.rediscover(context.Background(), issuer), "a transient refresh failure should not trigger a recomputation")
+
+	// What the next translation sees.
+	cfg, err = o.get(context.Background(), issuer)
+	r.NoError(err, "the last known good config should still be served during a blip")
+	r.NotNil(cfg, "the last known good config should still be served during a blip")
+	r.Equal("https://example.com/token", cfg.TokenEndpoint)
+}
+
+// TestProviderBlipBacksOffAndPicksUpChanges guards the two things retaining a config through a
+// failure must not cost us: the retry must still back off while the provider is down, and the
+// entry must not be latched -- once the provider returns with a *different* document, the change
+// has to propagate.
+func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
+	r := require.New(t)
+
+	var token atomic.Value
+	token.Store("https://example.com/token")
+	var healthy atomic.Bool
+	healthy.Store(true)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !healthy.Load() {
+			w.WriteHeader(http.StatusNotFound) // unrecoverable, so the blip resolves fast
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(oidcProviderConfig{
+			TokenEndpoint:         token.Load().(string),
+			AuthorizationEndpoint: "https://example.com/auth",
+		})
+	}))
+	defer server.Close()
+
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+	o.failureRetryInterval = time.Second
+	o.cacheRefreshInterval = 4 * time.Second
+
+	_, err := o.get(context.Background(), issuer)
+	r.NoError(err)
+
+	// Two failed refresh passes while stale-serving: the retry backs off 1s -> 2s rather than
+	// hammering the provider for the length of the outage.
+	healthy.Store(false)
+	for _, want := range []time.Duration{time.Second, 2 * time.Second} {
+		before := time.Now()
+		r.False(o.rediscover(context.Background(), issuer))
+
+		result, ok := o.load(issuer)
+		r.True(ok)
+		r.NotNil(result.cfg, "the last known good config must be retained across every failure")
+		r.NoError(result.err)
+		ttl := result.expiry.Sub(before)
+		r.GreaterOrEqual(ttl, want)
+		r.Less(ttl, want+time.Second)
+	}
+
+	// The provider comes back, with a different token endpoint than we cached.
+	token.Store("https://example.com/token/v2")
+	healthy.Store(true)
+
+	r.True(o.rediscover(context.Background(), issuer), "a changed config must trigger a recomputation")
+	cfg, err := o.get(context.Background(), issuer)
+	r.NoError(err)
+	r.Equal("https://example.com/token/v2", cfg.TokenEndpoint)
+
+	result, ok := o.load(issuer)
+	r.True(ok)
+	r.Equal(0, result.failures, "a successful refresh resets the backoff")
+}
+
 // TestOIDCConfigDiscoveryRefreshLoopRecovers exercises the same recovery through the running
 // refresh loop rather than by calling rediscover() directly.
 func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {

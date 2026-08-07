@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -59,15 +58,15 @@ func TestGatewayExtensionRecoversFromOIDCDiscoveryFailure(t *testing.T) {
 	gwExt := &kgateway.GatewayExtension{
 		ObjectMeta: metav1.ObjectMeta{Name: "dex-auth", Namespace: "default"},
 		Spec: kgateway.GatewayExtensionSpec{
-			Type: ptr.To(kgateway.GatewayExtensionTypeOAuth2),
+			Type: new(kgateway.GatewayExtensionTypeOAuth2),
 			OAuth2: &kgateway.OAuth2Provider{
 				IssuerURI:  new(idp.URL),
 				LogoutPath: "/logout",
 				BackendRef: gwv1.BackendRef{
 					BackendObjectReference: gwv1.BackendObjectReference{
-						Kind: ptr.To(gwv1.Kind("Service")),
+						Kind: new(gwv1.Kind("Service")),
 						Name: "dex",
-						Port: ptr.To(gwv1.PortNumber(80)),
+						Port: new(gwv1.PortNumber(80)),
 					},
 				},
 				Credentials: kgateway.OAuth2Credentials{
@@ -205,4 +204,116 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 	countAfterStop := atomic.LoadInt64(&requestCount)
 	time.Sleep(50 * time.Millisecond)
 	r.Equal(countAfterStop, atomic.LoadInt64(&requestCount), "no polling should happen after cancellation")
+}
+
+// TestProviderBlipDoesNotBreakHealthyExtension is the same scenario driven through the real
+// krt collection, using the same harness as
+// TestGatewayExtensionRecoversFromOIDCDiscoveryFailure. It asserts a working extension is not
+// knocked into an error state -- which rejects every TrafficPolicy referencing it -- by a
+// provider blip alone, with no Kubernetes object changing.
+func TestProviderBlipDoesNotBreakHealthyExtension(t *testing.T) {
+	ctx := t.Context()
+
+	var healthy atomic.Bool
+	healthy.Store(true)
+	idp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !healthy.Load() {
+			w.WriteHeader(521)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(oidcProviderConfig{
+			TokenEndpoint:         "https://idp.example.com/token",
+			AuthorizationEndpoint: "https://idp.example.com/auth",
+		})
+	}))
+	defer idp.Close()
+
+	gwExt := &kgateway.GatewayExtension{
+		ObjectMeta: metav1.ObjectMeta{Name: "dex-auth", Namespace: "default"},
+		Spec: kgateway.GatewayExtensionSpec{
+			Type: new(kgateway.GatewayExtensionTypeOAuth2),
+			OAuth2: &kgateway.OAuth2Provider{
+				IssuerURI:  new(idp.URL),
+				LogoutPath: "/logout",
+				BackendRef: gwv1.BackendRef{
+					BackendObjectReference: gwv1.BackendObjectReference{
+						Kind: new(gwv1.Kind("Service")),
+						Name: "dex",
+						Port: new(gwv1.PortNumber(80)),
+					},
+				},
+				Credentials: kgateway.OAuth2Credentials{
+					ClientID:        "kgateway",
+					ClientSecretRef: corev1.LocalObjectReference{Name: "dex-client-secret"},
+				},
+			},
+		},
+	}
+
+	fakeClient := apifake.NewClient(t,
+		gwExt,
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{Name: "dex", Namespace: "default"},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt32(80)}},
+			},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "dex-client-secret", Namespace: "default"},
+			Data:       map[string][]byte{clientSecretKey: []byte("shhh")},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      wellknown.OAuth2HMACSecret.Name,
+				Namespace: wellknown.OAuth2HMACSecret.Namespace,
+			},
+			Data: map[string][]byte{wellknown.OAuth2HMACSecretKey: []byte("hmac")},
+		},
+	)
+
+	settings := apisettings.Settings{}
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+	commoncol, err := collections.NewCommonCollections(
+		ctx, krtopts, fakeClient, wellknown.DefaultGatewayControllerName, settings,
+	)
+	require.NoError(t, err)
+	commoncol.InitPlugins(ctx, k8splugin.NewPlugin(ctx, commoncol), settings)
+
+	discoverer := newOIDCProviderConfigDiscoverer(
+		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
+	)
+	discoverer.cacheRefreshInterval = 100 * time.Millisecond
+	discoverer.failureRetryInterval = 100 * time.Millisecond
+	go discoverer.run(ctx)
+
+	extensions := krt.NewCollection(commoncol.GatewayExtensions, gatewayExtensionBuilder(ctx, commoncol, discoverer))
+
+	fakeClient.RunAndWait(ctx.Done())
+	require.Eventually(t, func() bool {
+		return commoncol.HasSynced() && commoncol.BackendIndex.HasSynced() && extensions.HasSynced()
+	}, 10*time.Second, 50*time.Millisecond, "collections should sync")
+
+	extName := krt.Named{Name: gwExt.Name, Namespace: gwExt.Namespace}.ResourceName()
+	getIR := func() *TrafficPolicyGatewayExtensionIR { return extensions.GetKey(extName) }
+
+	// Steady state: healthy extension serving a real OAuth2 config.
+	require.Eventually(t, func() bool {
+		out := getIR()
+		return out != nil && out.Err == nil && out.OAuth2 != nil
+	}, 10*time.Second, 50*time.Millisecond, "extension should be healthy to begin with")
+
+	// The IdP blips. Nothing about the Kubernetes objects changes.
+	healthy.Store(false)
+
+	// Give the refresh loop several passes to do damage, then assert it did not.
+	time.Sleep(time.Second)
+
+	out := getIR()
+	require.NotNil(t, out)
+	if out.Err != nil {
+		t.Logf("extension was knocked into an error state by the blip:\n%v", out.Err)
+	}
+	require.NoError(t, out.Err, "a provider blip must not break a working OAuth2 extension")
+	require.NotNil(t, out.OAuth2, "the discovered OAuth2 config must be retained through a blip")
 }

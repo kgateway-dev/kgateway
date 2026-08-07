@@ -82,6 +82,10 @@ func (c *oidcProviderConfig) equals(other *oidcProviderConfig) bool {
 // oidcDiscoveryResult is a cached discovery outcome. Failures are cached alongside successes
 // so that a GatewayExtension re-translated for an unrelated reason does not block the krt
 // event loop re-contacting a provider that is already known to be unreachable.
+//
+// err is only ever set for an issuer that has never been discovered successfully: once there is
+// a config to serve, rediscover keeps serving it through failures rather than withdrawing it.
+// So a non-zero failures with a non-nil cfg means "stale, still being retried".
 type oidcDiscoveryResult struct {
 	cfg *oidcProviderConfig
 	err error
@@ -294,26 +298,41 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 	}
 
 	cfg, err := o.discover(ctx, discoveryURL)
-	if err != nil {
-		// Check the parent, not ctx: a genuinely slow provider hits our own
-		// backgroundDiscoveryTimeout and should be cached as the failure it is, whereas a
-		// cancelled parent means we are shutting down and learned nothing about the provider.
-		if parent.Err() != nil {
-			return false
-		}
-		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", err)
+	// Check the parent, not ctx: a genuinely slow provider hits our own
+	// backgroundDiscoveryTimeout and should be cached as the failure it is, whereas a
+	// cancelled parent means we are shutting down and learned nothing about the provider.
+	if err != nil && parent.Err() != nil {
+		return false
 	}
 
 	o.mu.Lock()
-	defer o.mu.Unlock()
 	prev, ok := o.cache[issuerURI]
 	if !ok {
 		// The entry was pruned while we were discovering, because its GatewayExtension went
 		// away. Don't resurrect it.
+		o.mu.Unlock()
 		return false
 	}
 	next := o.newResult(cfg, err, prev.failures)
+	// A refresh failure must not withdraw a configuration that was already discovered
+	// successfully. The provider document rarely changes, the proxies are running with the one
+	// we have, and caching the error instead would set Err on the GatewayExtension, which
+	// rejects every TrafficPolicy referencing it: a provider blip alone would take down
+	// authentication on routes that were working. Serve the last known good config and let the
+	// backed-off retry that newResult stamped on next.expiry pick up any change once the
+	// provider is reachable again.
+	servingLastKnownGood := err != nil && prev.err == nil
+	if servingLastKnownGood {
+		next.cfg, next.err = prev.cfg, nil
+	}
 	o.cache[issuerURI] = next
+	o.mu.Unlock()
+
+	if err != nil {
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI,
+			"serving_last_known_good", servingLastKnownGood, "consecutive_failures", next.failures,
+			"error", err)
+	}
 	return !prev.sameOutcome(next)
 }
 
