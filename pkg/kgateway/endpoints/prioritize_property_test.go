@@ -1,9 +1,10 @@
 package endpoints
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
-	"sort"
+	"slices"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -148,8 +149,8 @@ func addEndpoint(ep *ir.EndpointsForBackend, region, zone, path string) {
 // order of ClusterLoadAssignment.Endpoints is otherwise non-deterministic across
 // calls. (region, zone, subzone, priority) is unique per group.
 func normalizeCLA(cla *envoyendpointv3.ClusterLoadAssignment) *envoyendpointv3.ClusterLoadAssignment {
-	sort.SliceStable(cla.Endpoints, func(i, j int) bool {
-		return localityKey(cla.Endpoints[i]) < localityKey(cla.Endpoints[j])
+	slices.SortStableFunc(cla.Endpoints, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
+		return cmp.Compare(localityKey(a), localityKey(b))
 	})
 	return cla
 }

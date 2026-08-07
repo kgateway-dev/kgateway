@@ -1,9 +1,10 @@
 package irtranslator
 
 import (
+	"cmp"
 	"context"
 	"errors"
-	"sort"
+	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -223,11 +224,11 @@ func (t *BackendTranslator) ApplyPerClient(
 	// (and therefore its version hash, which drives KRT equality and interning) is
 	// byte-stable across recomputes.
 	if len(overlays) > 1 {
-		sort.Slice(overlays, func(i, j int) bool {
-			if overlays[i].gk.Group != overlays[j].gk.Group {
-				return overlays[i].gk.Group < overlays[j].gk.Group
+		slices.SortFunc(overlays, func(a, b overlayEntry) int {
+			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
+				return c
 			}
-			return overlays[i].gk.Kind < overlays[j].gk.Kind
+			return cmp.Compare(a.gk.Kind, b.gk.Kind)
 		})
 	}
 
