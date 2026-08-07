@@ -38,9 +38,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TearDownSuite() {
-	defer s.cancel()
-	s.BaseTestingSuite.TearDownSuite()
+// SetupSuite registers the suite context's cancel before delegating to the base
+// suite. Registration must happen here rather than in TearDownSuite: the base
+// SetupSuite skips the whole suite when the cluster's Gateway API predates
+// GwApiRequireTcpRoutes, and testify only registers its TearDownSuite deferral
+// after SetupSuite returns — so a skip would leave the timeout context alive.
+func (s *testingSuite) SetupSuite() {
+	testutils.Cleanup(s.T(), s.cancel)
+	s.BaseTestingSuite.SetupSuite()
 }
 
 var (
