@@ -68,14 +68,14 @@ func preV1TLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersi
 // installed, we conservatively allow both promoted and pre-v1 watches so
 // startup does not incorrectly disable TLSRoute support before delayed
 // informers can recover.
-func getServedTLSRouteVersions(extClient apiextensionsclient.Interface) servedTLSRouteVersions {
+func getServedTLSRouteVersions(ctx context.Context, extClient apiextensionsclient.Interface) servedTLSRouteVersions {
 	if extClient == nil {
 		// If discovery is unavailable, keep both paths enabled and let the delayed
 		// informer logic determine what is actually readable at runtime.
 		return fallbackTLSRouteVersions()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
+	ctx, cancel := context.WithTimeout(ctx, crdLookupTimeout)
 	defer cancel()
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, "tlsroutes.gateway.networking.k8s.io", metav1.GetOptions{})

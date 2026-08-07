@@ -52,7 +52,7 @@ func (c *CommonCollections) InitCollections(
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		legacyListenerSetsRaw := krt.WrapClient(
-			newDelayedDynamicUnstructuredInformer(c.Client, wellknown.XListenerSetGVR, filter),
+			newDelayedDynamicUnstructuredInformer(ctx, c.Client, wellknown.XListenerSetGVR, filter),
 			c.KrtOpts.ToOptions("KubeLegacyXListenerSets")...,
 		)
 		legacyListenerSets := krt.NewManyCollection(legacyListenerSetsRaw, func(kctx krt.HandlerContext, in *unstructured.Unstructured) []*gwv1.ListenerSet {
@@ -98,9 +98,9 @@ func (c *CommonCollections) InitCollections(
 	// TCPRoute is standard as of Gateway API v1.6, so promoted v1 TCPRoutes
 	// are always enabled. Keep the pre-v1 TCPRoute watch under the experimental
 	// feature flag for compatibility with older Gateway API channels.
-	servedTCPRouteVersions := getServedTCPRouteVersions(c.Client.Ext())
+	servedTCPRouteVersions := getServedTCPRouteVersions(ctx, c.Client.Ext())
 	tcpRoutesV1 := krt.WrapClient(
-		newDelayedTypedInformer(c.Client, promotedTCPRouteGVR, func() kclient.Informer[*gwv1.TCPRoute] {
+		newDelayedTypedInformer(ctx, c.Client, promotedTCPRouteGVR, func() kclient.Informer[*gwv1.TCPRoute] {
 			return kclient.NewFiltered[*gwv1.TCPRoute](c.Client, filter)
 		}),
 		c.KrtOpts.ToOptions("TCPRouteV1")...,
@@ -116,7 +116,7 @@ func (c *CommonCollections) InitCollections(
 	if globalSettings.EnableExperimentalGatewayAPIFeatures {
 		for _, preV1TCPRouteGVR := range preV1TCPRouteWatchGVRs(servedTCPRouteVersions) {
 			preV1TCPRoutes := krt.WrapClient(
-				newDelayedTypedInformer(c.Client, preV1TCPRouteGVR, func() kclient.Informer[*gwv1a2.TCPRoute] {
+				newDelayedTypedInformer(ctx, c.Client, preV1TCPRouteGVR, func() kclient.Informer[*gwv1a2.TCPRoute] {
 					return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TCPRoutePreV1Alpha2")...,
@@ -138,7 +138,7 @@ func (c *CommonCollections) InitCollections(
 	// TLSRoute is standard as of Gateway API v1.5, so promoted v1 TLSRoutes
 	// are always enabled. Keep pre-v1 TLSRoute watches under the experimental
 	// feature flag for compatibility with older Gateway API channels.
-	servedTLSRouteVersions := getServedTLSRouteVersions(c.Client.Ext())
+	servedTLSRouteVersions := getServedTLSRouteVersions(ctx, c.Client.Ext())
 	tlsRoutesV1 := krt.WrapClient(
 		kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
 		c.KrtOpts.ToOptions("TLSRouteV1")...,
@@ -156,7 +156,7 @@ func (c *CommonCollections) InitCollections(
 			switch preV1TLSRouteGVR.Version {
 			case gwv1a2.GroupVersion.Version:
 				preV1TLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
+					newDelayedTypedInformer(ctx, c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
 					}),
 					c.KrtOpts.ToOptions("TLSRoutePreV1Alpha2")...,
@@ -164,7 +164,7 @@ func (c *CommonCollections) InitCollections(
 				tlsRouteCollections = append(tlsRouteCollections, preV1TLSRoutes)
 			case wellknown.TLSRouteV1Alpha3Version:
 				preV1TLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+					newDelayedTypedInformer(ctx, c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 						return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
 					}),
 					c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3")...,

@@ -104,7 +104,7 @@ func processLambda(ir *LambdaIr, out *envoyclusterv3.Cluster) error {
 		AllAddressesInSingleEndpoint: true, // follows logical dns semantics
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create dns cluster config: %v", err)
+		return fmt.Errorf("failed to create dns cluster config: %w", err)
 	}
 	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
 		ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
@@ -148,7 +148,7 @@ func processLambda(ir *LambdaIr, out *envoyclusterv3.Cluster) error {
 			},
 		})
 	}); err != nil {
-		return fmt.Errorf("failed to mutate http options: %v", err)
+		return fmt.Errorf("failed to mutate http options: %w", err)
 	}
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, ir.lambdaEndpoint.hostname, ir.lambdaEndpoint.port)
@@ -177,7 +177,7 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 		}
 		derived, err := deriveStaticSecret(secret)
 		if err != nil {
-			return nil, fmt.Errorf("failed to derive static secret: %v", err)
+			return nil, fmt.Errorf("failed to derive static secret: %w", err)
 		}
 		signing.CredentialProvider = &envoy_aws_common_v3.AwsCredentialProvider{
 			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
@@ -250,21 +250,21 @@ func buildLambdaFilters(
 		PayloadPassthrough: payloadPassthrough,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create lambda config: %v", err)
+		return nil, fmt.Errorf("failed to create lambda config: %w", err)
 	}
 
 	awsRequestSigning, err := configureAWSAuth(auth, secret, region)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
+		return nil, fmt.Errorf("failed to create aws request signing config: %w", err)
 	}
 	awsRequestSigningAny, err := utils.MessageToAny(awsRequestSigning)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
+		return nil, fmt.Errorf("failed to create aws request signing config: %w", err)
 	}
 
 	codecConfigAny, err := utils.MessageToAny(&envoy_upstream_codec.UpstreamCodec{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create upstream codec config: %v", err)
+		return nil, fmt.Errorf("failed to create upstream codec config: %w", err)
 	}
 
 	return &lambdaFilters{
@@ -312,7 +312,7 @@ func buildLambdaARN(in *kgateway.AwsBackend, region string) (string, error) {
 	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, getLambdaAccountID(in), in.Lambda.FunctionName, qualifier)
 	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse lambda arn: %v", err)
+		return "", fmt.Errorf("failed to parse lambda arn: %w", err)
 	}
 	return parsedARN.String(), nil
 }
@@ -345,14 +345,14 @@ func configureLambdaEndpoint(in *kgateway.AwsBackend) (*lambdaEndpointConfig, er
 	inUrl := *in.Lambda.EndpointURL
 	parsedURL, err := url.Parse(inUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
+		return nil, fmt.Errorf("failed to parse endpoint URL: %w", err)
 	}
 	config.useTLS = parsedURL.Scheme == "https"
 	config.hostname = parsedURL.Hostname()
 
 	port, err := strconv.ParseUint(parsedURL.Port(), 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse port: %v", err)
+		return nil, fmt.Errorf("failed to parse port: %w", err)
 	}
 	config.port = uint32(port)
 

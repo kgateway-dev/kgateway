@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -129,7 +130,7 @@ func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutCRD(t *testing.T)
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	client := kube.NewFakeClient()
 
-	inf := newDelayedDynamicUnstructuredInformer(client, wellknown.XListenerSetGVR, kclient.Filter{})
+	inf := newDelayedDynamicUnstructuredInformer(context.Background(), client, wellknown.XListenerSetGVR, kclient.Filter{})
 	inf.Start(stop)
 
 	require.True(t, inf.HasSynced(), "missing CRDs should not block startup")
@@ -137,7 +138,7 @@ func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutCRD(t *testing.T)
 }
 
 func TestCrdServesVersionWithNilClientIsNonAuthoritative(t *testing.T) {
-	served, err := crdServesVersion(nil, wellknown.TLSRouteV1Alpha3GVR)
+	served, err := crdServesVersion(context.Background(), nil, wellknown.TLSRouteV1Alpha3GVR)
 	require.Error(t, err)
 	require.False(t, served)
 }
@@ -146,7 +147,7 @@ func TestCrdServesVersionTracksAbsenceAuthoritatively(t *testing.T) {
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	client := kube.NewFakeClient()
 
-	served, err := crdServesVersion(client.Ext(), wellknown.TLSRouteV1Alpha3GVR)
+	served, err := crdServesVersion(context.Background(), client.Ext(), wellknown.TLSRouteV1Alpha3GVR)
 	require.NoError(t, err)
 	require.False(t, served)
 }
@@ -156,7 +157,7 @@ func TestCrdServesVersionReturnsTrueWhenVersionIsServed(t *testing.T) {
 	client := kube.NewFakeClient()
 	makeServedCRD(t, client, wellknown.TLSRouteV1Alpha3GVR, "v1.4.1")
 
-	served, err := crdServesVersion(client.Ext(), wellknown.TLSRouteV1Alpha3GVR)
+	served, err := crdServesVersion(context.Background(), client.Ext(), wellknown.TLSRouteV1Alpha3GVR)
 	require.NoError(t, err)
 	require.True(t, served)
 }

@@ -269,7 +269,7 @@ func TestResourceSync(t *testing.T) {
 		ResourceName: details.ResourceName,
 	})
 
-	EndResourceStatusSync(details)
+	EndResourceStatusSync(context.Background(), details)
 
 	gathered := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_resources_status_syncs_started_total",
@@ -314,7 +314,7 @@ func TestResourceSync(t *testing.T) {
 		ResourceName: details.ResourceName,
 	})
 
-	EndResourceXDSSync(details)
+	EndResourceXDSSync(context.Background(), details)
 
 	gathered = metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_xds_snapshot_syncs_total",
@@ -349,7 +349,7 @@ func TestSyncChannelFull(t *testing.T) {
 	}
 
 	for range 1024 {
-		success := EndResourceXDSSync(details)
+		success := EndResourceXDSSync(context.Background(), details)
 		assert.True(t, success)
 	}
 
@@ -362,7 +362,7 @@ func TestSyncChannelFull(t *testing.T) {
 	numOverflows := 20
 
 	for overflowCount < numOverflows {
-		success := EndResourceXDSSync(details)
+		success := EndResourceXDSSync(context.Background(), details)
 		assert.False(t, success)
 
 		overflowCount++

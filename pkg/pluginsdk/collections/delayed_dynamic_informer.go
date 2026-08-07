@@ -24,6 +24,7 @@ const crdLookupTimeout = 5 * time.Second
 type delayedInformer[T controllers.ComparableObject] struct {
 	inf *atomic.Pointer[kclient.Informer[T]]
 
+	ctx              context.Context
 	extClient        apiextensionsclient.Interface
 	gvr              schema.GroupVersionResource
 	newInformer      func() kclient.Informer[T]
@@ -76,6 +77,7 @@ type (
 )
 
 func newDelayedTypedInformer[T controllers.ComparableObject](
+	ctx context.Context,
 	c kube.Client,
 	gvr schema.GroupVersionResource,
 	newInformer func() kclient.Informer[T],
@@ -84,7 +86,7 @@ func newDelayedTypedInformer[T controllers.ComparableObject](
 		return newInformer()
 	}
 
-	served, err := crdServesVersion(c.Ext(), gvr)
+	served, err := crdServesVersion(ctx, c.Ext(), gvr)
 	if err != nil {
 		// Discovery failed but the route API itself may still be readable. Do not
 		// suppress route watching solely because CRD discovery is unavailable or
@@ -97,6 +99,7 @@ func newDelayedTypedInformer[T controllers.ComparableObject](
 
 	delayed := &delayedInformer[T]{
 		inf:       new(atomic.Pointer[kclient.Informer[T]]),
+		ctx:       ctx,
 		extClient: c.Ext(),
 		gvr:       gvr,
 		newInformer: func() kclient.Informer[T] {
@@ -112,21 +115,22 @@ func newDelayedTypedInformer[T controllers.ComparableObject](
 }
 
 func newDelayedDynamicUnstructuredInformer(
+	ctx context.Context,
 	c kube.Client,
 	gvr schema.GroupVersionResource,
 	filter kclient.Filter,
 ) kclient.Informer[*unstructured.Unstructured] {
-	return newDelayedTypedInformer(c, gvr, func() kclient.Informer[*unstructured.Unstructured] {
+	return newDelayedTypedInformer(ctx, c, gvr, func() kclient.Informer[*unstructured.Unstructured] {
 		return newDynamicUnstructuredInformer(c, gvr, filter)
 	})
 }
 
-func crdServesVersion(extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
+func crdServesVersion(ctx context.Context, extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
 	if extClient == nil {
 		return false, fmt.Errorf("CRD discovery not authoritative for %s", gvr)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
+	ctx, cancel := context.WithTimeout(ctx, crdLookupTimeout)
 	defer cancel()
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group), metav1.GetOptions{})
@@ -387,7 +391,7 @@ func (d *delayedInformer[T]) startPolling(stop <-chan struct{}) {
 				return
 			}
 
-			served, err := crdServesVersion(d.extClient, d.gvr)
+			served, err := crdServesVersion(d.ctx, d.extClient, d.gvr)
 			if err != nil {
 				// Discovery is non-authoritative; unblock HasSynced so
 				// startup is not held indefinitely by a flaky API call.
@@ -402,6 +406,8 @@ func (d *delayedInformer[T]) startPolling(stop <-chan struct{}) {
 
 			select {
 			case <-stop:
+				return
+			case <-d.ctx.Done():
 				return
 			case <-timer.C:
 				interval = min(interval*2, maxInterval)

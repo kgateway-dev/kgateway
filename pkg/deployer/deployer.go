@@ -124,8 +124,8 @@ func JsonConvert(in *HelmConfig, out any) error {
 	return json.Unmarshal(b, out)
 }
 
-func (d *Deployer) RenderChartToObjects(ns, name string, vals map[string]any) ([]client.Object, error) {
-	objs, err := d.RenderToObjects(ns, name, vals)
+func (d *Deployer) RenderChartToObjects(ctx context.Context, ns, name string, vals map[string]any) ([]client.Object, error) {
+	objs, err := d.RenderToObjects(ctx, ns, name, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +140,8 @@ func (d *Deployer) RenderChartToObjects(ns, name string, vals map[string]any) ([
 // RenderToObjects relies on a `helm install` to render the Chart with the injected values
 // It returns the list of Objects that are rendered, and an optional error if rendering failed,
 // or converting the rendered manifests to objects failed.
-func (d *Deployer) RenderToObjects(ns, name string, vals map[string]any) ([]client.Object, error) {
-	manifest, err := d.RenderManifest(ns, name, vals)
+func (d *Deployer) RenderToObjects(ctx context.Context, ns, name string, vals map[string]any) ([]client.Object, error) {
+	manifest, err := d.RenderManifest(ctx, ns, name, vals)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (d *Deployer) RenderToObjects(ns, name string, vals map[string]any) ([]clie
 	return objs, nil
 }
 
-func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte, error) {
+func (d *Deployer) RenderManifest(ctx context.Context, ns, name string, vals map[string]any) ([]byte, error) {
 	mem := driver.NewMemory()
 	mem.SetNamespace(ns)
 	cfg := &action.Configuration{
@@ -167,9 +167,7 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 	// This means that there is no i/o (i.e. no reads/writes to k8s) that would need to be cancelled.
 	// This essentially guarantees that this function terminates quickly and doesn't block the rest of the controller.
 	install.ClientOnly = true
-	installCtx := context.Background()
-
-	release, err := install.RunWithContext(installCtx, d.chart, vals)
+	release, err := install.RunWithContext(ctx, d.chart, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for %s.%s: %w", ns, name, err)
 	}
@@ -204,7 +202,7 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	)
 
 	rname, rns := d.helmReleaseNameAndNamespaceGenerator(obj)
-	objs, err := d.RenderToObjects(rns, rname, vals)
+	objs, err := d.RenderToObjects(ctx, rns, rname, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get objects to deploy %s.%s: %w", obj.GetNamespace(), obj.GetName(), err)
 	}
@@ -448,7 +446,7 @@ func (d *Deployer) GetGvksToWatch(ctx context.Context, vals map[string]any) ([]s
 	// i.e. don't add stuff here!
 
 	// The namespace and name do not matter since we only care about the GVKs of the rendered resources.
-	objs, err := d.RenderChartToObjects("default", "default", vals)
+	objs, err := d.RenderChartToObjects(ctx, "default", "default", vals)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +470,7 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	for {
 		var obj unstructured.Unstructured
 		if err := decoder.Decode(&obj); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, err

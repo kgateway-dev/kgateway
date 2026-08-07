@@ -107,7 +107,8 @@ func NewControlPlane(
 	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
-	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher)
+	// The interceptor uses the per-stream context supplied by gRPC, not the control-plane lifecycle context.
+	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher) //nolint:contextcheck
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)

@@ -31,7 +31,7 @@ func TestDelayedTLSRouteV1Alpha3InformerReportsSyncedWithoutCRD_Issue13661(t *te
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
-	inf := newDelayedTypedInformer(client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
 	})
 	inf.Start(stop)
@@ -77,7 +77,7 @@ func TestDelayedTLSRouteV1Alpha3InformerBypassesCrdWatcherFilter_Issue13735(t *t
 	require.False(t, client.CrdWatcher().KnownOrCallback(wellknown.TLSRouteV1Alpha3GVR, func(<-chan struct{}) {}),
 		"Gateway API v1.4.x v1alpha3 TLSRoute should be filtered from CrdWatcher known state")
 
-	inf := newDelayedTypedInformer(client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
 	})
 	inf.Start(stop)
@@ -139,7 +139,7 @@ func TestDelayedTLSRouteV1Alpha3InformerUsesOptimisticTypedWatchWhenCRDDiscovery
 
 	client.RunAndWait(stop)
 
-	inf := newDelayedTypedInformer(client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
 		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
 	})
 	inf.Start(stop)

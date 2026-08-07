@@ -44,14 +44,14 @@ func preV1TCPRouteWatchGVRs(versions servedTCPRouteVersions) []schema.GroupVersi
 // installed, we conservatively allow both promoted and pre-v1 watches so
 // startup does not incorrectly disable TCPRoute support before delayed
 // informers can recover.
-func getServedTCPRouteVersions(extClient apiextensionsclient.Interface) servedTCPRouteVersions {
+func getServedTCPRouteVersions(ctx context.Context, extClient apiextensionsclient.Interface) servedTCPRouteVersions {
 	if extClient == nil {
 		// If discovery is unavailable, keep both paths enabled and let the delayed
 		// informer logic determine what is actually readable at runtime.
 		return fallbackTCPRouteVersions()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), crdLookupTimeout)
+	ctx, cancel := context.WithTimeout(ctx, crdLookupTimeout)
 	defer cancel()
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, wellknown.TCPRouteCRDName, metav1.GetOptions{})

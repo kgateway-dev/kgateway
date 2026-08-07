@@ -118,7 +118,7 @@ func TestResourceSyncMetrics(t *testing.T) {
 		ResourceName: testName,
 	})
 
-	kmetrics.EndResourceStatusSync(kmetrics.ResourceSyncDetails{
+	kmetrics.EndResourceStatusSync(context.Background(), kmetrics.ResourceSyncDetails{
 		Gateway:      testName,
 		Namespace:    testNS,
 		ResourceType: testResource,

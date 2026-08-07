@@ -57,7 +57,7 @@ func (a *KubeJWTAuthenticator) Authenticate(authRequest security.AuthContext) (*
 func (a *KubeJWTAuthenticator) authenticateHTTP(req *http.Request) (*security.Caller, error) {
 	targetJWT, err := extractRequestToken(req)
 	if err != nil {
-		return nil, fmt.Errorf("target JWT extraction error: %v", err)
+		return nil, fmt.Errorf("target JWT extraction error: %w", err)
 	}
 	return a.authenticate(targetJWT)
 }
@@ -65,7 +65,7 @@ func (a *KubeJWTAuthenticator) authenticateHTTP(req *http.Request) (*security.Ca
 func (a *KubeJWTAuthenticator) authenticateGrpc(ctx context.Context) (*security.Caller, error) {
 	targetJWT, err := security.ExtractBearerToken(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("target JWT extraction error: %v", err)
+		return nil, fmt.Errorf("target JWT extraction error: %w", err)
 	}
 
 	return a.authenticate(targetJWT)
@@ -74,7 +74,7 @@ func (a *KubeJWTAuthenticator) authenticateGrpc(ctx context.Context) (*security.
 func (a *KubeJWTAuthenticator) authenticate(targetJWT string) (*security.Caller, error) {
 	id, err := tokenreview.ValidateK8sJwt(a.kubeClient, targetJWT, xdsTokenAudiences)
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate the JWT token: %v", err)
+		return nil, fmt.Errorf("failed to validate the JWT token: %w", err)
 	}
 	if id.PodServiceAccount == "" {
 		return nil, fmt.Errorf("failed to parse the JWT; service account required")

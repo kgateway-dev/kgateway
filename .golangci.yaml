@@ -13,7 +13,9 @@ linters:
   enable:
     - bodyclose
     - copyloopvar
+    - contextcheck
     - depguard
+    - errorlint
     - forbidigo
     - ginkgolinter
     - gomodguard
@@ -200,6 +202,15 @@ linters:
       - path: _test\.go$
         linters:
           - unparam
+      # Test setup commonly starts independent lifecycles or uses framework-specific context types.
+      - path: _test\.go$
+        linters:
+          - contextcheck
+      # Test framework callbacks and KRT helpers use lifecycle-specific context APIs
+      # that contextcheck cannot model as inherited standard-library contexts.
+      - path: ^test/
+        linters:
+          - contextcheck
       # Skip client.Client forbidgo rule for e2e tests
       - path: test/e2e/
         linters:

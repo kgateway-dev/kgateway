@@ -283,7 +283,7 @@ func buildTranslateFunc(
 				if err != nil {
 					perr := &InvalidCACertificateRefError{
 						Ref:   localObjectRefString(refKind, certRef),
-						Cause: fmt.Errorf("%w: %v", ErrSecretNotFound, err),
+						Cause: fmt.Errorf("%w: %w", ErrSecretNotFound, err),
 					}
 					logger.Error("error fetching Secret", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr

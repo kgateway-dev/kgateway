@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,7 @@ func TestGetServedTCPRouteVersions(t *testing.T) {
 			Promoted:      true,
 			PreV1:         true,
 			Authoritative: true,
-		}, getServedTCPRouteVersions(client))
+		}, getServedTCPRouteVersions(context.Background(), client))
 	})
 
 	t.Run("returns only pre-v1 when promoted v1 is not served", func(t *testing.T) {
@@ -48,7 +49,7 @@ func TestGetServedTCPRouteVersions(t *testing.T) {
 		require.Equal(t, servedTCPRouteVersions{
 			PreV1:         true,
 			Authoritative: true,
-		}, getServedTCPRouteVersions(client))
+		}, getServedTCPRouteVersions(context.Background(), client))
 	})
 
 	t.Run("returns only promoted when v1alpha2 is no longer served", func(t *testing.T) {
@@ -65,21 +66,21 @@ func TestGetServedTCPRouteVersions(t *testing.T) {
 		require.Equal(t, servedTCPRouteVersions{
 			Promoted:      true,
 			Authoritative: true,
-		}, getServedTCPRouteVersions(client))
+		}, getServedTCPRouteVersions(context.Background(), client))
 	})
 
 	t.Run("defaults to startup fallback when the CRD is absent", func(t *testing.T) {
 		require.Equal(t, servedTCPRouteVersions{
 			Promoted: true,
 			PreV1:    true,
-		}, getServedTCPRouteVersions(apiextensionsfake.NewClientset()))
+		}, getServedTCPRouteVersions(context.Background(), apiextensionsfake.NewClientset()))
 	})
 
 	t.Run("defaults to startup fallback when discovery is unavailable", func(t *testing.T) {
 		require.Equal(t, servedTCPRouteVersions{
 			Promoted: true,
 			PreV1:    true,
-		}, getServedTCPRouteVersions(nil))
+		}, getServedTCPRouteVersions(context.Background(), nil))
 	})
 }
 

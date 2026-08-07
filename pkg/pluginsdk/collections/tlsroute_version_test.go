@@ -1,6 +1,7 @@
 package collections
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			PreV1:             true,
 			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
 			Authoritative:     true,
-		}, getServedTLSRouteVersions(client))
+		}, getServedTLSRouteVersions(context.Background(), client))
 	})
 
 	t.Run("returns only pre-v1 when promoted v1 is not served", func(t *testing.T) {
@@ -51,7 +52,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			PreV1:             true,
 			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
 			Authoritative:     true,
-		}, getServedTLSRouteVersions(client))
+		}, getServedTLSRouteVersions(context.Background(), client))
 	})
 
 	t.Run("prefers v1alpha3 when gateway api v1.4.1 serves both pre-v1 versions", func(t *testing.T) {
@@ -69,7 +70,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			PreV1:             true,
 			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
 			Authoritative:     true,
-		}, getServedTLSRouteVersions(client))
+		}, getServedTLSRouteVersions(context.Background(), client))
 	})
 
 	t.Run("defaults to startup fallback when the CRD is absent", func(t *testing.T) {
@@ -77,7 +78,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			Promoted:          true,
 			PreV1:             true,
 			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
-		}, getServedTLSRouteVersions(apiextensionsfake.NewClientset()))
+		}, getServedTLSRouteVersions(context.Background(), apiextensionsfake.NewClientset()))
 	})
 
 	t.Run("defaults to pre-v1 when discovery is unavailable", func(t *testing.T) {
@@ -85,7 +86,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			Promoted:          true,
 			PreV1:             true,
 			PreferredPreV1GVR: wellknown.TLSRouteV1Alpha3GVR,
-		}, getServedTLSRouteVersions(nil))
+		}, getServedTLSRouteVersions(context.Background(), nil))
 	})
 
 	t.Run("falls back to v1alpha2 when that is the only served pre-v1 version", func(t *testing.T) {
@@ -102,7 +103,7 @@ func TestGetServedTLSRouteVersions(t *testing.T) {
 			PreV1:             true,
 			PreferredPreV1GVR: schema.GroupVersionResource{Group: wellknown.GatewayGroup, Version: gwv1a2.GroupVersion.Version, Resource: "tlsroutes"},
 			Authoritative:     true,
-		}, getServedTLSRouteVersions(client))
+		}, getServedTLSRouteVersions(context.Background(), client))
 	})
 }
 
