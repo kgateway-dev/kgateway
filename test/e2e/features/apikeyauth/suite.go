@@ -4,7 +4,6 @@ package apikeyauth
 
 import (
 	"context"
-	"slices"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,10 +16,6 @@ import (
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
-
-func withCurlOptions(base []curl.Option, additional ...curl.Option) []curl.Option {
-	return slices.Concat(base, additional)
-}
 
 // testingSuite is a suite of tests for API key authentication functionality
 type testingSuite struct {
@@ -303,13 +298,13 @@ func (s *testingSuite) TestAPIKeyAuthWithSecretUpdate() {
 
 	// Step 1: Verify initial API keys work (k-123, k-456)
 	s.T().Log("Step 1: Verifying initial API keys (k-123, k-456) work")
-	statusWithK123 := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithK123 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK123...,
 	)
-	statusWithK456 := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithK456 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -348,18 +343,18 @@ stringData:
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
-		append(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))...,
+		curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))...,
 	)
 
 	// Step 3: Verify new keys work
 	s.T().Log("Step 3: Verifying new API keys (k-789, k-999) work")
-	statusWithK789 := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	statusWithK789 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK789...,
 	)
-	statusWithK999 := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	statusWithK999 := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -368,13 +363,13 @@ stringData:
 
 	// Step 4: Verify old keys no longer work
 	s.T().Log("Step 4: Verifying old API keys (k-123, k-456) no longer work")
-	statusWithK123Old := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithK123Old := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
 		statusWithK123Old...,
 	)
-	statusWithK456Old := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithK456Old := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -401,25 +396,25 @@ stringData:
 	// Step 6: Verify the final set of keys work
 	// After Step 5 merge update, the secret has: client1 (k-123), client3 (k-789), client4 (k-999), client5 (k-111)
 	s.T().Log("Step 6: Verifying final API keys (k-123, k-789, k-999, k-111) works")
-	statusWithK123Final := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithK123Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK123Final...,
 	)
-	statusWithK789Final := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	statusWithK789Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK789Final...,
 	)
-	statusWithK999Final := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	statusWithK999Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-999"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
 		statusWithK999Final...,
 	)
-	statusWithK111Final := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-111"))
+	statusWithK111Final := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-111"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -429,7 +424,7 @@ stringData:
 	// Step 7: Verify removed keys no longer work
 	// k-456 was removed in Step 2, so it should not work
 	s.T().Log("Step 7: Verifying removed API key (k-456) no longer work")
-	statusWithK456Removed := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithK456Removed := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -461,7 +456,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has valid API key from route-level secret, should succeed
 	s.T().Log("The /get route should succeed with valid API key from route-level secret (k-789)")
-	getWithRouteAPIKeyCurlOpts := withCurlOptions(getReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	getWithRouteAPIKeyCurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -470,7 +465,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has another valid API key from route-level secret, should succeed
 	s.T().Log("The /get route should succeed with another valid API key from route-level secret (k-999)")
-	getWithRouteAPIKey2CurlOpts := withCurlOptions(getReqCurlOpts, curl.WithHeader("api-key", "k-999"))
+	getWithRouteAPIKey2CurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-999"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -479,7 +474,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has API key from gateway-level secret, should fail (route-level policy overrides)
 	s.T().Log("The /get route should fail with API key from gateway-level secret (k-123) - route-level policy overrides")
-	getWithGatewayAPIKeyCurlOpts := withCurlOptions(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	getWithGatewayAPIKeyCurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -488,7 +483,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has another API key from gateway-level secret, should fail
 	s.T().Log("The /get route should fail with another API key from gateway-level secret (k-456) - route-level policy overrides")
-	getWithGatewayAPIKey2CurlOpts := withCurlOptions(getReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	getWithGatewayAPIKey2CurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -512,7 +507,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has valid API key from gateway-level secret, should succeed
 	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level secret (k-123)")
-	statusWithGatewayAPIKeyCurlOpts := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithGatewayAPIKeyCurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -521,7 +516,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has another valid API key from gateway-level secret, should succeed
 	s.T().Log("The /status/200 route should succeed with another valid API key from gateway-level secret (k-456)")
-	statusWithGatewayAPIKey2CurlOpts := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
+	statusWithGatewayAPIKey2CurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-456"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -530,7 +525,7 @@ func (s *testingSuite) TestAPIKeyAuthRouteOverrideGateway() {
 
 	// has API key from route-level secret, should fail (only applies to /get route)
 	s.T().Log("The /status/200 route should fail with API key from route-level secret (k-789) - only gateway-level policy applies")
-	statusWithRouteAPIKeyCurlOpts := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
+	statusWithRouteAPIKeyCurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-789"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectAPIKeyAuthDenied,
@@ -560,7 +555,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 
 	// has valid API key, should succeed
 	s.T().Log("The /status/200 route should succeed with valid API key from gateway-level policy")
-	statusWithAPIKeyCurlOpts := withCurlOptions(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	statusWithAPIKeyCurlOpts := curl.Extend(statusReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,
@@ -583,7 +578,7 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 
 	// has API key, should still succeed (API key is ignored when disabled)
 	s.T().Log("The /get route with disable should succeed even with API key present")
-	getWithAPIKeyCurlOpts := withCurlOptions(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
+	getWithAPIKeyCurlOpts := curl.Extend(getReqCurlOpts, curl.WithHeader("api-key", "k-123"))
 	common.BaseGateway.Send(
 		s.T(),
 		expectStatus200Success,

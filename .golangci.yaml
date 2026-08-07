@@ -87,23 +87,42 @@ linters:
         - pattern: ^slog\.(Debug|DebugContext|Info|InfoContext|Warn|WarnContext|Error|ErrorContext|Log|LogAttrs)$
           msg: use a package-level logger created with logging.New instead of the global slog logger
     gocritic:
+      # Opt in to an explicit allowlist of correctness checks rather than gocritic's
+      # default set, which is dominated by style opinions we don't want to enforce.
+      #
+      # Deliberately excluded, with current finding counts, so they aren't re-litigated:
+      #   dupArg (10) - all x.Equals(x) self-comparisons in Equals unit tests, which is
+      #     the intended pattern given the IR Equals convention (see CLAUDE.md)
+      #   filepathJoin (29), sloppyReassign (5), deferInLoop (4) - style, not correctness
+      #   nilValReturn (1), uncheckedInlineErr (1) - both benign in context
       disable-all: true
       enabled-checks:
         - appendAssign
         - argOrder
         - badCall
         - badCond
+        - badLock
+        - badSorting
         - caseOrder
         - dupBranchBody
         - dupCase
         - dupSubExpr
+        - evalOrder
         - exitAfterDefer
+        - externalErrorReassign
+        - flagDeref
+        - flagName
         - mapKey
         - newDeref
         - offBy1
         - regexpMust
+        - returnAfterHttpError
         - sloppyLen
         - sloppyTypeAssert
+        - sortSlice
+        - syncMapLoadAndDelete
+        - truncateCmp
+        - weakCond
     gomodguard:
       blocked:
         modules:
