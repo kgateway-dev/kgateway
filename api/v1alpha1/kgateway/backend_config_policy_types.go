@@ -733,6 +733,38 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Minimum=0
 	Consecutive5xx *int32 `json:"consecutive5xx,omitempty"`
 
+	// The percentage chance that a host is ejected when an outlier status is
+	// detected through consecutive 5xx responses. This setting can be used to
+	// disable ejection or to ramp it up slowly. Defaults to 100.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	EnforcingConsecutive5xx *int32 `json:"enforcingConsecutive5xx,omitempty"`
+
+	// Determines whether to distinguish locally originated failures from
+	// externally generated errors. When true, consecutiveLocalOriginFailure and
+	// enforcingConsecutiveLocalOriginFailure are used for locally originated
+	// failures. Defaults to false.
+	// +optional
+	SplitExternalLocalOriginErrors *bool `json:"splitExternalLocalOriginErrors,omitempty"`
+
+	// The number of consecutive locally originated failures before an ejection
+	// occurs. Defaults to 5. This setting takes effect only when
+	// splitExternalLocalOriginErrors is true. If this is zero, consecutive local
+	// origin failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	ConsecutiveLocalOriginFailure *int32 `json:"consecutiveLocalOriginFailure,omitempty"`
+
+	// The percentage chance that a host is ejected when an outlier status is
+	// detected through consecutive locally originated failures. This setting can
+	// be used to disable ejection or to ramp it up slowly. Defaults to 100 and
+	// takes effect only when splitExternalLocalOriginErrors is true.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	EnforcingConsecutiveLocalOriginFailure *int32 `json:"enforcingConsecutiveLocalOriginFailure,omitempty"`
+
 	// The time interval between ejection analysis sweeps. This can result in
 	// both new ejections as well as hosts being returned to service. Defaults
 	// to 10s.

@@ -264,9 +264,6 @@ type Settings struct {
 	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
-	// EnableEnvoy enables kgateway to send config to Envoy
-	EnableEnvoy bool `split_words:"true" default:"true"`
-
 	// EnableOrderedAds delivers ADS responses to each Envoy strictly in the
 	// snapshot cache's type order (CDS, EDS, LDS, RDS) instead of the default
 	// randomized drain, closing the busy-stream reordering window on additions.

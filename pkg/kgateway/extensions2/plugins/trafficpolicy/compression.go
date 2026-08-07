@@ -1,11 +1,15 @@
 package trafficpolicy
 
 import (
+	"slices"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	brotlicompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/brotli/compressor/v3"
+	brotlidecompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/brotli/decompressor/v3"
 	gzipcompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	gzipdecompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/decompressor/v3"
 	zstdcompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/zstd/compressor/v3"
+	zstddecompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/zstd/decompressor/v3"
 	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -30,6 +34,8 @@ type compressionIR struct {
 
 type decompressionIR struct {
 	enable bool
+	// codecs to accept, meaningful only when enabled.
+	libraries []kgateway.CompressionLibrary
 }
 
 var (
@@ -73,7 +79,13 @@ func (d *decompressionIR) Equals(other PolicySubIR) bool {
 	if d == nil || od == nil {
 		return d == nil && od == nil
 	}
-	return d.enable == od.enable
+	if d.enable != od.enable {
+		return false
+	}
+	if !d.enable {
+		return true
+	}
+	return slices.Equal(d.libraries, od.libraries)
 }
 
 func (d *decompressionIR) Validate() error { return nil }
@@ -97,7 +109,16 @@ func constructCompression(spec kgateway.TrafficPolicySpec, out *trafficPolicySpe
 
 	// Enable request decompression if not disabled
 	if dc := spec.Compression.RequestDecompression; dc != nil {
-		out.decompression = &decompressionIR{enable: (dc.Disable == nil)}
+		libraries := dc.Libraries
+		if len(libraries) == 0 {
+			libraries = []kgateway.CompressionLibrary{kgateway.CompressionGzip}
+		} else {
+			// Envoy selects the decompressor by Content-Encoding, so order is not significant. Sort
+			// to a canonical form so reordered lists produce equal IR and stable config.
+			libraries = slices.Clone(libraries)
+			slices.Sort(libraries)
+		}
+		out.decompression = &decompressionIR{enable: (dc.Disable == nil), libraries: libraries}
 	}
 }
 
@@ -216,29 +237,98 @@ func (p *trafficPolicyPluginGwPass) handleDecompression(fcn string, pCtxTypedFil
 	if decomp == nil {
 		return
 	}
-	if decomp.enable {
-		pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterName, EnableFilterPerRoute())
-	} else {
-		pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterName, DisableFilterPerRoute())
+
+	// Disable path: turn off every codec's decompressor filter. Names are fixed per codec (no
+	// settings), so a route-level disable always covers whatever a broader policy enabled. The
+	// per-route config is optional so Envoy ignores codecs absent from the chain.
+	if !decomp.enable {
+		for _, library := range allCompressionLibraries {
+			pCtxTypedFilterConfig.AddTypedConfig(decompressorFilterNameFor(library), DisableFilterPerRouteOptional())
+		}
 		return
 	}
+
 	if p.decompressorInChain == nil {
-		p.decompressorInChain = make(map[string]*decompressorv3.Decompressor)
+		p.decompressorInChain = make(map[string][]decompressorEntry)
 	}
-	if _, ok := p.decompressorInChain[fcn]; !ok {
-		gzipAny, _ := utils.MessageToAny(&gzipdecompressorv3.Gzip{})
-		p.decompressorInChain[fcn] = &decompressorv3.Decompressor{
-			ResponseDirectionConfig: &decompressorv3.Decompressor_ResponseDirectionConfig{
-				CommonConfig: &decompressorv3.Decompressor_CommonDirectionConfig{
-					Enabled: &envoycorev3.RuntimeFeatureFlag{
-						DefaultValue: wrapperspb.Bool(false),
-					},
+	// One decompressor filter per codec, shared across routes. Each route enables the subset it
+	// accepts and Envoy picks the decompressor by the request's Content-Encoding.
+	for _, library := range decomp.libraries {
+		filterName := decompressorFilterNameFor(library)
+		pCtxTypedFilterConfig.AddTypedConfig(filterName, EnableFilterPerRoute())
+
+		if !hasDecompressorNamed(p.decompressorInChain[fcn], filterName) {
+			p.decompressorInChain[fcn] = append(p.decompressorInChain[fcn], decompressorEntry{
+				filterName:   filterName,
+				decompressor: newDecompressor(library),
+			})
+		}
+	}
+}
+
+// decompressorEntry is a single codec's decompressor filter installed in a filter chain.
+type decompressorEntry struct {
+	filterName   string
+	decompressor *decompressorv3.Decompressor
+}
+
+// decompressorFilterNameFor returns the per-codec decompressor filter name. Gzip keeps the bare
+// decompressor name so existing single-codec configs stay byte-identical.
+func decompressorFilterNameFor(library kgateway.CompressionLibrary) string {
+	switch library {
+	case kgateway.CompressionBrotli:
+		return decompressorFilterName + ".brotli"
+	case kgateway.CompressionZstd:
+		return decompressorFilterName + ".zstd"
+	default: // CompressionGzip
+		return decompressorFilterName
+	}
+}
+
+func hasDecompressorNamed(entries []decompressorEntry, filterName string) bool {
+	for i := range entries {
+		if entries[i].filterName == filterName {
+			return true
+		}
+	}
+	return false
+}
+
+// newDecompressor builds a decompressor filter for the given codec. Response-direction
+// decompression is disabled, so only request bodies are decompressed.
+func newDecompressor(library kgateway.CompressionLibrary) *decompressorv3.Decompressor {
+	return &decompressorv3.Decompressor{
+		ResponseDirectionConfig: &decompressorv3.Decompressor_ResponseDirectionConfig{
+			CommonConfig: &decompressorv3.Decompressor_CommonDirectionConfig{
+				Enabled: &envoycorev3.RuntimeFeatureFlag{
+					DefaultValue: wrapperspb.Bool(false),
 				},
 			},
-			DecompressorLibrary: &envoycorev3.TypedExtensionConfig{
-				Name:        "envoy.compression.gzip.decompressor",
-				TypedConfig: gzipAny,
-			},
+		},
+		DecompressorLibrary: decompressorLibraryFor(library),
+	}
+}
+
+// decompressorLibraryFor returns the Envoy decompressor library extension config for the codec.
+func decompressorLibraryFor(library kgateway.CompressionLibrary) *envoycorev3.TypedExtensionConfig {
+	switch library {
+	case kgateway.CompressionBrotli:
+		brotliAny, _ := utils.MessageToAny(&brotlidecompressorv3.Brotli{})
+		return &envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.compression.brotli.decompressor",
+			TypedConfig: brotliAny,
+		}
+	case kgateway.CompressionZstd:
+		zstdAny, _ := utils.MessageToAny(&zstddecompressorv3.Zstd{})
+		return &envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.compression.zstd.decompressor",
+			TypedConfig: zstdAny,
+		}
+	default: // CompressionGzip and unset both map to gzip for backward compatibility.
+		gzipAny, _ := utils.MessageToAny(&gzipdecompressorv3.Gzip{})
+		return &envoycorev3.TypedExtensionConfig{
+			Name:        "envoy.compression.gzip.decompressor",
+			TypedConfig: gzipAny,
 		}
 	}
 }
@@ -256,10 +346,12 @@ func addCompressionFiltersIfNeeded(staged []filters.StagedHttpFilter, p *traffic
 		filter.Filter.Disabled = true
 		staged = append(staged, filter)
 	}
-	if d := p.decompressorInChain[fcn]; d != nil {
+	// One disabled-by-default decompressor filter per codec. Order is not significant (Envoy
+	// selects by Content-Encoding), and same-stage filters sort deterministically by name.
+	for _, entry := range p.decompressorInChain[fcn] {
 		filter := filters.MustNewStagedFilter(
-			decompressorFilterName,
-			d,
+			entry.filterName,
+			entry.decompressor,
 			filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage)),
 		)
 		filter.Filter.Disabled = true

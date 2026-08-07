@@ -459,6 +459,23 @@ spec:
 			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
+			// A policy with no targetRefs/targetSelectors is attached via an HTTPRoute
+			// ExtensionRef filter, so route-only fields must be accepted.
+			name: "TrafficPolicy: policy with urlRewrite and no targets is valid (ExtensionRef usage)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-extension-ref
+spec:
+  autoHostRewrite: true
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+`,
+		},
+		{
 			name: "TrafficPolicy: policy with statPrefix can only target HTTPRoute or GRPCRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

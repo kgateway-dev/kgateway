@@ -141,6 +141,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with unknown tls option", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/unknown-tls-option.yaml"},
+			outputFile: "frontendtlsconfig/unknown-tls-option.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with ListenerSet in different namespace", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/listenerset-cross-ns.yaml"},
@@ -1094,6 +1105,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/decompression-route.yaml"},
 			outputFile: "traffic-policy/decompression-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with multi-codec request decompression", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/decompression-multi-codec-route.yaml"},
+			outputFile: "traffic-policy/decompression-multi-codec-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with request decompression disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/decompression-disable-route.yaml"},
+			outputFile: "traffic-policy/decompression-disable-route.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2990,6 +3023,39 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-sets/tls-options.yaml"},
 			outputFile: "listener-sets/tls-options.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener policy isolation across ListenerSets sharing a port", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-sets/shared-port-policy-isolation.yaml"},
+			outputFile: "listener-sets/shared-port-policy-isolation.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("route-attached policy ancestor across ListenerSets sharing a port", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-sets/shared-port-route-policy-ancestor.yaml"},
+			outputFile: "listener-sets/shared-port-route-policy-ancestor.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener policy isolation across listeners on the same Gateway sharing a port", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/shared-port-policy-isolation-same-parent.yaml"},
+			outputFile: "traffic-policy/shared-port-policy-isolation-same-parent.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

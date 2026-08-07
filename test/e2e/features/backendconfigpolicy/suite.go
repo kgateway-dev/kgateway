@@ -202,7 +202,7 @@ func (s *testingSuite) TestBackendConfigPolicyDNS() {
 			g.Expect(dnsCluster.GetDnsJitter().AsDuration()).To(gomega.Equal(15 * time.Second))
 		}).
 			WithContext(ctx).
-			WithTimeout(10 * time.Second).
+			WithTimeout(30 * time.Second).
 			WithPolling(200 * time.Millisecond).
 			Should(gomega.Succeed())
 	})

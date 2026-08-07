@@ -9,7 +9,6 @@ Clusters:
             socketAddress:
               address: 1.1.1.1
               portValue: 5000
-        loadBalancingWeight: 1
       loadBalancingWeight: 1
   name: istio-se_infra_se-a_se-a.example.com_5000
   type: STATIC
@@ -23,7 +22,6 @@ Clusters:
             socketAddress:
               address: 2.2.2.2
               portValue: 9000
-        loadBalancingWeight: 1
       loadBalancingWeight: 1
   name: istio-se_infra_se-b_se-b.example.com_9000
   type: STATIC

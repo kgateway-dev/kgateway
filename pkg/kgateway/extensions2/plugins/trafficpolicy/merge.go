@@ -29,6 +29,27 @@ type TrafficPolicyMergeOpts struct {
 	ACL string `json:"acl,omitempty"`
 }
 
+// Merge shallow-merges other into o: o's already-set fields win, other only
+// fills fields o left empty.
+func (o TrafficPolicyMergeOpts) Merge(other TrafficPolicyMergeOpts) TrafficPolicyMergeOpts {
+	merged := o
+
+	if merged.ExtAuth == "" {
+		merged.ExtAuth = other.ExtAuth
+	}
+	if merged.ExtProc == "" {
+		merged.ExtProc = other.ExtProc
+	}
+	if merged.Transformation == "" {
+		merged.Transformation = other.Transformation
+	}
+	if merged.ACL == "" {
+		merged.ACL = other.ACL
+	}
+
+	return merged
+}
+
 // MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
 // about the origin policy reference for each merged field.
 func MergeTrafficPolicies(
@@ -180,7 +201,7 @@ func mergeRustFormationActionListJson(action string, obj1, obj2 map[string]any) 
 }
 
 func mergeRustFormationActionBody(obj1, obj2 map[string]any) {
-	body2, ok := obj2["body"].(any)
+	body2, ok := obj2["body"]
 	if ok {
 		obj1["body"] = body2
 	}

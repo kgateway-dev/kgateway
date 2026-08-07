@@ -1,6 +1,6 @@
 //go:build e2e
 
-package tests
+package kgateway
 
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -52,7 +52,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xds_starvation"
 )
 
-func KubeGatewaySuiteRunner() e2e.SuiteRunner {
+// SuiteRunner returns the suite runner for the TestKgateway scenario.
+func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
 
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)

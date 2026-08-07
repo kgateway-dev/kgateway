@@ -20,6 +20,7 @@ var (
 	routeZstdManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-zstd.yaml")
 	routeNegotiationManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-negotiation.yaml")
 	routeDecompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
+	routeReqDecompressManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-request-decompression.yaml")
 
 	// proxy object meta for the shared gateway
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -49,6 +50,12 @@ var (
 		},
 		"TestRequestDecompression": {
 			Manifests: []string{httpRoutesManifest, routeCompressionManifest, routeDecompressionManifest},
+		},
+		"TestBrotliRequestDecompression": {
+			Manifests: []string{routeReqDecompressManifest},
+		},
+		"TestZstdRequestDecompression": {
+			Manifests: []string{routeReqDecompressManifest},
 		},
 	}
 )

@@ -36,10 +36,7 @@ func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *Gatewa
 		inputs: inputs,
 	}
 
-	// Only create the kgateway parameters client if Envoy is enabled
-	if inputs.CommonCollections.Settings.EnableEnvoy {
-		gp.kgwParameters = newkgatewayParameters(cli, inputs)
-	}
+	gp.kgwParameters = newkgatewayParameters(cli, inputs)
 
 	return gp
 }
@@ -61,13 +58,10 @@ func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.
 	return gp
 }
 
-// GetGatewayParametersClient returns the GatewayParameters client if Envoy is enabled, nil otherwise.
+// GetGatewayParametersClient returns the GatewayParameters client.
 // This allows the reconciler to reuse the same client for watching changes.
 func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
-	if gp.kgwParameters != nil {
-		return gp.kgwParameters.gwParamClient
-	}
-	return nil
+	return gp.kgwParameters.gwParamClient
 }
 
 func LoadEnvoyChart() (*chart.Chart, error) {
@@ -88,11 +82,7 @@ func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
 		return gp.helmValuesGeneratorOverride.GetCacheSyncHandlers()
 	}
 
-	var handlers []cache.InformerSynced
-	if gp.kgwParameters != nil {
-		handlers = append(handlers, gp.kgwParameters.GetCacheSyncHandlers()...)
-	}
-	return handlers
+	return gp.kgwParameters.GetCacheSyncHandlers()
 }
 
 // PostProcessObjects implements deployer.ObjectPostProcessor.

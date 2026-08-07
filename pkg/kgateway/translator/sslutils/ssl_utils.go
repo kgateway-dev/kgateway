@@ -46,6 +46,8 @@ var (
 
 	ErrVerifySubjectAltNamesRequiresCA = errors.New("verify-subject-alt-names annotation requires a trusted CA to be configured")
 
+	ErrUnknownTLSExtensionOption = errors.New("unknown tls option")
+
 	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
 	tlsProtocolMap = map[string]envoytlsv3.TlsParameters_TlsProtocol{
 		"1.0": envoytlsv3.TlsParameters_TLSv1_0,
@@ -311,7 +313,7 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 				errs = errors.Join(errs, err)
 			}
 		} else {
-			errs = errors.Join(errs, fmt.Errorf("unknown tls option: %s", key))
+			errs = errors.Join(errs, fmt.Errorf("%w: %s", ErrUnknownTLSExtensionOption, key))
 		}
 	}
 

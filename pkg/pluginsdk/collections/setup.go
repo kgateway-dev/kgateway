@@ -70,13 +70,10 @@ func (c *CommonCollections) InitCollections(
 	}
 	metrics.RegisterEvents(kubeRawListenerSets, kmetrics.GetResourceMetricEventHandler[*gwv1.ListenerSet]())
 
-	var policies *krtcollections.PolicyIndex
-	if globalSettings.EnableEnvoy {
-		policies = krtcollections.NewPolicyIndex(c.KrtOpts, plugins.ContributesPolicies, globalSettings)
-		for _, plugin := range plugins.ContributesPolicies {
-			if plugin.Policies != nil {
-				metrics.RegisterEvents(plugin.Policies, kmetrics.GetResourceMetricEventHandler[ir.PolicyWrapper]())
-			}
+	policies := krtcollections.NewPolicyIndex(c.KrtOpts, plugins.ContributesPolicies, globalSettings)
+	for _, plugin := range plugins.ContributesPolicies {
+		if plugin.Policies != nil {
+			metrics.RegisterEvents(plugin.Policies, kmetrics.GetResourceMetricEventHandler[ir.PolicyWrapper]())
 		}
 	}
 
@@ -93,11 +90,6 @@ func (c *CommonCollections) InitCollections(
 		krtcollections.WithGatewayForDeployerTransformationFunc(c.options.gatewayForDeployerTransformationFunc),
 		krtcollections.WithGatewayForEnvoyTransformationFunc(c.options.gatewayForEnvoyTransformationFunc),
 	)
-
-	if !globalSettings.EnableEnvoy {
-		// When Envoy is disabled, only the gateway index is needed for the deployer
-		return gateways, nil, nil, nil
-	}
 
 	// create the KRT clients, remember to also register any needed types in the type registration setup.
 	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](c.Client, wellknown.HTTPRouteGVR, filter), c.KrtOpts.ToOptions("HTTPRoute")...)

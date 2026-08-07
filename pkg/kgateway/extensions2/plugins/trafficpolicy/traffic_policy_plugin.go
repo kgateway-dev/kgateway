@@ -11,7 +11,6 @@ import (
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
-	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	faulthttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
@@ -265,7 +264,7 @@ type trafficPolicyPluginGwPass struct {
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
 	bufferInChain            map[string]*bufferv3.Buffer
 	compressorInChain        map[string][]compressorEntry
-	decompressorInChain      map[string]*decompressorv3.Decompressor
+	decompressorInChain      map[string][]decompressorEntry
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
 	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
 	faultInChain             map[string]*faulthttpv3.HTTPFault
