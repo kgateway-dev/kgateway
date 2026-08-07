@@ -116,7 +116,7 @@ func (am *authenticationManager) authenticate(ctx context.Context) *security.Cal
 	for _, authn := range am.Authenticators {
 		u, err := authn.Authenticate(req)
 		if u != nil && err == nil { // we don't validate len(u.Identities) here like Istio does since this isn't relevant
-			logger.Debug("authentication succeeded", "auth_source", u.AuthSource)
+			controlPlaneLogger.Debug("authentication succeeded", "auth_source", u.AuthSource)
 			return u
 		}
 		am.authFailMsgs = append(am.authFailMsgs, fmt.Sprintf("Authenticator %s: %v", authn.AuthenticatorType(), err))
