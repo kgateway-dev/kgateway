@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strconv"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -46,7 +47,7 @@ func testLbEndpoint(addr string, port uint32) *envoyendpointv3.LbEndpoint {
 func testEndpointWithMd(i int) EndpointWithMd {
 	return EndpointWithMd{
 		LbEndpoint: testLbEndpoint(fmt.Sprintf("10.0.%d.%d", i/256, i%256), 8080),
-		EndpointMd: EndpointMetadata{Labels: map[string]string{"i": fmt.Sprint(i)}},
+		EndpointMd: EndpointMetadata{Labels: map[string]string{"i": strconv.Itoa(i)}},
 	}
 }
 

@@ -134,7 +134,7 @@ func constructJwt(
 
 	if spec.ExtensionRef == nil {
 		// shouldn't happen due to CRD validation
-		return fmt.Errorf("jwt: extensionRef is required if disable is not set")
+		return errors.New("jwt: extensionRef is required if disable is not set")
 	}
 	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {

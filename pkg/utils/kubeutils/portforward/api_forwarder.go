@@ -2,6 +2,7 @@ package portforward
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -111,7 +112,7 @@ func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 			return fmt.Errorf("failed to get ports: %v", err)
 		}
 		if len(p) == 0 {
-			return fmt.Errorf("got no ports")
+			return errors.New("got no ports")
 		}
 		// Set local port now, as it may have been 0 as input
 		f.properties.localPort = int(p[0].Local)

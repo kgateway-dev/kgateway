@@ -87,7 +87,7 @@ func (u *LambdaIr) Equals(other *LambdaIr) bool {
 func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	// defensive check; this should never happen with union types
 	if ir == nil {
-		return fmt.Errorf("aws ir is nil")
+		return errors.New("aws ir is nil")
 	}
 	switch {
 	case ir.lambdaIr != nil:
@@ -95,7 +95,7 @@ func processAws(ir *AwsIr, out *envoyclusterv3.Cluster) error {
 	case ir.ec2Ir != nil:
 		return processEc2(ir.ec2Ir, out)
 	default:
-		return fmt.Errorf("aws ir is empty")
+		return errors.New("aws ir is empty")
 	}
 }
 

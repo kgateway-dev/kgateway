@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -77,10 +78,10 @@ func (a *KubeJWTAuthenticator) authenticate(targetJWT string) (*security.Caller,
 		return nil, fmt.Errorf("failed to validate the JWT token: %v", err)
 	}
 	if id.PodServiceAccount == "" {
-		return nil, fmt.Errorf("failed to parse the JWT; service account required")
+		return nil, errors.New("failed to parse the JWT; service account required")
 	}
 	if id.PodNamespace == "" {
-		return nil, fmt.Errorf("failed to parse the JWT; namespace required")
+		return nil, errors.New("failed to parse the JWT; namespace required")
 	}
 	return &security.Caller{
 		AuthSource:     security.AuthSourceIDToken,
@@ -93,14 +94,14 @@ func (a *KubeJWTAuthenticator) authenticate(targetJWT string) (*security.Caller,
 func extractRequestToken(req *http.Request) (string, error) {
 	value := req.Header.Get(authorizationHeader)
 	if value == "" {
-		return "", fmt.Errorf("no HTTP authorization header exists")
+		return "", errors.New("no HTTP authorization header exists")
 	}
 
 	if after, ok := strings.CutPrefix(value, bearerTokenPrefix); ok {
 		return after, nil
 	}
 
-	return "", fmt.Errorf("no bearer token exists in HTTP authorization header")
+	return "", errors.New("no bearer token exists in HTTP authorization header")
 }
 
 // authenticationManager orchestrates all authenticators to perform authentication.

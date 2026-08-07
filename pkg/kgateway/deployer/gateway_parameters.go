@@ -152,7 +152,7 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 	}
 
 	if gp.kgwParameters == nil {
-		return nil, fmt.Errorf("no parameter clients available")
+		return nil, errors.New("no parameter clients available")
 	}
 	logger.Debug("using default HelmValuesGenerator for Gateway",
 		"gateway_name", gw.GetName(),

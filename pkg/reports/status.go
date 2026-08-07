@@ -97,9 +97,9 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 
 	// If any listeners have Programmed=False, set Gateway Accepted=True with ListenersNotValid reason
 	if len(invalidListeners) > 0 {
-		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		message := "Some listeners are not programmed: " + strings.Join(invalidMessages, "; ")
 		if len(invalidMessages) == 0 {
-			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+			message = "Some listeners are not programmed: " + strings.Join(invalidListeners, ", ")
 		}
 
 		meta.SetStatusCondition(&gwConditions, metav1.Condition{
@@ -326,9 +326,9 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 
 	// If any listeners have Programmed=False, set ListenerSet Accepted=True with ListenersNotValid reason
 	if len(invalidListeners) > 0 {
-		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		message := "Some listeners are not programmed: " + strings.Join(invalidMessages, "; ")
 		if len(invalidMessages) == 0 {
-			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+			message = "Some listeners are not programmed: " + strings.Join(invalidListeners, ", ")
 		}
 
 		meta.SetStatusCondition(&lsConditions, metav1.Condition{

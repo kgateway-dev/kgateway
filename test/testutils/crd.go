@@ -75,7 +75,7 @@ func GetGatewayAPICRDDir() (string, error) {
 
 	modDir := strings.TrimSpace(string(out))
 	if modDir == "" {
-		return "", fmt.Errorf("gateway-api module directory is empty")
+		return "", errors.New("gateway-api module directory is empty")
 	}
 	crdDir := filepath.Join(modDir, "config", "crd", "experimental")
 

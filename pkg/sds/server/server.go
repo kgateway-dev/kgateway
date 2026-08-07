@@ -12,6 +12,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -228,7 +229,7 @@ func readAndValidateSecret(ctx context.Context, sec Secret) ([][]byte, []cache_t
 // GetSnapshotVersion generates a version string by hashing the certs
 func GetSnapshotVersion(certs ...any) (string, error) {
 	hash, err := hashAllSafe(fnv.New64(), certs...)
-	return fmt.Sprintf("%d", hash), err
+	return strconv.FormatUint(hash, 10), err
 }
 
 // hashAllSafe replicates the behavior of hashutils.HashAllSafe from github.com/solo-io/go-utils

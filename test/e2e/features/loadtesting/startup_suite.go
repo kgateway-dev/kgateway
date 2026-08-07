@@ -5,6 +5,7 @@ package loadtesting
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -63,7 +64,7 @@ func (s *LoadTestingSuite) measureControllerRolloutStartup() (*startupBenchmarkR
 			Namespace:       namespace,
 			Deployment:      controllerDeploymentName,
 			DesiredReplicas: desiredReplicas,
-		}, fmt.Errorf("controller deployment has no desired replicas")
+		}, errors.New("controller deployment has no desired replicas")
 	}
 
 	version, channel := s.detectGatewayAPIMetadata()

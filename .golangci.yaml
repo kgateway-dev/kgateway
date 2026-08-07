@@ -26,6 +26,7 @@ linters:
     - modernize
     - nakedret
     - nestif
+    - perfsprint
     - predeclared
     - promlinter
     - sloglint
