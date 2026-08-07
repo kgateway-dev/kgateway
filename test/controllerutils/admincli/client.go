@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"path"
+	"slices"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
@@ -62,10 +63,10 @@ func (c *Client) WithCurlOptions(options ...curl.Option) *Client {
 
 // Command returns a curl Command, using the provided curl.Option as well as the client.curlOptions
 func (c *Client) Command(ctx context.Context, options ...curl.Option) cmdutils.Cmd {
-	commandCurlOptions := append(
+	commandCurlOptions := slices.Concat(
 		c.curlOptions,
 		// Ensure any options defined for this command can override any defaults that the Client has defined
-		options...)
+		options)
 	curlArgs := curl.BuildArgs(commandCurlOptions...)
 
 	return cmdutils.Command(ctx, "curl", curlArgs...).

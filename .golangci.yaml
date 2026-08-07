@@ -16,6 +16,7 @@ linters:
     - depguard
     - forbidigo
     - ginkgolinter
+    - gocritic
     - gomodguard
     - gosec
     - importas
@@ -85,6 +86,24 @@ linters:
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
         - pattern: ^slog\.(Debug|DebugContext|Info|InfoContext|Warn|WarnContext|Error|ErrorContext|Log|LogAttrs)$
           msg: use a package-level logger created with logging.New instead of the global slog logger
+    gocritic:
+      disable-all: true
+      enabled-checks:
+        - appendAssign
+        - argOrder
+        - badCall
+        - badCond
+        - caseOrder
+        - dupBranchBody
+        - dupCase
+        - dupSubExpr
+        - exitAfterDefer
+        - mapKey
+        - newDeref
+        - offBy1
+        - regexpMust
+        - sloppyLen
+        - sloppyTypeAssert
     gomodguard:
       blocked:
         modules:
