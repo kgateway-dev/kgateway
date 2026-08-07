@@ -67,7 +67,7 @@ func NewBaseGatewayController(
 
 	// Initialize Gateway reconciler
 	if err := watchGw(cfg, helmValuesGeneratorOverride, gatewayControllerExtension); err != nil {
-		return nil
+		return err
 	}
 
 	// Initialize GatewayClass reconciler

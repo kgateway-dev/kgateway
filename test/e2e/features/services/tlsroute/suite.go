@@ -25,6 +25,7 @@ import (
 // testingSuite is the entire suite of tests for testing K8s Service-specific features/fixes
 type testingSuite struct {
 	*base.BaseTestingSuite
+	cancel context.CancelFunc
 }
 
 var (
@@ -35,12 +36,18 @@ var (
 )
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	tlsRouteCtx, _ := context.WithTimeout(ctx, ctxTimeout)
+	tlsRouteCtx, cancel := context.WithTimeout(ctx, ctxTimeout)
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(tlsRouteCtx, testInst, setup, testCases,
 			base.WithMinGwApiVersion(base.GwApiRequireTlsRoutes),
 		),
+		cancel: cancel,
 	}
+}
+
+func (s *testingSuite) TearDownSuite() {
+	defer s.cancel()
+	s.BaseTestingSuite.TearDownSuite()
 }
 
 type tlsRouteTestCase struct {

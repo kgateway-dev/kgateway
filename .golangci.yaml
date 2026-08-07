@@ -18,6 +18,7 @@ linters:
     - ginkgolinter
     - gomodguard
     - gosec
+    - govet
     - importas
     - ineffassign
     - krtequals
@@ -26,6 +27,7 @@ linters:
     - modernize
     - nakedret
     - nestif
+    - nilerr
     - predeclared
     - promlinter
     - sloglint
@@ -154,8 +156,7 @@ linters:
       min-complexity: 20
     staticcheck:
       checks:
-        - SA1019 # deprecated usage
-        - SA2002 # testing.T FailNow/SkipNow called from goroutine
+        - SA* # correctness checks
         - ST1019 # duplicate imports
     testifylint:
       disable-all: true
