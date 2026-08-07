@@ -98,28 +98,35 @@ func (c *CommonCollections) InitCollections(
 	httpRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.HTTPRoute](c.Client, wellknown.HTTPRouteGVR, filter), c.KrtOpts.ToOptions("HTTPRoute")...)
 	metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 
-	// TCPRoute is standard as of Gateway API v1.6, so promoted v1 TCPRoutes
-	// are always enabled. Keep the pre-v1 TCPRoute watch under the experimental
-	// feature flag for compatibility with older Gateway API channels.
-	servedTCPRouteVersions := getServedTCPRouteVersions(ctx, c.Client.Ext())
-	tcpRoutesV1 := krt.WrapClient(
-		newDelayedTypedInformer(ctx, c.Client, promotedTCPRouteGVR, func() kclient.Informer[*gwv1.TCPRoute] {
-			return kclient.NewFiltered[*gwv1.TCPRoute](c.Client, filter)
-		}),
-		c.KrtOpts.ToOptions("TCPRouteV1")...,
+	// Resolve which TCPRoute API versions to watch and to write status through. The same
+	// list drives both, so a version we watch is always one we can write and vice versa.
+	// TCPRoute is standard as of Gateway API v1.6; pre-v1 versions stay behind the
+	// experimental feature flag for compatibility with older Gateway API channels.
+	tcpRouteWriteGVRs := selectRouteGVRs(
+		discoverRouteVersions(ctx, c.Client.Ext(), wellknown.TCPRouteCRDName),
+		tcpRouteGVRs,
+		globalSettings.EnableExperimentalGatewayAPIFeatures,
 	)
-	tcpRouteCollections := []krt.Collection[*gwv1a2.TCPRoute]{
-		krt.NewManyCollection(tcpRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TCPRoute) []*gwv1a2.TCPRoute {
-			if converted := convertTCPRouteV1ToV1Alpha2(i); converted != nil {
-				return []*gwv1a2.TCPRoute{converted}
-			}
-			return nil
-		}, c.KrtOpts.ToOptions("TCPRouteV1ToV1Alpha2")...),
-	}
-	if globalSettings.EnableExperimentalGatewayAPIFeatures {
-		for _, preV1TCPRouteGVR := range preV1TCPRouteWatchGVRs(servedTCPRouteVersions) {
+	tcpRouteCollections := make([]krt.Collection[*gwv1a2.TCPRoute], 0, len(tcpRouteWriteGVRs))
+	for _, tcpRouteGVR := range tcpRouteWriteGVRs {
+		switch tcpRouteGVR.Version {
+		case gwv1.GroupVersion.Version:
+			tcpRoutesV1 := krt.WrapClient(
+				newDelayedTypedInformer(ctx, c.Client, tcpRouteGVR, func() kclient.Informer[*gwv1.TCPRoute] {
+					return kclient.NewFiltered[*gwv1.TCPRoute](c.Client, filter)
+				}),
+				c.KrtOpts.ToOptions("TCPRouteV1")...,
+			)
+			tcpRouteCollections = append(tcpRouteCollections,
+				krt.NewManyCollection(tcpRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TCPRoute) []*gwv1a2.TCPRoute {
+					if converted := convertTCPRouteV1ToV1Alpha2(i); converted != nil {
+						return []*gwv1a2.TCPRoute{converted}
+					}
+					return nil
+				}, c.KrtOpts.ToOptions("TCPRouteV1ToV1Alpha2")...))
+		case gwv1a2.GroupVersion.Version:
 			preV1TCPRoutes := krt.WrapClient(
-				newDelayedTypedInformer(ctx, c.Client, preV1TCPRouteGVR, func() kclient.Informer[*gwv1a2.TCPRoute] {
+				newDelayedTypedInformer(ctx, c.Client, tcpRouteGVR, func() kclient.Informer[*gwv1a2.TCPRoute] {
 					return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TCPRoutePreV1Alpha2")...,
@@ -138,47 +145,51 @@ func (c *CommonCollections) InitCollections(
 		tcproutes = krt.JoinCollection(tcpRouteCollections, c.KrtOpts.ToOptions("TCPRoute")...)
 	}
 
-	// TLSRoute is standard as of Gateway API v1.5, so promoted v1 TLSRoutes
-	// are always enabled. Keep pre-v1 TLSRoute watches under the experimental
-	// feature flag for compatibility with older Gateway API channels.
-	servedTLSRouteVersions := getServedTLSRouteVersions(ctx, c.Client.Ext())
-	tlsRoutesV1 := krt.WrapClient(
-		kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, promotedTLSRouteGVR, kubetypes.StandardInformer, filter),
-		c.KrtOpts.ToOptions("TLSRouteV1")...,
+	// As for TCPRoute above: one selection drives both the watches and the status writers.
+	// TLSRoute is standard as of Gateway API v1.5; pre-v1 versions stay behind the
+	// experimental feature flag.
+	tlsRouteWriteGVRs := selectRouteGVRs(
+		discoverRouteVersions(ctx, c.Client.Ext(), wellknown.TLSRouteCRDName),
+		tlsRouteGVRs,
+		globalSettings.EnableExperimentalGatewayAPIFeatures,
 	)
-	tlsRouteCollections := []krt.Collection[*gwv1a2.TLSRoute]{
-		krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
-			if converted := convertTLSRouteV1ToV1Alpha2(i); converted != nil {
-				return []*gwv1a2.TLSRoute{converted}
-			}
-			return nil
-		}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...),
-	}
-	if globalSettings.EnableExperimentalGatewayAPIFeatures {
-		for _, preV1TLSRouteGVR := range preV1TLSRouteWatchGVRs(servedTLSRouteVersions) {
-			switch preV1TLSRouteGVR.Version {
-			case gwv1a2.GroupVersion.Version:
-				preV1TLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(ctx, c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
-						return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
-					}),
-					c.KrtOpts.ToOptions("TLSRoutePreV1Alpha2")...,
-				)
-				tlsRouteCollections = append(tlsRouteCollections, preV1TLSRoutes)
-			case wellknown.TLSRouteV1Alpha3Version:
-				preV1TLSRoutes := krt.WrapClient(
-					newDelayedTypedInformer(ctx, c.Client, preV1TLSRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
-						return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
-					}),
-					c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3")...,
-				)
-				tlsRouteCollections = append(tlsRouteCollections, krt.NewManyCollection(preV1TLSRoutes, func(kctx krt.HandlerContext, i *gwv1a3.TLSRoute) []*gwv1a2.TLSRoute {
+	tlsRouteCollections := make([]krt.Collection[*gwv1a2.TLSRoute], 0, len(tlsRouteWriteGVRs))
+	for _, tlsRouteGVR := range tlsRouteWriteGVRs {
+		switch tlsRouteGVR.Version {
+		case gwv1.GroupVersion.Version:
+			tlsRoutesV1 := krt.WrapClient(
+				kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, tlsRouteGVR, kubetypes.StandardInformer, filter),
+				c.KrtOpts.ToOptions("TLSRouteV1")...,
+			)
+			tlsRouteCollections = append(tlsRouteCollections,
+				krt.NewManyCollection(tlsRoutesV1, func(kctx krt.HandlerContext, i *gwv1.TLSRoute) []*gwv1a2.TLSRoute {
+					if converted := convertTLSRouteV1ToV1Alpha2(i); converted != nil {
+						return []*gwv1a2.TLSRoute{converted}
+					}
+					return nil
+				}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
+		case wellknown.TLSRouteV1Alpha3Version:
+			preV1TLSRoutes := krt.WrapClient(
+				newDelayedTypedInformer(ctx, c.Client, tlsRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+					return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
+				}),
+				c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3")...,
+			)
+			tlsRouteCollections = append(tlsRouteCollections,
+				krt.NewManyCollection(preV1TLSRoutes, func(kctx krt.HandlerContext, i *gwv1a3.TLSRoute) []*gwv1a2.TLSRoute {
 					if converted := convertTLSRouteV1Alpha3ToV1Alpha2(i); converted != nil {
 						return []*gwv1a2.TLSRoute{converted}
 					}
 					return nil
 				}, c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3ToV1Alpha2")...))
-			}
+		case gwv1a2.GroupVersion.Version:
+			preV1TLSRoutes := krt.WrapClient(
+				newDelayedTypedInformer(ctx, c.Client, tlsRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
+					return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
+				}),
+				c.KrtOpts.ToOptions("TLSRoutePreV1Alpha2")...,
+			)
+			tlsRouteCollections = append(tlsRouteCollections, preV1TLSRoutes)
 		}
 	}
 
@@ -202,11 +213,10 @@ func (c *CommonCollections) InitCollections(
 	c.RawTCPRoutes = tcproutes
 	c.RawTLSRoutes = tlsRoutes
 
-	// Resolve which served API versions status writes may go through. Pre-v1 versions are
-	// only candidates when we actually watch them: a version nothing watches can never
-	// hold the object the writer needs to read.
-	c.TCPRouteWriteGVRs = tcpRouteWriteGVRs(servedTCPRouteVersions, globalSettings.EnableExperimentalGatewayAPIFeatures)
-	c.TLSRouteWriteGVRs = tlsRouteWriteGVRs(servedTLSRouteVersions, globalSettings.EnableExperimentalGatewayAPIFeatures)
+	// The very lists the watches above were built from: a version we watch is a version we
+	// can write, so the two cannot drift apart.
+	c.TCPRouteWriteGVRs = tcpRouteWriteGVRs
+	c.TLSRouteWriteGVRs = tlsRouteWriteGVRs
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)

@@ -1,10 +1,8 @@
 package collections
 
 import (
-	"context"
+	"log/slog"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,129 +17,15 @@ import (
 
 var logger = logging.New("pluginsdk/collections")
 
-const tlsRouteCRDName = "tlsroutes.gateway.networking.k8s.io"
-
-var promotedTLSRouteGVR = wellknown.TLSRouteV1GVR
-
-var tlsRouteV1Alpha3GVR = schema.GroupVersionResource{
-	Group:    wellknown.GatewayGroup,
-	Version:  wellknown.TLSRouteV1Alpha3Version,
-	Resource: "tlsroutes",
-}
-
-var tlsRouteV1Alpha2GVR = schema.GroupVersionResource{
-	Group:    wellknown.GatewayGroup,
-	Version:  gwv1a2.GroupVersion.Version,
-	Resource: "tlsroutes",
-}
-
-type servedTLSRouteVersions struct {
-	Promoted          bool
-	PreV1             bool
-	PreferredPreV1GVR schema.GroupVersionResource
-	Authoritative     bool
-}
-
-func fallbackTLSRouteVersions() servedTLSRouteVersions {
-	return servedTLSRouteVersions{
-		Promoted:          true,
-		PreV1:             true,
-		PreferredPreV1GVR: tlsRouteV1Alpha3GVR,
-	}
-}
-
-// preV1TLSRouteWatchGVRs returns the pre-v1 TLSRoute API versions that should
-// be watched for the current discovery result. When discovery is authoritative,
-// prefer a single served version to avoid duplicate logical TLSRoutes. When
-// discovery is non-authoritative, keep both pre-v1 versions active so clusters
-// that only serve v1alpha2 remain discoverable.
-func preV1TLSRouteWatchGVRs(versions servedTLSRouteVersions) []schema.GroupVersionResource {
-	if !versions.PreV1 || (versions.Authoritative && versions.Promoted) {
-		return nil
-	}
-	if versions.Authoritative {
-		return []schema.GroupVersionResource{versions.PreferredPreV1GVR}
-	}
-	return []schema.GroupVersionResource{tlsRouteV1Alpha3GVR, tlsRouteV1Alpha2GVR}
-}
-
-// tlsRouteWriteGVRs returns the API versions status writes may go through, most preferred
-// first. See tcpRouteWriteGVRs for why a non-authoritative discovery result must not be
-// collapsed to a single guessed version.
-func tlsRouteWriteGVRs(versions servedTLSRouteVersions, watchPreV1 bool) []schema.GroupVersionResource {
-	if versions.Authoritative {
-		if versions.Promoted || versions.PreferredPreV1GVR.Empty() {
-			return []schema.GroupVersionResource{promotedTLSRouteGVR}
-		}
-		return []schema.GroupVersionResource{versions.PreferredPreV1GVR}
-	}
-
-	gvrs := []schema.GroupVersionResource{promotedTLSRouteGVR}
-	if watchPreV1 {
-		gvrs = append(gvrs, preV1TLSRouteWatchGVRs(versions)...)
-	}
-	return gvrs
-}
-
-// getServedTLSRouteVersions resolves which TLSRoute API versions are currently
-// served by the cluster. When discovery is unavailable, or the CRD is not yet
-// installed, we conservatively allow both promoted and pre-v1 watches so
-// startup does not incorrectly disable TLSRoute support before delayed
-// informers can recover.
-func getServedTLSRouteVersions(ctx context.Context, extClient apiextensionsclient.Interface) servedTLSRouteVersions {
-	if extClient == nil {
-		// If discovery is unavailable, keep both paths enabled and let the delayed
-		// informer logic determine what is actually readable at runtime.
-		slog.Warn("no CRD discovery client for TLSRoute; watching and writing status through every known API version until the CRD is observed")
-		return fallbackTLSRouteVersions()
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, crdLookupTimeout)
-	defer cancel()
-
-	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, tlsRouteCRDName, metav1.GetOptions{})
-	if err != nil {
-		// See getServedTCPRouteVersions: the CRD may not be installed yet, and neither the
-		// watch nor the write path can narrow to the served version without a restart.
-		slog.Warn("could not resolve served TLSRoute API versions; watching and writing status through every known API version until restart",
-			"crd", tlsRouteCRDName,
-			"not_found", apierrors.IsNotFound(err),
-			"error", err,
-		)
-		return fallbackTLSRouteVersions()
-	}
-
-	versions := servedTLSRouteVersions{Authoritative: true}
-	servedPreV1Versions := map[string]bool{}
-	for _, version := range crd.Spec.Versions {
-		if !version.Served {
-			continue
-		}
-
-		switch version.Name {
-		case gwv1.GroupVersion.Version:
-			versions.Promoted = true
-		case wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version:
-			servedPreV1Versions[version.Name] = true
-		}
-	}
-
-	// Prefer v1alpha3 over v1alpha2 when both pre-v1 versions are served so we
-	// consistently watch the most recent pre-promotion API and avoid duplicate
-	// logical TLSRoutes from multiple pre-v1 watches.
-	for _, preV1Version := range []string{wellknown.TLSRouteV1Alpha3Version, gwv1a2.GroupVersion.Version} {
-		if servedPreV1Versions[preV1Version] {
-			versions.PreV1 = true
-			versions.PreferredPreV1GVR = schema.GroupVersionResource{
-				Group:    wellknown.GatewayGroup,
-				Version:  preV1Version,
-				Resource: "tlsroutes",
-			}
-			break
-		}
-	}
-
-	return versions
+// tlsRouteGVRs lists the TLSRoute API versions kgateway understands, most preferred first.
+// TLSRoute is standard as of Gateway API v1.5; v1alpha3 and v1alpha2 are pre-promotion and
+// only candidates when experimental Gateway API features are enabled. v1alpha3 outranks
+// v1alpha2 so a cluster serving both (Gateway API v1.4.1) settles on the newer of the two.
+// See selectRouteGVRs.
+var tlsRouteGVRs = []schema.GroupVersionResource{
+	wellknown.TLSRouteV1GVR,
+	wellknown.TLSRouteV1Alpha3GVR,
+	wellknown.TLSRouteGVR,
 }
 
 func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
