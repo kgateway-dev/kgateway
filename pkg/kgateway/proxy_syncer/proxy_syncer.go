@@ -64,6 +64,9 @@ type ProxySyncer struct {
 
 	statusCollections *statussync.StatusCollections
 	statusWriters     map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
+	// statusNotReady is shared by every writer so one resource has one requeue budget
+	// regardless of which writer observed it as invisible.
+	statusNotReady *statussync.NotReadyRequeuer
 
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
@@ -421,6 +424,12 @@ func (s *ProxySyncer) StatusCollections() *statussync.StatusCollections {
 // StatusWriters returns the per-GVK status writers used to persist desired statuses.
 func (s *ProxySyncer) StatusWriters() map[schema.GroupVersionKind]statussync.ResourceStatusSyncer {
 	return s.statusWriters
+}
+
+// StatusNotReady returns the requeuer shared by every status writer. Downstream status
+// registrations must pass it to their own writers; see statussync.NotReadyRequeuer.
+func (s *ProxySyncer) StatusNotReady() *statussync.NotReadyRequeuer {
+	return s.statusNotReady
 }
 
 // StatusContributions returns the independently keyed status facts emitted by translation.

@@ -169,6 +169,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		StatusContributionsByTarget: proxySyncer.StatusContributionsByTarget(),
 		KrtOpts:                     cfg.KrtOptions,
 		CacheSyncs:                  proxySyncer.CacheSyncs(),
+		StatusNotReady:              proxySyncer.StatusNotReady(),
 	}, cfg.StatusSyncerOptions...)
 	if err := cfg.Manager.Add(statusSyncer); err != nil {
 		setupLog.Error(err, "unable to add statusSyncer runnable")

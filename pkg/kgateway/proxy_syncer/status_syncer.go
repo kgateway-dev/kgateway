@@ -52,6 +52,9 @@ type StatusSyncerConfig struct {
 	StatusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
 	KrtOpts                     krtutil.KrtOptions
 	CacheSyncs                  []cache.InformerSynced
+	// StatusNotReady is the requeuer shared with the built-in writers; registrations that
+	// build writers over delayed clients need it for the same reason those do.
+	StatusNotReady *statussync.NotReadyRequeuer
 }
 
 func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *StatusSyncer {
@@ -74,6 +77,7 @@ func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *Status
 			StatusContributions:   cfg.StatusContributions,
 			ContributionsByTarget: cfg.StatusContributionsByTarget,
 			KrtOpts:               cfg.KrtOpts,
+			NotReady:              cfg.StatusNotReady,
 			RegisterWriter: func(gvk schema.GroupVersionKind, writer statussync.ResourceStatusSyncer) {
 				registerStatusWriter(syncer.writers, gvk, writer)
 			},

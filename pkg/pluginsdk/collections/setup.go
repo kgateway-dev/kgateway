@@ -157,8 +157,19 @@ func (c *CommonCollections) InitCollections(
 	for _, tlsRouteGVR := range tlsRouteWriteGVRs {
 		switch tlsRouteGVR.Version {
 		case gwv1.GroupVersion.Version:
+			// newDelayedTypedInformer, not kclient.NewDelayedInformer, matching TCPRoute and
+			// the pre-v1 TLSRoute paths. Istio's CRD watcher keys readiness on
+			// <resource>.<group> and ignores the version, so on its own it would report v1 as
+			// ready off a CRD serving no v1, start an informer against an unserved endpoint,
+			// and never sync — blocking every collection gated on it. Istio only avoids that
+			// through minimumVersionFilter, a hardcoded table whose tlsroutes minimum happens
+			// to be the release where v1 appeared. Depending on that table staying aligned
+			// with kgateway's needs is a coupling we do not need: this helper checks the
+			// served version itself and keeps HasSynced unblocked when v1 is absent.
 			tlsRoutesV1 := krt.WrapClient(
-				kclient.NewDelayedInformer[*gwv1.TLSRoute](c.Client, tlsRouteGVR, kubetypes.StandardInformer, filter),
+				newDelayedTypedInformer(ctx, c.Client, tlsRouteGVR, func() kclient.Informer[*gwv1.TLSRoute] {
+					return kclient.NewFiltered[*gwv1.TLSRoute](c.Client, filter)
+				}),
 				c.KrtOpts.ToOptions("TLSRouteV1")...,
 			)
 			tlsRouteCollections = append(tlsRouteCollections,

@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stesting "k8s.io/client-go/testing"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -148,4 +149,40 @@ func TestDelayedTLSRouteV1Alpha3InformerUsesOptimisticTypedWatchWhenCRDDiscovery
 	require.Eventually(t, func() bool {
 		return len(inf.List("default", labels.Everything())) == 1
 	}, time.Second, 10*time.Millisecond, "non-authoritative CRD discovery must not suppress TLSRoute watches")
+}
+
+// Promoted TLSRoute goes through newDelayedTypedInformer rather than istio's
+// kclient.NewDelayedInformer because istio's CRD watcher keys readiness on
+// <resource>.<group> and ignores the version: it would report v1 as ready off a CRD that
+// serves no v1, start a real informer against an endpoint the API server does not serve, and
+// never sync — blocking every collection gated on it, up to the proxy syncer cache barrier.
+//
+// Istio guards that with minimumVersionFilter, whose hardcoded minimum for tlsroutes is the
+// Gateway API release where v1 appeared, so ordinary old installs are filtered out entirely
+// (see the v1.4.1 case above). This pins the window that filter leaves open — a new enough
+// CRD bundle that nonetheless does not serve v1 — where only checking the served version
+// keeps startup unblocked.
+func TestDelayedTLSRouteV1InformerDoesNotBlockWhenV1IsNotServed(t *testing.T) {
+	stop := test.NewStop(t)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	apiclient.RegisterTypes()
+
+	client := kube.NewFakeClient()
+	makeCRDWithVersions(t, client, wellknown.TLSRouteV1GVR, "v1.5.0", []apiextensionsv1.CustomResourceDefinitionVersion{
+		{Name: gwv1a2.GroupVersion.Version, Served: true, Storage: true},
+		{Name: gwv1.GroupVersion.Version, Served: false},
+	})
+	client.RunAndWait(stop)
+
+	require.True(t, client.CrdWatcher().KnownOrCallback(wellknown.TLSRouteV1GVR, func(<-chan struct{}) {}),
+		"istio's watcher ignores the version, so a new enough CRD bundle makes it report v1 as known "+
+			"even though v1 is not served; the istio delayed informer would start a watch that never syncs")
+
+	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1GVR, func() kclient.Informer[*gwv1.TLSRoute] {
+		return kclient.NewFiltered[*gwv1.TLSRoute](client, kclient.Filter{})
+	})
+	inf.Start(stop)
+
+	require.True(t, inf.HasSynced(), "an unserved promoted version must not block the cache barrier")
+	require.Empty(t, inf.List(metav1.NamespaceAll, labels.Everything()))
 }

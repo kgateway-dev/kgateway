@@ -42,7 +42,8 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	// Every writer below reads through a delayed client, whose Get returns nil until its own
 	// informer loads. Nothing upstream re-fires at that point, so writers hand those
 	// resources to the requeuer rather than mistaking a not-ready client for a deletion.
-	notReady := statussync.NewNotReadyRequeuer(s.statusCollections.Requeue)
+	s.statusNotReady = statussync.NewNotReadyRequeuer(s.statusCollections.Requeue)
+	notReady := s.statusNotReady
 
 	cl := s.apiClient
 	f := kclient.Filter{ObjectFilter: cl.ObjectFilter()}
