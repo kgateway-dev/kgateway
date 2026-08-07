@@ -32,6 +32,7 @@ func MergeHttpPolicies(
 		mergeXffConfig,
 		mergeSkipXffAppend,
 		mergeServerHeaderTransformation,
+		mergeServerNameTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
 		mergeHttp2ProtocolOptions,
@@ -283,6 +284,22 @@ func mergeServerHeaderTransformation(
 
 	p1.serverHeaderTransformation = p2.serverHeaderTransformation
 	mergeOrigins.SetOne(origin+"serverHeaderTransformation", p2Ref, p2MergeOrigins)
+}
+
+func mergeServerNameTransformation(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.serverName, p2.serverName, opts) {
+		return
+	}
+
+	p1.serverName = p2.serverName
+	mergeOrigins.SetOne(origin+"serverName", p2Ref, p2MergeOrigins)
 }
 
 func mergeStreamIdleTimeout(

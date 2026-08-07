@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.set_vars.outputs.version }}
+      floating_version: ${{ steps.set_vars.outputs.floating_version }}
       goreleaser_args: ${{ steps.set_vars.outputs.goreleaser_args }}
       needs_release: ${{ steps.set_vars.outputs.needs_release }}
       previous_tag: ${{ steps.set_vars.outputs.previous_tag }}
@@ -56,7 +57,8 @@ jobs:
         shell: bash
         run: |
           set -x
-          GIT_SHA=$(git rev-parse --short HEAD)
+          GIT_SHA=$(git rev-parse --short=12 HEAD)
+          FLOATING_VERSION=""
 
           find_previous_release_notes_tag() {
             local version="$1"
@@ -108,7 +110,10 @@ jobs:
             NEEDS_RELEASE=true
             GORELEASER_ARGS="--clean --skip=validate --release-notes _output/RELEASE_NOTES.md"
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION="$(make --no-print-directory print-ROLLING_MAIN_VERSION)"
+            # Per-sha version gives parallel main runs non-colliding image tags;
+            # the floating tag is promoted separately, only by the run that is still HEAD.
+            FLOATING_VERSION="$(make --no-print-directory print-ROLLING_MAIN_VERSION)"
+            VERSION="${FLOATING_VERSION}-${GIT_SHA}"
             NEEDS_RELEASE=false
             GORELEASER_ARGS="--clean --skip=validate"
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
@@ -125,6 +130,7 @@ jobs:
           # Group redirects to satisfy shellcheck SC2129
           {
             echo "version=${VERSION}"
+            echo "floating_version=${FLOATING_VERSION}"
             echo "previous_tag=${PREVIOUS_TAG:-}"
             echo "needs_release=${NEEDS_RELEASE}"
             echo "goreleaser_args=${GORELEASER_ARGS}"
@@ -141,6 +147,20 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
+      # docker login + buildx are only needed to promote the floating image tags below
+      # (`docker buildx imagetools create`); gate them on the same condition as that step.
+      - name: Log into ${{ env.IMAGE_REGISTRY }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.setup.outputs.floating_version != '' }}
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Buildx
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.setup.outputs.floating_version != '' }}
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
       - name: Package kgateway charts
         run: make package-kgateway-charts
         env:
@@ -152,6 +172,40 @@ jobs:
         env:
           VERSION: ${{ needs.setup.outputs.version }}
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+
+      # Promote the floating chart and image tags together, gated on a single origin/main
+      # HEAD check, so the two artifact tags can never diverge. Doing this in one step (rather
+      # than promoting images in the goreleaser job and charts here) avoids a race where
+      # origin/main advances between the two jobs and leaves the floating chart tag behind the
+      # floating image tag. This job needs [setup, goreleaser], so both the per-sha charts
+      # (pushed above) and the per-sha images (from goreleaser) already exist by now.
+      - name: Promote floating chart and image tags if this commit is still main HEAD
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.setup.outputs.floating_version != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          HEAD_SHA=$(git rev-parse origin/main)
+          if [ "${HEAD_SHA}" != "${GITHUB_SHA}" ]; then
+            echo "origin/main (${HEAD_SHA}) has moved past this commit (${GITHUB_SHA}); skipping floating tag promotion"
+            exit 0
+          fi
+          make release-charts VERSION="${FLOAT}"
+          for image in kgateway sds envoy-wrapper; do
+            docker buildx imagetools create \
+              -t "${REG}/${image}:${FLOAT}" \
+              "${REG}/${image}:${VERSION}"
+            for arch in amd64 arm64; do
+              docker buildx imagetools create \
+                -t "${REG}/${image}:${FLOAT}-${arch}" \
+                "${REG}/${image}:${VERSION}-${arch}"
+            done
+          done
+        env:
+          REG: ${{ env.IMAGE_REGISTRY }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          FLOAT: ${{ needs.setup.outputs.floating_version }}
 
   release-notes:
     name: Generate release notes

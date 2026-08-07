@@ -122,6 +122,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructRouteTracing(policyCR.Spec, &outSpec)
 	// Construct url rewrite specific IR
 	constructURLRewrite(policyCR.Spec, &outSpec)
+	// Construct stat prefix specific IR
+	constructStatPrefix(policyCR.Spec, &outSpec)
 	// Construct basic auth specific IR
 	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
 		errors = append(errors, err)

@@ -224,6 +224,34 @@ func TestHelmChartProbeHandlerOverrides(t *testing.T) {
 	require.Equal(t, int32(300), controller.StartupProbe.FailureThreshold)
 }
 
+func TestHelmChartRBACToggle(t *testing.T) {
+	t.Run("rbac disabled omits ClusterRole and ClusterRoleBinding", func(t *testing.T) {
+		output := string(renderHelmTemplate(t, "kgateway", `rbac:
+  create: false
+`, nil))
+
+		require.NotContains(t, output, "kind: ClusterRole",
+			"ClusterRole must be absent when rbac.create=false")
+		require.NotContains(t, output, "kind: ClusterRoleBinding",
+			"ClusterRoleBinding must be absent when rbac.create=false")
+		require.Contains(t, output, "kind: ServiceAccount",
+			"ServiceAccount must still be present when rbac.create=false")
+	})
+
+	t.Run("rbac enabled emits ClusterRole and ClusterRoleBinding", func(t *testing.T) {
+		output := string(renderHelmTemplate(t, "kgateway", `rbac:
+  create: true
+`, nil))
+
+		// Use newline-terminated strings to distinguish ClusterRole from ClusterRoleBinding
+		// (the latter contains the former as a substring).
+		require.Contains(t, output, "kind: ClusterRole\n",
+			"ClusterRole must be present when rbac.create=true")
+		require.Contains(t, output, "kind: ClusterRoleBinding\n",
+			"ClusterRoleBinding must be present when rbac.create=true")
+	})
+}
+
 // extractImageLines extracts lines containing "image:" from the output for debugging
 func extractImageLines(output string) string {
 	var lines []string
@@ -635,6 +663,12 @@ controller:
     initialDelaySeconds: 10
     periodSeconds: 5
     failureThreshold: 60
+`,
+	},
+	{
+		name: "rbac-disabled",
+		valuesYAML: `rbac:
+  create: false
 `,
 	},
 }

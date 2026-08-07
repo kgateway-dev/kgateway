@@ -15,8 +15,6 @@ import (
 const (
 	gatewayName     = "lambda-gateway"
 	lambdaNamespace = "lambda-test"
-	localstackNS    = "localstack"
-	localstackSvc   = "localstack"
 )
 
 var (
@@ -26,13 +24,6 @@ var (
 	lambdaAsyncManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-async.yaml")
 	lambdaQualifierManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-qualifier.yaml")
 	lambdaFunctionPath      = filepath.Join(fsutils.MustGetThisDir(), "functions", "hello-function.js")
-
-	localstackService = corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      localstackSvc,
-			Namespace: localstackNS,
-		},
-	}
 
 	gatewayObjectMeta = metav1.ObjectMeta{
 		Name:      gatewayName,

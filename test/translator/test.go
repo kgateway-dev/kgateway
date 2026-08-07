@@ -1,6 +1,7 @@
 package translator
 
 import (
+	stdcmp "cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"testing"
 	"time"
 
@@ -367,17 +368,17 @@ func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationR
 		return nil
 	}
 
-	sort.Slice(proxy.Listeners, func(i, j int) bool {
-		return proxy.Listeners[i].GetName() < proxy.Listeners[j].GetName()
+	slices.SortFunc(proxy.Listeners, func(a, b *envoylistenerv3.Listener) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	sort.Slice(proxy.Routes, func(i, j int) bool {
-		return proxy.Routes[i].GetName() < proxy.Routes[j].GetName()
+	slices.SortFunc(proxy.Routes, func(a, b *envoyroutev3.RouteConfiguration) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	sort.Slice(proxy.ExtraClusters, func(i, j int) bool {
-		return proxy.ExtraClusters[i].GetName() < proxy.ExtraClusters[j].GetName()
+	slices.SortFunc(proxy.ExtraClusters, func(a, b *envoyclusterv3.Cluster) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	sort.Slice(proxy.Secrets, func(i, j int) bool {
-		return proxy.Secrets[i].GetName() < proxy.Secrets[j].GetName()
+	slices.SortFunc(proxy.Secrets, func(a, b *envoytlsv3.Secret) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
 
 	// Sort credentials in routes to ensure deterministic output
@@ -443,8 +444,8 @@ func sortCredentialsInAny(config *anypb.Any) {
 
 	// Sort credentials by client name
 	if len(apiKeyAuth.Credentials) > 0 {
-		sort.Slice(apiKeyAuth.Credentials, func(i, j int) bool {
-			return apiKeyAuth.Credentials[i].Client < apiKeyAuth.Credentials[j].Client
+		slices.SortFunc(apiKeyAuth.Credentials, func(a, b *envoyapikeyauthv3.Credential) int {
+			return stdcmp.Compare(a.Client, b.Client)
 		})
 
 		// Marshal back to Any and update the config
@@ -470,8 +471,8 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	if len(clusters) == 0 {
 		return clusters
 	}
-	sort.Slice(clusters, func(i, j int) bool {
-		return clusters[i].GetName() < clusters[j].GetName()
+	slices.SortFunc(clusters, func(a, b *envoyclusterv3.Cluster) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
 	return clusters
 }
@@ -839,6 +840,25 @@ func (tc TestCase) Run(
 		// Merge gateway reports with backend policy reports
 		mergedReports := reportsMap
 		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
+
+		// Backend Accepted conditions are also generated outside gateway translation
+		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
+		// the kgateway Backend plugin's collections so golden files capture Backend
+		// statuses. Per-client translation errors are not reproducible here (the
+		// uccWithCluster type is internal to proxy_syncer), so only IR errors and
+		// plugin-contributed conditions are reflected.
+		var kgwBackends []ir.BackendObjectIR
+		var kgwExtraConditions []ir.BackendObjectStatus
+		if kgwBackendPlugin, ok := extensions.ContributesBackends[wellknown.BackendGVK.GroupKind()]; ok {
+			if kgwBackendPlugin.Backends != nil {
+				kgwBackends = kgwBackendPlugin.Backends.List()
+			}
+			if kgwBackendPlugin.ExtraConditions != nil {
+				kgwExtraConditions = kgwBackendPlugin.ExtraConditions.List()
+			}
+		}
+		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, nil, kgwExtraConditions)
+		maps.Copy(mergedReports.Backends, backendStatusReports.Backends)
 
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,

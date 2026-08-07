@@ -22,6 +22,9 @@ Clusters:
           - invalid-curve-p256
           - bogus-secp384r1
           - fake-x25519
+          signatureAlgorithms:
+          - rsa_unknown_algo
+          - ecdsa_bogus
           tlsMaximumProtocolVersion: TLSv1_3
           tlsMinimumProtocolVersion: TLSv1_2
   type: EDS

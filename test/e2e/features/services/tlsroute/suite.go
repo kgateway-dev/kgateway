@@ -275,14 +275,14 @@ func (s *testingSuite) setupTestEnvironment(nsManifest, gtwName, gtwNs, gtwManif
 func (s *testingSuite) applyManifests(ns string, manifests ...string) {
 	for _, manifest := range manifests {
 		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest, "-n", ns)
-		s.Require().NoError(err, fmt.Sprintf("Failed to apply manifest %s", manifest))
+		s.Require().NoError(err, "Failed to apply manifest "+manifest)
 	}
 }
 
 func (s *testingSuite) deleteManifests(manifests ...string) {
 	for _, manifest := range manifests {
 		err := s.TestInstallation.Actions.Kubectl().DeleteFileSafe(s.Ctx, manifest)
-		s.Require().NoError(err, fmt.Sprintf("Failed to delete manifest %s", manifest))
+		s.Require().NoError(err, "Failed to delete manifest "+manifest)
 	}
 }
 

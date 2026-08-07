@@ -3,6 +3,7 @@ package admincli
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -247,14 +248,14 @@ func (c *Client) ShutdownServer(ctx context.Context) error {
 // FailHealthCheck calls the endpoint to have the server start failing health checks
 func (c *Client) FailHealthCheck(ctx context.Context) error {
 	return c.RunCommand(ctx,
-		curl.WithPath(fmt.Sprintf("%s/fail", HealthCheckPath)),
+		curl.WithPath(HealthCheckPath+"/fail"),
 		curl.WithMethod(http.MethodPost))
 }
 
 // PassHealthCheck calls the endpoint to have the server start passing health checks
 func (c *Client) PassHealthCheck(ctx context.Context) error {
 	return c.RunCommand(ctx,
-		curl.WithPath(fmt.Sprintf("%s/ok", HealthCheckPath)),
+		curl.WithPath(HealthCheckPath+"/ok"),
 		curl.WithMethod(http.MethodPost))
 }
 
@@ -309,7 +310,7 @@ func (c *Client) GetSingleListenerFromDynamicListeners(
 	// before envoy is full configured, dynamic listeners will be missing
 	// and envoy will return an empty object json object `{}`
 	if len(configs) == 0 {
-		return nil, fmt.Errorf("could not get config: config is empty")
+		return nil, errors.New("could not get config: config is empty")
 	}
 
 	listenerDump := adminv3.ListenersConfigDump_DynamicListener{}

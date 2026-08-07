@@ -11,7 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.HttpRouteIR {
+func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute, controllerName string) (*StatusMarker, *ir.HttpRouteIR) {
 	src := ir.ObjectSource{
 		Group:     gwv1.GroupVersion.Group,
 		Kind:      wellknown.GRPCRouteKind,
@@ -19,7 +19,15 @@ func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRo
 		Name:      i.Name,
 	}
 
-	return &ir.HttpRouteIR{
+	var statusMarker *StatusMarker
+	for _, parentStatus := range i.Status.Parents {
+		if string(parentStatus.ControllerName) == controllerName {
+			statusMarker = &StatusMarker{}
+			break
+		}
+	}
+
+	return statusMarker, &ir.HttpRouteIR{
 		ObjectSource:     src,
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
@@ -125,7 +133,7 @@ func buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchTyp
 			path = fmt.Sprintf("/%s/.+", string(*method.Service))
 		case method.Method != nil:
 			// Match any valid service name before the method
-			path = fmt.Sprintf("/.+/%s", string(*method.Method))
+			path = "/.+/" + string(*method.Method)
 		}
 	default: // gwv1.GRPCMethodMatchExact
 		switch {
@@ -134,11 +142,11 @@ func buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchTyp
 			pathType = gwv1.PathMatchExact
 		case method.Service != nil:
 			// Exact service match maps to prefix /service
-			path = fmt.Sprintf("/%s", string(*method.Service))
+			path = "/" + string(*method.Service)
 			pathType = gwv1.PathMatchPathPrefix
 		case method.Method != nil:
 			// Exact method without service isn't directly mappable, use regex
-			path = fmt.Sprintf("/.+/%s", string(*method.Method))
+			path = "/.+/" + string(*method.Method)
 			pathType = gwv1.PathMatchRegularExpression
 		}
 	}

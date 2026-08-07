@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -133,7 +134,7 @@ func constructBasicAuth(
 		}
 	} else {
 		// This shouldn't happen due to CEL validation
-		return fmt.Errorf("basic auth: either users or secretRef must be specified")
+		return errors.New("basic auth: either users or secretRef must be specified")
 	}
 
 	// Validate and filter users to only include SHA hashed passwords
@@ -141,7 +142,7 @@ func constructBasicAuth(
 
 	// If there are no valid users after filtering, return an error
 	if len(validUsers) == 0 {
-		return fmt.Errorf("basic auth: no valid users with {SHA} hash format found")
+		return errors.New("basic auth: no valid users with {SHA} hash format found")
 	}
 
 	// Report invalid users if any were found

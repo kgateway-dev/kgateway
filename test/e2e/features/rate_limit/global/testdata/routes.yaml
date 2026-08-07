@@ -15,8 +15,8 @@ spec:
         type: PathPrefix
         value: /path1
     backendRefs:
-    - name: backend-0
-      port: 8080
+    - name: backend
+      port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -35,5 +35,5 @@ spec:
         type: PathPrefix
         value: /path2
     backendRefs:
-    - name: backend-0
-      port: 8080
+    - name: backend
+      port: 80

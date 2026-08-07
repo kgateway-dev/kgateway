@@ -4,7 +4,6 @@ package listener_policy
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -25,152 +24,78 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is the entire Suite of tests for the "ListenerPolicy" feature
 type testingSuite struct {
-	suite.Suite
-	ctx              context.Context
-	testInstallation *e2e.TestInstallation
-	// maps test name to a list of manifests to apply before the test
-	manifests map[string][]string
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(
 	ctx context.Context,
 	testInst *e2e.TestInstallation,
 ) suite.TestingSuite {
-	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+	// setup.yaml provides the nginx backend and the curl/curl-mtls client pods.
+	// The cert Secrets used by the forwardClientCertDetails tests are applied at
+	// suite setup time so the gw mtls-https listener is always programmable and
+	// curl-mtls can mount its volumes regardless of which test runs.
+	setup := base.TestCase{
+		Manifests: []string{
+			setupManifest,
+			forwardClientCertServerSecret,
+			forwardClientCertCASecret,
+			forwardClientCertAliceSecret,
+		},
 	}
-}
-
-func (s *testingSuite) SetupSuite() {
-	// Check that the common setup manifest is applied
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, exampleSvc, nginxPod)
-	// Check that test app is running
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=nginx",
-	})
-
-	// Apply cert Secrets used by the forwardClientCertDetails tests:
-	// - server cert + client CA in 'default' (consumed by the gw mtls-https
-	//   listener and the mtls-validation policy)
-	// - alice client cert + CA in 'curl' (mounted into the curl-mtls pod
-	//   created by setup.yaml)
-	// Applied at suite setup time so the listener is always programmable
-	// and curl-mtls can mount its volumes regardless of which test runs.
-	for _, m := range []string{
-		forwardClientCertServerSecret,
-		forwardClientCertCASecret,
-		forwardClientCertAliceSecret,
-	} {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, m)
-		s.NoError(err, "can apply "+m)
-	}
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, curlMtlsPod)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, curlMtlsPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=curl-mtls",
-	})
-
-	// include gateway manifests for tests, so we recreate it for each test run
-	s.manifests = map[string][]string{
-		"TestHttpListenerPolicyAllFields":        {gatewayManifest, httpRouteManifest, allFieldsManifest},
-		"TestListenerPolicyHTTP2ProtocolOptions": {gatewayManifest, httpRouteManifest, http2ProtocolOptionsManifest},
-		"TestHttpListenerPolicyServerHeader":     {gatewayManifest, httpRouteManifest, serverHeaderManifest},
-		"TestPreserveHttp1HeaderCase":            {gatewayManifest, preserveHttp1HeaderCaseManifest},
-		"TestAccessLogEmittedToStdout":           {gatewayManifest, httpRouteManifest, accessLogManifest},
-		"TestHttpListenerPolicyClearStaleStatus": {gatewayManifest, httpRouteManifest, serverHeaderManifest},
-		"TestEarlyRequestHeaderModifier":         {gatewayManifest, earlyHeaderMutationManifest},
-		"TestProxyProtocol":                      {gatewayManifest, httpRouteManifest, proxyProtocolManifest},
+	// include the gateway manifest for each test, so we recreate it (and thus
+	// dynamically provision the proxy pod) for each test run
+	testCases := map[string]*base.TestCase{
+		"TestHttpListenerPolicyAllFields":        {Manifests: []string{gatewayManifest, httpRouteManifest, allFieldsManifest}},
+		"TestListenerPolicyHTTP2ProtocolOptions": {Manifests: []string{gatewayManifest, httpRouteManifest, http2ProtocolOptionsManifest}},
+		"TestHttpListenerPolicyServerHeader":     {Manifests: []string{gatewayManifest, httpRouteManifest, serverHeaderManifest}},
+		"TestPreserveHttp1HeaderCase":            {Manifests: []string{gatewayManifest, preserveHttp1HeaderCaseManifest}},
+		"TestAccessLogEmittedToStdout":           {Manifests: []string{gatewayManifest, httpRouteManifest, accessLogManifest}},
+		"TestHttpListenerPolicyClearStaleStatus": {Manifests: []string{gatewayManifest, httpRouteManifest, serverHeaderManifest}},
+		"TestEarlyRequestHeaderModifier":         {Manifests: []string{gatewayManifest, earlyHeaderMutationManifest}},
+		"TestProxyProtocol":                      {Manifests: []string{gatewayManifest, httpRouteManifest, proxyProtocolManifest}},
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
-		"TestListenerPolicyRequestId":                {gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest},
-		"TestHTTPListenerPolicyRequestId":            {gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest},
-		"TestListenerPolicyMaxRequestsPerConnection": {gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest},
-		"TestListenerPolicyMaxHeadersCount":          {gatewayManifest, httpRouteManifest, maxHeadersCountManifest},
-		"TestStripHostPortAnyPort":                   {gatewayManifest, stripHostPortAnyPortManifest},
-		"TestStripHostPortMatchingPort":              {gatewayManifest, stripHostPortMatchingPortManifest},
+		"TestListenerPolicyRequestId":                {Manifests: []string{gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest}},
+		"TestHTTPListenerPolicyRequestId":            {Manifests: []string{gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest}},
+		"TestListenerPolicyMaxRequestsPerConnection": {Manifests: []string{gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest}},
+		"TestListenerPolicyMaxHeadersCount":          {Manifests: []string{gatewayManifest, httpRouteManifest, maxHeadersCountManifest}},
+		"TestStripHostPortAnyPort":                   {Manifests: []string{gatewayManifest, stripHostPortAnyPortManifest}},
+		"TestStripHostPortMatchingPort":              {Manifests: []string{gatewayManifest, stripHostPortMatchingPortManifest}},
 
-		"TestLocalReplyConfigDefaultFormat": {gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest},
-		"TestLocalReplyConfigMapper":        {gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest},
+		"TestLocalReplyConfigDefaultFormat": {Manifests: []string{gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest}},
+		"TestLocalReplyConfigMapper":        {Manifests: []string{gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest}},
 
 		// forwardClientCertDetails tests. All share gateway + request-id-echo
 		// + the route + the mtls-validation policy. Each scenario adds (or
 		// omits, for the baseline) a forward-client-cert ListenerPolicy.
-		"TestForwardClientCertBaseline":           {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation},
-		"TestForwardClientCertSanitizeSetDefault": {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetDef},
-		"TestForwardClientCertSanitizeSetAll":     {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetAll},
-		"TestForwardClientCertAppendForward":      {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertAppendForward},
-		"TestForwardClientCertSanitize":           {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitize},
-		"TestForwardClientCertForwardOnly":        {gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertForwardOnly},
+		"TestForwardClientCertBaseline":           {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation}},
+		"TestForwardClientCertSanitizeSetDefault": {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetDef}},
+		"TestForwardClientCertSanitizeSetAll":     {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetAll}},
+		"TestForwardClientCertAppendForward":      {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertAppendForward}},
+		"TestForwardClientCertSanitize":           {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitize}},
+		"TestForwardClientCertForwardOnly":        {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertForwardOnly}},
 	}
-}
-
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	// Tear down forwardClientCertDetails Secrets in reverse apply order.
-	for _, m := range []string{
-		forwardClientCertAliceSecret,
-		forwardClientCertCASecret,
-		forwardClientCertServerSecret,
-	} {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, m)
-		s.NoError(err, "can delete "+m)
-	}
-	// Check that the common setup manifest is deleted
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
-	s.NoError(err, "can delete "+setupManifest)
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	manifests, ok := s.manifests[testName]
-	if !ok {
-		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
-	}
-
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Assert().NoError(err, "can apply manifest "+manifest)
-	}
-
-	// we recreate the `Gateway` resource (and thus dynamically provision the proxy pod) for each test run
-	// so let's assert the proxy svc and pod is ready before moving on
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: testdefaults.WellKnownAppLabel + "=gw",
-	})
-}
-
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	manifests, ok := s.manifests[testName]
-	if !ok {
-		s.FailNow("no manifests found for " + testName)
-	}
-
-	for _, manifest := range manifests {
-		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.testInstallation.AssertionsT(s.T()).ExpectObjectDeleted(manifest, err, output)
+	return &testingSuite{
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 
 func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 	// Test that the HTTPListenerPolicy with all additional fields is applied correctly
 	// The test verifies that the gateway is working and all policy fields are applied
-	fmt.Println("TestHttpListenerPolicyAllFields")
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -182,8 +107,8 @@ func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 		})
 
 	// Check the health check path is working
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -200,8 +125,8 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 	// The test verifies that the server header is transformed as expected
 	// With PassThrough, the server header should be the backend server's header (nginx/1.28.0)
 	// instead of Envoy's default (envoy)
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -217,8 +142,8 @@ func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
 }
 
 func (s *testingSuite) TestListenerPolicyHTTP2ProtocolOptions() {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -239,12 +164,8 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 	// The test verifies that the HTTP1 headers are preserved as expected in the request and response
 	// The HTTPListenerPolicy ensures that the header is preserved in the request,
 	// and the BackendConfigPolicy ensures that the header is preserved in the response.
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=raw-header-echo",
-	})
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -263,8 +184,8 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 
 func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// First: trigger a 404 that SHOULD be logged (filter is GE 400)
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -275,15 +196,15 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	)
 
 	// Fetch gateway pod logs and verify the 404 access log JSON fields are present
-	pods, err := s.testInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
+		s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(),
 		testdefaults.WellKnownAppLabel+"="+proxyDeployment.ObjectMeta.GetName(),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 		// Check a few key fields configured in http-listener-policy-access-log.yaml jsonFormat
 		assert.Contains(c, logs, "\"method\":\"GET\"")
@@ -293,8 +214,8 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	}, 30*time.Second, 200*time.Millisecond)
 
 	// Second: trigger a 200 that SHOULD NOT be logged due to filter GE 400
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -307,7 +228,7 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// Confirm 200 logs do not appear over a stability window as it isn't being immediately emitted
 	g := gomega.NewWithT(s.T())
 	g.Consistently(func() string {
-		out, err := s.testInstallation.Actions.Kubectl().GetContainerLogs(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
+		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
 		s.Require().NoError(err)
 		return out
 	}, 10*time.Second, 200*time.Millisecond).ShouldNot(gomega.ContainSubstring("\"response_code\":200"))
@@ -330,8 +251,8 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 	})
 
 	// Apply policy with missing gateway target
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(
-		s.ctx,
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(
+		s.Ctx,
 		httpListenerPolicyMissingTargetManifest,
 	)
 	s.Require().NoError(err)
@@ -347,10 +268,10 @@ func (s *testingSuite) TestHttpListenerPolicyClearStaleStatus() {
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.ListenerPolicy{}
-		err := s.testInstallation.ClusterContext.Client.Get(
-			s.ctx,
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
 			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
 			policy,
 		)
@@ -372,17 +293,17 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 		}
 
 		policy.Status.Ancestors = append(policy.Status.Ancestors, fakeStatus)
-		err = s.testInstallation.ClusterContext.Client.Status().Update(s.ctx, policy)
+		err = s.TestInstallation.ClusterContext.Client.Status().Update(s.Ctx, policy)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.ListenerPolicy{}
-		err := s.testInstallation.ClusterContext.Client.Get(
-			s.ctx,
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
 			types.NamespacedName{Name: "http-listener-policy-server-header", Namespace: "default"},
 			policy,
 		)
@@ -408,8 +329,8 @@ func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedContr
 
 func (s *testingSuite) TestEarlyRequestHeaderModifier() {
 	// Route matches only when a specific header is present. The policy adds it early.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -426,8 +347,8 @@ func (s *testingSuite) TestEarlyRequestHeaderModifier() {
 // Test that enabling PROXY protocol causes plain HTTP (no PROXY header) to be rejected.
 func (s *testingSuite) TestProxyProtocol() {
 	// Attempt a normal HTTP request; expect curl to error (connection closed/empty reply).
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlError(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlError(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -438,8 +359,8 @@ func (s *testingSuite) TestProxyProtocol() {
 	)
 
 	// test with PROXY protocol header; expect 200 OK
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -456,18 +377,12 @@ func (s *testingSuite) TestProxyProtocol() {
 // 2. Traffic flows correctly with the configuration in place
 // 3. The x-request-id header is generated with valid UUID format
 func (s *testingSuite) TestListenerPolicyRequestId() {
-	// Wait for echo server to be ready
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=request-id-echo",
-	})
-
 	// Verify x-request-id is generated with valid UUID format when not provided
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify
 	// that Envoy properly generates the x-request-id header
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -486,18 +401,12 @@ func (s *testingSuite) TestListenerPolicyRequestId() {
 // 2. Traffic flows correctly with the configuration in place
 // 3. The x-request-id header is generated with valid UUID format
 func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
-	// Wait for echo server to be ready
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=request-id-echo",
-	})
-
 	// Verify x-request-id is generated with valid UUID format when not provided
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify
 	// that Envoy properly generates the x-request-id header
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -514,8 +423,8 @@ func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
 // in a ListenerPolicy lands in Envoy's HCM config and doesn't break traffic.
 func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
 	// A NACK from Envoy would surface here as a connection error, so this also serves as an acceptance check.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -528,11 +437,11 @@ func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
 	)
 
 	// Verify the setting appears in the Envoy config dump via the admin API.
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
 		proxyDeployment.ObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
-			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
 				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
 				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
@@ -572,11 +481,11 @@ func (s *testingSuite) TestListenerPolicyMaxRequestsPerConnection() {
 // headers brings the total to 6, exceeding the limit and triggering a 431.
 func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 	// Verify the setting appears in the Envoy config dump via the admin API.
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
 		proxyDeployment.ObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
-			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, "listener~8080")
 				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get dynamic listener from config dump")
 				g.Expect(listener.GetFilterChains()).NotTo(gomega.BeEmpty(), "listener should have at least one filter chain")
@@ -609,8 +518,8 @@ func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 
 	// A standard curl request (Host, User-Agent, Accept = 3 headers) is under the limit of 5
 	// and should succeed. This also confirms the policy was accepted without a NACK.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -624,8 +533,8 @@ func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 
 	// Adding 3 extra headers brings the total to 6, which exceeds the limit of 5.
 	// Envoy should reject the request with 431 Request Header Fields Too Large.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -642,12 +551,8 @@ func (s *testingSuite) TestListenerPolicyMaxHeadersCount() {
 
 // Verifies that AnyPort strips the port from the Host header regardless of its value.
 func (s *testingSuite) TestStripHostPortAnyPort() {
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=raw-header-echo",
-	})
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -662,13 +567,9 @@ func (s *testingSuite) TestStripHostPortAnyPort() {
 
 // Verifies that MatchingPort strips the port from the Host header when it matches the listener port.
 func (s *testingSuite) TestStripHostPortMatchingPort() {
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, echoService, echoDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, echoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=raw-header-echo",
-	})
 	// Port matches listener port (8080) - should be stripped.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -680,8 +581,8 @@ func (s *testingSuite) TestStripHostPortMatchingPort() {
 		},
 	)
 	// Port does not match listener port - should be preserved.
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -696,8 +597,8 @@ func (s *testingSuite) TestStripHostPortMatchingPort() {
 
 // Verifies that the default body format for local replies wraps a direct response.
 func (s *testingSuite) TestLocalReplyConfigDefaultFormat() {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -713,8 +614,8 @@ func (s *testingSuite) TestLocalReplyConfigDefaultFormat() {
 
 // Verifies that a filtering mapper for a local reply adjusts the body.
 func (s *testingSuite) TestLocalReplyConfigMapper() {
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
@@ -745,22 +646,12 @@ func forwardClientCertCurlOpts(extra ...curl.Option) []curl.Option {
 	return append(opts, extra...)
 }
 
-// waitForEchoBackend ensures the request-id-echo backend used by every
-// TestForwardClientCert* test is healthy before issuing requests.
-func (s *testingSuite) waitForEchoBackend() {
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, requestIdEchoService, requestIdEchoDeployment)
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, requestIdEchoDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app=request-id-echo",
-	})
-}
-
 // TestForwardClientCertBaseline verifies that without a forwardClientCertDetails
 // policy, Envoy uses its default SANITIZE mode and the backend never sees an
 // X-Forwarded-Client-Cert header.
 func (s *testingSuite) TestForwardClientCertBaseline() {
-	s.waitForEchoBackend()
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		curlMtlsPodExecOpt,
 		forwardClientCertCurlOpts(),
 		&matchers.HttpResponse{
@@ -773,9 +664,8 @@ func (s *testingSuite) TestForwardClientCertBaseline() {
 // and relies on kgateway auto-default of mode=SanitizeSet. The backend
 // should see XFCC carrying alice's Subject.
 func (s *testingSuite) TestForwardClientCertSanitizeSetDefault() {
-	s.waitForEchoBackend()
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		curlMtlsPodExecOpt,
 		forwardClientCertCurlOpts(),
 		&matchers.HttpResponse{
@@ -788,9 +678,8 @@ func (s *testingSuite) TestForwardClientCertSanitizeSetDefault() {
 // auto-emitted Hash. The backend should see XFCC carrying Hash, Cert,
 // Chain, Subject, URI, and DNS.
 func (s *testingSuite) TestForwardClientCertSanitizeSetAll() {
-	s.waitForEchoBackend()
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		curlMtlsPodExecOpt,
 		forwardClientCertCurlOpts(),
 		&matchers.HttpResponse{
@@ -813,9 +702,8 @@ func (s *testingSuite) TestForwardClientCertSanitizeSetAll() {
 // AppendForward must preserve it and append the gateway's own entry,
 // comma-separated.
 func (s *testingSuite) TestForwardClientCertAppendForward() {
-	s.waitForEchoBackend()
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		curlMtlsPodExecOpt,
 		forwardClientCertCurlOpts(
 			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
@@ -831,9 +719,8 @@ func (s *testingSuite) TestForwardClientCertAppendForward() {
 // TestForwardClientCertSanitize injects a spoofed inbound XFCC and asserts
 // it is dropped before reaching the backend (no XFCC header at all).
 func (s *testingSuite) TestForwardClientCertSanitize() {
-	s.waitForEchoBackend()
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		curlMtlsPodExecOpt,
 		forwardClientCertCurlOpts(
 			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
@@ -849,9 +736,8 @@ func (s *testingSuite) TestForwardClientCertSanitize() {
 // its own: no comma (no appended entry), no Hash= (no gateway-emitted
 // leaf cert), and no alice Subject.
 func (s *testingSuite) TestForwardClientCertForwardOnly() {
-	s.waitForEchoBackend()
-	s.testInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.Ctx,
 		curlMtlsPodExecOpt,
 		forwardClientCertCurlOpts(
 			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
@@ -867,11 +753,11 @@ func (s *testingSuite) TestForwardClientCertForwardOnly() {
 }
 
 func (s *testingSuite) assertListenerHTTP2ProtocolOptions(listenerName string) {
-	s.testInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
-		s.ctx,
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
 		proxyObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
-			s.testInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+			s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 				listener, err := adminClient.GetSingleListenerFromDynamicListeners(ctx, listenerName)
 				g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get listener %s", listenerName)
 				if err != nil {

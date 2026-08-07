@@ -3,96 +3,41 @@
 package policyselector
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 type tsuite struct {
-	suite.Suite
-
-	ctx context.Context
-	// ti contains all the metadata/utilities necessary to execute a series of tests
-	// against an installation of kgateway
-	ti *e2e.TestInstallation
-
-	// maps test name to a list of manifests to apply before the test
-	commonManifests []string
-	testManifests   map[string][]string
-
-	manifestObjects map[string][]client.Object
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	// the global-cors TrafficPolicy lives in the Settings.GlobalPolicyNamespace,
+	// which is the install namespace in the e2e setup
+	setup := base.TestCase{
+		ManifestsWithTransform: map[string]func(string) string{
+			labelSelectorManifest: func(content string) string {
+				return strings.ReplaceAll(content, "$INSTALL_NAMESPACE", testInst.Metadata.InstallNamespace)
+			},
+		},
+	}
 	return &tsuite{
-		ctx:             ctx,
-		ti:              testInst,
-		commonManifests: []string{labelSelectorManifest},
-		testManifests:   map[string][]string{},
-	}
-}
-
-func (s *tsuite) SetupSuite() {
-	for _, manifest := range s.commonManifests {
-		content, err := os.ReadFile(manifest)
-		s.Require().NoError(err, manifest)
-		yamlStr := strings.ReplaceAll(string(content), "$INSTALL_NAMESPACE", s.ti.Metadata.InstallNamespace)
-
-		out := new(bytes.Buffer)
-		err = s.ti.Actions.Kubectl().WithReceiver(out).Apply(s.T().Context(), []byte(yamlStr))
-		s.Require().NoErrorf(err, "manifest %s, out: %s", manifest, out.String())
-	}
-
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, "kgateway-base", metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=httpbin",
-	})
-}
-
-func (s *tsuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	for i := len(s.commonManifests) - 1; i >= 0; i-- {
-		manifest := s.commonManifests[i]
-		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.NoError(err, manifest)
-	}
-}
-
-func (s *tsuite) BeforeTest(suiteName, testName string) {
-	for _, manifest := range s.testManifests[testName] {
-		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
-		s.Require().NoError(err)
-		s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
-	}
-}
-
-func (s *tsuite) AfterTest(suiteName, testName string) {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	for _, manifest := range s.testManifests[testName] {
-		err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.NoError(err)
-		s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, nil),
 	}
 }
 
@@ -109,20 +54,20 @@ func (s *tsuite) TestLabelSelector() {
 	)
 
 	// Verify access logs with HTTPListenerPolicy
-	pods, err := s.ti.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.ctx, "kgateway-base", fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, "gateway"),
+	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
+		s.Ctx, "kgateway-base", fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, "gateway"),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.ti.Actions.Kubectl().GetContainerLogs(s.ctx, "kgateway-base", pods[0])
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "kgateway-base", pods[0])
 		s.Require().NoError(err)
 		// Verify the log contains the expected JSON pattern
 		assert.Contains(c, logs, `"method":"GET"`)
 		assert.Contains(c, logs, `"path":"/get"`)
 		assert.Contains(c, logs, `"protocol":"HTTP/1.1"`)
 		assert.Contains(c, logs, `"response_code":200`)
-		assert.Contains(c, logs, `"backendCluster":"kube_kgateway-base_httpbin_8000"`)
+		assert.Contains(c, logs, `"backendCluster":"kube_kgateway-base_backend_80"`)
 	}, 30*time.Second, 100*time.Millisecond)
 }
 

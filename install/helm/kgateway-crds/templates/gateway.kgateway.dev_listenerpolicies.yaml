@@ -1625,6 +1625,15 @@ spec:
                           HttpConnectionManager.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
                         properties:
+                          allowConnect:
+                            description: |-
+                              AllowConnect allows proxying of WebSocket and other upgrades over HTTP/2 by
+                              enabling Envoy to handle Extended CONNECT requests (RFC 8441) on the downstream
+                              connection. This is required for WebSocket-over-HTTP/2 when the listener advertises
+                              h2 in its ALPN; otherwise user agents that use Extended CONNECT (e.g. Firefox) fail
+                              to establish WebSocket connections.
+                              Defaults to false.
+                            type: boolean
                           initialConnectionWindowSize:
                             anyOf:
                             - type: integer
@@ -2757,6 +2766,12 @@ spec:
                         - AppendIfAbsent
                         - PassThrough
                         type: string
+                      serverName:
+                        description: |-
+                          ServerName determines the value of the server header.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-name
+                        minLength: 1
+                        type: string
                       skipXFFAppend:
                         description: |-
                           SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.
@@ -3326,6 +3341,16 @@ spec:
                         - message: keepAliveTime must be at least 1 second
                           rule: duration(self) >= duration('1s')
                     type: object
+                  transportSocketConnectTimeout:
+                    description: |-
+                      TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
+                      If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
+                      then never complete the TLS handshake. Applied to every filter chain on the listener.
+                      See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                 type: object
               perPort:
                 description: |-
@@ -4837,6 +4862,15 @@ spec:
                                 HttpConnectionManager.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http2protocoloptions
                               properties:
+                                allowConnect:
+                                  description: |-
+                                    AllowConnect allows proxying of WebSocket and other upgrades over HTTP/2 by
+                                    enabling Envoy to handle Extended CONNECT requests (RFC 8441) on the downstream
+                                    connection. This is required for WebSocket-over-HTTP/2 when the listener advertises
+                                    h2 in its ALPN; otherwise user agents that use Extended CONNECT (e.g. Firefox) fail
+                                    to establish WebSocket connections.
+                                    Defaults to false.
+                                  type: boolean
                                 initialConnectionWindowSize:
                                   anyOf:
                                   - type: integer
@@ -5978,6 +6012,12 @@ spec:
                               - AppendIfAbsent
                               - PassThrough
                               type: string
+                            serverName:
+                              description: |-
+                                ServerName determines the value of the server header.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-name
+                              minLength: 1
+                              type: string
                             skipXFFAppend:
                               description: |-
                                 SkipXffAppend specifies whether to skip adding the downstream's remote IP address to the X-Forwarded-For HTTP header.
@@ -6565,6 +6605,16 @@ spec:
                               - message: keepAliveTime must be at least 1 second
                                 rule: duration(self) >= duration('1s')
                           type: object
+                        transportSocketConnectTimeout:
+                          description: |-
+                            TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
+                            If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
+                            then never complete the TLS handshake. Applied to every filter chain on the listener.
+                            See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+                          type: string
+                          x-kubernetes-validations:
+                          - message: invalid duration value
+                            rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                       type: object
                     port:
                       description: |-

@@ -256,7 +256,7 @@ func resolveJwtProviders(
 		uniqProviders[providerNameForExt] = jwtProvider
 	}
 
-	requirementsName := fmt.Sprintf("%s_requirements", extNameNamespace)
+	requirementsName := extNameNamespace + "_requirements"
 	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
 	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders, jwt.ValidationMode)
 
@@ -393,9 +393,14 @@ func ResolveExtHttpService(
 	}
 
 	// Configure authorization response
-	if httpService.AuthorizationResponse != nil && len(httpService.AuthorizationResponse.HeadersToBackend) > 0 {
-		envoyHttpService.AuthorizationResponse = &envoy_ext_authz_v3.AuthorizationResponse{
-			AllowedUpstreamHeaders: buildStringListMatcher(httpService.AuthorizationResponse.HeadersToBackend),
+	if httpService.AuthorizationResponse != nil {
+		ar := httpService.AuthorizationResponse
+		if len(ar.HeadersToBackend) > 0 || len(ar.HeadersToClient) > 0 || len(ar.HeadersToClientOnSuccess) > 0 {
+			envoyHttpService.AuthorizationResponse = &envoy_ext_authz_v3.AuthorizationResponse{
+				AllowedUpstreamHeaders:        buildStringListMatcher(ar.HeadersToBackend),
+				AllowedClientHeaders:          buildStringListMatcher(ar.HeadersToClient),
+				AllowedClientHeadersOnSuccess: buildStringListMatcher(ar.HeadersToClientOnSuccess),
+			}
 		}
 	}
 

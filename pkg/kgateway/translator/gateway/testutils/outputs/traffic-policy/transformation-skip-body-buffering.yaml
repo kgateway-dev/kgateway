@@ -75,6 +75,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"source","value":"route-attachment-1"}],"body":{"parseAs":"None"}},"response":{"set":[{"name":"source","value":"route-attachment-1"}],"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/test:

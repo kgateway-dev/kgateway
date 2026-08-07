@@ -55,6 +55,24 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "signature_algorithms",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256,rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_with_whitespace",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256, rsa_pss_rsae_sha256, rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
 			name: "subject_alt_names",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},

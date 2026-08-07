@@ -175,6 +175,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - allowed.example.com
@@ -203,6 +204,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
   - domains:
     - denied.example.com
     name: listener~80~denied_example_com
@@ -244,6 +246,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - listener.example.com
@@ -272,6 +275,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/example-gateway:
@@ -492,6 +496,7 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: default
+          sectionName: http
         conditions:
         - lastTransitionTime: null
           message: Policy accepted
@@ -511,6 +516,7 @@ Statuses:
           kind: Gateway
           name: example-gateway
           namespace: default
+          sectionName: http
         conditions:
         - lastTransitionTime: null
           message: 'extauth: failed to resolve ExtAuth gRPC backend: missing reference

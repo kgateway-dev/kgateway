@@ -4,6 +4,8 @@
 package main
 
 import (
+	"cmp"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -11,7 +13,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -61,8 +63,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	sort.Slice(metrics, func(i, j int) bool {
-		return metrics[i].fullName() < metrics[j].fullName()
+	slices.SortFunc(metrics, func(a, b metricInfo) int {
+		return cmp.Compare(a.fullName(), b.fullName())
 	})
 
 	if outputMarkdown != nil && *outputMarkdown {
@@ -113,7 +115,7 @@ func findMetrics(target string) ([]metricInfo, error) {
 	} else if strings.HasSuffix(target, ".go") {
 		files = append(files, target)
 	} else {
-		return nil, fmt.Errorf("target must be a .go file or a directory")
+		return nil, errors.New("target must be a .go file or a directory")
 	}
 
 	var allMetrics []metricInfo

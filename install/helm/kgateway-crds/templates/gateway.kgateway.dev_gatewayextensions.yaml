@@ -269,6 +269,26 @@ spec:
                             items:
                               type: string
                             type: array
+                          headersToClient:
+                            description: |-
+                              HeadersToClient specifies which headers from the authorization response
+                              should be forwarded back to the downstream client when the request is denied.
+                              Maps to Envoy's allowed_client_headers. Required for redirect-based flows
+                              (e.g. oauth2-proxy returning 302 + Location) so that the redirect Location
+                              header reaches the browser on denial.
+                              Common examples: ["location", "set-cookie", "www-authenticate"]
+                            items:
+                              type: string
+                            type: array
+                          headersToClientOnSuccess:
+                            description: |-
+                              HeadersToClientOnSuccess specifies which headers from the authorization response
+                              should be forwarded back to the downstream client when the request is allowed.
+                              Maps to Envoy's allowed_client_headers_on_success.
+                              Common examples: ["set-cookie", "x-auth-token"]
+                            items:
+                              type: string
+                            type: array
                         type: object
                       backendRef:
                         description: BackendRef references the backend HTTP service.

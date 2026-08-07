@@ -76,6 +76,18 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.Http2ProtocolO
 	if http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage != nil {
 		out.OverrideStreamErrorOnInvalidHttpMessage = &wrapperspb.BoolValue{Value: *http2ProtocolOptions.OverrideStreamErrorOnInvalidHttpMessage}
 	}
+	if http2ProtocolOptions.ConnectionKeepalive != nil {
+		keepalive := &envoycorev3.KeepaliveSettings{
+			Timeout: durationpb.New(http2ProtocolOptions.ConnectionKeepalive.Timeout.Duration),
+		}
+		if http2ProtocolOptions.ConnectionKeepalive.Interval != nil {
+			keepalive.Interval = durationpb.New(http2ProtocolOptions.ConnectionKeepalive.Interval.Duration)
+		}
+		if http2ProtocolOptions.ConnectionKeepalive.ConnectionIdleInterval != nil {
+			keepalive.ConnectionIdleInterval = durationpb.New(http2ProtocolOptions.ConnectionKeepalive.ConnectionIdleInterval.Duration)
+		}
+		out.ConnectionKeepalive = keepalive
+	}
 	return out
 }
 

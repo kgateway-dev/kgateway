@@ -42,7 +42,7 @@ func TestConformance(t *testing.T) {
 	}
 
 	// Configure profiles and exempt features based on detected channel
-	profiles := sets.New(suite.GatewayGRPCConformanceProfileName, suite.GatewayHTTPConformanceProfileName)
+	profiles := sets.New(suite.GatewayGRPCConformanceProfileName, suite.GatewayHTTPConformanceProfileName, suite.GatewayTCPConformanceProfileName)
 	runTLSProfile := channel == features.FeatureChannelExperimental
 	if !runTLSProfile {
 		served, err := tlsRouteV1Served()

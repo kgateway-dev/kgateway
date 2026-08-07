@@ -71,6 +71,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]},"response":{"set":[{"name":"source","value":"gateway-attachment-1"},{"name":"source","value":"gateway-attachment-2"}]}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - test.com
@@ -103,6 +104,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]},"response":{"set":[{"name":"source","value":"route-attachment-2"},{"name":"source","value":"route-attachment-1"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-1
       name: listener~8080~test_com-route-1-httproute-test-default-1-0-rule1-matcher-0
@@ -124,6 +126,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]},"response":{"set":[{"name":"source","value":"listener-attachment-1"},{"name":"source","value":"listener-attachment-2"}]}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
 Statuses:
   gateways:
     default/test:

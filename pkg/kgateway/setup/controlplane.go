@@ -15,6 +15,8 @@ import (
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoylog "github.com/envoyproxy/go-control-plane/pkg/log"
+	serverconfig "github.com/envoyproxy/go-control-plane/pkg/server/config"
+	sotwv3 "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -26,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
@@ -34,6 +37,8 @@ const (
 )
 
 var (
+	controlPlaneLogger = logging.New("envoy-controlplane")
+
 	xdsAuthRequestTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: xdsSubsystem,
@@ -95,19 +100,23 @@ func NewControlPlane(
 	authenticators []security.Authenticator,
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
+	orderedADS bool,
 ) envoycache.SnapshotCache {
-	baseLogger := slog.Default().With("component", "envoy-controlplane")
-	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: baseLogger}
+	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
 	lnc := newLogNackCallback()
 	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
-	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher, baseLogger)
+	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher)
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 
 	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
-	xdsServer := xdsserver.NewServer(ctx, snapshotCache, allCallbacks)
+	var xdsOpts []serverconfig.XDSOption
+	if orderedADS {
+		xdsOpts = append(xdsOpts, sotwv3.WithOrderedADS())
+	}
+	xdsServer := xdsserver.NewServer(ctx, snapshotCache, allCallbacks, xdsOpts...)
 
 	// Register reflection and services on both servers
 	reflection.Register(kgwGRPCServer)
@@ -135,7 +144,6 @@ func getGRPCServerOpts(
 	authenticators []security.Authenticator,
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
-	logger *slog.Logger,
 ) []grpc.ServerOption {
 	opts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(math.MaxInt32),
@@ -143,7 +151,7 @@ func getGRPCServerOpts(
 			grpc_middleware.ChainStreamServer(
 				grpc_zap.StreamServerInterceptor(zap.NewNop()),
 				func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-					slog.Debug("gRPC call", "method", info.FullMethod)
+					controlPlaneLogger.Debug("gRPC call", "method", info.FullMethod)
 					if xdsAuth {
 						xdsAuthRequestTotal.Inc()
 						am := authenticationManager{
@@ -157,10 +165,10 @@ func getGRPCServerOpts(
 							})
 						}
 						xdsAuthFailureTotal.Inc()
-						slog.Error("authentication failed", "reasons", am.authFailMsgs)
+						controlPlaneLogger.Error("authentication failed", "reasons", am.authFailMsgs)
 						return fmt.Errorf("authentication failed: %v", am.authFailMsgs)
 					} else {
-						slog.Warn("xDS authentication is disabled")
+						controlPlaneLogger.Warn("xDS authentication is disabled")
 						return handler(srv, ss)
 					}
 				},
@@ -175,9 +183,9 @@ func getGRPCServerOpts(
 			GetCertificate: certWatcher.GetCertificate,
 		})
 		opts = append(opts, grpc.Creds(creds))
-		logger.Info("TLS enabled for xDS servers with certificate watcher")
+		controlPlaneLogger.Info("TLS enabled for xDS servers with certificate watcher")
 	} else {
-		logger.Warn("TLS disabled for xDS servers: connections will be unencrypted")
+		controlPlaneLogger.Warn("TLS disabled for xDS servers: connections will be unencrypted")
 	}
 
 	return opts

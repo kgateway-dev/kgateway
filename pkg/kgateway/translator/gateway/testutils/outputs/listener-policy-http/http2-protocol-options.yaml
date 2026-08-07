@@ -23,6 +23,7 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         http2ProtocolOptions:
+          allowConnect: true
           initialConnectionWindowSize: 262144
           initialStreamWindowSize: 131072
           maxConcurrentStreams: 123

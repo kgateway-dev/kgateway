@@ -11,7 +11,6 @@ clusters:
             socketAddress:
               address: 1.1.1.1
               portValue: 80
-        loadBalancingWeight: 1
       loadBalancingWeight: 1
       locality:
         region: r1
@@ -23,7 +22,6 @@ clusters:
             socketAddress:
               address: 2.2.2.2
               portValue: 80
-        loadBalancingWeight: 1
       loadBalancingWeight: 1
       locality:
         region: r1
@@ -36,7 +34,6 @@ clusters:
             socketAddress:
               address: 3.3.3.3
               portValue: 80
-        loadBalancingWeight: 1
       loadBalancingWeight: 1
       locality:
         region: r2
@@ -73,7 +70,6 @@ endpoints:
           socketAddress:
             address: 1.1.1.1
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r1
@@ -85,7 +81,6 @@ endpoints:
           socketAddress:
             address: 2.2.2.2
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r1
@@ -98,7 +93,6 @@ endpoints:
           socketAddress:
             address: 3.3.3.3
             portValue: 80
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r2

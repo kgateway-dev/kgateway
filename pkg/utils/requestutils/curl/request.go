@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 )
 
 // BuildArgs accepts a set of curl.Option and generates the list of arguments
@@ -89,10 +90,11 @@ type requestConfig struct {
 	http2  bool
 
 	// TLS-specific options
-	ciphers       string
-	curves        string
-	tlsVersion    string
-	tlsMaxVersion string
+	ciphers             string
+	curves              string
+	signatureAlgorithms string
+	tlsVersion          string
+	tlsMaxVersion       string
 
 	// Client certificate options
 	clientCert string
@@ -118,7 +120,7 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "-s")
 	}
 	if c.connectionTimeout > 0 {
-		seconds := fmt.Sprintf("%v", c.connectionTimeout)
+		seconds := strconv.Itoa(c.connectionTimeout)
 		args = append(args, "--connect-timeout", seconds, "--max-time", seconds)
 	}
 	if c.headersOnly {
@@ -140,13 +142,13 @@ func (c *requestConfig) generateArgs() []string {
 		args = append(args, "--data-binary", c.body)
 	}
 	if c.retry != 0 {
-		args = append(args, "--retry", fmt.Sprintf("%d", c.retry))
+		args = append(args, "--retry", strconv.Itoa(c.retry))
 	}
 	if c.retryDelay != -1 {
-		args = append(args, "--retry-delay", fmt.Sprintf("%d", c.retryDelay))
+		args = append(args, "--retry-delay", strconv.Itoa(c.retryDelay))
 	}
 	if c.retryMaxTime != 0 {
-		args = append(args, "--retry-max-time", fmt.Sprintf("%d", c.retryMaxTime))
+		args = append(args, "--retry-max-time", strconv.Itoa(c.retryMaxTime))
 	}
 	if c.retryConnectionRefused {
 		args = append(args, "--retry-connrefused")
@@ -170,8 +172,11 @@ func (c *requestConfig) generateArgs() []string {
 	if c.curves != "" {
 		args = append(args, "--curves", c.curves)
 	}
+	if c.signatureAlgorithms != "" {
+		args = append(args, "--sigalgs", c.signatureAlgorithms)
+	}
 	if c.tlsVersion != "" {
-		args = append(args, fmt.Sprintf("--tlsv%s", c.tlsVersion))
+		args = append(args, "--tlsv"+c.tlsVersion)
 	}
 	if c.tlsMaxVersion != "" {
 		args = append(args, "--tls-max", c.tlsMaxVersion)

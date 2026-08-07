@@ -67,6 +67,7 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 			Subject: wrapperspb.Bool(true),
 		},
 		stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
+		serverName:        new("envoy"),
 	}
 }
 
@@ -211,6 +212,10 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "stripHostPortMode",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripHostPortMode = new(kgateway.StripAnyHostPortMode) },
+		},
+		{
+			Field:  "serverName",
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).serverName = new("other-server") },
 		},
 	}
 

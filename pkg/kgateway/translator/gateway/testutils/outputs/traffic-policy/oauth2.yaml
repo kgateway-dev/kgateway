@@ -354,6 +354,7 @@ Routes:
         '@type': type.googleapis.com/google.protobuf.StringValue
         value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - test.com
@@ -387,6 +388,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-1
       metadata:
@@ -413,6 +415,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /route-2
       name: listener~8080~test_com-route-2-httproute-test-default-2-0-rule2-matcher-0
@@ -434,6 +437,7 @@ Routes:
           '@type': type.googleapis.com/google.protobuf.StringValue
           value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
 Secrets:
 - genericSecret:
     secret:
@@ -444,6 +448,21 @@ Secrets:
       inlineBytes: SE1BQyBzZWNyZXQ=
   name: oauth2/hmac_secret/kgateway-system/oauth2-hmac-secret
 Statuses:
+  backends:
+    default/oauth-provider-1:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
+    default/oauth-provider-2:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/test:
       conditions:

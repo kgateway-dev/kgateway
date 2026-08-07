@@ -362,13 +362,13 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 					curl.WithPort(int(wellknown.KgatewayAdminPort)),
 				)
 
-			krtSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.krt_snapshot.log", podName)))
+			krtSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, podName+".krt_snapshot.log"))
 			err = adminClient.KrtSnapshotCmd(ctx).WithQuiet().WithStdout(krtSnapshotFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running krt snapshot command: %v\n", err)
 			}
 
-			xdsSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.xds_snapshot.log", podName)))
+			xdsSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, podName+".xds_snapshot.log"))
 			err = adminClient.XdsSnapshotCmd(ctx).WithQuiet().WithStdout(xdsSnapshotFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running xds snapshot command: %v\n", err)
@@ -404,7 +404,7 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 
 		for _, proxy := range proxies {
 			adminCli, shutdown, err := admincli.NewPortForwardedClient(ctx,
-				fmt.Sprintf("pod/%s", proxy), ns, portforward.WithQuiet())
+				"pod/"+proxy, ns, portforward.WithQuiet())
 			if err != nil {
 				fmt.Printf("error creating admin cli: %v\n", err)
 				continue
@@ -412,25 +412,25 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 
 			defer shutdown()
 
-			configDumpFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.config.log", proxy)))
+			configDumpFile := fileAtPath(filepath.Join(envoyOutDir, proxy+".config.log"))
 			err = adminCli.ConfigDumpCmd(ctx, nil).WithQuiet().WithStdout(configDumpFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running config dump command: %v\n", err)
 			}
 
-			statsFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.stats.log", proxy)))
+			statsFile := fileAtPath(filepath.Join(envoyOutDir, proxy+".stats.log"))
 			err = adminCli.StatsCmd(ctx, nil).WithQuiet().WithStdout(statsFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running stats command: %v\n", err)
 			}
 
-			clustersFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.clusters.log", proxy)))
+			clustersFile := fileAtPath(filepath.Join(envoyOutDir, proxy+".clusters.log"))
 			err = adminCli.ClustersCmd(ctx).WithQuiet().WithStdout(clustersFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running clusters command: %v\n", err)
 			}
 
-			listenersFile := fileAtPath(filepath.Join(envoyOutDir, fmt.Sprintf("%s.listeners.log", proxy)))
+			listenersFile := fileAtPath(filepath.Join(envoyOutDir, proxy+".listeners.log"))
 			err = adminCli.ListenersCmd(ctx).WithQuiet().WithStdout(listenersFile).Run().Cause()
 			if err != nil {
 				fmt.Printf("error running listeners command: %v\n", err)
@@ -478,7 +478,7 @@ func fileAtPath(path string) *os.File {
 
 func writeControllerLog(ctx context.Context, outDir string, ns string, podName string, kubectlCli *kubectl.Cli) {
 	// Get the kgateway controller logs
-	controllerLogsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.controller.log", podName)))
+	controllerLogsFile := fileAtPath(filepath.Join(outDir, podName+".controller.log"))
 	controllerLogsCmd := kubectlCli.WithReceiver(controllerLogsFile).Command(ctx,
 		"-n", ns, "logs", podName, "-c", KgatewayContainerName, "--tail=1000")
 	err := controllerLogsCmd.Run().Cause()
@@ -489,7 +489,7 @@ func writeControllerLog(ctx context.Context, outDir string, ns string, podName s
 
 func writeMetricsLog(ctx context.Context, outDir string, ns string, podName string, kubectlCli *kubectl.Cli) {
 	// Using an ephemeral debug pod fetch the metrics from the kgateway controller
-	metricsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.metrics.log", podName)))
+	metricsFile := fileAtPath(filepath.Join(outDir, podName+".metrics.log"))
 	metricsCmd := kubectlCli.Command(ctx, "debug", "-n", ns,
 		"-it", "--image=curlimages/curl:7.83.1", podName, "--",
 		"curl", "http://localhost:9091/metrics")

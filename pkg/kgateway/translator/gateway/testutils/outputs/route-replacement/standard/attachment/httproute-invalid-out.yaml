@@ -76,6 +76,7 @@ Routes:
             value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
               }"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         pathSeparatedPrefix: /api
       metadata:
@@ -97,6 +98,7 @@ Routes:
             value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
               }"}}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     gwtest/example-gateway:

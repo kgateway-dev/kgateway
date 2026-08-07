@@ -37,11 +37,12 @@ var errAwsEc2DiscoveryDisabled = errors.New("aws ec2 discovery is disabled by co
 
 // backendIr is the internal representation of a backend.
 type backendIr struct {
-	awsIr    *AwsIr
-	staticIr *StaticIr
-	dfpIr    *DfpIr
-	gcpIr    *GcpIr
-	errors   []error
+	awsIr            *AwsIr
+	staticIr         *StaticIr
+	dfpIr            *DfpIr
+	gcpIr            *GcpIr
+	priorityGroupsIr *PriorityGroupsIr
+	errors           []error
 }
 
 func (u *backendIr) Equals(other any) bool {
@@ -63,6 +64,10 @@ func (u *backendIr) Equals(other any) bool {
 	}
 	// GCP
 	if !u.gcpIr.Equals(otherBackend.gcpIr) {
+		return false
+	}
+	// Priority groups
+	if !u.priorityGroupsIr.Equals(otherBackend.priorityGroupsIr) {
 		return false
 	}
 	if len(u.errors) != len(otherBackend.errors) {
@@ -97,7 +102,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translateFn := buildTranslateFunc(commoncol.Secrets, commoncol.Settings.EnableAwsEc2Discovery)
+	translateFn := buildTranslateFunc(col, commoncol.Secrets, commoncol.Settings.EnableAwsEc2Discovery)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.Backend) *ir.BackendObjectIR {
 		backendIR := translateFn(krtctx, i)
 		if len(backendIR.errors) > 0 {
@@ -145,12 +150,17 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 // buildTranslateFunc builds a function that translates a Backend to a backendIr that
 // the plugin can use to build the envoy config.
 func buildTranslateFunc(
+	col krt.Collection[*kgateway.Backend],
 	secrets *krtcollections.SecretIndex,
 	enableAwsEc2Discovery bool,
 ) func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 	return func(krtctx krt.HandlerContext, i *kgateway.Backend) *backendIr {
 		var beIr backendIr
 		switch {
+		case len(i.Spec.PriorityGroups) > 0:
+			pgIr, errs := buildPriorityGroupsIr(krtctx, col, i)
+			beIr.priorityGroupsIr = pgIr
+			beIr.errors = append(beIr.errors, errs...)
 		case i.Spec.Static != nil:
 			staticIr, err := buildStaticIr(i.Spec.Static)
 			if err != nil {
@@ -291,6 +301,11 @@ func processBackendForEnvoy(ctx context.Context, in ir.BackendObjectIR, out *env
 	// TODO: propagated error to CRD #11558.
 	spec := be.Spec
 	switch {
+	case len(spec.PriorityGroups) > 0:
+		if beIr.priorityGroupsIr == nil {
+			return nil
+		}
+		processPriorityGroups(beIr.priorityGroupsIr, out)
 	case spec.Static != nil:
 		processStatic(beIr.staticIr, out)
 	case spec.Aws != nil:
