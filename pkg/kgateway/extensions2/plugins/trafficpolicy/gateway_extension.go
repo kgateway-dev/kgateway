@@ -256,7 +256,7 @@ func resolveJwtProviders(
 		uniqProviders[providerNameForExt] = jwtProvider
 	}
 
-	requirementsName := fmt.Sprintf("%s_requirements", extNameNamespace)
+	requirementsName := extNameNamespace + "_requirements"
 	requirements := make(map[string]*envoyjwtauthnv3.JwtRequirement)
 	requirements[requirementsName] = buildJwtRequirementFromProviders(uniqProviders, jwt.ValidationMode)
 

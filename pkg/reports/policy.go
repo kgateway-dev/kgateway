@@ -2,7 +2,6 @@ package reports
 
 import (
 	"context"
-	"log/slog"
 	"slices"
 	"strings"
 
@@ -184,7 +183,7 @@ func (r *ReportMap) BuildPolicyStatus(
 	if len(status.Ancestors) > MaxPolicyStatusAncestors {
 		// Gateway API caps PolicyStatus.ancestors at 16 real entries. We can't
 		// invent a synthetic ancestor entry here, so log the truncation explicitly.
-		slog.WarnContext(ctx,
+		logger.WarnContext(ctx,
 			"truncating policy status ancestors to Gateway API limit",
 			"policy", key.DisplayString(),
 			"controller", controller,

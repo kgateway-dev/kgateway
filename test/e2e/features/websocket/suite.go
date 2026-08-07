@@ -111,7 +111,7 @@ func (s *testingSuite) assertWebsocketUpgradeEnabled() {
 				}
 
 				websocketEnabled := strings.Contains(listener.String(), "upgrade_configs:{upgrade_type:\"websocket\"}")
-				g.Expect(websocketEnabled).To(gomega.BeTrue(), fmt.Sprintf("%v", listener.String()))
+				g.Expect(websocketEnabled).To(gomega.BeTrue(), listener.String())
 			}).
 				WithContext(ctx).
 				WithTimeout(30*time.Second).
@@ -134,6 +134,6 @@ func (s *testingSuite) assertPodsRunning() {
 
 	// websocket server backend
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, "kgateway-base", metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=websocket-backend", defaults.WellKnownAppLabel),
+		LabelSelector: defaults.WellKnownAppLabel + "=websocket-backend",
 	})
 }

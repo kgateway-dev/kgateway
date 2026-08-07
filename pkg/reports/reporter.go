@@ -2,7 +2,6 @@ package reports
 
 import (
 	"fmt"
-	"log/slog"
 	"slices"
 	"strings"
 
@@ -15,8 +14,11 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
+
+var logger = logging.New("reports")
 
 type ReportMap struct {
 	Gateways     map[types.NamespacedName]*GatewayReport
@@ -189,7 +191,7 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 	case *gwv1.GRPCRoute:
 		return r.GRPCRoutes[key]
 	default:
-		slog.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
+		logger.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
 		return nil
 	}
 }
@@ -215,7 +217,7 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	case *gwv1.GRPCRoute:
 		r.GRPCRoutes[key] = rr
 	default:
-		slog.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
+		logger.Warn("unsupported route type", "route_type", fmt.Sprintf("%T", obj))
 		return nil
 	}
 

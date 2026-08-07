@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -23,12 +24,12 @@ import (
 )
 
 var (
-	ErrNoMatchingListenerHostname = fmt.Errorf("no matching listener hostname")
-	ErrNoMatchingParent           = fmt.Errorf("no matching parent")
-	ErrNotAllowedByListeners      = fmt.Errorf("not allowed by listeners")
-	ErrLocalObjRefMissingKind     = fmt.Errorf("localObjRef provided with empty kind")
-	ErrCyclicReference            = fmt.Errorf("cyclic reference detected while evaluating delegated routes")
-	ErrUnresolvedReference        = fmt.Errorf("unresolved reference")
+	ErrNoMatchingListenerHostname = errors.New("no matching listener hostname")
+	ErrNoMatchingParent           = errors.New("no matching parent")
+	ErrNotAllowedByListeners      = errors.New("not allowed by listeners")
+	ErrLocalObjRefMissingKind     = errors.New("localObjRef provided with empty kind")
+	ErrCyclicReference            = errors.New("cyclic reference detected while evaluating delegated routes")
+	ErrUnresolvedReference        = errors.New("unresolved reference")
 )
 
 type Error struct {

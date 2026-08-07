@@ -2,6 +2,7 @@ package gatewaytls
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -95,7 +96,7 @@ func validateClientCertificateRef(defaultNamespace string, ref *gwv1.SecretObjec
 
 func buildBackendClientCertificate(secret *ir.Secret) (*ir.GatewayBackendClientCertificateIR, error) {
 	if secret == nil {
-		return nil, fmt.Errorf("backend client certificate secret is nil")
+		return nil, errors.New("backend client certificate secret is nil")
 	}
 
 	certChainBytes, ok := secret.Data[corev1.TLSCertKey]

@@ -1,8 +1,10 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -162,10 +164,10 @@ func buildOAuth2ProviderConfig(
 	}
 
 	if tokenEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 token endpoint not specified or not found in issuer well-known configuration")
+		return nil, errors.New("oauth2 token endpoint not specified or not found in issuer well-known configuration")
 	}
 	if authorizationEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
+		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
 	}
 
 	backend, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.BackendRef.BackendObjectReference)
@@ -522,5 +524,5 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 // getCookieSuffix generates a unique suffix for cookie names based on the given object
 func getCookieSuffix(src ir.ObjectSource) string {
 	hash := utils.HashString(src.NamespacedName().String())
-	return fmt.Sprintf("%x", hash)
+	return strconv.FormatUint(hash, 16)
 }

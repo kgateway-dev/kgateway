@@ -3,7 +3,6 @@ package proxy_syncer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -253,7 +252,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 								if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
 									finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
 										finishFunc:  finish.finishFunc,
-										statusError: fmt.Errorf("partially invalid route condition"),
+										statusError: errors.New("partially invalid route condition"),
 									}
 									break
 								}
@@ -264,7 +263,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
 										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
 											finishFunc:  finish.finishFunc,
-											statusError: fmt.Errorf("invalid route condition"),
+											statusError: errors.New("invalid route condition"),
 										}
 										break
 									}
@@ -277,7 +276,7 @@ func (s *StatusSyncer) syncRouteStatus(ctx context.Context, logger *slog.Logger,
 									if finish, exists := finishMetrics[string(ps.ParentRef.Name)]; exists {
 										finishMetrics[string(ps.ParentRef.Name)] = finishMetricsErrors{
 											finishFunc:  finish.finishFunc,
-											statusError: fmt.Errorf("invalid route condition"),
+											statusError: errors.New("invalid route condition"),
 										}
 										break
 									}
@@ -550,7 +549,7 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 					cond.Reason != string(gwv1.GatewayReasonPending) {
 					logger.Debug("invalid status condition reason", "reason", cond.Reason, "gateway", gwnn.String())
 
-					statusErr = fmt.Errorf("invalid gateway condition")
+					statusErr = errors.New("invalid gateway condition")
 
 					break
 				}
@@ -620,7 +619,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 							if cond.Reason != string(gwv1.ListenerSetReasonAccepted) &&
 								cond.Reason != string(gwv1.ListenerSetReasonProgrammed) &&
 								cond.Reason != string(gwv1.ListenerSetReasonPending) {
-								statusErr = fmt.Errorf("invalid listener condition")
+								statusErr = errors.New("invalid listener condition")
 
 								break
 							}
@@ -788,7 +787,7 @@ func (s *StatusSyncer) syncPolicyStatus(ctx context.Context, rm reports.ReportMa
 
 					if cond.Reason != string(shared.PolicyReasonValid) &&
 						cond.Reason != string(shared.PolicyReasonPending) {
-						statusErr = fmt.Errorf("invalid policy condition")
+						statusErr = errors.New("invalid policy condition")
 
 						break
 					}
