@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"log/slog"
 	"slices"
 
 	"istio.io/istio/pkg/util/sets"
@@ -64,7 +63,7 @@ func selectRouteGVRs(
 	// watch will yield objects and no write can land, so the choice is inconsequential; we
 	// still need a stable identity for GVK keying, and naming the promoted version keeps the
 	// watch and the writer pointed at the same place.
-	slog.Warn("no usable served API version for route kind; its resources will not be reconciled",
+	logger.Warn("no usable served API version for route kind; its resources will not be reconciled",
 		"resource", known[0].Resource,
 		"served", discovery.Served.UnsortedList(),
 		"legacy_versions_enabled", includeLegacy,
@@ -79,7 +78,7 @@ func selectRouteGVRs(
 // saying loudly.
 func discoverRouteVersions(ctx context.Context, extClient apiextensionsclient.Interface, crdName string) routeVersionDiscovery {
 	if extClient == nil {
-		slog.Warn("no CRD discovery client; watching and writing status through every known API version until the CRD is observed",
+		logger.Warn("no CRD discovery client; watching and writing status through every known API version until the CRD is observed",
 			"crd", crdName)
 		return routeVersionDiscovery{}
 	}
@@ -89,7 +88,7 @@ func discoverRouteVersions(ctx context.Context, extClient apiextensionsclient.In
 
 	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
 	if err != nil {
-		slog.Warn("could not resolve served API versions; watching and writing status through every known API version until restart",
+		logger.Warn("could not resolve served API versions; watching and writing status through every known API version until restart",
 			"crd", crdName,
 			"error", err,
 		)

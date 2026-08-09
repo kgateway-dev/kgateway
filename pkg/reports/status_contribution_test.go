@@ -13,6 +13,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
@@ -107,10 +108,13 @@ func TestReduceStatusContributionsWarnsOnMultipleSingleWriterContributions(t *te
 		}
 	}
 
+	// The package logger is bound to its own handler at init, so redirecting slog's default
+	// would not capture it; swap the package logger itself for the duration of the test.
 	var logged bytes.Buffer
-	restore := slog.Default()
-	slog.SetDefault(slog.New(slog.NewTextHandler(&logged, &slog.HandlerOptions{Level: slog.LevelWarn})))
-	t.Cleanup(func() { slog.SetDefault(restore) })
+	warn := slog.LevelWarn
+	restore := logger
+	logger = logging.NewWithOptions("reports", logging.Options{Writer: &logged, Level: &warn, Format: logging.TextFormat})
+	t.Cleanup(func() { logger = restore })
 
 	ReduceStatusContributions([]StatusContribution{contribution("a")})
 	require.Empty(t, logged.String(), "a single writer is the expected topology and must stay quiet")

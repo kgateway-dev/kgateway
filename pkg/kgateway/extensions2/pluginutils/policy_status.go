@@ -3,7 +3,6 @@ package pluginutils
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"istio.io/istio/pkg/kube/controllers"
@@ -130,7 +129,7 @@ func policyStatusConditionError(status gwv1.PolicyStatus, controllerName string)
 			}
 			if cond.Reason != string(shared.PolicyReasonValid) &&
 				cond.Reason != string(shared.PolicyReasonPending) {
-				return fmt.Errorf("invalid policy condition")
+				return errors.New("invalid policy condition")
 			}
 		}
 	}

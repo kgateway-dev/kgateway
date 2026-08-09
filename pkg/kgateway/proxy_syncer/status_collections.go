@@ -385,7 +385,7 @@ func gatewayStatusMetricsHook() func(res statussync.Resource, current *gwv1.Gate
 			if cond.Reason != string(gwv1.GatewayReasonAccepted) &&
 				cond.Reason != string(gwv1.GatewayReasonProgrammed) &&
 				cond.Reason != string(gwv1.GatewayReasonPending) {
-				statusErr = errors.Join(statusErr, fmt.Errorf("invalid gateway condition"))
+				statusErr = errors.Join(statusErr, errors.New("invalid gateway condition"))
 				break
 			}
 		}
@@ -422,13 +422,13 @@ func routeStatusMetricsHook[T controllers.ComparableObject](
 			for _, cond := range ps.Conditions {
 				switch {
 				case cond.Type == string(gwv1.RouteConditionPartiallyInvalid) && cond.Status == metav1.ConditionTrue:
-					statusErrByGateway[gwName] = fmt.Errorf("partially invalid route condition")
+					statusErrByGateway[gwName] = errors.New("partially invalid route condition")
 				case cond.Type == conditions.KgatewayConditionProgrammed && cond.Status != metav1.ConditionTrue:
-					statusErrByGateway[gwName] = fmt.Errorf("invalid route condition")
+					statusErrByGateway[gwName] = errors.New("invalid route condition")
 				case cond.Type == string(gwv1.RouteConditionAccepted) &&
 					cond.Reason != string(gwv1.RouteReasonAccepted) &&
 					cond.Reason != string(gwv1.RouteReasonPending):
-					statusErrByGateway[gwName] = fmt.Errorf("invalid route condition")
+					statusErrByGateway[gwName] = errors.New("invalid route condition")
 				}
 			}
 		}
@@ -555,7 +555,7 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 		if cond.Reason != string(gwv1.ListenerSetReasonAccepted) &&
 			cond.Reason != string(gwv1.ListenerSetReasonProgrammed) &&
 			cond.Reason != string(gwv1.ListenerSetReasonPending) {
-			statusErr = errors.Join(statusErr, fmt.Errorf("invalid listener condition"))
+			statusErr = errors.Join(statusErr, errors.New("invalid listener condition"))
 			break
 		}
 	}

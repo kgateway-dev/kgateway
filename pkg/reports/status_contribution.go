@@ -2,7 +2,6 @@ package reports
 
 import (
 	"cmp"
-	"log/slog"
 	"slices"
 	"strings"
 
@@ -237,7 +236,7 @@ func warnOnMultipleSingleWriterContributions(kind string, replacement StatusCont
 	if !hasPrevious {
 		return
 	}
-	slog.Warn("multiple status contributions for single-writer report kind; replacing earlier contribution",
+	logger.Warn("multiple status contributions for single-writer report kind; replacing earlier contribution",
 		"report_kind", kind,
 		"target", replacement.Target.Key().String(),
 		"previous_source", previous.String(),
