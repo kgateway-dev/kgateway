@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -44,6 +45,9 @@ func TestWithStatusRegistration(t *testing.T) {
 		StatusContributions:         contributions,
 		StatusContributionsByTarget: contributionsByTarget,
 		StatusNotReady:              notReady,
+		// The proxy syncer contributes StatusCollections.HasSynced exactly once; the status
+		// syncer must carry it through rather than adding a second copy of its own.
+		CacheSyncs: []cache.InformerSynced{collections.HasSynced},
 	}, WithStatusRegistration(func(in StatusRegistrationInputs) {
 		called = true
 		assert.Same(t, collections, in.Collections)
@@ -72,8 +76,8 @@ func TestWithStatusRegistration(t *testing.T) {
 	}))
 
 	assert.True(t, called)
-	// A single cache sync entry (StatusCollections.HasSynced) covers every reducer
-	// registered through statussync.RegisterResourceReports, including this one.
+	// One entry, not two: StatusCollections.HasSynced re-reads its registration set on every
+	// call, so the entry inherited from CacheSyncs already covers reducers registered here.
 	assert.Len(t, statusSyncer.cacheSyncs, 1)
 	assert.Eventually(t, collections.HasSynced, 5*time.Second, 10*time.Millisecond,
 		"registered reducer should be part of the sync barrier")

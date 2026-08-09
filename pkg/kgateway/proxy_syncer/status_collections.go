@@ -52,28 +52,10 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		return []reports.StatusKey{contribution.Target.Key()}
 	})
 	contributionsByTarget := s.statusContributionsByTarget
-	resourceFor := func(gvk schema.GroupVersionKind, object controllers.Object) statussync.Resource {
-		return statussync.Resource{
-			GroupVersionKind: gvk,
-			NamespacedName:   types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()},
-		}
-	}
-	resourceForObjectGVK := func(fallback schema.GroupVersionKind, object controllers.Object) statussync.Resource {
-		gvk := object.GetObjectKind().GroupVersionKind()
-		if gvk.Empty() {
-			gvk = fallback
-		}
-		return resourceFor(gvk, object)
-	}
 
 	// Gateway
-	gatewayReports := statussync.NewResourceReports(
-		s.commonCols.RawGateways, s.statusContributions, contributionsByTarget,
-		func(object *gwv1.Gateway) statussync.Resource { return resourceFor(wellknown.GatewayGVK, object) },
-		krtopts.ToOptions("GatewayStatusReports")...,
-	)
-	statussync.RegisterResource(s.statusCollections, wellknown.GatewayGVK, s.commonCols.RawGateways)
-	statussync.RegisterResourceReports(s.statusCollections, gatewayReports)
+	gatewayReports := statussync.RegisterKind(s.statusCollections, wellknown.GatewayGVK, s.commonCols.RawGateways,
+		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GatewayStatusReports")...)
 	s.statusWriters[wellknown.GatewayGVK] = statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
 		Name:   "gateway",
 		Client: kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
@@ -97,16 +79,10 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		NotReady:  notReady,
 	}
 
-	httpRouteReports := statussync.NewResourceReports(
-		s.commonCols.RawHTTPRoutes, s.statusContributions, contributionsByTarget,
-		func(object *gwv1.HTTPRoute) statussync.Resource { return resourceFor(wellknown.HTTPRouteGVK, object) },
-		krtopts.ToOptions("HTTPRouteStatusReports")...,
-	)
-	grpcRouteReports := statussync.NewResourceReports(
-		s.commonCols.RawGRPCRoutes, s.statusContributions, contributionsByTarget,
-		func(object *gwv1.GRPCRoute) statussync.Resource { return resourceFor(wellknown.GRPCRouteGVK, object) },
-		krtopts.ToOptions("GRPCRouteStatusReports")...,
-	)
+	httpRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes,
+		s.statusContributions, contributionsByTarget, krtopts.ToOptions("HTTPRouteStatusReports")...)
+	grpcRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes,
+		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GRPCRouteStatusReports")...)
 	// The preferred write version also names the GVK the queue keys TCP/TLS routes under.
 	// Every version maps to the same writer below, so the choice only has to be stable.
 	tcpWriteGVRs := routeWriteGVRsOrDefault(s.commonCols.TCPRouteWriteGVRs, wellknown.TCPRouteV1GVR)
@@ -115,11 +91,8 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	if tcpWriteGVRs[0] == wellknown.TCPRouteV1GVR {
 		tcpGVK = wellknown.TCPRouteV1GVK
 	}
-	tcpRouteReports := statussync.NewResourceReports(
-		s.commonCols.RawTCPRoutes, s.statusContributions, contributionsByTarget,
-		func(object *gwv1a2.TCPRoute) statussync.Resource { return resourceFor(tcpGVK, object) },
-		krtopts.ToOptions("TCPRouteStatusReports")...,
-	)
+	tcpRouteReports := statussync.RegisterKind(s.statusCollections, tcpGVK, s.commonCols.RawTCPRoutes,
+		s.statusContributions, contributionsByTarget, krtopts.ToOptions("TCPRouteStatusReports")...)
 	tlsGVK := wellknown.TLSRouteGVK
 	switch tlsWriteGVRs[0] {
 	case wellknown.TLSRouteV1GVR:
@@ -127,19 +100,8 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	case wellknown.TLSRouteV1Alpha3GVR:
 		tlsGVK = wellknown.TLSRouteV1Alpha3GVK
 	}
-	tlsRouteReports := statussync.NewResourceReports(
-		s.commonCols.RawTLSRoutes, s.statusContributions, contributionsByTarget,
-		func(object *gwv1a2.TLSRoute) statussync.Resource { return resourceFor(tlsGVK, object) },
-		krtopts.ToOptions("TLSRouteStatusReports")...,
-	)
-	statussync.RegisterResource(s.statusCollections, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes)
-	statussync.RegisterResource(s.statusCollections, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes)
-	statussync.RegisterResource(s.statusCollections, tcpGVK, s.commonCols.RawTCPRoutes)
-	statussync.RegisterResource(s.statusCollections, tlsGVK, s.commonCols.RawTLSRoutes)
-	statussync.RegisterResourceReports(s.statusCollections, httpRouteReports)
-	statussync.RegisterResourceReports(s.statusCollections, grpcRouteReports)
-	statussync.RegisterResourceReports(s.statusCollections, tcpRouteReports)
-	statussync.RegisterResourceReports(s.statusCollections, tlsRouteReports)
+	tlsRouteReports := statussync.RegisterKind(s.statusCollections, tlsGVK, s.commonCols.RawTLSRoutes,
+		s.statusContributions, contributionsByTarget, krtopts.ToOptions("TLSRouteStatusReports")...)
 
 	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute](ctx, cl, f, httpRouteReports, wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
@@ -222,15 +184,9 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	s.statusWriters[wellknown.TLSRouteV1GVK] = tlsWriter
 	s.statusWriters[wellknown.TLSRouteV1Alpha3GVK] = tlsWriter
 
-	listenerSetReports := statussync.NewResourceReports(
+	listenerSetReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK,
 		s.commonCols.RawListenerSets, s.statusContributions, contributionsByTarget,
-		func(object *gwv1.ListenerSet) statussync.Resource {
-			return resourceForObjectGVK(wellknown.ListenerSetGVK, object)
-		},
-		krtopts.ToOptions("ListenerSetStatusReports")...,
-	)
-	statussync.RegisterResourceByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK, s.commonCols.RawListenerSets)
-	statussync.RegisterResourceReports(s.statusCollections, listenerSetReports)
+		krtopts.ToOptions("ListenerSetStatusReports")...)
 	lsWriter := &listenerSetStatusSyncer{
 		col:      s.commonCols.RawListenerSets,
 		promoted: kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
@@ -243,13 +199,9 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	backendPlugin, hasBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
 	var backendReports krt.Collection[statussync.ResourceReports]
 	if backendPlugin.RawBackends != nil {
-		backendReports = statussync.NewResourceReports(
+		backendReports = statussync.RegisterKind(s.statusCollections, wellknown.BackendGVK,
 			backendPlugin.RawBackends, s.statusContributions, contributionsByTarget,
-			func(object *kgateway.Backend) statussync.Resource { return resourceFor(wellknown.BackendGVK, object) },
-			krtopts.ToOptions("BackendStatusReports")...,
-		)
-		statussync.RegisterResource(s.statusCollections, wellknown.BackendGVK, backendPlugin.RawBackends)
-		statussync.RegisterResourceReports(s.statusCollections, backendReports)
+			krtopts.ToOptions("BackendStatusReports")...)
 	} else if hasBackendPlugin {
 		// A registered Backend plugin that does not expose its informer-backed collection is a
 		// wiring bug. No Backend plugin at all is a legitimate configuration (nothing serves
@@ -296,9 +248,10 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		}
 	}
 
-	// One entry covers every reducer registered above and every reducer a plugin or
-	// downstream registration adds later: statussync.RegisterResourceReports is what
-	// enrols them, and HasSynced re-reads that set on each call.
+	// The single entry covering every report reducer, here and in any plugin or downstream
+	// registration that runs later: statussync.RegisterResourceReports is what enrols them,
+	// and HasSynced re-reads that set on each call. StatusSyncer inherits this through
+	// CacheSyncs, so it must not be added there too.
 	s.waitForSync = append(s.waitForSync, s.statusCollections.HasSynced)
 }
 
@@ -379,7 +332,13 @@ func routeWriter[T controllers.ComparableObject](
 			}
 			status := reports.BuildRouteStatus(ctx, report.Route, current, controllerName)
 			if status == nil {
-				return gwv1.RouteStatus{}, true
+				// The route has a report, so the only way the builder returns nil is that it
+				// does not recognise this Go type. Suppress the write instead of publishing an
+				// empty status, which Merge reads as "clear every parent we own" — a missing
+				// type switch case must not erase good status.
+				logger.Error("route status builder does not support this type; skipping status update",
+					"gvk", gvk.String(), "resource", nn.String(), "type", fmt.Sprintf("%T", current))
+				return gwv1.RouteStatus{}, false
 			}
 			return *status, true
 		},
@@ -621,19 +580,30 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 
 // patchLegacyStatus merge-patches the status subresource of a legacy XListenerSet through
 // the dynamic client, injecting the per-listener port required by the legacy CRD schema.
+//
+// The patch body carries metadata.resourceVersion so the API server rejects the write when
+// the object has moved on, matching the optimistic concurrency the promoted path gets from
+// UpdateStatus. Without it a merge patch applies unconditionally, so a status built from a
+// stale read silently overwrites a newer one and nothing re-enqueues to correct it.
 func (s *listenerSetStatusSyncer) patchLegacyStatus(ctx context.Context, res statussync.Resource, current *gwv1.ListenerSet, desired gwv1.ListenerSetStatus) error {
 	statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&desired)
 	if err != nil {
 		return err
 	}
 	injectListenerPorts(statusMap, current.Spec.Listeners)
-	data, err := json.Marshal(map[string]any{"status": statusMap})
+	data, err := json.Marshal(map[string]any{
+		"metadata": map[string]any{"resourceVersion": current.ResourceVersion},
+		"status":   statusMap,
+	})
 	if err != nil {
 		return err
 	}
 	_, err = s.client.Dynamic().Resource(wellknown.XListenerSetGVR).Namespace(res.Namespace).
 		Patch(ctx, res.Name, types.MergePatchType, data, metav1.PatchOptions{}, "status")
-	if apierrors.IsNotFound(err) {
+	if apierrors.IsConflict(err) || apierrors.IsNotFound(err) {
+		// Same self-healing contract as the promoted path: the raw collection re-enqueues
+		// once the informer delivers the newer object.
+		logger.Debug("skipping stale legacy listener set status update", "resource", res.NamespacedName.String(), "error", err)
 		return nil
 	}
 	return err

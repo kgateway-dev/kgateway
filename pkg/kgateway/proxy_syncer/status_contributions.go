@@ -32,9 +32,13 @@ func backendPolicyStatusContributions(
 			return nil
 		}
 		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend}, excludedPolicyKinds)
+		// Key on the backend's own resource name, not its ObjectSource's: one Service yields a
+		// BackendObjectIR per port, and ObjectSource.ResourceName() drops both the port and the
+		// extra key. Two ports contributing to the same policy would then emit contributions
+		// with identical KRT keys from a single collection.
 		return reports.StatusContributionsFromReportMap(reports.StatusSource{
 			Kind: reports.BackendPolicyStatusSource,
-			Name: backend.GetObjectSource().ResourceName(),
+			Name: backend.ResourceName(),
 		}, reportMap)
 	}, krtopts.ToOptions("BackendPolicyStatusContributions")...)
 }

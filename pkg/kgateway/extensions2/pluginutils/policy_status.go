@@ -63,20 +63,11 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 				return reports.BuildPolicyStatus(ctx, report, key, controllerName, getStatus(pol))
 			}
 		}
-		statusReports := statussync.NewResourceReports(
-			col,
-			in.StatusContributions,
-			in.ContributionsByTarget,
-			func(pol T) statussync.Resource {
-				return statussync.Resource{
-					GroupVersionKind: gvk,
-					NamespacedName:   types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()},
-				}
-			},
+		statusReports := statussync.RegisterKind(
+			in.Collections, gvk, col,
+			in.StatusContributions, in.ContributionsByTarget,
 			in.KrtOpts.ToOptions(gvk.Kind+"StatusReports")...,
 		)
-		statussync.RegisterResource(in.Collections, gvk, col)
-		statussync.RegisterResourceReports(in.Collections, statusReports)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
 			Name:   gvk.Kind,
 			Client: cl,

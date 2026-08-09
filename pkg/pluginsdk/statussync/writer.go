@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"context"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -243,33 +244,12 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 // at the same limit before it gets here and follows the same ownership policy, so the two
 // caps agree on which entries survive.
 func MergePolicyAncestorStatuses(ourControllerName string, existing, desired []gwv1.PolicyAncestorStatus) []gwv1.PolicyAncestorStatus {
-	out := make([]gwv1.PolicyAncestorStatus, 0, len(existing)+len(desired))
-
-	// Preserve any entries not owned by our controller.
-	for _, a := range existing {
-		if string(a.ControllerName) != ourControllerName {
-			out = append(out, a)
-		}
-	}
-
-	// Only add entries owned by our controller from the desired status.
-	ours := make([]gwv1.PolicyAncestorStatus, 0, len(desired))
-	for _, a := range desired {
-		if string(a.ControllerName) == ourControllerName {
-			ours = append(ours, a)
-		}
-	}
-
-	// Ensure stable ordering of our entries so status doesn't flap due to map/set iteration upstream.
-	slices.SortFunc(ours, func(a, b gwv1.PolicyAncestorStatus) int {
-		if c := cmp.Compare(string(a.ControllerName), string(b.ControllerName)); c != 0 {
-			return c
-		}
-		return compareParentReference(a.AncestorRef, b.AncestorRef)
-	})
-
-	out = append(out, ours...)
-	return capMergedStatusEntries(out, reports.MaxPolicyStatusAncestors, "PolicyStatus.ancestors")
+	return mergeOwnedStatusEntries(
+		ourControllerName, existing, desired,
+		func(a gwv1.PolicyAncestorStatus) string { return string(a.ControllerName) },
+		func(a gwv1.PolicyAncestorStatus) gwv1.ParentReference { return a.AncestorRef },
+		reports.MaxPolicyStatusAncestors, "PolicyStatus.ancestors",
+	)
 }
 
 // MergeRouteParentStatuses preserves RouteStatus parents owned by other controllers,
@@ -280,33 +260,66 @@ func MergePolicyAncestorStatuses(ourControllerName string, existing, desired []g
 // enforces via CRD schema. Entries owned by other controllers are never dropped in favor
 // of ours: our entries are truncated first.
 func MergeRouteParentStatuses(ourControllerName string, existing, desired []gwv1.RouteParentStatus) []gwv1.RouteParentStatus {
-	out := make([]gwv1.RouteParentStatus, 0, len(existing)+len(desired))
+	return mergeOwnedStatusEntries(
+		ourControllerName, existing, desired,
+		func(p gwv1.RouteParentStatus) string { return string(p.ControllerName) },
+		func(p gwv1.RouteParentStatus) gwv1.ParentReference { return p.ParentRef },
+		reports.MaxRouteStatusParents, "RouteStatus.parents",
+	)
+}
+
+// mergeOwnedStatusEntries implements the shared merge for the two Gateway API status lists
+// that several controllers write to. PolicyStatus.ancestors and RouteStatus.parents differ
+// only in element type and the name of their ref field.
+//
+// The published order is canonical: entries are sorted by ParentString, the same key istio
+// and kgateway's own report builders use. That matters because the writer suppresses no-op
+// writes with a plain equality check. If we published in an arbitrary order, a peer
+// controller that rewrites the whole list in sorted order — which is exactly what these
+// builders do — would disagree with us on ordering alone, and the two of us would rewrite
+// the list back and forth forever.
+func mergeOwnedStatusEntries[T any](
+	ourControllerName string,
+	existing, desired []T,
+	controllerOf func(T) string,
+	refOf func(T) gwv1.ParentReference,
+	limit int,
+	field string,
+) []T {
+	out := make([]T, 0, len(existing)+len(desired))
 
 	// Preserve any entries not owned by our controller.
-	for _, a := range existing {
-		if string(a.ControllerName) != ourControllerName {
-			out = append(out, a)
+	for _, e := range existing {
+		if controllerOf(e) != ourControllerName {
+			out = append(out, e)
 		}
 	}
 
 	// Only add entries owned by our controller from the desired status.
-	ours := make([]gwv1.RouteParentStatus, 0, len(desired))
-	for _, a := range desired {
-		if string(a.ControllerName) == ourControllerName {
-			ours = append(ours, a)
+	ours := make([]T, 0, len(desired))
+	for _, d := range desired {
+		if controllerOf(d) == ourControllerName {
+			ours = append(ours, d)
 		}
 	}
 
-	// Ensure stable ordering of our entries so status doesn't flap due to map/set iteration upstream.
-	slices.SortFunc(ours, func(a, b gwv1.RouteParentStatus) int {
-		if c := cmp.Compare(string(a.ControllerName), string(b.ControllerName)); c != 0 {
+	// Order ours deterministically before the cap, so which of them survives truncation does
+	// not depend on map/set iteration upstream.
+	slices.SortFunc(ours, func(a, b T) int {
+		if c := cmp.Compare(controllerOf(a), controllerOf(b)); c != 0 {
 			return c
 		}
-		return compareParentReference(a.ParentRef, b.ParentRef)
+		return compareParentReference(refOf(a), refOf(b))
 	})
 
+	// Foreign entries first so the cap truncates ours before anyone else's.
 	out = append(out, ours...)
-	return capMergedStatusEntries(out, reports.MaxRouteStatusParents, "RouteStatus.parents")
+	out = capMergedStatusEntries(out, limit, field)
+
+	slices.SortStableFunc(out, func(a, b T) int {
+		return strings.Compare(reports.ParentString(refOf(a)), reports.ParentString(refOf(b)))
+	})
+	return out
 }
 
 // capMergedStatusEntries truncates a merged status list to the Gateway API schema limit,

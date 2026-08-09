@@ -37,6 +37,68 @@ func (r ResourceReports) Equals(other ResourceReports) bool {
 		r.Report.Equals(other.Report)
 }
 
+// RegisterKind wires one status kind end to end: it derives the report reducer for a raw
+// collection, registers that collection as a reconciliation source, and enrols the reducer as
+// both an event source and a cache-sync dependency.
+//
+// The three belong together. Done separately, each compiles on its own and omitting one is
+// invisible: skip the raw registration and the resource is never swept on leadership, skip
+// the reducer registration and status stops following report changes. Both are silent status
+// outages rather than build or test failures.
+func RegisterKind[I controllers.Object](
+	s *StatusCollections,
+	gvk schema.GroupVersionKind,
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	return registerKind(s, objects, contributions, byTarget,
+		func(I) schema.GroupVersionKind { return gvk },
+		func() { RegisterResource(s, gvk, objects) },
+		opts...)
+}
+
+// RegisterKindByObjectGVK is RegisterKind for a normalized collection whose objects retain
+// distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
+func RegisterKindByObjectGVK[I controllers.Object](
+	s *StatusCollections,
+	fallback schema.GroupVersionKind,
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	return registerKind(s, objects, contributions, byTarget,
+		func(obj I) schema.GroupVersionKind { return objectGVKOrDefault(obj, fallback) },
+		func() { RegisterResourceByObjectGVK(s, fallback, objects) },
+		opts...)
+}
+
+func registerKind[I controllers.Object](
+	s *StatusCollections,
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	gvkFor func(I) schema.GroupVersionKind,
+	registerRaw func(),
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	col := NewResourceReports(objects, contributions, byTarget, func(obj I) Resource {
+		return Resource{GroupVersionKind: gvkFor(obj), NamespacedName: config.NamespacedName(obj)}
+	}, opts...)
+	registerRaw()
+	RegisterResourceReports(s, col)
+	return col
+}
+
+func objectGVKOrDefault(obj controllers.Object, fallback schema.GroupVersionKind) schema.GroupVersionKind {
+	if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
+		return gvk
+	}
+	return fallback
+}
+
 // NewResourceReports builds one lightweight report reduction per raw object.
 // KRT tracks the filtered contribution dependency, so only the owner of a
 // changed contribution recomputes.
@@ -136,11 +198,7 @@ func RegisterResourceByObjectGVK[I controllers.Object](
 	col krt.Collection[I],
 ) {
 	registerResource(s, col, func(obj I) schema.GroupVersionKind {
-		gvk := obj.GetObjectKind().GroupVersionKind()
-		if gvk.Empty() {
-			return fallback
-		}
-		return gvk
+		return objectGVKOrDefault(obj, fallback)
 	})
 }
 

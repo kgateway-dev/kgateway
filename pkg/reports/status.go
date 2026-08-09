@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -549,6 +550,17 @@ func BuildRouteStatusWithParentRefDefaulting(
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	case *gwv1a2.TLSRoute:
+		existingStatus = route.Status.RouteStatus
+		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+		if len(parentRefs) == 0 {
+			parentRefs = append(parentRefs, routeReport.parentRefs()...)
+		}
+	case *gwv1a3.TLSRoute:
+		// Reached whenever v1alpha3 is the served TLSRoute version, which is what the status
+		// writer hands us on Gateway API v1.4.x. Without this case the default branch returns
+		// nil, and a nil desired status is indistinguishable from "this route has nothing to
+		// report", so every kgateway parent status on the route gets cleared instead of
+		// written.
 		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
 		if len(parentRefs) == 0 {

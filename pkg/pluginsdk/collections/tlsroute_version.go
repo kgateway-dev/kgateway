@@ -1,11 +1,7 @@
 package collections
 
 import (
-	"log/slog"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -76,35 +72,6 @@ func convertTLSRouteV1Alpha3ToV1Alpha2(in *gwv1a3.TLSRoute) *gwv1a2.TLSRoute {
 			RouteStatus: in.Status.RouteStatus,
 		},
 	}
-}
-
-func convertUnstructuredTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
-	if in == nil {
-		return nil
-	}
-
-	out := &gwv1a2.TLSRoute{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(in.Object, out); err != nil {
-		logger.Warn("ignoring unstructured TLSRoute with invalid payload",
-			"name", in.GetName(),
-			"namespace", in.GetNamespace(),
-			"error", err,
-		)
-		return nil
-	}
-	out.SetGroupVersionKind(wellknown.TLSRouteGVK)
-	return out
-}
-
-// ConvertUnstructuredTLSRouteToV1Alpha2ForStatus normalizes TLSRoute objects
-// fetched as *unstructured.Unstructured by getTLSRouteForStatus. Status sync
-// uses an unstructured Get against the controller-runtime manager client for
-// TLSRoute versions that are not registered in the manager scheme (today:
-// v1alpha3 — see pkg/schemes/scheme.go). This helper converts that
-// unstructured object into *gwv1a2.TLSRoute so the existing gwv1a2-typed
-// status report builder can process it.
-func ConvertUnstructuredTLSRouteToV1Alpha2ForStatus(in *unstructured.Unstructured) *gwv1a2.TLSRoute {
-	return convertUnstructuredTLSRouteToV1Alpha2(in)
 }
 
 func convertTLSRouteHostnamesV1ToV1Alpha2(in []gwv1.Hostname) []gwv1a2.Hostname {

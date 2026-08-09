@@ -67,10 +67,9 @@ func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *Status
 		writers:           cfg.StatusWriters,
 		cacheSyncs:        slices.Clone(cfg.CacheSyncs),
 	}
-	// StatusCollections.HasSynced covers every report reducer registered through
-	// statussync.RegisterResourceReports, including the ones the registrations below add.
-	// It re-reads the registration set on each call, so one entry suffices.
-	syncer.cacheSyncs = append(syncer.cacheSyncs, syncer.statusCollections.HasSynced)
+	// StatusCollections.HasSynced arrives via cfg.CacheSyncs, where the proxy syncer adds it
+	// once. It re-reads its registration set on every call, so it already covers the reducers
+	// the registrations below add and must not be appended again here.
 	for _, register := range optCfg.statusRegistrations {
 		register(StatusRegistrationInputs{
 			Collections:           syncer.statusCollections,

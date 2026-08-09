@@ -29,7 +29,7 @@ var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 // GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
 // Exported for testing.
 func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds map[schema.GroupKind]struct{}) reports.ReportMap {
-	merged := reports.NewReportMap()
+	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
 
 	// iterate all backends and aggregate all policies attached to them
@@ -131,7 +131,7 @@ func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicy
 // condition) are merged onto the same Backend so all conditions share a single writer.
 // Exported for testing.
 func GenerateBackendStatusReport(backends []ir.BackendObjectIR, clusters []uccWithCluster, extraConditions []ir.BackendObjectStatus) reports.ReportMap {
-	merged := reports.NewReportMap()
+	merged := reports.NewBackendReportMap()
 	reporter := reports.NewReporter(&merged)
 
 	backendGVK := wellknown.BackendGVK.GroupKind()

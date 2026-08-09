@@ -45,10 +45,11 @@ func TestMergeRouteParentStatusesPreservesOtherControllers(t *testing.T) {
 	merged := MergeRouteParentStatuses(ourController, existing, desired)
 
 	require.Len(t, merged, 3, "should keep the other controller's entry and replace ours")
-	require.Equal(t, gwv1.GatewayController(otherController), merged[0].ControllerName,
-		"other controllers' entries must be preserved first, in their existing order")
-	require.Equal(t, gwv1.ObjectName("gw-a"), merged[1].ParentRef.Name, "our entries must be sorted")
-	require.Equal(t, gwv1.ObjectName("gw-b"), merged[2].ParentRef.Name)
+	// Published order is canonical (ParentString), not grouped by owner.
+	require.Equal(t, []gwv1.ObjectName{"gw-a", "gw-b", "their-gw"},
+		[]gwv1.ObjectName{merged[0].ParentRef.Name, merged[1].ParentRef.Name, merged[2].ParentRef.Name})
+	require.Equal(t, gwv1.GatewayController(otherController), merged[2].ControllerName,
+		"the other controller's entry must be preserved")
 	for _, p := range merged {
 		require.NotEqual(t, gwv1.ObjectName("stale-gw"), p.ParentRef.Name,
 			"our stale entry must be dropped when absent from the desired status")
@@ -101,9 +102,9 @@ func TestMergePolicyAncestorStatuses(t *testing.T) {
 	merged := MergePolicyAncestorStatuses(ourController, existing, desired)
 
 	require.Len(t, merged, 3)
-	require.Equal(t, gwv1.GatewayController(otherController), merged[0].ControllerName)
-	require.Equal(t, gwv1.ObjectName("gw-a"), merged[1].AncestorRef.Name, "our entries must be sorted")
-	require.Equal(t, gwv1.ObjectName("gw-b"), merged[2].AncestorRef.Name)
+	require.Equal(t, []gwv1.ObjectName{"gw-a", "gw-b", "their-gw"},
+		[]gwv1.ObjectName{merged[0].AncestorRef.Name, merged[1].AncestorRef.Name, merged[2].AncestorRef.Name})
+	require.Equal(t, gwv1.GatewayController(otherController), merged[2].ControllerName)
 }
 
 func TestMergePolicyAncestorStatusesClearsAllOursOnEmptyDesired(t *testing.T) {
@@ -158,11 +159,14 @@ func TestMergePolicyAncestorStatusesCapKeepsOursWhileRoomRemains(t *testing.T) {
 	merged := MergePolicyAncestorStatuses(ourController, existing, desired)
 
 	require.Len(t, merged, reports.MaxPolicyStatusAncestors)
-	last := merged[len(merged)-1]
-	require.Equal(t, gwv1.GatewayController(ourController), last.ControllerName,
-		"our first sorted entry should fill the remaining slot")
-	require.Equal(t, gwv1.ObjectName("our-gw-a"), last.AncestorRef.Name,
-		"truncation must drop our entries from the sorted tail")
+	ours := []gwv1.ObjectName{}
+	for _, a := range merged {
+		if a.ControllerName == gwv1.GatewayController(ourController) {
+			ours = append(ours, a.AncestorRef.Name)
+		}
+	}
+	require.Equal(t, []gwv1.ObjectName{"our-gw-a"}, ours,
+		"our first sorted entry fills the remaining slot; the rest of ours are truncated")
 }
 
 func TestMergeRouteParentStatusesCapsAtGatewayAPILimit(t *testing.T) {
@@ -206,4 +210,46 @@ func TestRetryStatusWriteStopsOnContextCancel(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Equal(t, 1, attempts, "retries must stop once the context is canceled")
+}
+
+// The writer suppresses no-op writes with a plain equality check, so what we publish has to
+// be a function of the entry set alone. If the stored order depended on the order we happened
+// to read, a peer controller that rewrites the list in its own sorted order would disagree
+// with us on ordering and the two of us would rewrite it back and forth forever.
+func TestMergeIsCanonicalRegardlessOfExistingOrder(t *testing.T) {
+	forward := []gwv1.RouteParentStatus{
+		routeParent(otherController, "b-their-gw"),
+		routeParent(otherController, "a-their-gw"),
+	}
+	reversed := []gwv1.RouteParentStatus{forward[1], forward[0]}
+	desired := []gwv1.RouteParentStatus{
+		routeParent(ourController, "z-our-gw"),
+		routeParent(ourController, "c-our-gw"),
+	}
+
+	fromForward := MergeRouteParentStatuses(ourController, forward, desired)
+	fromReversed := MergeRouteParentStatuses(ourController, reversed, desired)
+
+	require.Equal(t, fromForward, fromReversed, "merge output must not depend on the order read")
+	require.Equal(t,
+		[]gwv1.ObjectName{"a-their-gw", "b-their-gw", "c-our-gw", "z-our-gw"},
+		[]gwv1.ObjectName{
+			fromForward[0].ParentRef.Name, fromForward[1].ParentRef.Name,
+			fromForward[2].ParentRef.Name, fromForward[3].ParentRef.Name,
+		},
+		"published order must be the ParentString order istio and our own builders use")
+}
+
+func TestMergePolicyAncestorsIsCanonicalRegardlessOfExistingOrder(t *testing.T) {
+	forward := []gwv1.PolicyAncestorStatus{
+		ancestor(otherController, "b-their-gw"),
+		ancestor(otherController, "a-their-gw"),
+	}
+	reversed := []gwv1.PolicyAncestorStatus{forward[1], forward[0]}
+	desired := []gwv1.PolicyAncestorStatus{ancestor(ourController, "c-our-gw")}
+
+	require.Equal(t,
+		MergePolicyAncestorStatuses(ourController, forward, desired),
+		MergePolicyAncestorStatuses(ourController, reversed, desired),
+		"merge output must not depend on the order read")
 }
