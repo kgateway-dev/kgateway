@@ -604,19 +604,19 @@ func BuildRouteStatusWithParentRefDefaulting(
 		newStatus.Parents = append(newStatus.Parents, routeParentStatus)
 	}
 
-	// now we have a status object reflecting the state of translation according to our reportMap
-	// let's add status from other controllers on the current object status
-	var kgwStatus *gwv1.RouteStatus = &newStatus
-	for _, rps := range existingStatus.Parents {
-		if rps.ControllerName != gwv1.GatewayController(controller) {
-			kgwStatus.Parents = append(kgwStatus.Parents, rps)
-		}
-	}
-
+	// Parents owned by other controllers are deliberately absent: preserving them here
+	// produced entries that statussync.MergeRouteParentStatuses discarded and re-derived
+	// from its own authoritative read of the live object. existingStatus is still read
+	// above, for LastTransitionTime continuity.
+	//
+	// The sort is not redundant with the merge's: it makes this function's output
+	// deterministic for callers that consume the desired status directly, such as the
+	// golden-output translator tests.
+	//
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
-	slices.SortStableFunc(kgwStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
+	slices.SortStableFunc(newStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
 		return strings.Compare(ParentString(a.ParentRef), ParentString(b.ParentRef))
 	})
 	if newStatus.Parents == nil {

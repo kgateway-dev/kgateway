@@ -377,10 +377,13 @@ var _ = Describe("Reporting Infrastructure", func() {
 				status := rm.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
-				// 1 parent is ours, 1 parent is other
-				Expect(status.Parents).To(HaveLen(2))
+				// Only the parentRef we translated. The other controller's parent is not
+				// dropped from the object: statussync.MergeRouteParentStatuses re-adds it
+				// from its own read of the live status at write time, which is the only
+				// place that read is authoritative.
+				Expect(status.Parents).To(HaveLen(1), "the builder publishes only the parents we own")
+				Expect(status.Parents[0].ControllerName).To(Equal(gwv1.GatewayController(wellknown.DefaultGatewayControllerName)))
 				// 3 default positive conditions for the single parentRef we "translated"
-				// ours will be first due to alphabetical ordering of controller name ('k' vs. 'o')
 				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 			},
 			Entry("httproute", &gwv1.HTTPRoute{

@@ -180,76 +180,23 @@ func BuildPolicyStatus(
 		status.Ancestors = append(status.Ancestors, ancestorStatus)
 	}
 
-	// now we have a status object reflecting the state of translation according to our reportMap
-	// let's add status from other controllers on the current object status
-	for _, ancestor := range currentStatus.Ancestors {
-		if ancestor.ControllerName != gwv1.GatewayController(controller) {
-			status.Ancestors = append(status.Ancestors, ancestor)
-		}
-	}
-
-	// sort all parents for consistency with Equals and for Update
-	// match sorting semantics of istio/istio, see:
-	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
+	// Ancestors owned by other controllers are deliberately absent, and so is the Gateway
+	// API cap. Both belong to the write path, which is the only layer holding an
+	// authoritative read of the live object: statussync.MergePolicyAncestorStatuses
+	// re-reads the live status, keeps every foreign ancestor, replaces ours, and caps the
+	// result. Preserving and capping here too produced entries the merge discarded and a
+	// second cap that had to be kept in lockstep with the first across two packages.
+	//
+	// currentStatus is still read above, for LastTransitionTime continuity.
+	//
+	// The sort is not redundant with the merge's: it makes this function's output
+	// deterministic for callers that consume the desired status directly, such as the
+	// golden-output translator tests.
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})
 
-	if len(status.Ancestors) > MaxPolicyStatusAncestors {
-		// Gateway API caps PolicyStatus.ancestors at 16 real entries. We can't
-		// invent a synthetic ancestor entry here, so log the truncation explicitly.
-		logger.WarnContext(ctx,
-			"truncating policy status ancestors to Gateway API limit",
-			"policy", key.DisplayString(),
-			"controller", controller,
-			"total_ancestors", len(status.Ancestors),
-			"dropped_ancestors", len(status.Ancestors)-MaxPolicyStatusAncestors,
-		)
-		status.Ancestors = capPolicyStatusAncestors(status.Ancestors, controller, MaxPolicyStatusAncestors)
-	}
-
 	return &status
-}
-
-// capPolicyStatusAncestors truncates an ancestor list to the Gateway API schema limit,
-// dropping entries owned by controller before entries owned by anyone else.
-//
-// This has to match the ownership policy of statussync.MergePolicyAncestorStatuses, which
-// caps the same list again at write time. The two caps see different lists: this one runs
-// on the interleaved, ParentString-sorted list, the merge on a foreign-then-ours list. If
-// this one truncated the tail blindly, it would decide which of our entries survive before
-// the merge ever ran, defeating the merge's "foreign never dropped in favor of ours"
-// guarantee. Relative order is otherwise preserved, so the caller's sort still determines
-// the output order.
-func capPolicyStatusAncestors(ancestors []gwv1.PolicyAncestorStatus, controller string, limit int) []gwv1.PolicyAncestorStatus {
-	if len(ancestors) <= limit {
-		return ancestors
-	}
-
-	foreign := 0
-	for _, ancestor := range ancestors {
-		if ancestor.ControllerName != gwv1.GatewayController(controller) {
-			foreign++
-		}
-	}
-	// Whatever the limit leaves once every foreign entry is accounted for is ours to use.
-	// Foreign entries alone can exceed the limit, in which case none of ours survive.
-	oursBudget := max(limit-foreign, 0)
-
-	out := make([]gwv1.PolicyAncestorStatus, 0, limit)
-	for _, ancestor := range ancestors {
-		if ancestor.ControllerName != gwv1.GatewayController(controller) {
-			if len(out) < limit {
-				out = append(out, ancestor)
-			}
-			continue
-		}
-		if oursBudget > 0 {
-			out = append(out, ancestor)
-			oursBudget--
-		}
-	}
-	return out
 }
 
 // getAncestorRefOrNil returns a ParentRefReport for the given parentRef if and only if

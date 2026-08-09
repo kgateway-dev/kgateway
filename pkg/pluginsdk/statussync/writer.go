@@ -211,9 +211,9 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 //
 // The merged list is capped at the Gateway API limit (16 ancestors), which the API server
 // enforces via CRD schema. Entries owned by other controllers are never dropped in favor
-// of ours: our entries are truncated first. reports.BuildPolicyStatus caps the desired list
-// at the same limit before it gets here and follows the same ownership policy, so the two
-// caps agree on which entries survive.
+// of ours: our entries are truncated first. This is the only place the list is capped —
+// reports.BuildPolicyStatus publishes every ancestor it translated, so the decision about
+// which entries survive is made once, here, with the live list in hand.
 func MergePolicyAncestorStatuses(ourControllerName string, existing, desired []gwv1.PolicyAncestorStatus) []gwv1.PolicyAncestorStatus {
 	return mergeOwnedStatusEntries(
 		ourControllerName, existing, desired,
@@ -312,9 +312,7 @@ type keyedStatusEntry[T any] struct {
 // capMergedStatusEntries truncates a merged status list to the Gateway API schema limit,
 // so writes are not rejected by the API server when entries owned by other controllers
 // already fill (or nearly fill) the list. Merged lists place other controllers' entries
-// first, so truncating the tail drops our entries before anyone else's. This must be
-// applied by the merge itself (not at the write site only) so desired-status
-// normalization stays byte-identical to the written result.
+// first, so truncating the tail drops our entries before anyone else's.
 func capMergedStatusEntries[T any](entries []T, limit int, field string) []T {
 	if len(entries) <= limit {
 		return entries
