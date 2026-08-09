@@ -1,7 +1,6 @@
 package reports
 
 import (
-	"cmp"
 	"slices"
 	"strings"
 
@@ -17,10 +16,6 @@ import (
 type StatusTarget struct {
 	schema.GroupVersionKind
 	types.NamespacedName
-}
-
-func (t StatusTarget) String() string {
-	return t.Group + "/" + t.Version + "/" + t.Kind + "/" + t.Namespace + "/" + t.Name
 }
 
 // StatusKey is the version-independent identity of a status owner. Multiple
@@ -172,40 +167,56 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 		}
 	}
 
-	slices.SortStableFunc(contributions, compareStatusContributions)
+	slices.SortFunc(contributions, compareStatusContributions)
 	return contributions
 }
 
+// compareStatusContributions orders contributions by their complete identity, so no ties
+// remain and a stable sort is not needed. The comparisons are chained rather than passed to
+// cmp.Or because cmp.Or is an ordinary variadic call: it would run all seven on every
+// comparison, and this sorts one entry per translated route on every Gateway translation.
 func compareStatusContributions(a, b StatusContribution) int {
-	return cmp.Or(
-		strings.Compare(a.Target.Group, b.Target.Group),
-		strings.Compare(a.Target.Kind, b.Target.Kind),
-		strings.Compare(a.Target.Namespace, b.Target.Namespace),
-		strings.Compare(a.Target.Name, b.Target.Name),
-		strings.Compare(string(a.Source.Kind), string(b.Source.Kind)),
-		strings.Compare(a.Source.Name, b.Source.Name),
-		strings.Compare(a.Target.Version, b.Target.Version),
-	)
+	if c := strings.Compare(a.Target.Group, b.Target.Group); c != 0 {
+		return c
+	}
+	if c := strings.Compare(a.Target.Kind, b.Target.Kind); c != 0 {
+		return c
+	}
+	if c := strings.Compare(a.Target.Namespace, b.Target.Namespace); c != 0 {
+		return c
+	}
+	if c := strings.Compare(a.Target.Name, b.Target.Name); c != 0 {
+		return c
+	}
+	if c := strings.Compare(string(a.Source.Kind), string(b.Source.Kind)); c != 0 {
+		return c
+	}
+	if c := strings.Compare(a.Source.Name, b.Source.Name); c != 0 {
+		return c
+	}
+	return strings.Compare(a.Target.Version, b.Target.Version)
 }
 
 // ReduceStatusContributions combines contributions for one target into a
 // compact fragment. The result owns its reports and can be retained safely.
 func ReduceStatusContributions(contributions []StatusContribution) StatusReport {
 	ordered := slices.Clone(contributions)
-	slices.SortStableFunc(ordered, compareStatusContributions)
+	slices.SortFunc(ordered, compareStatusContributions)
 	var reduced StatusReport
+	// Only the source of the previously seen contribution needs tracking: the reports
+	// themselves say whether one was seen, since a non-nil contribution always clones to a
+	// non-nil report.
 	var gatewaySource, listenerSetSource, backendSource StatusSource
-	var hasGateway, hasListenerSet, hasBackend bool
 	for _, contribution := range ordered {
 		switch {
 		case contribution.Gateway != nil:
-			warnOnMultipleSingleWriterContributions("Gateway", contribution, gatewaySource, hasGateway)
+			warnOnMultipleSingleWriterContributions("Gateway", contribution, gatewaySource, reduced.Gateway != nil)
 			reduced.Gateway = cloneGatewayReport(contribution.Gateway)
-			gatewaySource, hasGateway = contribution.Source, true
+			gatewaySource = contribution.Source
 		case contribution.ListenerSet != nil:
-			warnOnMultipleSingleWriterContributions("ListenerSet", contribution, listenerSetSource, hasListenerSet)
+			warnOnMultipleSingleWriterContributions("ListenerSet", contribution, listenerSetSource, reduced.ListenerSet != nil)
 			reduced.ListenerSet = cloneListenerSetReport(contribution.ListenerSet)
-			listenerSetSource, hasListenerSet = contribution.Source, true
+			listenerSetSource = contribution.Source
 		case contribution.Route != nil:
 			if reduced.Route == nil {
 				reduced.Route = cloneRouteReport(contribution.Route)
@@ -219,9 +230,9 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 				mergeAncestorReports(reduced.Policy, contribution.Policy)
 			}
 		case contribution.Backend != nil:
-			warnOnMultipleSingleWriterContributions("Backend", contribution, backendSource, hasBackend)
+			warnOnMultipleSingleWriterContributions("Backend", contribution, backendSource, reduced.Backend != nil)
 			reduced.Backend = cloneBackendReport(contribution.Backend)
-			backendSource, hasBackend = contribution.Source, true
+			backendSource = contribution.Source
 		}
 	}
 	return reduced

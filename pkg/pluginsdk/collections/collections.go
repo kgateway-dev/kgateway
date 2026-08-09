@@ -63,13 +63,14 @@ type CommonCollections struct {
 	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
 	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
 
-	// TCPRouteWriteGVRs and TLSRouteWriteGVRs identify the served API versions status
+	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
 	// writes may go through, most preferred first, resolved from CRD discovery at startup.
 	// Normally one entry. More than one means discovery was not authoritative and the
-	// writer must dispatch to whichever version's informer actually holds the object;
-	// see tcpRouteWriteGVRs.
-	TCPRouteWriteGVRs []schema.GroupVersionResource
-	TLSRouteWriteGVRs []schema.GroupVersionResource
+	// writer must dispatch to whichever version's informer actually holds the object.
+	// Read them through TCPRouteWriteVersions/TLSRouteWriteVersions, which supply the
+	// fallback for a CommonCollections built without InitCollections.
+	tcpRouteWriteGVRs []schema.GroupVersionResource
+	tlsRouteWriteGVRs []schema.GroupVersionResource
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -80,6 +81,26 @@ type CommonCollections struct {
 	ControllerName string
 
 	options *option
+}
+
+// TCPRouteWriteVersions returns the served TCPRoute API versions status writes may go
+// through, most preferred first. It never returns an empty slice, so callers can index the
+// preferred version unconditionally: a CommonCollections built without InitCollections
+// (which some tests do) would otherwise leave the kind with no write version at all.
+func (c *CommonCollections) TCPRouteWriteVersions() []schema.GroupVersionResource {
+	return routeWriteVersionsOrDefault(c.tcpRouteWriteGVRs, wellknown.TCPRouteV1GVR)
+}
+
+// TLSRouteWriteVersions is TCPRouteWriteVersions for TLSRoutes.
+func (c *CommonCollections) TLSRouteWriteVersions() []schema.GroupVersionResource {
+	return routeWriteVersionsOrDefault(c.tlsRouteWriteGVRs, wellknown.TLSRouteV1GVR)
+}
+
+func routeWriteVersionsOrDefault(gvrs []schema.GroupVersionResource, fallback schema.GroupVersionResource) []schema.GroupVersionResource {
+	if len(gvrs) == 0 {
+		return []schema.GroupVersionResource{fallback}
+	}
+	return gvrs
 }
 
 func (c *CommonCollections) HasSynced() bool {

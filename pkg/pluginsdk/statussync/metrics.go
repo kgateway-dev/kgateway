@@ -1,7 +1,11 @@
 package statussync
 
 import (
+	"errors"
+	"slices"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -47,11 +51,12 @@ type SyncMetricLabels struct {
 }
 
 func (s SyncMetricLabels) toMetricsLabels() []metrics.Label {
-	return []metrics.Label{
-		{Name: nameLabel, Value: s.Name},
-		{Name: namespaceLabel, Value: s.Namespace},
-		{Name: syncerNameLabel, Value: s.Syncer},
-	}
+	// Capacity 4 so RecordStatusSync can append the result label without reallocating.
+	return append(make([]metrics.Label, 0, 4),
+		metrics.Label{Name: nameLabel, Value: s.Name},
+		metrics.Label{Name: namespaceLabel, Value: s.Namespace},
+		metrics.Label{Name: syncerNameLabel, Value: s.Syncer},
+	)
 }
 
 // ResetMetrics resets the metrics from this package.
@@ -66,14 +71,29 @@ func RecordStatusSync(labels SyncMetricLabels, took time.Duration, err error) {
 	if !metrics.Active() {
 		return
 	}
-	statusSyncDuration.Observe(took.Seconds(), labels.toMetricsLabels()...)
+	l := labels.toMetricsLabels()
+	statusSyncDuration.Observe(took.Seconds(), l...)
 	result := "success"
 	if err != nil {
 		result = "error"
 	}
-	statusSyncsTotal.Inc(append(labels.toMetricsLabels(),
-		metrics.Label{Name: resultLabel, Value: result},
-	)...)
+	statusSyncsTotal.Inc(append(l, metrics.Label{Name: resultLabel, Value: result})...)
+}
+
+// ConditionError returns err joined with message when any condition whose type is in
+// watchedTypes carries a reason outside acceptedReasons. Gateways, ListenerSets and
+// policies all derive their status-sync error result this way, differing only in which
+// condition types and reasons they consider healthy.
+func ConditionError(err error, conds []metav1.Condition, watchedTypes, acceptedReasons []string, message string) error {
+	for _, cond := range conds {
+		if !slices.Contains(watchedTypes, cond.Type) {
+			continue
+		}
+		if !slices.Contains(acceptedReasons, cond.Reason) {
+			return errors.Join(err, errors.New(message))
+		}
+	}
+	return err
 }
 
 // EndResourceStatusSyncOnWriteSuccess closes a resource's status sync unless the write

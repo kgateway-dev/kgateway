@@ -13,10 +13,12 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -316,10 +318,26 @@ func mergeOwnedStatusEntries[T any](
 	out = append(out, ours...)
 	out = capMergedStatusEntries(out, limit, field)
 
-	slices.SortStableFunc(out, func(a, b T) int {
-		return strings.Compare(reports.ParentString(refOf(a)), reports.ParentString(refOf(b)))
+	// Decorate before sorting: ParentString formats a string, and a comparator would
+	// re-format both operands on every one of the O(n log n) comparisons, on every write
+	// attempt (including retries) of every resource.
+	keyed := make([]keyedStatusEntry[T], len(out))
+	for i, e := range out {
+		keyed[i] = keyedStatusEntry[T]{key: reports.ParentString(refOf(e)), entry: e}
+	}
+	slices.SortStableFunc(keyed, func(a, b keyedStatusEntry[T]) int {
+		return strings.Compare(a.key, b.key)
 	})
+	for i, k := range keyed {
+		out[i] = k.entry
+	}
 	return out
+}
+
+// keyedStatusEntry pairs a status list entry with its precomputed sort key.
+type keyedStatusEntry[T any] struct {
+	key   string
+	entry T
 }
 
 // capMergedStatusEntries truncates a merged status list to the Gateway API schema limit,
@@ -343,49 +361,29 @@ func capMergedStatusEntries[T any](entries []T, limit int, field string) []T {
 }
 
 func compareParentReference(a, b gwv1.ParentReference) int {
-	// ParentReference includes pointer fields with defaults. Canonicalize those defaults so nil
-	// vs explicitly-set default values don't introduce ordering churn.
-	if c := cmp.Compare(parentRefGroupOrDefault(a.Group), parentRefGroupOrDefault(b.Group)); c != 0 {
+	// ParentReference includes pointer fields with defaults (Group is the Gateway API group,
+	// Kind is Gateway). Canonicalize those defaults so nil vs explicitly-set default values
+	// don't introduce ordering churn.
+	if c := cmp.Compare(ptr.OrDefault(a.Group, gwv1.Group(gwv1.GroupName)), ptr.OrDefault(b.Group, gwv1.Group(gwv1.GroupName))); c != 0 {
 		return c
 	}
-	if c := cmp.Compare(parentRefKindOrDefault(a.Kind), parentRefKindOrDefault(b.Kind)); c != 0 {
+	if c := cmp.Compare(ptr.OrDefault(a.Kind, gwv1.Kind(wellknown.GatewayKind)), ptr.OrDefault(b.Kind, gwv1.Kind(wellknown.GatewayKind))); c != 0 {
 		return c
 	}
-	if c := cmp.Compare(derefStringPtr(a.Namespace), derefStringPtr(b.Namespace)); c != 0 {
+	if c := cmp.Compare(ptr.OrEmpty(a.Namespace), ptr.OrEmpty(b.Namespace)); c != 0 {
 		return c
 	}
-	if c := cmp.Compare(string(a.Name), string(b.Name)); c != 0 {
+	if c := cmp.Compare(a.Name, b.Name); c != 0 {
 		return c
 	}
-	if c := cmp.Compare(derefStringPtr(a.SectionName), derefStringPtr(b.SectionName)); c != 0 {
+	if c := cmp.Compare(ptr.OrEmpty(a.SectionName), ptr.OrEmpty(b.SectionName)); c != 0 {
 		return c
 	}
 	return comparePortNumberPtr(a.Port, b.Port)
 }
 
-func parentRefGroupOrDefault(g *gwv1.Group) string {
-	if g == nil {
-		// ParentReference.Group default.
-		return gwv1.GroupName
-	}
-	return string(*g)
-}
-
-func parentRefKindOrDefault(k *gwv1.Kind) string {
-	if k == nil {
-		// ParentReference.Kind default.
-		return "Gateway"
-	}
-	return string(*k)
-}
-
-func derefStringPtr[S ~string](p *S) string {
-	if p == nil {
-		return ""
-	}
-	return string(*p)
-}
-
+// comparePortNumberPtr sorts an unset port before port 0, so it cannot be replaced with
+// ptr.OrEmpty: the two are distinct values in a ParentReference.
 func comparePortNumberPtr(a, b *gwv1.PortNumber) int {
 	switch {
 	case a == nil && b == nil:

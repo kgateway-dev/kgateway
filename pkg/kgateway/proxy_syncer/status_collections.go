@@ -25,6 +25,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
@@ -60,7 +61,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		Name:   "gateway",
 		Client: kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
 		Desired: func(gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
-			report, ok := currentReport(gatewayReports, wellknown.GatewayGVK, types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
+			report, ok := statussync.ReportFor(gatewayReports, wellknown.GatewayGVK, types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
 			if !ok {
 				return gwv1.GatewayStatus{}, false
 			}
@@ -85,8 +86,8 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GRPCRouteStatusReports")...)
 	// The preferred write version also names the GVK the queue keys TCP/TLS routes under.
 	// Every version maps to the same writer below, so the choice only has to be stable.
-	tcpWriteGVRs := routeWriteGVRsOrDefault(s.commonCols.TCPRouteWriteGVRs, wellknown.TCPRouteV1GVR)
-	tlsWriteGVRs := routeWriteGVRsOrDefault(s.commonCols.TLSRouteWriteGVRs, wellknown.TLSRouteV1GVR)
+	tcpWriteGVRs := s.commonCols.TCPRouteWriteVersions()
+	tlsWriteGVRs := s.commonCols.TLSRouteWriteVersions()
 	tcpGVK := wellknown.TCPRouteGVK
 	if tcpWriteGVRs[0] == wellknown.TCPRouteV1GVR {
 		tcpGVK = wellknown.TCPRouteV1GVK
@@ -213,7 +214,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		Name:   "backend",
 		Client: kclient.NewFilteredDelayed[*kgateway.Backend](cl, wellknown.BackendGVR, f),
 		Desired: func(be *kgateway.Backend) (kgateway.BackendStatus, bool) {
-			report, ok := currentReport(backendReports, wellknown.BackendGVK, types.NamespacedName{Namespace: be.Namespace, Name: be.Name})
+			report, ok := statussync.ReportFor(backendReports, wellknown.BackendGVK, types.NamespacedName{Namespace: be.Namespace, Name: be.Name})
 			if !ok {
 				return kgateway.BackendStatus{}, false
 			}
@@ -255,16 +256,6 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	s.waitForSync = append(s.waitForSync, s.statusCollections.HasSynced)
 }
 
-// routeWriteGVRsOrDefault guards against a CommonCollections built without going through
-// InitCollections (some tests do this), which would otherwise leave a route kind with no
-// write version at all.
-func routeWriteGVRsOrDefault(gvrs []schema.GroupVersionResource, fallback schema.GroupVersionResource) []schema.GroupVersionResource {
-	if len(gvrs) == 0 {
-		return []schema.GroupVersionResource{fallback}
-	}
-	return gvrs
-}
-
 // registerStatusWriter records the writer for a GVK. Exactly one writer may own a GVK:
 // a second registration means two plugins both claim to persist that resource's status,
 // and whichever registered last would silently win. Keep the first and report the conflict
@@ -280,24 +271,6 @@ func registerStatusWriter(
 		return
 	}
 	writers[gvk] = syncer
-}
-
-func currentReport(
-	col krt.Collection[statussync.ResourceReports],
-	gvk schema.GroupVersionKind,
-	nn types.NamespacedName,
-) (reports.StatusReport, bool) {
-	if col == nil {
-		return reports.StatusReport{}, false
-	}
-	target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn}
-	current := col.GetKey(target.String())
-	if current == nil {
-		return reports.StatusReport{}, false
-	}
-	// StatusReport contains pointers into KRT-owned retained state. Builders must treat the
-	// returned report as read-only so later KRT equality checks continue to observe changes.
-	return current.Report, true
 }
 
 // routeWriter constructs the status writer for one route kind, wiring the multi-controller
@@ -322,7 +295,7 @@ func routeWriter[T controllers.ComparableObject](
 		Client: kclient.NewFilteredDelayed[T](cl, gvr, f),
 		Desired: func(current T) (gwv1.RouteStatus, bool) {
 			nn := types.NamespacedName{Namespace: current.GetNamespace(), Name: current.GetName()}
-			report, ok := currentReport(reportCol, gvk, nn)
+			report, ok := statussync.ReportFor(reportCol, gvk, nn)
 			if !ok {
 				return gwv1.RouteStatus{}, false
 			}
@@ -372,23 +345,35 @@ func mergeGatewayStatusAddresses(current *gwv1.Gateway, desired gwv1.GatewayStat
 	return desired
 }
 
+// The Accepted/Programmed condition types and the reasons considered healthy, used to
+// derive the status-sync error result the previous syncer reported.
+var (
+	gatewayConditionTypes = []string{
+		string(gwv1.GatewayConditionAccepted),
+		string(gwv1.GatewayConditionProgrammed),
+	}
+	gatewayAcceptedReasons = []string{
+		string(gwv1.GatewayReasonAccepted),
+		string(gwv1.GatewayReasonProgrammed),
+		string(gwv1.GatewayReasonPending),
+	}
+	listenerSetConditionTypes = []string{
+		string(gwv1.ListenerSetConditionAccepted),
+		string(gwv1.ListenerSetConditionProgrammed),
+	}
+	listenerSetAcceptedReasons = []string{
+		string(gwv1.ListenerSetReasonAccepted),
+		string(gwv1.ListenerSetReasonProgrammed),
+		string(gwv1.ListenerSetReasonPending),
+	}
+)
+
 // gatewayStatusMetricsHook records status sync metrics for Gateways, deriving an error
 // result from invalid Accepted/Programmed condition reasons like the previous syncer did.
 func gatewayStatusMetricsHook() func(res statussync.Resource, current *gwv1.Gateway, status gwv1.GatewayStatus, took time.Duration, err error) {
 	return func(res statussync.Resource, current *gwv1.Gateway, status gwv1.GatewayStatus, took time.Duration, err error) {
-		statusErr := err
-		for _, cond := range status.Conditions {
-			if cond.Type != string(gwv1.GatewayConditionAccepted) &&
-				cond.Type != string(gwv1.GatewayConditionProgrammed) {
-				continue
-			}
-			if cond.Reason != string(gwv1.GatewayReasonAccepted) &&
-				cond.Reason != string(gwv1.GatewayReasonProgrammed) &&
-				cond.Reason != string(gwv1.GatewayReasonPending) {
-				statusErr = errors.Join(statusErr, errors.New("invalid gateway condition"))
-				break
-			}
-		}
+		statusErr := statussync.ConditionError(err, status.Conditions,
+			gatewayConditionTypes, gatewayAcceptedReasons, "invalid gateway condition")
 		statussync.RecordStatusSync(statussync.SyncMetricLabels{
 			Name:      res.Name,
 			Namespace: res.Namespace,
@@ -411,7 +396,19 @@ func routeStatusMetricsHook[T controllers.ComparableObject](
 	parentRefs func(T) []gwv1.ParentReference,
 ) func(res statussync.Resource, current T, status gwv1.RouteStatus, took time.Duration, err error) {
 	return func(res statussync.Resource, current T, status gwv1.RouteStatus, took time.Duration, err error) {
-		statusErrByGateway := map[string]error{}
+		// Every emitter below is a no-op while metrics are disabled, so skip the scan and
+		// the allocations entirely rather than building them for nothing on each write.
+		if !metrics.Active() {
+			return
+		}
+		// Allocated on the first invalid condition: routes are healthy in the common case.
+		var statusErrByGateway map[string]error
+		setStatusErr := func(gwName string, statusErr error) {
+			if statusErrByGateway == nil {
+				statusErrByGateway = map[string]error{}
+			}
+			statusErrByGateway[gwName] = statusErr
+		}
 		for _, ps := range status.Parents {
 			// status is the merged status, so it also carries parents owned by other
 			// controllers. Their conditions are not ours to report on.
@@ -422,24 +419,22 @@ func routeStatusMetricsHook[T controllers.ComparableObject](
 			for _, cond := range ps.Conditions {
 				switch {
 				case cond.Type == string(gwv1.RouteConditionPartiallyInvalid) && cond.Status == metav1.ConditionTrue:
-					statusErrByGateway[gwName] = errors.New("partially invalid route condition")
+					setStatusErr(gwName, errors.New("partially invalid route condition"))
 				case cond.Type == conditions.KgatewayConditionProgrammed && cond.Status != metav1.ConditionTrue:
-					statusErrByGateway[gwName] = errors.New("invalid route condition")
+					setStatusErr(gwName, errors.New("invalid route condition"))
 				case cond.Type == string(gwv1.RouteConditionAccepted) &&
 					cond.Reason != string(gwv1.RouteReasonAccepted) &&
 					cond.Reason != string(gwv1.RouteReasonPending):
-					statusErrByGateway[gwName] = errors.New("invalid route condition")
+					setStatusErr(gwName, errors.New("invalid route condition"))
 				}
 			}
 		}
 
-		gatewayNames := []string{}
-		if !controllers.IsNil(current) {
-			for _, pr := range parentRefs(current) {
-				gatewayNames = append(gatewayNames, string(pr.Name))
-			}
+		if controllers.IsNil(current) {
+			return
 		}
-		for _, gwName := range gatewayNames {
+		for _, pr := range parentRefs(current) {
+			gwName := string(pr.Name)
 			statussync.RecordStatusSync(statussync.SyncMetricLabels{
 				Name:      gwName,
 				Namespace: res.Namespace,
@@ -500,7 +495,7 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 			return nil
 		}
 		current = *cur
-		report, ok := currentReport(s.reports, res.GroupVersionKind, res.NamespacedName)
+		report, ok := statussync.ReportFor(s.reports, res.GroupVersionKind, res.NamespacedName)
 		if !ok {
 			return nil
 		}
@@ -546,19 +541,8 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 		return
 	}
 
-	statusErr := err
-	for _, cond := range desired.Conditions {
-		if cond.Type != string(gwv1.ListenerSetConditionAccepted) &&
-			cond.Type != string(gwv1.ListenerSetConditionProgrammed) {
-			continue
-		}
-		if cond.Reason != string(gwv1.ListenerSetReasonAccepted) &&
-			cond.Reason != string(gwv1.ListenerSetReasonProgrammed) &&
-			cond.Reason != string(gwv1.ListenerSetReasonPending) {
-			statusErr = errors.Join(statusErr, errors.New("invalid listener condition"))
-			break
-		}
-	}
+	statusErr := statussync.ConditionError(err, desired.Conditions,
+		listenerSetConditionTypes, listenerSetAcceptedReasons, "invalid listener condition")
 	parentName := ""
 	if current != nil {
 		parentName = string(current.Spec.ParentRef.Name)

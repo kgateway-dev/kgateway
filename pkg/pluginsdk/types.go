@@ -16,10 +16,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // ErrNotFound is returned when a requested resource is not found
@@ -50,27 +48,7 @@ type PerClientProcessBackend func(
 
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
 // registers its raw collection, keyed report reducer, and just-in-time writer.
-type PolicyStatusInputs struct {
-	// Ctx is the controller's root context. It is captured by the plugin's
-	// desired-status builders, which run for the lifetime of the process.
-	Ctx context.Context
-	// Collections is where the plugin registers its raw policy collection with
-	// statussync.RegisterResource and its report reducer with
-	// statussync.RegisterResourceReports.
-	Collections *StatusCollections
-	// StatusContributions contains Gateway- and Backend-produced facts keyed by status owner.
-	StatusContributions krt.Collection[reports.StatusContribution]
-	// ContributionsByTarget selects all contributions for one status owner.
-	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
-	// KrtOpts supplies standard collection lifecycle and debugging options.
-	KrtOpts krtutil.KrtOptions
-	// NotReady re-queues policies whose client cannot see them yet. Plugins reading through
-	// a delayed client must pass it to their writer, or a policy enqueued before that
-	// client's informer loads silently never gets status.
-	NotReady *statussync.NotReadyRequeuer
-	// RegisterWriter registers the writer that persists this plugin's policy status.
-	RegisterWriter func(gvk schema.GroupVersionKind, syncer statussync.ResourceStatusSyncer)
-}
+type PolicyStatusInputs = statussync.RegistrationInputs
 
 // StatusCollections aliases the statussync type for plugin convenience.
 type StatusCollections = statussync.StatusCollections

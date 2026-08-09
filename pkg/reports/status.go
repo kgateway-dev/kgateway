@@ -518,63 +518,41 @@ func BuildRouteStatusWithParentRefDefaulting(
 
 	logger.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
+	// Every supported route kind carries the same two facts; only the Go type differs. A
+	// missing case here is a silent status wipe (the nil return is indistinguishable from
+	// "nothing to report"), so keep the arms trivial and the shared handling below them.
+	// The v1alpha3 TLSRoute arm is reached whenever v1alpha3 is the served TLSRoute version,
+	// which is what the status writer hands us on Gateway API v1.4.x.
 	var existingStatus gwv1.RouteStatus
+	var specParentRefs []gwv1.ParentReference
+	switch route := obj.(type) {
+	case *gwv1.HTTPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.GRPCRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.TCPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a2.TCPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a2.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a3.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	default:
+		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
+		return nil
+	}
+
 	// Default to using spec.ParentRefs when building the parent statuses for a route.
 	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
 	// may not specify it. In this case, we infer the parentRefs form the RouteReport
 	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
 	var parentRefs []gwv1.ParentReference
-	switch route := obj.(type) {
-	case *gwv1.HTTPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.TCPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a2.TCPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.TLSRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a2.TLSRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a3.TLSRoute:
-		// Reached whenever v1alpha3 is the served TLSRoute version, which is what the status
-		// writer hands us on Gateway API v1.4.x. Without this case the default branch returns
-		// nil, and a nil desired status is indistinguishable from "this route has nothing to
-		// report", so every kgateway parent status on the route gets cleared instead of
-		// written.
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.GRPCRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	default:
-		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
-		return nil
+	parentRefs = append(parentRefs, specParentRefs...)
+	if len(parentRefs) == 0 {
+		parentRefs = append(parentRefs, routeReport.parentRefs()...)
 	}
 	if defaultParentRef {
 		parentRefs = ensureParentRefNamespaces(parentRefs, obj.GetNamespace())

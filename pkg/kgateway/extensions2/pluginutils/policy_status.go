@@ -71,15 +71,12 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			Name:   gvk.Kind,
 			Client: cl,
 			Desired: func(pol T) (gwv1.PolicyStatus, bool) {
-				target := reports.StatusKey{
-					GroupKind:      gvk.GroupKind(),
-					NamespacedName: types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()},
-				}
-				rw := statusReports.GetKey(target.String())
-				if rw == nil {
+				nn := types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()}
+				report, ok := statussync.ReportFor(statusReports, gvk, nn)
+				if !ok {
 					return gwv1.PolicyStatus{}, false
 				}
-				status := desiredFor(rw.Report.Policy, pol, controllerName)
+				status := desiredFor(report.Policy, pol, controllerName)
 				if status == nil {
 					// Merge will clear only ancestors owned by this controller.
 					return gwv1.PolicyStatus{}, true
@@ -123,15 +120,15 @@ func policyStatusConditionError(status gwv1.PolicyStatus, controllerName string)
 		if string(ancestor.ControllerName) != controllerName {
 			continue
 		}
-		for _, cond := range ancestor.Conditions {
-			if cond.Type != string(shared.PolicyConditionAccepted) {
-				continue
-			}
-			if cond.Reason != string(shared.PolicyReasonValid) &&
-				cond.Reason != string(shared.PolicyReasonPending) {
-				return errors.New("invalid policy condition")
-			}
+		if err := statussync.ConditionError(nil, ancestor.Conditions,
+			policyConditionTypes, policyAcceptedReasons, "invalid policy condition"); err != nil {
+			return err
 		}
 	}
 	return nil
 }
+
+var (
+	policyConditionTypes  = []string{string(shared.PolicyConditionAccepted)}
+	policyAcceptedReasons = []string{string(shared.PolicyReasonValid), string(shared.PolicyReasonPending)}
+)

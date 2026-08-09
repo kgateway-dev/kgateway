@@ -226,8 +226,8 @@ func (c *CommonCollections) InitCollections(
 
 	// The very lists the watches above were built from: a version we watch is a version we
 	// can write, so the two cannot drift apart.
-	c.TCPRouteWriteGVRs = tcpRouteWriteGVRs
-	c.TLSRouteWriteGVRs = tlsRouteWriteGVRs
+	c.tcpRouteWriteGVRs = tcpRouteWriteGVRs
+	c.tlsRouteWriteGVRs = tlsRouteWriteGVRs
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)

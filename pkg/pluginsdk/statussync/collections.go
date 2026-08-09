@@ -3,6 +3,8 @@
 package statussync
 
 import (
+	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -23,17 +26,21 @@ var logger = logging.New("statussync")
 // Report is empty, so disappearance of the last contribution is observable.
 type ResourceReports struct {
 	Resource Resource
-	Target   reports.StatusKey
 	Report   reports.StatusReport
 }
 
+// Target is the version-independent key this reduction is stored under. It is derived from
+// Resource rather than stored, so the two can never disagree.
+func (r ResourceReports) Target() reports.StatusKey {
+	return reports.StatusKey{GroupKind: r.Resource.GroupKind(), NamespacedName: r.Resource.NamespacedName}
+}
+
 func (r ResourceReports) ResourceName() string {
-	return r.Target.String()
+	return r.Target().String()
 }
 
 func (r ResourceReports) Equals(other ResourceReports) bool {
 	return r.Resource == other.Resource &&
-		r.Target == other.Target &&
 		r.Report.Equals(other.Report)
 }
 
@@ -115,10 +122,30 @@ func NewResourceReports[I controllers.Object](
 		fragments := krt.Fetch(kctx, contributions, krt.FilterIndex(byTarget, target))
 		return &ResourceReports{
 			Resource: res,
-			Target:   target,
 			Report:   reports.ReduceStatusContributions(fragments),
 		}
 	}, opts...)
+}
+
+// ReportFor looks up the current reduction for one status owner. Writers call it from
+// their Desired func to build status just in time from the latest KRT state.
+//
+// The returned StatusReport contains pointers into KRT-owned retained state. Builders must
+// treat it as read-only, so later KRT equality checks continue to observe changes.
+func ReportFor(
+	col krt.Collection[ResourceReports],
+	gvk schema.GroupVersionKind,
+	nn types.NamespacedName,
+) (reports.StatusReport, bool) {
+	if col == nil {
+		return reports.StatusReport{}, false
+	}
+	target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn}
+	current := col.GetKey(target.String())
+	if current == nil {
+		return reports.StatusReport{}, false
+	}
+	return current.Report, true
 }
 
 // StatusRegistration attaches a source handler that feeds the given queue. It is invoked
@@ -166,15 +193,12 @@ func (s *StatusCollections) UnsetQueue() {
 
 // SetQueue enables status writing. All registered sources attach handlers to the queue;
 // raw KRT collections replay current objects as Add events to sweep them on leadership.
-func (s *StatusCollections) SetQueue(queue WorkerQueue) []krt.Syncer {
+func (s *StatusCollections) SetQueue(queue WorkerQueue) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.queue = queue
 	s.active = slices.Map(s.constructors, func(reg StatusRegistration) krt.HandlerRegistration {
 		return reg(queue)
-	})
-	return slices.Map(s.active, func(e krt.HandlerRegistration) krt.Syncer {
-		return e
 	})
 }
 
@@ -218,7 +242,11 @@ func registerResource[I controllers.Object](
 				NamespacedName:   config.NamespacedName(obj),
 			}
 			statusWriter.Push(res)
-			logger.Debug("enqueued status reconciliation", "resource", res.NamespacedName.String(), "resource_version", obj.GetResourceVersion())
+			// This fires for every informer event on every registered kind, including the
+			// echo of our own writes, so keep the argument evaluation behind the level check.
+			if logger.Enabled(context.Background(), slog.LevelDebug) {
+				logger.Debug("enqueued status reconciliation", "resource", res.NamespacedName.String(), "resource_version", obj.GetResourceVersion())
+			}
 		})
 	}
 	s.Register(reg)
