@@ -30,8 +30,12 @@ func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
 	}
 
 	return &gwv1a2.TLSRoute{
+		// The Go type is normalized but the API version is not: TypeMeta records the version
+		// this object was actually served as, which is the version its status must be written
+		// back through. Erasing it here is what forced the write path to probe informers to
+		// guess the version back.
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1a2.GroupVersion.String(),
+			APIVersion: gwv1.GroupVersion.String(),
 			Kind:       wellknown.TLSRouteKind,
 		},
 		ObjectMeta: *in.ObjectMeta.DeepCopy(),
@@ -55,8 +59,9 @@ func convertTLSRouteV1Alpha3ToV1Alpha2(in *gwv1a3.TLSRoute) *gwv1a2.TLSRoute {
 	}
 
 	return &gwv1a2.TLSRoute{
+		// See convertTLSRouteV1ToV1Alpha2: the served API version is preserved.
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1a2.GroupVersion.String(),
+			APIVersion: gwv1a3.GroupVersion.String(),
 			Kind:       wellknown.TLSRouteKind,
 		},
 		ObjectMeta: *in.ObjectMeta.DeepCopy(),

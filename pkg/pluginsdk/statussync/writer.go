@@ -35,13 +35,6 @@ type ResourceStatusSyncer interface {
 	ApplyStatus(ctx context.Context, obj Resource)
 }
 
-// ResourcePresenceChecker is optionally implemented by a ResourceStatusSyncer that can
-// report whether its backing client currently holds an object. NewFirstPresentSyncer uses
-// it to choose between syncers for different API versions of the same storage object.
-type ResourcePresenceChecker interface {
-	HasResource(res Resource) bool
-}
-
 // Writer is a generic ResourceStatusSyncer that writes status via the istio kclient,
 // i.e. the same client/informer cache that translation reads from.
 type Writer[O controllers.ComparableObject, S any] struct {
@@ -81,65 +74,7 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	NotReady *NotReadyRequeuer
 }
 
-var (
-	_ ResourceStatusSyncer    = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
-	_ ResourcePresenceChecker = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
-)
-
-// HasResource reports whether this writer's informer currently holds the object. A writer
-// bound to an API version the cluster does not serve never holds anything, because its
-// delayed informer never starts.
-func (w Writer[O, S]) HasResource(res Resource) bool {
-	return !controllers.IsNil(w.Client.Get(res.Name, res.Namespace))
-}
-
-// NewFirstPresentSyncer combines syncers for several API versions of the same storage
-// object into one that dispatches each write to the first candidate whose client actually
-// holds the object.
-//
-// This exists for resources whose served API version could not be resolved at startup (see
-// collections.tcpRouteWriteGVRs). Binding to a single guessed version is a permanent
-// failure when the guess is wrong: the client for a never-served version returns nil from
-// Get, so ApplyStatus skips the write and logs at Debug, and the resource carries no status
-// until the pod restarts. Probing instead lets the correct version win as soon as its
-// informer syncs.
-//
-// candidates must be ordered most-preferred first. One candidate is returned unwrapped, so
-// the common (resolvable) case costs nothing.
-func NewFirstPresentSyncer(name string, candidates ...ResourceStatusSyncer) ResourceStatusSyncer {
-	switch len(candidates) {
-	case 0:
-		return nil
-	case 1:
-		return candidates[0]
-	default:
-		return firstPresentSyncer{name: name, candidates: candidates}
-	}
-}
-
-type firstPresentSyncer struct {
-	name       string
-	candidates []ResourceStatusSyncer
-}
-
-func (s firstPresentSyncer) ApplyStatus(ctx context.Context, obj Resource) {
-	for _, candidate := range s.candidates {
-		probe, ok := candidate.(ResourcePresenceChecker)
-		if !ok || !probe.HasResource(obj) {
-			continue
-		}
-		candidate.ApplyStatus(ctx, obj)
-		return
-	}
-	// No candidate holds the object: either it was deleted, or no informer has loaded yet.
-	// Delegating to the preferred version is what makes the second case recoverable — its
-	// writer routes this through NotReadyRequeuer, which re-queues until some candidate can
-	// see the object or the budget runs out. Dropping it here instead would strand the
-	// resource, since nothing upstream re-fires once a writer's informer finally loads.
-	logger.Debug("no candidate API version holds the object; using the preferred version",
-		"kind", s.name, "resource", obj.NamespacedName.String())
-	s.candidates[0].ApplyStatus(ctx, obj)
-}
+var _ ResourceStatusSyncer = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
 
 // RetryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
 // with exponential backoff, aborted on ctx cancellation. attempt must re-read the current

@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/slices"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -84,25 +83,16 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		s.statusContributions, contributionsByTarget, krtopts.ToOptions("HTTPRouteStatusReports")...)
 	grpcRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.GRPCRouteGVK, s.commonCols.RawGRPCRoutes,
 		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GRPCRouteStatusReports")...)
-	// The preferred write version also names the GVK the queue keys TCP/TLS routes under.
-	// Every version maps to the same writer below, so the choice only has to be stable.
-	tcpWriteGVRs := s.commonCols.TCPRouteWriteVersions()
-	tlsWriteGVRs := s.commonCols.TLSRouteWriteVersions()
-	tcpGVK := wellknown.TCPRouteGVK
-	if tcpWriteGVRs[0] == wellknown.TCPRouteV1GVR {
-		tcpGVK = wellknown.TCPRouteV1GVK
-	}
-	tcpRouteReports := statussync.RegisterKind(s.statusCollections, tcpGVK, s.commonCols.RawTCPRoutes,
-		s.statusContributions, contributionsByTarget, krtopts.ToOptions("TCPRouteStatusReports")...)
-	tlsGVK := wellknown.TLSRouteGVK
-	switch tlsWriteGVRs[0] {
-	case wellknown.TLSRouteV1GVR:
-		tlsGVK = wellknown.TLSRouteV1GVK
-	case wellknown.TLSRouteV1Alpha3GVR:
-		tlsGVK = wellknown.TLSRouteV1Alpha3GVK
-	}
-	tlsRouteReports := statussync.RegisterKind(s.statusCollections, tlsGVK, s.commonCols.RawTLSRoutes,
-		s.statusContributions, contributionsByTarget, krtopts.ToOptions("TLSRouteStatusReports")...)
+	// TCP and TLS routes are normalized to one Go type but keep the API version they were
+	// served as in TypeMeta, so an enqueued resource already names the version its status
+	// must be written back through. Key the reductions and the queue by that GVK, and give
+	// each served version its own writer.
+	tcpRouteReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.TCPRouteGVK,
+		s.commonCols.RawTCPRoutes, s.statusContributions, contributionsByTarget,
+		krtopts.ToOptions("TCPRouteStatusReports")...)
+	tlsRouteReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.TLSRouteGVK,
+		s.commonCols.RawTLSRoutes, s.statusContributions, contributionsByTarget,
+		krtopts.ToOptions("TLSRouteStatusReports")...)
 
 	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute](ctx, cl, f, httpRouteReports, wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
@@ -121,69 +111,68 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		notReady,
 	)
 
-	// TCP and TLS route statuses are written through a served API version resolved from CRD
-	// discovery at startup; all versions share the same storage object. When discovery could
-	// not resolve one, every candidate version gets a writer and the dispatcher picks the one
-	// whose informer actually holds the object, so a wrong startup guess is not permanent.
-	tcpWriter := statussync.NewFirstPresentSyncer("tcpRoute", slices.Map(tcpWriteGVRs,
-		func(gvr schema.GroupVersionResource) statussync.ResourceStatusSyncer {
-			if gvr == wellknown.TCPRouteV1GVR {
-				return routeWriter[*gwv1.TCPRoute](ctx, cl, f, tcpRouteReports, tcpGVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
+	// One writer per served version. A version we do not watch produces no objects, so it
+	// never appears as an enqueued GVK and needs no writer; that is why this iterates the
+	// same list the watches were built from rather than every version we understand.
+	for _, gvr := range s.commonCols.TCPRouteWriteVersions() {
+		switch gvr {
+		case wellknown.TCPRouteV1GVR:
+			registerStatusWriter(s.statusWriters, wellknown.TCPRouteV1GVK,
+				routeWriter[*gwv1.TCPRoute](ctx, cl, f, tcpRouteReports, wellknown.TCPRouteV1GVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
 						return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
 					},
 					func(o *gwv1.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 					notReady,
-				)
-			}
-			return routeWriter[*gwv1a2.TCPRoute](ctx, cl, f, tcpRouteReports, tcpGVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
-				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
-					return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
-				},
-				func(o *gwv1a2.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-				func(o *gwv1a2.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
-				notReady,
-			)
-		})...)
-	s.statusWriters[wellknown.TCPRouteGVK] = tcpWriter
-	s.statusWriters[wellknown.TCPRouteV1GVK] = tcpWriter
+				))
+		default:
+			registerStatusWriter(s.statusWriters, wellknown.TCPRouteGVK,
+				routeWriter[*gwv1a2.TCPRoute](ctx, cl, f, tcpRouteReports, wellknown.TCPRouteGVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
+					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
+						return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
+					},
+					func(o *gwv1a2.TCPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+					func(o *gwv1a2.TCPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+					notReady,
+				))
+		}
+	}
 
-	tlsWriter := statussync.NewFirstPresentSyncer("tlsRoute", slices.Map(tlsWriteGVRs,
-		func(gvr schema.GroupVersionResource) statussync.ResourceStatusSyncer {
-			switch gvr {
-			case wellknown.TLSRouteV1GVR:
-				return routeWriter[*gwv1.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
+	for _, gvr := range s.commonCols.TLSRouteWriteVersions() {
+		switch gvr {
+		case wellknown.TLSRouteV1GVR:
+			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1GVK,
+				routeWriter[*gwv1.TLSRoute](ctx, cl, f, tlsRouteReports, wellknown.TLSRouteV1GVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
 						return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
 					},
 					func(o *gwv1.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 					notReady,
-				)
-			case wellknown.TLSRouteV1Alpha3GVR:
-				return routeWriter[*gwv1a3.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
+				))
+		case wellknown.TLSRouteV1Alpha3GVR:
+			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1Alpha3GVK,
+				routeWriter[*gwv1a3.TLSRoute](ctx, cl, f, tlsRouteReports, wellknown.TLSRouteV1Alpha3GVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
 						return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
 					},
 					func(o *gwv1a3.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1a3.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 					notReady,
-				)
-			default:
-				return routeWriter[*gwv1a2.TLSRoute](ctx, cl, f, tlsRouteReports, tlsGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
+				))
+		default:
+			registerStatusWriter(s.statusWriters, wellknown.TLSRouteGVK,
+				routeWriter[*gwv1a2.TLSRoute](ctx, cl, f, tlsRouteReports, wellknown.TLSRouteGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
 						return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
 					},
 					func(o *gwv1a2.TLSRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 					func(o *gwv1a2.TLSRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 					notReady,
-				)
-			}
-		})...)
-	s.statusWriters[wellknown.TLSRouteGVK] = tlsWriter
-	s.statusWriters[wellknown.TLSRouteV1GVK] = tlsWriter
-	s.statusWriters[wellknown.TLSRouteV1Alpha3GVK] = tlsWriter
+				))
+		}
+	}
 
 	listenerSetReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK,
 		s.commonCols.RawListenerSets, s.statusContributions, contributionsByTarget,

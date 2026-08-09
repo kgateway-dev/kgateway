@@ -162,22 +162,6 @@ func (c notReadyClient[T]) Get(name, namespace string) T {
 	return c.Client.Get(name, namespace)
 }
 
-// The dispatcher's "no candidate holds it" fall-through is the exact path a late CRD
-// installation takes, so it must reach a writer that requeues rather than dropping the work.
-func TestFirstPresentSyncerFallThroughRequeues(t *testing.T) {
-	preferred, _, _ := newTestWriter(t, false) // no object: stands in for an unloaded client
-	rec := &requeueRecorder{}
-	preferred.NotReady = NewNotReadyRequeuer(rec.fn)
-
-	absentOther := stubSyncer{present: false, applied: &atomic.Int32{}}
-	NewFirstPresentSyncer("tcpRoute", preferred, absentOther).
-		ApplyStatus(context.Background(), testRouteResource())
-
-	require.Len(t, rec.recorded(), 1,
-		"a resource no candidate can see yet must be requeued, not silently dropped")
-	require.Zero(t, absentOther.applied.Load())
-}
-
 func TestStatusCollectionsRequeueDropsWhenNotLeader(t *testing.T) {
 	sc := NewStatusCollections()
 	// No queue set: this replica is not the leader, so requeues must be dropped rather than

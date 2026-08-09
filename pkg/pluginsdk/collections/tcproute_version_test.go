@@ -8,6 +8,8 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
@@ -54,7 +56,8 @@ func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
 	require.Equal(t, route.Name, converted.Name)
 	require.Equal(t, route.Namespace, converted.Namespace)
 	require.Equal(t, route.Labels, converted.Labels)
-	require.Equal(t, gwv1a2.GroupVersion.String(), converted.APIVersion)
+	require.Equal(t, gwv1.GroupVersion.String(), converted.APIVersion,
+		"the served API version must survive normalization: it is the version status is written back through")
 	require.Equal(t, route.Spec.ParentRefs, converted.Spec.ParentRefs)
 	require.Len(t, converted.Spec.Rules, 1)
 	require.Equal(t, gwv1a2.SectionName("rule-1"), ptr.Deref(converted.Spec.Rules[0].Name, ""))
@@ -67,4 +70,13 @@ func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
 
 func TestConvertTCPRouteV1ToV1Alpha2Nil(t *testing.T) {
 	require.Nil(t, convertTCPRouteV1ToV1Alpha2(nil))
+}
+
+// See TestNormalizedTLSRoutesReportTheServedGroupVersionKind.
+func TestNormalizedTCPRoutesReportTheServedGroupVersionKind(t *testing.T) {
+	fromV1 := convertTCPRouteV1ToV1Alpha2(&gwv1.TCPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"},
+	})
+	require.Equal(t, wellknown.TCPRouteV1GVK, fromV1.GetObjectKind().GroupVersionKind())
+	require.Equal(t, gwv1a2.GroupVersion.Version, wellknown.TCPRouteGVK.Version)
 }
