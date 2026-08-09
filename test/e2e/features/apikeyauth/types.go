@@ -19,6 +19,7 @@ var (
 	apiKeyAuthManifestQuery        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-query.yaml")
 	apiKeyAuthManifestCookie       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-cookie.yaml")
 	apiKeyAuthManifestSecretUpdate = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-secret-update.yaml")
+	apiKeyAuthManifestSelector     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-secret-selector.yaml")
 	apiKeyAuthManifestOverride     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-override.yaml")
 	apiKeyAuthManifestDisable      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-disable.yaml")
 
@@ -53,6 +54,9 @@ var (
 		},
 		"TestAPIKeyAuthWithSecretUpdate": {
 			Manifests: []string{apiKeyAuthManifestSecretUpdate},
+		},
+		"TestAPIKeyAuthWithSecretSelector": {
+			Manifests: []string{apiKeyAuthManifestSelector},
 		},
 		"TestAPIKeyAuthRouteOverrideGateway": {
 			Manifests:       []string{apiKeyAuthManifestOverride},
