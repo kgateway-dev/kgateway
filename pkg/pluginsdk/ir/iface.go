@@ -106,6 +106,8 @@ type RouteBackendContext struct {
 	RequestHeadersToRemove  []string
 	ResponseHeadersToAdd    []*envoycorev3.HeaderValueOption
 	ResponseHeadersToRemove []string
+	RouteSource             metav1.Object
+	RouteParentRef          gwv1.ParentReference
 }
 
 type RouteContext struct {
@@ -292,6 +294,11 @@ type PolicyWrapper struct {
 	// Errors should be formatted for users, so do not include internal lib errors.
 	// Instead use a well defined error such as ErrInvalidConfig
 	Errors []error
+
+	// Warnings are non-fatal issues detected while processing the policy. The policy
+	// is still accepted, but is reported as PartiallyValid so users can see what was
+	// dropped or ignored.
+	Warnings []error
 
 	// The IR of the policy objects. ideally with structural errors removed.
 	// Opaque to us other than metadata.

@@ -635,6 +635,10 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			FilterChainName:   h.fc.FilterChainName,
 			Backend:           backend.Backend.BackendObject,
 			TypedFilterConfig: backendConfigCtx.typedPerFilterConfigRoute,
+			RouteParentRef:    in.ParentRef,
+		}
+		if in.Parent != nil {
+			pCtx.RouteSource = in.Parent.GetSourceObject()
 		}
 
 		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)

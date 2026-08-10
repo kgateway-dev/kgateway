@@ -35,6 +35,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
 const (
@@ -589,6 +590,7 @@ type headerModifierIr struct {
 	Add       []*envoycorev3.HeaderValueOption
 	Remove    []string
 	IsRequest bool // true=request, false=response
+	Dropped   []string
 }
 
 func (h *headerModifierIr) apply(
@@ -621,8 +623,14 @@ func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isR
 	if f == nil {
 		return nil
 	}
+	var dropped []string
 	var add []*envoycorev3.HeaderValueOption
 	for _, h := range f.Add {
+		if stringutils.IsRestrictedHeaderName(string(h.Name)) {
+			dropped = append(dropped, string(h.Name))
+			continue
+		}
+
 		add = append(add, &envoycorev3.HeaderValueOption{
 			Header: &envoycorev3.HeaderValue{
 				Key:   string(h.Name),
@@ -632,6 +640,11 @@ func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isR
 		})
 	}
 	for _, h := range f.Set {
+		if stringutils.IsRestrictedHeaderName(string(h.Name)) {
+			dropped = append(dropped, string(h.Name))
+			continue
+		}
+
 		add = append(add, &envoycorev3.HeaderValueOption{
 			Header: &envoycorev3.HeaderValue{
 				Key:   string(h.Name),
@@ -640,10 +653,21 @@ func convertHeaderModifierIR(_ krt.HandlerContext, f *gwv1.HTTPHeaderFilter, isR
 			AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 		})
 	}
+
+	var remove []string
+	for _, name := range f.Remove {
+		if stringutils.IsRestrictedHeaderName(name) {
+			dropped = append(dropped, name)
+			continue
+		}
+		remove = append(remove, name)
+	}
+
 	return &headerModifierIr{
 		Add:       add,
-		Remove:    f.Remove,
+		Remove:    remove,
 		IsRequest: isRequest,
+		Dropped:   dropped,
 	}
 }
 
@@ -716,6 +740,9 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 		if canPostProcessRedirect {
 			applyRedirectPortPostProcessing(pCtx, pol, outputRoute)
 		}
+		if hm, ok := pol.filter.policy.(*headerModifierIr); ok && pCtx.In.Parent != nil {
+			p.reportDroppedHeaders(pCtx.In.Parent.GetSourceObject(), pCtx.In.ParentRef, hm.Dropped)
+		}
 	}
 
 	p.applyRulePolicy(pCtx, pol.rule, mergeOpts, outputRoute)
@@ -724,6 +751,21 @@ func (p *builtinPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputRoute *
 	}
 
 	return errs
+}
+
+func (p *builtinPluginGwPass) reportDroppedHeaders(src metav1.Object, parentRef gwv1.ParentReference, dropped []string) {
+	if len(dropped) == 0 || src == nil {
+		return
+	}
+	p.reporter.Route(src).ParentRef(&parentRef).SetCondition(reporter.RouteCondition{
+		Type:   gwv1.RouteConditionPartiallyInvalid,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.RouteReasonUnsupportedValue,
+		Message: fmt.Sprintf(
+			"Dropped header modifier(s) targeting restricted headers that Envoy refuses to mutate (Host or :-prefixed pseudo-headers): %s",
+			strings.Join(dropped, ", "),
+		),
+	})
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(
@@ -746,6 +788,9 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 	}
 	if backendPolicy, ok := inPolicy.filter.policy.(applyToRouteBackend); ok {
 		backendPolicy.applyToBackend(pCtx)
+		if hm, ok := inPolicy.filter.policy.(*headerModifierIr); ok {
+			p.reportDroppedHeaders(pCtx.RouteSource, pCtx.RouteParentRef, hm.Dropped)
+		}
 	} else {
 		logger.Error("filter policy is not supported on backendRef", "filter_type", inPolicy.filter.filterType)
 		// TODO: once we have warnings / non terminal errors we should return it here, so the policy status is updated.

@@ -2,6 +2,7 @@ package stringutils
 
 import (
 	slices0 "slices"
+	"strings"
 
 	slices "golang.org/x/exp/slices"
 )
@@ -34,4 +35,12 @@ func TruncateMaxLength(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen]
+}
+
+// IsRestrictedHeaderName reports if a name is a header Envoy refuses to let
+// config add, set, or remove via header alter lists - "host" (case-insensitive),
+// or basically any HTTP/2 pseudo-header, i.e. one starting with ":"
+// (":authority", ":path", ":method", ":scheme", ":status").
+func IsRestrictedHeaderName(name string) bool {
+	return strings.HasPrefix(name, ":") || strings.EqualFold(name, "host")
 }

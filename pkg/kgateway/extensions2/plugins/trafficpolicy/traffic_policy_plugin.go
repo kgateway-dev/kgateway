@@ -295,7 +295,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			Name:      policyCR.Name,
 		}
 
-		policyIR, errors := constructor.ConstructIR(krtctx, policyCR)
+		policyIR, errors, warnings := constructor.ConstructIR(krtctx, policyCR)
 		if err := validateWithValidationLevel(ctx, policyIR, v, commoncol.Settings.ValidationMode, commoncol.Settings.EnableAuthMetadata); err != nil {
 			logger.Error("validation failed", "policy", policyCR.Name, "error", err)
 			errors = append(errors, err)
@@ -319,6 +319,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			PolicyIR:         policyIR,
 			TargetRefs:       pluginsdkutils.TargetRefsToPolicyRefsWithSectionName(policyCR.Spec.TargetRefs, policyCR.Spec.TargetSelectors),
 			Errors:           errors,
+			Warnings:         warnings,
 			PrecedenceWeight: precedenceWeight,
 		}
 		return statusMarker, pol

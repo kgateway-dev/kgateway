@@ -130,6 +130,43 @@ func TestConvertHeaderMutations(t *testing.T) {
 			input:    nil,
 			expected: nil,
 		},
+		{
+			name: "drops Host and pseudo-headers that Envoy refuses to mutate, keeps the rest",
+			input: &gwv1.HTTPHeaderFilter{
+				Add: []gwv1.HTTPHeader{
+					{Name: "Host", Value: "evil.example.com"},
+					{Name: "X-Add-Kept", Value: "v"},
+				},
+				Set: []gwv1.HTTPHeader{
+					{Name: "host", Value: "evil.example.com"},
+					{Name: "X-Set-Kept", Value: "v"},
+				},
+				Remove: []string{":authority", "X-Remove-Kept"},
+			},
+			expected: []*mutation_rulesv3.HeaderMutation{
+				{
+					Action: &mutation_rulesv3.HeaderMutation_Append{
+						Append: &envoycorev3.HeaderValueOption{
+							Header:       &envoycorev3.HeaderValue{Key: "X-Add-Kept", Value: "v"},
+							AppendAction: envoycorev3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
+						},
+					},
+				},
+				{
+					Action: &mutation_rulesv3.HeaderMutation_Append{
+						Append: &envoycorev3.HeaderValueOption{
+							Header:       &envoycorev3.HeaderValue{Key: "X-Set-Kept", Value: "v"},
+							AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+						},
+					},
+				},
+				{
+					Action: &mutation_rulesv3.HeaderMutation_Remove{
+						Remove: "X-Remove-Kept",
+					},
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {

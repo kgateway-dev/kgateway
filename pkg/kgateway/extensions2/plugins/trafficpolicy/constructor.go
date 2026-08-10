@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
@@ -47,13 +48,14 @@ func NewTrafficPolicyConstructor(
 func (c *TrafficPolicyConstructor) ConstructIR(
 	krtctx krt.HandlerContext,
 	policyCR *kgateway.TrafficPolicy,
-) (*TrafficPolicy, []error) {
+) (*TrafficPolicy, []error, []error) {
 	policyIr := TrafficPolicy{
 		ct: policyCR.CreationTimestamp.Time,
 	}
 	outSpec := trafficPolicySpecIr{}
 
 	var errors []error
+	var warnings []error
 
 	// Construct rustformation specific IR
 	if err := constructRustformation(policyCR, &outSpec); err != nil {
@@ -81,8 +83,13 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
-	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
+	if dropped, err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
 		errors = append(errors, err)
+	} else if len(dropped) > 0 {
+		warnings = append(warnings, fmt.Errorf(
+			"dropped header modifier(s) targeting restricted headers that Envoy refuses to mutate (Host or :-prefixed pseudo-headers): %s",
+			strings.Join(dropped, ", "),
+		))
 	}
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
@@ -134,7 +141,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	}
 	policyIr.spec = outSpec
 
-	return &policyIr, errors
+	return &policyIr, errors, warnings
 }
 
 func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerContext, extensionRef shared.NamespacedObjectReference, ns string) (*TrafficPolicyGatewayExtensionIR, error) {

@@ -916,6 +916,7 @@ func (p *PolicyIndex) getTargetingPoliciesMaybeForBackends(
 			},
 			PrecedenceWeight: p.PrecedenceWeight,
 			Errors:           p.Errors,
+			Warnings:         p.Warnings,
 		})
 	}
 
@@ -1530,6 +1531,7 @@ func (h *RoutesIndex) resolveExtension(
 			PolicyIr:         policy.PolicyIR,
 			PolicyRef:        policyRef,
 			Errors:           policy.Errors,
+			Warnings:         policy.Warnings,
 			PrecedenceWeight: policy.PrecedenceWeight,
 		}
 		return policyAtt, nil
@@ -1661,6 +1663,7 @@ func ToAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts
 			PolicyRef:        p.PolicyRef,
 			GroupKind:        gk,
 			Errors:           p.Errors,
+			Warnings:         p.Warnings,
 			Generation:       p.Generation,
 			PrecedenceWeight: p.PrecedenceWeight,
 		}

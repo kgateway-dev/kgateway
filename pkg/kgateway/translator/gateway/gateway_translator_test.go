@@ -251,6 +251,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("http gateway drops restricted HeaderModifier headers and reports PartiallyInvalid", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-with-restricted-header-modifier"},
+			outputFile: "http-with-restricted-header-modifier-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "gw",
+			},
+		})
+	})
+
 	t.Run("Gateway API route sorting", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"route-sort.yaml"},

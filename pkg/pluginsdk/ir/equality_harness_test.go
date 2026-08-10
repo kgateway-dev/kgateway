@@ -52,6 +52,7 @@ func baseHarnessPolicyAtt() PolicyAtt {
 		},
 		InheritedPolicyPriority: apiannotations.ShallowMergePreferParent,
 		Errors:                  []error{errors.New("base error")},
+		Warnings:                []error{errors.New("base warning")},
 		HierarchicalPriority:    5,
 		PrecedenceWeight:        10,
 		// MergeOrigins is +noKrtEquals and listed as exempt below.
@@ -83,6 +84,10 @@ func TestHarnessPolicyAttEquals(t *testing.T) {
 		{
 			Field:  "Errors",
 			Mutate: func(p *PolicyAtt) { p.Errors = []error{errors.New("different error")} },
+		},
+		{
+			Field:  "Warnings",
+			Mutate: func(p *PolicyAtt) { p.Warnings = []error{errors.New("different warning")} },
 		},
 		{
 			Field:  "HierarchicalPriority",

@@ -230,11 +230,12 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	return true
 }
 
-func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.CommonCollections, h *kgateway.HTTPSettings, objSrc ir.ObjectSource) (*HttpListenerPolicyIr, []error) {
+func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.CommonCollections, h *kgateway.HTTPSettings, objSrc ir.ObjectSource) (*HttpListenerPolicyIr, []error, []string) {
 	if h == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	errs := []error{}
+	var dropped []string
 	accessLog, err := convertAccessLogConfig(h, commoncol, krtctx, objSrc)
 	if err != nil {
 		logger.Error("error translating access log", "error", err)
@@ -247,7 +248,8 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		errs = append(errs, err)
 	}
 
-	localReplyConfig, err := convertLocalReplyConfig(h, commoncol, krtctx, objSrc)
+	localReplyConfig, localReplyDropped, err := convertLocalReplyConfig(h, commoncol, krtctx, objSrc)
+	dropped = append(dropped, localReplyDropped...)
 	if err != nil {
 		logger.Error("error translating local reply config", "error", err)
 		errs = append(errs, err)
@@ -383,6 +385,8 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		}
 	}
 
+	dropped = append(dropped, pluginutils.RestrictedHeaderNames(h.EarlyRequestHeaderModifier)...)
+
 	return &HttpListenerPolicyIr{
 		accessLogConfig:               accessLog,
 		accessLogPolicies:             h.AccessLog,
@@ -413,7 +417,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,
 		stripHostPortMode:             h.StripHostPortMode,
-	}, errs
+	}, errs, dropped
 }
 
 func convertUpgradeConfig(policy *kgateway.HTTPSettings) []*envoy_hcm.HttpConnectionManager_UpgradeConfig {
