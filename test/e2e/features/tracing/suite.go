@@ -46,7 +46,7 @@ func (s *testingSuite) TestOTelTracingSecure() {
 // testOTelTracing makes a request to the httpbin service
 // and checks if the collector pod logs contain the expected lines
 func (s *testingSuite) testOTelTracing() {
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
 	headerValue := strconv.Itoa(rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
@@ -75,7 +75,7 @@ func (s *testingSuite) testOTelTracing() {
 			`-> http.method: Str(GET)`,
 			`-> http.status_code: Str(200)`,
 			`-> upstream_cluster: Str(kube_httpbin_httpbin_8000)`,
-			// User provided in the HTTPListenerPolicy
+			// User provided in the ListenerPolicy
 			`-> service.name: Str(my:service)`,
 			// Default resource attributes set via OTEL_RESOURCE_ATTRIBUTES env var in the Helm chart
 			`-> k8s.namespace.name: Str(default)`,
@@ -111,10 +111,10 @@ func (s *testingSuite) testOTelTracing() {
 }
 
 // TestRouteTracingCustomAttributes verifies that a TrafficPolicy with route-level tracing
-// adds custom tags to traces alongside listener-level tags from the HTTPListenerPolicy.
+// adds custom tags to traces alongside listener-level tags from the ListenerPolicy.
 func (s *testingSuite) TestRouteTracingCustomAttributes() {
 	// Wait for listener-level tracing policy to be accepted
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	headerValue := strconv.Itoa(rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
@@ -139,7 +139,7 @@ func (s *testingSuite) TestRouteTracingCustomAttributes() {
 			`-> http.url: Str(http://www.example.com/status/200)`,
 			`-> http.method: Str(GET)`,
 			`-> http.status_code: Str(200)`,
-			// Listener-level custom tags from HTTPListenerPolicy should still be present
+			// Listener-level custom tags from ListenerPolicy should still be present
 			`-> custom: Str(literal)`,
 			// Route-level custom tags from TrafficPolicy
 			`-> route-tag: Str(route-tag-value)`,
@@ -164,7 +164,7 @@ func (s *testingSuite) TestRouteTracingCustomAttributes() {
 // prevents traces from being emitted for the targeted route.
 func (s *testingSuite) TestRouteTracingDisable() {
 	// Wait for listener-level tracing policy to be accepted
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	// Use a unique marker to identify requests from this test
 	marker := fmt.Sprintf("disable-test-%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable

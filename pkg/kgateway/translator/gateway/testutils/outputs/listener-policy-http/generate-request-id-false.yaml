@@ -22,6 +22,7 @@ Listeners:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        generateRequestId: false
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -33,27 +34,22 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        requestIdExtension:
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.request_id.uuid.v3.UuidRequestIdConfig
-            packTraceReason: true
-            useRequestIdForTraceSampling: true
         statPrefix: http
         useRemoteAddress: true
     name: listener~80
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        uuidRequestIdConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/default/request-id-defaults
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.generateRequestId:
+        - gateway.kgateway.dev/ListenerPolicy/default/generate-request-id-false
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        uuidRequestIdConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/default/request-id-defaults
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.generateRequestId:
+        - gateway.kgateway.dev/ListenerPolicy/default/generate-request-id-false
   name: listener~80
   virtualHosts:
   - domains:
@@ -139,7 +135,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    HTTPListenerPolicy/default/request-id-defaults:
+    ListenerPolicy/default/generate-request-id-false:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

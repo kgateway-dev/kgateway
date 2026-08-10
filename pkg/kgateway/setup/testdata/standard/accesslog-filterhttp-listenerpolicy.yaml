@@ -118,7 +118,7 @@ ports:
     protocol: TCP
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: accesslog
   namespace: gwtest
@@ -127,15 +127,17 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: http-gw-for-test
-  accessLog:
-    - grpcService:
-        logName: "test-accesslog-service"
-        backendRef:
-          name: log-test
-          port: 50051
-      filter:
-          headerFilter:
-              header:
-                value: "test"
-                name: "x-my-cool-test-filter"
-                type: "Exact"
+  default:
+    httpSettings:
+      accessLog:
+        - grpcService:
+            logName: "test-accesslog-service"
+            backendRef:
+              name: log-test
+              port: 50051
+          filter:
+              headerFilter:
+                  header:
+                    value: "test"
+                    name: "x-my-cool-test-filter"
+                    type: "Exact"

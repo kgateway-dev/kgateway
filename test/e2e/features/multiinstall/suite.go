@@ -50,7 +50,7 @@ func (s *tsuite) TestPolicies() {
 		[]curl.Option{curl.WithHostPort(ProxyHostPort(s.namespace)), curl.WithPath("/get")},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Headers: map[string]any{"x-foo": "bar"}})
 
-	// Verify access logs with HTTPListenerPolicy
+	// Verify access logs with ListenerPolicy
 	pods, err := s.ti.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.ctx, s.namespace, fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, Gateway(s.namespace).Name),
 	)

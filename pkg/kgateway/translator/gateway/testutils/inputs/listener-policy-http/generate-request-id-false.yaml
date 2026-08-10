@@ -36,7 +36,7 @@ spec:
       port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: generate-request-id-false
 spec:
@@ -44,4 +44,6 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  generateRequestId: false
+  default:
+    httpSettings:
+      generateRequestId: false
