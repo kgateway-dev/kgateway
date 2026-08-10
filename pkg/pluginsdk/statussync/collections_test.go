@@ -159,6 +159,63 @@ func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond, "the raw owner must retain an empty reduction after its final contribution disappears")
 }
 
+// TestFetchedContributionsAreNotAliasedByIndexStorage pins the krt allocation behavior that
+// reports.ReduceStatusContributions relies on: it sorts its input in place, which is only safe
+// because krt.Fetch hands back a slice the caller owns rather than a view into the index's
+// storage. If an upstream krt bump ever returned shared storage, sorting would silently permute
+// index-owned state; this test fails loudly instead.
+//
+// It overwrites every slot of the fetched slice rather than merely sorting it: a sort can only
+// permute elements within the slice's length, so slot-level writes detect every aliasing a sort
+// could corrupt, and detect it regardless of the input's incidental order.
+func TestFetchedContributionsAreNotAliasedByIndexStorage(t *testing.T) {
+	stop := test.NewStop(t)
+	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
+	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
+	otherRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: "default"}}
+	objects := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route, otherRoute}, krt.WithStop(stop))
+
+	want := []reports.StatusContribution{
+		routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first"),
+		routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/second"}, "second"),
+		routeContribution(t, otherRoute, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first"),
+		routeContribution(t, otherRoute, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/second"}, "second"),
+	}
+	contributions := krt.NewStaticCollection(nil, want, krt.WithStop(stop))
+	byTarget := krt.NewIndex(contributions, "status-target", func(c reports.StatusContribution) []reports.StatusKey {
+		return []reports.StatusKey{c.Target}
+	})
+
+	// Stands in for NewResourceReports, but destroys what it fetches instead of reducing it.
+	var mu sync.Mutex
+	overwritten := 0
+	saboteur := krt.NewCollection(objects, func(kctx krt.HandlerContext, object *gwv1.HTTPRoute) *ResourceReports {
+		res := Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: object.Namespace, Name: object.Name}}
+		target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: res.NamespacedName}
+		fetched := krt.Fetch(kctx, contributions, krt.FilterIndex(byTarget, target))
+		for i := range fetched {
+			fetched[i] = reports.StatusContribution{}
+		}
+		mu.Lock()
+		overwritten += len(fetched)
+		mu.Unlock()
+		return &ResourceReports{Resource: res}
+	}, krt.WithStop(stop))
+	require.True(t, saboteur.WaitUntilSynced(nil))
+	// Without this the test passes vacuously if the fetch ever stops matching anything.
+	mu.Lock()
+	require.Equal(t, len(want), overwritten, "every contribution must have been fetched and overwritten")
+	mu.Unlock()
+
+	for _, expected := range [][]reports.StatusContribution{want[:2], want[2:]} {
+		target := expected[0].Target
+		require.ElementsMatch(t, expected, byTarget.Lookup(target),
+			"mutating a krt.Fetch result must not reach the index's own storage for %s", target)
+	}
+	require.ElementsMatch(t, want, contributions.List(),
+		"mutating a krt.Fetch result must not reach the source collection")
+}
+
 func routeParentCount(current *ResourceReports) int {
 	if current == nil || current.Report.Route == nil {
 		return 0

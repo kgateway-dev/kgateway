@@ -191,7 +191,10 @@ func compareStatusContributions(a, b StatusContribution) int {
 // which is freshly allocated per call — the index Lookup builds the slice, and Fetch itself
 // already FilterInPlaces it — and this runs once per status owner on every recompute that
 // touches it, so a defensive copy here is one wasted allocation per owner per event.
-// Callers that need their own ordering back must pass a copy.
+// That is a coupling to krt's allocation behavior, so it is pinned by
+// TestFetchedContributionsAreNotAliasedByIndexStorage in pkg/pluginsdk/statussync: an upstream
+// bump that started handing back index-owned storage fails there rather than silently
+// corrupting the index. Callers that need their own ordering back must pass a copy.
 func ReduceStatusContributions(contributions []StatusContribution) StatusReport {
 	slices.SortFunc(contributions, compareStatusContributions)
 	var reduced StatusReport
