@@ -36,12 +36,14 @@ spec:
       port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: generate-request-id-false
+  name: preserve-external-request-id
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  generateRequestId: false
+  default:
+    httpSettings:
+      preserveExternalRequestId: true

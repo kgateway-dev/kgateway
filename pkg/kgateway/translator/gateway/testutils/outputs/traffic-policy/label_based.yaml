@@ -84,21 +84,21 @@ Listeners:
     name: listener~80
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        accessLog:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
-        accessLogConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        accessLog:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
-        accessLogConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
   name: listener~80
   virtualHosts:
   - domains:
@@ -216,7 +216,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    HTTPListenerPolicy/infra/accesslog:
+    ListenerPolicy/infra/accesslog:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

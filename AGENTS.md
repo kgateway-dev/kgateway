@@ -14,7 +14,7 @@ See `/devel/architecture/overview.md` and the translation diagram at `/devel/arc
 - **cmd/**: 3 binaries: `kgateway` (controller), `envoyinit` (does some envoy bootstrap config manipulation), `sds` (secret server)
 - **api/v1alpha1/kgateway/**: kgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
 - **pkg/pluginsdk/**: Plugin interfaces (`Plugin`, `PolicyPlugin`, `BackendPlugin`)
-- **pkg/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
+- **pkg/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, listenerpolicy, etc.)
 - **pkg/krtcollections/**: KRT collections for core resources
 - **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
 

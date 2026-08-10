@@ -47,9 +47,6 @@ type ListenerPolicyIR struct {
 	ct            time.Time
 	defaultPolicy listenerPolicy
 	perPortPolicy map[uint32]listenerPolicy
-
-	NoOrigin bool // +noKrtEquals reason: When set to true, suppress source reporting metadata from
-	// ListenerPolicy specific fields that are irrelevant to the (now deprecated) HTTPListenerPolicy. Remove when HTTPListenerPolicy is removed.
 }
 
 type listenerPolicy struct {
@@ -216,7 +213,7 @@ type listenerPolicyPluginGwPass struct {
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
 
-func NewListenerPolicyIR(
+func newListenerPolicyIR(
 	krtctx krt.HandlerContext,
 	commoncol *collections.CommonCollections,
 	ct time.Time,
@@ -270,7 +267,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			}
 		}
 
-		polIr, errs := NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
+		polIr, errs := newListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
