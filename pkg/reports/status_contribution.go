@@ -186,15 +186,20 @@ func compareStatusContributions(a, b StatusContribution) int {
 
 // ReduceStatusContributions combines contributions for one target into a
 // compact fragment. The result owns its reports and can be retained safely.
+//
+// It reorders contributions in place. The production caller passes a krt.Fetch result,
+// which is freshly allocated per call — the index Lookup builds the slice, and Fetch itself
+// already FilterInPlaces it — and this runs once per status owner on every recompute that
+// touches it, so a defensive copy here is one wasted allocation per owner per event.
+// Callers that need their own ordering back must pass a copy.
 func ReduceStatusContributions(contributions []StatusContribution) StatusReport {
-	ordered := slices.Clone(contributions)
-	slices.SortFunc(ordered, compareStatusContributions)
+	slices.SortFunc(contributions, compareStatusContributions)
 	var reduced StatusReport
 	// Only the source of the previously seen contribution needs tracking: the reports
 	// themselves say whether one was seen, since a non-nil contribution always clones to a
 	// non-nil report.
 	var gatewaySource, listenerSetSource, backendSource StatusSource
-	for _, contribution := range ordered {
+	for _, contribution := range contributions {
 		switch {
 		case contribution.Gateway != nil:
 			warnOnMultipleSingleWriterContributions("Gateway", contribution, gatewaySource, reduced.Gateway != nil)
