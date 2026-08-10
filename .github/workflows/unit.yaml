@@ -39,6 +39,11 @@ jobs:
         with:
           path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
           key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
+          # This job only restores (never saves), so falling back to the
+          # previous race-cache generation on a go.sum change is a strict win:
+          # the -race build recompiles just the delta instead of the world.
+          restore-keys: |
+            ${{ steps.prep-go-runner.outputs.go-build-cache-restore-key-race }}
       - name: Detect validator image rebuild
         id: validator-image
         shell: bash
