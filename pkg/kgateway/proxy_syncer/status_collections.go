@@ -284,7 +284,12 @@ func routeWriter[R, W controllers.ComparableObject](
 				return gwv1.RouteStatus{}, false
 			}
 			if report.Route == nil {
-				// An empty desired status clears only this controller's stale parents in Merge.
+				// An empty desired status clears only this controller's stale parents in Merge,
+				// so it is worth writing only if we have parents to clear. Every route in the
+				// watched namespaces lands here, most of them ours to translate but many not.
+				if !statussync.OwnsAnyRouteParent(controllerName, getStatus(current).Parents) {
+					return gwv1.RouteStatus{}, false
+				}
 				return gwv1.RouteStatus{}, true
 			}
 			status := reports.BuildRouteStatus(ctx, report.Route, current, controllerName)

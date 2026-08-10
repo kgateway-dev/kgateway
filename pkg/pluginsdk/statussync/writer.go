@@ -239,6 +239,39 @@ func MergeRouteParentStatuses(ourControllerName string, existing, desired []gwv1
 	)
 }
 
+// OwnsAnyRouteParent reports whether any parent in a live RouteStatus was written by
+// ourControllerName. See ownsAnyEntry for why writers need this.
+func OwnsAnyRouteParent(ourControllerName string, parents []gwv1.RouteParentStatus) bool {
+	return ownsAnyEntry(ourControllerName, parents,
+		func(p gwv1.RouteParentStatus) string { return string(p.ControllerName) })
+}
+
+// OwnsAnyPolicyAncestor is OwnsAnyRouteParent for PolicyStatus.ancestors.
+func OwnsAnyPolicyAncestor(ourControllerName string, ancestors []gwv1.PolicyAncestorStatus) bool {
+	return ownsAnyEntry(ourControllerName, ancestors,
+		func(a gwv1.PolicyAncestorStatus) string { return string(a.ControllerName) })
+}
+
+// ownsAnyEntry answers the question a writer has to ask before publishing an empty desired
+// status: is there anything of ours to retract?
+//
+// Publishing empty means "clear the entries I own", which the merges below implement. That
+// is the right thing when translation stopped producing a report for a resource we had
+// previously written. It is the wrong thing for a resource we have never written, and every
+// route and policy in the watched namespaces reaches that path, because the report reducer
+// has an entry for every raw object. Without this check the merge returns a non-nil empty
+// list where the live status holds nil, the no-op check (a reflect.DeepEqual that separates
+// nil from empty) sees a difference, and we write status to resources that have nothing to
+// do with kgateway — one write each, cluster-wide, on every leadership acquisition.
+//
+// It is the same ownership predicate mergeOwnedStatusEntries applies, kept here rather than
+// at each call site so a writer cannot answer it differently than the merge does.
+func ownsAnyEntry[T any](ourControllerName string, entries []T, controllerOf func(T) string) bool {
+	return slices.ContainsFunc(entries, func(e T) bool {
+		return controllerOf(e) == ourControllerName
+	})
+}
+
 // mergeOwnedStatusEntries implements the shared merge for the two Gateway API status lists
 // that several controllers write to. PolicyStatus.ancestors and RouteStatus.parents differ
 // only in element type and the name of their ref field.

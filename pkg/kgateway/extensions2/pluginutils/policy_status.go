@@ -80,7 +80,12 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 				}
 				status := desiredFor(report.Policy, pol, controllerName)
 				if status == nil {
-					// Merge will clear only ancestors owned by this controller.
+					// Merge will clear only ancestors owned by this controller, which is worth
+					// a write only if we have ancestors to clear. Every policy of this kind
+					// lands here, including ones no Gateway we translate ever attached.
+					if !statussync.OwnsAnyPolicyAncestor(controllerName, getStatus(pol).Ancestors) {
+						return gwv1.PolicyStatus{}, false
+					}
 					return gwv1.PolicyStatus{}, true
 				}
 				return *status, true

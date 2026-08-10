@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
@@ -68,8 +69,11 @@ func policyReport(acceptedReason shared.PolicyConditionReason) reports.StatusCon
 }
 
 type policyStatusFixture struct {
-	writer  statussync.ResourceStatusSyncer
+	writer statussync.ResourceStatusSyncer
+	// current reads the policy back from the fake API server.
 	current func(t *testing.T) *gwv1.BackendTLSPolicy
+	// statusUpdates counts status subresource writes that actually reached the API server.
+	statusUpdates func() int
 }
 
 // newPolicyStatusFixture runs RegisterPolicyStatus against a fake API server holding one
@@ -128,6 +132,7 @@ func newPolicyStatusFixture(
 	require.Eventually(t, collections.HasSynced, 5*time.Second, 10*time.Millisecond,
 		"the report reducer must be registered in the cache sync barrier and synced")
 
+	fake := c.GatewayAPI().(*gatewayfake.Clientset)
 	return policyStatusFixture{
 		writer: registered,
 		current: func(t *testing.T) *gwv1.BackendTLSPolicy {
@@ -136,6 +141,15 @@ func newPolicyStatusFixture(
 				Get(context.Background(), testPolicyName, metav1.GetOptions{})
 			require.NoError(t, err)
 			return got
+		},
+		statusUpdates: func() int {
+			n := 0
+			for _, a := range fake.Actions() {
+				if a.GetVerb() == "update" && a.GetSubresource() == "status" {
+					n++
+				}
+			}
+			return n
 		},
 	}
 }
@@ -288,4 +302,42 @@ func TestRegisterPolicyStatusCustomBuilderSkipsConditionErrors(t *testing.T) {
 			Value: 1,
 		},
 	})
+}
+
+// A policy no Gateway we translate ever attached still reaches the writer: the report
+// reducer holds an entry for every raw policy, so Desired is asked about all of them. It
+// must decline rather than publish an empty status, which the merge would turn into a
+// non-nil empty ancestor list and the no-op check would see as a change — one spurious
+// write per unrelated policy, on every leadership acquisition.
+func TestRegisterPolicyStatusSkipsPoliciesWeDoNotOwn(t *testing.T) {
+	tests := map[string]gwv1.PolicyStatus{
+		"never written by anyone": {},
+		// Stored in the reverse of the order our merge canonicalizes to, so a write would
+		// reorder another controller's ancestors -- a rewrite war against any peer that
+		// compares its own list order-sensitively.
+		"owned entirely by another controller, unsorted": {Ancestors: []gwv1.PolicyAncestorStatus{
+			{
+				AncestorRef:    gwv1.ParentReference{Name: "zzz-their-gw"},
+				ControllerName: gwv1.GatewayController(otherController),
+			},
+			{
+				AncestorRef:    gwv1.ParentReference{Name: "aaa-their-gw"},
+				ControllerName: gwv1.GatewayController(otherController),
+			},
+		}},
+	}
+
+	for name, existingStatus := range tests {
+		t.Run(name, func(t *testing.T) {
+			existing := emptyPolicy()
+			existing.Status = existingStatus
+			f := newPolicyStatusFixture(t, existing, nil, nil)
+
+			f.writer.ApplyStatus(context.Background(), policyResource())
+
+			require.Zero(t, f.statusUpdates(), "a policy we own no ancestor on must not be written")
+			require.Equal(t, existingStatus.Ancestors, f.current(t).Status.Ancestors,
+				"another controller's ancestors must be left exactly as they are")
+		})
+	}
 }

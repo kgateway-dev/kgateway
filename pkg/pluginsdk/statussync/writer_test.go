@@ -253,3 +253,31 @@ func TestMergePolicyAncestorsIsCanonicalRegardlessOfExistingOrder(t *testing.T) 
 		MergePolicyAncestorStatuses(ourController, reversed, desired),
 		"merge output must not depend on the order read")
 }
+
+func TestOwnsAnyEntryMatchesTheMergeOwnershipPredicate(t *testing.T) {
+	require.False(t, OwnsAnyRouteParent(ourController, nil))
+	require.False(t, OwnsAnyRouteParent(ourController, []gwv1.RouteParentStatus{}))
+	require.False(t, OwnsAnyRouteParent(ourController, []gwv1.RouteParentStatus{
+		{ParentRef: gwv1.ParentReference{Name: "gw"}, ControllerName: otherController},
+	}))
+	require.True(t, OwnsAnyRouteParent(ourController, []gwv1.RouteParentStatus{
+		{ParentRef: gwv1.ParentReference{Name: "theirs"}, ControllerName: otherController},
+		{ParentRef: gwv1.ParentReference{Name: "ours"}, ControllerName: ourController},
+	}))
+
+	require.False(t, OwnsAnyPolicyAncestor(ourController, nil))
+	require.False(t, OwnsAnyPolicyAncestor(ourController, []gwv1.PolicyAncestorStatus{
+		{AncestorRef: gwv1.ParentReference{Name: "gw"}, ControllerName: otherController},
+	}))
+	require.True(t, OwnsAnyPolicyAncestor(ourController, []gwv1.PolicyAncestorStatus{
+		{AncestorRef: gwv1.ParentReference{Name: "gw"}, ControllerName: ourController},
+	}))
+
+	// The predicate has to agree with the merge, or a writer declines to publish an empty
+	// status for entries the merge would in fact have cleared.
+	ours := []gwv1.RouteParentStatus{
+		{ParentRef: gwv1.ParentReference{Name: "gw"}, ControllerName: ourController},
+	}
+	require.Empty(t, MergeRouteParentStatuses(string(ourController), ours, nil),
+		"the merge clears exactly the entries OwnsAnyRouteParent reports we own")
+}
