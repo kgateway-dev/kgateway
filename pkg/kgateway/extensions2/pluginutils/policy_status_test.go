@@ -97,7 +97,7 @@ func newPolicyStatusFixture(
 
 	contributionCol := krt.NewStaticCollection(nil, contributions, krt.WithStop(stop))
 	byTarget := krtpkg.UnnamedIndex(contributionCol, func(c reports.StatusContribution) []reports.StatusKey {
-		return []reports.StatusKey{c.Target.Key()}
+		return []reports.StatusKey{c.Target}
 	})
 
 	var registered statussync.ResourceStatusSyncer
@@ -214,9 +214,9 @@ func TestRegisterPolicyStatusWithNilReportClearsOnlyOurAncestors(t *testing.T) {
 	// A contribution exists for the policy (so the reducer has an entry to key on) but it
 	// carries no policy report, which is what an untranslated policy looks like.
 	emptyContribution := reports.StatusContribution{
-		Target: reports.StatusTarget{
-			GroupVersionKind: policyGVK,
-			NamespacedName:   types.NamespacedName{Namespace: testNamespace, Name: testPolicyName},
+		Target: reports.StatusKey{
+			GroupKind:      policyGVK.GroupKind(),
+			NamespacedName: types.NamespacedName{Namespace: testNamespace, Name: testPolicyName},
 		},
 		Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: testNamespace + "/gw"},
 	}

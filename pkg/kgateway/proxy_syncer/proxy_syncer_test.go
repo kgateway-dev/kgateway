@@ -55,14 +55,14 @@ func TestGatewayTranslationOutputSeparatesStatusFromXdsEquality(t *testing.T) {
 		Status: GatewayStatusSnapshot{
 			NamespacedName: nn,
 			Contributions: []reports.StatusContribution{{
-				Target: reports.StatusTarget{NamespacedName: nn},
+				Target: reports.StatusKey{NamespacedName: nn},
 				Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: nn.String()},
 			}},
 		},
 	}
 	changed := base
 	changed.Status.Contributions = []reports.StatusContribution{{
-		Target: reports.StatusTarget{NamespacedName: nn},
+		Target: reports.StatusKey{NamespacedName: nn},
 		Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "changed"},
 	}}
 

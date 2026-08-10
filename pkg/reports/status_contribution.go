@@ -10,16 +10,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-// StatusTarget identifies the Kubernetes object that owns a status. Version is
-// retained for resources whose promoted and legacy forms have different status
-// writers; callers that normalize versions may use the selected write version.
-type StatusTarget struct {
-	schema.GroupVersionKind
-	types.NamespacedName
-}
-
 // StatusKey is the version-independent identity of a status owner. Multiple
-// served API versions of a Gateway API resource share storage and status.
+// served API versions of a Gateway API resource share storage and status, and
+// the version a status is written back through comes from the object's own
+// TypeMeta at write time, never from a contribution.
 type StatusKey struct {
 	schema.GroupKind
 	types.NamespacedName
@@ -27,10 +21,6 @@ type StatusKey struct {
 
 func (k StatusKey) String() string {
 	return k.Group + "/" + k.Kind + "/" + k.Namespace + "/" + k.Name
-}
-
-func (t StatusTarget) Key() StatusKey {
-	return StatusKey{GroupKind: t.GroupKind(), NamespacedName: t.NamespacedName}
 }
 
 type StatusSourceKind string
@@ -76,7 +66,7 @@ func (r StatusReport) Equals(other StatusReport) bool {
 // the producer (for example, a Gateway or Backend), allowing multiple producers
 // to contribute independently to the same target.
 type StatusContribution struct {
-	Target StatusTarget
+	Target StatusKey
 	Source StatusSource
 	StatusReport
 }
@@ -112,7 +102,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 	for nn, report := range reportMap.Gateways {
 		if report != nil {
 			contributions = append(contributions, StatusContribution{
-				Target:       StatusTarget{GroupVersionKind: wellknown.GatewayGVK, NamespacedName: nn},
+				Target:       StatusKey{GroupKind: wellknown.GatewayGVK.GroupKind(), NamespacedName: nn},
 				Source:       source,
 				StatusReport: StatusReport{Gateway: report},
 			})
@@ -122,7 +112,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 		for nn, report := range byName {
 			if report != nil {
 				contributions = append(contributions, StatusContribution{
-					Target:       StatusTarget{GroupVersionKind: gvk, NamespacedName: nn},
+					Target:       StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn},
 					Source:       source,
 					StatusReport: StatusReport{ListenerSet: report},
 				})
@@ -133,7 +123,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 		for nn, report := range reportsByName {
 			if report != nil {
 				contributions = append(contributions, StatusContribution{
-					Target:       StatusTarget{GroupVersionKind: gvk, NamespacedName: nn},
+					Target:       StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn},
 					Source:       source,
 					StatusReport: StatusReport{Route: report},
 				})
@@ -148,9 +138,9 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 	for key, report := range reportMap.Policies {
 		if report != nil {
 			contributions = append(contributions, StatusContribution{
-				Target: StatusTarget{
-					GroupVersionKind: schema.GroupVersionKind{Group: key.Group, Kind: key.Kind},
-					NamespacedName:   types.NamespacedName{Namespace: key.Namespace, Name: key.Name},
+				Target: StatusKey{
+					GroupKind:      schema.GroupKind{Group: key.Group, Kind: key.Kind},
+					NamespacedName: types.NamespacedName{Namespace: key.Namespace, Name: key.Name},
 				},
 				Source:       source,
 				StatusReport: StatusReport{Policy: report},
@@ -160,7 +150,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 	for nn, report := range reportMap.Backends {
 		if report != nil {
 			contributions = append(contributions, StatusContribution{
-				Target:       StatusTarget{GroupVersionKind: wellknown.BackendGVK, NamespacedName: nn},
+				Target:       StatusKey{GroupKind: wellknown.BackendGVK.GroupKind(), NamespacedName: nn},
 				Source:       source,
 				StatusReport: StatusReport{Backend: report},
 			})
@@ -173,7 +163,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 
 // compareStatusContributions orders contributions by their complete identity, so no ties
 // remain and a stable sort is not needed. The comparisons are chained rather than passed to
-// cmp.Or because cmp.Or is an ordinary variadic call: it would run all seven on every
+// cmp.Or because cmp.Or is an ordinary variadic call: it would run all six on every
 // comparison, and this sorts one entry per translated route on every Gateway translation.
 func compareStatusContributions(a, b StatusContribution) int {
 	if c := strings.Compare(a.Target.Group, b.Target.Group); c != 0 {
@@ -191,10 +181,7 @@ func compareStatusContributions(a, b StatusContribution) int {
 	if c := strings.Compare(string(a.Source.Kind), string(b.Source.Kind)); c != 0 {
 		return c
 	}
-	if c := strings.Compare(a.Source.Name, b.Source.Name); c != 0 {
-		return c
-	}
-	return strings.Compare(a.Target.Version, b.Target.Version)
+	return strings.Compare(a.Source.Name, b.Source.Name)
 }
 
 // ReduceStatusContributions combines contributions for one target into a
@@ -249,7 +236,7 @@ func warnOnMultipleSingleWriterContributions(kind string, replacement StatusCont
 	}
 	logger.Warn("multiple status contributions for single-writer report kind; replacing earlier contribution",
 		"report_kind", kind,
-		"target", replacement.Target.Key().String(),
+		"target", replacement.Target.String(),
 		"previous_source", previous.String(),
 		"replacement_source", replacement.Source.String(),
 	)

@@ -115,7 +115,7 @@ func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 	other := routeContribution(t, otherRoute, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first")
 	contributions := krt.NewStaticCollection(nil, []reports.StatusContribution{first, second, other}, krt.WithStop(stop))
 	byTarget := krt.NewIndex(contributions, "status-target", func(c reports.StatusContribution) []reports.StatusKey {
-		return []reports.StatusKey{c.Target.Key()}
+		return []reports.StatusKey{c.Target}
 	})
 	reduced := NewResourceReports(
 		objects,

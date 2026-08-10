@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -28,23 +27,37 @@ func TestStatusContributionsFromReportMapSplitsAndTransfersOwnership(t *testing.
 	contributions := StatusContributionsFromReportMap(StatusSource{Kind: GatewayStatusSource, Name: "default/gateway"}, reportMap)
 	require.Len(t, contributions, 1)
 	contribution := contributions[0]
-	require.Equal(t, wellknown.HTTPRouteGVK, contribution.Target.GroupVersionKind)
+	require.Equal(t, wellknown.HTTPRouteGVK.GroupKind(), contribution.Target.GroupKind)
 	require.Equal(t, types.NamespacedName{Namespace: "default", Name: "route"}, contribution.Target.NamespacedName)
 	require.Same(t, reportMap.HTTPRoutes[contribution.Target.NamespacedName], contribution.Route,
 		"splitting transfers ownership without cloning every report")
 }
 
-func TestStatusKeyIsVersionIndependent(t *testing.T) {
+// The KRT key and Equals must agree on what identity is. A field compared by Equals but
+// absent from the key means two entries KRT treats as the same object compare unequal, and
+// recompute forever. StatusTarget used to carry a Version in exactly that position.
+func TestStatusContributionKeyCoversEveryFieldEqualsCompares(t *testing.T) {
 	nn := types.NamespacedName{Namespace: "default", Name: "route"}
-	v1 := StatusTarget{
-		GroupVersionKind: schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"},
-		NamespacedName:   nn,
+	base := StatusContribution{
+		Target: StatusKey{GroupKind: wellknown.HTTPRouteGVK.GroupKind(), NamespacedName: nn},
+		Source: StatusSource{Kind: GatewayStatusSource, Name: "default/gw"},
 	}
-	v1beta1 := StatusTarget{
-		GroupVersionKind: schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1beta1", Kind: "HTTPRoute"},
-		NamespacedName:   nn,
+
+	otherTarget := base
+	otherTarget.Target.Kind = "GRPCRoute"
+	otherSource := base
+	otherSource.Source.Name = "default/other-gw"
+
+	for name, other := range map[string]StatusContribution{
+		"different target": otherTarget,
+		"different source": otherSource,
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.False(t, base.Equals(other))
+			require.NotEqual(t, base.ResourceName(), other.ResourceName(),
+				"anything Equals distinguishes must also change the KRT key")
+		})
 	}
-	require.Equal(t, v1.Key(), v1beta1.Key())
 }
 
 func TestReduceStatusContributionsMergesPolicyAncestorsAcrossSources(t *testing.T) {
@@ -71,9 +84,9 @@ func TestReduceStatusContributionsMergesPolicyAncestorsAcrossSources(t *testing.
 // order KRT happens to hand us the fragments in, or status would flap between two values
 // with nothing changing upstream.
 func TestReduceStatusContributionsIsDeterministicForSingleWriterKinds(t *testing.T) {
-	target := StatusTarget{
-		GroupVersionKind: wellknown.GatewayGVK,
-		NamespacedName:   types.NamespacedName{Namespace: "default", Name: "gw"},
+	target := StatusKey{
+		GroupKind:      wellknown.GatewayGVK.GroupKind(),
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"},
 	}
 	first := StatusContribution{
 		Target:       target,
@@ -96,9 +109,9 @@ func TestReduceStatusContributionsIsDeterministicForSingleWriterKinds(t *testing
 }
 
 func TestReduceStatusContributionsWarnsOnMultipleSingleWriterContributions(t *testing.T) {
-	target := StatusTarget{
-		GroupVersionKind: wellknown.BackendGVK,
-		NamespacedName:   types.NamespacedName{Namespace: "default", Name: "backend"},
+	target := StatusKey{
+		GroupKind:      wellknown.BackendGVK.GroupKind(),
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"},
 	}
 	contribution := func(source string) StatusContribution {
 		return StatusContribution{

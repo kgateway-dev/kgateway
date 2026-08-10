@@ -26,7 +26,7 @@ func (testStatusWriter) ApplyStatus(context.Context, statussync.Resource) {}
 func TestWithStatusRegistration(t *testing.T) {
 	contributions := krt.NewStaticCollection[reports.StatusContribution](nil, nil)
 	contributionsByTarget := krtutil.UnnamedIndex(contributions, func(contribution reports.StatusContribution) []reports.StatusKey {
-		return []reports.StatusKey{contribution.Target.Key()}
+		return []reports.StatusKey{contribution.Target}
 	})
 	objects := krt.NewStaticCollection(nil, []*gwv1.Gateway{{
 		ObjectMeta: metav1.ObjectMeta{Name: "example", Namespace: "default"},

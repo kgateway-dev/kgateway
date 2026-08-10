@@ -43,7 +43,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	f := kclient.Filter{ObjectFilter: cl.ObjectFilter()}
 	controllerName := s.controllerName
 	s.statusContributionsByTarget = krtpkg.UnnamedIndex(s.statusContributions, func(contribution reports.StatusContribution) []reports.StatusKey {
-		return []reports.StatusKey{contribution.Target.Key()}
+		return []reports.StatusKey{contribution.Target}
 	})
 	contributionsByTarget := s.statusContributionsByTarget
 
