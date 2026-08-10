@@ -1,7 +1,6 @@
 package translator
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"time"
@@ -36,8 +35,6 @@ func buildStatusesFromReports(
 	gateways map[types.NamespacedName]*gwv1.Gateway,
 	listenerSets map[types.NamespacedName]*gwv1.ListenerSet,
 ) *Statuses {
-	ctx := context.Background()
-
 	// Fixed values for deterministic golden file tests. Use the zero time
 	// for consistency and to avoid confusion about the significance of a
 	// specific date.
@@ -69,7 +66,7 @@ func buildStatusesFromReports(
 				},
 			}
 		}
-		if status := reportsMap.BuildGWStatus(ctx, gw, nil); status != nil {
+		if status := reportsMap.BuildGWStatus(gw, nil); status != nil {
 			normalizeStatus(status, fixedTime)
 			statuses.Gateways[gwNN.String()] = status
 		}
@@ -94,7 +91,7 @@ func buildStatusesFromReports(
 			if listenerSet.GroupVersionKind().Empty() {
 				listenerSet.SetGroupVersionKind(gvk)
 			}
-			if status := reportsMap.BuildListenerSetStatus(ctx, listenerSet); status != nil {
+			if status := reportsMap.BuildListenerSetStatus(listenerSet); status != nil {
 				normalizeListenerSetStatus(status, fixedTime)
 				statuses.ListenerSets[listenerSetNN.String()] = status
 			}
@@ -109,7 +106,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.HTTPRoutes[routeNN.String()] = status
 		}
@@ -123,7 +120,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.TCPRoutes[routeNN.String()] = status
 		}
@@ -137,7 +134,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.TLSRoutes[routeNN.String()] = status
 		}
@@ -151,7 +148,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.GRPCRoutes[routeNN.String()] = status
 		}
@@ -174,7 +171,7 @@ func buildStatusesFromReports(
 				Namespace: backendNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildBackendStatus(ctx, &backend, kgateway.BackendStatus{}); status != nil {
+		if status := reportsMap.BuildBackendStatus(&backend, kgateway.BackendStatus{}); status != nil {
 			normalizeBackendStatus(status, fixedTime)
 			statuses.Backends[backendNN.String()] = status
 		}
@@ -201,7 +198,7 @@ func buildPolicyStatus(
 		return backendtlspolicy.BuildDesiredPolicyStatus(reportsMap.PolicyReport(policyKey), pol, wellknown.DefaultGatewayControllerName)
 	}
 
-	return reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
+	return reportsMap.BuildPolicyStatus(policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
 }
 
 // normalizeStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing

@@ -160,7 +160,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	statusSyncer := proxy_syncer.NewStatusSyncer(proxy_syncer.StatusSyncerConfig{
-		Ctx:                         ctx,
 		Plugins:                     mergedPlugins,
 		ControllerName:              cfg.ControllerName,
 		Client:                      cfg.Client,

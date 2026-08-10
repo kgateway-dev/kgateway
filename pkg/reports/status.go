@@ -1,7 +1,6 @@
 package reports
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -41,12 +40,12 @@ const (
 
 // TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
-func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
-	return BuildGWStatus(ctx, r.GatewayNamespaceName(key(&gw)), gw, attachedRoutes)
+func (r *ReportMap) BuildGWStatus(gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
+	return BuildGWStatus(r.GatewayNamespaceName(key(&gw)), gw, attachedRoutes)
 }
 
 // BuildGWStatus builds a Gateway status directly from its typed report fragment.
-func BuildGWStatus(ctx context.Context, gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
+func BuildGWStatus(gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
 	if gwReport == nil {
 		return nil
 	}
@@ -274,12 +273,12 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
 }
 
-func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
-	return BuildListenerSetStatus(ctx, r.ListenerSet(&ls), ls)
+func (r *ReportMap) BuildListenerSetStatus(ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
+	return BuildListenerSetStatus(r.ListenerSet(&ls), ls)
 }
 
 // BuildListenerSetStatus builds a ListenerSet status directly from its typed report fragment.
-func BuildListenerSetStatus(ctx context.Context, lsReport *ListenerSetReport, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
+func BuildListenerSetStatus(lsReport *ListenerSetReport, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	if lsReport == nil {
 		return nil
 	}
@@ -406,16 +405,14 @@ func BuildListenerSetStatus(ctx context.Context, lsReport *ListenerSetReport, ls
 // LastTransitionTime of unchanged conditions and any conditions we don't own. Returns nil
 // if the Backend has no report (i.e. it wasn't translated).
 func (r *ReportMap) BuildBackendStatus(
-	ctx context.Context,
 	obj metav1.Object,
 	currentStatus kgateway.BackendStatus,
 ) *kgateway.BackendStatus {
-	return BuildBackendStatus(ctx, r.backend(obj), currentStatus)
+	return BuildBackendStatus(r.backend(obj), currentStatus)
 }
 
 // BuildBackendStatus builds a Backend status directly from its typed report fragment.
 func BuildBackendStatus(
-	ctx context.Context,
 	report *BackendReport,
 	currentStatus kgateway.BackendStatus,
 ) *kgateway.BackendStatus {
@@ -469,36 +466,32 @@ var backendConditionTypesOwnedByKgateway = map[string]struct{}{
 // the route during translation, or the object is an unsupported route kind, nil is returned.
 // Supported route types are: HTTPRoute, TCPRoute, TLSRoute, GRPCRoute
 func (r *ReportMap) BuildRouteStatus(
-	ctx context.Context,
 	obj client.Object,
 	controller string,
 ) *gwv1.RouteStatus {
-	return BuildRouteStatus(ctx, r.route(obj), obj, controller)
+	return BuildRouteStatus(r.route(obj), obj, controller)
 }
 
 func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
-	ctx context.Context,
 	obj client.Object,
 	controller string,
 	defaultParentRef bool,
 ) *gwv1.RouteStatus {
-	return BuildRouteStatusWithParentRefDefaulting(ctx, r.route(obj), obj, controller, defaultParentRef)
+	return BuildRouteStatusWithParentRefDefaulting(r.route(obj), obj, controller, defaultParentRef)
 }
 
 // BuildRouteStatus builds a Route status directly from its typed report fragment.
 func BuildRouteStatus(
-	ctx context.Context,
 	routeReport *RouteReport,
 	obj client.Object,
 	controller string,
 ) *gwv1.RouteStatus {
-	return BuildRouteStatusWithParentRefDefaulting(ctx, routeReport, obj, controller, false)
+	return BuildRouteStatusWithParentRefDefaulting(routeReport, obj, controller, false)
 }
 
 // BuildRouteStatusWithParentRefDefaulting builds a Route status directly from its typed
 // report fragment and optionally defaults parent reference fields.
 func BuildRouteStatusWithParentRefDefaulting(
-	ctx context.Context,
 	routeReport *RouteReport,
 	obj client.Object,
 	controller string,

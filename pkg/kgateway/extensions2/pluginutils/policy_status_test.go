@@ -113,7 +113,6 @@ func newPolicyStatusFixture(
 		},
 		buildDesired,
 	)(pluginsdk.PolicyStatusInputs{
-		Ctx:                   context.Background(),
 		Collections:           collections,
 		StatusContributions:   contributionCol,
 		ContributionsByTarget: byTarget,

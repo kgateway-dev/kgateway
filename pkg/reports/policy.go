@@ -1,7 +1,6 @@
 package reports
 
 import (
-	"context"
 	"slices"
 	"strings"
 
@@ -108,17 +107,15 @@ func (r *PolicyReport) ancestorRefs() []gwv1.ParentReference {
 }
 
 func (r *ReportMap) BuildPolicyStatus(
-	ctx context.Context,
 	key reporter.PolicyKey,
 	controller string,
 	currentStatus gwv1.PolicyStatus,
 ) *gwv1.PolicyStatus {
-	return BuildPolicyStatus(ctx, r.policy(key), key, controller, currentStatus)
+	return BuildPolicyStatus(r.policy(key), key, controller, currentStatus)
 }
 
 // BuildPolicyStatus builds a Policy status directly from its typed report fragment.
 func BuildPolicyStatus(
-	ctx context.Context,
 	report *PolicyReport,
 	key reporter.PolicyKey,
 	controller string,

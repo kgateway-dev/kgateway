@@ -1,7 +1,6 @@
 package pluginutils
 
 import (
-	"context"
 	"errors"
 	"time"
 
@@ -46,12 +45,6 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 	return func(in pluginsdk.PolicyStatusInputs) {
 		desiredFor := buildDesired
 		if desiredFor == nil {
-			// The builder outlives this call, so capture the controller's root context
-			// rather than a request-scoped one.
-			ctx := in.Ctx
-			if ctx == nil {
-				ctx = context.Background()
-			}
 			desiredFor = func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus {
 				key := reporter.PolicyKey{
 					Group:     gvk.Group,
@@ -59,7 +52,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 					Namespace: pol.GetNamespace(),
 					Name:      pol.GetName(),
 				}
-				return reports.BuildPolicyStatus(ctx, report, key, controllerName, getStatus(pol))
+				return reports.BuildPolicyStatus(report, key, controllerName, getStatus(pol))
 			}
 		}
 		statusReports := statussync.RegisterKind(

@@ -499,7 +499,7 @@ func GetHTTPRouteStatusError(
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -548,7 +548,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -569,7 +569,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -590,7 +590,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -611,7 +611,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildGWStatus(context.Background(), g, nil)
+		status := reportsMap.BuildGWStatus(g, nil)
 		for _, c := range status.Conditions {
 			if c.Type == listener.GatewayConditionAttachedListenerSets {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
@@ -632,7 +632,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 				},
 			}
 			l.SetGroupVersionKind(gvk)
-			status := reportsMap.BuildListenerSetStatus(context.Background(), l)
+			status := reportsMap.BuildListenerSetStatus(l)
 			for _, c := range status.Conditions {
 				if c.Status != metav1.ConditionTrue {
 					return fmt.Errorf("condition not accepted for listenerSet %s condition: %v", ls, c)

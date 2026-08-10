@@ -36,7 +36,7 @@ import (
 // initStatusInfra reduces keyed translation contributions per status owner and
 // registers both raw-object and reduced-report reconciliation sources. Desired
 // Kubernetes status is still built just in time by the leader's writer.
-func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOptions) {
+func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	s.statusCollections = statussync.NewStatusCollections()
 	s.statusWriters = map[schema.GroupVersionKind]statussync.ResourceStatusSyncer{}
 	cl := s.apiClient
@@ -58,7 +58,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 			if !ok {
 				return gwv1.GatewayStatus{}, false
 			}
-			status := reports.BuildGWStatus(ctx, report.Gateway, *gw, nil)
+			status := reports.BuildGWStatus(report.Gateway, *gw, nil)
 			if status == nil {
 				return gwv1.GatewayStatus{}, false
 			}
@@ -89,14 +89,14 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		s.commonCols.RawTLSRoutes, s.statusContributions, contributionsByTarget,
 		krtopts.ToOptions("TLSRouteStatusReports")...)
 
-	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute, *gwv1.HTTPRoute](ctx, cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
+	s.statusWriters[wellknown.HTTPRouteGVK] = routeWriter[*gwv1.HTTPRoute, *gwv1.HTTPRoute](cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, controllerName,
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 		},
 		func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		func(o *gwv1.HTTPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
 	)
-	s.statusWriters[wellknown.GRPCRouteGVK] = routeWriter[*gwv1.GRPCRoute, *gwv1.GRPCRoute](ctx, cl, f, s.commonCols.RawGRPCRoutes, grpcRouteReports, wellknown.GRPCRouteGVK, "grpcRoute", wellknown.GRPCRouteGVR, wellknown.GRPCRouteKind, controllerName,
+	s.statusWriters[wellknown.GRPCRouteGVK] = routeWriter[*gwv1.GRPCRoute, *gwv1.GRPCRoute](cl, f, s.commonCols.RawGRPCRoutes, grpcRouteReports, wellknown.GRPCRouteGVK, "grpcRoute", wellknown.GRPCRouteGVR, wellknown.GRPCRouteKind, controllerName,
 		func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.GRPCRoute {
 			return &gwv1.GRPCRoute{ObjectMeta: om, Status: gwv1.GRPCRouteStatus{RouteStatus: st}}
 		},
@@ -115,7 +115,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		switch gvr {
 		case wellknown.TCPRouteV1GVR:
 			registerStatusWriter(s.statusWriters, wellknown.TCPRouteV1GVK,
-				routeWriter[*gwv1a2.TCPRoute, *gwv1.TCPRoute](ctx, cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteV1GVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
+				routeWriter[*gwv1a2.TCPRoute, *gwv1.TCPRoute](cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteV1GVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TCPRoute {
 						return &gwv1.TCPRoute{ObjectMeta: om, Status: gwv1.TCPRouteStatus{RouteStatus: st}}
 					},
@@ -123,7 +123,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 				))
 		default:
 			registerStatusWriter(s.statusWriters, wellknown.TCPRouteGVK,
-				routeWriter[*gwv1a2.TCPRoute, *gwv1a2.TCPRoute](ctx, cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteGVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
+				routeWriter[*gwv1a2.TCPRoute, *gwv1a2.TCPRoute](cl, f, s.commonCols.RawTCPRoutes, tcpRouteReports, wellknown.TCPRouteGVK, "tcpRoute", gvr, wellknown.TCPRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TCPRoute {
 						return &gwv1a2.TCPRoute{ObjectMeta: om, Status: gwv1a2.TCPRouteStatus{RouteStatus: st}}
 					},
@@ -138,7 +138,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 		switch gvr {
 		case wellknown.TLSRouteV1GVR:
 			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1GVK,
-				routeWriter[*gwv1a2.TLSRoute, *gwv1.TLSRoute](ctx, cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1GVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
+				routeWriter[*gwv1a2.TLSRoute, *gwv1.TLSRoute](cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1GVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.TLSRoute {
 						return &gwv1.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
 					},
@@ -146,7 +146,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 				))
 		case wellknown.TLSRouteV1Alpha3GVR:
 			registerStatusWriter(s.statusWriters, wellknown.TLSRouteV1Alpha3GVK,
-				routeWriter[*gwv1a2.TLSRoute, *gwv1a3.TLSRoute](ctx, cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1Alpha3GVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
+				routeWriter[*gwv1a2.TLSRoute, *gwv1a3.TLSRoute](cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteV1Alpha3GVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a3.TLSRoute {
 						return &gwv1a3.TLSRoute{ObjectMeta: om, Status: gwv1.TLSRouteStatus{RouteStatus: st}}
 					},
@@ -154,7 +154,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 				))
 		default:
 			registerStatusWriter(s.statusWriters, wellknown.TLSRouteGVK,
-				routeWriter[*gwv1a2.TLSRoute, *gwv1a2.TLSRoute](ctx, cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
+				routeWriter[*gwv1a2.TLSRoute, *gwv1a2.TLSRoute](cl, f, s.commonCols.RawTLSRoutes, tlsRouteReports, wellknown.TLSRouteGVK, "tlsRoute", gvr, wellknown.TLSRouteKind, controllerName,
 					func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1a2.TLSRoute {
 						return &gwv1a2.TLSRoute{ObjectMeta: om, Status: gwv1a2.TLSRouteStatus{RouteStatus: st}}
 					},
@@ -196,7 +196,7 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 			if !ok {
 				return kgateway.BackendStatus{}, false
 			}
-			status := reports.BuildBackendStatus(ctx, report.Backend, be.Status)
+			status := reports.BuildBackendStatus(report.Backend, be.Status)
 			if status == nil {
 				return kgateway.BackendStatus{}, false
 			}
@@ -212,7 +212,6 @@ func (s *ProxySyncer) initStatusInfra(ctx context.Context, krtopts krtutil.KrtOp
 	}
 
 	policyStatusInputs := plug.PolicyStatusInputs{
-		Ctx:                   ctx,
 		Collections:           s.statusCollections,
 		StatusContributions:   s.statusContributions,
 		ContributionsByTarget: contributionsByTarget,
@@ -258,7 +257,6 @@ func registerStatusWriter(
 // They differ for TCP and TLS routes, whose collections are normalized to one Go type while
 // the write must go through the API version the object is actually served as.
 func routeWriter[R, W controllers.ComparableObject](
-	ctx context.Context,
 	cl apiclient.Client,
 	f kclient.Filter,
 	routes krt.Collection[R],
@@ -292,7 +290,7 @@ func routeWriter[R, W controllers.ComparableObject](
 				}
 				return gwv1.RouteStatus{}, true
 			}
-			status := reports.BuildRouteStatus(ctx, report.Route, current, controllerName)
+			status := reports.BuildRouteStatus(report.Route, current, controllerName)
 			if status == nil {
 				// The route has a report, so the only way the builder returns nil is that it
 				// does not recognise this Go type. Suppress the write instead of publishing an
@@ -488,7 +486,7 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 		}
 		lsCopy := *current
 		lsCopy.SetGroupVersionKind(res.GroupVersionKind)
-		status := reports.BuildListenerSetStatus(ctx, report.ListenerSet, lsCopy)
+		status := reports.BuildListenerSetStatus(report.ListenerSet, lsCopy)
 		if status == nil {
 			return nil
 		}

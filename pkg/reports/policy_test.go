@@ -435,7 +435,7 @@ func TestPolicyStatusReport(t *testing.T) {
 				tc.fakeTranslation(a, reporter)
 			}
 
-			gotStatus := rm.BuildPolicyStatus(t.Context(), tc.key, tc.controller, tc.currentStatus)
+			gotStatus := rm.BuildPolicyStatus(tc.key, tc.controller, tc.currentStatus)
 			diff := cmp.Diff(tc.wantStatus, gotStatus, cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"))
 			a.Empty(diff)
 		})
@@ -471,7 +471,7 @@ func TestBuildPolicyStatusPublishesEveryTranslatedAncestorUncapped(t *testing.T)
 		})
 	}
 
-	gotStatus := rm.BuildPolicyStatus(t.Context(), key, "example-controller", gwv1.PolicyStatus{})
+	gotStatus := rm.BuildPolicyStatus(key, "example-controller", gwv1.PolicyStatus{})
 	require.NotNil(t, gotStatus)
 	require.Len(t, gotStatus.Ancestors, ancestors)
 }
@@ -500,7 +500,7 @@ func TestBuildPolicyStatusExcludesForeignAncestors(t *testing.T) {
 		ControllerName: "other.example/controller",
 	}}}
 
-	gotStatus := rm.BuildPolicyStatus(t.Context(), key, "example-controller", currentStatus)
+	gotStatus := rm.BuildPolicyStatus(key, "example-controller", currentStatus)
 
 	require.NotNil(t, gotStatus)
 	require.Len(t, gotStatus.Ancestors, 1)

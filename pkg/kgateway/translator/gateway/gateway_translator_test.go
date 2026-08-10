@@ -3473,8 +3473,8 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 	resultTwo, ok := results[gatewayTwo]
 	require.True(t, ok, "expected second gateway result")
 
-	statusOne := resultOne.ReportsMap.BuildGWStatus(ctx, *resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
-	statusTwo := resultTwo.ReportsMap.BuildGWStatus(ctx, *resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
+	statusOne := resultOne.ReportsMap.BuildGWStatus(*resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
+	statusTwo := resultTwo.ReportsMap.BuildGWStatus(*resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
 	require.NotNil(t, statusOne)
 	require.NotNil(t, statusTwo)
 

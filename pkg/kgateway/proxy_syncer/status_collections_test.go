@@ -88,7 +88,7 @@ func TestBuildGWStatusCarriesLiveAddresses(t *testing.T) {
 	rm := reports.NewReportMap()
 	reports.NewReporter(&rm).Gateway(gw)
 
-	status := rm.BuildGWStatus(t.Context(), *gw, nil)
+	status := rm.BuildGWStatus(*gw, nil)
 	require.NotNil(t, status)
 	require.Equal(t, live, status.Addresses, "BuildGWStatus must carry live addresses through verbatim")
 }

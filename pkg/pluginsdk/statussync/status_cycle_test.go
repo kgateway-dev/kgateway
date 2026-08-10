@@ -58,7 +58,6 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 		ParentRef(&gwv1.ParentReference{Name: "gw"})
 	buildDesired := func(current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 		status := reports.BuildRouteStatus(
-			ctx,
 			routeReport.HTTPRoutes[types.NamespacedName{Namespace: "default", Name: "route"}],
 			current,
 			controllerName,

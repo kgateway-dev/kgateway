@@ -1,8 +1,6 @@
 package statussync
 
 import (
-	"context"
-
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -19,10 +17,6 @@ import (
 // There is deliberately one struct for both entry points. They were separate types with
 // identical fields, and a field added to one of them silently did not reach the other.
 type RegistrationInputs struct {
-	// Ctx is the controller's root context, captured by desired-status builders that run
-	// for the lifetime of the process. Both entry points populate it. It is nil only when
-	// inputs are constructed directly, as tests do; treat that as context.Background().
-	Ctx context.Context
 	// Collections owns the raw-resource and reduced-report event sources that feed the
 	// leader's status queue. RegisterKind wires both for one kind; RegisterResource and
 	// RegisterResourceReports are the individual halves. Registering a reduction is also

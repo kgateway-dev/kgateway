@@ -1,7 +1,6 @@
 package reports
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -42,7 +41,7 @@ func TestBuildGWStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	beforeCond := slicesCloneConditions(gr.conditions)
 	beforeListenerCond := slicesCloneConditions(gr.listeners["http"].Status.Conditions)
 
-	status := rm.BuildGWStatus(context.Background(), *gw, nil)
+	status := rm.BuildGWStatus(*gw, nil)
 	require.NotNil(t, status)
 
 	require.Equal(t, beforeCond, gr.conditions, "BuildGWStatus must not mutate GatewayReport conditions")
@@ -78,7 +77,7 @@ func TestBuildRouteStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	rr := rm.HTTPRoutes[types.NamespacedName{Namespace: route.Namespace, Name: route.Name}]
 	before := cloneParentConditionsForTest(rr)
 
-	status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+	status := rm.BuildRouteStatus(route, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
 
 	require.Equal(t, before, cloneParentConditionsForTest(rr), "BuildRouteStatus must not mutate RouteReport condition slices")
@@ -99,7 +98,7 @@ func TestBuildPolicyStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	pr := rm.Policies[policyKey]
 	before := cloneAncestorConditionsForTest(pr)
 
-	status := rm.BuildPolicyStatus(context.Background(), policyKey, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
+	status := rm.BuildPolicyStatus(policyKey, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
 	require.NotNil(t, status)
 	requireConditionForTest(t, status.Ancestors[0].Conditions, string(shared.PolicyConditionAttached))
 
@@ -121,7 +120,7 @@ func TestBuildBackendStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	br := rm.backend(backend)
 	before := cloneBackendReport(br)
 
-	status := BuildBackendStatus(context.Background(), br, kgateway.BackendStatus{})
+	status := BuildBackendStatus(br, kgateway.BackendStatus{})
 	require.NotNil(t, status)
 
 	require.Equal(t, before, br, "BuildBackendStatus must not mutate BackendReport")
@@ -158,7 +157,7 @@ func TestBuildListenerSetStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	lsr := rm.ListenerSet(listenerSet)
 	before := cloneListenerSetReport(lsr)
 
-	status := BuildListenerSetStatus(context.Background(), lsr, *listenerSet)
+	status := BuildListenerSetStatus(lsr, *listenerSet)
 	require.NotNil(t, status)
 
 	require.Equal(t, before, lsr, "BuildListenerSetStatus must not mutate ListenerSetReport")
@@ -254,7 +253,7 @@ func TestBuildRouteStatusSupportsEveryWrittenRouteType(t *testing.T) {
 			report := rm.route(tc.reportedAs)
 			require.NotNil(t, report, "translation must produce a report for the normalized type")
 
-			status := BuildRouteStatus(context.Background(), report, tc.writtenAs, "kgateway.dev/kgateway")
+			status := BuildRouteStatus(report, tc.writtenAs, "kgateway.dev/kgateway")
 
 			require.NotNil(t, status, "an unsupported route type erases status instead of writing it")
 			require.Len(t, status.Parents, 1)

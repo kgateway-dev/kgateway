@@ -345,7 +345,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.translator.HasSynced,
 	}
 
-	s.initStatusInfra(ctx, krtopts)
+	s.initStatusInfra(krtopts)
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
