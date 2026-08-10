@@ -27,8 +27,10 @@ type baseEnvoyCluster struct {
 	// which is how the deltas builder looks bases up.
 	Name string
 	// Cluster is wrapped so consumers cannot mutate the proto shared across
-	// every client snapshot; see package sharedproto.
-	// +krtEqualsTodo include full cluster diff in equality
+	// every client snapshot; see package sharedproto. Content equality is
+	// carried by ClusterVersion (a content hash over the proto plus, for
+	// inline-CLA bases, the endpoint and policy inputs) together with Error.
+	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
 	// Fingerprint fences per-client deltas to the exact base/backend input they
@@ -126,8 +128,10 @@ type uccClusterDelta struct {
 	// newer base.
 	BaseFingerprint baseClusterFingerprint
 	// Cluster is wrapped so consumers cannot mutate the proto interned across
-	// UCCs; see package sharedproto.
-	// +krtEqualsTodo include full cluster diff in equality
+	// UCCs; see package sharedproto. Content equality is carried by
+	// ClusterVersion (the proto content hash; errored rows hash the error
+	// message instead) together with Error.
+	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
 	// Error participates in Equals by message.
@@ -269,7 +273,9 @@ type PerClientEnvoyClusters struct {
 }
 
 // HasSynced reports whether both the base and delta collections have synced.
-// Used to gate xDS publishing until cluster translation has reached steady state.
+// Publishing is not gated on this (the readiness gates were reverted in favor
+// of the first-connect grace period, #14380); it exists for callers — currently
+// tests — that need to wait for cluster translation to reach steady state.
 func (iu *PerClientEnvoyClusters) HasSynced() bool {
 	if iu.base != nil && !iu.base.HasSynced() {
 		return false

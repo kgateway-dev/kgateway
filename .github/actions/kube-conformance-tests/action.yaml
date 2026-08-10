@@ -86,7 +86,7 @@ runs:
         echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
 
         # Arm the shared-proto mutation tripwire in the control plane for all
-        # conformance runs (see pkg/kgateway/proxy_syncer/shared_proto_assert.go).
+        # conformance runs (see pkg/kgateway/proxy_syncer/sharedproto).
         # A mutation of a Cluster/CLA proto shared across client snapshots then
         # panics the controller instead of silently corrupting sibling clients.
         # Older released binaries ignore the variable, so it is safe on both
