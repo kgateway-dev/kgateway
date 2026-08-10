@@ -32,7 +32,6 @@ func TestWithStatusRegistration(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "example", Namespace: "default"},
 	}})
 	collections := statussync.NewStatusCollections()
-	notReady := statussync.NewNotReadyRequeuer(collections.Requeue)
 	writers := map[schema.GroupVersionKind]statussync.ResourceStatusSyncer{}
 	gvk := schema.GroupVersionKind{Group: "example.io", Version: "v1", Kind: "Example"}
 	called := false
@@ -44,7 +43,6 @@ func TestWithStatusRegistration(t *testing.T) {
 		StatusWriters:               writers,
 		StatusContributions:         contributions,
 		StatusContributionsByTarget: contributionsByTarget,
-		StatusNotReady:              notReady,
 		// The proxy syncer contributes StatusCollections.HasSynced exactly once; the status
 		// syncer must carry it through rather than adding a second copy of its own.
 		CacheSyncs: []cache.InformerSynced{collections.HasSynced},
@@ -53,9 +51,6 @@ func TestWithStatusRegistration(t *testing.T) {
 		assert.Same(t, collections, in.Collections)
 		assert.NotNil(t, in.StatusContributions)
 		assert.NotNil(t, in.ContributionsByTarget)
-		// Downstream writers read through delayed clients too; without the shared requeuer
-		// a resource enqueued before their informer loads silently never gets status.
-		assert.Same(t, notReady, in.NotReady, "the shared requeuer must reach downstream registrations")
 		resourceReports := statussync.NewResourceReports(
 			objects,
 			in.StatusContributions,

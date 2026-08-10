@@ -72,11 +72,11 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	var syncs atomic.Int32
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name:    "httpRoute",
-		Client:  routesClient,
+		Current: CollectionSource(routes),
 		Desired: buildDesired,
-		Build: func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
+		UpdateStatus: ClientWriter(routesClient, func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
-		},
+		}),
 		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		Merge: func(current *gwv1.HTTPRoute, d gwv1.RouteStatus) gwv1.RouteStatus {
 			return gwv1.RouteStatus{Parents: MergeRouteParentStatuses(controllerName, current.Status.Parents, d.Parents)}

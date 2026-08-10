@@ -34,11 +34,6 @@ type RegistrationInputs struct {
 	ContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
 	// KrtOpts supplies the standard collection lifecycle and debugging options.
 	KrtOpts krtutil.KrtOptions
-	// NotReady re-queues resources whose client cannot see them yet, and is shared with
-	// every built-in writer. A registration whose writer reads through a delayed client
-	// must pass it on, or a resource enqueued before that client's informer loads silently
-	// never gets status. See NotReadyRequeuer.
-	NotReady *NotReadyRequeuer
 	// RegisterWriter registers the just-in-time writer that persists this resource's status.
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer ResourceStatusSyncer)
 }

@@ -68,8 +68,10 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			in.KrtOpts.ToOptions(gvk.Kind+"StatusReports")...,
 		)
 		in.RegisterWriter(gvk, statussync.Writer[T, gwv1.PolicyStatus]{
-			Name:   gvk.Kind,
-			Client: cl,
+			Name: gvk.Kind,
+			// Read from the collection that enqueues this policy, not from cl: cl is a
+			// delayed client whose Get returns nil until its own informer loads.
+			Current: statussync.CollectionSource(col),
 			Desired: func(pol T) (gwv1.PolicyStatus, bool) {
 				nn := types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()}
 				report, ok := statussync.ReportFor(statusReports, gvk, nn)
@@ -83,9 +85,8 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 				}
 				return *status, true
 			},
-			Build:     build,
-			GetStatus: getStatus,
-			NotReady:  in.NotReady,
+			UpdateStatus: statussync.ClientWriter(cl, build),
+			GetStatus:    getStatus,
 			Merge: func(current T, desired gwv1.PolicyStatus) gwv1.PolicyStatus {
 				desired.Ancestors = statussync.MergePolicyAncestorStatuses(controllerName, getStatus(current).Ancestors, desired.Ancestors)
 				return desired

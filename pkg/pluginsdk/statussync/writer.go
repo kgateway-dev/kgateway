@@ -35,24 +35,43 @@ type ResourceStatusSyncer interface {
 	ApplyStatus(ctx context.Context, obj Resource)
 }
 
-// Writer is a generic ResourceStatusSyncer that writes status via the istio kclient,
-// i.e. the same client/informer cache that translation reads from.
+// Writer is a generic ResourceStatusSyncer. Reads and writes are separate on purpose: the
+// current object comes from the KRT collection that enqueued the resource, and only the
+// write goes to the API server.
 type Writer[O controllers.ComparableObject, S any] struct {
 	// Name for logging
 	Name string
 
-	// Client reads the current object (from the shared informer cache) and writes status.
-	Client kclient.Client[O]
+	// Current returns the object to build status from, or the zero value when it is gone.
+	// It must read the same collection that enqueues this resource — see CollectionSource.
+	//
+	// Reading anywhere else is what makes an enqueued resource invisible to its own writer.
+	// kclient hands out one shared informer per {GVR, filter}, so a separate client built
+	// with the same filter happens to track the collection's readiness — but that is a
+	// coincidence, not a guarantee. A client built with a different filter or informer type
+	// gets an independent informer, whose Get returns nil while HasSynced already reports
+	// true; the writer cannot tell that from a deletion. Nothing upstream re-fires once
+	// that informer loads, because the collection already delivered the object and the
+	// report reducer has no new reduction to emit, so the resource silently carries no
+	// status. Sourcing reads here makes that state unreachable rather than something a
+	// bounded requeue loop has to paper over.
+	//
+	// The obligation this creates: a normalized collection must carry ObjectMeta (hence
+	// resourceVersion) and status through faithfully, or the no-op check and optimistic
+	// concurrency below both break. See convertTCPRouteV1ToV1Alpha2.
+	Current func(res Resource) O
 
 	// Desired builds the desired status from the latest object and report state. Returning
 	// false suppresses the write. It is invoked for every retry so neither the object nor
 	// report snapshot is retained in the work queue.
 	Desired func(current O) (S, bool)
 
-	// Build constructs the object to pass to UpdateStatus. Only the status and minimal
-	// ObjectMeta (name, namespace, resourceVersion) should be set: the API server ignores
-	// spec on status writes, and passing the resourceVersion ensures stale data is rejected.
-	Build func(om metav1.ObjectMeta, s S) O
+	// UpdateStatus persists s against the given ObjectMeta, which carries only the name,
+	// namespace and the resourceVersion the status was built from: the API server ignores
+	// spec on status writes, and the resourceVersion is what makes stale data rejected.
+	// It takes an ObjectMeta rather than an O so a normalized read type can be written back
+	// through the versioned client that actually serves it — see ClientWriter.
+	UpdateStatus func(om metav1.ObjectMeta, s S) error
 
 	// GetStatus extracts the live status from the current object. When set, a write is
 	// skipped if the (merged) desired status already matches the live status.
@@ -64,17 +83,41 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	Merge func(current O, desired S) S
 
 	// OnSync, when set, is called once per ApplyStatus invocation for which Desired returns
-	// true. current is the last object read from the informer and status the last merged
+	// true. current is the last object read from the collection and status the last merged
 	// status. Used to record status sync metrics.
 	OnSync func(res Resource, current O, status S, took time.Duration, err error)
-
-	// NotReady, when set, re-queues resources this writer's client cannot see yet. Required
-	// for correctness whenever Client is a delayed client, because its Get returns nil until
-	// its own informer loads and nothing upstream re-fires afterwards. See NotReadyRequeuer.
-	NotReady *NotReadyRequeuer
 }
 
 var _ ResourceStatusSyncer = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
+
+// CollectionSource reads the current object from a KRT collection, satisfying Writer.Current.
+// Pass the collection registered for this resource kind, so an enqueued resource is always
+// visible to the writer that handles it.
+func CollectionSource[O controllers.ComparableObject](col krt.Collection[O]) func(Resource) O {
+	return func(res Resource) O {
+		if col == nil {
+			return ptr.Empty[O]()
+		}
+		current := col.GetKey(res.Namespace + "/" + res.Name)
+		if current == nil {
+			return ptr.Empty[O]()
+		}
+		return *current
+	}
+}
+
+// ClientWriter persists status through an istio kclient, satisfying Writer.UpdateStatus.
+// build assembles the versioned object the client writes; W is independent of the writer's
+// read type, which is how a normalized route is written back through its served version.
+func ClientWriter[W controllers.ComparableObject, S any](
+	cl kclient.Client[W],
+	build func(om metav1.ObjectMeta, s S) W,
+) func(metav1.ObjectMeta, S) error {
+	return func(om metav1.ObjectMeta, s S) error {
+		_, err := cl.UpdateStatus(build(om, s))
+		return err
+	}
+}
 
 // RetryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
 // with exponential backoff, aborted on ctx cancellation. attempt must re-read the current
@@ -99,21 +142,17 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	var lastCurrent O
 	var lastMerged S
 	hasDesired := false
-	invisible := false
 	err := RetryStatusWrite(ctx, func() error {
 		hasDesired = false
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
-		current := w.Client.Get(obj.Name, obj.Namespace)
+		current := w.Current(obj)
 		if controllers.IsNil(current) {
-			// Either the resource was deleted (a harmless race) or this client's informer
-			// has not loaded yet. The two are indistinguishable here, so hand it to the
-			// requeuer, which bounds how long we keep waiting.
-			invisible = true
-			log.Debug("resource not found, skipping status update")
+			// The resource was deleted between enqueue and write. Current reads the
+			// collection that enqueued it, so this cannot mean "not visible yet".
+			log.Debug("resource no longer present, skipping status update")
 			return nil
 		}
-		invisible = false
 		lastCurrent = current
 
 		desired, ok := w.Desired(current)
@@ -133,13 +172,13 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 			return nil
 		}
 
-		// Write with the informer's current resourceVersion so stale data is rejected;
+		// Write with the collection's current resourceVersion so stale data is rejected;
 		// conflicts are expected and self-heal via re-enqueue.
-		_, err := w.Client.UpdateStatus(w.Build(metav1.ObjectMeta{
+		err := w.UpdateStatus(metav1.ObjectMeta{
 			Name:            obj.Name,
 			Namespace:       obj.Namespace,
 			ResourceVersion: current.GetResourceVersion(),
-		}, merged))
+		}, merged)
 		if err != nil {
 			if apierrors.IsConflict(err) {
 				// This is normal. The raw collection will re-enqueue the write once the
@@ -160,11 +199,6 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	})
 	if err != nil {
 		log.Error("failed to sync status after retries", "error", err)
-	}
-	if invisible {
-		w.NotReady.Schedule(obj)
-	} else {
-		w.NotReady.Done(obj)
 	}
 	if hasDesired && w.OnSync != nil {
 		w.OnSync(obj, lastCurrent, lastMerged, time.Since(start), err)

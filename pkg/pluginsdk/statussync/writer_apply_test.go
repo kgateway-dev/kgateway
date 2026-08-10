@@ -8,7 +8,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/test"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,21 +53,24 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
+	routes := krt.WrapClient(routesClient, krt.WithStop(stop))
 	c.RunAndWait(stop)
 
 	result := &applyResult{}
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
-		Name:   "httpRoute",
-		Client: routesClient,
+		Name: "httpRoute",
+		// The writer reads the collection that would have enqueued the route, never the
+		// client it writes through.
+		Current: CollectionSource(routes),
 		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{{
 				ParentRef:      gwv1.ParentReference{Name: "gw"},
 				ControllerName: ourController,
 			}}}, true
 		},
-		Build: func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
+		UpdateStatus: ClientWriter(routesClient, func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
-		},
+		}),
 		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		OnSync: func(_ Resource, _ *gwv1.HTTPRoute, _ gwv1.RouteStatus, _ time.Duration, err error) {
 			result.calls.Add(1)
@@ -76,8 +82,8 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 
 	if createRoute {
 		require.Eventually(t, func() bool {
-			return routesClient.Get("route", "default") != nil
-		}, 5*time.Second, 10*time.Millisecond, "informer should observe the route")
+			return routes.GetKey("default/route") != nil
+		}, 5*time.Second, 10*time.Millisecond, "collection should observe the route")
 	}
 	return writer, result, c.GatewayAPI().(*gatewayfake.Clientset)
 }
@@ -155,3 +161,52 @@ func TestApplyStatusSkipsMissingResource(t *testing.T) {
 	require.Zero(t, result.calls.Load(), "OnSync must not run when the object is gone")
 	require.Zero(t, countUpdates(fake))
 }
+
+// The write client and the read source are deliberately independent. Reads come from the
+// collection that enqueues the resource, so a write client whose own informer has not loaded
+// -- the state a delayed client is in until its CRD appears -- cannot make the writer mistake
+// a live resource for a deleted one. That is what removed the need for a bounded requeue loop
+// around "no client can see this yet".
+func TestApplyStatusReadsTheCollectionNotTheWriteClient(t *testing.T) {
+	stop := test.NewStop(t)
+	c := kube.NewFakeClient()
+	_, err := c.GatewayAPI().GatewayV1().HTTPRoutes("default").Create(context.Background(), &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default", ResourceVersion: "1"},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// A write client that never observes anything: Get always returns nil, exactly like a
+	// delayed client before its informer is swapped in.
+	blindClient := unloadedClient[*gwv1.HTTPRoute]{Client: kclient.NewFiltered[*gwv1.HTTPRoute](c, kclient.Filter{})}
+	routes := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{{
+		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default", ResourceVersion: "1"},
+	}}, krt.WithStop(stop))
+
+	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
+		Name:    "httpRoute",
+		Current: CollectionSource(routes),
+		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{{
+				ParentRef:      gwv1.ParentReference{Name: "gw"},
+				ControllerName: ourController,
+			}}}, true
+		},
+		UpdateStatus: ClientWriter(blindClient, func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
+			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
+		}),
+		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+	}
+
+	writer.ApplyStatus(context.Background(), testRouteResource())
+
+	require.Equal(t, 1, countUpdates(c.GatewayAPI().(*gatewayfake.Clientset)),
+		"status must be written on the first attempt, without waiting on the write client's informer")
+}
+
+// unloadedClient models a delayed client that has not swapped its informer in: reads are
+// empty, writes still reach the API server.
+type unloadedClient[T controllers.ComparableObject] struct {
+	kclient.Client[T]
+}
+
+func (unloadedClient[T]) Get(string, string) T { return ptr.Empty[T]() }
