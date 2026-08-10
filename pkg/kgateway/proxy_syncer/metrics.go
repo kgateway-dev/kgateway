@@ -70,7 +70,29 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
+	snapshotPerClientReclaimedTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "perclient_reclaimed_total",
+			Help: "Total per-client xDS snapshot cache entries reclaimed after the " +
+				"client left the connected set and stayed gone for the grace period.",
+		},
+		[]string{gatewayLabel, namespaceLabel},
+	)
 )
+
+// recordSnapshotReclaim counts one reclaimed snapshot cache entry for the
+// departed client's gateway.
+func recordSnapshotReclaim(proxyKey string) {
+	if !metrics.Active() {
+		return
+	}
+	cd := getDetailsFromXDSClientResourceName(proxyKey)
+	snapshotPerClientReclaimedTotal.Inc(
+		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
+		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
+	)
+}
 
 // snapshotResourcesMetricLabels defines the labels for XDS snapshot resources metrics.
 type snapshotResourcesMetricLabels struct {
@@ -199,4 +221,5 @@ func ResetMetrics() {
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
+	snapshotPerClientReclaimedTotal.Reset()
 }

@@ -394,6 +394,29 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.backendStatusReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
+	// Reclaim the SnapshotCache entries of departed clients. The per-client
+	// snapshot subscriber below must NOT clear the cache on its Delete events
+	// (those can mean "publication deferred", and Envoy keeps serving its last
+	// coherent config), so without this, every replaced gateway pod leaves a
+	// full per-client snapshot in the cache forever — unbounded controller
+	// memory growth in client-churn-heavy environments. The connected-client
+	// collection's Delete fires only when an identity's last stream closes,
+	// which makes it the reliable departure signal; the grace period plus a
+	// membership re-check at fire time make reconnect flaps safe.
+	reclaimer := newSnapshotReclaimer(s.proxyTranslator.xdsCache, func(resourceName string) bool {
+		return s.uniqueClients.GetKey(resourceName) == nil
+	})
+	s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
+		for _, e := range events {
+			name := e.Latest().ResourceName()
+			if e.Event == controllers.EventDelete {
+				reclaimer.clientDeparted(name)
+			} else {
+				reclaimer.clientConnected(name)
+			}
+		}
+	}, true)
+
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
 			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
@@ -411,15 +434,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// serving its previously-published config until a new
 				// snapshot overwrites it — "retain last good".
 				//
-				// Known leak: this branch also fires when a UCC truly goes
-				// away (Envoy pod replaced on rollout, scaled down, etc.),
-				// and we cannot distinguish that from the "defer" case here.
-				// The SnapshotCache entry for that UCC is therefore never
-				// cleared and accumulates over the controller's lifetime.
-				// Pre-existing behavior (the prior ClearSnapshot call was
-				// already commented out); reclaiming these entries requires
-				// a separate signal — e.g. cross-referencing uccCol
-				// membership — and is left to a follow-up.
+				// Entries of truly-departed clients (which also surface here,
+				// indistinguishably from deferrals) are reclaimed by the
+				// snapshotReclaimer registered above, driven by the
+				// connected-client collection where departure IS unambiguous.
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
