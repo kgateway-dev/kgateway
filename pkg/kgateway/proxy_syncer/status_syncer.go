@@ -43,6 +43,10 @@ type StatusSyncer struct {
 
 // StatusSyncerConfig holds the dependencies required to construct a StatusSyncer.
 type StatusSyncerConfig struct {
+	// Ctx is the controller's root context, handed to status registrations so the
+	// desired-status builders they construct outlive this call. Registrations run during
+	// construction, before Start receives a context, so it has to arrive here.
+	Ctx                         context.Context
 	Plugins                     plug.Plugin
 	ControllerName              string
 	Client                      apiclient.Client
@@ -69,6 +73,7 @@ func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *Status
 	// the registrations below add and must not be appended again here.
 	for _, register := range optCfg.statusRegistrations {
 		register(StatusRegistrationInputs{
+			Ctx:                   cfg.Ctx,
 			Collections:           syncer.statusCollections,
 			StatusContributions:   cfg.StatusContributions,
 			ContributionsByTarget: cfg.StatusContributionsByTarget,

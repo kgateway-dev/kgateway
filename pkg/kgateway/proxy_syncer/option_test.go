@@ -36,7 +36,11 @@ func TestWithStatusRegistration(t *testing.T) {
 	gvk := schema.GroupVersionKind{Group: "example.io", Version: "v1", Kind: "Example"}
 	called := false
 
+	type ctxKey struct{}
+	rootCtx := context.WithValue(context.Background(), ctxKey{}, "root")
+
 	statusSyncer := NewStatusSyncer(StatusSyncerConfig{
+		Ctx:                         rootCtx,
 		Plugins:                     pluginsdk.Plugin{},
 		ControllerName:              "controller-name",
 		StatusCollections:           collections,
@@ -49,6 +53,10 @@ func TestWithStatusRegistration(t *testing.T) {
 	}, WithStatusRegistration(func(in StatusRegistrationInputs) {
 		called = true
 		assert.Same(t, collections, in.Collections)
+		// Downstream registrations build desired-status closures that outlive this call,
+		// exactly as the policy path does, so they need the controller's root context and
+		// not a nil one they have to paper over with context.Background().
+		assert.Equal(t, rootCtx, in.Ctx, "the controller context must reach downstream registrations")
 		assert.NotNil(t, in.StatusContributions)
 		assert.NotNil(t, in.ContributionsByTarget)
 		resourceReports := statussync.NewResourceReports(

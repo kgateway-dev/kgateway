@@ -20,8 +20,8 @@ import (
 // identical fields, and a field added to one of them silently did not reach the other.
 type RegistrationInputs struct {
 	// Ctx is the controller's root context, captured by desired-status builders that run
-	// for the lifetime of the process. It may be nil for registrations made before the
-	// controller context exists; treat a nil Ctx as context.Background().
+	// for the lifetime of the process. Both entry points populate it. It is nil only when
+	// inputs are constructed directly, as tests do; treat that as context.Background().
 	Ctx context.Context
 	// Collections owns the raw-resource and reduced-report event sources that feed the
 	// leader's status queue. RegisterKind wires both for one kind; RegisterResource and
