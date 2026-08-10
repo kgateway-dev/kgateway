@@ -381,11 +381,6 @@ func (i *BackendIndex) GetBackendFromRef(kctx krt.HandlerContext, src ir.ObjectS
 	return i.getBackendFromRef(kctx, src.Namespace, ref)
 }
 
-// Intentionally long name, to make sure the user doesn't use this by mistake.
-func (i *BackendIndex) GetBackendFromRefWithoutRefGrantValidation(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
-	return i.getBackendFromRef(kctx, src.Namespace, ref)
-}
-
 // MARK: GatewayIndex
 
 type GatewayIndex struct {

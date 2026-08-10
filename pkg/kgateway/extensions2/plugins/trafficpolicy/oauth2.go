@@ -170,7 +170,7 @@ func buildOAuth2ProviderConfig(
 		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
 	}
 
-	backend, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.BackendRef.BackendObjectReference)
+	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
 	if err != nil || backend == nil {
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
@@ -179,7 +179,7 @@ func buildOAuth2ProviderConfig(
 	// This is needed when the JWKS endpoint is on a different domain than the token endpoint.
 	jwksBackend := backend
 	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
-		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
+		resolved, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, *in.JWT.JWKSBackendRef)
 		if err != nil {
 			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
 		}

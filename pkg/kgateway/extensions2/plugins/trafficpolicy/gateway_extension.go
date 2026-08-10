@@ -25,7 +25,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -133,7 +132,7 @@ func TranslateGatewayExtensionBuilder(
 		switch {
 		case gExt.ExtAuth != nil:
 			if gExt.ExtAuth.GrpcService != nil {
-				envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
+				envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, gExt.ExtAuth.GrpcService)
 				if err != nil {
 					// TODO: should this be a warning, and set cluster to blackhole?
 					p.Err = fmt.Errorf("failed to resolve ExtAuth gRPC backend: %w", err)
@@ -150,7 +149,7 @@ func TranslateGatewayExtensionBuilder(
 					StatusOnError:         &envoytypev3.HttpStatus{Code: envoytypev3.StatusCode(gExt.ExtAuth.StatusOnError)}, //nolint:gosec // G115: StatusOnError is HTTP status code, valid range fits in int32
 				}
 			} else if gExt.ExtAuth.HttpService != nil {
-				envoyHttpService, err := ResolveExtHttpService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, gExt.ExtAuth.HttpService)
+				envoyHttpService, err := ResolveExtHttpService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, gExt.ExtAuth.HttpService)
 				if err != nil {
 					p.Err = fmt.Errorf("failed to resolve ExtAuth HTTP backend: %w", err)
 					return p
@@ -186,7 +185,7 @@ func TranslateGatewayExtensionBuilder(
 			}
 
 		case gExt.ExtProc != nil:
-			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
+			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("failed to resolve ExtProc backend: %w", err)
 				return p
@@ -195,7 +194,7 @@ func TranslateGatewayExtensionBuilder(
 			p.FilterStage = gExt.ExtProc.FilterStage
 
 		case gExt.RateLimit != nil:
-			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, false, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
+			grpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, &gExt.RateLimit.GrpcService)
 			if err != nil {
 				p.Err = fmt.Errorf("ratelimit: %w", err)
 				return p
@@ -266,23 +265,9 @@ func resolveJwtProviders(
 	}, nil
 }
 
-func resolveBackend(
-	krtctx krt.HandlerContext,
-	backends *krtcollections.BackendIndex,
-	disableExtensionRefValidation bool,
-	objectSource ir.ObjectSource,
-	backendRef gwv1.BackendObjectReference,
-) (*ir.BackendObjectIR, error) {
-	if disableExtensionRefValidation {
-		return backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-	}
-	return backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-}
-
 func ResolveExtGrpcService(
 	krtctx krt.HandlerContext,
 	backends *krtcollections.BackendIndex,
-	disableExtensionRefValidation bool,
 	objectSource ir.ObjectSource,
 	grpcService *kgateway.ExtGrpcService,
 ) (*envoycorev3.GrpcService, error) {
@@ -291,10 +276,8 @@ func ResolveExtGrpcService(
 		return nil, errors.New("grpcService not provided")
 	}
 
-	var backend *ir.BackendObjectIR
-	var err error
 	backendRef := grpcService.BackendRef.BackendObjectReference
-	backend, err = resolveBackend(krtctx, backends, disableExtensionRefValidation, objectSource, backendRef)
+	backend, err := backends.GetBackendFromRef(krtctx, objectSource, backendRef)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +312,6 @@ func ResolveExtGrpcService(
 func ResolveExtHttpService(
 	krtctx krt.HandlerContext,
 	backends *krtcollections.BackendIndex,
-	disableExtensionRefValidation bool,
 	objectSource ir.ObjectSource,
 	httpService *kgateway.ExtHttpService,
 ) (*envoy_ext_authz_v3.HttpService, error) {
@@ -338,14 +320,8 @@ func ResolveExtHttpService(
 	}
 
 	// Resolve backend
-	var backend *ir.BackendObjectIR
-	var err error
 	backendRef := httpService.BackendRef.BackendObjectReference
-	if disableExtensionRefValidation {
-		backend, err = backends.GetBackendFromRefWithoutRefGrantValidation(krtctx, objectSource, backendRef)
-	} else {
-		backend, err = backends.GetBackendFromRef(krtctx, objectSource, backendRef)
-	}
+	backend, err := backends.GetBackendFromRef(krtctx, objectSource, backendRef)
 	if err != nil {
 		return nil, err
 	}
