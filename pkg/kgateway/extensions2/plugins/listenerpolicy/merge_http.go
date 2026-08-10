@@ -28,6 +28,7 @@ func MergeHttpPolicies(
 		mergeUseRemoteAddress,
 		mergePreserveExternalRequestId,
 		mergeGenerateRequestId,
+		mergeProxy100Continue,
 		mergeXffNumTrustedHops,
 		mergeXffConfig,
 		mergeSkipXffAppend,
@@ -172,6 +173,22 @@ func mergeGenerateRequestId(
 
 	p1.generateRequestId = p2.generateRequestId
 	mergeOrigins.SetOne(origin+"generateRequestId", p2Ref, p2MergeOrigins)
+}
+
+func mergeProxy100Continue(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.proxy100Continue, p2.proxy100Continue, opts) {
+		return
+	}
+
+	p1.proxy100Continue = p2.proxy100Continue
+	mergeOrigins.SetOne(origin+"proxy100Continue", p2Ref, p2MergeOrigins)
 }
 
 func mergePreserveHttp1HeaderCase(

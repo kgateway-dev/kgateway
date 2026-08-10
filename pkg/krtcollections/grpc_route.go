@@ -133,7 +133,7 @@ func buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchTyp
 			path = fmt.Sprintf("/%s/.+", string(*method.Service))
 		case method.Method != nil:
 			// Match any valid service name before the method
-			path = fmt.Sprintf("/.+/%s", string(*method.Method))
+			path = "/.+/" + string(*method.Method)
 		}
 	default: // gwv1.GRPCMethodMatchExact
 		switch {
@@ -142,11 +142,11 @@ func buildGRPCPathMatch(method *gwv1.GRPCMethodMatch) (string, gwv1.PathMatchTyp
 			pathType = gwv1.PathMatchExact
 		case method.Service != nil:
 			// Exact service match maps to prefix /service
-			path = fmt.Sprintf("/%s", string(*method.Service))
+			path = "/" + string(*method.Service)
 			pathType = gwv1.PathMatchPathPrefix
 		case method.Method != nil:
 			// Exact method without service isn't directly mappable, use regex
-			path = fmt.Sprintf("/.+/%s", string(*method.Method))
+			path = "/.+/" + string(*method.Method)
 			pathType = gwv1.PathMatchRegularExpression
 		}
 	}

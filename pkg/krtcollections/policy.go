@@ -629,7 +629,7 @@ func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace
 				allowedNs = SameNamespace(parentNamespace)
 			case gwv1.NamespacesFromSelector:
 				if allowedListeners.Namespaces.Selector == nil {
-					return nil, fmt.Errorf("selector must be set")
+					return nil, errors.New("selector must be set")
 				}
 				selector, err := metav1.LabelSelectorAsSelector(allowedListeners.Namespaces.Selector)
 				if err != nil {
@@ -732,7 +732,7 @@ func NewPolicyIndex(
 					return nil
 				}
 				return &a
-			}, krtopts.ToOptions(fmt.Sprintf("%s-policiesByTargetRef", gk.String()))...)
+			}, krtopts.ToOptions(gk.String()+"-policiesByTargetRef")...)
 
 			targetRefIndex := krtpkg.UnnamedIndex(policiesByTargetRef, func(p ir.PolicyWrapper) []TargetRefIndexKey {
 				// Every policy is indexed by PolicyRef and PolicyRef without Name (by Group+Kind+Namespace)

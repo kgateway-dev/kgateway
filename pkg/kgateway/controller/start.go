@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"maps"
 	"net/http"
 	"strings"
@@ -219,7 +218,7 @@ func pluginFactoryWithBuiltin(cfg StartConfig) extensions2.K8sGatewayExtensionsF
 }
 
 func (c *ControllerBuilder) Build(ctx context.Context) error {
-	slog.Info("creating gateway controllers")
+	logger.Info("creating gateway controllers")
 
 	globalSettings := c.cfg.SetupOpts.GlobalSettings
 
@@ -239,7 +238,7 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 	}
 
 	xdsPort := globalSettings.XdsServicePort
-	slog.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
+	logger.Info("got xds address for deployer", "xds_host", xdsHost, "xds_port", xdsPort)
 
 	istioAutoMtlsEnabled := globalSettings.EnableIstioAutoMtls
 

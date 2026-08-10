@@ -825,7 +825,7 @@ func (tc TestCase) Run(
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
 		// Backend policies (e.g. BackendConfigPolicy) use a different reporting pipeline than gateway policies.
-		// Gateway policies (HTTPListenerPolicy, TrafficPolicy) are reported during gateway translation via the
+		// Gateway policies (ListenerPolicy, TrafficPolicy) are reported during gateway translation via the
 		// standard reporter mechanism. Backend policies are processed differently - they don't use the reporter
 		// during translation, instead their reports are generated separately by GenerateBackendPolicyReport().
 		// We need to merge both report types to capture all policy statuses for golden file testing.

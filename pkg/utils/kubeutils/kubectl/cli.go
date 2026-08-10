@@ -288,7 +288,7 @@ func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, ex
 	rolloutArgs := append([]string{
 		"rollout",
 		"status",
-		fmt.Sprintf("deployment/%s", deployment),
+		"deployment/" + deployment,
 	}, extraArgs...)
 	return c.RunCommand(ctx, rolloutArgs...)
 }
@@ -413,7 +413,7 @@ func (c *Cli) RestartDeployment(ctx context.Context, name string, extraArgs ...s
 	args := append([]string{
 		"rollout",
 		"restart",
-		fmt.Sprintf("deployment/%s", name),
+		"deployment/" + name,
 	}, extraArgs...)
 	return c.RunCommand(ctx, args...)
 }

@@ -1346,6 +1346,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	reason := gwv1.ListenerReasonInvalidCertificateRef
 	message := "Invalid certificate ref(s)."
 	acceptedReason := gwv1.ListenerReasonInvalid
+	resolvedRefsOK := false
 
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
@@ -1358,6 +1359,9 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
+		// verify-subject-alt-names requires CA is a TLS configuration issue,
+		// not a certificate reference problem — the secret refs resolved fine.
+		resolvedRefsOK = true
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidCACertificateRef):
 		reason = sslutils.ListenerReasonInvalidCACertificateRef
@@ -1366,6 +1370,12 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	case errors.Is(err, sslutils.ErrInvalidCACertificateKind):
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
+		// Unknown TLS extension options are not a certificate reference problem;
+		// the cert refs resolved fine. Per the Gateway API spec, this is an
+		// Invalid condition on Programmed/Accepted, not a ResolvedRefs issue.
+		resolvedRefsOK = true
 		message = err.Error()
 	}
 
@@ -1378,12 +1388,18 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = fmt.Sprintf(ResourceNotFoundMessageTemplate, resourceType, notFoundErr.NotFoundObj.Namespace, notFoundErr.NotFoundObj.Name)
 	}
 
-	listenerReporter.SetCondition(reports.ListenerCondition{
-		Type:    gwv1.ListenerConditionResolvedRefs,
-		Status:  metav1.ConditionFalse,
-		Reason:  reason,
-		Message: message,
-	})
+	// When resolvedRefsOK is true, do not set a ResolvedRefs condition at all
+	// — listenerConditionsWithDefaults sets ResolvedRefs=True as the default
+	// for any condition type that was not explicitly set. We only need to
+	// override it when references genuinely failed to resolve.
+	if !resolvedRefsOK {
+		listenerReporter.SetCondition(reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionResolvedRefs,
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
+		})
+	}
 
 	// Accepted and Programmed conditions are set to true if the listener is partially valid
 	acceptedProgrammedStatus := metav1.ConditionFalse

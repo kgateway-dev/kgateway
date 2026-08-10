@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"log/slog"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -15,7 +14,10 @@ import (
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("pluginsdk/collections")
 
 var promotedTLSRouteGVR = wellknown.TLSRouteV1GVR
 
@@ -174,7 +176,7 @@ func convertUnstructuredTLSRouteToV1Alpha2(in *unstructured.Unstructured) *gwv1a
 
 	out := &gwv1a2.TLSRoute{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(in.Object, out); err != nil {
-		slog.Warn("ignoring unstructured TLSRoute with invalid payload",
+		logger.Warn("ignoring unstructured TLSRoute with invalid payload",
 			"name", in.GetName(),
 			"namespace", in.GetNamespace(),
 			"error", err,

@@ -7,16 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	testruntime "github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
+
+var logger = logging.New("e2e/cluster")
 
 const (
 	// TODO(npolshak): Add support for other profiles (ambient, etc.)
@@ -29,7 +31,7 @@ func GetIstioctl(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download istio: %w", err)
 	}
-	slog.Info("using Istio binary", "path", istioctlBinary)
+	logger.Info("using Istio binary", "path", istioctlBinary)
 
 	return istioctlBinary, nil
 }
@@ -113,25 +115,25 @@ func getIstioVersion() string {
 		return version
 	} else {
 		// Fail loudly if ISTIO_VERSION is not set
-		panic(fmt.Sprintf("%s environment variable must be specified to run", testruntime.IstioVersionEnv))
+		panic(testruntime.IstioVersionEnv + " environment variable must be specified to run")
 	}
 }
 
 // Download istioctl binary from istio.io/downloadIstio and returns the path to the binary
 func downloadIstio(version string) (string, error) {
 	if version == "" {
-		slog.Info("ISTIO_VERSION not specified, using istioctl from PATH")
+		logger.Info("ISTIO_VERSION not specified, using istioctl from PATH")
 		binaryPath, err := exec.LookPath("istioctl")
 		if err != nil {
 			return "", errors.New("ISTIO_VERSION environment variable must be specified or istioctl must be installed")
 		}
 
-		slog.Info("using istioctl", "path", binaryPath)
+		logger.Info("using istioctl", "path", binaryPath)
 
 		return binaryPath, nil
 	}
 	installLocation := filepath.Join(testutils.GitRootDirectory(), ".bin")
-	binaryDir := filepath.Join(installLocation, fmt.Sprintf("istio-%s", version), "bin")
+	binaryDir := filepath.Join(installLocation, "istio-"+version, "bin")
 	binaryLocation := filepath.Join(binaryDir, "istioctl")
 
 	fileInfo, _ := os.Stat(binaryLocation)
@@ -149,7 +151,7 @@ func downloadIstio(version string) (string, error) {
 		}
 
 		arch := runtime.GOARCH
-		archModifier := fmt.Sprintf("-%s", arch)
+		archModifier := "-" + arch
 
 		if osName == "osx" && arch != "arm64" {
 			archModifier = ""

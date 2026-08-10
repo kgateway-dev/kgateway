@@ -32,7 +32,7 @@ Let's focus on the first one - Routes and Listeners, as this is where the
 majority of the logic is.
 
 Envoy Routes & Listeners translate from Gateways, HTTPRoutes, and user policies
-(i.e. TrafficPolicy, HTTPListenerPolicy, etc).
+(i.e. TrafficPolicy, ListenerPolicy, etc).
 
 ## Policies (Contributed by Plugins)
 

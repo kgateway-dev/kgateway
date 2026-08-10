@@ -17,19 +17,13 @@ Statuses:
         status: "True"
         type: Programmed
       - lastTransitionTime: null
-        message: One or more listeners have unresolved references
-        reason: ListenersNotResolved
-        status: "False"
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
         type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
-        - lastTransitionTime: null
-          message: verify-subject-alt-names annotation requires a trusted CA to be
-            configured
-          reason: InvalidCertificateRef
-          status: "False"
-          type: ResolvedRefs
         - lastTransitionTime: null
           message: verify-subject-alt-names annotation requires a trusted CA to be
             configured
@@ -47,6 +41,11 @@ Statuses:
           reason: NoConflicts
           status: "False"
           type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
         name: https-mtls-strict-validation
         supportedKinds:
         - group: gateway.networking.k8s.io

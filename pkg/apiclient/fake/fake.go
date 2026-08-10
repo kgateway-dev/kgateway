@@ -123,7 +123,6 @@ func filterObjects(objects ...client.Object) (istio []client.Object, kgw []clien
 			*kgateway.DirectResponse,
 			*kgateway.GatewayExtension,
 			*kgateway.GatewayParameters,
-			*kgateway.HTTPListenerPolicy,
 			*kgateway.ListenerPolicy,
 			*kgateway.TrafficPolicy:
 			kgw = append(kgw, obj)
@@ -261,8 +260,6 @@ func kindForSeededCRD(resource schema.GroupVersionResource) string {
 		return wellknown.BackendConfigPolicyGVK.Kind
 	case wellknown.TrafficPolicyGVR:
 		return wellknown.TrafficPolicyGVK.Kind
-	case wellknown.HTTPListenerPolicyGVR:
-		return wellknown.HTTPListenerPolicyGVK.Kind
 	case wellknown.ListenerPolicyGVR:
 		return wellknown.ListenerPolicyGVK.Kind
 	case wellknown.DirectResponseGVR:

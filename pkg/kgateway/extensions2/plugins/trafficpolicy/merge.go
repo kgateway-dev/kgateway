@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -227,7 +228,7 @@ func mergeRustformationJsonInPlace(obj1, obj2 any) error {
 	m1, ok1 := obj1.(map[string]any)
 	m2, ok2 := obj2.(map[string]any)
 	if !ok1 || !ok2 {
-		return fmt.Errorf("both arguments must be map[string]any")
+		return errors.New("both arguments must be map[string]any")
 	}
 
 	mergeRustFormationRequestResponseJson("response", m1, m2)
@@ -830,7 +831,7 @@ func detectHttpACLMergeConflict(m1, m2 map[string]any) []error {
 	da1, hasDA1 := m1["defaultAction"].(string)
 	da2, hasDA2 := m2["defaultAction"].(string)
 	if !hasDA1 || !hasDA2 {
-		conflicts = append(conflicts, fmt.Errorf("defaultAction not set"))
+		conflicts = append(conflicts, errors.New("defaultAction not set"))
 	} else if da1 != da2 {
 		conflicts = append(conflicts, fmt.Errorf("defaultAction conflict: %q vs %q", da1, da2))
 	}

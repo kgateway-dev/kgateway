@@ -42,16 +42,71 @@ Routes:
             Disallow: /direct-response
         status: 510
       match:
-        prefix: /
+        pathSeparatedPrefix: /match1
       metadata:
         filterMetadata:
           dev.kgateway.route_source:
             group: gateway.networking.k8s.io
             kind: HTTPRoute
+            match: _match-0
             name: example
             namespace: default
-            rule: httproute-example-default-0-0-direct-response-rule
+            rule: direct-response-rule
       name: listener~8080~example_com-route-0-httproute-example-default-0-0-direct-response-rule-matcher-0
+    - directResponse:
+        body:
+          inlineString: |
+            User-agent: *
+            Disallow: /direct-response
+        status: 510
+      match:
+        pathSeparatedPrefix: /match2
+      metadata:
+        filterMetadata:
+          dev.kgateway.route_source:
+            group: gateway.networking.k8s.io
+            kind: HTTPRoute
+            match: _match-1
+            name: example
+            namespace: default
+            rule: direct-response-rule
+      name: listener~8080~example_com-route-1-httproute-example-default-0-1-direct-response-rule-matcher-1
+    - directResponse:
+        body:
+          inlineString: |
+            User-agent: *
+            Disallow: /direct-response
+        status: 510
+      match:
+        pathSeparatedPrefix: /match1
+      metadata:
+        filterMetadata:
+          dev.kgateway.route_source:
+            group: gateway.networking.k8s.io
+            kind: HTTPRoute
+            match: _match-0
+            name: example
+            namespace: default
+            rule: _rule-1
+      name: listener~8080~example_com-route-2-httproute-example-default-1-0-matcher-0
+    - directResponse:
+        body:
+          inlineString: |
+            User-agent: *
+            Disallow: /direct-response
+        status: 510
+      match:
+        pathSeparatedPrefix: /match2
+      metadata:
+        filterMetadata:
+          dev.kgateway.route_source:
+            group: gateway.networking.k8s.io
+            kind: HTTPRoute
+            match: _match-1
+            name: example
+            namespace: default
+            rule: _rule-1
+      name: listener~8080~example_com-route-3-httproute-example-default-1-1-matcher-1
 Statuses:
   gateways:
     default/example-gateway:
