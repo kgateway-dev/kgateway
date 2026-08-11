@@ -118,10 +118,8 @@ func (c *Client) WithCurlOptions(options ...curl.Option) *Client {
 
 // Command returns a curl Command, using the provided curl.Option as well as the client.curlOptions
 func (c *Client) Command(ctx context.Context, options ...curl.Option) cmdutils.Cmd {
-	commandCurlOptions := append(
-		c.curlOptions,
-		// Ensure any options defined for this command can override any defaults that the Client has defined
-		options...)
+	// Ensure any options defined for this command can override any defaults that the Client has defined
+	commandCurlOptions := curl.Extend(c.curlOptions, options...)
 	curlArgs := curl.BuildArgs(commandCurlOptions...)
 
 	return cmdutils.Command(ctx, "curl", curlArgs...).

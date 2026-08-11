@@ -148,7 +148,7 @@ func (f *apiPortForwarder) portForwarderToPod(podName string, readyCh chan struc
 	}
 
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", f.properties.resourceNamespace, podName)
-	hostIP := strings.TrimLeft(f.restConfig.Host, "https:/")
+	hostIP := strings.TrimPrefix(f.restConfig.Host, "https://")
 	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
 

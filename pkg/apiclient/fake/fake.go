@@ -3,6 +3,7 @@ package fake
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
@@ -58,7 +59,7 @@ func NewClientWithExtraGVRs(t test.Failer, extraGVRs []schema.GroupVersionResour
 		kgateway: fakeKgwClient(kgw...),
 	}
 
-	allCRDs := append(testutils.AllCRDs, extraGVRs...)
+	allCRDs := slices.Concat(testutils.AllCRDs, extraGVRs)
 	for _, crd := range allCRDs {
 		clienttest.MakeCRDWithAnnotations(t, c.Client, crd, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,

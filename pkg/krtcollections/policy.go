@@ -564,7 +564,8 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
 				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
 				// Ensure the sectioned policies are first
-				listenerPolicies := append(listenerSpecificPolicies, listenerSetPolicies...)
+				listenerPolicies := slices.Clone(listenerSpecificPolicies)
+				listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
 
 				lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
 					Listener:         utils.ToListener(l),

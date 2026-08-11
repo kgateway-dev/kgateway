@@ -24,15 +24,27 @@ import (
 // testingSuite is the entire suite of tests for testing K8s Service-specific features/fixes
 type testingSuite struct {
 	*base.BaseTestingSuite
+	cancel context.CancelFunc
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	tcpRouteCtx, _ := context.WithTimeout(ctx, ctxTimeout)
+	tcpRouteCtx, cancel := context.WithTimeout(ctx, ctxTimeout)
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(tcpRouteCtx, testInst, setup, testCases,
 			base.WithMinGwApiVersion(base.GwApiRequireTcpRoutes),
 		),
+		cancel: cancel,
 	}
+}
+
+// SetupSuite registers the suite context's cancel before delegating to the base
+// suite. Registration must happen here rather than in TearDownSuite: the base
+// SetupSuite skips the whole suite when the cluster's Gateway API predates
+// GwApiRequireTcpRoutes, and testify only registers its TearDownSuite deferral
+// after SetupSuite returns — so a skip would leave the timeout context alive.
+func (s *testingSuite) SetupSuite() {
+	testutils.Cleanup(s.T(), s.cancel)
+	s.BaseTestingSuite.SetupSuite()
 }
 
 var (
