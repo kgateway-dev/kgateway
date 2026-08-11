@@ -582,6 +582,9 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 			out.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{StripAnyHostPort: true}
 		}
 	}
+	if policy.stripTrailingHostDot != nil {
+		out.StripTrailingHostDot = *policy.stripTrailingHostDot
+	}
 
 	return nil
 }

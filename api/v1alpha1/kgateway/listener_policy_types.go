@@ -344,6 +344,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Enum=MatchingPort;AnyPort
 	// +optional
 	StripHostPortMode *StripHostPortMode `json:"stripHostPortMode,omitempty"`
+
+	// StripTrailingHostDot determines whether Envoy strips the trailing dot from the
+	// Host/authority header before any filter processing or route matching. Without this,
+	// a request whose host is a fully qualified domain name with a trailing dot (for example
+	// "example.com.") does not match routes configured for the hostname "example.com".
+	// The stripped value is also what gets forwarded upstream.
+	// If unset, the trailing dot is kept (Envoy's default).
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
+	// +optional
+	StripTrailingHostDot *bool `json:"stripTrailingHostDot,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.

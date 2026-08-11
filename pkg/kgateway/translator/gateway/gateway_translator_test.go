@@ -2258,6 +2258,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with stripTrailingHostDot", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/strip-trailing-host-dot.yaml"},
+			outputFile: "listener-policy-http/strip-trailing-host-dot.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy_proxy100Continue", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/proxy-100-continue.yaml"},
