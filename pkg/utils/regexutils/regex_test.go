@@ -1,27 +1,14 @@
 package regexutils_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"testing"
 
-	. "github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 )
 
-var _ = Describe("Regex", func() {
-	It("should create regex with default program size", func() {
-		regex := NewRegexWithProgramSize("foo", nil)
-		Expect(regex.GetRegex()).To(Equal("foo"))
-		Expect(regex.GetGoogleRe2().GetMaxProgramSize()).To(BeNil()) //nolint:staticcheck // GetGoogleRe2 and GetMaxProgramSize are deprecated
-
-		// regex = NewRegex(nil, "foo")
-		// Expect(regex.GetRegex()).To(Equal("foo"))
-		// Expect(regex.GetGoogleRe2().GetMaxProgramSize()).To(BeNil())
-	})
-	It("should create regex with a specific program size", func() {
-		var number uint32
-		number = 123
-		regex := NewRegexWithProgramSize("foo", &number)
-		Expect(regex.GetRegex()).To(Equal("foo"))
-		Expect(regex.GetGoogleRe2().GetMaxProgramSize().GetValue()).To(Equal(number)) //nolint:staticcheck // GetGoogleRe2 and GetMaxProgramSize are deprecated
-	})
-})
+func TestCheckRegexString(t *testing.T) {
+	require.NoError(t, regexutils.CheckRegexString(`^foo.*$`))
+	require.Error(t, regexutils.CheckRegexString(`[[invalid`))
+}

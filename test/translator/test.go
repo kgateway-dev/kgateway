@@ -880,12 +880,8 @@ func (tc TestCase) Run(
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
-				if err != nil {
-					// In strict mode, backend validation errors are expected and should not fail the test
-					// The cluster will be nil or a blackhole cluster, which will be filtered out by perclient.go
-					// Note: These errors are expected when xDS validation is enabled in strict mode
-				}
+				// In strict mode, backend validation errors are expected and should not fail the test.
+				cluster, _ := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
 				if cluster != nil {
 					clusters = append(clusters, cluster)
 				}

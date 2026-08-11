@@ -91,7 +91,7 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 	if e.Err != nil {
 		// If there's an error in the IR, validation doesn't make sense.
-		return nil
+		return nil //nolint:nilerr // The stored IR error is reported separately; skip redundant validation.
 	}
 	if e.ExtAuth != nil {
 		if err := e.ExtAuth.ValidateAll(); err != nil {
