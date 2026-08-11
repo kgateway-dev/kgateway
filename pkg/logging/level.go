@@ -156,7 +156,7 @@ func HTTPLevelHandler(w http.ResponseWriter, r *http.Request) {
 			name = DefaultComponent
 		}
 		if _, ok := componentLeveler.Load(name); !ok {
-			http.Error(w, fmt.Sprintf("logger not found for component: %s", component), http.StatusBadRequest)
+			http.Error(w, "logger not found for component: "+component, http.StatusBadRequest)
 			return
 		}
 	}
