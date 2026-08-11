@@ -585,3 +585,78 @@ func (s *testingSuite) TestAPIKeyAuthDisableAtRouteLevel() {
 		getWithAPIKeyCurlOpts...,
 	)
 }
+
+// TestAPIKeyAuthWithSecretSelector covers apiKeyAuth.secretSelector, where the
+// Secrets holding the keys are chosen by label rather than by name.
+//
+// Beyond the static case, this exercises selector membership changing at
+// runtime in both directions. kgateway loads the contents of only those Secrets
+// its configuration references, and a label-selected reference is resolved
+// against a metadata-only watch (see pkg/krtcollections/ondemand), so a label
+// change has to move a Secret in and out of the referenced set. Getting only the
+// growing direction right still passes a static test: a key that should have
+// been revoked keeps working, which is a security-relevant failure rather than
+// merely a stale one.
+func (s *testingSuite) TestAPIKeyAuthWithSecretSelector() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		s.Ctx, "httpbin-route-secret-selector", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+
+	statusReqCurlOpts := []curl.Option{
+		curl.WithHostHeader("httpbin"),
+		curl.WithPort(80),
+		curl.WithPath("/status/200"),
+	}
+	withKey := func(key string) []curl.Option {
+		return append(append([]curl.Option{}, statusReqCurlOpts...), curl.WithHeader("api-key", key))
+	}
+
+	// Keys are aggregated across every Secret the selector matches.
+	s.T().Log("Step 1: keys from both selected Secrets should be accepted")
+	common.BaseGateway.Send(s.T(), expectStatus200Success, withKey("k-sel-111")...)
+	common.BaseGateway.Send(s.T(), expectStatus200Success, withKey("k-sel-222")...)
+
+	// A Secret without the label is not referenced, so its contents are never
+	// loaded and its key is unknown to the filter.
+	s.T().Log("Step 2: a key from an unselected Secret should be rejected")
+	common.BaseGateway.Send(s.T(), expectAPIKeyAuthDenied, withKey("k-sel-333")...)
+
+	// Growing: labelling a Secret brings it into the selection.
+	s.T().Log("Step 3: labelling the unselected Secret should bring its key into use")
+	err := s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(`apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-unselected
+  namespace: kgateway-base
+  labels:
+    apikeys: selector-test
+type: Opaque
+stringData:
+  client3: k-sel-333
+`)) //gosec:disable G101
+	s.Require().NoError(err, "failed to label the previously unselected secret")
+
+	common.BaseGateway.Send(s.T(), expectStatus200Success, withKey("k-sel-333")...)
+
+	// Shrinking: removing the label must revoke the key. If the selector only
+	// ever grew, this key would keep working indefinitely.
+	s.T().Log("Step 4: removing the label again should revoke that key")
+	err = s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(`apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-unselected
+  namespace: kgateway-base
+  labels:
+    apikeys: something-else
+type: Opaque
+stringData:
+  client3: k-sel-333
+`)) //gosec:disable G101
+	s.Require().NoError(err, "failed to remove the label from the secret")
+
+	common.BaseGateway.Send(s.T(), expectAPIKeyAuthDenied, withKey("k-sel-333")...)
+
+	// The originally selected Secrets are unaffected throughout.
+	s.T().Log("Step 5: the originally selected keys should still work")
+	common.BaseGateway.Send(s.T(), expectStatus200Success, withKey("k-sel-111")...)
+	common.BaseGateway.Send(s.T(), expectStatus200Success, withKey("k-sel-222")...)
+}

@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/gateway-api/pkg/consts"
 
@@ -82,6 +83,14 @@ func (c *cli) Core() kube.Client {
 
 func fakeIstioClient(objects ...client.Object) kube.Client {
 	c := kube.NewFakeClient(testutils.ToRuntimeObjects(objects...)...)
+
+	// Serve metadata-client reads from the typed tracker so that metadata-only
+	// watches (the on-demand Secret/ConfigMap caches) see the test's fixtures.
+	if typed, ok := c.Kube().(*kubefake.Clientset); ok {
+		wireMetadataReadThrough(c.Metadata(), typed)
+		wireResourceVersions(typed)
+	}
+
 	// Also add to the Dynamic store
 	for _, obj := range objects {
 		nn := kubeutils.NamespacedNameFrom(obj)

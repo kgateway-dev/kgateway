@@ -29,6 +29,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/ondemand"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -311,6 +312,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 					return policy.MergePolicies(pols, MergePolicies, "" /*no merge settings*/)
 				},
 			},
+		},
+		ContributesResourceRefs: []krt.Collection[ondemand.ResourceRef]{
+			resourceRefs(col, commoncol.KrtOpts),
 		},
 	}
 }

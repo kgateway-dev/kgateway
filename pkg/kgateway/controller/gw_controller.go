@@ -90,7 +90,7 @@ func NewGatewayReconciler(
 		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
-		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
+		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, ownedConfigMapFilter(cfg.Client)),
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.
@@ -218,6 +218,30 @@ func NewGatewayReconciler(
 	r.setupTLSCertificateWatch(cfg.CertWatcher)
 
 	return r
+}
+
+// ownedConfigMapFilter restricts the ConfigMap watch to objects kgateway
+// deployed itself.
+//
+// This client exists only to re-reconcile a Gateway when one of its child
+// objects drifts, so it never needs to see a user's ConfigMaps. Without the
+// selector it would keep a full typed copy of every ConfigMap in the cluster,
+// which is exactly the cost the metadata-only Secret/ConfigMap caches in
+// pkg/krtcollections/ondemand exist to avoid -- and would negate that saving
+// entirely. Every object the deployer renders carries the gateway-name label,
+// so selecting on its presence is both server-side and complete.
+// ownedConfigMapSelector matches objects the deployer rendered. It selects on
+// the presence of the gateway-name label rather than on a value: the label is
+// set unconditionally by the Helm templates and cannot be overridden by a user's
+// gatewayLabels, whereas app.kubernetes.io/managed-by carries a configurable
+// value (see Deployer.managedBy) and would be fragile to match on.
+const ownedConfigMapSelector = wellknown.GatewayNameLabel
+
+func ownedConfigMapFilter(client kube.Client) kclient.Filter {
+	return kclient.Filter{
+		ObjectFilter:  client.ObjectFilter(),
+		LabelSelector: ownedConfigMapSelector,
+	}
 }
 
 // NeedLeaderElection returns true to ensure that the Gateway reconciler runs only on the leader

@@ -199,6 +199,11 @@ func (c *CommonCollections) InitCollections(
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 
 	routes := krtcollections.NewRoutesIndex(c.KrtOpts, c.ControllerName, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, c.RefGrants, globalSettings)
+	// Core Secret/ConfigMap references are derived from the raw Gateway and
+	// ListenerSet collections rather than from the GatewayIndex, which attaches
+	// policies and would therefore depend on the Secret cache itself.
+	c.coreResourceRefs = krtcollections.GatewayResourceRefs(kubeRawGateways, kubeRawListenerSets, c.KrtOpts)
+
 	return gateways, routes, backendIndex, endpointIRs
 }
 

@@ -12,6 +12,7 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -20,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/ondemand"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -46,6 +48,20 @@ type CommonCollections struct {
 	WrappedPods  krt.Collection[krtcollections.WrappedPod]
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
 	RefGrants    *krtcollections.RefGrantIndex
+
+	// secretCache and configMapCache back Secrets and ConfigMaps. They hold the
+	// contents of referenced objects only; the cluster-wide view they maintain is
+	// metadata-only. Their reference inputs are attached in InitPlugins, once the
+	// plugins that declare those references exist.
+	secretCache    *ondemand.Cache[*corev1.Secret]
+	configMapCache *ondemand.Cache[*corev1.ConfigMap]
+
+	// coreResourceRefs are the references core Gateway API translation produces.
+	// Set by InitCollections.
+	coreResourceRefs krt.Collection[ondemand.ResourceRef]
+
+	// gwExtResourceRefs are the references GatewayExtension-backed policies read.
+	gwExtResourceRefs krt.Collection[ondemand.ResourceRef]
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -106,14 +122,23 @@ func NewCommonCollections(
 		kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
 	}
 
-	secretClient := kclient.NewFiltered[*corev1.Secret](
-		client,
-		kclient.Filter{
+	// Secrets and ConfigMaps are watched metadata-only cluster-wide; only objects
+	// some part of the configuration references have their contents fetched. See
+	// the ondemand package for why.
+	secretCache := ondemand.New(ctx, client, krtOptions, ondemand.Config[*corev1.Secret]{
+		Name: "Secrets",
+		Kind: wellknown.SecretKind,
+		GVR:  gvr.Secret,
+		Filter: kclient.Filter{
 			FieldSelector: apiclient.SecretsFieldSelector,
 			ObjectFilter:  client.ObjectFilter(),
 		},
-	)
-	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(krtOptions.Stop), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
+		Getter: func(ctx context.Context, ns, name string) (*corev1.Secret, error) {
+			return client.Kube().CoreV1().Secrets(ns).Get(ctx, name, metav1.GetOptions{})
+		},
+	})
+	// no debug here - we don't want raw secrets printed
+	k8sSecretsRaw := secretCache.Collection()
 	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 		res := ir.Secret{
 			ObjectSource: ir.ObjectSource{
@@ -161,21 +186,26 @@ func NewCommonCollections(
 		serviceEntries = krt.NewStaticCollection[*networkingclient.ServiceEntry](nil, nil, krtOptions.ToOptions("disable/ServiceEntries")...)
 	}
 
-	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
-		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
-	)
-	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
+	configMapCache := ondemand.New(ctx, client, krtOptions, ondemand.Config[*corev1.ConfigMap]{
+		Name:   "ConfigMaps",
+		Kind:   wellknown.ConfigMapKind,
+		GVR:    gvr.ConfigMap,
+		Filter: kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		Getter: func(ctx context.Context, ns, name string) (*corev1.ConfigMap, error) {
+			return client.Kube().CoreV1().ConfigMaps(ns).Get(ctx, name, metav1.GetOptions{})
+		},
+	})
+	cfgmaps := configMapCache.Collection()
 
-	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
+	gwExts, rawGwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
 
 	return &CommonCollections{
 		Client:                                client,
 		KrtOpts:                               krtOptions,
-		Secrets:                               krtcollections.NewSecretIndex(secrets, refgrants),
-		ConfigMaps:                            krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
+		Secrets:                               krtcollections.NewSecretIndex(secrets, refgrants).WithExistenceCheck(secretCache.Exists),
+		ConfigMaps:                            krtcollections.NewConfigMapIndex(cfgmaps, refgrants).WithExistenceCheck(configMapCache.Exists),
 		LocalityPods:                          localityPods,
 		WrappedPods:                           wrappedPods,
 		RefGrants:                             refgrants,
@@ -185,6 +215,11 @@ func NewCommonCollections(
 		ServiceEntries:                        serviceEntries,
 		ServiceEntriesExclusionLabelSelectors: serviceEntriesExclusionLabelSelectors,
 		GatewayExtensions:                     gwExts,
+
+		gwExtResourceRefs: krtcollections.GatewayExtensionResourceRefs(rawGwExts, krtOptions),
+
+		secretCache:    secretCache,
+		configMapCache: configMapCache,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 
@@ -214,4 +249,28 @@ func (c *CommonCollections) InitPlugins(
 	c.Routes = routeIndex
 	c.Endpoints = endpointIRs
 	c.GatewayIndex = gateways
+
+	// Now that every plugin exists, assemble the full set of Secret/ConfigMap
+	// references and start fetching. Until this runs the caches report unsynced,
+	// so nothing translates against an empty Secrets collection.
+	refs := c.buildResourceRefs(mergedPlugins)
+	c.secretCache.SetRefs(ctx, refs)
+	c.configMapCache.SetRefs(ctx, refs)
+}
+
+// buildResourceRefs unions the references contributed by core translation with
+// those declared by each plugin.
+func (c *CommonCollections) buildResourceRefs(
+	mergedPlugins pluginsdk.Plugin,
+) krt.Collection[ondemand.ResourceRef] {
+	var cols []krt.Collection[ondemand.ResourceRef]
+	if c.coreResourceRefs != nil {
+		cols = append(cols, c.coreResourceRefs)
+	}
+	if c.gwExtResourceRefs != nil {
+		cols = append(cols, c.gwExtResourceRefs)
+	}
+	cols = append(cols, mergedPlugins.ContributesResourceRefs...)
+
+	return krt.JoinCollection(cols, c.KrtOpts.ToOptions("ResourceRefs")...)
 }

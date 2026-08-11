@@ -1817,3 +1817,24 @@ func getGatewayBackendTLSConfig(backendTLS *gwv1.GatewayBackendTLS) *ir.GatewayB
 		ClientCertificateRef: backendTLS.ClientCertificateRef.DeepCopy(),
 	}
 }
+
+// NotLoadedError reports that an object exists in the cluster but its contents
+// have not been loaded.
+//
+// kgateway only fetches the contents of Secrets and ConfigMaps that some
+// ResourceRef points at (see pkg/krtcollections/ondemand). This error means the
+// object is really there, so it is either momentarily in flight -- the
+// reference was only just declared and the fetch has not landed -- or, if it
+// persists, no ref site declares it, which is a bug in the reference
+// derivation rather than a problem with the user's configuration.
+//
+// It is deliberately distinct from NotFoundError so that a transient or
+// internal condition is never reported to users as a missing object.
+type NotLoadedError struct {
+	Obj ir.ObjectSource
+}
+
+func (n *NotLoadedError) Error() string {
+	return fmt.Sprintf("%s %s/%s exists but its contents are not loaded yet",
+		n.Obj.Kind, n.Obj.Namespace, n.Obj.Name)
+}
