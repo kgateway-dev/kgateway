@@ -336,7 +336,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.TrafficPolicy {
 						return &kgateway.TrafficPolicy{ObjectMeta: om, Status: st}
 					},
-					nil,
 				),
 			},
 		},

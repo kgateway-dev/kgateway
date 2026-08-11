@@ -122,7 +122,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Policies:       tlsPolicyCol,
 				ProcessBackend: processBackend,
 				MergePolicies:  MergePolicies,
-				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,
 					cli,
@@ -132,6 +132,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 						return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 					},
 					BuildDesiredPolicyStatus,
+					// This status reports the Gateway API's own PolicyReasonAccepted, not the
+					// kgateway Valid/Pending vocabulary the standard grading expects.
+					pluginutils.NoConditionErrorMetric,
 				),
 				PolicyStatusFromGatewayReports: true,
 			},

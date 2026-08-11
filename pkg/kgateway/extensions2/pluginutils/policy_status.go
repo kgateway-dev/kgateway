@@ -24,12 +24,34 @@ import (
 // its typed report fragment, returning nil when the object has no report.
 type BuildDesiredPolicyStatusFn[T controllers.ComparableObject] func(report *reports.PolicyReport, pol T, controllerName string) *gwv1.PolicyStatus
 
-// RegisterPolicyStatus returns a PolicyPlugin.RegisterPolicyStatus hook for a policy CRD
-// whose status is a standard gwv1.PolicyStatus. It derives a per-object desired-status
-// source and registers a writer that builds from the latest merged policy report, merging
-// ancestors owned by other controllers at write time.
+// ConditionErrorMetric selects how a policy writer reports its status-sync metric: whether
+// the conditions it publishes are graded against the standard policy Accepted reasons
+// (Valid, Pending), or only write failures count as errors.
 //
-// buildDesired may be nil, in which case the standard typed policy status builder is used.
+// It is a separate, explicit choice rather than something inferred from which builder a
+// plugin supplied. Those are independent questions — a plugin can build its own status and
+// still use the standard condition vocabulary — and inferring one from the other meant such
+// a plugin silently lost the metric with nothing to indicate it.
+type ConditionErrorMetric bool
+
+const (
+	// StandardConditionErrorMetric grades published conditions against shared.PolicyReasonValid
+	// and shared.PolicyReasonPending. Use it for any status built from the standard policy
+	// condition vocabulary.
+	StandardConditionErrorMetric ConditionErrorMetric = true
+	// NoConditionErrorMetric reports only write failures. Use it for a status whose conditions
+	// come from a different vocabulary — e.g. BackendTLSPolicy, which reports the Gateway API's
+	// own PolicyReasonAccepted and would otherwise be graded as permanently failing.
+	NoConditionErrorMetric ConditionErrorMetric = false
+)
+
+// RegisterPolicyStatus returns a PolicyPlugin.RegisterPolicyStatus hook for a policy CRD
+// whose status is a standard gwv1.PolicyStatus, built by the standard typed policy status
+// builder. It derives a per-object desired-status source and registers a writer that builds
+// from the latest merged policy report, merging ancestors owned by other controllers at
+// write time.
+//
+// Use RegisterPolicyStatusWithBuilder for a policy that builds its own desired status.
 func RegisterPolicyStatus[T controllers.ComparableObject](
 	gvk schema.GroupVersionKind,
 	col krt.Collection[T],
@@ -37,11 +59,26 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 	controllerName string,
 	getStatus func(T) gwv1.PolicyStatus,
 	build func(om metav1.ObjectMeta, st gwv1.PolicyStatus) T,
-	buildDesired BuildDesiredPolicyStatusFn[T],
 ) func(pluginsdk.PolicyStatusInputs) {
-	// Condition-derived error metrics only apply to the standard status shape; custom
-	// builders (e.g. BackendTLSPolicy) own their condition semantics.
-	defaultBuild := buildDesired == nil
+	return RegisterPolicyStatusWithBuilder(gvk, col, cl, controllerName, getStatus, build, nil, StandardConditionErrorMetric)
+}
+
+// RegisterPolicyStatusWithBuilder is RegisterPolicyStatus for a policy CRD that builds its
+// own desired status, such as BackendTLSPolicy. conditionMetric says explicitly whether that
+// status uses the standard condition vocabulary; see ConditionErrorMetric.
+//
+// A nil buildDesired selects the standard builder, which is what RegisterPolicyStatus is
+// for — call that instead.
+func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
+	gvk schema.GroupVersionKind,
+	col krt.Collection[T],
+	cl kclient.Client[T],
+	controllerName string,
+	getStatus func(T) gwv1.PolicyStatus,
+	build func(om metav1.ObjectMeta, st gwv1.PolicyStatus) T,
+	buildDesired BuildDesiredPolicyStatusFn[T],
+	conditionMetric ConditionErrorMetric,
+) func(pluginsdk.PolicyStatusInputs) {
 	return func(in pluginsdk.PolicyStatusInputs) {
 		desiredFor := buildDesired
 		if desiredFor == nil {
@@ -91,7 +128,7 @@ func RegisterPolicyStatus[T controllers.ComparableObject](
 			},
 			OnSync: func(res statussync.Resource, current T, status gwv1.PolicyStatus, took time.Duration, err error) {
 				statusErr := err
-				if defaultBuild {
+				if conditionMetric {
 					statusErr = errors.Join(statusErr, policyStatusConditionError(status, controllerName))
 				}
 				statussync.RecordStatusSync(statussync.SyncMetricLabels{

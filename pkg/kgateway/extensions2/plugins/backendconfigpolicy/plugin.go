@@ -194,7 +194,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.BackendConfigPolicy {
 						return &kgateway.BackendConfigPolicy{ObjectMeta: om, Status: st}
 					},
-					nil,
 				),
 			},
 		},

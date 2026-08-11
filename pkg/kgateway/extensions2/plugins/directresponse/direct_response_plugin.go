@@ -94,7 +94,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.DirectResponse {
 						return &kgateway.DirectResponse{ObjectMeta: om, Status: st}
 					},
-					nil,
 				),
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 			},

@@ -248,7 +248,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.ListenerPolicy {
 						return &kgateway.ListenerPolicy{ObjectMeta: om, Status: st}
 					},
-					nil,
 				),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, MergePolicies, "" /*no merge settings*/)
