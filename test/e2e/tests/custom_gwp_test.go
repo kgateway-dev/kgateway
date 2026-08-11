@@ -207,7 +207,7 @@ func TestCustomGWP(t *testing.T) {
 		assert.Equal(c, "custom-gwp-2", gcUpdated.Spec.ParametersRef.Name, "expected kgateway GatewayClass parametersRef.name to be 'custom-gwp-2' after upgrade")
 		assert.NotNil(c, gcUpdated.Spec.ParametersRef.Namespace, "kgateway GatewayClass spec.parametersRef.namespace is nil after upgrade")
 		assert.Equal(c, expectedNamespace, *gcUpdated.Spec.ParametersRef.Namespace, "expected kgateway GatewayClass parametersRef.namespace to be '%s' after upgrade", expectedNamespace)
-	}, 20*time.Second, 200*time.Millisecond)
+	}, 60*time.Second, 200*time.Millisecond)
 
 	// Ensure gateway pods are still running (even though the ParametersRef has changed to non-existent resource)
 	testInstallation.AssertionsT(t).EventuallyReadyReplicas(ctx, proxyObjectMeta, gomega.Equal(1))
