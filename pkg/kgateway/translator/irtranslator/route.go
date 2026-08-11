@@ -24,7 +24,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -679,7 +678,9 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch
 		}
 	case gwv1.PathMatchRegularExpression:
 		out.PathSpecifier = &envoyroutev3.RouteMatch_SafeRegex{
-			SafeRegex: regexutils.NewRegexWithProgramSize(pathValue, nil),
+			SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+				Regex: pathValue,
+			},
 		}
 	}
 }
@@ -705,7 +706,9 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoyroutev3.HeaderMatcher
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: matcher.Value,
+							},
 						},
 					},
 				}
@@ -745,7 +748,9 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: matcher.Value,
+							},
 						},
 					},
 				}
