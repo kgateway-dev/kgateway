@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"fmt"
 	"maps"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -757,11 +758,11 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 			for i := range tc.routes {
 				routeLabels := maps.Clone(routeLabels)
 				if tc.byLabel {
-					routeLabels[fmt.Sprint(i)] = "yes"
+					routeLabels[strconv.Itoa(i)] = "yes"
 				}
 				inputs = append(inputs, &gwv1.HTTPRoute{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "httproute-" + fmt.Sprint(i),
+						Name:      "httproute-" + strconv.Itoa(i),
 						Namespace: "default",
 						Labels:    routeLabels,
 					},
@@ -791,7 +792,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 						Group:     wellknown.TrafficPolicyGVK.Group,
 						Kind:      wellknown.TrafficPolicyGVK.Kind,
 						Namespace: "default",
-						Name:      "policy-" + fmt.Sprint(i),
+						Name:      "policy-" + strconv.Itoa(i),
 					},
 					Policy:   &kgateway.TrafficPolicy{},
 					PolicyIR: fakePolicyIR{},
@@ -799,7 +800,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 				if tc.byLabel {
 					switch tc.selectionPolicy {
 					case onePolicyPerRoute:
-						routeLabels[fmt.Sprint(i)] = "yes"
+						routeLabels[strconv.Itoa(i)] = "yes"
 					case allPoliciesPerRoute:
 					}
 					p.TargetRefs = []ir.PolicyRef{
@@ -816,7 +817,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 							{
 								Group: "gateway.networking.k8s.io",
 								Kind:  "HTTPRoute",
-								Name:  "httproute-" + fmt.Sprint(i),
+								Name:  "httproute-" + strconv.Itoa(i),
 							},
 						}
 					case allPoliciesPerRoute:
@@ -825,7 +826,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 							p.TargetRefs = append(p.TargetRefs, ir.PolicyRef{
 								Group: "gateway.networking.k8s.io",
 								Kind:  "HTTPRoute",
-								Name:  "httproute-" + fmt.Sprint(r),
+								Name:  "httproute-" + strconv.Itoa(r),
 							})
 						}
 					}
@@ -837,7 +838,7 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 			for b.Loop() {
 				rtidx := preRouteIndex(b, inputs)
 				firstRoute := "httproute-0"
-				lastRoute := "httproute-" + fmt.Sprint(tc.routes-1)
+				lastRoute := "httproute-" + strconv.Itoa(tc.routes-1)
 
 				for _, route := range []string{firstRoute, lastRoute} {
 					h := rtidx.FetchHttp(krt.TestingDummyContext{}, "default", route)

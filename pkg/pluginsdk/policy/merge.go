@@ -2,14 +2,16 @@ package policy
 
 import (
 	"errors"
-	"log/slog"
 	"maps"
 	"reflect"
 	"slices"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+var logger = logging.New("pluginsdk/policy")
 
 var ErrUnsupportedMergeStrategy = errors.New("unsupported merge strategy")
 
@@ -59,7 +61,7 @@ func ToInternalMergeStrategy(s string) MergeStrategy {
 	} else if s == ShallowMerge {
 		return AugmentedShallowMerge
 	} else {
-		slog.Error("unsupported value, defaulting to shallow merge; allowed: DeepMerge, ShallowMerge", "strategy", s)
+		logger.Error("unsupported value, defaulting to shallow merge; allowed: DeepMerge, ShallowMerge", "strategy", s)
 		return AugmentedShallowMerge
 	}
 }
@@ -193,7 +195,7 @@ func merge[T any](
 
 		out.Errors = append(out.Errors, ir.WrapPolicyErrors(p2Ref, policies[i].Errors)...)
 		if len(policies[i].Errors) > 0 {
-			slog.Warn("ignoring policy with errors", "resource_ref", p2Ref, "errors", policies[i].FormatErrors())
+			logger.Warn("ignoring policy with errors", "resource_ref", p2Ref, "errors", policies[i].FormatErrors())
 			continue
 		}
 

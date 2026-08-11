@@ -160,7 +160,7 @@ func (d *dockerValidator) args() []string {
 		args = append(args, "--pull", d.pull)
 	}
 	if d.etcEnvoy != "" {
-		args = append(args, "-v", fmt.Sprintf("%s:/etc/envoy/:ro", d.etcEnvoy))
+		args = append(args, "-v", d.etcEnvoy+":/etc/envoy/:ro")
 	}
 	args = append(args,
 		"--entrypoint", "/usr/local/bin/envoy",

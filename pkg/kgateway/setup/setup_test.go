@@ -278,9 +278,9 @@ spec:
 		t.Cleanup(dumper.Close)
 		t.Cleanup(func() {
 			if t.Failed() {
-				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 			}
 		})
 
@@ -358,9 +358,9 @@ spec:
 		time.Sleep(time.Second * 2)
 		t.Cleanup(func() {
 			if t.Failed() {
-				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 			}
 		})
 		initialDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
@@ -396,10 +396,10 @@ spec:
 				return fmt.Errorf("failed to get updated xDS dump: %w", err)
 			}
 			if len(updatedDump.Routes) == 0 {
-				return fmt.Errorf("no routes found in updated dump")
+				return errors.New("no routes found in updated dump")
 			}
 			if !hasWebsocketUpgradeConfig(updatedDump) {
-				return fmt.Errorf("expected websocket upgrade configuration after updating appProtocol, but found none")
+				return errors.New("expected websocket upgrade configuration after updating appProtocol, but found none")
 			}
 			t.Logf("SUCCESS: Found websocket upgrade configuration after updating appProtocol")
 			return nil
@@ -562,9 +562,9 @@ func testScenario(
 
 	t.Cleanup(func() {
 		if t.Failed() {
-			logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+			logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 		} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-			logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+			logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 		}
 	})
 
@@ -576,7 +576,7 @@ func testScenario(
 			return err
 		}
 		if len(dump.Listeners) == 0 {
-			return fmt.Errorf("timed out waiting for listeners")
+			return errors.New("timed out waiting for listeners")
 		}
 		if write {
 			t.Logf("writing out file")
@@ -586,7 +586,7 @@ func testScenario(
 				return fmt.Errorf("failed to serialize xdsDump: %v", err)
 			}
 			os.WriteFile(fout, d, 0o600)
-			return fmt.Errorf("wrote out file - nothing to test")
+			return errors.New("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)
 	}, retry.Converge(2), retry.Timeout(10*time.Second))
@@ -733,11 +733,11 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		errs = errors.Join(errs, fmt.Errorf("timed out waiting for listener/cluster xds dump"))
+		errs = errors.Join(errs, errors.New("timed out waiting for listener/cluster xds dump"))
 		return xdsDump{}, errs
 	}
 	if len(listeners) == 0 {
-		errs = errors.Join(errs, fmt.Errorf("no listeners found"))
+		errs = errors.Join(errs, errors.New("no listeners found"))
 		return xdsDump{}, errs
 	}
 	t.Logf("xds: found %d listeners and %d clusters", len(listeners), len(clusters))
@@ -819,7 +819,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		errs = errors.Join(errs, fmt.Errorf("timed out waiting for routes/cla xds dump"))
+		errs = errors.Join(errs, errors.New("timed out waiting for routes/cla xds dump"))
 		return xdsDump{}, errs
 	}
 
@@ -931,7 +931,7 @@ func (x *xdsDump) Compare(other xdsDump) error {
 func compareCla(c, otherc *envoyendpointv3.ClusterLoadAssignment) error {
 	if (c == nil) != (otherc == nil) {
 		if c == nil {
-			return fmt.Errorf("cluster is nil")
+			return errors.New("cluster is nil")
 		}
 		return fmt.Errorf("ep %v not found", c.ClusterName)
 	}

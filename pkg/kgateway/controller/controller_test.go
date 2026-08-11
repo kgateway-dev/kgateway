@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -795,7 +796,7 @@ func (s *ControllerSuite) startController(
 		if err != nil {
 			return fmt.Errorf("controller-manager exited before it was ready: %w", err)
 		}
-		return fmt.Errorf("controller-manager exited before it was ready")
+		return errors.New("controller-manager exited before it was ready")
 	default:
 	}
 

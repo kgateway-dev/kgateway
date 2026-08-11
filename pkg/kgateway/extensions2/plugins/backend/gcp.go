@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"errors"
 	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -58,7 +59,7 @@ func (u *GcpIr) Equals(other *GcpIr) bool {
 // processGcp processes a GCP backend and returns an envoy cluster.
 func processGcp(ir *GcpIr, out *envoyclusterv3.Cluster) error {
 	if ir == nil {
-		return fmt.Errorf("gcp ir is nil")
+		return errors.New("gcp ir is nil")
 	}
 
 	dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
@@ -110,7 +111,7 @@ func buildGcpIr(in *kgateway.GcpBackend) (*GcpIr, error) {
 	}
 
 	// Build audience config (defaults to https://{host} if not specified)
-	audienceURL := ptr.Deref(in.Audience, fmt.Sprintf("https://%s", hostname))
+	audienceURL := ptr.Deref(in.Audience, "https://"+hostname)
 	audienceConfig := &gcp_auth.Audience{
 		Url: audienceURL,
 	}

@@ -22,31 +22,13 @@ Listeners:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        earlyHeaderMutationExtensions:
-        - name: envoy.http.early_header_mutation.header_mutation
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.http.early_header_mutation.header_mutation.v3.HeaderMutation
-            mutations:
-            - append:
-                header:
-                  key: x-added-one
-                  value: v1
-            - append:
-                header:
-                  key: x-added-two
-                  value: v2
-            - append:
-                appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-                header:
-                  key: x-set
-                  value: s1
-            - remove: x-remove
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         mergeSlashes: true
         normalizePath: true
+        preserveExternalRequestId: true
         rds:
           configSource:
             ads: {}
@@ -57,17 +39,17 @@ Listeners:
     name: listener~80
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        earlyHeaderMutationExtensions:
-        - gateway.kgateway.dev/HTTPListenerPolicy/default/early-header-mutation
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.preserveExternalRequestId:
+        - gateway.kgateway.dev/ListenerPolicy/default/preserve-external-request-id
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        earlyHeaderMutationExtensions:
-        - gateway.kgateway.dev/HTTPListenerPolicy/default/early-header-mutation
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.preserveExternalRequestId:
+        - gateway.kgateway.dev/ListenerPolicy/default/preserve-external-request-id
   name: listener~80
   virtualHosts:
   - domains:
@@ -153,7 +135,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    HTTPListenerPolicy/default/early-header-mutation:
+    ListenerPolicy/default/preserve-external-request-id:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

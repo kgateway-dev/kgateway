@@ -28,6 +28,7 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         mergeSlashes: true
         normalizePath: true
+        proxy100Continue: true
         rds:
           configSource:
             ads: {}
@@ -36,9 +37,19 @@ Listeners:
         statPrefix: http
         useRemoteAddress: true
     name: listener~80
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.proxy100Continue:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-100-continue
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.proxy100Continue:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-100-continue
   name: listener~80
   virtualHosts:
   - domains:
@@ -47,7 +58,7 @@ Routes:
     routes:
     - match:
         prefix: /
-      name: listener~80~example_com-route-0-httproute-example-route-timeout-default-0-0-matcher-0
+      name: listener~80~example_com-route-0-httproute-example-route-default-0-0-matcher-0
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -100,7 +111,7 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
-    default/example-route-timeout:
+    default/example-route:
       parents:
       - conditions:
         - lastTransitionTime: null
@@ -124,7 +135,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    HTTPListenerPolicy/default/empty:
+    ListenerPolicy/default/proxy-100-continue:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

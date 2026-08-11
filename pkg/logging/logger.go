@@ -28,7 +28,7 @@ SOFTWARE.
 package logging
 
 import (
-	"fmt"
+	"errors"
 	"log/slog"
 	"sync"
 )
@@ -104,7 +104,7 @@ func NewWithOptions(component string, opts Options) *slog.Logger {
 // but are disconnected from SetLevel/GetLevel.
 func DeleteLeveler(component string) error {
 	if component == "" {
-		return fmt.Errorf("component unspecified")
+		return errors.New("component unspecified")
 	}
 	componentLeveler.Delete(component)
 	return nil

@@ -170,7 +170,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 				Labels: []metrics.Label{
 					{Name: "namespace", Value: "default"},
 					{Name: "parent", Value: ""},
-					{Name: "resource", Value: "HTTPListenerPolicy"},
+					{Name: "resource", Value: "ListenerPolicy"},
 				},
 				Test: metricstest.Equal(1),
 			},
@@ -210,7 +210,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: ""},
 					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "HTTPListenerPolicy"},
+					{Name: "resource", Value: "ListenerPolicy"},
 				},
 				Test: metricstest.Between(1, 2),
 			},
@@ -237,7 +237,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: ""},
 					{Name: "namespace", Value: "default"},
-					{Name: "resource", Value: "HTTPListenerPolicy"},
+					{Name: "resource", Value: "ListenerPolicy"},
 				},
 				Test: metricstest.Between(1, 2),
 			},
@@ -254,7 +254,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 		}, {
 			{Name: "gateway", Value: ""},
 			{Name: "namespace", Value: "default"},
-			{Name: "resource", Value: "HTTPListenerPolicy"},
+			{Name: "resource", Value: "ListenerPolicy"},
 		}})
 
 		gathered.AssertHistogramPopulated("kgateway_resources_status_sync_duration_seconds")

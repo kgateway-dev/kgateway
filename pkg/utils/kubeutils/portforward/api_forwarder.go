@@ -2,8 +2,8 @@ package portforward
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,8 +17,11 @@ import (
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
+
+var logger = logging.New("kubeutils/portforward")
 
 var _ PortForwarder = &apiPortForwarder{}
 
@@ -109,11 +112,11 @@ func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 			return fmt.Errorf("failed to get ports: %v", err)
 		}
 		if len(p) == 0 {
-			return fmt.Errorf("got no ports")
+			return errors.New("got no ports")
 		}
 		// Set local port now, as it may have been 0 as input
 		f.properties.localPort = int(p[0].Local)
-		slog.Debug("port forward established", "address", f.Address(), "pod", podName, "remote_port", f.properties.remotePort)
+		logger.Debug("port forward established", "address", f.Address(), "pod", podName, "remote_port", f.properties.remotePort)
 		// The apiPortForwarder is now ready.
 		return nil
 	}

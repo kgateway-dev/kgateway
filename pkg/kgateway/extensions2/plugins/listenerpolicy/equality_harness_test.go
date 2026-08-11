@@ -46,6 +46,7 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		preserveHttp1HeaderCase:   new(true),
 		preserveExternalRequestId: new(true),
 		generateRequestId:         new(true),
+		proxy100Continue:          new(true),
 		accessLogConfig:           []proto.Message{wrapperspb.String("access-log")},
 		accessLogPolicies: []kgateway.AccessLog{
 			{FileSink: &kgateway.FileSink{Path: "/dev/stdout"}},
@@ -136,6 +137,12 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "generateRequestId",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).generateRequestId = new(false) },
+		},
+		{
+			Field: "proxy100Continue",
+			Mutate: func(d **HttpListenerPolicyIr) {
+				(*d).proxy100Continue = new(false)
+			},
 		},
 		{
 			Field: "accessLogConfig",

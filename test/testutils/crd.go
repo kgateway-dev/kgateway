@@ -51,7 +51,6 @@ var AllCRDs = []schema.GroupVersionResource{
 	wellknown.BackendGVR,
 	wellknown.BackendConfigPolicyGVR,
 	wellknown.TrafficPolicyGVR,
-	wellknown.HTTPListenerPolicyGVR,
 	wellknown.ListenerPolicyGVR,
 	wellknown.DirectResponseGVR,
 	wellknown.GatewayExtensionGVR,
@@ -75,7 +74,7 @@ func GetGatewayAPICRDDir() (string, error) {
 
 	modDir := strings.TrimSpace(string(out))
 	if modDir == "" {
-		return "", fmt.Errorf("gateway-api module directory is empty")
+		return "", errors.New("gateway-api module directory is empty")
 	}
 	crdDir := filepath.Join(modDir, "config", "crd", "experimental")
 

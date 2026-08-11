@@ -1,6 +1,7 @@
 package listenerpolicy
 
 import (
+	"errors"
 	"fmt"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -265,7 +266,7 @@ func translateFilter(filter *kgateway.FilterType) (*envoyaccesslogv3.AccessLogFi
 		}
 
 	default:
-		return nil, fmt.Errorf("no valid filter type specified")
+		return nil, errors.New("no valid filter type specified")
 	}
 
 	return alCfg, nil

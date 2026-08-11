@@ -1,8 +1,10 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -162,13 +164,13 @@ func buildOAuth2ProviderConfig(
 	}
 
 	if tokenEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 token endpoint not specified or not found in issuer well-known configuration")
+		return nil, errors.New("oauth2 token endpoint not specified or not found in issuer well-known configuration")
 	}
 	if authorizationEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
+		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
 	}
 
-	backend, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.BackendRef.BackendObjectReference)
+	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
 	if err != nil || backend == nil {
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
@@ -177,7 +179,7 @@ func buildOAuth2ProviderConfig(
 	// This is needed when the JWKS endpoint is on a different domain than the token endpoint.
 	jwksBackend := backend
 	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
-		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
+		resolved, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, *in.JWT.JWKSBackendRef)
 		if err != nil {
 			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
 		}
@@ -522,5 +524,5 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 // getCookieSuffix generates a unique suffix for cookie names based on the given object
 func getCookieSuffix(src ir.ObjectSource) string {
 	hash := utils.HashString(src.NamespacedName().String())
-	return fmt.Sprintf("%x", hash)
+	return strconv.FormatUint(hash, 16)
 }

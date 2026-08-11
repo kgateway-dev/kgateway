@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync/atomic"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -116,7 +117,7 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 
 func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	r, h := sliceToResourcesHash(slice)
-	return envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", h), r)
+	return envoycache.NewResourcesWithTTL(strconv.FormatUint(h, 10), r)
 }
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
