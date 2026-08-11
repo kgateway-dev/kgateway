@@ -38,6 +38,13 @@ type ResourceStatusSyncer interface {
 // Writer is a generic ResourceStatusSyncer. Reads and writes are separate on purpose: the
 // current object comes from the KRT collection that enqueued the resource, and only the
 // write goes to the API server.
+//
+// Desired and Merge together must be idempotent: every write echoes back as an informer
+// event that re-enqueues the resource, and the only thing that stops the cycle is the
+// live-vs-desired check below. Merge(current, Desired(current)) applied to current must
+// therefore be a fixed point — a builder that regenerates LastTransitionTime, or that
+// renormalizes entries it does not own, turns the designed one-shot echo into a permanent
+// write loop. CheckWriterIdempotent asserts exactly that, and every writer should run it.
 type Writer[O controllers.ComparableObject, S any] struct {
 	// Name for logging
 	Name string
@@ -136,6 +143,35 @@ func RetryStatusWrite(ctx context.Context, attempt func() error) error {
 	)
 }
 
+// writeDecision is what one write attempt concludes about a resource, before any API call.
+// It is a distinct step from ApplyStatus so the idempotence harness can ask the writer what
+// it would do without writing, and get the answer from the same code the writer uses.
+type writeDecision[S any] struct {
+	// status is the merged status that would be published. Meaningful only when has is true.
+	status S
+	// has reports whether the writer has a status for this resource at all.
+	has bool
+	// write reports whether that status differs from the live one, i.e. whether an API
+	// write actually happens.
+	write bool
+}
+
+// decide runs the build/merge/compare sequence for one object.
+func (w Writer[O, S]) decide(current O) writeDecision[S] {
+	desired, ok := w.Desired(current)
+	if !ok {
+		return writeDecision[S]{}
+	}
+	merged := desired
+	if w.Merge != nil {
+		merged = w.Merge(current, desired)
+	}
+	if w.GetStatus != nil && krt.Equal(w.GetStatus(current), merged) {
+		return writeDecision[S]{status: merged, has: true}
+	}
+	return writeDecision[S]{status: merged, has: true, write: true}
+}
+
 func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	log := logger.With("kind", w.Name, "resource", obj.NamespacedName.String())
 	start := time.Now()
@@ -155,19 +191,15 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 		}
 		lastCurrent = current
 
-		desired, ok := w.Desired(current)
-		if !ok {
+		decision := w.decide(current)
+		if !decision.has {
 			log.Debug("resource has no desired status, skipping status update")
 			return nil
 		}
 		hasDesired = true
-		merged := desired
-		if w.Merge != nil {
-			merged = w.Merge(current, desired)
-		}
-		lastMerged = merged
+		lastMerged = decision.status
 
-		if w.GetStatus != nil && krt.Equal(w.GetStatus(current), merged) {
+		if !decision.write {
 			log.Debug("status already up to date, skipping status update")
 			return nil
 		}
@@ -178,7 +210,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 			Name:            obj.Name,
 			Namespace:       obj.Namespace,
 			ResourceVersion: current.GetResourceVersion(),
-		}, merged)
+		}, decision.status)
 		if err != nil {
 			if apierrors.IsConflict(err) {
 				// This is normal. The raw collection will re-enqueue the write once the

@@ -50,29 +50,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	// Gateway
 	gatewayReports := statussync.RegisterKind(s.statusCollections, wellknown.GatewayGVK, s.commonCols.RawGateways,
 		s.statusContributions, contributionsByTarget, krtopts.ToOptions("GatewayStatusReports")...)
-	s.statusWriters[wellknown.GatewayGVK] = statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
-		Name:    "gateway",
-		Current: statussync.CollectionSource(s.commonCols.RawGateways),
-		Desired: func(gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
-			report, ok := statussync.ReportFor(gatewayReports, wellknown.GatewayGVK, types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
-			if !ok {
-				return gwv1.GatewayStatus{}, false
-			}
-			status := reports.BuildGWStatus(report.Gateway, *gw, nil)
-			if status == nil {
-				return gwv1.GatewayStatus{}, false
-			}
-			return *status, true
-		},
-		UpdateStatus: statussync.ClientWriter(
-			kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
-			func(om metav1.ObjectMeta, st gwv1.GatewayStatus) *gwv1.Gateway {
-				return &gwv1.Gateway{ObjectMeta: om, Status: st}
-			}),
-		GetStatus: func(o *gwv1.Gateway) gwv1.GatewayStatus { return o.Status },
-		Merge:     mergeGatewayStatusAddresses,
-		OnSync:    gatewayStatusMetricsHook(),
-	}
+	s.statusWriters[wellknown.GatewayGVK] = gatewayWriter(cl, f, s.commonCols.RawGateways, gatewayReports)
 
 	httpRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.HTTPRouteGVK, s.commonCols.RawHTTPRoutes,
 		s.statusContributions, contributionsByTarget, krtopts.ToOptions("HTTPRouteStatusReports")...)
@@ -248,6 +226,42 @@ func registerStatusWriter(
 		return
 	}
 	writers[gvk] = syncer
+}
+
+// gatewayWriter constructs the Gateway status writer, wiring the deployer-owned address
+// merge and the Gateway status sync metrics. It is a function rather than a literal inside
+// initStatusInfra so tests can exercise the writer this controller actually runs — the
+// convergence invariant in TestStatusWritersConvergeAfterOneWrite is only worth anything
+// against the real builder and merge.
+func gatewayWriter(
+	cl apiclient.Client,
+	f kclient.Filter,
+	gateways krt.Collection[*gwv1.Gateway],
+	reportCol krt.Collection[statussync.ResourceReports],
+) statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus] {
+	return statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
+		Name:    "gateway",
+		Current: statussync.CollectionSource(gateways),
+		Desired: func(gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
+			report, ok := statussync.ReportFor(reportCol, wellknown.GatewayGVK, types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
+			if !ok {
+				return gwv1.GatewayStatus{}, false
+			}
+			status := reports.BuildGWStatus(report.Gateway, *gw, nil)
+			if status == nil {
+				return gwv1.GatewayStatus{}, false
+			}
+			return *status, true
+		},
+		UpdateStatus: statussync.ClientWriter(
+			kclient.NewFilteredDelayed[*gwv1.Gateway](cl, wellknown.GatewayGVR, f),
+			func(om metav1.ObjectMeta, st gwv1.GatewayStatus) *gwv1.Gateway {
+				return &gwv1.Gateway{ObjectMeta: om, Status: st}
+			}),
+		GetStatus: func(o *gwv1.Gateway) gwv1.GatewayStatus { return o.Status },
+		Merge:     mergeGatewayStatusAddresses,
+		OnSync:    gatewayStatusMetricsHook(),
+	}
 }
 
 // routeWriter constructs the status writer for one route kind, wiring the multi-controller

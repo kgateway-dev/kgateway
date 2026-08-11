@@ -29,5 +29,10 @@ type RegistrationInputs struct {
 	// KrtOpts supplies the standard collection lifecycle and debugging options.
 	KrtOpts krtutil.KrtOptions
 	// RegisterWriter registers the just-in-time writer that persists this resource's status.
+	//
+	// The registered writer must be idempotent: its own write echoes back as an informer
+	// event that re-enqueues the resource, and nothing but the writer's live-vs-desired
+	// skip stops that cycle. CheckWriterIdempotent asserts it; run it in the registration's
+	// tests, as the built-in writers do.
 	RegisterWriter func(gvk schema.GroupVersionKind, syncer ResourceStatusSyncer)
 }

@@ -125,15 +125,16 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond, "desired status should be written to the API server")
 
 	// The written status must be a fixed point of the builder: feeding it back in produces
-	// the same value, which is the precondition for the no-op skip asserted below.
+	// the same value, which is the precondition for the no-op skip asserted below. This is
+	// the same check CheckWriterIdempotent exports for writers outside this package.
 	written := routesClient.Get("route", "default")
 	require.NotNil(t, written)
-	rebuilt, ok := buildDesired(written)
-	require.True(t, ok)
-	require.True(t, krt.Equal(
-		gwv1.RouteStatus{Parents: MergeRouteParentStatuses(controllerName, written.Status.Parents, rebuilt.Parents)},
-		written.Status.RouteStatus,
-	), "rebuilding desired status from what we wrote must be byte-identical, or writes never converge")
+	require.NoError(t, CheckWriterIdempotent(writer, written,
+		func(current *gwv1.HTTPRoute, status gwv1.RouteStatus) *gwv1.HTTPRoute {
+			next := current.DeepCopy()
+			next.Status.RouteStatus = *status.DeepCopy()
+			return next
+		}), "rebuilding desired status from what we wrote must reproduce it, or writes never converge")
 
 	// Phase 2: the informer update from our own write re-enqueues the identity, and the
 	// writer suppresses the API call after rebuilding the same desired status.
