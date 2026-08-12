@@ -33,12 +33,10 @@ func BuildDesiredPolicyStatus(report *reports.PolicyReport, pol *gwv1.BackendTLS
 			Namespace: nil,
 		}
 		if parentKey.Namespace != "" {
-			ancestorRef.Namespace = new(gwv1.Namespace)
-			*ancestorRef.Namespace = gwv1.Namespace(parentKey.Namespace)
+			ancestorRef.Namespace = new(gwv1.Namespace(parentKey.Namespace))
 		}
 		if parentKey.SectionName != "" {
-			ancestorRef.SectionName = new(gwv1.SectionName)
-			*ancestorRef.SectionName = gwv1.SectionName(parentKey.SectionName)
+			ancestorRef.SectionName = new(gwv1.SectionName(parentKey.SectionName))
 		}
 
 		var currentParentConditions []metav1.Condition

@@ -38,7 +38,10 @@ const (
 	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
-// TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
+// The Build*Status functions below take a single typed report fragment, which is what the
+// status writers hold after a ReportMap is decomposed into per-resource contributions. The
+// *ReportMap methods are thin lookup-then-build wrappers, kept for callers that still have a
+// whole ReportMap in hand — the translator test harness in test/translator.
 
 func (r *ReportMap) BuildGWStatus(gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
 	return BuildGWStatus(r.GatewayNamespaceName(key(&gw)), gw, attachedRoutes)

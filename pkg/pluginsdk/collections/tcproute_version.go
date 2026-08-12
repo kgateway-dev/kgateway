@@ -23,10 +23,10 @@ func convertTCPRouteV1ToV1Alpha2(in *gwv1.TCPRoute) *gwv1a2.TCPRoute {
 	}
 
 	return &gwv1a2.TCPRoute{
-		// The Go type is normalized but the API version is not: TypeMeta records the version
-		// this object was actually served as, which is the version its status must be written
-		// back through. Erasing it here is what forced the write path to probe informers to
-		// guess the version back.
+		// Every served TCPRoute version is normalized to this one Go type, so TypeMeta is the
+		// only record of which version an object came from — and that is the version its
+		// status must be written back through. statussync.RegisterKindByObjectGVK keys the
+		// status reductions and the write queue off this GVK, so it has to be set here.
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: gwv1.GroupVersion.String(),
 			Kind:       wellknown.TCPRouteKind,
