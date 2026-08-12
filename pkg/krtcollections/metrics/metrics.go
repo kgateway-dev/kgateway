@@ -548,8 +548,20 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				namesOld = []string{clientObjectOld.(*gwv1.Gateway).Name}
 			}
 		case *gwv1.ListenerSet:
-			// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
-			// follow-up cleanup so dashboards, tests, and emitters can be updated together.
+			// Promoted ListenerSets and legacy XListenerSets both normalize to
+			// *gwv1.ListenerSet, so this arm reports the two flavors as ONE metric series,
+			// under the legacy label value "XListenerSet" — including resources that were
+			// never XListenerSets. The value is part of the start/end join key
+			// (startTimes.times[Gateway][ResourceType][Namespace][ResourceName]), so it must
+			// stay byte-identical to the ResourceType that listenerSetStatusSyncer reports in
+			// proxy_syncer/status_collections.go: rename either site alone and every listener
+			// set sync starts but never ends, permanently raising the out-of-sync gauge.
+			//
+			// TODO: Rename the label value to "ListenerSet" (or split the two flavors into
+			// separate series keyed by their real GVK, if per-flavor visibility is wanted) in
+			// one follow-up that updates both emit sites, the unit and e2e metrics tests that
+			// assert resource="XListenerSet", and release notes for anyone with dashboards or
+			// alerts on the old value.
 			resourceType = "XListenerSet"
 			resourceName = obj.Name
 			namespace = obj.Namespace

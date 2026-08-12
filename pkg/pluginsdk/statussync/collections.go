@@ -44,7 +44,7 @@ func (r ResourceReports) Equals(other ResourceReports) bool {
 }
 
 // RegisterKind wires one status kind end to end: it derives the report reducer for a raw
-// collection, registers that collection as a reconciliation source, and enrols the reducer as
+// collection, registers that collection as a reconciliation source, and enrolls the reducer as
 // both an event source and a cache-sync dependency.
 //
 // The three belong together. Done separately, each compiles on its own and omitting one is

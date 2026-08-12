@@ -129,7 +129,7 @@ func newPolicyStatusFixture(
 		return cl.Get(testPolicyName, testNamespace) != nil
 	}, 5*time.Second, 10*time.Millisecond, "informer should observe the policy")
 	// The writer builds desired status from the reducer, so it must have reduced the
-	// contributions before ApplyStatus runs. RegisterResourceReports enrols the reducer in
+	// contributions before ApplyStatus runs. RegisterResourceReports enrolls the reducer in
 	// this barrier, which is exactly the tracking the hook is responsible for.
 	require.Eventually(t, collections.HasSynced, 5*time.Second, 10*time.Millisecond,
 		"the report reducer must be registered in the cache sync barrier and synced")

@@ -20,7 +20,7 @@ type RegistrationInputs struct {
 	// Collections owns the raw-resource and reduced-report event sources that feed the
 	// leader's status queue. RegisterKind wires both for one kind; RegisterResource and
 	// RegisterResourceReports are the individual halves. Registering a reduction is also
-	// what enrols it in the StatusSyncer's cache synchronization barrier.
+	// what enrolls it in the StatusSyncer's cache synchronization barrier.
 	Collections *StatusCollections
 	// StatusContributions contains all Gateway- and Backend-produced status facts.
 	StatusContributions krt.Collection[reports.StatusContribution]

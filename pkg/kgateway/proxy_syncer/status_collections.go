@@ -205,7 +205,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	}
 
 	// The single entry covering every report reducer, here and in any plugin or downstream
-	// registration that runs later: statussync.RegisterResourceReports is what enrols them,
+	// registration that runs later: statussync.RegisterResourceReports is what enrolls them,
 	// and HasSynced re-reads that set on each call. StatusSyncer inherits this through
 	// CacheSyncs, so it must not be added there too.
 	s.waitForSync = append(s.waitForSync, s.statusCollections.HasSynced)
@@ -554,8 +554,12 @@ func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussyn
 	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
 		Namespace: res.Namespace,
 		Gateway:   parentName,
-		// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
-		// follow-up cleanup so dashboards, tests, and emitters can be updated together.
+		// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
+		// series under the legacy value "XListenerSet", not two. This must stay
+		// byte-identical to the value the *gwv1.ListenerSet arm in
+		// krtcollections/metrics derives at sync start: ResourceType is part of the
+		// start/end join key, so renaming either site alone leaves every listener set
+		// sync permanently open. See the TODO there for the coordinated rename.
 		ResourceType: "XListenerSet",
 		ResourceName: res.Name,
 	})
@@ -592,10 +596,14 @@ func (s *listenerSetStatusSyncer) patchLegacyStatus(ctx context.Context, res sta
 	return err
 }
 
-// legacyPortFallback is used when a listener protocol requires an explicit port
-// but none is set, matching the v2.2.4 fallback behaviour. 65535 is an out-of-
-// range sentinel that satisfies the schema's required field without silently
-// routing traffic to a real port.
+// legacyPortFallback fills the legacy schema's required status port when a listener's
+// protocol requires an explicit port but none is set, or when a status entry matches no
+// spec listener, matching the v2.2.4 fallback behaviour. 65535 is a valid port — the
+// highest — so it satisfies the schema's 1-65535 range; it is only a recognizable
+// placeholder, not a sentinel the schema would reject elsewhere. It appears solely in
+// written status and never programs a listener, so a genuine listener on port 65535 is
+// unaffected (its status entry is then indistinguishable from the fallback, which is the
+// cost of the legacy schema requiring a port we do not always have).
 const legacyPortFallback int64 = 65535
 
 // injectListenerPorts adds the "port" field to each entry in statusMap["listeners"]
