@@ -345,7 +345,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		s.translator.HasSynced,
 	}
 
-	s.initStatusInfra(krtopts)
+	// contextcheck sees a context.Background() deep in the registration chain, in the slog
+	// level check that guards the per-event debug log in statussync.registerResource. A level
+	// check takes a context only because slog.Handler.Enabled does; there is nothing to
+	// propagate, and pkg/kgateway/setup/controlplane.go checks levels the same way. Threading
+	// ctx through four exported statussync registration functions to reach it would be worse.
+	s.initStatusInfra(krtopts) //nolint:contextcheck // only ctx use in the chain is a slog level check
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {

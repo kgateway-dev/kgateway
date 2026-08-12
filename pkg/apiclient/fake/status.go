@@ -50,8 +50,10 @@ func statusSubresourceReaction(tracker k8stesting.ObjectTracker) k8stesting.Reac
 		existing, err := tracker.Get(gvr, ns, accessor.GetName(), metav1.GetOptions{})
 		if err != nil {
 			// Let the default reaction produce the NotFound (or whatever else) the caller
-			// would have seen.
-			return false, nil, nil
+			// would have seen. Swallowing err here is the point: returning it would make this
+			// reactor the one that answers, and the error it reports would not carry the
+			// resource details the default reaction's error does.
+			return false, nil, nil //nolint:nilerr // deliberate fall-through to the default reaction
 		}
 		merged := existing.DeepCopyObject()
 		if !copyStatus(update.GetObject(), merged) {
