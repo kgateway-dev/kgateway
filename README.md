@@ -81,11 +81,11 @@ Thanks to all contributors who are helping to make kgateway better!
 
 ## Star History
 
-<a href="https://www.star-history.com/#kgateway-dev/kgateway&Date">
+<a href="https://star-history.dera.page/#kgateway-dev/kgateway&type=Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date" />
-   <img alt="Star history of kgateway-dev/kgateway over time" src="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=kgateway-dev/kgateway&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=kgateway-dev/kgateway&type=Date" />
+   <img alt="Star history of kgateway-dev/kgateway over time" src="https://star-history.dera.page/svg?repos=kgateway-dev/kgateway&type=Date" />
  </picture>
 </a>
 
