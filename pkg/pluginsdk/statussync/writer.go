@@ -71,14 +71,24 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	// Desired builds the desired status from the latest object and report state. Returning
 	// false suppresses the write. It is invoked for every retry so neither the object nor
 	// report snapshot is retained in the work queue.
-	Desired func(current O) (S, bool)
+	//
+	// res is the identity the resource was enqueued under, and is what a builder must key its
+	// report lookup on — see ReportFor. Deriving the key from current instead recovers the
+	// name and namespace but not the GVK, so a writer for a normalized collection that serves
+	// several source kinds (ListenerSet/XListenerSet, the route versions) had to capture a
+	// GVK at construction that can disagree with the one the queue dispatched on.
+	Desired func(res Resource, current O) (S, bool)
 
 	// UpdateStatus persists s against the given ObjectMeta, which carries only the name,
 	// namespace and the resourceVersion the status was built from: the API server ignores
 	// spec on status writes, and the resourceVersion is what makes stale data rejected.
 	// It takes an ObjectMeta rather than an O so a normalized read type can be written back
 	// through the versioned client that actually serves it — see ClientWriter.
-	UpdateStatus func(om metav1.ObjectMeta, s S) error
+	//
+	// ctx is the one ApplyStatus was called with, so a writer that persists through a client
+	// needing a context (the dynamic client, for one) is a plain Writer like any other rather
+	// than a bespoke ResourceStatusSyncer built per call to capture one.
+	UpdateStatus func(ctx context.Context, om metav1.ObjectMeta, s S) error
 
 	// GetStatus extracts the live status from the current object. When set, a write is
 	// skipped if the (merged) desired status already matches the live status.
@@ -119,8 +129,8 @@ func CollectionSource[O controllers.ComparableObject](col krt.Collection[O]) fun
 func ClientWriter[W controllers.ComparableObject, S any](
 	cl kclient.Client[W],
 	build func(om metav1.ObjectMeta, s S) W,
-) func(metav1.ObjectMeta, S) error {
-	return func(om metav1.ObjectMeta, s S) error {
+) func(context.Context, metav1.ObjectMeta, S) error {
+	return func(_ context.Context, om metav1.ObjectMeta, s S) error {
 		_, err := cl.UpdateStatus(build(om, s))
 		return err
 	}
@@ -157,8 +167,8 @@ type writeDecision[S any] struct {
 }
 
 // decide runs the build/merge/compare sequence for one object.
-func (w Writer[O, S]) decide(current O) writeDecision[S] {
-	desired, ok := w.Desired(current)
+func (w Writer[O, S]) decide(res Resource, current O) writeDecision[S] {
+	desired, ok := w.Desired(res, current)
 	if !ok {
 		return writeDecision[S]{}
 	}
@@ -191,7 +201,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 		}
 		lastCurrent = current
 
-		decision := w.decide(current)
+		decision := w.decide(obj, current)
 		if !decision.has {
 			log.Debug("resource has no desired status, skipping status update")
 			return nil
@@ -206,7 +216,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 
 		// Write with the collection's current resourceVersion so stale data is rejected;
 		// conflicts are expected and self-heal via re-enqueue.
-		err := w.UpdateStatus(metav1.ObjectMeta{
+		err := w.UpdateStatus(ctx, metav1.ObjectMeta{
 			Name:            obj.Name,
 			Namespace:       obj.Namespace,
 			ResourceVersion: current.GetResourceVersion(),

@@ -9,7 +9,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -102,9 +101,8 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 			// Read from the collection that enqueues this policy, not from cl: cl is a
 			// delayed client whose Get returns nil until its own informer loads.
 			Current: statussync.CollectionSource(col),
-			Desired: func(pol T) (gwv1.PolicyStatus, bool) {
-				nn := types.NamespacedName{Namespace: pol.GetNamespace(), Name: pol.GetName()}
-				report, ok := statussync.ReportFor(statusReports, gvk, nn)
+			Desired: func(res statussync.Resource, pol T) (gwv1.PolicyStatus, bool) {
+				report, ok := statussync.ReportFor(statusReports, res)
 				if !ok {
 					return gwv1.PolicyStatus{}, false
 				}

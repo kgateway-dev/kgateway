@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
@@ -146,11 +145,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	s.statusWriters[wellknown.ListenerSetGVK] = listenerSetWriter(cl, f, s.commonCols.RawListenerSets, listenerSetReports)
 	// ON_EXPERIMENTAL_PROMOTION : Remove this registration together with xlistenerset_status.go.
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
-	s.statusWriters[wellknown.XListenerSetGVK] = &xListenerSetStatusSyncer{
-		col:     s.commonCols.RawListenerSets,
-		client:  cl,
-		reports: listenerSetReports,
-	}
+	s.statusWriters[wellknown.XListenerSetGVK] = xListenerSetWriter(cl, s.commonCols.RawListenerSets, listenerSetReports)
 
 	backendPlugin, hasBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
 	var backendReports krt.Collection[statussync.ResourceReports]
@@ -168,8 +163,8 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	s.statusWriters[wellknown.BackendGVK] = statussync.Writer[*kgateway.Backend, kgateway.BackendStatus]{
 		Name:    "backend",
 		Current: statussync.CollectionSource(backendPlugin.RawBackends),
-		Desired: func(be *kgateway.Backend) (kgateway.BackendStatus, bool) {
-			report, ok := statussync.ReportFor(backendReports, wellknown.BackendGVK, types.NamespacedName{Namespace: be.Namespace, Name: be.Name})
+		Desired: func(res statussync.Resource, be *kgateway.Backend) (kgateway.BackendStatus, bool) {
+			report, ok := statussync.ReportFor(backendReports, res)
 			if !ok {
 				return kgateway.BackendStatus{}, false
 			}
@@ -241,8 +236,8 @@ func gatewayWriter(
 	return statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]{
 		Name:    "gateway",
 		Current: statussync.CollectionSource(gateways),
-		Desired: func(gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
-			report, ok := statussync.ReportFor(reportCol, wellknown.GatewayGVK, types.NamespacedName{Namespace: gw.Namespace, Name: gw.Name})
+		Desired: func(res statussync.Resource, gw *gwv1.Gateway) (gwv1.GatewayStatus, bool) {
+			report, ok := statussync.ReportFor(reportCol, res)
 			if !ok {
 				return gwv1.GatewayStatus{}, false
 			}
@@ -288,9 +283,8 @@ func routeWriter[R, W controllers.ComparableObject](
 		Current: statussync.CollectionSource(routes),
 		UpdateStatus: statussync.ClientWriter(
 			kclient.NewFilteredDelayed[W](cl, gvr, f), build),
-		Desired: func(current R) (gwv1.RouteStatus, bool) {
-			nn := types.NamespacedName{Namespace: current.GetNamespace(), Name: current.GetName()}
-			report, ok := statussync.ReportFor(reportCol, gvk, nn)
+		Desired: func(res statussync.Resource, current R) (gwv1.RouteStatus, bool) {
+			report, ok := statussync.ReportFor(reportCol, res)
 			if !ok {
 				return gwv1.RouteStatus{}, false
 			}
@@ -310,7 +304,8 @@ func routeWriter[R, W controllers.ComparableObject](
 				// empty status, which Merge reads as "clear every parent we own" — a missing
 				// type switch case must not erase good status.
 				logger.Error("route status builder does not support this type; skipping status update",
-					"gvk", gvk.String(), "resource", nn.String(), "type", fmt.Sprintf("%T", current))
+					"gvk", res.GroupVersionKind.String(), "resource", res.NamespacedName.String(),
+					"type", fmt.Sprintf("%T", current))
 				return gwv1.RouteStatus{}, false
 			}
 			return *status, true
@@ -481,7 +476,7 @@ func listenerSetWriter(
 	return statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]{
 		Name:    "listenerSet",
 		Current: statussync.CollectionSource(listenerSets),
-		Desired: listenerSetDesired(wellknown.ListenerSetGVK, reportCol),
+		Desired: listenerSetDesired(reportCol),
 		UpdateStatus: statussync.ClientWriter(
 			kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
 			func(om metav1.ObjectMeta, st gwv1.ListenerSetStatus) *gwv1.ListenerSet {
@@ -492,19 +487,18 @@ func listenerSetWriter(
 	}
 }
 
-// listenerSetDesired builds the desired status for one ListenerSet flavor, satisfying
+// listenerSetDesired builds the desired status for either ListenerSet flavor, satisfying
 // Writer.Desired.
 //
-// gvk selects which reduction to read: the promoted and legacy flavors share one normalized
-// collection whose reports are keyed by the object's own GVK, so it is the only thing that
-// differs between the two writers' reads.
+// The promoted and legacy flavors share one normalized collection whose reports are keyed by
+// the object's own GVK, and the enqueued Resource already carries that GVK -- which is the
+// same one the writers are dispatched on. So there is nothing left for the two writers to
+// differ on here, and no captured GVK that can disagree with the queue.
 func listenerSetDesired(
-	gvk schema.GroupVersionKind,
 	reportCol krt.Collection[statussync.ResourceReports],
-) func(*gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
-	return func(current *gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
-		nn := types.NamespacedName{Namespace: current.Namespace, Name: current.Name}
-		report, ok := statussync.ReportFor(reportCol, gvk, nn)
+) func(statussync.Resource, *gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
+	return func(res statussync.Resource, current *gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
+		report, ok := statussync.ReportFor(reportCol, res)
 		if !ok {
 			return gwv1.ListenerSetStatus{}, false
 		}
