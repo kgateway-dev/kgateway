@@ -76,7 +76,7 @@ func RegisterKindByObjectGVK[I controllers.Object](
 ) krt.Collection[ResourceReports] {
 	return registerKind(s, objects, contributions, byTarget,
 		func(obj I) schema.GroupVersionKind { return objectGVKOrDefault(obj, fallback) },
-		func() { RegisterResourceByObjectGVK(s, fallback, objects) },
+		func() { registerResourceByObjectGVK(s, fallback, objects) },
 		opts...)
 }
 
@@ -215,9 +215,10 @@ func RegisterResource[I controllers.Object](
 	registerResource(s, col, func(I) schema.GroupVersionKind { return gvk })
 }
 
-// RegisterResourceByObjectGVK registers a normalized collection whose objects retain
+// registerResourceByObjectGVK registers a normalized collection whose objects retain
 // distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
-func RegisterResourceByObjectGVK[I controllers.Object](
+// Callers reach it through RegisterKindByObjectGVK, which wires the reducer alongside it.
+func registerResourceByObjectGVK[I controllers.Object](
 	s *StatusCollections,
 	fallback schema.GroupVersionKind,
 	col krt.Collection[I],

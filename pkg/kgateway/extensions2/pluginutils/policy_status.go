@@ -124,22 +124,24 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 				desired.Ancestors = statussync.MergePolicyAncestorStatuses(controllerName, getStatus(current).Ancestors, desired.Ancestors)
 				return desired
 			},
-			OnSync: func(res statussync.Resource, current T, status gwv1.PolicyStatus, took time.Duration, err error) {
+			OnSync: func(res statussync.Resource, _ T, status gwv1.PolicyStatus, took time.Duration, err error) {
 				statusErr := err
 				if conditionMetric {
 					statusErr = errors.Join(statusErr, policyStatusConditionError(status, controllerName))
 				}
-				statussync.RecordStatusSync(statussync.SyncMetricLabels{
-					Name:      gvk.Kind,
-					Namespace: res.Namespace,
-					Syncer:    "PolicyStatusSyncer",
-				}, took, statusErr)
-				statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-					Namespace:    res.Namespace,
-					Gateway:      "",
-					ResourceType: gvk.Kind,
-					ResourceName: res.Name,
-				})
+				statussync.RecordStatusSyncOutcome(
+					statussync.SyncMetricLabels{
+						Name:      gvk.Kind,
+						Namespace: res.Namespace,
+						Syncer:    "PolicyStatusSyncer",
+					},
+					kmetrics.ResourceSyncDetails{
+						Namespace:    res.Namespace,
+						Gateway:      "",
+						ResourceType: gvk.Kind,
+						ResourceName: res.Name,
+					},
+					took, err, statusErr)
 			},
 		})
 	}

@@ -292,7 +292,7 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 		gatewayWriter:     gatewayWriter(c, f, gateways, gatewayReports),
 		listenerSetWriter: listenerSetWriter(c, f, listenerSets, listenerSetReports),
 		routeWriter: routeWriter[*gwv1.HTTPRoute, *gwv1.HTTPRoute](c, f, routes, routeReports,
-			wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, cycleController,
+			wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, cycleController,
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 			},

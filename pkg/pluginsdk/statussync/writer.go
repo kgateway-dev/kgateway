@@ -136,14 +136,17 @@ func ClientWriter[W controllers.ComparableObject, S any](
 	}
 }
 
-// RetryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
-// with exponential backoff, aborted on ctx cancellation. attempt must re-read the current
-// object each time and swallow (return nil for) conflicts and NotFound, which self-heal
-// via re-enqueue; only transient errors (throttling, 5xx, network) should be returned.
-// Custom ResourceStatusSyncer implementations should wrap their write in this so transient
-// failures are not silently dropped: after a failed write nothing changes on the informer,
-// so no event is guaranteed to re-enqueue the resource.
-func RetryStatusWrite(ctx context.Context, attempt func() error) error {
+// retryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
+// with exponential backoff, aborted on ctx cancellation. attempt re-reads the current object
+// each time and swallows (returns nil for) conflicts and NotFound, which self-heal via
+// re-enqueue; only transient errors (throttling, 5xx, network) are returned.
+//
+// Retrying is a property of the pipeline rather than of each writer: after a failed write
+// nothing changes on the informer, so no event is guaranteed to re-enqueue the resource.
+// ApplyStatus is the single place it is applied, which is why this is unexported — a custom
+// ResourceStatusSyncer that forgot to wrap its own write would silently drop transient
+// failures.
+func retryStatusWrite(ctx context.Context, attempt func() error) error {
 	return retry.Do(attempt,
 		retry.Context(ctx),
 		retry.Attempts(maxRetryAttempts),
@@ -188,7 +191,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 	var lastCurrent O
 	var lastMerged S
 	hasDesired := false
-	err := RetryStatusWrite(ctx, func() error {
+	err := retryStatusWrite(ctx, func() error {
 		hasDesired = false
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.

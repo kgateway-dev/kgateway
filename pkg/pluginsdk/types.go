@@ -50,9 +50,6 @@ type PerClientProcessBackend func(
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
-// StatusCollections aliases the statussync type for plugin convenience.
-type StatusCollections = statussync.StatusCollections
-
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass

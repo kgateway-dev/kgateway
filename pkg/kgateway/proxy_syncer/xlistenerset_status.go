@@ -44,7 +44,7 @@ func xListenerSetWriter(
 		Desired:      listenerSetDesired(reportCol),
 		UpdateStatus: patchXListenerSetStatus(cl, source),
 		GetStatus:    func(o *gwv1.ListenerSet) gwv1.ListenerSetStatus { return o.Status },
-		OnSync:       listenerSetStatusMetricsHook(),
+		OnSync:       listenerSetStatusOnSync,
 	}
 }
 
