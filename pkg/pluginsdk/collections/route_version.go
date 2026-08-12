@@ -228,7 +228,7 @@ func servedVersionsFromDiscovery(
 		resources, err := disco.ServerResourcesForGroupVersion(groupVersion)
 		switch {
 		case err == nil:
-		case apierrors.IsNotFound(err), meta.IsNoMatchError(err), discovery.IsGroupDiscoveryFailedError(err):
+		case apierrors.IsNotFound(err), meta.IsNoMatchError(err):
 			// The group/version is not served at all: a definite no for this version.
 			continue
 		default:
