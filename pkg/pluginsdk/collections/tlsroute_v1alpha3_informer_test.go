@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	fakediscovery "k8s.io/client-go/discovery/fake"
 	k8stesting "k8s.io/client-go/testing"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -89,13 +90,63 @@ func TestDelayedTLSRouteV1Alpha3InformerBypassesCrdWatcherFilter_Issue13735(t *t
 	}, time.Second, 10*time.Millisecond, "v1alpha3 TLSRoute should still be discoverable through the typed informer path")
 }
 
-func TestDelayedTLSRouteV1Alpha3InformerUsesOptimisticTypedWatchWhenCRDDiscoveryErrors(t *testing.T) {
+// An RBAC gap on customresourcedefinitions used to be the worst case: the CRD read failed,
+// the informer started anyway, and if the version happened not to be served its initial list
+// could only 404 — never syncing, and hanging the control plane's cache barrier behind it.
+// The discovery API answers the same question through an endpoint every authenticated client
+// can reach, so the watch now starts for the right reason instead of on a guess.
+func TestDelayedTLSRouteV1Alpha3InformerRecoversThroughDiscoveryWhenCRDReadIsDenied(t *testing.T) {
 	stop := test.NewStop(t)
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()
 	makeGatewayAPIV141TLSRouteCRD(t, client)
+	denyCRDReads(t, client)
+	serveInDiscovery(t, client, wellknown.TLSRouteV1Alpha3GVR)
+	createV1Alpha3TLSRoute(t, client)
+
+	client.RunAndWait(stop)
+
+	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
+	})
+	inf.Start(stop)
+
+	require.Eventually(t, inf.HasSynced, time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool {
+		return len(inf.List("default", labels.Everything())) == 1
+	}, time.Second, 10*time.Millisecond, "the discovery fallback should recover the watch the CRD read could not authorize")
+}
+
+// When neither reader can answer, the informer parks. That does cost the kind its watch until
+// one of them recovers — the poll loop keeps asking — but the alternative is starting a watch
+// on an unverified version, and if that version is not served its list 404s forever while
+// HasSynced holds the whole cache barrier. A kind that is late is recoverable; a control plane
+// that never finishes syncing is not.
+func TestDelayedTLSRouteV1Alpha3InformerParksWhenNoReaderCanAnswer(t *testing.T) {
+	stop := test.NewStop(t)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	apiclient.RegisterTypes()
+
+	client := kube.NewFakeClient()
+	makeGatewayAPIV141TLSRouteCRD(t, client)
+	denyCRDReads(t, client)
+	createV1Alpha3TLSRoute(t, client)
+
+	client.RunAndWait(stop)
+
+	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
+	})
+	inf.Start(stop)
+
+	require.True(t, inf.HasSynced(), "an unresolved version must not hold the cache barrier")
+	require.Empty(t, inf.List("default", labels.Everything()))
+}
+
+func denyCRDReads(t *testing.T, client kube.Client) {
+	t.Helper()
 
 	extClient, ok := client.Ext().(*extfake.Clientset)
 	require.True(t, ok)
@@ -113,6 +164,21 @@ func TestDelayedTLSRouteV1Alpha3InformerUsesOptimisticTypedWatchWhenCRDDiscovery
 			errors.New("rbac denied"),
 		)
 	})
+}
+
+func serveInDiscovery(t *testing.T, client kube.Client, gvr schema.GroupVersionResource) {
+	t.Helper()
+
+	disco, ok := client.Kube().Discovery().(*fakediscovery.FakeDiscovery)
+	require.True(t, ok)
+	disco.Resources = append(disco.Resources, &metav1.APIResourceList{
+		GroupVersion: gvr.GroupVersion().String(),
+		APIResources: []metav1.APIResource{{Name: gvr.Resource}},
+	})
+}
+
+func createV1Alpha3TLSRoute(t *testing.T, client kube.Client) {
+	t.Helper()
 
 	_, err := client.GatewayAPI().GatewayV1alpha3().TLSRoutes("default").Create(
 		context.Background(),
@@ -137,18 +203,6 @@ func TestDelayedTLSRouteV1Alpha3InformerUsesOptimisticTypedWatchWhenCRDDiscovery
 		metav1.CreateOptions{},
 	)
 	require.NoError(t, err)
-
-	client.RunAndWait(stop)
-
-	inf := newDelayedTypedInformer(context.Background(), client, wellknown.TLSRouteV1Alpha3GVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
-		return kclient.NewFiltered[*gwv1a3.TLSRoute](client, kclient.Filter{})
-	})
-	inf.Start(stop)
-
-	require.Eventually(t, inf.HasSynced, time.Second, 10*time.Millisecond)
-	require.Eventually(t, func() bool {
-		return len(inf.List("default", labels.Everything())) == 1
-	}, time.Second, 10*time.Millisecond, "non-authoritative CRD discovery must not suppress TLSRoute watches")
 }
 
 // Promoted TLSRoute goes through newDelayedTypedInformer rather than istio's

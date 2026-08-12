@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,26 +9,30 @@ import (
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	klabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
 
-const crdLookupTimeout = 5 * time.Second
+// informerGate answers whether the informer it guards should be running, from freshly read
+// discovery. ok is false when discovery could not establish anything, which is not the same
+// as a definite no -- and the difference matters in both directions. Starting an informer on
+// a version that turns out not to be served means its initial list can only 404: it never
+// syncs, and because HasSynced propagates through every collection built on it, the whole
+// cache sync hangs. Treating an unreadable version as definitely absent means silently
+// giving up on a kind that may well be installed. So an unresolved gate parks the informer,
+// which is retried for as long as the process runs.
+type informerGate func(ctx context.Context) (start bool, ok bool)
 
 type delayedInformer[T controllers.ComparableObject] struct {
 	inf *atomic.Pointer[kclient.Informer[T]]
 
-	ctx              context.Context
-	extClient        apiextensionsclient.Interface
-	gvr              schema.GroupVersionResource
-	newInformer      func() kclient.Informer[T]
-	verifiedNotReady atomic.Bool
-	pollingStarted   atomic.Bool
+	ctx            context.Context
+	gvr            schema.GroupVersionResource
+	gate           informerGate
+	newInformer    func() kclient.Informer[T]
+	pollingStarted atomic.Bool
 
 	mu       sync.Mutex
 	handlers []delayedHandler[T]
@@ -76,42 +79,36 @@ type (
 	delayedUnstructuredIndex    = delayedIndex[*unstructured.Unstructured]
 )
 
+// newGatedTypedInformer builds the informer only if its gate says it should be running, and
+// otherwise parks it behind a placeholder that keeps polling the gate. Nothing here starts an
+// informer on an unconfirmed version: see informerGate for why that is the one outcome we
+// cannot recover from.
+func newGatedTypedInformer[T controllers.ComparableObject](
+	ctx context.Context,
+	gvr schema.GroupVersionResource,
+	gate informerGate,
+	newInformer func() kclient.Informer[T],
+) kclient.Informer[T] {
+	if start, resolved := gate(ctx); resolved && start {
+		return newInformer()
+	}
+
+	return &delayedInformer[T]{
+		inf:         new(atomic.Pointer[kclient.Informer[T]]),
+		ctx:         ctx,
+		gvr:         gvr,
+		gate:        gate,
+		newInformer: newInformer,
+	}
+}
+
 func newDelayedTypedInformer[T controllers.ComparableObject](
 	ctx context.Context,
 	c kube.Client,
 	gvr schema.GroupVersionResource,
 	newInformer func() kclient.Informer[T],
 ) kclient.Informer[T] {
-	if c.Ext() == nil {
-		return newInformer()
-	}
-
-	served, err := crdServesVersion(ctx, c.Ext(), gvr)
-	if err != nil {
-		// Discovery failed but the route API itself may still be readable. Do not
-		// suppress route watching solely because CRD discovery is unavailable or
-		// non-authoritative (for example due to RBAC).
-		return newInformer()
-	}
-	if served {
-		return newInformer()
-	}
-
-	delayed := &delayedInformer[T]{
-		inf:       new(atomic.Pointer[kclient.Informer[T]]),
-		ctx:       ctx,
-		extClient: c.Ext(),
-		gvr:       gvr,
-		newInformer: func() kclient.Informer[T] {
-			return newInformer()
-		},
-	}
-	// The delayed path is only used for authoritative "not served yet" results.
-	// Keep HasSynced unblocked so startup does not wait on an optional CRD that
-	// is absent and may be installed later.
-	delayed.verifiedNotReady.Store(true)
-
-	return delayed
+	return newGatedTypedInformer(ctx, gvr, servedVersionGate(newRouteVersionSource(c), gvr), newInformer)
 }
 
 func newDelayedDynamicUnstructuredInformer(
@@ -123,31 +120,6 @@ func newDelayedDynamicUnstructuredInformer(
 	return newDelayedTypedInformer(ctx, c, gvr, func() kclient.Informer[*unstructured.Unstructured] {
 		return newDynamicUnstructuredInformer(c, gvr, filter)
 	})
-}
-
-func crdServesVersion(ctx context.Context, extClient apiextensionsclient.Interface, gvr schema.GroupVersionResource) (bool, error) {
-	if extClient == nil {
-		return false, fmt.Errorf("CRD discovery not authoritative for %s", gvr)
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, crdLookupTimeout)
-	defer cancel()
-
-	crd, err := extClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, fmt.Sprintf("%s.%s", gvr.Resource, gvr.Group), metav1.GetOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, fmt.Errorf("CRD discovery not authoritative for %s: %w", gvr, err)
-	}
-
-	for _, version := range crd.Spec.Versions {
-		if version.Name == gvr.Version {
-			return version.Served, nil
-		}
-	}
-
-	return false, nil
 }
 
 func newDynamicUnstructuredInformer(
@@ -275,18 +247,23 @@ func (d *delayedInformer[T]) AddEventHandler(h cache.ResourceEventHandler) cache
 	return reg
 }
 
+// HasSynced reports true while parked. There is nothing to sync -- a parked informer holds
+// no watch and its collection is empty -- and reporting false instead would hold the whole
+// control plane's cache sync, which is unbounded, on one kind that may never arrive. Once an
+// informer is installed its own readiness takes over, so a kind that does show up is still
+// waited for properly.
 func (d *delayedInformer[T]) HasSynced() bool {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).HasSynced()
 	}
-	return d.verifiedNotReady.Load()
+	return true
 }
 
 func (d *delayedInformer[T]) HasSyncedIgnoringHandlers() bool {
 	if inf := d.inf.Load(); inf != nil {
 		return (*inf).HasSyncedIgnoringHandlers()
 	}
-	return d.verifiedNotReady.Load()
+	return true
 }
 
 func (d *delayedInformer[T]) ShutdownHandlers() {
@@ -386,22 +363,30 @@ func (d *delayedInformer[T]) startPolling(stop <-chan struct{}) {
 		timer := time.NewTimer(interval)
 		defer timer.Stop()
 
+		// Reported once per unresolved spell rather than every round: at the steady-state
+		// interval this would otherwise be a line every 30s, forever, per parked informer.
+		reportedUnresolved := false
+
 		for {
 			if d.inf.Load() != nil {
 				return
 			}
 
-			served, err := crdServesVersion(d.ctx, d.extClient, d.gvr)
-			if err != nil {
-				// Discovery is non-authoritative; unblock HasSynced so
-				// startup is not held indefinitely by a flaky API call.
-				d.verifiedNotReady.Store(true)
-			} else {
-				d.verifiedNotReady.Store(!served)
-				if served {
-					d.set(d.newInformer())
-					return
+			start, resolved := d.gate(d.ctx)
+			switch {
+			case !resolved:
+				if !reportedUnresolved {
+					logger.Warn("cannot determine whether this API version is served; its resources are not being reconciled, and this will keep being retried",
+						"gvr", d.gvr.String(),
+					)
+					reportedUnresolved = true
 				}
+			case start:
+				logger.Info("API version is now served; starting its informer", "gvr", d.gvr.String())
+				d.set(d.newInformer())
+				return
+			default:
+				reportedUnresolved = false
 			}
 
 			select {

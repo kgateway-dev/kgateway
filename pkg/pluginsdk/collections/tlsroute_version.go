@@ -8,10 +8,7 @@ import (
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
-
-var logger = logging.New("pluginsdk/collections")
 
 // tlsRouteGVRs lists the TLSRoute API versions kgateway understands, most preferred first.
 // TLSRoute is standard as of Gateway API v1.5; v1alpha3 and v1alpha2 are pre-promotion and

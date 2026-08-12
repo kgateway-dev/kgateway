@@ -5,7 +5,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	istiogvr "istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
@@ -137,29 +139,71 @@ func TestDelayedDynamicUnstructuredInformerReportsSyncedWithoutCRD(t *testing.T)
 	require.Empty(t, inf.List(metav1.NamespaceAll, labels.Everything()))
 }
 
-func TestCrdServesVersionWithNilClientIsNonAuthoritative(t *testing.T) {
-	served, err := crdServesVersion(context.Background(), nil, wellknown.TLSRouteV1Alpha3GVR)
-	require.Error(t, err)
-	require.False(t, served)
-}
-
-func TestCrdServesVersionTracksAbsenceAuthoritatively(t *testing.T) {
+func TestServedVersionGateTracksAbsenceAuthoritatively(t *testing.T) {
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	client := kube.NewFakeClient()
 
-	served, err := crdServesVersion(context.Background(), client.Ext(), wellknown.TLSRouteV1Alpha3GVR)
-	require.NoError(t, err)
-	require.False(t, served)
+	start, resolved := servedVersionGate(newRouteVersionSource(client), wellknown.TLSRouteV1Alpha3GVR)(context.Background())
+	require.True(t, resolved)
+	require.False(t, start)
 }
 
-func TestCrdServesVersionReturnsTrueWhenVersionIsServed(t *testing.T) {
+func TestServedVersionGateStartsWhenVersionIsServed(t *testing.T) {
 	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
 	client := kube.NewFakeClient()
 	makeServedCRD(t, client, wellknown.TLSRouteV1Alpha3GVR, "v1.4.1")
 
-	served, err := crdServesVersion(context.Background(), client.Ext(), wellknown.TLSRouteV1Alpha3GVR)
-	require.NoError(t, err)
-	require.True(t, served)
+	start, resolved := servedVersionGate(newRouteVersionSource(client), wellknown.TLSRouteV1Alpha3GVR)(context.Background())
+	require.True(t, resolved)
+	require.True(t, start)
+}
+
+// An unresolved gate must park, never start. A real informer for a version that turns out not
+// to be served can only 404 its initial list, so it never syncs -- and HasSynced propagates
+// from there through every collection built on it into the control plane's unbounded
+// WaitForCacheSync. Parking trades that hang for one kind going unreconciled until the poll
+// loop resolves it.
+func TestGatedInformerParksWhenTheGateCannotResolve(t *testing.T) {
+	stop := test.NewStop(t)
+	built := false
+
+	inf := newGatedTypedInformer(
+		context.Background(),
+		wellknown.TLSRouteV1GVR,
+		func(context.Context) (bool, bool) { return false, false },
+		func() kclient.Informer[*unstructured.Unstructured] {
+			built = true
+			return &fakeDelayedUnstructuredInformer{}
+		},
+	)
+	inf.Start(stop)
+
+	require.False(t, built, "an unresolved version must not get a live informer")
+	require.True(t, inf.HasSynced(), "a parked informer must not hold the control plane's cache sync")
+	require.Empty(t, inf.List(metav1.NamespaceAll, labels.Everything()))
+}
+
+// The flip side: once the gate resolves to yes, the parked placeholder must hand over to a
+// real informer, so a kind installed after startup is still picked up.
+func TestGatedInformerStartsOnceTheGateResolvesToServed(t *testing.T) {
+	stop := test.NewStop(t)
+	var served atomic.Bool
+	fake := &fakeDelayedUnstructuredInformer{}
+
+	inf := newGatedTypedInformer(
+		context.Background(),
+		wellknown.TLSRouteV1GVR,
+		func(context.Context) (bool, bool) { return served.Load(), true },
+		func() kclient.Informer[*unstructured.Unstructured] { return fake },
+	)
+	inf.Start(stop)
+	served.Store(true)
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		fake.mu.Lock()
+		defer fake.mu.Unlock()
+		assert.Equal(c, 1, fake.starts)
+	}, 10*time.Second, 10*time.Millisecond, "the parked informer should hand over once its version is served")
 }
 
 func TestDelayedDynamicUnstructuredInformerSetPublishesInformerAfterReplay(t *testing.T) {

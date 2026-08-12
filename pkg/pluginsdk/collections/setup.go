@@ -9,6 +9,7 @@ import (
 	"istio.io/istio/pkg/util/smallset"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
@@ -102,17 +103,26 @@ func (c *CommonCollections) InitCollections(
 	// list drives both, so a version we watch is always one we can write and vice versa.
 	// TCPRoute is standard as of Gateway API v1.6; pre-v1 versions stay behind the
 	// experimental feature flag for compatibility with older Gateway API channels.
+	versionSource := newRouteVersionSource(c.Client)
+	includeLegacyRouteVersions := globalSettings.EnableExperimentalGatewayAPIFeatures
 	tcpRouteWriteGVRs := selectRouteGVRs(
-		discoverRouteVersions(ctx, c.Client.Ext(), wellknown.TCPRouteCRDName),
+		resolveRouteVersions(ctx, versionSource, wellknown.TCPRouteCRDName, tcpRouteGVRs),
 		tcpRouteGVRs,
-		globalSettings.EnableExperimentalGatewayAPIFeatures,
+		includeLegacyRouteVersions,
 	)
+	// Each candidate's informer is gated on that candidate being the served version we
+	// prefer, re-read at gate time rather than reused from the startup resolution above.
+	// When the resolution was authoritative the gate just confirms it; when it was not, this
+	// is what keeps an unserved candidate from starting a watch that could only 404.
+	tcpRouteGate := func(gvr schema.GroupVersionResource) informerGate {
+		return routeInformerGate(versionSource, wellknown.TCPRouteCRDName, tcpRouteGVRs, includeLegacyRouteVersions, gvr)
+	}
 	tcpRouteCollections := make([]krt.Collection[*gwv1a2.TCPRoute], 0, len(tcpRouteWriteGVRs))
 	for _, tcpRouteGVR := range tcpRouteWriteGVRs {
 		switch tcpRouteGVR.Version {
 		case gwv1.GroupVersion.Version:
 			tcpRoutesV1 := krt.WrapClient(
-				newDelayedTypedInformer(ctx, c.Client, tcpRouteGVR, func() kclient.Informer[*gwv1.TCPRoute] {
+				newGatedTypedInformer(ctx, tcpRouteGVR, tcpRouteGate(tcpRouteGVR), func() kclient.Informer[*gwv1.TCPRoute] {
 					return kclient.NewFiltered[*gwv1.TCPRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TCPRouteV1")...,
@@ -126,7 +136,7 @@ func (c *CommonCollections) InitCollections(
 				}, c.KrtOpts.ToOptions("TCPRouteV1ToV1Alpha2")...))
 		case gwv1a2.GroupVersion.Version:
 			preV1TCPRoutes := krt.WrapClient(
-				newDelayedTypedInformer(ctx, c.Client, tcpRouteGVR, func() kclient.Informer[*gwv1a2.TCPRoute] {
+				newGatedTypedInformer(ctx, tcpRouteGVR, tcpRouteGate(tcpRouteGVR), func() kclient.Informer[*gwv1a2.TCPRoute] {
 					return kclient.NewFiltered[*gwv1a2.TCPRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TCPRoutePreV1Alpha2")...,
@@ -149,25 +159,28 @@ func (c *CommonCollections) InitCollections(
 	// TLSRoute is standard as of Gateway API v1.5; pre-v1 versions stay behind the
 	// experimental feature flag.
 	tlsRouteWriteGVRs := selectRouteGVRs(
-		discoverRouteVersions(ctx, c.Client.Ext(), wellknown.TLSRouteCRDName),
+		resolveRouteVersions(ctx, versionSource, wellknown.TLSRouteCRDName, tlsRouteGVRs),
 		tlsRouteGVRs,
-		globalSettings.EnableExperimentalGatewayAPIFeatures,
+		includeLegacyRouteVersions,
 	)
+	tlsRouteGate := func(gvr schema.GroupVersionResource) informerGate {
+		return routeInformerGate(versionSource, wellknown.TLSRouteCRDName, tlsRouteGVRs, includeLegacyRouteVersions, gvr)
+	}
 	tlsRouteCollections := make([]krt.Collection[*gwv1a2.TLSRoute], 0, len(tlsRouteWriteGVRs))
 	for _, tlsRouteGVR := range tlsRouteWriteGVRs {
 		switch tlsRouteGVR.Version {
 		case gwv1.GroupVersion.Version:
-			// newDelayedTypedInformer, not kclient.NewDelayedInformer, matching TCPRoute and
-			// the pre-v1 TLSRoute paths. Istio's CRD watcher keys readiness on
-			// <resource>.<group> and ignores the version, so on its own it would report v1 as
-			// ready off a CRD serving no v1, start an informer against an unserved endpoint,
-			// and never sync — blocking every collection gated on it. Istio only avoids that
-			// through minimumVersionFilter, a hardcoded table whose tlsroutes minimum happens
-			// to be the release where v1 appeared. Depending on that table staying aligned
-			// with kgateway's needs is a coupling we do not need: this helper checks the
-			// served version itself and keeps HasSynced unblocked when v1 is absent.
+			// A gated informer, not kclient.NewDelayedInformer, matching TCPRoute and the
+			// pre-v1 TLSRoute paths. Istio's CRD watcher keys readiness on <resource>.<group>
+			// and ignores the version, so on its own it would report v1 as ready off a CRD
+			// serving no v1, start an informer against an unserved endpoint, and never sync —
+			// blocking every collection gated on it. Istio only avoids that through
+			// minimumVersionFilter, a hardcoded table whose tlsroutes minimum happens to be
+			// the release where v1 appeared. Depending on that table staying aligned with
+			// kgateway's needs is a coupling we do not need: the gate checks the served
+			// version itself and keeps HasSynced unblocked when v1 is absent.
 			tlsRoutesV1 := krt.WrapClient(
-				newDelayedTypedInformer(ctx, c.Client, tlsRouteGVR, func() kclient.Informer[*gwv1.TLSRoute] {
+				newGatedTypedInformer(ctx, tlsRouteGVR, tlsRouteGate(tlsRouteGVR), func() kclient.Informer[*gwv1.TLSRoute] {
 					return kclient.NewFiltered[*gwv1.TLSRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TLSRouteV1")...,
@@ -181,7 +194,7 @@ func (c *CommonCollections) InitCollections(
 				}, c.KrtOpts.ToOptions("TLSRouteV1ToV1Alpha2")...))
 		case wellknown.TLSRouteV1Alpha3Version:
 			preV1TLSRoutes := krt.WrapClient(
-				newDelayedTypedInformer(ctx, c.Client, tlsRouteGVR, func() kclient.Informer[*gwv1a3.TLSRoute] {
+				newGatedTypedInformer(ctx, tlsRouteGVR, tlsRouteGate(tlsRouteGVR), func() kclient.Informer[*gwv1a3.TLSRoute] {
 					return kclient.NewFiltered[*gwv1a3.TLSRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3")...,
@@ -195,7 +208,7 @@ func (c *CommonCollections) InitCollections(
 				}, c.KrtOpts.ToOptions("TLSRoutePreV1Alpha3ToV1Alpha2")...))
 		case gwv1a2.GroupVersion.Version:
 			preV1TLSRoutes := krt.WrapClient(
-				newDelayedTypedInformer(ctx, c.Client, tlsRouteGVR, func() kclient.Informer[*gwv1a2.TLSRoute] {
+				newGatedTypedInformer(ctx, tlsRouteGVR, tlsRouteGate(tlsRouteGVR), func() kclient.Informer[*gwv1a2.TLSRoute] {
 					return kclient.NewFiltered[*gwv1a2.TLSRoute](c.Client, filter)
 				}),
 				c.KrtOpts.ToOptions("TLSRoutePreV1Alpha2")...,
