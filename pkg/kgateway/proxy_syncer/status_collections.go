@@ -1,8 +1,6 @@
 package proxy_syncer
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -10,9 +8,7 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -30,7 +26,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // initStatusInfra reduces keyed translation contributions per status owner and
@@ -141,17 +136,21 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 		}
 	}
 
+	// Both ListenerSet flavors normalize to one collection and one report reducer keyed by the
+	// object's own GVK, but they are written back through different APIs, so each GVK gets its
+	// own writer. The map dispatches on the enqueued GVK, which is the object's, so a promoted
+	// ListenerSet can never reach the legacy writer or vice versa.
 	listenerSetReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.ListenerSetGVK,
 		s.commonCols.RawListenerSets, s.statusContributions, contributionsByTarget,
 		krtopts.ToOptions("ListenerSetStatusReports")...)
-	lsWriter := &listenerSetStatusSyncer{
-		col:      s.commonCols.RawListenerSets,
-		promoted: kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
-		client:   cl,
-		reports:  listenerSetReports,
+	s.statusWriters[wellknown.ListenerSetGVK] = listenerSetWriter(cl, f, s.commonCols.RawListenerSets, listenerSetReports)
+	// ON_EXPERIMENTAL_PROMOTION : Remove this registration together with xlistenerset_status.go.
+	// Ref: https://github.com/kgateway-dev/kgateway/issues/12827
+	s.statusWriters[wellknown.XListenerSetGVK] = &xListenerSetStatusSyncer{
+		col:     s.commonCols.RawListenerSets,
+		client:  cl,
+		reports: listenerSetReports,
 	}
-	s.statusWriters[wellknown.ListenerSetGVK] = lsWriter
-	s.statusWriters[wellknown.XListenerSetGVK] = lsWriter
 
 	backendPlugin, hasBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
 	var backendReports krt.Collection[statussync.ResourceReports]
@@ -467,180 +466,84 @@ func simpleStatusMetricsHook[T controllers.ComparableObject, S any](syncer, kind
 	}
 }
 
-// listenerSetStatusSyncer writes ListenerSet statuses. Promoted ListenerSets are written
-// through the typed client; legacy XListenerSets are written through the dynamic client
-// with the required per-listener port injected into the status payload.
-type listenerSetStatusSyncer struct {
-	col      krt.Collection[*gwv1.ListenerSet]
-	promoted kclient.Client[*gwv1.ListenerSet]
-	client   apiclient.Client
-	reports  krt.Collection[statussync.ResourceReports]
-}
-
-func (s *listenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussync.Resource) {
-	start := time.Now()
-
-	var current *gwv1.ListenerSet
-	var desired gwv1.ListenerSetStatus
-	hasDesired := false
-	// Retry transient write failures: after a failed write nothing changes on the
-	// informer, so no event is guaranteed to re-enqueue this resource. Each attempt
-	// re-reads the current object; conflicts and NotFound self-heal via re-enqueue.
-	err := statussync.RetryStatusWrite(ctx, func() error {
-		hasDesired = false
-		cur := s.col.GetKey(res.Namespace + "/" + res.Name)
-		if cur == nil || *cur == nil {
-			logger.Debug("listener set not found, skipping status update", "resource", res.NamespacedName.String())
-			return nil
-		}
-		current = *cur
-		report, ok := statussync.ReportFor(s.reports, res.GroupVersionKind, res.NamespacedName)
-		if !ok {
-			return nil
-		}
-		lsCopy := *current
-		lsCopy.SetGroupVersionKind(res.GroupVersionKind)
-		status := reports.BuildListenerSetStatus(report.ListenerSet, lsCopy)
-		if status == nil {
-			return nil
-		}
-		desired = *status
-		hasDesired = true
-
-		if krt.Equal(current.Status, desired) {
-			return nil
-		}
-
-		if res.GroupVersionKind == wellknown.XListenerSetGVK {
-			return s.patchLegacyStatus(ctx, res, current, desired)
-		}
-
-		_, err := s.promoted.UpdateStatus(&gwv1.ListenerSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            res.Name,
-				Namespace:       res.Namespace,
-				ResourceVersion: current.ResourceVersion,
-			},
-			Status: desired,
-		})
-		if err != nil {
-			if apierrors.IsConflict(err) || apierrors.IsNotFound(err) {
-				// The raw collection re-enqueues once the informer delivers the newer object.
-				logger.Debug("skipping stale listener set status update", "resource", res.NamespacedName.String(), "error", err)
-				return nil
-			}
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		logger.Error("error updating listener set status", "resource", res.NamespacedName.String(), "error", err)
-	}
-	if !hasDesired {
-		return
-	}
-
-	statusErr := statussync.ConditionError(err, desired.Conditions,
-		listenerSetConditionTypes, listenerSetAcceptedReasons, "invalid listener condition")
-	parentName := ""
-	if current != nil {
-		parentName = string(current.Spec.ParentRef.Name)
-	}
-	statussync.RecordStatusSync(statussync.SyncMetricLabels{
-		Name:      parentName,
-		Namespace: res.Namespace,
-		Syncer:    "ListenerSetStatusSyncer",
-	}, time.Since(start), statusErr)
-	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-		Namespace: res.Namespace,
-		Gateway:   parentName,
-		// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
-		// series under the legacy value "XListenerSet", not two. This must stay
-		// byte-identical to the value the *gwv1.ListenerSet arm in
-		// krtcollections/metrics derives at sync start: ResourceType is part of the
-		// start/end join key, so renaming either site alone leaves every listener set
-		// sync permanently open. See the TODO there for the coordinated rename.
-		ResourceType: "XListenerSet",
-		ResourceName: res.Name,
-	})
-}
-
-// patchLegacyStatus merge-patches the status subresource of a legacy XListenerSet through
-// the dynamic client, injecting the per-listener port required by the legacy CRD schema.
+// listenerSetWriter constructs the status writer for promoted ListenerSets, which are
+// written back through the typed client like every other Gateway API kind.
 //
-// The patch body carries metadata.resourceVersion so the API server rejects the write when
-// the object has moved on, matching the optimistic concurrency the promoted path gets from
-// UpdateStatus. Without it a merge patch applies unconditionally, so a status built from a
-// stale read silently overwrites a newer one and nothing re-enqueues to correct it.
-func (s *listenerSetStatusSyncer) patchLegacyStatus(ctx context.Context, res statussync.Resource, current *gwv1.ListenerSet, desired gwv1.ListenerSetStatus) error {
-	statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&desired)
-	if err != nil {
-		return err
+// It is a function rather than a literal inside initStatusInfra for the same reason
+// gatewayWriter is: the convergence and idempotence checks are only worth anything against
+// the writer this controller actually runs.
+func listenerSetWriter(
+	cl apiclient.Client,
+	f kclient.Filter,
+	listenerSets krt.Collection[*gwv1.ListenerSet],
+	reportCol krt.Collection[statussync.ResourceReports],
+) statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus] {
+	return statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]{
+		Name:    "listenerSet",
+		Current: statussync.CollectionSource(listenerSets),
+		Desired: listenerSetDesired(wellknown.ListenerSetGVK, reportCol),
+		UpdateStatus: statussync.ClientWriter(
+			kclient.NewFilteredDelayed[*gwv1.ListenerSet](cl, wellknown.ListenerSetGVR, f),
+			func(om metav1.ObjectMeta, st gwv1.ListenerSetStatus) *gwv1.ListenerSet {
+				return &gwv1.ListenerSet{ObjectMeta: om, Status: st}
+			}),
+		GetStatus: func(o *gwv1.ListenerSet) gwv1.ListenerSetStatus { return o.Status },
+		OnSync:    listenerSetStatusMetricsHook(),
 	}
-	injectListenerPorts(statusMap, current.Spec.Listeners)
-	data, err := json.Marshal(map[string]any{
-		"metadata": map[string]any{"resourceVersion": current.ResourceVersion},
-		"status":   statusMap,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = s.client.Dynamic().Resource(wellknown.XListenerSetGVR).Namespace(res.Namespace).
-		Patch(ctx, res.Name, types.MergePatchType, data, metav1.PatchOptions{}, "status")
-	if apierrors.IsConflict(err) || apierrors.IsNotFound(err) {
-		// Same self-healing contract as the promoted path: the raw collection re-enqueues
-		// once the informer delivers the newer object.
-		logger.Debug("skipping stale legacy listener set status update", "resource", res.NamespacedName.String(), "error", err)
-		return nil
-	}
-	return err
 }
 
-// legacyPortFallback fills the legacy schema's required status port when a listener's
-// protocol requires an explicit port but none is set, or when a status entry matches no
-// spec listener, matching the v2.2.4 fallback behaviour. 65535 is a valid port — the
-// highest — so it satisfies the schema's 1-65535 range; it is only a recognizable
-// placeholder, not a sentinel the schema would reject elsewhere. It appears solely in
-// written status and never programs a listener, so a genuine listener on port 65535 is
-// unaffected (its status entry is then indistinguishable from the fallback, which is the
-// cost of the legacy schema requiring a port we do not always have).
-const legacyPortFallback int64 = 65535
-
-// injectListenerPorts adds the "port" field to each entry in statusMap["listeners"]
-// by looking up the matching listener in specListeners by name.
-// This is needed because gwv1.ListenerEntryStatus no longer carries Port, but the
-// legacy XListenerSet CRD schema still requires it.
-// Listeners whose name does not match any spec entry receive legacyPortFallback
-// so that the patch payload always satisfies the schema's required constraint.
-func injectListenerPorts(statusMap map[string]any, specListeners []gwv1.ListenerEntry) {
-	listeners, ok := statusMap["listeners"].([]any)
-	if !ok {
-		return
-	}
-
-	// Precompute name→port to avoid O(n²) scan.
-	portByName := make(map[string]int64, len(specListeners))
-	for _, spec := range specListeners {
-		port, err := kubeutils.DetectListenerPortNumber(spec.Protocol, spec.Port)
-		if err != nil {
-			port = gwv1.PortNumber(legacyPortFallback)
-		}
-		portByName[string(spec.Name)] = int64(port)
-	}
-
-	for i, entry := range listeners {
-		entryMap, ok := entry.(map[string]any)
+// listenerSetDesired builds the desired status for one ListenerSet flavor, satisfying
+// Writer.Desired.
+//
+// gvk selects which reduction to read: the promoted and legacy flavors share one normalized
+// collection whose reports are keyed by the object's own GVK, so it is the only thing that
+// differs between the two writers' reads.
+func listenerSetDesired(
+	gvk schema.GroupVersionKind,
+	reportCol krt.Collection[statussync.ResourceReports],
+) func(*gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
+	return func(current *gwv1.ListenerSet) (gwv1.ListenerSetStatus, bool) {
+		nn := types.NamespacedName{Namespace: current.Namespace, Name: current.Name}
+		report, ok := statussync.ReportFor(reportCol, gvk, nn)
 		if !ok {
-			continue
+			return gwv1.ListenerSetStatus{}, false
 		}
-		name, _ := entryMap["name"].(string)
-		port, matched := portByName[name]
-		if !matched {
-			// No corresponding spec entry; use the fallback so the patch
-			// payload still satisfies the schema's required port constraint.
-			port = legacyPortFallback
+		status := reports.BuildListenerSetStatus(report.ListenerSet, *current)
+		if status == nil {
+			return gwv1.ListenerSetStatus{}, false
 		}
-		entryMap["port"] = port
-		listeners[i] = entryMap
+		return *status, true
+	}
+}
+
+// listenerSetStatusMetricsHook records status sync metrics for either ListenerSet flavor,
+// deriving an error result from invalid Accepted/Programmed condition reasons like the
+// previous syncer did.
+func listenerSetStatusMetricsHook() func(res statussync.Resource, current *gwv1.ListenerSet, status gwv1.ListenerSetStatus, took time.Duration, err error) {
+	return func(res statussync.Resource, current *gwv1.ListenerSet, status gwv1.ListenerSetStatus, took time.Duration, err error) {
+		statusErr := statussync.ConditionError(err, status.Conditions,
+			listenerSetConditionTypes, listenerSetAcceptedReasons, "invalid listener condition")
+		parentName := ""
+		if !controllers.IsNil(current) {
+			parentName = string(current.Spec.ParentRef.Name)
+		}
+		statussync.RecordStatusSync(statussync.SyncMetricLabels{
+			Name:      parentName,
+			Namespace: res.Namespace,
+			Syncer:    "ListenerSetStatusSyncer",
+		}, took, statusErr)
+		statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
+			Namespace: res.Namespace,
+			Gateway:   parentName,
+			// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
+			// series under the legacy value "XListenerSet", not two -- which is also why
+			// both writers share this hook. This must stay byte-identical to the value the
+			// *gwv1.ListenerSet arm in krtcollections/metrics derives at sync start:
+			// ResourceType is part of the start/end join key, so renaming either site alone
+			// leaves every listener set sync permanently open. See the TODO there for the
+			// coordinated rename.
+			ResourceType: "XListenerSet",
+			ResourceName: res.Name,
+		})
 	}
 }

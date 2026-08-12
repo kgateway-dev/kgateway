@@ -553,8 +553,9 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			// under the legacy label value "XListenerSet" — including resources that were
 			// never XListenerSets. The value is part of the start/end join key
 			// (startTimes.times[Gateway][ResourceType][Namespace][ResourceName]), so it must
-			// stay byte-identical to the ResourceType that listenerSetStatusSyncer reports in
-			// proxy_syncer/status_collections.go: rename either site alone and every listener
+			// stay byte-identical to the ResourceType that listenerSetStatusMetricsHook reports
+			// in proxy_syncer/status_collections.go — a hook both ListenerSet writers share for
+			// exactly this reason: rename either site alone and every listener
 			// set sync starts but never ends, permanently raising the out-of-sync gauge.
 			//
 			// TODO: Rename the label value to "ListenerSet" (or split the two flavors into

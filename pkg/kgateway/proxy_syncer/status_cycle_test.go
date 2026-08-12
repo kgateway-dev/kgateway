@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -129,6 +130,55 @@ func cycleRoute() *gwv1.HTTPRoute {
 	}
 }
 
+// cycleListenerSet is a promoted ListenerSet whose live status is stale in the same ways
+// cycleGateway's is, plus one per-listener condition: ListenerSet status nests conditions two
+// levels deep, and the nested level preserves LastTransitionTime through a separate lookup
+// (by listener name) than the top-level one.
+func cycleListenerSet() *gwv1.ListenerSet {
+	return &gwv1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ls", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
+		},
+		Spec: gwv1.ListenerSetSpec{
+			ParentRef: gwv1.ParentGatewayReference{Name: "gw"},
+			Listeners: []gwv1.ListenerEntry{{
+				Name:     "http",
+				Protocol: gwv1.HTTPProtocolType,
+				Port:     8080,
+			}},
+		},
+		Status: gwv1.ListenerSetStatus{
+			Conditions: []metav1.Condition{
+				{
+					Type:               string(gwv1.ListenerSetConditionAccepted),
+					Status:             metav1.ConditionFalse,
+					Reason:             string(gwv1.ListenerSetReasonPending),
+					Message:            "waiting for controller",
+					ObservedGeneration: 1,
+					LastTransitionTime: staleTime(),
+				},
+				{
+					Type:               "example.com/SomeCondition",
+					Status:             metav1.ConditionTrue,
+					Reason:             "Whatever",
+					LastTransitionTime: staleTime(),
+				},
+			},
+			Listeners: []gwv1.ListenerEntryStatus{{
+				Name:           "http",
+				SupportedKinds: []gwv1.RouteGroupKind{},
+				Conditions: []metav1.Condition{{
+					Type:               string(gwv1.ListenerConditionProgrammed),
+					Status:             metav1.ConditionFalse,
+					Reason:             string(gwv1.ListenerReasonPending),
+					ObservedGeneration: 1,
+					LastTransitionTime: staleTime(),
+				}},
+			}},
+		},
+	}
+}
+
 // recordingQueue records the identities the status collections enqueue. The cycle under test
 // is "write -> informer event -> enqueue -> writer decides again", so the test drives the
 // writer itself and uses this to observe that the echo really arrived; running a worker pool
@@ -152,11 +202,13 @@ func (q *recordingQueue) count(res statussync.Resource) int {
 }
 
 type statusCycleFixture struct {
-	gateways      krt.Collection[*gwv1.Gateway]
-	routes        krt.Collection[*gwv1.HTTPRoute]
-	gatewayWriter statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]
-	routeWriter   statussync.Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]
-	queue         *recordingQueue
+	gateways          krt.Collection[*gwv1.Gateway]
+	routes            krt.Collection[*gwv1.HTTPRoute]
+	listenerSets      krt.Collection[*gwv1.ListenerSet]
+	gatewayWriter     statussync.Writer[*gwv1.Gateway, gwv1.GatewayStatus]
+	routeWriter       statussync.Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]
+	listenerSetWriter statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]
+	queue             *recordingQueue
 	// statusWrites counts status subresource writes that reached the API server for one
 	// resource plural (e.g. "gateways").
 	statusWrites func(resource string) int
@@ -178,15 +230,23 @@ func (f statusCycleFixture) liveRoute(t *testing.T) *gwv1.HTTPRoute {
 	return *route
 }
 
-// newStatusCycleFixture wires the production Gateway and HTTPRoute writers against a fake
-// API server whose informers echo every write back into the collections those writers read.
+func (f statusCycleFixture) liveListenerSet(t *testing.T) *gwv1.ListenerSet {
+	t.Helper()
+	ls := f.listenerSets.GetKey(cycleNamespace + "/ls")
+	require.NotNil(t, ls, "the listener set collection should hold the seeded listener set")
+	return *ls
+}
+
+// newStatusCycleFixture wires the production Gateway, HTTPRoute and ListenerSet writers
+// against a fake API server whose informers echo every write back into the collections those
+// writers read.
 func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	gw, route := cycleGateway(), cycleRoute()
-	c := apifake.NewClient(t, gw, route)
+	gw, route, ls := cycleGateway(), cycleRoute(), cycleListenerSet()
+	c := apifake.NewClient(t, gw, route, ls)
 	fake := c.GatewayAPI().(*gatewayfake.Clientset)
 	// Without this the first status write erases the spec these builders read, and every
 	// rebuild afterwards would legitimately differ from the last.
@@ -198,12 +258,17 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	gateways := krt.WrapClient(gatewayClient, krtopts.ToOptions("Gateways")...)
 	routeClient := kclient.NewFiltered[*gwv1.HTTPRoute](c, f)
 	routes := krt.WrapClient(routeClient, krtopts.ToOptions("HTTPRoutes")...)
+	// The controller joins the promoted and legacy flavors into one collection; the promoted
+	// half alone is what the writer under test reads, and the only half a typed client sees.
+	listenerSetClient := kclient.NewFiltered[*gwv1.ListenerSet](c, f)
+	listenerSets := krt.WrapClient(listenerSetClient, krtopts.ToOptions("ListenerSets")...)
 
 	// Report fragments from the real reporter, as translation would produce them.
 	reportMap := reports.NewReportMap()
 	reporter := reports.NewReporter(&reportMap)
 	reporter.Gateway(gw)
 	reporter.Route(route).ParentRef(&cycleParentRef)
+	reporter.ListenerSet(ls)
 	contributions := krt.NewStaticCollection(nil,
 		reports.StatusContributionsFromReportMap(
 			reports.StatusSource{Kind: reports.GatewayStatusSource, Name: cycleNamespace + "/gw"}, reportMap),
@@ -217,11 +282,15 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 		contributions, byTarget, krtopts.ToOptions("GatewayStatusReports")...)
 	routeReports := statussync.RegisterKind(collections, wellknown.HTTPRouteGVK, routes,
 		contributions, byTarget, krtopts.ToOptions("HTTPRouteStatusReports")...)
+	listenerSetReports := statussync.RegisterKindByObjectGVK(collections, wellknown.ListenerSetGVK,
+		listenerSets, contributions, byTarget, krtopts.ToOptions("ListenerSetStatusReports")...)
 
 	fixture := statusCycleFixture{
-		gateways:      gateways,
-		routes:        routes,
-		gatewayWriter: gatewayWriter(c, f, gateways, gatewayReports),
+		gateways:          gateways,
+		routes:            routes,
+		listenerSets:      listenerSets,
+		gatewayWriter:     gatewayWriter(c, f, gateways, gatewayReports),
+		listenerSetWriter: listenerSetWriter(c, f, listenerSets, listenerSetReports),
 		routeWriter: routeWriter[*gwv1.HTTPRoute, *gwv1.HTTPRoute](c, f, routes, routeReports,
 			wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, cycleController,
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
@@ -237,7 +306,9 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	require.Eventually(t, collections.HasSynced, 5*time.Second, 10*time.Millisecond,
 		"report reducers should sync")
 	require.Eventually(t, func() bool {
-		return gateways.GetKey(cycleNamespace+"/gw") != nil && routes.GetKey(cycleNamespace+"/route") != nil
+		return gateways.GetKey(cycleNamespace+"/gw") != nil &&
+			routes.GetKey(cycleNamespace+"/route") != nil &&
+			listenerSets.GetKey(cycleNamespace+"/ls") != nil
 	}, 5*time.Second, 10*time.Millisecond, "collections should observe the seeded objects")
 
 	// Attaching the queue is what leadership does; from here on every informer event,
@@ -256,6 +327,19 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	return fixture
 }
 
+// statusOf reads one object's live status out of the collection its writer reads, returning
+// nil while the object is absent. The status is boxed because the three writers under test
+// publish three unrelated status types.
+func statusOf[O controllers.ComparableObject](col krt.Collection[O], name string, status func(O) any) func() any {
+	return func() any {
+		obj := col.GetKey(cycleNamespace + "/" + name)
+		if obj == nil || controllers.IsNil(*obj) {
+			return nil
+		}
+		return status(*obj)
+	}
+}
+
 func gatewayResource() statussync.Resource {
 	return statussync.Resource{
 		GroupVersionKind: wellknown.GatewayGVK,
@@ -267,6 +351,13 @@ func routeResource() statussync.Resource {
 	return statussync.Resource{
 		GroupVersionKind: wellknown.HTTPRouteGVK,
 		NamespacedName:   types.NamespacedName{Namespace: cycleNamespace, Name: "route"},
+	}
+}
+
+func listenerSetResource() statussync.Resource {
+	return statussync.Resource{
+		GroupVersionKind: wellknown.ListenerSetGVK,
+		NamespacedName:   types.NamespacedName{Namespace: cycleNamespace, Name: "ls"},
 	}
 }
 
@@ -287,12 +378,18 @@ func TestStatusWritersConvergeAfterOneWrite(t *testing.T) {
 		resource statussync.Resource
 		plural   string
 		apply    func()
-		verify   func(t *testing.T)
+		// liveStatus reads the status the writer reads, from the collection it reads it from.
+		// It is how the test observes its own write coming back, which the queue alone cannot
+		// tell it: attaching the queue replays every seeded object as an Add, so a push may
+		// arrive that is not the echo of our write.
+		liveStatus func() any
+		verify     func(t *testing.T)
 	}{
 		"gateway": {
-			resource: gatewayResource(),
-			plural:   "gateways",
-			apply:    func() { f.gatewayWriter.ApplyStatus(ctx, gatewayResource()) },
+			resource:   gatewayResource(),
+			plural:     "gateways",
+			apply:      func() { f.gatewayWriter.ApplyStatus(ctx, gatewayResource()) },
+			liveStatus: statusOf(f.gateways, "gw", func(o *gwv1.Gateway) any { return o.Status }),
 			verify: func(t *testing.T) {
 				live := f.liveGateway(t)
 				accepted := meta.FindStatusCondition(live.Status.Conditions, string(gwv1.GatewayConditionAccepted))
@@ -304,10 +401,32 @@ func TestStatusWritersConvergeAfterOneWrite(t *testing.T) {
 					"a condition we do not own must survive the write")
 			},
 		},
+		"listenerset": {
+			resource:   listenerSetResource(),
+			plural:     "listenersets",
+			apply:      func() { f.listenerSetWriter.ApplyStatus(ctx, listenerSetResource()) },
+			liveStatus: statusOf(f.listenerSets, "ls", func(o *gwv1.ListenerSet) any { return o.Status }),
+			verify: func(t *testing.T) {
+				live := f.liveListenerSet(t)
+				accepted := meta.FindStatusCondition(live.Status.Conditions, string(gwv1.ListenerSetConditionAccepted))
+				require.NotNil(t, accepted, "our Accepted condition must be published")
+				require.Equal(t, metav1.ConditionTrue, accepted.Status)
+				require.Equal(t, int64(2), accepted.ObservedGeneration)
+				require.NotNil(t,
+					meta.FindStatusCondition(live.Status.Conditions, "example.com/SomeCondition"),
+					"a condition we do not own must survive the write")
+				require.Len(t, live.Status.Listeners, 1, "the spec listener must get a status entry")
+				programmed := meta.FindStatusCondition(live.Status.Listeners[0].Conditions,
+					string(gwv1.ListenerConditionProgrammed))
+				require.NotNil(t, programmed, "the nested listener conditions must be published too")
+				require.Equal(t, metav1.ConditionTrue, programmed.Status)
+			},
+		},
 		"httproute": {
-			resource: routeResource(),
-			plural:   "httproutes",
-			apply:    func() { f.routeWriter.ApplyStatus(ctx, routeResource()) },
+			resource:   routeResource(),
+			plural:     "httproutes",
+			apply:      func() { f.routeWriter.ApplyStatus(ctx, routeResource()) },
+			liveStatus: statusOf(f.routes, "route", func(o *gwv1.HTTPRoute) any { return o.Status.RouteStatus }),
 			verify: func(t *testing.T) {
 				live := f.liveRoute(t)
 				names := make([]gwv1.ObjectName, 0, len(live.Status.Parents))
@@ -323,15 +442,19 @@ func TestStatusWritersConvergeAfterOneWrite(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			before := f.queue.count(tc.resource)
+			stale := tc.liveStatus()
 
 			tc.apply()
 			require.Equal(t, 1, f.statusWrites(tc.plural), "the stale status must be corrected in one write")
 
 			// The write comes back through the informer and re-enqueues the resource; that
-			// event is the one every writer must absorb without writing again.
+			// event is the one every writer must absorb without writing again. Both halves
+			// matter: the status is what the next two passes rebuild from, and the enqueue is
+			// what would drive them in production.
 			require.Eventually(t, func() bool {
-				return f.queue.count(tc.resource) > before
-			}, 5*time.Second, 10*time.Millisecond, "our own write must echo back as a reconciliation")
+				return !krt.Equal(tc.liveStatus(), stale) && f.queue.count(tc.resource) > before
+			}, 5*time.Second, 10*time.Millisecond,
+				"our own write must reach the collection the writer reads, and re-enqueue the resource")
 
 			tc.verify(t)
 
@@ -366,6 +489,15 @@ func TestStatusWritersAreIdempotent(t *testing.T) {
 		func(current *gwv1.HTTPRoute, status gwv1.RouteStatus) *gwv1.HTTPRoute {
 			next := current.DeepCopy()
 			next.Status.RouteStatus = *status.DeepCopy()
+			return next
+		}))
+
+	require.True(t, statussync.WriterWouldWrite(f.listenerSetWriter, f.liveListenerSet(t)),
+		"the seeded listener set status must actually be written, or the check below proves nothing")
+	require.NoError(t, statussync.CheckWriterIdempotent(f.listenerSetWriter, f.liveListenerSet(t),
+		func(current *gwv1.ListenerSet, status gwv1.ListenerSetStatus) *gwv1.ListenerSet {
+			next := current.DeepCopy()
+			next.Status = *status.DeepCopy()
 			return next
 		}))
 }
