@@ -13,10 +13,15 @@ linters:
   enable:
     - bodyclose
     - copyloopvar
+    - contextcheck
+    - depguard
+    - errorlint
     - forbidigo
     - ginkgolinter
+    - gocritic
     - gomodguard
     - gosec
+    - govet
     - importas
     - ineffassign
     - krtequals
@@ -25,6 +30,8 @@ linters:
     - modernize
     - nakedret
     - nestif
+    - nilerr
+    - perfsprint
     - predeclared
     - promlinter
     - sloglint
@@ -63,6 +70,14 @@ linters:
               isFirstField: Ignore
               useProtobuf: Forbid
               usePatchStrategy: Ignore
+    depguard:
+      rules:
+        default:
+          files:
+            - "$all"
+          deny:
+            - pkg: "sort"
+              desc: "Should be replaced with slices package"
     forbidigo:
       forbid:
         - pattern: anypb.New
@@ -73,6 +88,45 @@ linters:
           msg: use apiclient.Client instead of controller-runtime's client.Client
         - pattern: (\bt|\bT\(\))\.Cleanup
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
+        - pattern: ^slog\.(Debug|DebugContext|Info|InfoContext|Warn|WarnContext|Error|ErrorContext|Log|LogAttrs)$
+          msg: use a package-level logger created with logging.New instead of the global slog logger
+    gocritic:
+      # Opt in to an explicit allowlist of correctness checks rather than gocritic's
+      # default set, which is dominated by style opinions we don't want to enforce.
+      #
+      # Deliberately excluded, with current finding counts, so they aren't re-litigated:
+      #   dupArg (10) - all x.Equals(x) self-comparisons in Equals unit tests, which is
+      #     the intended pattern given the IR Equals convention (see CLAUDE.md)
+      #   filepathJoin (29), sloppyReassign (5), deferInLoop (4) - style, not correctness
+      #   nilValReturn (1), uncheckedInlineErr (1) - both benign in context
+      disable-all: true
+      enabled-checks:
+        - appendAssign
+        - argOrder
+        - badCall
+        - badCond
+        - badLock
+        - badSorting
+        - caseOrder
+        - dupBranchBody
+        - dupCase
+        - dupSubExpr
+        - evalOrder
+        - exitAfterDefer
+        - externalErrorReassign
+        - flagDeref
+        - flagName
+        - mapKey
+        - newDeref
+        - offBy1
+        - regexpMust
+        - returnAfterHttpError
+        - sloppyLen
+        - sloppyTypeAssert
+        - sortSlice
+        - syncMapLoadAndDelete
+        - truncateCmp
+        - weakCond
     gomodguard:
       blocked:
         modules:
@@ -145,8 +199,7 @@ linters:
       min-complexity: 20
     staticcheck:
       checks:
-        - SA1019 # deprecated usage
-        - SA2002 # testing.T FailNow/SkipNow called from goroutine
+        - SA* # correctness checks
         - ST1019 # duplicate imports
     testifylint:
       disable-all: true
@@ -189,6 +242,15 @@ linters:
       - path: _test\.go$
         linters:
           - unparam
+      # Test setup commonly starts independent lifecycles or uses framework-specific context types.
+      - path: _test\.go$
+        linters:
+          - contextcheck
+      # Test framework callbacks and KRT helpers use lifecycle-specific context APIs
+      # that contextcheck cannot model as inherited standard-library contexts.
+      - path: ^test/
+        linters:
+          - contextcheck
       # Skip client.Client forbidgo rule for e2e tests
       - path: test/e2e/
         linters:

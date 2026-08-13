@@ -2,6 +2,7 @@ package sds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -87,7 +88,7 @@ func setup() Config {
 	}
 
 	if !c.IstioMtlsSdsEnabled {
-		err := fmt.Errorf("Istio Cert rotation must be enabled, using env var ISTIO_MTLS_SDS_ENABLED")
+		err := errors.New("Istio Cert rotation must be enabled, using env var ISTIO_MTLS_SDS_ENABLED")
 		log.Fatalf("invalid config: %v", err)
 	}
 	return c

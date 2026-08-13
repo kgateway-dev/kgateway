@@ -101,6 +101,7 @@ Routes:
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
   - domains:
     - api.a.example.com
     metadata:
@@ -126,6 +127,7 @@ Routes:
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
   - domains:
     - backend.b.example.com
     name: listener~8080~backend_b_example_com
@@ -161,6 +163,7 @@ Routes:
           value: '{"request":{"body":{"parseAs":"AsJson","value":"{{ invalid_template
             }"}}}'
         filterName: rustformation
+        perRouteConfigName: rustformation
   - domains:
     - www.b.example.com
     name: listener~8080~www_b_example_com
@@ -322,6 +325,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -341,6 +349,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
@@ -360,6 +373,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

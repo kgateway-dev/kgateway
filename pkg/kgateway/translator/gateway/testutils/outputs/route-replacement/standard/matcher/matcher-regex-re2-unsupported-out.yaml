@@ -50,7 +50,6 @@ Routes:
         - name: x-test-header
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: (?<=foo)bar
         pathSeparatedPrefix: /test
       name: listener~8080~www_example_com-route-0-httproute-invalid-rds-route-gwtest-0-0-matcher-0
@@ -119,6 +118,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

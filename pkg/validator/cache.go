@@ -10,8 +10,11 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-// DefaultCacheSize is the default LRU capacity for cachingValidator.
-const DefaultCacheSize = 4096
+// DefaultCacheSize is the default LRU capacity for cachingValidator. It is the
+// single source of truth for the default: ValidatorCacheSize in api/settings
+// defaults to 0, which routes through NewCaching's size <= 0 fallback to this
+// value.
+const DefaultCacheSize = 65536
 
 // cachingValidator wraps an inner Validator with an LRU cache keyed on the
 // content hash of the marshalled bootstrap. Successful and ErrInvalidXDS

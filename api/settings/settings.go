@@ -210,6 +210,12 @@ type Settings struct {
 	// any of these label keys will be excluded from kgateway's endpoint discovery.
 	WorkloadEntriesExclusionLabels string `split_words:"true"`
 
+	// ServiceEntriesExclusionLabelSelectors is a JSON representation of a list of metav1.LabelSelector.
+	// ServiceEntries matching any of these selectors will be excluded from kgateway's ServiceEntry backend
+	// and endpoint discovery. Unlike WorkloadEntriesExclusionLabels, this uses full selectors so exclusions
+	// can match specific label values.
+	ServiceEntriesExclusionLabelSelectors string `split_words:"true" default:"[]"`
+
 	// XdsServiceHost is the host that serves xDS config.
 	// It overrides xdsServiceName if set.
 	XdsServiceHost string `split_words:"true"`
@@ -258,8 +264,12 @@ type Settings struct {
 	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
 
-	// EnableEnvoy enables kgateway to send config to Envoy
-	EnableEnvoy bool `split_words:"true" default:"true"`
+	// EnableOrderedAds delivers ADS responses to each Envoy strictly in the
+	// snapshot cache's type order (CDS, EDS, LDS, RDS) instead of the default
+	// randomized drain, closing the busy-stream reordering window on additions.
+	// It does not change ACK-skew or removal ordering, because those depend on
+	// when resource-type watches are open.
+	EnableOrderedAds bool `split_words:"true" default:"false"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
@@ -282,8 +292,9 @@ type Settings struct {
 	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
 
 	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
-	// Ignored when ValidatorMode is BINARY. A value <= 0 selects the implementation default.
-	ValidatorCacheSize int `split_words:"true" default:"4096"`
+	// Ignored when ValidatorMode is BINARY. A value <= 0 (the default) selects the
+	// implementation default, validator.DefaultCacheSize.
+	ValidatorCacheSize int `split_words:"true"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.
 	// Since these metrics can be numerous, it is disabled by default.
@@ -311,6 +322,14 @@ type Settings struct {
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
+
+	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata
+	// to every Envoy route. This metadata includes the Kubernetes source object (kind, group,
+	// name, namespace, rule) for each route, which can be useful for debugging and observability.
+	// Disabled by default.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	EnableRouteSourceMetadata bool `split_words:"true" default:"false"`
 
 	// GatewayClassParametersRefs configures the GatewayParameters references to set on the default GatewayClasses.
 	// Format: JSON map where keys are GatewayClass names and values are objects with "name" (required),

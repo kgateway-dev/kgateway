@@ -24,6 +24,10 @@ inputs:
   matrix-label:
     required: true
     description: The version of the matrix being used - used to name artifacts to prevent filename collisions
+  envtest-k8s-version:
+    required: false
+    default: '1.33'
+    description: Kubernetes minor version for envtest API-server assets
 
 runs:
   using: "composite"
@@ -37,6 +41,7 @@ runs:
         TEST_PKG: ./test/e2e/tests
         # Doesn't really matter, but using the same as `go build` means we can re-use the same Go cache.
         CGO_ENABLED: 0
+        ENVTEST_K8S_VERSION: ${{ inputs.envtest-k8s-version }}
       shell: bash
       run: make e2e-test
     - name: Archive bug report directory on failure

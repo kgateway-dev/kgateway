@@ -2,7 +2,7 @@ package trafficpolicy
 
 import (
 	"encoding/json"
-	"sort"
+	"slices"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -85,8 +85,9 @@ func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmo
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: RustformationModuleName,
 		},
-		FilterName:   RustformationFilterName,
-		FilterConfig: filterCfg,
+		FilterName:         RustformationFilterName,
+		PerRouteConfigName: RustformationFilterName,
+		FilterConfig:       filterCfg,
 	}
 
 	return rustCfg, nil
@@ -119,7 +120,8 @@ func GenerateBlankTransformationConfigPerRoute() *dynamicmodulesv3.DynamicModule
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: RustformationModuleName,
 		},
-		FilterName: RustformationFilterName,
+		FilterName:         RustformationFilterName,
+		PerRouteConfigName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: "{}",
 		}),
@@ -133,7 +135,7 @@ func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dy
 	for k := range kv {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	for _, k := range keys {
 		v := kv[k]
@@ -162,7 +164,8 @@ func generateDynamicMetadata(ns string, kv map[string]kgateway.InjaTemplate) *dy
 		DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 			Name: RustformationModuleName,
 		},
-		FilterName: RustformationFilterName,
+		FilterName:         RustformationFilterName,
+		PerRouteConfigName: RustformationFilterName,
 		FilterConfig: utils.MustMessageToAny(&wrapperspb.StringValue{
 			Value: string(b),
 		}),

@@ -7,7 +7,6 @@ import (
 	"net"
 	"sync"
 
-	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/kube/krt"
@@ -46,6 +45,8 @@ import (
 type Server interface {
 	Start(ctx context.Context) error
 }
+
+var logger = logging.New("setup")
 
 func WithAPIClient(apiClient apiclient.Client) func(*setup) {
 	return func(s *setup) {
@@ -222,7 +223,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 		var err error
 		s.globalSettings, err = apisettings.BuildSettings()
 		if err != nil {
-			slog.Error("error loading settings from env", "error", err)
+			logger.Error("error loading settings from env", "error", err)
 			return nil, err
 		}
 	}
@@ -264,24 +265,28 @@ func New(opts ...func(*setup)) (*setup, error) {
 		s.krtDebugger = new(krt.DebugHandler)
 	}
 
-	if s.globalSettings.EnableEnvoy && s.xdsListener == nil {
+	if s.xdsListener == nil {
 		var err error
 		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
 		if err != nil {
-			slog.Error("error creating xds listener", "error", err)
+			logger.Error("error creating xds listener", "error", err)
 			return nil, err
 		}
 	}
 
 	if s.validator == nil {
-		s.validator = validator.New(*s.globalSettings)
+		var err error
+		s.validator, err = validator.New(*s.globalSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error creating validator: %w", err)
+		}
 	}
 
 	return s, nil
 }
 
 func (s *setup) Start(ctx context.Context) error {
-	slog.Info("starting kgateway")
+	logger.Info("starting kgateway")
 
 	mgrOpts := s.ctrlMgrOptionsInitFunc(ctx)
 
@@ -295,7 +300,7 @@ func (s *setup) Start(ctx context.Context) error {
 	}
 
 	if err := schemes.AddToScheme(mgr.GetScheme()); err != nil {
-		slog.Error("unable to extend scheme", "error", err)
+		logger.Error("unable to extend scheme", "error", err)
 		return err
 	}
 
@@ -321,11 +326,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	// Only create Envoy control plane if Envoy controller is enabled
-	var cache envoycache.SnapshotCache
-	if s.globalSettings.EnableEnvoy {
-		cache = NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher)
-	}
+	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
@@ -334,7 +335,7 @@ func (s *setup) Start(ctx context.Context) error {
 		CertWatcher:    certWatcher,
 	}
 
-	slog.Info("creating krt collections")
+	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -346,7 +347,7 @@ func (s *setup) Start(ctx context.Context) error {
 		s.commonCollectionsOptions...,
 	)
 	if err != nil {
-		slog.Error("error creating common collections", "error", err)
+		logger.Error("error creating common collections", "error", err)
 		return err
 	}
 
@@ -376,10 +377,10 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	slog.Info("starting admin server")
+	logger.Info("starting admin server")
 	go admin.RunAdminServer(ctx, setupOpts)
 
-	slog.Info("starting manager")
+	logger.Info("starting manager")
 	return mgr.Start(ctx)
 }
 
@@ -395,7 +396,7 @@ func (s *setup) buildKgatewayWithConfig(
 	commonCollections *collections.CommonCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBuilder,
 ) error {
-	slog.Info("creating krt collections")
+	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
 	augmentedPods, _ := krtcollections.NewPodsCollection(s.apiClient, krtOpts)
@@ -414,7 +415,7 @@ func (s *setup) buildKgatewayWithConfig(
 		s.additionalGatewayClasses,
 	)
 
-	slog.Info("initializing controller")
+	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		Manager:                     mgr,
 		ControllerName:              s.gatewayControllerName,
@@ -437,11 +438,11 @@ func (s *setup) buildKgatewayWithConfig(
 		StatusSyncerOptions:         s.statusSyncerOptions,
 	})
 	if err != nil {
-		slog.Error("failed initializing controller: ", "error", err)
+		logger.Error("failed initializing controller: ", "error", err)
 		return err
 	}
 
-	slog.Info("waiting for cache sync")
+	logger.Info("waiting for cache sync")
 
 	err = c.Build(ctx)
 	if err != nil {
@@ -461,7 +462,7 @@ func (s *setup) buildKgatewayWithConfig(
 func SetupLogging(levelStr string) {
 	level, err := logging.ParseLevel(levelStr)
 	if err != nil {
-		slog.Error("failed to parse log level, defaulting to info", "error", err)
+		logger.Error("failed to parse log level, defaulting to info", "error", err)
 		level = slog.LevelInfo
 	}
 	// set all loggers to the specified level

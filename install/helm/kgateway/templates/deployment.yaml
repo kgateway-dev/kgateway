@@ -60,6 +60,9 @@ spec:
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: controller
+        {{- with .Values.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -122,10 +125,16 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
+              value: {{ .Values.serviceEntriesExclusionLabelSelectors | toJson | quote }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
               value: {{ include "kgateway.validationLevel" . | quote }}
+            {{- if .Values.enableRouteSourceMetadata }}
+            - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
+              value: "true"
+            {{- end }}
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
@@ -136,8 +145,6 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            - name: KGW_ENABLE_ENVOY
-              value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}

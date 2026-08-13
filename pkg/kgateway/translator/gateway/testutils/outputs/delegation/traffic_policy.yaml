@@ -95,6 +95,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"request":{"set":[{"name":"x-foo-req","value":"abc"}]},"response":{"set":[{"name":"x-foo-resp","value":"xyz"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
     - match:
         prefix: /
       name: listener~80~example_com-route-2-httproute-example-route-infra-0-0-matcher-0
@@ -163,6 +164,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: gateway.networking.k8s.io
@@ -182,6 +188,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -142,7 +143,7 @@ func (ltm *LoadTestManager) WaitForGatewayReadiness(timeout time.Duration) error
 	for {
 		select {
 		case <-timeoutCh:
-			return fmt.Errorf("timeout waiting for gateways to be ready")
+			return errors.New("timeout waiting for gateways to be ready")
 		case <-ticker.C:
 			allReady := true
 
@@ -249,7 +250,7 @@ func (ltm *LoadTestManager) buildRoute(gatewayName string, routeIdx, batchStart 
 			Labels: map[string]string{
 				"loadtest": "true",
 				"gateway":  gatewayName,
-				"batch":    fmt.Sprintf("%d", batchStart/GetOptimalBatchSize(1000)), // Use baseline batch size for labeling
+				"batch":    strconv.Itoa(batchStart / GetOptimalBatchSize(1000)), // Use baseline batch size for labeling
 			},
 		},
 		Spec: gwv1.HTTPRouteSpec{
@@ -389,14 +390,54 @@ func (ltm *LoadTestManager) CollectKGatewayValidationMetrics() (ValidationMetric
 
 func (ltm *LoadTestManager) fetchKGatewayMetrics() ([]byte, error) {
 	namespace := ltm.testInstallation.Metadata.InstallNamespace
-	raw, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
-		Services(namespace).
-		ProxyGet("http", controllerDeploymentName, "metrics", "/metrics", nil).
-		DoRaw(ltm.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("fetch kgateway metrics from service %s/%s: %w", namespace, controllerDeploymentName, err)
+	var lastErr error
+	timeout := time.After(60 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		pods, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
+			Pods(namespace).
+			List(ltm.ctx, metav1.ListOptions{
+				LabelSelector: "app.kubernetes.io/instance=kgateway,app.kubernetes.io/name=kgateway,kgateway=kgateway",
+			})
+		if err != nil {
+			lastErr = err
+		} else {
+			lastErr = errors.New("no ready kgateway controller pods found")
+			for _, pod := range pods.Items {
+				if !podReady(&pod) {
+					continue
+				}
+				raw, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
+					Pods(namespace).
+					ProxyGet("http", pod.Name, "9092", "/metrics", nil).
+					DoRaw(ltm.ctx)
+				if err == nil {
+					return raw, nil
+				}
+				lastErr = err
+			}
+		}
+		select {
+		case <-ltm.ctx.Done():
+			return nil, fmt.Errorf("fetch kgateway metrics from service %s/%s: %w", namespace, controllerDeploymentName, ltm.ctx.Err())
+		case <-timeout:
+			return nil, fmt.Errorf("fetch kgateway metrics from namespace %s after retrying: %w", namespace, lastErr)
+		case <-ticker.C:
+		}
 	}
-	return raw, nil
+}
+
+func podReady(pod *corev1.Pod) bool {
+	if pod == nil || pod.DeletionTimestamp != nil || pod.Status.Phase != corev1.PodRunning {
+		return false
+	}
+	for _, condition := range pod.Status.Conditions {
+		if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 func addCounterFamily(

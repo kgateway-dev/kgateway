@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -28,6 +29,27 @@ type TrafficPolicyMergeOpts struct {
 	Transformation string `json:"transformation,omitempty"`
 
 	ACL string `json:"acl,omitempty"`
+}
+
+// Merge shallow-merges other into o: o's already-set fields win, other only
+// fills fields o left empty.
+func (o TrafficPolicyMergeOpts) Merge(other TrafficPolicyMergeOpts) TrafficPolicyMergeOpts {
+	merged := o
+
+	if merged.ExtAuth == "" {
+		merged.ExtAuth = other.ExtAuth
+	}
+	if merged.ExtProc == "" {
+		merged.ExtProc = other.ExtProc
+	}
+	if merged.Transformation == "" {
+		merged.Transformation = other.Transformation
+	}
+	if merged.ACL == "" {
+		merged.ACL = other.ACL
+	}
+
+	return merged
 }
 
 // MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
@@ -57,6 +79,7 @@ func MergeTrafficPolicies(
 		mergeAutoHostRewrite,
 		mergeTimeouts,
 		mergeRetry,
+		mergeInternalRedirect,
 		mergeRBAC,
 		mergeJwt,
 		mergeCompression,
@@ -67,6 +90,7 @@ func MergeTrafficPolicies(
 		mergeRouteTracing,
 		mergeFaultInjection,
 		mergeHttpACL,
+		mergeStatPrefix,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -226,7 +250,7 @@ func rustFormationHeaderName(e any) (string, bool) {
 }
 
 func mergeRustFormationActionBody(obj1, obj2 map[string]any) {
-	body2, ok := obj2["body"].(any)
+	body2, ok := obj2["body"]
 	if ok {
 		obj1["body"] = body2
 	}
@@ -252,7 +276,7 @@ func mergeRustformationJsonInPlace(obj1, obj2 any) error {
 	m1, ok1 := obj1.(map[string]any)
 	m2, ok2 := obj2.(map[string]any)
 	if !ok1 || !ok2 {
-		return fmt.Errorf("both arguments must be map[string]any")
+		return errors.New("both arguments must be map[string]any")
 	}
 
 	mergeRustFormationRequestResponseJson("response", m1, m2)
@@ -296,8 +320,9 @@ func mergeRustformation(
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: RustformationModuleName,
 				},
-				FilterName:   RustformationFilterName,
-				FilterConfig: filterCfg,
+				FilterName:         RustformationFilterName,
+				PerRouteConfigName: RustformationFilterName,
+				FilterConfig:       filterCfg,
 			}}
 		}
 		p1Json, err := utils.AnyToJson(p1.spec.rustformation.config.FilterConfig)
@@ -584,6 +609,21 @@ func mergeAutoHostRewrite(
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "autoHostRewrite")
 }
 
+func mergeStatPrefix(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[statPrefixIR]{
+		Get: func(spec *trafficPolicySpecIr) *statPrefixIR { return spec.statPrefix },
+		Set: func(spec *trafficPolicySpecIr, val *statPrefixIR) { spec.statPrefix = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "statPrefix")
+}
+
 func mergeTimeouts(
 	p1, p2 *TrafficPolicy,
 	p2Ref *ir.AttachedPolicyRef,
@@ -642,6 +682,21 @@ func mergeRetry(
 		Set: func(spec *trafficPolicySpecIr, val *retryIR) { spec.retry = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "retry")
+}
+
+func mergeInternalRedirect(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[internalRedirectIR]{
+		Get: func(spec *trafficPolicySpecIr) *internalRedirectIR { return spec.internalRedirect },
+		Set: func(spec *trafficPolicySpecIr, val *internalRedirectIR) { spec.internalRedirect = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "internalRedirect")
 }
 
 func mergeBasicAuth(
@@ -744,8 +799,9 @@ func mergeHttpACL(
 				DynamicModuleConfig: &extensiondynamicmodulev3.DynamicModuleConfig{
 					Name: httpACLModuleName,
 				},
-				FilterName:   httpACLFilterName,
-				FilterConfig: filterCfg,
+				FilterName:         httpACLFilterName,
+				PerRouteConfigName: httpACLFilterName,
+				FilterConfig:       filterCfg,
 			}}
 		}
 
@@ -823,7 +879,7 @@ func detectHttpACLMergeConflict(m1, m2 map[string]any) []error {
 	da1, hasDA1 := m1["defaultAction"].(string)
 	da2, hasDA2 := m2["defaultAction"].(string)
 	if !hasDA1 || !hasDA2 {
-		conflicts = append(conflicts, fmt.Errorf("defaultAction not set"))
+		conflicts = append(conflicts, errors.New("defaultAction not set"))
 	} else if da1 != da2 {
 		conflicts = append(conflicts, fmt.Errorf("defaultAction conflict: %q vs %q", da1, da2))
 	}

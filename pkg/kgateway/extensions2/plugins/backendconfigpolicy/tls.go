@@ -249,6 +249,7 @@ func parseTLSParameters(tlsParameters *kgateway.TLSParameters) (*envoytlsv3.TlsP
 	return &envoytlsv3.TlsParameters{
 		CipherSuites:              tlsParameters.CipherSuites,
 		EcdhCurves:                tlsParameters.EcdhCurves,
+		SignatureAlgorithms:       tlsParameters.SignatureAlgorithms,
 		TlsMinimumProtocolVersion: tlsMinVersion,
 		TlsMaximumProtocolVersion: tlsMaxVersion,
 	}, nil

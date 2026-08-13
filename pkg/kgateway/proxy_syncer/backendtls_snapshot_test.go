@@ -116,7 +116,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		newActualBackendTLSTestConfigMap(),
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -154,7 +154,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		if xdsSnap == nil {
 			return nil
 		}
-		return toResources(gw, *xdsSnap, reportsMap)
+		return &toTranslationOutput(gw, *xdsSnap, reportsMap).Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
@@ -355,7 +355,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		sectionSpecificPolicy,
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 	)
-	settings := apisettings.Settings{EnableEnvoy: true}
+	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
 	commoncol, err := collections.NewCommonCollections(
@@ -393,7 +393,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		if xdsSnap == nil {
 			return nil
 		}
-		return toResources(gw, *xdsSnap, reportsMap)
+		return &toTranslationOutput(gw, *xdsSnap, reportsMap).Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(

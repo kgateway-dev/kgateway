@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -113,7 +114,7 @@ func constructAPIKeyAuth(
 		}
 	} else {
 		// We shouldn't get here because the spec validation should catch this
-		return fmt.Errorf("either secretRef or secretSelector must be specified")
+		return errors.New("either secretRef or secretSelector must be specified")
 	}
 
 	// Parse secrets and build credentials
@@ -147,7 +148,7 @@ func constructAPIKeyAuth(
 	}
 
 	if len(credentials) == 0 {
-		return fmt.Errorf("no valid API keys found in secrets")
+		return errors.New("no valid API keys found in secrets")
 	}
 
 	// Convert API KeySources to Envoy KeySource format

@@ -2,6 +2,7 @@ package collections
 
 import (
 	"context"
+	"fmt"
 
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -11,7 +12,10 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -37,9 +41,36 @@ type CommonCollections struct {
 	Services          krt.Collection[*corev1.Service]
 	ServiceEntries    krt.Collection[*networkingclient.ServiceEntry]
 
+	// ServiceEntriesExclusionLabelSelectors is parsed from Settings.ServiceEntriesExclusionLabelSelectors.
+	// Keep it with CommonCollections so ServiceEntry exclusion config has one validated source of truth.
+	ServiceEntriesExclusionLabelSelectors []labels.Selector
+
 	WrappedPods  krt.Collection[krtcollections.WrappedPod]
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
 	RefGrants    *krtcollections.RefGrantIndex
+
+	// Raw informer-backed collections of the Gateway API resources kgateway writes status
+	// for. These share informers with the IR collections above; they are exposed so the
+	// status syncer can derive per-object desired-status collections that see live status
+	// changes (the IR collections may not re-emit on status-only updates).
+	// TCP and TLS routes are normalized to their v1alpha2 representation; legacy
+	// XListenerSets are normalized to gwv1.ListenerSet with their GroupVersionKind
+	// preserved as XListenerSet.
+	RawGateways     krt.Collection[*gwv1.Gateway]
+	RawListenerSets krt.Collection[*gwv1.ListenerSet]
+	RawHTTPRoutes   krt.Collection[*gwv1.HTTPRoute]
+	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
+	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
+	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+
+	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
+	// writes may go through, most preferred first, resolved from CRD discovery at startup.
+	// Normally one entry. More than one means discovery was not authoritative and the
+	// writer must dispatch to whichever version's informer actually holds the object.
+	// Read them through TCPRouteWriteVersions/TLSRouteWriteVersions, which supply the
+	// fallback for a CommonCollections built without InitCollections.
+	tcpRouteWriteGVRs []schema.GroupVersionResource
+	tlsRouteWriteGVRs []schema.GroupVersionResource
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -50,6 +81,26 @@ type CommonCollections struct {
 	ControllerName string
 
 	options *option
+}
+
+// TCPRouteWriteVersions returns the served TCPRoute API versions status writes may go
+// through, most preferred first. It never returns an empty slice, so callers can index the
+// preferred version unconditionally: a CommonCollections built without InitCollections
+// (which some tests do) would otherwise leave the kind with no write version at all.
+func (c *CommonCollections) TCPRouteWriteVersions() []schema.GroupVersionResource {
+	return routeWriteVersionsOrDefault(c.tcpRouteWriteGVRs, wellknown.TCPRouteV1GVR)
+}
+
+// TLSRouteWriteVersions is TCPRouteWriteVersions for TLSRoutes.
+func (c *CommonCollections) TLSRouteWriteVersions() []schema.GroupVersionResource {
+	return routeWriteVersionsOrDefault(c.tlsRouteWriteGVRs, wellknown.TLSRouteV1GVR)
+}
+
+func routeWriteVersionsOrDefault(gvrs []schema.GroupVersionResource, fallback schema.GroupVersionResource) []schema.GroupVersionResource {
+	if len(gvrs) == 0 {
+		return []schema.GroupVersionResource{fallback}
+	}
+	return gvrs
 }
 
 func (c *CommonCollections) HasSynced() bool {
@@ -139,7 +190,13 @@ func NewCommonCollections(
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
 	var serviceEntries krt.Collection[*networkingclient.ServiceEntry]
+	var serviceEntriesExclusionLabelSelectors []labels.Selector
 	if settings.EnableIstioIntegration {
+		var err error
+		serviceEntriesExclusionLabelSelectors, err = ParseExclusionLabelSelectors(settings.ServiceEntriesExclusionLabelSelectors)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing ServiceEntry exclusion label selectors: %w", err)
+		}
 		seInformer := kclient.NewDelayedInformer[*networkingclient.ServiceEntry](
 			client, gvr.ServiceEntry,
 			kubetypes.StandardInformer, kclient.Filter{ObjectFilter: client.ObjectFilter()},
@@ -155,27 +212,24 @@ func NewCommonCollections(
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
-	// Only create GatewayExtensions collection if Envoy is enabled
-	var gwExts krt.Collection[ir.GatewayExtension]
-	if settings.EnableEnvoy {
-		gwExts = krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
-	}
+	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
 
 	return &CommonCollections{
-		Client:            client,
-		KrtOpts:           krtOptions,
-		Secrets:           krtcollections.NewSecretIndex(secrets, refgrants),
-		ConfigMaps:        krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
-		LocalityPods:      localityPods,
-		WrappedPods:       wrappedPods,
-		RefGrants:         refgrants,
-		Settings:          settings,
-		Namespaces:        namespaces,
-		Services:          services,
-		ServiceEntries:    serviceEntries,
-		GatewayExtensions: gwExts,
+		Client:                                client,
+		KrtOpts:                               krtOptions,
+		Secrets:                               krtcollections.NewSecretIndex(secrets, refgrants),
+		ConfigMaps:                            krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
+		LocalityPods:                          localityPods,
+		WrappedPods:                           wrappedPods,
+		RefGrants:                             refgrants,
+		Settings:                              settings,
+		Namespaces:                            namespaces,
+		Services:                              services,
+		ServiceEntries:                        serviceEntries,
+		ServiceEntriesExclusionLabelSelectors: serviceEntriesExclusionLabelSelectors,
+		GatewayExtensions:                     gwExts,
 
 		DiscoveryNamespacesFilter: discoveryNamespacesFilter,
 

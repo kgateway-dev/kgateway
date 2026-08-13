@@ -12,6 +12,7 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -20,6 +21,22 @@ import (
 )
 
 const dnsClusterExtensionName = "envoy.clusters.dns"
+
+// serviceEntryBackendIR makes the resolved addresses participate in backend
+// equality. Addresses can change in Status without bumping generation, so
+// without this a status-only update looks unchanged and never reaches the
+// static cluster.
+type serviceEntryBackendIR struct {
+	addresses []string
+}
+
+func (s *serviceEntryBackendIR) Equals(in any) bool {
+	other, ok := in.(*serviceEntryBackendIR)
+	if !ok {
+		return false
+	}
+	return slices.Equal(s.addresses, other.addresses)
+}
 
 func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 	se, ok := in.Obj.(*networkingclient.ServiceEntry)
@@ -132,6 +149,8 @@ func BuildServiceEntryBackendObjectIR(
 	backend.AppProtocol = ir.ParseAppProtocol(new(svcProtocol))
 	backend.CanonicalHostname = hostname
 	backend.Obj = se
+	// Carry resolved addresses so a status-only VIP update re-emits the backend.
+	backend.ObjIr = &serviceEntryBackendIR{addresses: ServiceEntryAddresses(se)}
 
 	// include ourselves as alias to fix issues with one-to-many se-to-backend
 	backend.Aliases = []ir.ObjectSource{objSrc}

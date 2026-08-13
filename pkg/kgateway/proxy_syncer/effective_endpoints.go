@@ -1,8 +1,9 @@
 package proxy_syncer
 
 import (
+	"cmp"
 	"hash/fnv"
-	"sort"
+	"slices"
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -30,11 +31,10 @@ func newFinalBackendEndpoints(
 		final.AttachedPolicies = backend.AttachedPolicies
 		final.ClusterName = backend.ClusterName()
 		final.UpstreamResourceName = backend.ResourceName()
-		for locality, endpoints := range raw.LbEps {
-			for _, endpoint := range endpoints {
-				final.Add(locality, endpoint)
-			}
-		}
+		// Reuse the endpoint protos AND their precomputed equality hash instead
+		// of re-Adding every endpoint: Add re-marshals each LbEndpoint proto
+		// (HashProtoWithHasher), which is a major allocation source at scale.
+		final.ReuseEndpointsFrom(raw)
 		// A same-named EDS cluster can still re-warm when policy changes CDS.
 		// Bump only the endpoint version so Envoy receives a fresh CLA response.
 		if policyHash := backendEndpointVersionHash(backend); policyHash != 0 {
@@ -54,11 +54,11 @@ func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 	for groupKind := range backend.AttachedPolicies.Policies {
 		groupKinds = append(groupKinds, groupKind)
 	}
-	sort.Slice(groupKinds, func(i, j int) bool {
-		if groupKinds[i].Group == groupKinds[j].Group {
-			return groupKinds[i].Kind < groupKinds[j].Kind
+	slices.SortFunc(groupKinds, func(a, b schema.GroupKind) int {
+		if a.Group != b.Group {
+			return cmp.Compare(a.Group, b.Group)
 		}
-		return groupKinds[i].Group < groupKinds[j].Group
+		return cmp.Compare(a.Kind, b.Kind)
 	})
 
 	for _, groupKind := range groupKinds {

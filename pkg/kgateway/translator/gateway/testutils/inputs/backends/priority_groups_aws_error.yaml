@@ -1,0 +1,66 @@
+# A priority groups Backend referencing an AWS backend: only static backends
+# are supported as group members, so translation reports an error on the
+# priority groups Backend.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: priority-groups-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "failover.example.com"
+  rules:
+    - backendRefs:
+        - name: priority-groups
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: primary-nginx
+  namespace: default
+spec:
+  static:
+    hosts:
+      - host: nginx.nginx-shared.svc
+        port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-backend
+  namespace: default
+spec:
+  aws:
+    lambda:
+      accountId: "000000000000"
+      functionName: hello-function
+      qualifier: $LATEST
+      endpointURL: "http://172.18.0.2:31566"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: priority-groups
+  namespace: default
+spec:
+  priorityGroups:
+    - backendRefs:
+        - name: primary-nginx
+    - backendRefs:
+        - name: lambda-backend
