@@ -92,7 +92,24 @@ stdout for scripted collection.
 | `SCALEPERF_PARALLEL` | 8 | concurrent creates/patches |
 | `SCALEPERF_WRITE_LATENCY` | `0s` | latency injected before each Gateway and HTTPRoute status request reaches the API server |
 | `SCALEPERF_OUT` | test temp dir | output directory |
+| `SCALEPERF_IDLE_CPUPROFILE` | unset | set to any value to CPU-profile the idle phase to `cpuidle-<label>.pprof` |
 | `KGW_LOG_LEVEL` | `error` (forced) | log I/O is CPU; raise it only when debugging |
+
+## Attributing the idle phase
+
+At high route counts most CPU lands in the post-write idle phase, and the whole-run
+heap profile cannot separate it from load. `SCALEPERF_IDLE_CPUPROFILE=1` writes a CPU
+profile covering only that phase:
+
+```bash
+SCALEPERF_IDLE_CPUPROFILE=1 ... go test -tags e2e -run TestScaleFootprint ./test/perf/statusscale/
+go tool pprof -top -cum -nodecount=200 cpuidle-<label>.pprof
+```
+
+Read it with `-cum` and filter to application frames: the flat view is dominated by
+runtime GC and map internals, which are a symptom of the allocation rather than its
+source. Profiling costs a few percent, so a run with it enabled is for attribution and
+should not be compared against runs without it.
 
 ## Comparing two branches
 

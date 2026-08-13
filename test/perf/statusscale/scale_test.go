@@ -474,7 +474,9 @@ func measure(t *testing.T, ctx context.Context, client istiokube.CLIClient, cfg 
 	// the settle phase above reports whatever translation happened to be in flight,
 	// which is window-dependent and not a steady state.
 	idleStart := w.mark()
+	stopIdleCPUProfile := startIdleCPUProfile(t, cfg)
 	waitHeapStable(t, cfg)
+	stopIdleCPUProfile()
 	res.Idle = w.since(idleStart)
 
 	runtime.GC()
@@ -998,6 +1000,30 @@ func maxRSSBytes() uint64 {
 		return uint64(ru.Maxrss)
 	}
 	return uint64(ru.Maxrss) * 1024
+}
+
+// startIdleCPUProfile profiles only the post-write idle phase, which is where most
+// of the CPU goes at high route counts and which the whole-run heap profile cannot
+// separate from load. Off by default: CPU profiling costs a few percent, so a run
+// with it enabled is for attribution, not for comparison against runs without it.
+func startIdleCPUProfile(t *testing.T, cfg config) func() {
+	if os.Getenv("SCALEPERF_IDLE_CPUPROFILE") == "" {
+		return func() {}
+	}
+	path := filepath.Join(cfg.outDir, fmt.Sprintf("cpuidle-%s.pprof", cfg.Label))
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("failed to create idle cpu profile %s: %v", path, err)
+	}
+	if err := pprof.StartCPUProfile(f); err != nil {
+		f.Close()
+		t.Fatalf("failed to start idle cpu profile: %v", err)
+	}
+	return func() {
+		pprof.StopCPUProfile()
+		f.Close()
+		t.Logf("idle cpu profile: %s", path)
+	}
 }
 
 func writeHeapProfile(t *testing.T, path string) {
