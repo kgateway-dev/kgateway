@@ -997,6 +997,11 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.MaxConnectionDuration != nil {
+		in, out := &in.MaxConnectionDuration, &out.MaxConnectionDuration
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.MaxHeadersCount != nil {
 		in, out := &in.MaxHeadersCount, &out.MaxHeadersCount
 		*out = new(int32)
@@ -2576,6 +2581,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 	}
 	if in.IdleTimeout != nil {
 		in, out := &in.IdleTimeout, &out.IdleTimeout
+		*out = new(v1.Duration)
+		**out = **in
+	}
+	if in.MaxConnectionDuration != nil {
+		in, out := &in.MaxConnectionDuration, &out.MaxConnectionDuration
 		*out = new(v1.Duration)
 		**out = **in
 	}

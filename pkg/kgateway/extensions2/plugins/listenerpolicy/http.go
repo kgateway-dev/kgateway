@@ -47,6 +47,7 @@ type HttpListenerPolicyIr struct {
 	serverName                 *string
 	streamIdleTimeout          *time.Duration
 	idleTimeout                *time.Duration
+	maxConnectionDuration      *time.Duration
 	http2ProtocolOptions       *envoycorev3.Http2ProtocolOptions
 	healthCheckPolicy          *healthcheckv3.HealthCheck
 	grpcStats                  *grpcstatsv3.FilterConfig
@@ -170,6 +171,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.maxConnectionDuration, d2.maxConnectionDuration) {
+		return false
+	}
+
 	if !proto.Equal(d.http2ProtocolOptions, d2.http2ProtocolOptions) {
 		return false
 	}
@@ -289,6 +294,12 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	if h.IdleTimeout != nil {
 		duration := h.IdleTimeout.Duration
 		idleTimeout = &duration
+	}
+
+	var maxConnectionDuration *time.Duration
+	if h.MaxConnectionDuration != nil {
+		duration := h.MaxConnectionDuration.Duration
+		maxConnectionDuration = &duration
 	}
 
 	var http2ProtocolOptions *envoycorev3.Http2ProtocolOptions
@@ -423,6 +434,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		serverName:                    serverName,
 		streamIdleTimeout:             streamIdleTimeout,
 		idleTimeout:                   idleTimeout,
+		maxConnectionDuration:         maxConnectionDuration,
 		http2ProtocolOptions:          http2ProtocolOptions,
 		healthCheckPolicy:             healthCheckPolicy,
 		grpcStats:                     grpcStats,

@@ -224,6 +224,16 @@ type CommonHttpProtocolOptions struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
+	// MaxConnectionDuration is the maximum duration of a connection, measured from
+	// when the connection was established. When this duration is reached, Envoy starts
+	// the drain sequence. If unset, there is no maximum connection duration.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
+
 	// Specifies the maximum number of response headers that the upstream connection will accept
 	// from the backend. If not specified, the default of 100 is used.
 	// To configure the maximum number of headers accepted in downstream requests, use
