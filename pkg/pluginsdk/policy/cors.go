@@ -1,8 +1,8 @@
 package policy
 
 import (
-	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -76,7 +76,7 @@ func BuildCorsPolicy(
 		corsPolicy.ExposeHeaders = strings.Join(headers, ", ")
 	}
 	if f.MaxAge != 0 {
-		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
+		corsPolicy.MaxAge = strconv.Itoa(int(f.MaxAge))
 	}
 	corsPolicy.ForwardNotMatchingPreflights = &wrapperspb.BoolValue{Value: false}
 	return corsPolicy

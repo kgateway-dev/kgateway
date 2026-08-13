@@ -12,6 +12,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -66,7 +67,7 @@ func (s *Server) ID(_ *envoycorev3.Node) string {
 }
 
 // SetupEnvoySDS creates a new SDSServer. The returned server can be started with Run()
-func SetupEnvoySDS(secrets []Secret, sdsClient, serverAddress string) *Server {
+func SetupEnvoySDS(ctx context.Context, secrets []Secret, sdsClient, serverAddress string) *Server {
 	grpcServer := grpc.NewServer(grpcOptions...)
 	sdsServer := &Server{
 		secrets:    secrets,
@@ -77,7 +78,7 @@ func SetupEnvoySDS(secrets []Secret, sdsClient, serverAddress string) *Server {
 	snapshotCache := cache.NewSnapshotCache(false, sdsServer, nil)
 	sdsServer.snapshotCache = snapshotCache
 
-	svr := server.NewServer(context.Background(), snapshotCache, nil)
+	svr := server.NewServer(ctx, snapshotCache, nil)
 
 	// register services
 	envoy_service_secret_v3.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
@@ -228,7 +229,7 @@ func readAndValidateSecret(ctx context.Context, sec Secret) ([][]byte, []cache_t
 // GetSnapshotVersion generates a version string by hashing the certs
 func GetSnapshotVersion(certs ...any) (string, error) {
 	hash, err := hashAllSafe(fnv.New64(), certs...)
-	return fmt.Sprintf("%d", hash), err
+	return strconv.FormatUint(hash, 10), err
 }
 
 // hashAllSafe replicates the behavior of hashutils.HashAllSafe from github.com/solo-io/go-utils

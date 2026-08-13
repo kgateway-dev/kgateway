@@ -449,7 +449,7 @@ func (x *callbacksCollection) tryConfirmLocalCluster(sid int64, uccName string, 
 // request and respond with an error.
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	if x.xdsAuth {
-		return fmt.Errorf("OnFetchRequest not supported when xDS auth is enabled")
+		return errors.New("OnFetchRequest not supported when xDS auth is enabled")
 	}
 	if x.extraXDSCallbacks != nil {
 		if err := x.extraXDSCallbacks.OnFetchRequest(ctx, r); err != nil {

@@ -202,7 +202,7 @@ func createDefaultIstioMatch() *envoyclusterv3.Cluster_TransportSocketMatch {
 	}
 
 	return &envoyclusterv3.Cluster_TransportSocketMatch{
-		Name:            fmt.Sprintf("%s-disabled", ourwellknown.TLSModeLabelShortname),
+		Name:            ourwellknown.TLSModeLabelShortname + "-disabled",
 		Match:           &structpb.Struct{},
 		TransportSocket: rawBufferTransportSocket,
 	}

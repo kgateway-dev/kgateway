@@ -115,7 +115,7 @@ func getIstioVersion() string {
 		return version
 	} else {
 		// Fail loudly if ISTIO_VERSION is not set
-		panic(fmt.Sprintf("%s environment variable must be specified to run", testruntime.IstioVersionEnv))
+		panic(testruntime.IstioVersionEnv + " environment variable must be specified to run")
 	}
 }
 
@@ -133,7 +133,7 @@ func downloadIstio(version string) (string, error) {
 		return binaryPath, nil
 	}
 	installLocation := filepath.Join(testutils.GitRootDirectory(), ".bin")
-	binaryDir := filepath.Join(installLocation, fmt.Sprintf("istio-%s", version), "bin")
+	binaryDir := filepath.Join(installLocation, "istio-"+version, "bin")
 	binaryLocation := filepath.Join(binaryDir, "istioctl")
 
 	fileInfo, _ := os.Stat(binaryLocation)
@@ -151,7 +151,7 @@ func downloadIstio(version string) (string, error) {
 		}
 
 		arch := runtime.GOARCH
-		archModifier := fmt.Sprintf("-%s", arch)
+		archModifier := "-" + arch
 
 		if osName == "osx" && arch != "arm64" {
 			archModifier = ""

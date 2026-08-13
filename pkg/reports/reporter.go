@@ -90,6 +90,20 @@ func NewReportMap() ReportMap {
 	}
 }
 
+// NewPolicyReportMap returns a ReportMap that can only accept policy reports. Reporting any
+// other kind into it panics on a nil map write, which is deliberate: it exists for the
+// per-object status contribution paths, which run once per backend per translation and would
+// otherwise allocate seven maps they never touch.
+func NewPolicyReportMap() ReportMap {
+	return ReportMap{Policies: make(map[reporter.PolicyKey]*PolicyReport)}
+}
+
+// NewBackendReportMap returns a ReportMap that can only accept Backend reports. See
+// NewPolicyReportMap for why the remaining maps are left nil.
+func NewBackendReportMap() ReportMap {
+	return ReportMap{Backends: make(map[types.NamespacedName]*BackendReport)}
+}
+
 func key(obj metav1.Object) types.NamespacedName {
 	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 }

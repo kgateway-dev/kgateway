@@ -2,6 +2,7 @@ package portforward
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -85,11 +86,11 @@ func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 			// Build a new port portforward.PortForwarder.
 			fw, err = f.portForwarderToPod(podName, readyCh)
 			if err != nil {
-				f.errCh <- fmt.Errorf("building port apiPortForwarder failed: %v", err)
+				f.errCh <- fmt.Errorf("building port apiPortForwarder failed: %w", err)
 				return
 			}
 			if err = fw.ForwardPorts(); err != nil {
-				f.errCh <- fmt.Errorf("port forward: %v", err)
+				f.errCh <- fmt.Errorf("port forward: %w", err)
 				return
 			}
 			f.errCh <- nil
@@ -104,14 +105,14 @@ func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 	// We may later get an error, but that is handled async.
 	select {
 	case err := <-f.errCh:
-		return fmt.Errorf("failure running port forward process: %v", err)
+		return fmt.Errorf("failure running port forward process: %w", err)
 	case <-readyCh:
 		p, err := fw.GetPorts()
 		if err != nil {
-			return fmt.Errorf("failed to get ports: %v", err)
+			return fmt.Errorf("failed to get ports: %w", err)
 		}
 		if len(p) == 0 {
-			return fmt.Errorf("got no ports")
+			return errors.New("got no ports")
 		}
 		// Set local port now, as it may have been 0 as input
 		f.properties.localPort = int(p[0].Local)
@@ -147,7 +148,7 @@ func (f *apiPortForwarder) portForwarderToPod(podName string, readyCh chan struc
 	}
 
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", f.properties.resourceNamespace, podName)
-	hostIP := strings.TrimLeft(f.restConfig.Host, "https:/")
+	hostIP := strings.TrimPrefix(f.restConfig.Host, "https://")
 	serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
 

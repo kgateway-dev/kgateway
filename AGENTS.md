@@ -3,30 +3,15 @@ kgateway is a control plane implementing the Kubernetes Gateway API for Envoy. I
 
 ## Architecture
 
-### Translation Pipeline (3 phases)
-1. **Policy → IR**: Plugins translate CRDs to PolicyIR (close to Envoy protos). Done once per policy CRD change.
-2. **HTTPRoute/Gateway → IR with Policies Attached**: Core kgateway aggregates routes/gateways and performs policy attachment via `targetRefs`.
-3. **IR → xDS**: Translates to Envoy config. Plugins provide `NewGatewayTranslationPass` functions called during route/listener translation.
-
-See `/devel/architecture/overview.md` and the translation diagram at `/devel/architecture/translation.svg`.
-
-### Key Components
-- **cmd/**: 3 binaries: `kgateway` (controller), `envoyinit` (does some envoy bootstrap config manipulation), `sds` (secret server)
-- **api/v1alpha1/kgateway/**: kgateway CRD definitions. Use `+kubebuilder` markers for validation/generation
-- **pkg/pluginsdk/**: Plugin interfaces (`Plugin`, `PolicyPlugin`, `BackendPlugin`)
-- **pkg/kgateway/extensions2/plugins/**: Plugin implementations (trafficpolicy, httplistenerpolicy, etc.)
-- **pkg/krtcollections/**: KRT collections for core resources
-- **test/e2e/**: End-to-end tests using custom framework (see test/e2e/README.md)
+### Translation Pipeline
+Translation runs in 3 phases: Policy → IR, then HTTPRoute/Gateway → IR with policies attached, then IR → xDS. See `/devel/architecture/overview.md` and the translation diagram at `/devel/architecture/translation.svg`.
 
 ### Plugin System
 kgateway translates Kubernetes Gateway API resources into Envoy configuration. Plugins *contribute* to that translation, usually by adding a new CRD (most commonly a Policy CRD) that users create to express their desired configuration. Policy CRDs attach to Gateway API resources via `targetRefs` or `targetSelectors`; kgateway manages the attachment during translation.
 
 Convert the CRD to an intermediate representation (IR) that is as close to Envoy protos as possible. This minimizes logic in the final translation and allows better status to be reported back to the user on errors.
 
-Plugins are **stateless across translations** but maintain state during a single gateway translation via `ProxyTranslationPass`. Each plugin:
-- Provides a KRT collection of `ir.PolicyWrapper` (contains `PolicyIR` + `TargetRefs`)
-- Implements `NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass`
-- Can process backends via `ProcessBackend`, `PerClientProcessBackend`, or `PerClientProcessEndpoints`
+Plugins are **stateless across translations** but maintain state during a single gateway translation via `ProxyTranslationPass`. Each plugin provides a KRT collection of `ir.PolicyWrapper`, implements `NewGatewayTranslationPass`, and may hook backend processing — see `pkg/pluginsdk` for the interfaces.
 
 Example: `/pkg/kgateway/extensions2/plugins/trafficpolicy/traffic_policy_plugin.go`
 
@@ -46,11 +31,7 @@ IRs output by KRT collections **must** implement `Equals(other T) bool`:
 High-risk area: an incomplete `Equals` silently breaks KRT change detection.
 
 ### Code Generation Workflow
-- `make generate-all`: Uses stamp files, only regenerates changed code (fast) — the usual choice
-- `make generated-code`: Ignores stamp files, force-regenerates everything
-- `make go-generate-apis`: Only API changes (~1m)
-- `make verify`: CI target - always regenerates and fails on any resulting git diff
-- `make fmt` or `make fmt-changed`: Format code (always run before commit)
+`make help` lists the codegen targets. `make generate-all` is the usual choice (stamp-based, only regenerates what changed); `make generated-code` force-regenerates everything. Always run `make fmt` or `make fmt-changed` before committing.
 
 After API changes: run `make go-generate-apis` then `make fmt-changed`. Dependency tracking lives in `_output/stamps/`; run `make clean-stamps` if regeneration seems stuck. If not sure, just run `make generate-all`.
 
@@ -71,33 +52,11 @@ make unit                                   # All unit tests (excludes e2e)
 
 ### API/CRD Development
 
-#### Adding New CRDs
-1. Create `*_types.go` in `api/v1alpha1/` with `+kubebuilder` markers. You can use `+kubebuilder:validation:AtLeastOneOf` or `+kubebuilder:validation:ExactlyOneOf` for field groups.
-2. **Required fields**: Use `+required`, NO `omitempty` tag
-3. **Optional fields**: Use `+optional`, pointer types (except slices/maps), `omitempty` tag
-4. **Durations**: Use `metav1.Duration` with CEL validation
-5. Document defaults with `+kubebuilder:default=...`
-6. Run `make go-generate-apis` (generates CRDs, clients, RBAC in helm chart)
-7. Register CRD to the client in `pkg/apiclient/types.go`
-8. Add the CRD to the fake client's `filterObjects` in `pkg/apiclient/fake/fake.go` and `AllCRDs` in `test/testutils/crd.go`.
+Read the relevant doc BEFORE starting either of these — both have non-obvious required steps:
+- **Adding a new CRD**: `/api/README.md` (field conventions, codegen, and the client + fake-client registration steps).
+- **Adding a field to an existing Policy CRD**: `/devel/contributing/adding-policy-fields.md` (IR translation, golden-file refresh via `REFRESH_GOLDEN=true`, E2E registration).
 
-See `/api/README.md` for full guidelines.
-
-#### Adding fields to Policy CRDs
-1. Add the field to the appropriate `Spec` struct in the CRD Go type in `api/v1alpha1/`.
-2. Add validation markers as needed (e.g., `+kubebuilder:validation:MinLength=1`, `+optional`, etc.)
-3. Run `make go-generate-apis` to regenerate code.
-4. Update the IR struct in the plugin package (`pkg/kgateway/extensions2/plugins/<plugin_name>/`) to include the new field. Translate as close to Envoy protos as possible here, not in the translation pass — the translation pass should stay very lightweight.
-5. Add yaml test cases in `pkg/kgateway/translator/gateway/gateway_translator_test.go`.
-   The yaml inputs go in `pkg/kgateway/translator/gateway/testutils/inputs/`. DO NOT create the outputs by yourself.
-   Instead, run your tests with environment variable `REFRESH_GOLDEN=true`. For example: `REFRESH_GOLDEN=true go test -timeout 30s -run ^TestBasic$/^ListenerPolicy_with_proxy_protocol_on_HTTPS_listener$ github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/gateway`
-   It will generate the outputs for you automatically in the `pkg/kgateway/translator/gateway/testutils/outputs/` folder.
-   Once the outputs are generated, inspect them to see they contain the changes you expect, and alert the user if that's not the case.
-6. For non-trivial changes, also add unit tests.
-7. Consider also adding E2E tests using the framework. You can look at `test/e2e/features/cors/suite.go` as an example.
-   When writing an E2E test, prefer to use `base.NewBaseTestingSuite` as the base suite, as it provides many useful utilities.
-   If you are adding a new test suite, remember to register it in `test/e2e/tests/kgateway/suite_runner.go`.
-   Additionally add it to one of the test kind clusters in `.github/workflows/e2e.yaml`.
+Key constraint either way: translate as close to the Envoy protos as possible in the IR, not in the translation pass — the translation pass should stay very lightweight.
 
 ## Local Development
 ```bash

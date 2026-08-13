@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -736,12 +737,12 @@ func DetectGwApiInfo(ctx context.Context, c client.Client) (GwApiChannel, GwApiV
 
 	channel, hasChannel := crd.Annotations["gateway.networking.k8s.io/channel"]
 	if !hasChannel {
-		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
+		return "", GwApiVersion{}, errors.New("Gateway CRD missing 'gateway.networking.k8s.io/channel' annotation")
 	}
 
 	versionStr, hasVersion := crd.Annotations["gateway.networking.k8s.io/bundle-version"]
 	if !hasVersion {
-		return "", GwApiVersion{}, fmt.Errorf("Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
+		return "", GwApiVersion{}, errors.New("Gateway CRD missing 'gateway.networking.k8s.io/bundle-version' annotation")
 	}
 
 	version, err := semver.NewVersion(versionStr)

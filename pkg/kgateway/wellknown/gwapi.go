@@ -48,6 +48,7 @@ const (
 
 	// Gateway API CRD names
 	TCPRouteCRDName = "tcproutes.gateway.networking.k8s.io"
+	TLSRouteCRDName = "tlsroutes.gateway.networking.k8s.io"
 
 	// TLSRouteV1Alpha3Version names the v1alpha3 TLSRoute API. kgateway's
 	// internal routing representation is *gwv1a2.TLSRoute — v1 and v1alpha3
@@ -95,6 +96,11 @@ var (
 		Group:    GatewayGroup,
 		Version:  gwv1.GroupVersion.Version,
 		Resource: "tlsroutes",
+	}
+	TLSRouteV1GVK = schema.GroupVersionKind{
+		Group:   GatewayGroup,
+		Version: gwv1.GroupVersion.Version,
+		Kind:    TLSRouteKind,
 	}
 	TLSRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,

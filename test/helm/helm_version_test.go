@@ -2,6 +2,7 @@ package helm
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -52,7 +53,8 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 
 	err = grepCmd.Wait()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			// No matches found - output will be empty. Diff will fail; test will fail.
 		} else {
 			require.NoError(t, err, "grep command failed: %s", stderr.String())
