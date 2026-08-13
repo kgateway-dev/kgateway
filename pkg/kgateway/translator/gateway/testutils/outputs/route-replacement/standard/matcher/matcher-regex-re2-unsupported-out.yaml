@@ -50,7 +50,6 @@ Routes:
         - name: x-test-header
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: (?<=foo)bar
         pathSeparatedPrefix: /test
       name: listener~8080~www_example_com-route-0-httproute-invalid-rds-route-gwtest-0-0-matcher-0

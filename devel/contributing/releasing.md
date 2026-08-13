@@ -50,11 +50,25 @@ If the release branch **does not** exist, create one:
 - On `main`, bump `ROLLING_MAIN_VERSION` in the [Makefile](../../Makefile) to the next minor's rolling tag via a PR (for example, after cutting `v2.3.x`, set it to `v2.4.0-main`), since `main` now tracks the next minor.
 - On `main`, bump `gateway-api-version` in the [e2e test workflow](https://github.com/kgateway-dev/kgateway/blob/96403169afb6b0f4becb864b42d22fcf000033f7/.github/workflows/e2e.yaml#L129) to 1 version lower than what is used in go.mod (since this is an upgrade test)
 
-- Update the OSV security scan workflow branch allowlist in [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml) to include the new release branch, and drop any branch that is no longer LTS.
-  This workflow only scans an explicit set of branches, so each newly cut release branch must be added to both the scheduled scan matrix and the `workflow_dispatch` branch options.
-  This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
-  An allowlisted branch that does not exist in the repository being scanned, and a release image that has not been published to its registry, are reported as annotations and skipped rather than failing the run.
-  That keeps the scan green on forks, which carry only a subset of the release branches and publish no release images; on `kgateway-dev/kgateway` the same gaps are annotated at error level, so a newly cut branch that is missing a scan target is still visible in the run summary.
+- Add the new release branch to both CI workflows that hardcode a branch list. Neither discovers branches automatically, so a newly cut branch gets no coverage until it is listed:
+  - [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml): add it to the scheduled scan matrix (the `branches='[...]'` array) *and* the `workflow_dispatch` branch options.
+    This allowlist is the single source of truth for which branches get scanned: tooling such as [`hack/osvtool`](../../hack/osvtool) and the `cve-bump` skill reads it rather than hardcoding the branch list, so keeping it current is all that is needed.
+    An allowlisted branch that does not exist in the repository being scanned, and a release image that has not been published to its registry, are reported as annotations and skipped rather than failing the run.
+    That keeps the scan green on forks, which carry only a subset of the release branches and publish no release images; on `kgateway-dev/kgateway` the same gaps are annotated at error level, so a newly cut branch that is missing a scan target is still visible in the run summary.
+  - [.github/workflows/nightly-tests.yaml](../../.github/workflows/nightly-tests.yaml): add it to the scheduled `refs` array in the `determine_refs` job, which drives the nightly conformance, load, and e2e matrices.
+
+### Retiring an LTS branch
+
+When a release branch reaches end of life, remove it from the same two workflows it was added to when it was cut:
+
+- [.github/workflows/osv-scanner.yaml](../../.github/workflows/osv-scanner.yaml): drop it from the scheduled `branches='[...]'` array and the `workflow_dispatch` options.
+- [.github/workflows/nightly-tests.yaml](../../.github/workflows/nightly-tests.yaml): drop it from the scheduled `refs` array.
+
+Both edits land on `main` only. Scheduled runs always use the workflow definition from the default branch even though they check out each ref, so removing a ref from `main`'s matrix retires it everywhere -- there is no corresponding change to make on the release branch itself.
+
+Also delete any branch-specific workarounds that existed solely to keep the retired branch green.
+
+Once a branch is retired it stops being scanned, so it no longer appears in `hack/osvtool` output and no longer needs CVE triage before a release.
 
 ### OSV scan and CVE triage
 
@@ -103,7 +117,7 @@ relying on the scan results for that branch.
 
 ### Patch Release
 
-A patch release is generated from an existing release branch, e.g. [v2.2.x](https://github.com/kgateway-dev/kgateway/commits/v2.2.x/).
+A patch release is generated from an existing release branch, e.g. [v2.3.x](https://github.com/kgateway-dev/kgateway/commits/v2.3.x/).
 After all the necessary backport pull requests have merged, you can proceed to the next section.
 
 ## Publish the Release
@@ -114,7 +128,7 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
 
 - Select the branch to release from
   - Minor release: Select the `main` branch.
-  - Patch release: Select the release branch, e.g. `v2.2.x`, that will be patched.
+  - Patch release: Select the release branch, e.g. `v2.3.x`, that will be patched.
 - Enter the version for the release to create, e.g. `v2.0.3`. This will trigger
   the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3)
   for example.

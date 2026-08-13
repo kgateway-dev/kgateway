@@ -391,7 +391,7 @@ func toSlowStartConfig(cfg *kgateway.SlowStart, name, namespace string) *envoyco
 
 		out.Aggression = &envoycorev3.RuntimeDouble{
 			DefaultValue: aggressionValue,
-			RuntimeKey:   fmt.Sprintf("%s.slowStart.aggression", runtimeKeyPrefix),
+			RuntimeKey:   runtimeKeyPrefix + ".slowStart.aggression",
 		}
 	}
 	return out

@@ -46,6 +46,7 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		preserveHttp1HeaderCase:   new(true),
 		preserveExternalRequestId: new(true),
 		generateRequestId:         new(true),
+		proxy100Continue:          new(true),
 		accessLogConfig:           []proto.Message{wrapperspb.String("access-log")},
 		accessLogPolicies: []kgateway.AccessLog{
 			{FileSink: &kgateway.FileSink{Path: "/dev/stdout"}},
@@ -66,8 +67,9 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		setCurrentClientCertDetails: &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
 			Subject: wrapperspb.Bool(true),
 		},
-		stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
-		serverName:        new("envoy"),
+		stripHostPortMode:    new(kgateway.StripMatchingHostPortMode),
+		stripTrailingHostDot: new(true),
+		serverName:           new("envoy"),
 	}
 }
 
@@ -136,6 +138,12 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "generateRequestId",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).generateRequestId = new(false) },
+		},
+		{
+			Field: "proxy100Continue",
+			Mutate: func(d **HttpListenerPolicyIr) {
+				(*d).proxy100Continue = new(false)
+			},
 		},
 		{
 			Field: "accessLogConfig",
@@ -212,6 +220,10 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "stripHostPortMode",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripHostPortMode = new(kgateway.StripAnyHostPortMode) },
+		},
+		{
+			Field:  "stripTrailingHostDot",
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripTrailingHostDot = new(false) },
 		},
 		{
 			Field:  "serverName",

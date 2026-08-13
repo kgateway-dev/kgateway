@@ -50,6 +50,7 @@ type HttpListenerPolicyIr struct {
 	preserveHttp1HeaderCase    *bool
 	preserveExternalRequestId  *bool
 	generateRequestId          *bool
+	proxy100Continue           *bool
 	// For a better UX, we set the default serviceName for access logs to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
 	// Since the gateway name can only be determined during translation, the access log configs and policies
 	// are stored so that during translation, the default serviceName is set if not already provided
@@ -73,6 +74,7 @@ type HttpListenerPolicyIr struct {
 	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
 	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
 	stripHostPortMode             *kgateway.StripHostPortMode
+	stripTrailingHostDot          *bool
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -128,6 +130,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 
 	// Check xffNumTrustedHops
 	if !cmputils.PointerValsEqual(d.xffNumTrustedHops, d2.xffNumTrustedHops) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.proxy100Continue, d2.proxy100Continue) {
 		return false
 	}
 
@@ -224,6 +230,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.stripHostPortMode, d2.stripHostPortMode) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.stripTrailingHostDot, d2.stripTrailingHostDot) {
 		return false
 	}
 
@@ -393,6 +403,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		useRemoteAddress:              h.UseRemoteAddress,
 		preserveExternalRequestId:     h.PreserveExternalRequestId,
 		generateRequestId:             h.GenerateRequestId,
+		proxy100Continue:              h.Proxy100Continue,
 		xffNumTrustedHops:             xffNumTrustedHops,
 		xffConfig:                     xffConfig,
 		skipXffAppend:                 h.SkipXffAppend,
@@ -413,6 +424,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,
 		stripHostPortMode:             h.StripHostPortMode,
+		stripTrailingHostDot:          h.StripTrailingHostDot,
 	}, errs
 }
 

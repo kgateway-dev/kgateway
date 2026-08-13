@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	logger            = logging.New("xds/envoy")
+	envoyLogger       = logging.New("xds/envoy")
 	envoyXdsSubsystem = "envoy_xds"
 	xdsRejectsTotal   = metrics.NewCounter(
 		metrics.CounterOpts{
@@ -122,7 +122,7 @@ func (l *logNackCallback) onNewError(key resourceKey, err *status.Status) {
 	labels := toLabels(key)
 	xdsRejectsTotal.Inc(labels...)
 	xdsRejectsCurrent.Add(1, labels...)
-	logger.Warn("xds error", "gateway_name", key.Name, "gateway_ns", key.Namespace, "resource", key.ResourceTypeUrl, "error", err.Message)
+	envoyLogger.Warn("xds error", "gateway_name", key.Name, "gateway_ns", key.Namespace, "resource", key.ResourceTypeUrl, "error", err.Message)
 }
 
 func (l *logNackCallback) onErrorGone(key resourceKey) {

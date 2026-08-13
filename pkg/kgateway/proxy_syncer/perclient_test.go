@@ -144,6 +144,40 @@ func TestFilterEndpointResourcesForStaticClusters_MixedStaticAndNonStatic(t *tes
 	}
 }
 
+func TestFilterEndpointResourcesForErroredClusters(t *testing.T) {
+	endpoints := envoycache.NewResourcesWithTTL("v1", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "healthy-cluster"}},
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "errored-cluster"}},
+		// This cluster is defined in Envoy's bootstrap, not in the dynamic CDS snapshot.
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "local-cluster"}},
+	})
+
+	out := filterEndpointResourcesForErroredClusters(endpoints, []string{"errored-cluster"})
+
+	g := gomega.NewWithT(t)
+	g.Expect(out.Items).To(gomega.HaveKey("healthy-cluster"))
+	g.Expect(out.Items).To(gomega.HaveKey("local-cluster"),
+		"filtering must not require every CLA to have a matching dynamic CDS resource")
+	g.Expect(out.Items).ToNot(gomega.HaveKey("errored-cluster"))
+	g.Expect(out.Version).ToNot(gomega.Equal(endpoints.Version),
+		"entering the error state must change the EDS version")
+
+	updatedEndpoints := endpoints
+	updatedEndpoints.Version = "v2"
+	updatedOut := filterEndpointResourcesForErroredClusters(updatedEndpoints, []string{"errored-cluster"})
+	g.Expect(updatedOut.Version).ToNot(gomega.Equal(out.Version),
+		"the filtered version must retain the underlying endpoint version")
+
+	unchanged := filterEndpointResourcesForErroredClusters(endpoints, []string{"not-an-endpoint"})
+	g.Expect(unchanged.Version).To(gomega.Equal(endpoints.Version))
+	g.Expect(unchanged.Items).To(gomega.HaveLen(len(endpoints.Items)))
+
+	recovered := filterEndpointResourcesForErroredClusters(endpoints, nil)
+	g.Expect(recovered.Version).To(gomega.Equal(endpoints.Version),
+		"leaving the error state must restore the original EDS version")
+	g.Expect(recovered.Items).To(gomega.HaveKey("errored-cluster"))
+}
+
 // TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored pins the
 // fail-closed behavior for errored clusters: a cluster whose backend
 // translation failed is excluded from the CDS payload (routes to it get

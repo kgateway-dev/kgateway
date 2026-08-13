@@ -213,6 +213,11 @@ type HTTPSettings struct {
 	// See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
 	// +optional
 	GenerateRequestId *bool `json:"generateRequestId,omitempty"`
+	// Proxy100Continue determines whether Envoy forwards requests with an
+	// Expect: 100-continue header upstream and proxies upstream 100 Continue
+	// responses downstream. When unset or false, Envoy handles the response locally.
+	// +optional
+	Proxy100Continue *bool `json:"proxy100Continue,omitempty"`
 
 	// XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
 	// This is mutually exclusive with XffTrustedCIDRs.
@@ -339,6 +344,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Enum=MatchingPort;AnyPort
 	// +optional
 	StripHostPortMode *StripHostPortMode `json:"stripHostPortMode,omitempty"`
+
+	// StripTrailingHostDot determines whether Envoy strips the trailing dot from the
+	// Host/authority header before any filter processing or route matching. Without this,
+	// a request whose host is a fully qualified domain name with a trailing dot (for example
+	// "example.com.") does not match routes configured for the hostname "example.com".
+	// The stripped value is also what gets forwarded upstream.
+	// If unset, the trailing dot is kept (Envoy's default).
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
+	// +optional
+	StripTrailingHostDot *bool `json:"stripTrailingHostDot,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
