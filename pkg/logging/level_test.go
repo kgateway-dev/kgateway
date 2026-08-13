@@ -52,7 +52,7 @@ func TestLogging(t *testing.T) {
 			name:           "only default logger",
 			wantStatusCode: http.StatusOK,
 			wantLevels: map[string]slog.Level{
-				DefaultComponent: GlobalLevel.Level(),
+				DefaultComponent: slog.LevelInfo,
 			},
 		},
 		{
@@ -136,8 +136,8 @@ func TestLogging(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			a := assert.New(t)
 
-			// Reset component levels to default level
-			Reset(slog.LevelInfo)
+			// Reset component leveler to prevent test pollution
+			resetComponentLeveler()
 
 			loggers := map[string]*slog.Logger{DefaultComponent: slog.Default()}
 			for _, component := range tc.components {
@@ -177,6 +177,7 @@ func TestLogging(t *testing.T) {
 
 func TestGetComponentLevels(t *testing.T) {
 	a := assert.New(t)
+	resetComponentLeveler()
 
 	_ = NewWithOptions("TestGetComponentLevels1", Options{Level: new(slog.LevelDebug)})
 	_ = NewWithOptions("TestGetComponentLevels2", Options{Level: new(slog.LevelError)})

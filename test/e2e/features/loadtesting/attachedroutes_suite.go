@@ -4,6 +4,7 @@ package loadtesting
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -407,12 +408,12 @@ func (s *AttachedRoutesSuite) verifyRouteValid(gatewayName string) error {
 	}
 
 	if len(routeList.Items) == 0 {
-		return fmt.Errorf("no routes found")
+		return errors.New("no routes found")
 	}
 
 	route := &routeList.Items[0]
 	if len(route.Status.Parents) == 0 {
-		return fmt.Errorf("route has no parent status")
+		return errors.New("route has no parent status")
 	}
 
 	parentStatus := route.Status.Parents[0]
@@ -423,7 +424,7 @@ func (s *AttachedRoutesSuite) verifyRouteValid(gatewayName string) error {
 		}
 	}
 
-	return fmt.Errorf("no routes are accepted")
+	return errors.New("no routes are accepted")
 }
 
 func (s *AttachedRoutesSuite) createSingleIncrementalRoute(gatewayName string) *gwv1.HTTPRoute {
@@ -439,12 +440,12 @@ func (s *AttachedRoutesSuite) createSingleIncrementalRoute(gatewayName string) *
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{Name: gwv1.ObjectName(gatewayName)}},
 			},
-			Hostnames: []gwv1.Hostname{gwv1.Hostname(fmt.Sprintf("%s.example.com", routeName))},
+			Hostnames: []gwv1.Hostname{gwv1.Hostname(routeName + ".example.com")},
 			Rules: []gwv1.HTTPRouteRule{{
 				Matches: []gwv1.HTTPRouteMatch{{
 					Path: &gwv1.HTTPPathMatch{
 						Type:  &[]gwv1.PathMatchType{gwv1.PathMatchPathPrefix}[0],
-						Value: &[]string{fmt.Sprintf("/%s", routeName)}[0],
+						Value: &[]string{"/" + routeName}[0],
 					},
 				}},
 				BackendRefs: []gwv1.HTTPBackendRef{{
@@ -558,7 +559,7 @@ func (s *AttachedRoutesSuite) waitForAllGatewaysCondition(gateways []string, exp
 				}
 
 				if len(gateway.Status.Listeners) == 0 {
-					lastObserved = fmt.Sprintf("%s: no listeners", gatewayName)
+					lastObserved = gatewayName + ": no listeners"
 					allReady = false
 					break
 				}

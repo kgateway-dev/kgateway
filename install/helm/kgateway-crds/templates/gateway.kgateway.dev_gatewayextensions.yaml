@@ -1528,8 +1528,10 @@ spec:
                       It discovers the authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI if specified in the discovery response.
                       Explicit configuration of these options will take precedence over the discovered values.
                       Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig for more details.
-                      Note that the OpenID provider configuration is cached and only refreshed periodically when the GatewayExtension object
-                      is reprocessed.
+                      Note that the OpenID provider configuration is cached. It is refreshed periodically in the background, and a failed
+                      discovery is retried, so a provider that is unreachable when the configuration is first discovered is picked up once
+                      it becomes reachable. Discovery stops once authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI
+                      (when JWT parsing is configured) are all set explicitly, since none of the discovered values are then used.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$
                     type: string
                   jwt:

@@ -4,7 +4,6 @@ package waypoint
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -140,7 +139,7 @@ func (s *testingSuite) TearDownSuite() {
 func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 	controllerNamespace, ok := os.LookupEnv(testutils.InstallNamespace)
 	if !ok {
-		s.FailNow(fmt.Sprintf("%s environment variable not set", testutils.InstallNamespace))
+		s.FailNow(testutils.InstallNamespace + " environment variable not set")
 	}
 
 	// make a copy of the original controller deployment
