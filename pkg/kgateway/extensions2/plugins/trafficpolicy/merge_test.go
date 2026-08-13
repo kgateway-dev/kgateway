@@ -5,9 +5,12 @@ import (
 	"testing"
 	"time"
 
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -184,43 +187,83 @@ func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
 		assert.Equal(t, first, second, "re-merging the same inputs must give the same result")
 	})
 
+	// extProc and extAuth both merge by unioning providers, so a child and a parent that
+	// reference different GatewayExtensions is the shape that appends the parent's provider
+	// onto the child's IR. fetchExtension stands in for the GatewayExtension collection.
+	fetchExtension := func(name string, build func(*TrafficPolicyGatewayExtensionIR)) FetchGatewayExtensionFunc {
+		return func(krt.HandlerContext, shared.NamespacedObjectReference, string) (*TrafficPolicyGatewayExtensionIR, error) {
+			ext := &TrafficPolicyGatewayExtensionIR{Name: name}
+			build(ext)
+			return ext, nil
+		}
+	}
+	extensionRef := &shared.NamespacedObjectReference{Name: "ext"}
+
 	t.Run("extProc", func(t *testing.T) {
-		// disableAllProviders is the simplest field a deep merge writes onto p1, so it
-		// shows the write landing on the child's IR rather than on a copy.
-		child := &TrafficPolicy{ct: time.Now(), spec: trafficPolicySpecIr{
-			extProc: &extprocIR{providerNames: sets.New("child-provider")},
-		}}
-		parent := &TrafficPolicy{ct: time.Now(), spec: trafficPolicySpecIr{
-			extProc: &extprocIR{disableAllProviders: true},
-		}}
+		policyFor := func(t *testing.T, provider string) *TrafficPolicy {
+			t.Helper()
+			tp := &TrafficPolicy{ct: time.Now()}
+			in := &kgateway.TrafficPolicy{
+				Spec: kgateway.TrafficPolicySpec{ExtProc: &kgateway.ExtProcPolicy{ExtensionRef: extensionRef}},
+			}
+			fetch := fetchExtension(provider, func(e *TrafficPolicyGatewayExtensionIR) {
+				e.ExtProc = &envoymatchingv3.ExtensionWithMatcher{}
+			})
+			require.NoError(t, constructExtProc(nil, in, fetch, &tp.spec))
+			require.Equal(t, sets.New(provider), tp.spec.extProc.providerNames)
+			return tp
+		}
 
 		for _, prio := range []apiannotations.InheritedPolicyPriorityValue{
 			apiannotations.DeepMergePreferChild,
 			apiannotations.DeepMergePreferParent,
 		} {
+			child := policyFor(t, "child-provider")
+			parent := policyFor(t, "parent-provider")
+
 			merged := translate(child, parent, prio, "")
-			assert.True(t, merged.spec.extProc.disableAllProviders, "%s: merged policy should disable providers", prio)
-			assert.False(t, child.spec.extProc.disableAllProviders, "%s: child IR must be unchanged after merging", prio)
-			assert.Equal(t, sets.New("child-provider"), child.spec.extProc.providerNames, "%s: child IR must be unchanged after merging", prio)
+			require.Len(t, merged.spec.extProc.perProviderConfig, 2, "%s: merged policy should hold both providers", prio)
+
+			assert.Equal(t, sets.New("child-provider"), child.spec.extProc.providerNames,
+				"%s: the parent's provider must not be added to the child IR", prio)
+			assert.Len(t, child.spec.extProc.perProviderConfig, 1,
+				"%s: the parent's config must not be appended to the child IR", prio)
+			assert.Len(t, parent.spec.extProc.perProviderConfig, 1,
+				"%s: parent IR must be unchanged after merging", prio)
 		}
 	})
 
 	t.Run("extAuth", func(t *testing.T) {
-		child := &TrafficPolicy{ct: time.Now(), spec: trafficPolicySpecIr{
-			extAuth: &extAuthIR{providerNames: sets.New("child-provider")},
-		}}
-		parent := &TrafficPolicy{ct: time.Now(), spec: trafficPolicySpecIr{
-			extAuth: &extAuthIR{disableAllProviders: true},
-		}}
+		policyFor := func(t *testing.T, provider string) *TrafficPolicy {
+			t.Helper()
+			tp := &TrafficPolicy{ct: time.Now()}
+			in := &kgateway.TrafficPolicy{
+				Spec: kgateway.TrafficPolicySpec{ExtAuth: &kgateway.ExtAuthPolicy{ExtensionRef: extensionRef}},
+			}
+			fetch := fetchExtension(provider, func(e *TrafficPolicyGatewayExtensionIR) {
+				e.ExtAuth = &envoy_ext_authz_v3.ExtAuthz{}
+			})
+			require.NoError(t, constructExtAuth(nil, in, fetch, &tp.spec))
+			require.Equal(t, sets.New(provider), tp.spec.extAuth.providerNames)
+			return tp
+		}
 
 		for _, prio := range []apiannotations.InheritedPolicyPriorityValue{
 			apiannotations.DeepMergePreferChild,
 			apiannotations.DeepMergePreferParent,
 		} {
+			child := policyFor(t, "child-provider")
+			parent := policyFor(t, "parent-provider")
+
 			merged := translate(child, parent, prio, "")
-			assert.True(t, merged.spec.extAuth.disableAllProviders, "%s: merged policy should disable providers", prio)
-			assert.False(t, child.spec.extAuth.disableAllProviders, "%s: child IR must be unchanged after merging", prio)
-			assert.Equal(t, sets.New("child-provider"), child.spec.extAuth.providerNames, "%s: child IR must be unchanged after merging", prio)
+			require.Len(t, merged.spec.extAuth.perProviderConfig, 2, "%s: merged policy should hold both providers", prio)
+
+			assert.Equal(t, sets.New("child-provider"), child.spec.extAuth.providerNames,
+				"%s: the parent's provider must not be added to the child IR", prio)
+			assert.Len(t, child.spec.extAuth.perProviderConfig, 1,
+				"%s: the parent's config must not be appended to the child IR", prio)
+			assert.Len(t, parent.spec.extAuth.perProviderConfig, 1,
+				"%s: parent IR must be unchanged after merging", prio)
 		}
 	})
 }
