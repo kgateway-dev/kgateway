@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -193,60 +192,13 @@ func mergeExtProc(
 func mergeRustFormationActionListJson(action string, obj1, obj2 map[string]any) {
 	list1, ok1 := obj1[action].([]any)
 	list2, ok2 := obj2[action].([]any)
-	if !ok2 {
-		return
-	}
 	if !ok1 {
-		obj1[action] = list2
-		return
-	}
-	if action != "set" {
-		// "add" may legitimately set multiple values for the same header, and "remove"
-		// is idempotent, so concatenation is safe and order-independent for membership.
-		obj1[action] = append(list1, list2...)
-		return
-	}
-
-	// "set" replaces a header, so duplicate entries for the same name are order-sensitive:
-	// Envoy applies them last-wins. Concatenating both policies' entries would make the
-	// result depend on array position. Dedup by header name instead so the outcome is
-	// determined by merge priority. The caller arranges the preferred policy as obj2, so
-	// obj2 wins conflicts.
-	//
-	// HTTP header names are case-insensitive, so dedup on the lower-cased name to collapse
-	// e.g. "Origin" and "origin" (both permitted by the HeaderName API pattern) into a
-	// single entry. The original entry (and its casing) is preserved in the output.
-	idxByName := make(map[string]int, len(list1)+len(list2))
-	merged := make([]any, 0, len(list1)+len(list2))
-	upsert := func(list []any) {
-		for _, e := range list {
-			name, ok := rustFormationHeaderName(e)
-			if !ok {
-				merged = append(merged, e)
-				continue
-			}
-			key := strings.ToLower(name)
-			if i, exists := idxByName[key]; exists {
-				merged[i] = e
-				continue
-			}
-			idxByName[key] = len(merged)
-			merged = append(merged, e)
+		if ok2 {
+			obj1[action] = list2
 		}
+	} else if ok2 {
+		obj1[action] = append(list1, list2...)
 	}
-	upsert(list1)
-	upsert(list2)
-	obj1[action] = merged
-}
-
-// rustFormationHeaderName extracts the "name" field of a transformation set/add entry.
-func rustFormationHeaderName(e any) (string, bool) {
-	m, ok := e.(map[string]any)
-	if !ok {
-		return "", false
-	}
-	name, ok := m["name"].(string)
-	return name, ok
 }
 
 func mergeRustFormationActionBody(obj1, obj2 map[string]any) {

@@ -53,64 +53,6 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 	assert.True(t, errors.Is(byName["p2"], err2))
 }
 
-func TestMergeRustFormationActionListJson(t *testing.T) {
-	setEntry := func(name, value string) any {
-		return map[string]any{"name": name, "value": value}
-	}
-	setList := func(m map[string]any) []any {
-		resp, _ := m["set"].([]any)
-		return resp
-	}
-
-	t.Run("set dedups by header name and obj2 wins", func(t *testing.T) {
-		obj1 := map[string]any{"set": []any{setEntry("origin", "child"), setEntry("x-keep", "1")}}
-		obj2 := map[string]any{"set": []any{setEntry("origin", "parent")}}
-
-		mergeRustFormationActionListJson("set", obj1, obj2)
-
-		got := setList(obj1)
-		require.Len(t, got, 2, "origin should not be duplicated")
-		assert.Equal(t, map[string]any{"name": "origin", "value": "parent"}, got[0], "obj2 wins the origin conflict")
-		assert.Equal(t, map[string]any{"name": "x-keep", "value": "1"}, got[1], "x-keep retained")
-	})
-
-	t.Run("set result is independent of which side already set the header", func(t *testing.T) {
-		// obj2 always wins regardless of obj1 contents/position, so the surviving value
-		// is deterministic and not a function of array order.
-		a := map[string]any{"set": []any{setEntry("origin", "a")}}
-		b := map[string]any{"set": []any{setEntry("origin", "b")}}
-		mergeRustFormationActionListJson("set", a, b)
-		require.Len(t, setList(a), 1)
-		assert.Equal(t, "b", setList(a)[0].(map[string]any)["value"])
-	})
-
-	t.Run("set dedups case-insensitively (HTTP header names)", func(t *testing.T) {
-		// "Origin" and "origin" are both valid per the HeaderName pattern but are the same
-		// header to Envoy, so they must collapse to one entry (obj2 wins).
-		obj1 := map[string]any{"set": []any{setEntry("Origin", "child")}}
-		obj2 := map[string]any{"set": []any{setEntry("origin", "parent")}}
-		mergeRustFormationActionListJson("set", obj1, obj2)
-		got := setList(obj1)
-		require.Len(t, got, 1, "Origin/origin must not be treated as distinct headers")
-		assert.Equal(t, map[string]any{"name": "origin", "value": "parent"}, got[0])
-	})
-
-	t.Run("add concatenates without dedup", func(t *testing.T) {
-		obj1 := map[string]any{"add": []any{setEntry("origin", "child")}}
-		obj2 := map[string]any{"add": []any{setEntry("origin", "parent")}}
-		mergeRustFormationActionListJson("add", obj1, obj2)
-		add, _ := obj1["add"].([]any)
-		assert.Len(t, add, 2, "add should preserve both values for the same header")
-	})
-
-	t.Run("obj1 missing list takes obj2", func(t *testing.T) {
-		obj1 := map[string]any{}
-		obj2 := map[string]any{"set": []any{setEntry("origin", "parent")}}
-		mergeRustFormationActionListJson("set", obj1, obj2)
-		require.Len(t, setList(obj1), 1)
-	})
-}
-
 func TestMergeHttpACL(t *testing.T) {
 	p2Ref := &ir.AttachedPolicyRef{Name: "p2", Namespace: "default"}
 
