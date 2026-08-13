@@ -55,6 +55,8 @@ type BackendConfigPolicySpec struct {
 
 	// The timeout for new network connections to hosts in the cluster.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	ConnectTimeout *metav1.Duration `json:"connectTimeout,omitempty"`
 
@@ -164,6 +166,8 @@ type DNS struct {
 	// so RefreshRate acts as the maximum polling interval.
 	// Recommended value for large-scale deployments is 60s or higher.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="refreshRate must be at least 1ms"
 	RefreshRate *metav1.Duration `json:"refreshRate,omitempty"`
@@ -172,6 +176,8 @@ type DNS struct {
 	// spreading query load over time and helping prevent thundering-herd spikes.
 	// Must be less than or equal to refreshRate when both are set.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Jitter *metav1.Duration `json:"jitter,omitempty"`
 
@@ -213,6 +219,8 @@ type CommonHttpProtocolOptions struct {
 	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
 	//	FIN packets, etc.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
@@ -226,6 +234,8 @@ type CommonHttpProtocolOptions struct {
 	// Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
 	// reset independent of any other timeouts. If not specified, this value is not set.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	MaxStreamDuration *metav1.Duration `json:"maxStreamDuration,omitempty"`
 
@@ -278,6 +288,8 @@ type ConnectionKeepalive struct {
 	// Timeout after which the connection is closed if no response to a keepalive
 	// PING is received. A PING response is considered received if any frame
 	// arrives on the connection while the PING is outstanding.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms"
 	// +required
@@ -286,6 +298,8 @@ type ConnectionKeepalive struct {
 	// Interval between keepalive PINGs. If unset, PINGs are only sent when
 	// triggered by ConnectionIdleInterval.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
 	Interval *metav1.Duration `json:"interval,omitempty"`
@@ -294,6 +308,8 @@ type ConnectionKeepalive struct {
 	// has been idle for at least this duration, verifying the connection is
 	// still alive before reusing it.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="connectionIdleInterval must be at least 1ms"
 	ConnectionIdleInterval *metav1.Duration `json:"connectionIdleInterval,omitempty"`
@@ -308,12 +324,16 @@ type TCPKeepalive struct {
 
 	// The number of seconds a connection needs to be idle before keep-alive probes start being sent.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveTime must be at least 1 second"
 	KeepAliveTime *metav1.Duration `json:"keepAliveTime,omitempty"`
 
 	// The number of seconds between keep-alive probes.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="keepAliveInterval must be at least 1 second"
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
@@ -434,6 +454,8 @@ type LoadBalancer struct {
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
 	// Set to 0 to disable and have changes applied immediately.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	UpdateMergeWindow *metav1.Duration `json:"updateMergeWindow,omitempty"`
 
@@ -551,6 +573,8 @@ type (
 		// If set, the newly created host remains in slow start mode starting from its creation time
 		// for the duration of slow start window.
 		// +optional
+		// +kubebuilder:validation:Type=string
+		// +kubebuilder:validation:MaxLength=32
 		// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 		Window *metav1.Duration `json:"window,omitempty"`
 
@@ -658,11 +682,15 @@ type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
 	// health check attempt will be considered a failure.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Timeout metav1.Duration `json:"timeout"`
 
 	// Interval is the time between health checks.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Interval metav1.Duration `json:"interval"`
 
@@ -770,6 +798,8 @@ type OutlierDetection struct {
 	// to 10s.
 	// +optional
 	// +kubebuilder:default="10s"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="interval must be at least 1ms"
 	Interval *metav1.Duration `json:"interval,omitempty"`
@@ -779,6 +809,8 @@ type OutlierDetection struct {
 	// Defaults to 30s.
 	// +optional
 	// +kubebuilder:default="30s"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseEjectionTime must be at least 1ms"
 	BaseEjectionTime *metav1.Duration `json:"baseEjectionTime,omitempty"`
@@ -834,6 +866,8 @@ type Cookie struct {
 	// If specified, a cookie with the TTL will be generated if the cookie is not present.
 	// If the TTL is present and zero, the generated cookie will be a session cookie.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	TTL *metav1.Duration `json:"ttl,omitempty"`
 
