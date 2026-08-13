@@ -4,7 +4,14 @@
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
 {{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
 {{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
-{{- $goMemLimitPercent := int (.Values.controller.goMemLimitPercent | default 0) }}
+{{- $rawGoMemLimitPercent := .Values.controller.goMemLimitPercent }}
+{{- if kindIs "invalid" $rawGoMemLimitPercent }}
+{{- $rawGoMemLimitPercent = 0 }}
+{{- end }}
+{{- if not (regexMatch "^[0-9]+$" (printf "%v" $rawGoMemLimitPercent)) }}
+{{- fail (printf "controller.goMemLimitPercent must be an integer between 1 and 100, got %v" $rawGoMemLimitPercent) }}
+{{- end }}
+{{- $goMemLimitPercent := int $rawGoMemLimitPercent }}
 {{- $hasCustomGoMemLimit := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "GOMEMLIMIT") }}
 {{- if and (ne $goMemLimitPercent 0) $hasCustomGoMemLimit }}
 {{- fail "controller.goMemLimitPercent and controller.extraEnv.GOMEMLIMIT cannot both be set; use one or the other" }}

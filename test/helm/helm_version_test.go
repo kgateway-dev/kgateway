@@ -2,6 +2,7 @@ package helm
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -345,18 +346,34 @@ func findContainerEnvVar(t *testing.T, container corev1.Container, name string) 
 }
 
 func TestControllerGoMemLimitPercent(t *testing.T) {
-	t.Run("computes a static byte value from controller resources", func(t *testing.T) {
-		output := renderHelmTemplate(t, "kgateway", `controller:
+	for _, test := range []struct {
+		name    string
+		memory  string
+		percent int
+		want    string
+	}{
+		{name: "binary quantity", memory: "2Gi", percent: 80, want: "1717986918"},
+		{name: "lower percentage boundary", memory: "2Gi", percent: 1, want: "21474836"},
+		{name: "upper percentage boundary", memory: "2Gi", percent: 100, want: "2147483648"},
+		{name: "decimal binary quantity", memory: "1.5Gi", percent: 80, want: "1288490188"},
+		{name: "decimal SI megabytes", memory: "512M", percent: 80, want: "409600000"},
+		{name: "decimal SI gigabyte", memory: "1G", percent: 80, want: "800000000"},
+		{name: "large decimal SI quantity", memory: "48G", percent: 80, want: "38400000000"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			values := fmt.Sprintf(`controller:
   resources:
     limits:
-      memory: 2Gi
-  goMemLimitPercent: 80
-`, nil)
-		deployment := findDeployment(t, output)
-		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
-		require.Equal(t, "1717986918", memoryLimit.Value)
-		require.Nil(t, memoryLimit.ValueFrom)
-	})
+      memory: %s
+  goMemLimitPercent: %d
+`, test.memory, test.percent)
+			output := renderHelmTemplate(t, "kgateway", values, nil)
+			deployment := findDeployment(t, output)
+			memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+			require.Equal(t, test.want, memoryLimit.Value)
+			require.Nil(t, memoryLimit.ValueFrom)
+		})
+	}
 
 	t.Run("uses deprecated top-level resources when controller resources are unset", func(t *testing.T) {
 		output := renderHelmTemplate(t, "kgateway", `resources:
@@ -403,11 +420,58 @@ controller:
 		require.Equal(t, 1, count)
 	})
 
+	t.Run("allows a null percentage as unset", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  goMemLimitPercent: null
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Empty(t, memoryLimit.Value)
+		require.NotNil(t, memoryLimit.ValueFrom)
+		require.NotNil(t, memoryLimit.ValueFrom.ResourceFieldRef)
+		require.Equal(t, "limits.memory", memoryLimit.ValueFrom.ResourceFieldRef.Resource)
+	})
+
 	for _, test := range []struct {
 		name       string
 		valuesYAML string
 		message    string
 	}{
+		{
+			name: "rejects a non-numeric percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: eighty
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got eighty",
+		},
+		{
+			name: "rejects a fractional percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: 80.5
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got 80.5",
+		},
+		{
+			name: "rejects a boolean percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: true
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got true",
+		},
+		{
+			name: "rejects a false boolean percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: false
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got false",
+		},
+		{
+			name: "rejects a negative percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: -1
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got -1",
+		},
 		{
 			name: "requires an explicit memory limit",
 			valuesYAML: `controller:
