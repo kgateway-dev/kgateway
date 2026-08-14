@@ -1106,6 +1106,7 @@ spec:
                       fixedDelay:
                         description: FixedDelay is the duration to delay before forwarding
                           the request.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -1856,6 +1857,7 @@ spec:
                               FillInterval defines the time duration between consecutive token fills.
                               This value must be a valid duration string (e.g., "1s", "500ms").
                               It determines the frequency of token replenishment.
+                            maxLength: 32
                             type: string
                             x-kubernetes-validations:
                             - message: invalid duration value
@@ -1953,6 +1955,7 @@ spec:
                       The backoff interval is capped at a max of 10 times the base interval.
                       E.g., given a value of 25ms, the first retry will be delayed randomly by 0-24ms, the 2nd by 0-74ms,
                       the 3rd by 0-174ms, and so on, and capped to a max of 10 times the base interval (250ms).
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -1965,6 +1968,7 @@ spec:
                       If a global timeout is configured on a route, this timeout must be less than the global
                       route timeout.
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -2169,6 +2173,7 @@ spec:
                       processed and when the backend response has been completely processed.
                       A value of 0 effectively disables the timeout.
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -2177,6 +2182,7 @@ spec:
                     description: |-
                       StreamIdle specifies a timeout for a requests' idle streams.
                       A value of 0 effectively disables the timeout.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
