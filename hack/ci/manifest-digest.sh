@@ -14,5 +14,12 @@ if [[ $# -ne 1 ]]; then
     exit 2
 fi
 
-# The digest of a manifest is the sha256 of its raw bytes; --raw returns exactly those.
-docker buildx imagetools inspect "$1" --raw | sha256sum | awk '{print "sha256:"$1}'
+# The digest of a manifest is the sha256 of its raw bytes; --raw returns exactly those. The bytes go
+# to a file rather than straight down a pipe so that a failed inspect (a missing tag, a registry
+# error) prints nothing: piping would hash the empty input and hand the caller a plausible-looking
+# digest alongside the nonzero exit. Redirecting preserves the bytes exactly as `--raw` emitted
+# them, trailing newline included, which is what makes this digest usable as a `ref@digest`.
+raw="$(mktemp)"
+trap 'rm -f "$raw"' EXIT
+docker buildx imagetools inspect "$1" --raw >"$raw"
+sha256sum <"$raw" | awk '{print "sha256:"$1}'
