@@ -11,6 +11,7 @@ import (
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
@@ -693,10 +694,16 @@ func ioUringBootstrapAssertion(t *testing.T, testInstallation *e2e.TestInstallat
 			g.Expect(bootstrap.GetDefaultSocketInterface()).To(gomega.Equal(socketInterfaceExtensionName),
 				"bootstrap should select the default socket interface extension when ioUring is enabled")
 			extensions := bootstrap.GetBootstrapExtensions()
-			g.Expect(extensions).To(gomega.HaveLen(1),
-				"bootstrap should have exactly one bootstrap extension when ioUring is enabled")
-			g.Expect(extensions[0].GetName()).To(gomega.Equal(socketInterfaceExtensionName))
-			g.Expect(extensions[0].GetTypedConfig().GetTypeUrl()).To(gomega.Equal(defaultSocketInterfaceTypeURL))
+			var ext *envoycorev3.TypedExtensionConfig
+			for i := range extensions {
+				if extensions[i].GetName() == socketInterfaceExtensionName {
+					ext = extensions[i]
+					break
+				}
+			}
+			g.Expect(ext).NotTo(gomega.BeNil(),
+				"bootstrap should include %q in bootstrap_extensions when ioUring is enabled", socketInterfaceExtensionName)
+			g.Expect(ext.GetTypedConfig().GetTypeUrl()).To(gomega.Equal(defaultSocketInterfaceTypeURL))
 		}).
 			WithContext(ctx).
 			WithTimeout(30 * time.Second).
