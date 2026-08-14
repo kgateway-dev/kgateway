@@ -455,6 +455,12 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 
 	gateway.EnableReadinessProbeProxyProtocol = envoyContainerConfig.GetBootstrap().GetEnableReadinessProbeProxyProtocol()
 
+	if ioUringConfig := envoyContainerConfig.GetBootstrap().GetIoUring(); ioUringConfig != nil {
+		gateway.IoUring = &deployer.HelmIoUring{
+			Enabled: ioUringConfig.GetEnabled(),
+		}
+	}
+
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
 	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())

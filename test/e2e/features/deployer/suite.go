@@ -10,6 +10,7 @@ import (
 	"time"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
@@ -44,6 +45,9 @@ const (
 	readinessListenerName      = "readiness_listener"
 	proxyProtocolFilterName    = "envoy.filters.listener.proxy_protocol"
 	proxyProtocolFilterTypeURL = "type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol"
+
+	socketInterfaceExtensionName  = "envoy.extensions.network.socket_interface.default_socket_interface"
+	defaultSocketInterfaceTypeURL = "type.googleapis.com/envoy.extensions.network.socket_interface.v3.DefaultSocketInterface"
 )
 
 var (
@@ -79,6 +83,9 @@ var (
 		},
 		"TestReadinessProbeProxyProtocol": {
 			Manifests: []string{gatewayReadinessProxyProtocol},
+		},
+		"TestIoUringBootstrap": {
+			Manifests: []string{gatewayIoUring},
 		},
 	}
 )
@@ -660,6 +667,53 @@ func findStaticListener(cfgDump *adminv3.ConfigDump, name string) *envoylistener
 		if l.GetName() == name {
 			return &l
 		}
+	}
+	return nil
+}
+
+func (s *testingSuite) TestIoUringBootstrap() {
+	s.TestInstallation.AssertionsT(s.T()).EventuallyReadyReplicas(s.Ctx, proxyObjectMeta, gomega.Equal(1))
+
+	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
+		s.Ctx,
+		proxyObjectMeta,
+		ioUringBootstrapAssertion(s.T(), s.TestInstallation),
+	)
+}
+
+func ioUringBootstrapAssertion(t *testing.T, testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+	return func(ctx context.Context, adminClient *admincli.Client) {
+		testInstallation.AssertionsT(t).Gomega.Eventually(func(g gomega.Gomega) {
+			cfgDump, err := adminClient.GetConfigDump(ctx, nil)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get config dump from envoy admin")
+
+			bootstrap := findBootstrap(cfgDump)
+			g.Expect(bootstrap).NotTo(gomega.BeNil(), "bootstrap must be present in the config dump")
+
+			g.Expect(bootstrap.GetDefaultSocketInterface()).To(gomega.Equal(socketInterfaceExtensionName),
+				"bootstrap should select the default socket interface extension when ioUring is enabled")
+			extensions := bootstrap.GetBootstrapExtensions()
+			g.Expect(extensions).To(gomega.HaveLen(1),
+				"bootstrap should have exactly one bootstrap extension when ioUring is enabled")
+			g.Expect(extensions[0].GetName()).To(gomega.Equal(socketInterfaceExtensionName))
+			g.Expect(extensions[0].GetTypedConfig().GetTypeUrl()).To(gomega.Equal(defaultSocketInterfaceTypeURL))
+		}).
+			WithContext(ctx).
+			WithTimeout(30 * time.Second).
+			WithPolling(500 * time.Millisecond).
+			Should(gomega.Succeed())
+	}
+}
+
+// findBootstrap walks the config dump and returns the proxy's bootstrap
+// config, or nil if not found.
+func findBootstrap(cfgDump *adminv3.ConfigDump) *envoybootstrapv3.Bootstrap {
+	for _, c := range cfgDump.GetConfigs() {
+		var b adminv3.BootstrapConfigDump
+		if err := c.UnmarshalTo(&b); err != nil {
+			continue
+		}
+		return b.GetBootstrap()
 	}
 	return nil
 }

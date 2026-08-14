@@ -419,6 +419,17 @@ type EnvoyBootstrap struct {
 	//
 	// +optional
 	EnableReadinessProbeProxyProtocol *bool `json:"enableReadinessProbeProxyProtocol,omitempty"`
+
+	// IoUring configures the io_uring socket interface for the Envoy proxy.
+	// When enabled, the default socket interface is configured with io_uring
+	// options via a bootstrap extension, so Envoy uses io_uring instead of
+	// classic socket syscalls for network I/O. Requires a Linux kernel with
+	// io_uring support (5.11+). Defaults to disabled.
+	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/socket_interface/v3/default_socket_interface.proto
+	// for more information.
+	//
+	// +optional
+	IoUring *IoUring `json:"ioUring,omitempty"`
 }
 
 // LogFormat configures Envoy's application log format. Either JSON or Text must be specified.
@@ -434,6 +445,22 @@ type LogFormat struct {
 	// See https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-log-format.
 	// +optional
 	Text *string `json:"text,omitempty"`
+}
+
+// IoUring configures the io_uring socket interface for Envoy.
+type IoUring struct {
+	// Enabled enables io_uring for network I/O in the Envoy proxy.
+	// Defaults to false.
+	//
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+func (in *IoUring) GetEnabled() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.Enabled
 }
 
 // DnsResolver configures the CARES DNS resolver for Envoy.
@@ -482,6 +509,13 @@ func (in *EnvoyBootstrap) GetEnableReadinessProbeProxyProtocol() *bool {
 		return nil
 	}
 	return in.EnableReadinessProbeProxyProtocol
+}
+
+func (in *EnvoyBootstrap) GetIoUring() *IoUring {
+	if in == nil {
+		return nil
+	}
+	return in.IoUring
 }
 
 func (in *DnsResolver) GetUdpMaxQueries() *int32 {

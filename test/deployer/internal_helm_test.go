@@ -251,6 +251,21 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
+			Name:      "envoy io_uring socket interface",
+			InputFile: "envoy-io-uring",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "bootstrap_extensions:",
+					"envoy bootstrap should include bootstrap_extensions when ioUring is enabled")
+				assert.Contains(t, outputYaml, "type.googleapis.com/envoy.extensions.network.socket_interface.v3.DefaultSocketInterface",
+					"bootstrap_extensions should configure the default socket interface")
+				assert.Contains(t, outputYaml, "io_uring_options: {}",
+					"the default socket interface should enable io_uring")
+				assert.Contains(t, outputYaml, `default_socket_interface: "envoy.extensions.network.socket_interface.default_socket_interface"`,
+					"the bootstrap should select the default socket interface extension")
+			},
+		},
+		{
 			Name:      "envoy JSON log",
 			InputFile: "envoy-log-json",
 		},

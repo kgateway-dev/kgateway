@@ -692,6 +692,24 @@ func deepMergeEnvoyBootstrap(dst, src *kgateway.EnvoyBootstrap) *kgateway.EnvoyB
 		dst.EnableReadinessProbeProxyProtocol = src.GetEnableReadinessProbeProxyProtocol()
 	}
 
+	dst.IoUring = deepMergeIoUring(dst.GetIoUring(), src.GetIoUring())
+
+	return dst
+}
+
+func deepMergeIoUring(dst, src *kgateway.IoUring) *kgateway.IoUring {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+	if src.GetEnabled() != nil {
+		dst.Enabled = src.GetEnabled()
+	}
+
 	return dst
 }
 
