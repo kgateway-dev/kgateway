@@ -95,3 +95,65 @@ Otherwise (e.g., "latest", "dev"), return it unchanged.
 {{- $tag -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Convert a Kubernetes memory quantity to bytes for GOMEMLIMIT percentage calculation.
+Supported suffixes: Ki, Mi, Gi, Ti, Pi, Ei, k, M, G, T, P, E, or no suffix.
+*/}}
+{{- define "kgateway.memToBytes" -}}
+{{- $memory := printf "%v" . -}}
+{{- $number := $memory -}}
+{{- $multiplier := 1.0 -}}
+{{- if hasSuffix "Ki" $memory -}}
+  {{- $number = trimSuffix "Ki" $memory -}}
+  {{- $multiplier = 1024.0 -}}
+{{- else if hasSuffix "Mi" $memory -}}
+  {{- $number = trimSuffix "Mi" $memory -}}
+  {{- $multiplier = 1048576.0 -}}
+{{- else if hasSuffix "Gi" $memory -}}
+  {{- $number = trimSuffix "Gi" $memory -}}
+  {{- $multiplier = 1073741824.0 -}}
+{{- else if hasSuffix "Ti" $memory -}}
+  {{- $number = trimSuffix "Ti" $memory -}}
+  {{- $multiplier = 1099511627776.0 -}}
+{{- else if hasSuffix "Pi" $memory -}}
+  {{- $number = trimSuffix "Pi" $memory -}}
+  {{- $multiplier = 1125899906842624.0 -}}
+{{- else if hasSuffix "Ei" $memory -}}
+  {{- $number = trimSuffix "Ei" $memory -}}
+  {{- $multiplier = 1152921504606846976.0 -}}
+{{- else if hasSuffix "k" $memory -}}
+  {{- $number = trimSuffix "k" $memory -}}
+  {{- $multiplier = 1000.0 -}}
+{{- else if hasSuffix "M" $memory -}}
+  {{- $number = trimSuffix "M" $memory -}}
+  {{- $multiplier = 1000000.0 -}}
+{{- else if hasSuffix "G" $memory -}}
+  {{- $number = trimSuffix "G" $memory -}}
+  {{- $multiplier = 1000000000.0 -}}
+{{- else if hasSuffix "T" $memory -}}
+  {{- $number = trimSuffix "T" $memory -}}
+  {{- $multiplier = 1000000000000.0 -}}
+{{- else if hasSuffix "P" $memory -}}
+  {{- $number = trimSuffix "P" $memory -}}
+  {{- $multiplier = 1000000000000000.0 -}}
+{{- else if hasSuffix "E" $memory -}}
+  {{- $number = trimSuffix "E" $memory -}}
+  {{- $multiplier = 1000000000000000000.0 -}}
+{{- end -}}
+{{- if not (regexMatch "^([0-9]+(\\.[0-9]+)?|\\.[0-9]+)([eE][+-]?[0-9]+)?$" $number) -}}
+  {{- fail (printf "goMemLimitPercent: unsupported memory quantity %q; use a Kubernetes memory quantity such as \"2Gi\", \"1.5Gi\", or \"512M\"" $memory) -}}
+{{- end -}}
+{{- printf "%.0f" (floor (mulf (float64 $number) $multiplier)) -}}
+{{- end -}}
+
+{{/* Compute a byte-valued GOMEMLIMIT from a memory quantity and percentage. */}}
+{{- define "kgateway.goMemLimit" -}}
+{{- $memory := index . 0 -}}
+{{- $percent := int (index . 1) -}}
+{{- if or (lt $percent 1) (gt $percent 100) -}}
+  {{- fail (printf "goMemLimitPercent must be between 1 and 100, got %d" $percent) -}}
+{{- end -}}
+{{- $bytes := include "kgateway.memToBytes" $memory | trim | float64 -}}
+{{- printf "%.0f" (floor (divf (mulf $bytes (float64 $percent)) 100.0)) -}}
+{{- end -}}

@@ -116,6 +116,7 @@ spec:
                       hour. To disable idle timeouts explicitly set this to 0.\n\tDisabling
                       this timeout has a highly likelihood of yielding connection
                       leaks due to lost TCP\n\tFIN packets, etc."
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -139,6 +140,7 @@ spec:
                     description: |-
                       Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
                       reset independent of any other timeouts. If not specified, this value is not set.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -147,6 +149,7 @@ spec:
               connectTimeout:
                 description: The timeout for new network connections to hosts in the
                   cluster.
+                maxLength: 32
                 type: string
                 x-kubernetes-validations:
                 - message: invalid duration value
@@ -161,6 +164,7 @@ spec:
                       Jitter adds a random delay of up to this duration before each DNS refresh,
                       spreading query load over time and helping prevent thundering-herd spikes.
                       Must be less than or equal to refreshRate when both are set.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -173,6 +177,7 @@ spec:
                       When Envoy respects DNS TTLs, lower TTL values effectively override this setting,
                       so RefreshRate acts as the maximum polling interval.
                       Recommended value for large-scale deployments is 60s or higher.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -248,6 +253,7 @@ spec:
                     type: object
                   interval:
                     description: Interval is the time between health checks.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -256,6 +262,7 @@ spec:
                     description: |-
                       Timeout is time to wait for a health check response. If the timeout is reached the
                       health check attempt will be considered a failure.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -317,6 +324,7 @@ spec:
                           If set, a PING is sent before dispatching new streams on a connection that
                           has been idle for at least this duration, verifying the connection is
                           still alive before reusing it.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -327,6 +335,7 @@ spec:
                         description: |-
                           Interval between keepalive PINGs. If unset, PINGs are only sent when
                           triggered by ConnectionIdleInterval.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -338,6 +347,7 @@ spec:
                           Timeout after which the connection is closed if no response to a keepalive
                           PING is received. A PING response is considered received if any frame
                           arrives on the connection while the PING is outstanding.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -469,6 +479,7 @@ spec:
                               Represents the size of slow start window.
                               If set, the newly created host remains in slow start mode starting from its creation time
                               for the duration of slow start window.
+                            maxLength: 32
                             type: string
                             x-kubernetes-validations:
                             - message: invalid duration value
@@ -525,6 +536,7 @@ spec:
                                     TTL specifies the time to live of the cookie.
                                     If specified, a cookie with the TTL will be generated if the cookie is not present.
                                     If the TTL is present and zero, the generated cookie will be a session cookie.
+                                  maxLength: 32
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -615,6 +627,7 @@ spec:
                                     TTL specifies the time to live of the cookie.
                                     If specified, a cookie with the TTL will be generated if the cookie is not present.
                                     If the TTL is present and zero, the generated cookie will be a session cookie.
+                                  maxLength: 32
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -709,6 +722,7 @@ spec:
                               Represents the size of slow start window.
                               If set, the newly created host remains in slow start mode starting from its creation time
                               for the duration of slow start window.
+                            maxLength: 32
                             type: string
                             x-kubernetes-validations:
                             - message: invalid duration value
@@ -720,6 +734,7 @@ spec:
                       This allows batch updates of endpoints health/weight/metadata that happen during a time window.
                       this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
                       Set to 0 to disable and have changes applied immediately.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -807,6 +822,7 @@ spec:
                       The base time that a host is ejected for. The real time is equal to the
                       base time multiplied by the number of times the host has been ejected.
                       Defaults to 30s.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -858,6 +874,7 @@ spec:
                       The time interval between ejection analysis sweeps. This can result in
                       both new ejections as well as hosts being returned to service. Defaults
                       to 10s.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -980,6 +997,7 @@ spec:
                 properties:
                   keepAliveInterval:
                     description: The number of seconds between keep-alive probes.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -995,6 +1013,7 @@ spec:
                   keepAliveTime:
                     description: The number of seconds a connection needs to be idle
                       before keep-alive probes start being sent.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value

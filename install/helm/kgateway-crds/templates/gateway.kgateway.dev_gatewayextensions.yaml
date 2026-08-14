@@ -169,6 +169,7 @@ spec:
                       requestTimeout:
                         description: RequestTimeout is the timeout for the gRPC request.
                           This is the timeout for a specific request.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -197,6 +198,7 @@ spec:
                                 description: BaseInterval specifies the base interval
                                   used with a fully jittered exponential back-off
                                   between retries.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -207,6 +209,7 @@ spec:
                                 description: |-
                                   MaxInterval specifies the maximum interval between retry attempts.
                                   Defaults to 10 times the BaseInterval if not set.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -390,6 +393,7 @@ spec:
                       requestTimeout:
                         description: RequestTimeout is the timeout for the HTTP request.
                           Default timeout is 2 seconds.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -418,6 +422,7 @@ spec:
                                 description: BaseInterval specifies the base interval
                                   used with a fully jittered exponential back-off
                                   between retries.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -428,6 +433,7 @@ spec:
                                 description: |-
                                   MaxInterval specifies the maximum interval between retry attempts.
                                   Defaults to 10 times the BaseInterval if not set.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -721,6 +727,7 @@ spec:
                       requestTimeout:
                         description: RequestTimeout is the timeout for the gRPC request.
                           This is the timeout for a specific request.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -749,6 +756,7 @@ spec:
                                 description: BaseInterval specifies the base interval
                                   used with a fully jittered exponential back-off
                                   between retries.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -759,6 +767,7 @@ spec:
                                 description: |-
                                   MaxInterval specifies the maximum interval between retry attempts.
                                   Defaults to 10 times the BaseInterval if not set.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -779,6 +788,7 @@ spec:
                     description: |-
                       MaxMessageTimeout specifies the upper bound of override_message_timeout that may be sent from the external processing server.
                       The default value 0, which effectively disables the override_message_timeout API.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid timeout value
@@ -788,6 +798,7 @@ spec:
                   messageTimeout:
                     description: MessageTimeout is the timeout for each message sent
                       to the external processing server.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid timeout value
@@ -1022,6 +1033,7 @@ spec:
                                       description: |-
                                         FailedRefetchDuration is how long to wait before retrying the fetch after a failure.
                                         If unspecified, Envoy default of 1 second is used.
+                                      maxLength: 32
                                       type: string
                                       x-kubernetes-validations:
                                       - message: invalid duration value
@@ -1113,6 +1125,7 @@ spec:
                                   description: |-
                                     Duration after which the cached JWKS expires.
                                     If unspecified, the default cache duration is 5 minutes.
+                                  maxLength: 32
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -1134,6 +1147,7 @@ spec:
                                           description: |-
                                             BaseInterval is the base interval for the exponential backoff computation.
                                             It must be greater than zero and less than or equal to MaxInterval.
+                                          maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
                                           - message: invalid duration value
@@ -1145,6 +1159,7 @@ spec:
                                           description: |-
                                             MaxInterval is the maximum interval between retries. If set, it must be greater than
                                             or equal to BaseInterval. Defaults to 10 times the BaseInterval.
+                                          maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
                                           - message: invalid duration value
@@ -1881,6 +1896,7 @@ spec:
                       requestTimeout:
                         description: RequestTimeout is the timeout for the gRPC request.
                           This is the timeout for a specific request.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid timeout value
@@ -1909,6 +1925,7 @@ spec:
                                 description: BaseInterval specifies the base interval
                                   used with a fully jittered exponential back-off
                                   between retries.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -1919,6 +1936,7 @@ spec:
                                 description: |-
                                   MaxInterval specifies the maximum interval between retry attempts.
                                   Defaults to 10 times the BaseInterval if not set.
+                                maxLength: 32
                                 type: string
                                 x-kubernetes-validations:
                                 - message: invalid duration value
@@ -1941,6 +1959,7 @@ spec:
                       Timeout provides an optional timeout value for requests to the rate limit service.
                       For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.
                       See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value

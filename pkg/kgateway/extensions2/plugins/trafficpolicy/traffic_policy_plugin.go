@@ -667,10 +667,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Add Buffer filter to enable buffer for the listener.
-	// Requires the buffer policy to be set as typed_per_filter_config.
+	// Register Buffer immediately before Rustformation so its per-route request
+	// limit is established before a body-parsing transformation buffers data.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(bufferFilterName, f, filters.DuringStage(filters.RouteStage))
+		filter := filters.MustNewStagedFilter(
+			bufferFilterName,
+			f,
+			filters.RelativeToStage(filters.AcceptedStage, -2),
+		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}
