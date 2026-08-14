@@ -334,8 +334,9 @@ jobs:
         # CURRENT_TAG defaults to HEAD because the release tag does not exist yet: the publish
         # job creates it (via `gh release create --target`) only after the gate passes.
         # PREVIOUS_TAG derives from `git describe` and a tag name can contain shell metacharacters,
-        # so it must reach the script through the environment and never via `${{ }}` interpolation.
-        run: make release-notes PREVIOUS_TAG="${PREVIOUS_TAG}"
+        # so it must reach the script as an environment variable end to end — expanding it into a
+        # command line (via `${{ }}` here or by make in the Makefile) would execute a crafted tag.
+        run: make release-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PREVIOUS_TAG: ${{ needs.setup.outputs.previous_tag }}
@@ -748,9 +749,23 @@ jobs:
           # the badge back to the older line. Only a GA outranking the current latest claims it.
           latest=false
           if [[ "${VERSION}" != *-* ]]; then
-            current="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name 2>/dev/null || true)"
-            # /releases/latest never returns a prerelease, so this compares GA against GA. An empty
-            # response means there is no latest release yet (a fresh repo or fork), so this is it.
+            # Only a definite 404 means there is no latest release yet; treating any lookup failure
+            # as "none" would hand Latest to a backport GA whenever the API hiccuped. Same pattern
+            # as assert-release-absent.sh: check the status first, fail closed on anything else.
+            response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --include 2>/dev/null || true)"
+            http_code="$(awk 'NR == 1 {print $2}' <<<"$response")"
+            current=""
+            case "$http_code" in
+            200)
+              current="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)"
+              ;;
+            404) ;; # No latest release yet (a fresh repo or fork), so this release claims it.
+            *)
+              echo "unable to determine the current latest release (response status: ${http_code:-none}); refusing to guess at --latest"
+              exit 1
+              ;;
+            esac
+            # /releases/latest never returns a prerelease, so this compares GA against GA.
             if [[ -z "$current" ]] ||
               [[ "$(printf '%s\n%s\n' "${current#v}" "${VERSION#v}" | sort -V | tail -1)" == "${VERSION#v}" ]]; then
               latest=true

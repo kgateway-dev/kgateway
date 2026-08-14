@@ -1035,7 +1035,7 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
-	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
+	./hack/generate-release-notes.sh -p "$${PREVIOUS_TAG:-}" -c "$${CURRENT_TAG:-HEAD}"
 
 #----------------------------------------------------------------------------------
 # MARK: Development
