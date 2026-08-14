@@ -224,9 +224,10 @@ type CommonHttpProtocolOptions struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
-	// Specifies the maximum number of headers that the connection will accept.
-	// If not specified, the default of 100 is used. Requests that exceed this limit will receive
-	// a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
+	// Specifies the maximum number of response headers that the upstream connection will accept
+	// from the backend. If not specified, the default of 100 is used.
+	// To configure the maximum number of headers accepted in downstream requests, use
+	// ListenerPolicy.spec.default.httpSettings.maxHeadersCount.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxHeadersCount *int32 `json:"maxHeadersCount,omitempty"`
