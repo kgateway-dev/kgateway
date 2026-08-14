@@ -2,6 +2,7 @@ package waypoint
 
 import (
 	"context"
+	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -255,13 +256,13 @@ func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Se
 		sortedAddresses = ipv6Addrs
 	case apisettings.DnsLookupFamilyV4Preferred:
 		// IPv4 first, then IPv6 as additional addresses
-		sortedAddresses = append(ipv4Addrs, ipv6Addrs...)
+		sortedAddresses = slices.Concat(ipv4Addrs, ipv6Addrs)
 	case apisettings.DnsLookupFamilyAuto:
 		// IPv6 first, then IPv4 as additional addresses
-		sortedAddresses = append(ipv6Addrs, ipv4Addrs...)
+		sortedAddresses = slices.Concat(ipv6Addrs, ipv4Addrs)
 	default:
 		// Default to V4_PREFERRED for unknown values
-		sortedAddresses = append(ipv4Addrs, ipv6Addrs...)
+		sortedAddresses = slices.Concat(ipv4Addrs, ipv6Addrs)
 	}
 
 	return sortedAddresses

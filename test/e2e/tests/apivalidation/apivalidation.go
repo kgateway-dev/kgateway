@@ -530,12 +530,12 @@ spec:
 			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
 		},
 		{
-			name: "HTTPListenerPolicy: valid target references",
+			name: "ListenerPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-valid-targets
+  name: listener-policy-valid-targets
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -549,34 +549,34 @@ spec:
 `,
 		},
 		{
-			name: "HTTPListenerPolicy: invalid target reference - HTTPRoute not allowed",
+			name: "ListenerPolicy: invalid target reference - HTTPRoute not allowed",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-invalid-target-httproute
+  name: listener-policy-invalid-target-httproute
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: test-route
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
-			name: "HTTPListenerPolicy: invalid target reference - wrong resource type",
+			name: "ListenerPolicy: invalid target reference - wrong resource type",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-invalid-target
+  name: listener-policy-invalid-target
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: ListenerSet
     name: test-listener
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
 			name: "DirectResponse: empty body not allowed",

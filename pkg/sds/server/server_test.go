@@ -68,7 +68,7 @@ var _ = Describe("SDS Server", func() {
 				ValidationContext: "test-validation",
 			},
 		}
-		srv = server.SetupEnvoySDS(secrets, sdsClient, serverAddr)
+		srv = server.SetupEnvoySDS(context.Background(), secrets, sdsClient, serverAddr)
 	})
 
 	AfterEach(func() {
@@ -95,7 +95,7 @@ var _ = Describe("SDS Server", func() {
 
 	It("includes configured ocsp staple in the served tls secret", func() {
 		ocspServerAddr := "127.0.0.1:8889"
-		ocspSrv := server.SetupEnvoySDS([]server.Secret{{
+		ocspSrv := server.SetupEnvoySDS(context.Background(), []server.Secret{{
 			ServerCert:        "test-server",
 			SslCaFile:         caFile.Name(),
 			SslCertFile:       certFile.Name(),

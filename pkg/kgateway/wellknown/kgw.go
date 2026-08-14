@@ -26,7 +26,6 @@ var (
 	DirectResponseGVK      = buildKgatewayGvk("DirectResponse")
 	BackendGVK             = buildKgatewayGvk("Backend")
 	TrafficPolicyGVK       = buildKgatewayGvk("TrafficPolicy")
-	HTTPListenerPolicyGVK  = buildKgatewayGvk("HTTPListenerPolicy")
 	ListenerPolicyGVK      = buildKgatewayGvk("ListenerPolicy")
 	BackendConfigPolicyGVK = buildKgatewayGvk("BackendConfigPolicy")
 	GatewayParametersGVR   = GatewayParametersGVK.GroupVersion().WithResource("gatewayparameters")
@@ -34,7 +33,6 @@ var (
 	DirectResponseGVR      = DirectResponseGVK.GroupVersion().WithResource("directresponses")
 	BackendGVR             = BackendGVK.GroupVersion().WithResource("backends")
 	TrafficPolicyGVR       = TrafficPolicyGVK.GroupVersion().WithResource("trafficpolicies")
-	HTTPListenerPolicyGVR  = HTTPListenerPolicyGVK.GroupVersion().WithResource("httplistenerpolicies")
 	ListenerPolicyGVR      = ListenerPolicyGVK.GroupVersion().WithResource("listenerpolicies")
 	BackendConfigPolicyGVR = BackendConfigPolicyGVK.GroupVersion().WithResource("backendconfigpolicies")
 )
@@ -64,8 +62,6 @@ func GVKToGVR(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) 
 		return BackendGVR, nil
 	case TrafficPolicyGVK:
 		return TrafficPolicyGVR, nil
-	case HTTPListenerPolicyGVK:
-		return HTTPListenerPolicyGVR, nil
 	case ListenerPolicyGVK:
 		return ListenerPolicyGVR, nil
 	case BackendConfigPolicyGVK:

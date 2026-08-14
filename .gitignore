@@ -6,6 +6,10 @@ _test
 .venv
 .cursor
 .envrc
+.codex
+# .claude/skills is checked in; ignore everything else under .claude
+.claude/*
+!.claude/skills/
 
 # ignore local pollution from kind setup script
 docker-local

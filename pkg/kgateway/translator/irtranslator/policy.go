@@ -1,6 +1,8 @@
 package irtranslator
 
 import (
+	"fmt"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,8 +144,17 @@ func addRouteSourceMetadata(in ir.HttpRouteRuleMatchIR, metadata *envoycorev3.Me
 	if in.Parent.Namespace != "" {
 		fields["namespace"] = structpb.NewStringValue(in.Parent.Namespace)
 	}
+	if in.RuleName != "" {
+		fields["rule"] = structpb.NewStringValue(in.RuleName)
+	} else if in.Name != "" {
+		// Generate a unique identifier for the rule in the context if its route that is *not* a valid Gateway API section name.
+		// This way, the same field can be used for named and unnamed rules without risk of conflict.
+		fields["rule"] = structpb.NewStringValue(fmt.Sprintf("_rule-%d", in.RuleIndex))
+	}
+	// Gate on unique name being set because default value (0) is a valid index
 	if in.Name != "" {
-		fields["rule"] = structpb.NewStringValue(in.Name)
+		// Use string value so all fields are strings and because struct number type is floating point.
+		fields["match"] = structpb.NewStringValue(fmt.Sprintf("_match-%d", in.MatchIndex))
 	}
 
 	if len(fields) == 0 {
