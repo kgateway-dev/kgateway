@@ -1,0 +1,723 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "imagePullSecrets": {
+      "type": "array",
+      "description": "Set a list of image pull secrets for Kubernetes to use when pulling container images from a private registry.",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commonLabels": {
+      "type": "object",
+      "description": "Additional labels to add to all resources created by the Helm chart.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "nameOverride": {
+      "type": "string",
+      "description": "Add a name to the default Helm base release name."
+    },
+    "fullnameOverride": {
+      "type": "string",
+      "description": "Override the full name of resources created by the Helm chart."
+    },
+    "rbac": {
+      "type": "object",
+      "description": "Configure RBAC resources (ClusterRole and ClusterRoleBinding) for the deployment.",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Create the ClusterRole and ClusterRoleBinding."
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "description": "Configure the service account for the deployment.",
+      "additionalProperties": false,
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Specify whether a service account should be created."
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Add annotations to the service account.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string",
+          "description": "Set the name of the service account to use."
+        }
+      }
+    },
+    "deploymentAnnotations": {
+      "type": "object",
+      "description": "Add annotations to the kgateway deployment.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "podAnnotations": {
+      "type": "object",
+      "description": "Add annotations to the kgateway pods. Deprecated in favor of controller.podAnnotations.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "description": "Set the pod-level security context. Deprecated in favor of controller.podSecurityContext."
+    },
+    "securityContext": {
+      "type": "object",
+      "description": "Set the container-level security context. Deprecated in favor of controller.securityContext."
+    },
+    "resources": {
+      "type": "object",
+      "description": "Configure resource requests and limits for the container. Deprecated in favor of controller.resources.",
+      "additionalProperties": false,
+      "properties": {
+        "requests": {
+          "type": "object",
+          "description": "Resource requests (cpu, memory, ephemeral-storage, hugepages, etc.)",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        },
+        "limits": {
+          "type": "object",
+          "description": "Resource limits (cpu, memory, ephemeral-storage, hugepages, etc.)",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "description": "Set node selector labels for pod scheduling. Deprecated in favor of controller.nodeSelector.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tolerations": {
+      "type": "array",
+      "description": "Set tolerations for pod scheduling. Deprecated in favor of controller.tolerations.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "affinity": {
+      "type": "object",
+      "description": "Set affinity rules for pod scheduling. Deprecated in favor of controller.affinity."
+    },
+    "topologySpreadConstraints": {
+      "type": "array",
+      "description": "Set topology spread constraints for pod scheduling. Deprecated in favor of controller.topologySpreadConstraints.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "controller": {
+      "type": "object",
+      "description": "Configure the kgateway control plane deployment.",
+      "additionalProperties": false,
+      "properties": {
+        "replicaCount": {
+          "description": "Set the number of controller pod replicas.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priorityClassName": {
+          "type": "string",
+          "description": "Set the priority class name for the controller pod."
+        },
+        "logLevel": {
+          "type": "string",
+          "description": "Set the log level for the controller.",
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "image": {
+          "type": "object",
+          "description": "Configure the controller container image.",
+          "additionalProperties": false,
+          "properties": {
+            "registry": {
+              "type": "string",
+              "description": "Set the image registry for the controller."
+            },
+            "repository": {
+              "type": "string",
+              "description": "Set the image repository for the controller."
+            },
+            "pullPolicy": {
+              "type": "string",
+              "description": "Set the image pull policy for the controller.",
+              "enum": [
+                "",
+                "Always",
+                "IfNotPresent",
+                "Never"
+              ]
+            },
+            "tag": {
+              "type": "string",
+              "description": "Set the image tag for the controller."
+            }
+          }
+        },
+        "podAnnotations": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Add annotations to the controller pods."
+        },
+        "podSecurityContext": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Set the pod-level security context for the controller pod."
+        },
+        "securityContext": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Set the container-level security context for the controller container."
+        },
+        "resources": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Configure resource requests and limits for the controller container."
+        },
+        "goMemLimitPercent": {
+          "description": "Compute GOMEMLIMIT as this percentage of resources.limits.memory at render time. 0 disables percentage calculation. Type and range (1-100) are validated by the chart template, not this schema, so it can emit a descriptive error message."
+        },
+        "nodeSelector": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Set node selector labels for controller pod scheduling."
+        },
+        "tolerations": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Set tolerations for controller pod scheduling."
+        },
+        "affinity": {
+          "oneOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Set affinity rules for controller pod scheduling."
+        },
+        "topologySpreadConstraints": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Set topology spread constraints for controller pod scheduling."
+        },
+        "service": {
+          "type": "object",
+          "description": "Controller service configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Create the controller Service."
+            },
+            "type": {
+              "type": "string",
+              "description": "Service type.",
+              "enum": [
+                "ClusterIP",
+                "NodePort",
+                "LoadBalancer",
+                "ExternalName"
+              ]
+            },
+            "ports": {
+              "type": "object",
+              "description": "Service ports.",
+              "additionalProperties": false,
+              "properties": {
+                "grpc": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "health": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "metrics": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                }
+              }
+            },
+            "annotations": {
+              "type": "object",
+              "description": "Service annotations.",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "extraLabels": {
+              "type": "object",
+              "description": "Extra labels for the Service.",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "clusterIP": {
+              "type": "string",
+              "description": "Cluster IP address."
+            },
+            "clusterIPs": {
+              "type": "array",
+              "description": "Cluster IPs for dual-stack.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "externalIPs": {
+              "type": "array",
+              "description": "External IP addresses.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "externalName": {
+              "type": "string",
+              "description": "External name for ExternalName services."
+            },
+            "loadBalancerIP": {
+              "type": "string",
+              "description": "Load balancer IP address."
+            },
+            "loadBalancerSourceRanges": {
+              "type": "array",
+              "description": "Allowed source ranges for load balancer.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "loadBalancerClass": {
+              "type": "string",
+              "description": "Load balancer class."
+            },
+            "externalTrafficPolicy": {
+              "type": "string",
+              "description": "External traffic policy.",
+              "enum": [
+                "",
+                "Cluster",
+                "Local"
+              ]
+            },
+            "internalTrafficPolicy": {
+              "type": "string",
+              "description": "Internal traffic policy.",
+              "enum": [
+                "",
+                "Cluster",
+                "Local"
+              ]
+            },
+            "healthCheckNodePort": {
+              "description": "Health check node port.",
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sessionAffinity": {
+              "type": "string",
+              "description": "Session affinity.",
+              "enum": [
+                "",
+                "None",
+                "ClientIP"
+              ]
+            },
+            "sessionAffinityConfig": {
+              "type": "object",
+              "description": "Session affinity configuration."
+            },
+            "ipFamilies": {
+              "type": "array",
+              "description": "IP families.",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "IPv4",
+                  "IPv6"
+                ]
+              }
+            },
+            "ipFamilyPolicy": {
+              "type": "string",
+              "description": "IP family policy.",
+              "enum": [
+                "",
+                "SingleStack",
+                "PreferDualStack",
+                "RequireDualStack"
+              ]
+            },
+            "publishNotReadyAddresses": {
+              "type": "boolean",
+              "description": "Publish not ready addresses."
+            },
+            "allocateLoadBalancerNodePorts": {
+              "description": "Allocate load balancer node ports.",
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "trafficDistribution": {
+              "type": "string",
+              "description": "Traffic distribution.",
+              "enum": [
+                "",
+                "PreferClose",
+                "PreferSameZone",
+                "PreferSameNode"
+              ]
+            }
+          }
+        },
+        "prometheusAnnotations": {
+          "type": "boolean",
+          "description": "Add Prometheus scrape annotations to the controller pods."
+        },
+        "serviceMonitor": {
+          "type": "object",
+          "description": "Controller ServiceMonitor configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Create the controller ServiceMonitor when the Prometheus Operator CRDs are installed."
+            },
+            "annotations": {
+              "type": "object",
+              "description": "ServiceMonitor annotations.",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "extraLabels": {
+              "type": "object",
+              "description": "Extra labels for the ServiceMonitor.",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "readinessProbe": {
+          "type": "object",
+          "description": "Configure the readiness probe for the controller container. Overrides the default probe when set."
+        },
+        "startupProbe": {
+          "type": "object",
+          "description": "Configure the startup probe for the controller container. Overrides the default probe when set."
+        },
+        "extraEnv": {
+          "type": "object",
+          "description": "Add extra environment variables to the controller container."
+        },
+        "admin": {
+          "type": "object",
+          "description": "Controller admin/debug server configuration.",
+          "additionalProperties": false,
+          "properties": {
+            "bindAddress": {
+              "type": "string",
+              "description": "Bind host for the controller admin/debug server on port 9095."
+            }
+          }
+        },
+        "xds": {
+          "type": "object",
+          "description": "Configure TLS settings for the xDS gRPC servers.",
+          "additionalProperties": false,
+          "properties": {
+            "tls": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable TLS encryption for xDS communication."
+                }
+              }
+            }
+          }
+        },
+        "enableAwsEc2Discovery": {
+          "type": "boolean",
+          "description": "Enable dynamic discovery of AWS EC2 instances for Backend resources."
+        },
+        "awsEc2RefreshInterval": {
+          "type": "string",
+          "description": "Set how often the controller refreshes discovered AWS EC2 instances for Backend resources."
+        },
+        "strategy": {
+          "type": "object",
+          "description": "Change the rollout strategy from the Kubernetes default."
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "description": "Set pod disruption budget for the controller."
+        },
+        "horizontalPodAutoscaler": {
+          "type": "object",
+          "description": "Set horizontal pod autoscaler for the controller."
+        },
+        "verticalPodAutoscaler": {
+          "type": "object",
+          "description": "Set vertical pod autoscaler for the controller."
+        }
+      }
+    },
+    "image": {
+      "type": "object",
+      "description": "Configure the default container image for the components that Helm deploys.",
+      "additionalProperties": false,
+      "properties": {
+        "registry": {
+          "type": "string",
+          "description": "Set the default image registry."
+        },
+        "tag": {
+          "type": "string",
+          "description": "Set the default image tag."
+        },
+        "pullPolicy": {
+          "type": "string",
+          "description": "Set the default image pull policy.",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        }
+      }
+    },
+    "discoveryNamespaceSelectors": {
+      "type": "array",
+      "description": "List of namespace selectors for config discovery.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "serviceEntriesExclusionLabelSelectors": {
+      "type": "array",
+      "description": "List of ServiceEntry exclusion label selectors.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "gatewayClassParametersRefs": {
+      "type": "object",
+      "description": "Map of GatewayClass names to GatewayParameters references.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "namespace"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Name of the GatewayParameters resource."
+          },
+          "namespace": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Namespace of the GatewayParameters resource."
+          }
+        }
+      }
+    },
+    "policyMerge": {
+      "type": "object",
+      "description": "Policy merging settings.",
+      "additionalProperties": false,
+      "properties": {
+        "trafficPolicy": {
+          "type": "object",
+          "description": "Merge strategy per TrafficPolicy field. Supported keys: extAuth, extProc, transformation.",
+          "additionalProperties": false,
+          "properties": {
+            "extAuth": {
+              "type": "string",
+              "description": "Merge strategy for ExtAuth policy.",
+              "enum": [
+                "DeepMerge",
+                "StrategicMerge"
+              ]
+            },
+            "extProc": {
+              "type": "string",
+              "description": "Merge strategy for ExtProc policy.",
+              "enum": [
+                "DeepMerge",
+                "StrategicMerge"
+              ]
+            },
+            "transformation": {
+              "type": "string",
+              "description": "Merge strategy for Transformation policy.",
+              "enum": [
+                "DeepMerge",
+                "StrategicMerge"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "waypoint": {
+      "type": "object",
+      "description": "Enable the waypoint integration.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable kgateway as a waypoint in an Istio Ambient service mesh setup."
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Configure validation behavior for route and policy safety checks.",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "Validation level. Accepted values: standard or strict (case-insensitive).",
+          "pattern": "^\\s*([sS][tT][aA][nN][dD][aA][rR][dD]|[sS][tT][rR][iI][cC][tT])\\s*$"
+        }
+      }
+    },
+    "enableRouteSourceMetadata": {
+      "type": "boolean",
+      "description": "Enable attaching dev.kgateway.route_source filter metadata to every Envoy route. Experimental."
+    }
+  }
+}
