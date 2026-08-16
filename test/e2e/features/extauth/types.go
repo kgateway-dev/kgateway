@@ -17,6 +17,7 @@ var (
 	securedGatewayPolicyManifest = getTestFile("secured-gateway-policy.yaml")
 	securedRouteManifest         = getTestFile("secured-route.yaml")
 	insecureRouteManifest        = getTestFile("insecure-route.yaml")
+	percentageEnabledManifest    = getTestFile("percentage-enabled.yaml")
 )
 
 func getTestFile(filename string) string {

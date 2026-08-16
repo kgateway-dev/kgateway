@@ -112,4 +112,13 @@ type ExtAuthProvider struct {
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	StatPrefix *string `json:"statPrefix,omitempty"`
+
+	// PercentageEnabled specifies the percentage of requests that are sent to the auth service.
+	// Requests that are not selected are allowed through without being authorized, which makes
+	// this useful for gradually rolling out an ext auth service.
+	// If this field is omitted, all requests matching the policy are authorized.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentageEnabled *int32 `json:"percentageEnabled,omitempty"`
 }

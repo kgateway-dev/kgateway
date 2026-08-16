@@ -7,6 +7,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -324,4 +325,48 @@ func TestExtAuthPolicyPlugin(t *testing.T) {
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[ExtAuthEnabledFilterName])
 		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[ExtAuthEnabledFilterName]), AuthSucceededMetadataKey, "ext_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
 	})
+}
+
+func TestBuildExtAuthFilterEnabled(t *testing.T) {
+	tests := []struct {
+		name              string
+		percentageEnabled *int32
+		wantNil           bool
+		wantNumerator     uint32
+	}{
+		{
+			name:              "unset leaves filter_enabled unset so all requests are authorized",
+			percentageEnabled: nil,
+			wantNil:           true,
+		},
+		{
+			name:              "zero disables the filter for all requests",
+			percentageEnabled: new(int32(0)),
+			wantNumerator:     0,
+		},
+		{
+			name:              "partial rollout",
+			percentageEnabled: new(int32(10)),
+			wantNumerator:     10,
+		},
+		{
+			name:              "hundred authorizes all requests",
+			percentageEnabled: new(int32(100)),
+			wantNumerator:     100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildExtAuthFilterEnabled(tt.percentageEnabled)
+			if tt.wantNil {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, extAuthFilterEnabledRuntimeKey, got.GetRuntimeKey())
+			assert.Equal(t, tt.wantNumerator, got.GetDefaultValue().GetNumerator())
+			assert.Equal(t, envoytypev3.FractionalPercent_HUNDRED, got.GetDefaultValue().GetDenominator())
+		})
+	}
 }

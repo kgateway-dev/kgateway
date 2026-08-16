@@ -450,6 +450,16 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  percentageEnabled:
+                    description: |-
+                      PercentageEnabled specifies the percentage of requests that are sent to the auth service.
+                      Requests that are not selected are allowed through without being authorized, which makes
+                      this useful for gradually rolling out an ext auth service.
+                      If this field is omitted, all requests matching the policy are authorized.
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
                   statPrefix:
                     description: |-
                       StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,

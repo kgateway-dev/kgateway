@@ -1,0 +1,89 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  namespace: kgateway-base
+  name: never-extauth
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 4444
+    # no request is sent to the auth service
+    percentageEnabled: 0
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  namespace: kgateway-base
+  name: always-extauth
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 4444
+    # every request is sent to the auth service
+    percentageEnabled: 100
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: route-example-never-authed
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "neverauthed.com"
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-base
+  name: never-authed-route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-example-never-authed
+  extAuth:
+    extensionRef:
+      name: never-extauth
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: route-example-always-authed
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "alwaysauthed.com"
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-base
+  name: always-authed-route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-example-always-authed
+  extAuth:
+    extensionRef:
+      name: always-extauth

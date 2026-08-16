@@ -114,6 +114,7 @@ spec:
     failOpen: true
     statusOnError: 400
     clearRouteCache: true
+    percentageEnabled: 100
     statPrefix: my_prefix
     withRequestBody:
       maxRequestBytes: 420000
