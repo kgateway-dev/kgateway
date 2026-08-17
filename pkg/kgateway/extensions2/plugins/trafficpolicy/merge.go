@@ -115,6 +115,7 @@ func MergeTrafficPolicies(
 		mergeCORS,
 		mergeCSRF,
 		mergeHeaderModifiers,
+		mergeRequestMirror,
 		mergeBuffer,
 		mergeAutoHostRewrite,
 		mergeTimeouts,
@@ -564,6 +565,22 @@ func mergeHeaderModifiers(
 	}
 
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "headerModifiers")
+}
+
+func mergeRequestMirror(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[requestMirrorIR]{
+		Get: func(spec *trafficPolicySpecIr) *requestMirrorIR { return spec.requestMirror },
+		Set: func(spec *trafficPolicySpecIr, val *requestMirrorIR) { spec.requestMirror = val },
+	}
+
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "requestMirror")
 }
 
 func mergeBuffer(
