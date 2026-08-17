@@ -175,8 +175,9 @@ func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) stri
 type clientSetFingerprint uint64
 
 // fingerprintClients hashes the client set order-independently, over exactly the
-// fields an overlay can branch on (role, namespace, locality, labels). Two calls
-// agree if and only if every client an overlay could distinguish is unchanged.
+// fields an overlay can branch on (role, namespace, locality, labels, and local
+// cluster capability). Two calls agree if and only if every client an overlay
+// could distinguish is unchanged.
 func fingerprintClients(clients []ir.UniquelyConnectedClient) clientSetFingerprint {
 	ordered := slices.Clone(clients)
 	slices.SortFunc(ordered, func(a, b ir.UniquelyConnectedClient) int {
@@ -191,6 +192,11 @@ func fingerprintClients(clients []ir.UniquelyConnectedClient) clientSetFingerpri
 		utils.HashStringField(hasher, client.Locality.Zone)
 		utils.HashStringField(hasher, client.Locality.Subzone)
 		utils.HashUint64(hasher, utils.HashLabels(client.Labels))
+		if client.KnowsLocalCluster {
+			utils.HashUint64(hasher, 1)
+		} else {
+			utils.HashUint64(hasher, 0)
+		}
 	}
 	return clientSetFingerprint(hasher.Sum64())
 }

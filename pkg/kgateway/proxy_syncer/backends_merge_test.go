@@ -257,3 +257,37 @@ func TestFetchClustersForClient_WaitsForCurrentClientSet(t *testing.T) {
 		return len(got) == 1 && got[0].Cluster.Is(base)
 	}, time.Second, 10*time.Millisecond)
 }
+
+// TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability proves that
+// an empty sparse result from before a client advertised local-cluster support
+// is pending, not an affirmative "no overlay" decision for the changed client.
+func TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability(t *testing.T) {
+	oldUcc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	currentUcc := oldUcc
+	currentUcc.KnowsLocalCluster = true
+
+	base := clusterNamed("c")
+	fingerprint := baseClusterFingerprint{ClusterVersion: 1}
+	baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
+		Name: "c", Cluster: sharedproto.Wrap(base), ClusterVersion: 1, Fingerprint: fingerprint,
+	}})
+	deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
+		Name:               "c",
+		BaseFingerprint:    fingerprint,
+		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{oldUcc}),
+	}})
+	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{currentUcc})
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	waitSynced(t, pcc)
+
+	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc))
+	deltaCol.UpdateObject(backendClusterDeltaSet{
+		Name:               "c",
+		BaseFingerprint:    fingerprint,
+		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{currentUcc}),
+	})
+	require.Eventually(t, func() bool {
+		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc)
+		return len(got) == 1 && got[0].Cluster.Is(base)
+	}, time.Second, 10*time.Millisecond)
+}
