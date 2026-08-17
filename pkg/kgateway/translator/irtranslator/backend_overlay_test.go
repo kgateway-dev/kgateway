@@ -138,7 +138,7 @@ func TestApplyPerClient_BaseErrorIsNoOp(t *testing.T) {
 // inline-CLA path: a STRICT_DNS backend with inline endpoints and no overlay
 // must still materialize a per-client cluster (the CLA is UCC-dependent via
 // PrioritizeEndpoints). It must build the LoadAssignment without mutating either
-// the base cluster proto or the base EndpointInputs that a PerClientProcessEndpoints
+// the base cluster proto or the base EndpointInputs that a per-client endpoint
 // hook writes to.
 func TestApplyPerClient_InlineCLAMaterializesAndIsolatesBaseEndpoints(t *testing.T) {
 	endpointGK := schema.GroupKind{Group: "test", Kind: "Endpoints"}
@@ -156,8 +156,8 @@ func TestApplyPerClient_InlineCLAMaterializesAndIsolatesBaseEndpoints(t *testing
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			endpointGK: {
 				// Mimics destrule: writes PriorityInfo onto the per-client inputs.
-				PerClientProcessEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *sdk.EndpointsInputs) uint64 {
-					out.PriorityInfo = &endpoints.PriorityInfo{}
+				PerClientEditEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out sdk.EndpointInputsEditor) uint64 {
+					out.SetPriorityInfo(&endpoints.PriorityInfo{})
 					return 1
 				},
 			},
@@ -187,12 +187,59 @@ func TestApplyPerClient_InlineCLAMaterializesAndIsolatesBaseEndpoints(t *testing
 	// endpoint hook wrote to may be mutated by the overlay.
 	assert.Nil(t, base.Cluster.GetLoadAssignment(), "inline-CLA build must not mutate the shared base proto")
 	assert.Nil(t, base.EndpointInputs.PriorityInfo,
-		"PerClientProcessEndpoints must run against a copy, leaving base EndpointInputs untouched")
+		"the endpoint editor must leave base EndpointInputs untouched")
 
 	clusterB, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, uccB, backend, base)
 	require.NoError(t, err)
 	require.NotNil(t, clusterB)
 	assert.NotSame(t, clusterA, clusterB, "each client must get an independent inline-CLA proto")
+}
+
+func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T) {
+	endpointGK := schema.GroupKind{Group: "test", Kind: "LegacyEndpoints"}
+	locality := ir.PodLocality{Region: "r1"}
+	bt := &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			{Group: "group", Kind: "kind"}: {
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
+					eps := ir.NewEndpointsForBackend(in)
+					eps.BackendLabels = map[string]string{"owner": "base"}
+					eps.Add(locality, endpointWithLabels("10.0.0.1", map[string]string{"owner": "base"}))
+					return eps
+				},
+			},
+		},
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
+			endpointGK: {
+				PerClientProcessEndpoints: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, out *sdk.EndpointsInputs) uint64 {
+					if ucc.Role != "mutate" {
+						return 0
+					}
+					out.EndpointsForBackend.BackendLabels["owner"] = "mutated"
+					out.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["owner"] = "mutated"
+					out.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().Address = "127.0.0.1"
+					return 1
+				},
+			},
+		},
+	}
+	backend := overlayBackend()
+	base := bt.TranslateBackendBase(context.Background(), backend)
+	require.NotNil(t, base)
+	require.NotNil(t, base.EndpointInputs)
+
+	mutated, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "mutate"}, backend, base)
+	require.NoError(t, err)
+	require.Equal(t, "127.0.0.1", mutated.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+
+	assert.Equal(t, "base", base.EndpointInputs.EndpointsForBackend.BackendLabels["owner"])
+	assert.Equal(t, "base", base.EndpointInputs.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["owner"])
+	assert.Equal(t, "10.0.0.1", base.EndpointInputs.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+
+	pristine, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "pristine"}, backend, base)
+	require.NoError(t, err)
+	require.Equal(t, "10.0.0.1", pristine.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
 }
 
 // TestTranslateBackendBase_NilForUnsupportedGroupKind: a backend whose GroupKind

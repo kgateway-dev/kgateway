@@ -36,7 +36,7 @@ type CombinedTranslator struct {
 	gwtranslator      sdk.KGwTranslator
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
-	endpointPlugins   []sdk.EndpointPlugin
+	endpointPlugins   []irtranslator.EndpointPlugin
 
 	logger *slog.Logger
 }
@@ -155,14 +155,9 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 // It does NOT build the CLA — that is BuildClusterLoadAssignment — so callers can dedup
 // the (relatively expensive) CLA construction across UCCs that resolve identically.
 func (s *CombinedTranslator) ResolveEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) ResolvedEndpoints {
-	epInputs := endpoints.EndpointsInputs{
+	epInputs, hash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
-	}
-	var hash uint64
-	for _, processEndpoints := range s.endpointPlugins {
-		additionalHash := processEndpoints(kctx, context.TODO(), ucc, &epInputs)
-		hash ^= additionalHash
-	}
+	}, s.endpointPlugins)
 	return ResolvedEndpoints{
 		Inputs:            epInputs,
 		AdditionalHash:    hash,

@@ -24,18 +24,34 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type (
-	EndpointsInputs = endpoints.EndpointsInputs
-	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
+	EndpointsInputs      = endpoints.EndpointsInputs
+	EndpointInputsEditor = endpoints.EndpointInputsEditor
+	EndpointSetBuilder   = endpoints.EndpointSetBuilder
+	EndpointView         = endpoints.EndpointView
+	ProcessBackend       func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
+	// EndpointEditorPlugin edits per-client endpoint inputs through a
+	// copy-on-write API. Read-only source state is exposed through accessors;
+	// endpoint rewrites build a replacement set and clone only modified protos.
+	// The returned hash must capture effects not already represented by the
+	// replacement endpoint set's LbEpsEqualityHash or the framework's
+	// load-balancing-context hash.
+	EndpointEditorPlugin func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniquelyConnectedClient,
+		out EndpointInputsEditor,
+	) uint64
 	// EndpointPlugin mutates the per-client EndpointsInputs before the
 	// ClusterLoadAssignment is built for (ucc, backend).
 	//
-	// CONTRACT: the returned hash MUST capture every per-UCC effect this plugin
-	// has on the inputs (everything that could change the resulting CLA for
-	// this client). It is not merely a change-detection hint: the framework
-	// interns CLAs across UCCs keyed on this hash combined with the endpoint
-	// and load-balancing-context hashes, so two UCCs whose hashes collide are
-	// served ONE shared CLA. A hash that under-captures the plugin's mutation
-	// silently routes one client with another client's load assignment.
+	// CONTRACT: the returned hash MUST capture every per-UCC effect not already
+	// reflected by the resolved EndpointsForBackend.LbEpsEqualityHash or the
+	// framework's load-balancing-context hash. It is not merely a
+	// change-detection hint: the framework interns CLAs across UCCs using these
+	// hashes, so an under-captured mutation can route one client with another
+	// client's load assignment.
+	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
+	// mutable nested state before invoking this legacy hook.
 	EndpointPlugin func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
@@ -82,8 +98,10 @@ type PolicyPlugin struct {
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
-	ProcessBackend            ProcessBackend
-	PerClientClusterOverlay   PerClientClusterOverlay
+	ProcessBackend          ProcessBackend
+	PerClientClusterOverlay PerClientClusterOverlay
+	PerClientEditEndpoints  EndpointEditorPlugin
+	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
 
 	Policies       krt.Collection[ir.PolicyWrapper]

@@ -104,7 +104,7 @@ func NewPerClientEnvoyEndpoints(
 		sharedClas := map[uint64]sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]{}
 		for _, ucc := range uccs {
 			resolved := resolveEndpoints(kctx, ucc, ep)
-			endpointsHash := combineEndpointHash(ep.LbEpsEqualityHash, resolved.AdditionalHash, resolved.LoadBalancingHash)
+			endpointsHash := combineEndpointHash(resolved.Inputs.EndpointsForBackend.LbEpsEqualityHash, resolved.AdditionalHash, resolved.LoadBalancingHash)
 			cla, ok := sharedClas[endpointsHash]
 			if !ok {
 				// Wrap captures the tripwire hash once per distinct CLA; rows

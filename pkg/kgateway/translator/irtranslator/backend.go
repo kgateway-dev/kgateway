@@ -42,7 +42,7 @@ const (
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
-	EndpointPlugins     []sdk.EndpointPlugin
+	EndpointPlugins     []EndpointPlugin
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
 	Mode                apisettings.ValidationMode
@@ -60,7 +60,7 @@ type BaseCluster struct {
 	Cluster *envoyclusterv3.Cluster
 	// EndpointInputs carries inline endpoints from InitEnvoyBackend, if the backend
 	// produced any. Used by per-client overlay to build the inline CLA and to drive
-	// PerClientProcessEndpoints hooks.
+	// per-client endpoint hooks.
 	EndpointInputs *endpoints.EndpointsInputs
 	// SupportsInlineCLA is true when the cluster type accepts an inline
 	// ClusterLoadAssignment (STATIC, STRICT_DNS, LOGICAL_DNS, or the DNS extension).
@@ -275,13 +275,10 @@ func (t *BackendTranslator) ApplyPerClient(
 	if needsInlineCLA {
 		// Gather endpoint plugins lazily — only inline-CLA clusters consume them,
 		// so the common EDS path (which returns early above) never pays for this.
-		// PerClientProcessEndpoints may modify EndpointInputs (e.g. destrule
-		// PriorityInfo). Work on a copy so we don't mutate the shared
-		// EndpointInputs held by base.
-		epIn := *base.EndpointInputs
-		for _, processEndpoints := range t.orderedEndpointPlugins() {
-			processEndpoints(kctx, ctx, ucc, &epIn)
-		}
+		// Resolve through the copy-on-write editor. Modern plugins clone only
+		// endpoint protos they modify; legacy raw mutators receive a one-time
+		// defensive deep copy of the entire nested input graph.
+		epIn, _ := ResolveEndpointInputs(kctx, ctx, ucc, *base.EndpointInputs, t.orderedEndpointPlugins())
 		// Re-check LoadAssignment: an overlay may have set it.
 		if out.GetLoadAssignment() == nil {
 			out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
@@ -374,7 +371,7 @@ func undoDefaultedLocalityConfig(c *envoyclusterv3.Cluster) {
 }
 
 // applyBasePolicies runs only the UCC-invariant ProcessBackend hooks. Per-client
-// hooks (PerClientClusterOverlay, PerClientProcessEndpoints) are handled by
+// hooks (PerClientClusterOverlay and endpoint editors) are handled by
 // ApplyPerClient.
 func (t *BackendTranslator) applyBasePolicies(
 	ctx context.Context,
@@ -402,7 +399,7 @@ func (t *BackendTranslator) applyBasePolicies(
 	return errors.Join(errs...)
 }
 
-func (t *BackendTranslator) orderedEndpointPlugins() []sdk.EndpointPlugin {
+func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {
 	if t.EndpointPlugins != nil {
 		return t.EndpointPlugins
 	}
