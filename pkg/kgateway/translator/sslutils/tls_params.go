@@ -93,8 +93,11 @@ func ValidateTlsStrings(input []string, supported map[string]struct{}, fieldName
 
 	seen := make(map[string]struct{}, len(input))
 	cleaned := make([]string, 0, len(input))
-	for _, val := range input {
+	for i, val := range input {
 		trimmed := strings.TrimSpace(val)
+		if trimmed == "" {
+			return nil, fmt.Errorf("empty %s entry at index %d", fieldName, i)
+		}
 		if _, ok := supported[trimmed]; !ok {
 			return nil, fmt.Errorf("unsupported %s: %q (ensure you are using a BoringSSL-supported name)", fieldName, trimmed)
 		}
