@@ -14,7 +14,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 // baseEnvoyCluster is the UCC-invariant translation result for a single backend.
@@ -432,12 +431,6 @@ func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt
 	if iu.base == nil {
 		return krt.NewStaticCollection[uccWithCluster](nil, nil, krtopts.ToOptions("BackendStatusClusters")...)
 	}
-	var deltaSetByName krt.Index[string, backendClusterDeltaSet]
-	if iu.deltas != nil {
-		deltaSetByName = krtpkg.UnnamedIndex(iu.deltas, func(set backendClusterDeltaSet) []string {
-			return []string{set.Name}
-		})
-	}
 	return krt.NewManyCollection(iu.base, func(kctx krt.HandlerContext, b baseEnvoyCluster) []uccWithCluster {
 		// The base row carries the zero UCC, whose ResourceName is empty; a connected
 		// client's never is, so base and delta rows cannot collide on the KRT key.
@@ -450,22 +443,23 @@ func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt
 		if iu.deltas == nil {
 			return out
 		}
-		for _, set := range krt.Fetch(kctx, iu.deltas, krt.FilterIndex(deltaSetByName, b.Name)) {
-			if set.BaseFingerprint != b.Fingerprint {
+		// The delta set's KRT key is its backend's cluster name, so a keyed FetchOne
+		// is both the narrowest dependency and cheaper than a secondary index.
+		set := krt.FetchOne(kctx, iu.deltas, krt.FilterKey(b.Name))
+		if set == nil || set.BaseFingerprint != b.Fingerprint {
+			return out
+		}
+		for _, d := range set.Deltas {
+			if d.Error == nil || d.BaseFingerprint != b.Fingerprint {
 				continue
 			}
-			for _, d := range set.Deltas {
-				if d.Error == nil || d.BaseFingerprint != b.Fingerprint {
-					continue
-				}
-				out = append(out, uccWithCluster{
-					Client:            d.Client,
-					Name:              d.Name,
-					Error:             d.Error,
-					BackendSource:     b.BackendSource,
-					BackendGeneration: b.BackendGeneration,
-				})
-			}
+			out = append(out, uccWithCluster{
+				Client:            d.Client,
+				Name:              d.Name,
+				Error:             d.Error,
+				BackendSource:     b.BackendSource,
+				BackendGeneration: b.BackendGeneration,
+			})
 		}
 		return out
 	}, krtopts.ToOptions("BackendStatusClusters")...)
