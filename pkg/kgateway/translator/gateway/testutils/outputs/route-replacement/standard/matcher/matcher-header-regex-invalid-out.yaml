@@ -50,12 +50,10 @@ Routes:
         - name: x-test-invalid-header
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: '[invalid-regex'
         - name: x-test-valid-header
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: .*[valid]
         pathSeparatedPrefix: /test
       name: listener~8080~www_example_com-route-0-httproute-invalid-regex-route-gwtest-0-0-matcher-0
