@@ -13,6 +13,10 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
+// gatewayScopedBackend is a backend rewritten for one Gateway's client certificate.
+// A Service referenced from two Gateways with different client certificates has to
+// become two distinct Envoy clusters, so each variant is a separate row carrying the
+// resource name of the backend it was derived from.
 type gatewayScopedBackend struct {
 	baseResourceName string
 	backend          *ir.BackendObjectIR
@@ -35,6 +39,12 @@ func (v gatewayScopedBackend) Equals(other gatewayScopedBackend) bool {
 	return v.backend.Equals(*other.backend)
 }
 
+// newGatewayBackendVariants derives a [gatewayScopedBackend] for every backend
+// reachable from a Gateway that configures a backend client certificate. Gateways
+// without one contribute nothing, which is the common case.
+//
+// Rows are emitted in resource-name order so the collection is stable across
+// recomputes.
 func newGatewayBackendVariants(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
@@ -77,6 +87,10 @@ func newGatewayBackendVariants(
 	}, krtopts.ToOptions("GatewayBackendClientCertificateVariants")...)
 }
 
+// newGatewayBackendVariantEndpoints gives each backend variant its own endpoint row,
+// since a variant is a distinct Envoy cluster and EDS is keyed by cluster name. The
+// endpoints themselves are identical to the base backend's, so the row reuses the
+// base's protos and equality hash rather than recomputing either.
 func newGatewayBackendVariantEndpoints(
 	krtopts krtutil.KrtOptions,
 	variants krt.Collection[gatewayScopedBackend],

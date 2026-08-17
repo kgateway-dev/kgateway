@@ -80,11 +80,18 @@ type backendInputFingerprint struct {
 	PolicyVersion   uint64
 }
 
+// baseClusterFingerprint identifies one exact base translation: both the backend
+// inputs it was computed from and the cluster proto it produced. A delta carrying a
+// different fingerprint than the base it is being merged with was computed against
+// a generation that no longer exists, and must not be published.
 type baseClusterFingerprint struct {
 	Input          backendInputFingerprint
 	ClusterVersion uint64
 }
 
+// fingerprintBackendInput hashes the backend inputs that a per-client overlay may
+// read. Returns the zero fingerprint for a nil backend or one with no source object,
+// which is what synthetic backends in tests look like.
 func fingerprintBackendInput(backend *ir.BackendObjectIR) backendInputFingerprint {
 	if backend == nil {
 		return backendInputFingerprint{}
@@ -101,6 +108,8 @@ func fingerprintBackendInput(backend *ir.BackendObjectIR) backendInputFingerprin
 	return fingerprint
 }
 
+// fingerprintBase pairs a backend's input fingerprint with the version of the base
+// cluster translated from it, producing the identity a delta pins itself to.
 func fingerprintBase(backend *ir.BackendObjectIR, clusterVersion uint64) baseClusterFingerprint {
 	return baseClusterFingerprint{
 		Input:          fingerprintBackendInput(backend),
@@ -165,6 +174,9 @@ func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) stri
 // older delta set that simply never evaluated that client.
 type clientSetFingerprint uint64
 
+// fingerprintClients hashes the client set order-independently, over exactly the
+// fields an overlay can branch on (role, namespace, locality, labels). Two calls
+// agree if and only if every client an overlay could distinguish is unchanged.
 func fingerprintClients(clients []ir.UniquelyConnectedClient) clientSetFingerprint {
 	ordered := slices.Clone(clients)
 	slices.SortFunc(ordered, func(a, b ir.UniquelyConnectedClient) int {
@@ -249,6 +261,8 @@ func (c uccWithCluster) Equals(in uccWithCluster) bool {
 		errString(c.Error) == errString(in.Error)
 }
 
+// errString renders an error for comparison inside an Equals method, where a nil
+// error and an empty message must compare equal.
 func errString(err error) string {
 	if err == nil {
 		return ""
@@ -288,6 +302,20 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 	return hasher.Sum64()
 }
 
+// PerClientEnvoyClusters is the cluster half of per-client xDS, stored as a base
+// plus a sparse overlay rather than one row per (client, backend) pair:
+//
+//   - base holds the UCC-invariant translation, one row per backend, whose Cluster
+//     proto is shared read-only by every client that targets it.
+//   - deltas holds one row per backend recording which clients — usually none —
+//     genuinely need a different cluster, and what it is.
+//   - clients is retained so a delta set can record the client set it resolved
+//     against, which is how a newly connected client tells "no overlay applies to
+//     me" apart from "I was not considered yet".
+//
+// Consumers never read the fields directly: FetchClustersForClient merges base and
+// delta into the view a snapshot needs, and StatusClusters projects the errors out
+// for status. Construct with [NewPerClientEnvoyClusters].
 type PerClientEnvoyClusters struct {
 	base    krt.Collection[baseEnvoyCluster]
 	deltas  krt.Collection[backendClusterDeltaSet]
@@ -465,6 +493,21 @@ func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt
 	}, krtopts.ToOptions("BackendStatusClusters")...)
 }
 
+// NewPerClientEnvoyClusters builds the base and delta collections that back
+// [PerClientEnvoyClusters], translating every backend in finalBackends into an
+// Envoy cluster for every client in uccs.
+//
+// The work is split so that the expensive part does not scale with the client
+// count: each backend is translated once into a shared base, and each connected
+// client is then offered a cheap overlay on top of it. Only the (client, backend)
+// pairs whose cluster genuinely differs — a matching destination rule, a waypoint
+// redirect, an inline CLA, a per-client validation failure — materialize a delta.
+// For a fleet where few backends vary per client, storage and translation cost stay
+// close to O(backends) instead of O(backends * clients).
+//
+// The two collections are versioned against each other by fingerprint, so a
+// consumer can always tell whether a delta set was computed against the base and
+// client set it is looking at. See FetchClustersForClient for how that is enforced.
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,

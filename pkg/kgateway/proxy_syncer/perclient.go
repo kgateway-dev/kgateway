@@ -18,6 +18,14 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
+// clustersWithErrors is one client's assembled CDS payload plus the clusters that
+// failed to translate for that client. Errored clusters are deliberately kept out of
+// the payload but tracked by name, because a route pointing at one must return a
+// direct response rather than silently falling through to a cluster that isn't there.
+//
+// The two hashes are the equality keys: publishable clusters are versioned by
+// content, errored ones only by name, so an error changing its message does not
+// churn a snapshot Envoy will never see.
 type clustersWithErrors struct {
 	// +noKrtEquals
 	clusters envoycache.Resources
@@ -28,6 +36,8 @@ type clustersWithErrors struct {
 	resourceName        string
 }
 
+// endpointsWithUccName is one client's assembled EDS payload, keyed by client.
+// envoycache.Resources already carries a version, which is the equality key.
 type endpointsWithUccName struct {
 	endpoints    envoycache.Resources
 	resourceName string
@@ -53,6 +63,20 @@ func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
 	return c.endpoints.Version == k.endpoints.Version && c.resourceName == k.resourceName
 }
 
+// snapshotPerClient assembles the complete xDS snapshot each connected client should
+// receive, joining the per-Gateway listener/route translation with that client's own
+// clusters and endpoints. It is the last stage of translation: everything downstream
+// just ships what this produces.
+//
+// It publishes only complete snapshots. When a client's per-client inputs have not
+// caught up with the event being processed, it returns nil rather than a partial
+// snapshot; the subscriber treats that as "keep serving what Envoy already has".
+// Retaining the last coherent config is always preferable to publishing an
+// incoherent one, which Envoy would apply — dropping routes or endpoints that are
+// still valid.
+//
+// extraEndpointCollections are additional per-client endpoint sources merged into the
+// same EDS payload, currently the gateway's own local cluster.
 func snapshotPerClient(
 	krtopts krtutil.KrtOptions,
 	uccCol krt.Collection[ir.UniquelyConnectedClient],

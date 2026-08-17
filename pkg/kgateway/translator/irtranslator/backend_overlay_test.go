@@ -249,6 +249,159 @@ func TestTranslateBackend_MatchesBaseThenOverlay(t *testing.T) {
 		"TranslateBackend must equal TranslateBackendBase followed by ApplyPerClient")
 }
 
+// edsWithConfigBackendTranslator mirrors what a real EDS backend plugin (e.g.
+// kubernetes) emits: the discovery type AND an EdsClusterConfig. The latter is what
+// defaultLocalityConfig gates on, so it is required to exercise that path.
+func edsWithConfigBackendTranslator(policies map[schema.GroupKind]sdk.PolicyPlugin) *irtranslator.BackendTranslator {
+	return &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			{Group: "group", Kind: "kind"}: {
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					out.EdsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{
+						EdsConfig: &envoycorev3.ConfigSource{
+							ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{Ads: &envoycorev3.AggregatedConfigSource{}},
+						},
+					}
+					return nil
+				},
+			},
+		},
+		ContributedPolicies: policies,
+	}
+}
+
+// inlineRedirectOverlay mimics the waypoint ingress redirect: it converts the EDS
+// cluster into a STATIC one with an inlined CLA whose LocalityLbEndpoints carry no
+// load_balancing_weight — exactly the shape that cannot coexist with locality
+// weighted LB.
+func inlineRedirectOverlay(gk schema.GroupKind) map[schema.GroupKind]sdk.PolicyPlugin {
+	return map[schema.GroupKind]sdk.PolicyPlugin{
+		gk: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}
+						out.EdsClusterConfig = nil
+						out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
+							ClusterName: out.GetName(),
+							Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
+								{LbEndpoints: []*envoyendpointv3.LbEndpoint{pipeEndpoint("redirect")}},
+							},
+						}
+					},
+				}
+			},
+		},
+	}
+}
+
+// TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay is the ordering
+// regression guard for the base/overlay split. defaultLocalityConfig declines to
+// touch plugin-provided inline clusters because their CLAs carry no per-locality
+// load_balancing_weight, and Envoy rejects locality weighted LB without it. Before
+// the split, per-client hooks ran first, so that guard saw the final cluster. Now the
+// guard runs on the still-EDS base, so an overlay that inlines the CLA afterwards
+// must undo the default rather than ship a cluster Envoy will reject.
+func TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	bt := edsWithConfigBackendTranslator(inlineRedirectOverlay(overlayGK))
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+	require.True(t, base.DefaultedLocalityConfig, "an EDS base with no LB policy must get the locality default")
+	require.NotNil(t, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+		"precondition: the base carries the defaulted locality mode")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient, "the overlay applies, so a per-client cluster must materialize")
+
+	require.NotNil(t, perClient.GetLoadAssignment(), "precondition: the overlay inlined a CLA")
+	require.Nil(t, perClient.GetEdsClusterConfig(), "precondition: the overlay dropped EDS")
+	assert.Nil(t, perClient.GetCommonLbConfig().GetLocalityConfigSpecifier(),
+		"locality weighting must not survive onto an inlined CLA with no load_balancing_weight")
+	assert.Nil(t, perClient.GetCommonLbConfig(),
+		"CommonLbConfig was allocated only to hold the default, so it must not be emitted empty")
+
+	assert.NotNil(t, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+		"undoing the default must not reach back into the shared base")
+}
+
+// TestApplyPerClient_KeepsDefaultedLocalityWhenStillEDS is the other half: an
+// overlay that leaves the cluster EDS keeps the defaulted locality mode, so the undo
+// above cannot regress the ordinary per-client path.
+func TestApplyPerClient_KeepsDefaultedLocalityWhenStillEDS(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+					},
+				}
+			},
+		},
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.True(t, base.DefaultedLocalityConfig)
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient)
+
+	assert.NotNil(t, perClient.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+		"a cluster that is still EDS must keep the defaulted locality mode")
+}
+
+// TestApplyPerClient_LeavesOverlayChosenLocalityMode: the undo is scoped to the mode
+// defaultLocalityConfig itself installed. An overlay that inlines the CLA and picks
+// its own locality mode has made a deliberate choice, which must survive.
+func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}
+						out.EdsClusterConfig = nil
+						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
+							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+								ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+							},
+						}
+					},
+				}
+			},
+		},
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.True(t, base.DefaultedLocalityConfig)
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient)
+
+	assert.NotNil(t, perClient.GetCommonLbConfig().GetZoneAwareLbConfig(),
+		"an overlay's own locality choice must not be undone")
+}
+
 func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
 	return &envoyendpointv3.LbEndpoint{
 		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{

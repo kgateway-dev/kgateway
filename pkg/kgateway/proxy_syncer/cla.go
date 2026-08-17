@@ -14,6 +14,10 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
+// UccWithEndpoints is one client's view of one backend's endpoints: the
+// ClusterLoadAssignment that client should receive, keyed by (client, backend).
+// Clients that resolve identically share a single interned CLA, so the row count is
+// per-pair but the proto count is per distinct result.
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
 	// Endpoints is wrapped so consumers cannot mutate the CLA interned across
@@ -41,6 +45,8 @@ func (c UccWithEndpoints) ResourceName() string {
 	return c.resourceName
 }
 
+// uccEndpointsResourceName builds the (client, backend) identity key. Callers cache
+// the result on the row; see the resourceName field for why that is worth doing.
 func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName string) string {
 	return client.ResourceName() + "/" + endpointsName
 }
@@ -51,15 +57,34 @@ func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 		c.endpointsName == in.endpointsName
 }
 
+// PerClientEnvoyEndpoints is the endpoint half of per-client xDS: [UccWithEndpoints]
+// rows indexed by client, so assembling one client's EDS payload does not scan the
+// other clients' rows. Both [NewPerClientEnvoyEndpoints] (backend endpoints) and
+// [NewPerClientLocalClusterEndpoints] (the gateway's own local cluster) produce this
+// shape, and snapshot assembly consumes them the same way.
 type PerClientEnvoyEndpoints struct {
 	endpoints krt.Collection[UccWithEndpoints]
 	index     krt.Index[string, UccWithEndpoints]
 }
 
+// FetchEndpointsForClient returns every CLA belonging to ucc, registering a KRT
+// dependency narrowed to that client's rows.
 func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []UccWithEndpoints {
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
+// NewPerClientEnvoyEndpoints builds a [UccWithEndpoints] row for every (client,
+// backend) pair by resolving each backend's endpoints from that client's
+// perspective — locality, labels, and any plugin-applied priority — and turning the
+// result into a ClusterLoadAssignment.
+//
+// resolveEndpoints and buildClusterLoadAssignment are injected rather than called
+// directly so this collection can be built against a test double.
+//
+// Endpoints must vary per client (that is what locality-aware routing means), so
+// unlike clusters there is no base to share. What is shared is the output: clients
+// whose resolution hashes agree are handed the same read-only CLA proto, which is
+// why a large fleet in one locality costs about as much as a single client.
 func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
