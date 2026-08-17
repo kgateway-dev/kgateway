@@ -135,10 +135,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
-            Failed to initialize cipher suites BOGUS_CIPHER_SUITE_1:INVALID_AES_256_GCM_SHA384:FAKE_ECDHE_RSA_WITH_AES_128_CBC_SHA.
-            The following ciphers were rejected when tried individually: BOGUS_CIPHER_SUITE_1,
-            INVALID_AES_256_GCM_SHA384, FAKE_ECDHE_RSA_WITH_AES_128_CBC_SHA'
+          message: 'unsupported cipher suite: "BOGUS_CIPHER_SUITE_1" (ensure you are
+            using a BoringSSL-supported name)'
           reason: Invalid
           status: "False"
           type: Accepted
