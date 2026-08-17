@@ -1068,6 +1068,7 @@ spec:
                                             for the next back off computation. It
                                             should be greater than zero and less than
                                             or equal to max_interval.
+                                          maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
                                           - message: invalid duration value
@@ -1078,6 +1079,7 @@ spec:
                                             but must be greater than or equal to the
                                             base_interval if set. The default is 10
                                             times the base_interval.
+                                          maxLength: 32
                                           type: string
                                           x-kubernetes-validations:
                                           - message: invalid duration value
@@ -1097,6 +1099,7 @@ spec:
                                 timeout:
                                   description: The timeout for the gRPC request. This
                                     is the timeout for a specific request
+                                  maxLength: 32
                                   type: string
                                   x-kubernetes-validations:
                                   - message: invalid duration value
@@ -1308,6 +1311,7 @@ spec:
                                                 used for the next back off computation.
                                                 It should be greater than zero and
                                                 less than or equal to max_interval.
+                                              maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
                                               - message: invalid duration value
@@ -1318,6 +1322,7 @@ spec:
                                                 optional, but must be greater than
                                                 or equal to the base_interval if set.
                                                 The default is 10 times the base_interval.
+                                              maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
                                               - message: invalid duration value
@@ -1337,6 +1342,7 @@ spec:
                                     timeout:
                                       description: The timeout for the gRPC request.
                                         This is the timeout for a specific request
+                                      maxLength: 32
                                       type: string
                                       x-kubernetes-validations:
                                       - message: invalid duration value
@@ -1668,6 +1674,7 @@ spec:
                         description: |-
                           IdleTimeout is the idle timeout for connections.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -2757,6 +2764,12 @@ spec:
                           PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 request headers.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
                         type: boolean
+                      proxy100Continue:
+                        description: |-
+                          Proxy100Continue determines whether Envoy forwards requests with an
+                          Expect: 100-continue header upstream and proxies upstream 100 Continue
+                          responses downstream. When unset or false, Envoy handles the response locally.
+                        type: boolean
                       serverHeaderTransformation:
                         description: |-
                           ServerHeaderTransformation determines how the server header is transformed.
@@ -2782,6 +2795,7 @@ spec:
                         description: |-
                           StreamIdleTimeout is the idle timeout for HTTP streams.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -2797,6 +2811,16 @@ spec:
                         - MatchingPort
                         - AnyPort
                         type: string
+                      stripTrailingHostDot:
+                        description: |-
+                          StripTrailingHostDot determines whether Envoy strips the trailing dot from the
+                          Host/authority header before any filter processing or route matching. Without this,
+                          a request whose host is a fully qualified domain name with a trailing dot (for example
+                          "example.com.") does not match routes configured for the hostname "example.com".
+                          The stripped value is also what gets forwarded upstream.
+                          If unset, the trailing dot is kept (Envoy's default).
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
+                        type: boolean
                       tracing:
                         description: |-
                           Tracing contains various settings for Envoy's OpenTelemetry tracer.
@@ -3093,6 +3117,7 @@ spec:
                                                   be used for the next back off computation.
                                                   It should be greater than zero and
                                                   less than or equal to max_interval.
+                                                maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
@@ -3104,6 +3129,7 @@ spec:
                                                   than or equal to the base_interval
                                                   if set. The default is 10 times
                                                   the base_interval.
+                                                maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
@@ -3124,6 +3150,7 @@ spec:
                                       timeout:
                                         description: The timeout for the gRPC request.
                                           This is the timeout for a specific request
+                                        maxLength: 32
                                         type: string
                                         x-kubernetes-validations:
                                         - message: invalid duration value
@@ -3319,6 +3346,7 @@ spec:
                     properties:
                       keepAliveInterval:
                         description: The number of seconds between keep-alive probes.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -3334,6 +3362,7 @@ spec:
                       keepAliveTime:
                         description: The number of seconds a connection needs to be
                           idle before keep-alive probes start being sent.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -3347,6 +3376,7 @@ spec:
                       If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
                       then never complete the TLS handshake. Applied to every filter chain on the listener.
                       See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -4290,6 +4320,7 @@ spec:
                                                   be used for the next back off computation.
                                                   It should be greater than zero and
                                                   less than or equal to max_interval.
+                                                maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
@@ -4301,6 +4332,7 @@ spec:
                                                   than or equal to the base_interval
                                                   if set. The default is 10 times
                                                   the base_interval.
+                                                maxLength: 32
                                                 type: string
                                                 x-kubernetes-validations:
                                                 - message: invalid duration value
@@ -4321,6 +4353,7 @@ spec:
                                       timeout:
                                         description: The timeout for the gRPC request.
                                           This is the timeout for a specific request
+                                        maxLength: 32
                                         type: string
                                         x-kubernetes-validations:
                                         - message: invalid duration value
@@ -4538,6 +4571,7 @@ spec:
                                                       off computation. It should be
                                                       greater than zero and less than
                                                       or equal to max_interval.
+                                                    maxLength: 32
                                                     type: string
                                                     x-kubernetes-validations:
                                                     - message: invalid duration value
@@ -4549,6 +4583,7 @@ spec:
                                                       be greater than or equal to
                                                       the base_interval if set. The
                                                       default is 10 times the base_interval.
+                                                    maxLength: 32
                                                     type: string
                                                     x-kubernetes-validations:
                                                     - message: invalid duration value
@@ -4570,6 +4605,7 @@ spec:
                                             description: The timeout for the gRPC
                                               request. This is the timeout for a specific
                                               request
+                                            maxLength: 32
                                             type: string
                                             x-kubernetes-validations:
                                             - message: invalid duration value
@@ -4905,6 +4941,7 @@ spec:
                               description: |-
                                 IdleTimeout is the idle timeout for connections.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
+                              maxLength: 32
                               type: string
                               x-kubernetes-validations:
                               - message: invalid duration value
@@ -6003,6 +6040,12 @@ spec:
                                 PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 request headers.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
                               type: boolean
+                            proxy100Continue:
+                              description: |-
+                                Proxy100Continue determines whether Envoy forwards requests with an
+                                Expect: 100-continue header upstream and proxies upstream 100 Continue
+                                responses downstream. When unset or false, Envoy handles the response locally.
+                              type: boolean
                             serverHeaderTransformation:
                               description: |-
                                 ServerHeaderTransformation determines how the server header is transformed.
@@ -6028,6 +6071,7 @@ spec:
                               description: |-
                                 StreamIdleTimeout is the idle timeout for HTTP streams.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
+                              maxLength: 32
                               type: string
                               x-kubernetes-validations:
                               - message: invalid duration value
@@ -6043,6 +6087,16 @@ spec:
                               - MatchingPort
                               - AnyPort
                               type: string
+                            stripTrailingHostDot:
+                              description: |-
+                                StripTrailingHostDot determines whether Envoy strips the trailing dot from the
+                                Host/authority header before any filter processing or route matching. Without this,
+                                a request whose host is a fully qualified domain name with a trailing dot (for example
+                                "example.com.") does not match routes configured for the hostname "example.com".
+                                The stripped value is also what gets forwarded upstream.
+                                If unset, the trailing dot is kept (Envoy's default).
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
+                              type: boolean
                             tracing:
                               description: |-
                                 Tracing contains various settings for Envoy's OpenTelemetry tracer.
@@ -6350,6 +6404,7 @@ spec:
                                                         off computation. It should
                                                         be greater than zero and less
                                                         than or equal to max_interval.
+                                                      maxLength: 32
                                                       type: string
                                                       x-kubernetes-validations:
                                                       - message: invalid duration
@@ -6363,6 +6418,7 @@ spec:
                                                         equal to the base_interval
                                                         if set. The default is 10
                                                         times the base_interval.
+                                                      maxLength: 32
                                                       type: string
                                                       x-kubernetes-validations:
                                                       - message: invalid duration
@@ -6385,6 +6441,7 @@ spec:
                                               description: The timeout for the gRPC
                                                 request. This is the timeout for a
                                                 specific request
+                                              maxLength: 32
                                               type: string
                                               x-kubernetes-validations:
                                               - message: invalid duration value
@@ -6583,6 +6640,7 @@ spec:
                             keepAliveInterval:
                               description: The number of seconds between keep-alive
                                 probes.
+                              maxLength: 32
                               type: string
                               x-kubernetes-validations:
                               - message: invalid duration value
@@ -6598,6 +6656,7 @@ spec:
                             keepAliveTime:
                               description: The number of seconds a connection needs
                                 to be idle before keep-alive probes start being sent.
+                              maxLength: 32
                               type: string
                               x-kubernetes-validations:
                               - message: invalid duration value
@@ -6611,6 +6670,7 @@ spec:
                             If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
                             then never complete the TLS handshake. Applied to every filter chain on the listener.
                             See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+                          maxLength: 32
                           type: string
                           x-kubernetes-validations:
                           - message: invalid duration value

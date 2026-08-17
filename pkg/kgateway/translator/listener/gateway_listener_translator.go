@@ -82,11 +82,6 @@ func mergeGWListeners(
 	}
 	for _, listener := range listeners {
 		result := routesForGw.GetListenerResult(listener.Parent, string(listener.Name))
-		if result == nil || result.Error != nil {
-			// TODO report
-			// TODO, if Error is not nil, this is a user-config error on selectors
-			// continue
-		}
 		parentReporter := listener.GetParentReporter(reporter)
 		listenerReporter := parentReporter.ListenerName(string(listener.Name))
 		var routes []*query.RouteInfo

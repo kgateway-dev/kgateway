@@ -200,8 +200,12 @@ func (t *BackendTranslator) ApplyPerClient(
 	backend *ir.BackendObjectIR,
 	base *BaseCluster,
 ) (*envoyclusterv3.Cluster, error) {
+	// A base error is terminal for every client — base.Cluster is already the blackhole,
+	// so there is nothing to overlay. It is deliberately not propagated: the base row is
+	// what carries it to status, and returning it here would attribute the same failure
+	// a second time, once per connected client.
 	if base == nil || base.Error != nil {
-		return nil, nil
+		return nil, nil //nolint:nilerr // base.Error is reported by the base row, not per client
 	}
 
 	// Gather overlays. Each plugin must self-determine applicability and return

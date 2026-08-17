@@ -139,7 +139,6 @@ rules:
   - directresponses
   - gatewayextensions
   - gatewayparameters
-  - httplistenerpolicies
   - listenerpolicies
   - trafficpolicies
   verbs:
@@ -154,7 +153,6 @@ rules:
   - directresponses/status
   - gatewayextensions/status
   - gatewayparameters/status
-  - httplistenerpolicies/status
   - listenerpolicies/status
   - trafficpolicies/status
   verbs:

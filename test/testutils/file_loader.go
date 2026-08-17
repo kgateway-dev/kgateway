@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,11 @@ import (
 	celconfig "k8s.io/apiserver/pkg/apis/cel"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("testutils")
 
 var ErrNoFilesFound = errors.New("no k8s files found")
 
@@ -50,7 +53,7 @@ func LoadFromFileWithTransform(
 
 	var yamlFiles []string
 	if fileOrDir.IsDir() {
-		slog.Debug("looking for YAML files", "path", fileOrDir.Name())
+		logger.Debug("looking for YAML files", "path", fileOrDir.Name())
 		err := filepath.WalkDir(filename, func(path string, d fs.DirEntry, _ error) error {
 			if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") {
 				yamlFiles = append(yamlFiles, path)
@@ -68,7 +71,7 @@ func LoadFromFileWithTransform(
 		return nil, ErrNoFilesFound
 	}
 
-	slog.Debug("user configuration YAML files found", "files", yamlFiles)
+	logger.Debug("user configuration YAML files found", "files", yamlFiles)
 
 	var resources []client.Object
 	for _, file := range yamlFiles {
@@ -127,7 +130,7 @@ func parseFile(
 
 		var meta metaOnly
 		if err := yaml.Unmarshal(objYaml, &meta); err != nil {
-			slog.Warn("failed to parse resource metadata, skipping YAML document",
+			logger.Warn("failed to parse resource metadata, skipping YAML document",
 				"filename", filename,
 				"data", truncateString(string(objYaml), 100),
 			)
@@ -137,7 +140,7 @@ func parseFile(
 		gvk := schema.FromAPIVersionAndKind(meta.APIVersion, meta.Kind)
 		obj, err := scheme.New(gvk)
 		if err != nil {
-			slog.Warn("unknown resource kind",
+			logger.Warn("unknown resource kind",
 				"filename", filename,
 				"gvk", gvk.String(),
 				"data", truncateString(string(objYaml), 100),
@@ -146,7 +149,7 @@ func parseFile(
 		}
 
 		if err := yaml.Unmarshal(objYaml, obj); err != nil {
-			slog.Warn("failed to parse resource YAML",
+			logger.Warn("failed to parse resource YAML",
 				"error", err,
 				"filename", filename,
 				"gvk", gvk.String(),

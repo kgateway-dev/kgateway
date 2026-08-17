@@ -1,11 +1,26 @@
 name: Cache Setup
 
 on:
-  # We utilize this job to seed the GitHub action cache(s) for the LTS branch
+  # Seed the shared GitHub Actions Go caches from main, and only from main.
+  # (A previous 'v1.**.x' filter here referred to branches that have never
+  # existed in this repo, so it never fired.)
+  #
+  # Deliberately NOT seeding the v2.**.x LTS branches:
+  #   - The repo's 10GB cache budget is already near-saturated by main's cache
+  #     generations; a full seed set (build + race + modules) is ~2.25GB per
+  #     branch, so each LTS line seeded would immediately force LRU eviction.
+  #   - LRU favors main's constant PR traffic. Release-branch PRs are sparse,
+  #     so a seed pushed on an LTS branch is typically evicted before the next
+  #     release-branch PR can use it — costing the seeding run and transiently
+  #     evicting hot main caches for nothing.
+  #   - Release-branch PRs can already restore main's caches (default-branch
+  #     caches are visible to every branch). When an LTS branch's go.sum
+  #     diverges from main, the restore-keys prefix fallback in prep-go-runner
+  #     still gives it a warm start from main's most recent generation (as
+  #     long as the Go toolchain version matches).
   push:
     branches:
       - 'main'
-      - 'v1.**.x'
 
 env:
   CGO_ENABLED: '0'
@@ -42,6 +57,10 @@ jobs:
         with:
           path: ${{ steps.prep-go-runner.outputs.go-build-cache-path }}
           key: ${{ steps.prep-go-runner.outputs.go-build-cache-key-race }}
+          # No restore-keys here on purpose: the prime step below starts with
+          # `go clean -cache`, which would discard a fallback-restored cache
+          # anyway, and skipping the clean would make the saved race cache a
+          # bloated union of race and non-race entries.
       - name: Prime Race Go Build Cache
         if: steps.race-build-cache.outputs.cache-hit != 'true'
         env:

@@ -23,7 +23,7 @@ var (
 	routeWithGwManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-with-gw.yaml")
 	routeMissingGwManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-missing-gw.yaml")
 	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service-for-route.yaml")
-	tcpRouteCrdManifest      = filepath.Join(crds.AbsPathToCrd("tcproute-crd.yaml"))
+	tcpRouteCrdManifest      = crds.AbsPathToCrd("tcproute-crd.yaml")
 
 	expectedSvcResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,

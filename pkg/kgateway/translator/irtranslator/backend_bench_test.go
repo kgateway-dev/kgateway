@@ -21,6 +21,7 @@ package irtranslator
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -118,7 +119,7 @@ func benchUCCs(m int) []ir.UniquelyConnectedClient {
 		out[i] = ir.NewUniquelyConnectedClient(
 			fmt.Sprintf("role%d", i),
 			"default",
-			map[string]string{"bench-mutate": mutate, "idx": fmt.Sprintf("%d", i)},
+			map[string]string{"bench-mutate": mutate, "idx": strconv.Itoa(i)},
 			ir.PodLocality{Region: "r", Zone: fmt.Sprintf("z%d", i%3)},
 		)
 	}

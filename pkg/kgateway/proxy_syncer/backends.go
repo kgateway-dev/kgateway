@@ -14,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 // baseEnvoyCluster is the UCC-invariant translation result for a single backend.
@@ -150,10 +151,10 @@ func (d uccClusterDelta) Equals(in uccClusterDelta) bool {
 }
 
 // uccClusterResourceName builds the per-client identity key for a cluster.
-// Neither caller is a KRT row anymore — deltas live in a map keyed by UCC name
-// inside backendClusterDeltaSet, and uccWithCluster is a merged view returned as
-// a plain slice — so there is nothing to cache the key on, the way
-// UccWithEndpoints does. Plain concatenation is still ~2.5x cheaper than
+// Deltas are not KRT rows — they live in a map keyed by UCC name inside
+// backendClusterDeltaSet — and the uccWithCluster rows that are (the status
+// collection) are rebuilt per event, so there is nothing to cache the key on the
+// way UccWithEndpoints does. Plain concatenation is still ~2.5x cheaper than
 // fmt.Sprintf on these key shapes and allocates once instead of three times.
 func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) string {
 	return client.ResourceName() + "/" + name
@@ -216,12 +217,16 @@ func (d backendClusterDeltaSet) Equals(in backendClusterDeltaSet) bool {
 
 // uccWithCluster is the merged view returned by FetchClustersForClient: the
 // resolved cluster (base or delta) along with any translation error and the
-// source Backend identity used for status attribution.
+// source Backend identity used for status attribution. It is also the row type
+// of the status-only collection built by StatusClusters, where the Cluster and
+// ClusterVersion fields are left zero because status does not read them.
 type uccWithCluster struct {
 	Client ir.UniquelyConnectedClient
 	// Cluster is wrapped so snapshot assembly cannot mutate the proto shared
 	// with other clients; the only exits are ResourceWithTTL (into the
-	// envoycache snapshot, tripwire-verified) and Clone.
+	// envoycache snapshot, tripwire-verified) and Clone. Content equality is
+	// carried by ClusterVersion, a content hash over the same proto.
+	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
 	Name           string
@@ -234,6 +239,15 @@ type uccWithCluster struct {
 
 func (c uccWithCluster) ResourceName() string {
 	return uccClusterResourceName(c.Client, c.Name)
+}
+
+func (c uccWithCluster) Equals(in uccWithCluster) bool {
+	return c.Client.Equals(in.Client) &&
+		c.ClusterVersion == in.ClusterVersion &&
+		c.Name == in.Name &&
+		c.BackendSource == in.BackendSource &&
+		c.BackendGeneration == in.BackendGeneration &&
+		errString(c.Error) == errString(in.Error)
 }
 
 func errString(err error) string {
@@ -395,60 +409,66 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 	return out
 }
 
-// FetchForStatus returns the cluster views needed for fleet-wide Backend status
-// attribution: one entry per base cluster (carrying the source Backend identity and
-// any UCC-invariant translation error) plus one entry per errored per-client delta
+// StatusClusters is the cluster view needed for fleet-wide Backend status
+// attribution: one row per base cluster (carrying the source Backend identity and
+// any UCC-invariant translation error) plus one row per errored per-client delta
 // (carrying the per-client translation error attributed to the same Backend). Only
-// Error, BackendSource, and BackendGeneration are populated — the fields
-// GenerateBackendStatusReport consumes. Non-errored deltas contribute nothing to
-// status and are skipped.
-func (iu *PerClientEnvoyClusters) FetchForStatus(kctx krt.HandlerContext) []uccWithCluster {
-	var bases []baseEnvoyCluster
-	if iu.base != nil {
-		bases = krt.Fetch(kctx, iu.base)
+// Name, Error, BackendSource, BackendGeneration — and Client on delta rows — are
+// populated; those are the fields GenerateBackendStatusReport consumes. Non-errored
+// deltas contribute nothing to status and are skipped.
+//
+// This is a collection rather than a Fetch helper because backendStatusContributions
+// indexes it by Backend: one client's cluster error then recomputes only its owning
+// Backend's status, not every Backend's.
+//
+// Unlike FetchClustersForClient, a stale delta set is skipped rather than treated as
+// a barrier. Status has no cross-backend coherence requirement, and withholding every
+// row mid-propagation would clear Accepted conditions that are still true. The
+// client-set fingerprint is deliberately not re-checked here: recomputing it would
+// cost O(backends*clients) hashing per event, and a delta set whose client set moved
+// is recomputed anyway (ClientsFingerprint participates in its Equals), so at worst a
+// departed client's error lingers for one propagation.
+func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt.Collection[uccWithCluster] {
+	if iu.base == nil {
+		return krt.NewStaticCollection[uccWithCluster](nil, nil, krtopts.ToOptions("BackendStatusClusters")...)
 	}
-	var deltaSets []backendClusterDeltaSet
+	var deltaSetByName krt.Index[string, backendClusterDeltaSet]
 	if iu.deltas != nil {
-		deltaSets = krt.Fetch(kctx, iu.deltas)
+		deltaSetByName = krtpkg.UnnamedIndex(iu.deltas, func(set backendClusterDeltaSet) []string {
+			return []string{set.Name}
+		})
 	}
-	var clientsFingerprint clientSetFingerprint
-	if iu.clients != nil {
-		clientsFingerprint = fingerprintClients(krt.Fetch(kctx, iu.clients))
-	}
-
-	baseByName := make(map[string]*baseEnvoyCluster, len(bases))
-	out := make([]uccWithCluster, 0, len(bases))
-	for i := range bases {
-		b := &bases[i]
-		baseByName[b.Name] = b
-		out = append(out, uccWithCluster{
+	return krt.NewManyCollection(iu.base, func(kctx krt.HandlerContext, b baseEnvoyCluster) []uccWithCluster {
+		// The base row carries the zero UCC, whose ResourceName is empty; a connected
+		// client's never is, so base and delta rows cannot collide on the KRT key.
+		out := []uccWithCluster{{
 			Name:              b.Name,
 			Error:             b.Error,
 			BackendSource:     b.BackendSource,
 			BackendGeneration: b.BackendGeneration,
-		})
-	}
-	for i := range deltaSets {
-		set := &deltaSets[i]
-		base, ok := baseByName[set.Name]
-		if !ok || set.BaseFingerprint != base.Fingerprint ||
-			(iu.clients != nil && set.ClientsFingerprint != clientsFingerprint) {
-			continue
+		}}
+		if iu.deltas == nil {
+			return out
 		}
-		for _, d := range set.Deltas {
-			if d.Error == nil || d.BaseFingerprint != base.Fingerprint {
+		for _, set := range krt.Fetch(kctx, iu.deltas, krt.FilterIndex(deltaSetByName, b.Name)) {
+			if set.BaseFingerprint != b.Fingerprint {
 				continue
 			}
-			out = append(out, uccWithCluster{
-				Client:            d.Client,
-				Name:              d.Name,
-				Error:             d.Error,
-				BackendSource:     base.BackendSource,
-				BackendGeneration: base.BackendGeneration,
-			})
+			for _, d := range set.Deltas {
+				if d.Error == nil || d.BaseFingerprint != b.Fingerprint {
+					continue
+				}
+				out = append(out, uccWithCluster{
+					Client:            d.Client,
+					Name:              d.Name,
+					Error:             d.Error,
+					BackendSource:     b.BackendSource,
+					BackendGeneration: b.BackendGeneration,
+				})
+			}
 		}
-	}
-	return out
+		return out
+	}, krtopts.ToOptions("BackendStatusClusters")...)
 }
 
 func NewPerClientEnvoyClusters(
