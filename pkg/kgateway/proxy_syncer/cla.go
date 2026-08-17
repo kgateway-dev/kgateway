@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"fmt"
 	"hash/fnv"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -23,10 +22,27 @@ type UccWithEndpoints struct {
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
 	endpointsName string
+	// resourceName caches the KRT identity key, which KRT recomputes for every row
+	// on every recompute (slices.GroupUnique over the transform output) and again on
+	// the event path. This is the one collection still fanned out per client x per
+	// backend, so building the key on each call multiplies a format-string parse and
+	// three allocations by both dimensions. Nothing is retained that KRT wasn't
+	// already keeping: the same string is a map key in the collection state, so
+	// caching just makes the field and those keys share one allocation.
+	// +noKrtEquals derived from Client and endpointsName, both of which are compared
+	resourceName string
 }
 
 func (c UccWithEndpoints) ResourceName() string {
-	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.endpointsName)
+	// Fall back for rows built as bare struct literals (tests) that skip the cache.
+	if c.resourceName == "" {
+		return uccEndpointsResourceName(c.Client, c.endpointsName)
+	}
+	return c.resourceName
+}
+
+func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName string) string {
+	return client.ResourceName() + "/" + endpointsName
 }
 
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
@@ -54,6 +70,8 @@ func NewPerClientEnvoyEndpoints(
 	eps := krt.NewManyCollection(kgatewayEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
+		// Loop-invariant: every row in this transform shares the same backend.
+		epName := ep.ResourceName()
 		// Intern CLAs across UCCs that resolve identically. The CLA varies per
 		// client only through PrioritizeEndpoints (locality, labels) and the
 		// plugin-applied PriorityInfo; UCCs sharing those hashes get one shared
@@ -73,7 +91,8 @@ func NewPerClientEnvoyEndpoints(
 				Client:        ucc,
 				Endpoints:     cla,
 				EndpointsHash: endpointsHash,
-				endpointsName: ep.ResourceName(),
+				endpointsName: epName,
+				resourceName:  uccEndpointsResourceName(ucc, epName),
 			}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}

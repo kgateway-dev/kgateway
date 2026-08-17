@@ -68,6 +68,7 @@ func NewPerClientLocalClusterEndpoints(
 			Endpoints:     sharedproto.Wrap(cla),
 			EndpointsHash: hashLocalClusterLoadAssignment(cla),
 			endpointsName: localClusterName,
+			resourceName:  uccEndpointsResourceName(ucc, localClusterName),
 		}
 	}, krtopts.ToOptions("LocalClusterEndpoints")...)
 

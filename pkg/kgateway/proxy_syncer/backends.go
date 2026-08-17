@@ -3,7 +3,6 @@ package proxy_syncer
 import (
 	"cmp"
 	"context"
-	"fmt"
 	"hash/fnv"
 	"slices"
 
@@ -139,7 +138,7 @@ type uccClusterDelta struct {
 }
 
 func (d uccClusterDelta) ResourceName() string {
-	return fmt.Sprintf("%s/%s", d.Client.ResourceName(), d.Name)
+	return uccClusterResourceName(d.Client, d.Name)
 }
 
 func (d uccClusterDelta) Equals(in uccClusterDelta) bool {
@@ -148,6 +147,16 @@ func (d uccClusterDelta) Equals(in uccClusterDelta) bool {
 		d.BaseFingerprint == in.BaseFingerprint &&
 		d.ClusterVersion == in.ClusterVersion &&
 		errString(d.Error) == errString(in.Error)
+}
+
+// uccClusterResourceName builds the per-client identity key for a cluster.
+// Neither caller is a KRT row anymore — deltas live in a map keyed by UCC name
+// inside backendClusterDeltaSet, and uccWithCluster is a merged view returned as
+// a plain slice — so there is nothing to cache the key on, the way
+// UccWithEndpoints does. Plain concatenation is still ~2.5x cheaper than
+// fmt.Sprintf on these key shapes and allocates once instead of three times.
+func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) string {
+	return client.ResourceName() + "/" + name
 }
 
 // clientSetFingerprint versions the complete UCC input consumed while a
@@ -224,7 +233,7 @@ type uccWithCluster struct {
 }
 
 func (c uccWithCluster) ResourceName() string {
-	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.Name)
+	return uccClusterResourceName(c.Client, c.Name)
 }
 
 func errString(err error) string {
