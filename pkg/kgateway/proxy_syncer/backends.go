@@ -548,9 +548,15 @@ func NewPerClientEnvoyClusters(
 		// one proto instead of N clones cuts allocations to O(distinct). The protos
 		// are read-only on the consumer side, so aliasing is safe.
 		internByVersion := map[uint64]sharedproto.Shared[*envoyclusterv3.Cluster]{}
+		// One clone for the whole client loop, not one per client. ApplyPerClient
+		// only reads this proto — it clones internally before letting an overlay
+		// touch it — so the copy exists solely to unseal the shared base, which is
+		// a per-backend concern. Cloning per client would restore the O(backends *
+		// clients) deep copy that the base/overlay split exists to remove, and pay
+		// it on the dominant path where ApplyPerClient returns nil untouched.
+		perClientBase := *b.Base
+		perClientBase.Cluster = b.Cluster.Clone()
 		for _, ucc := range clients {
-			perClientBase := *b.Base
-			perClientBase.Cluster = b.Cluster.Clone()
 			perClient, err := translator.ApplyPerClient(kctx, ctx, ucc, backendObj, &perClientBase)
 			if err != nil {
 				// Emit a delta entry that carries the error so the snapshot
