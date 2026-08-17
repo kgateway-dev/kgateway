@@ -10,7 +10,6 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -243,8 +242,7 @@ func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T)
 }
 
 // TestTranslateBackendBase_NilForUnsupportedGroupKind: a backend whose GroupKind
-// has no contributed translator cannot produce even a blackhole cluster, so the
-// base is nil and the convenience wrapper surfaces an error.
+// has no contributed translator cannot produce even a blackhole base cluster.
 func TestTranslateBackendBase_NilForUnsupportedGroupKind(t *testing.T) {
 	bt := &irtranslator.BackendTranslator{
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{},
@@ -254,46 +252,6 @@ func TestTranslateBackendBase_NilForUnsupportedGroupKind(t *testing.T) {
 
 	base := bt.TranslateBackendBase(context.Background(), backend)
 	assert.Nil(t, base, "unsupported GroupKind must yield a nil base")
-
-	_, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no backend translator found")
-}
-
-// TestTranslateBackend_MatchesBaseThenOverlay pins the convenience wrapper to the
-// composition it documents: TranslateBackend == TranslateBackendBase followed by
-// ApplyPerClient. A regression here means a hot-path caller (base once, overlay
-// per client) and a wrapper caller would diverge.
-func TestTranslateBackend_MatchesBaseThenOverlay(t *testing.T) {
-	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
-	makeTranslator := func() *irtranslator.BackendTranslator {
-		return edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-			overlayGK: {
-				PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-					return &sdk.ClusterOverlay{
-						Mutate: func(out *envoyclusterv3.Cluster) {
-							out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
-						},
-					}
-				},
-			},
-		})
-	}
-	ctx := context.Background()
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-
-	wrapped, err := makeTranslator().TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, overlayBackend())
-	require.NoError(t, err)
-
-	bt := makeTranslator()
-	base := bt.TranslateBackendBase(ctx, overlayBackend())
-	require.NotNil(t, base)
-	manual, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, overlayBackend(), base)
-	require.NoError(t, err)
-	require.NotNil(t, manual, "overlay always applies in this setup, so the manual path must materialize")
-
-	assert.True(t, proto.Equal(wrapped, manual),
-		"TranslateBackend must equal TranslateBackendBase followed by ApplyPerClient")
 }
 
 // edsWithConfigBackendTranslator mirrors what a real EDS backend plugin (e.g.

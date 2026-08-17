@@ -4,7 +4,7 @@ package irtranslator
 // the base+overlay refactor.
 //
 //	Old: full translation per (backend, client) pair, in place — no base cache, no clone, no fast
-//	     path. This faithfully reconstructs the pre-refactor TranslateBackend body.
+//	     path. This faithfully reconstructs the former monolithic translation body.
 //	New: base translated once per backend (TranslateBackendBase), then a cheap per-client overlay
 //	     (ApplyPerClient) per pair. When no overlay applies, ApplyPerClient returns nil and the
 //	     caller shares the base proto — the dominant path for a sparsely-matched destination rule.

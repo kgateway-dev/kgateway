@@ -34,10 +34,15 @@ func newTestBackend(objSrc ir.ObjectSource, port int32) *ir.BackendObjectIR {
 	return &backend
 }
 
+func translateBackendBase(t *testing.T, bt *irtranslator.BackendTranslator, backend *ir.BackendObjectIR) (*envoyclusterv3.Cluster, error) {
+	t.Helper()
+	base := bt.TranslateBackendBase(t.Context(), backend)
+	require.NotNil(t, base)
+	return base.Cluster, base.Error
+}
+
 func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	var bt irtranslator.BackendTranslator
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
 	backend := newTestBackend(ir.ObjectSource{
 		Group:     "group",
 		Kind:      "kind",
@@ -53,7 +58,7 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 		},
 	}
 
-	c, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	c, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	opts := c.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
 	assert.NotNil(t, opts)
@@ -97,10 +102,7 @@ func TestBackendTranslatorAppliesDnsLookupFamilyToDnsCluster(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
-
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 
 	clusterType := cluster.GetClusterType()
@@ -139,10 +141,8 @@ func TestBackendTranslatorHandlesBackendIRErrors(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
 	// Validate that the backend IR errors are propagated.
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid backend hostname")
 	assert.Contains(t, err.Error(), "unsupported backend protocol")
@@ -208,9 +208,7 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 		},
 	}
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	// Validate that the policy errors are propagated.
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid TLS certificate")
@@ -262,9 +260,7 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = mockValidator
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 
 	// Should get an error because xDS validation failed
 	require.Error(t, err)
@@ -333,7 +329,7 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificate(t *testing.T) {
 		},
 	}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.NotNil(t, cluster.TransportSocket)
@@ -373,7 +369,7 @@ func TestBackendTranslatorDoesNotEnableTLSForGatewayBackendClientCertificate(t *
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	assert.Nil(t, cluster.TransportSocket)
@@ -452,7 +448,7 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificateToTransportSocke
 		},
 	}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.Nil(t, cluster.TransportSocket)

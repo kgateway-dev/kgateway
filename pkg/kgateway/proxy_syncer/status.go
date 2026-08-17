@@ -126,7 +126,8 @@ func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicy
 // GenerateBackendStatusReport builds the Accepted condition for every kgateway Backend from
 // its IR-construction errors, falling back to the per-client translation errors (deduplicated
 // across connected clients) when there are none. IR errors take precedence because
-// TranslateBackend returns them and short-circuits before the per-client policy/validation runs.
+// TranslateBackendBase records them and the delta transform short-circuits before
+// per-client policy and validation processing.
 // Any plugin-contributed conditions in extraConditions (e.g. the EC2 EndpointsDiscovered
 // condition) are merged onto the same Backend so all conditions share a single writer.
 // Exported for testing.

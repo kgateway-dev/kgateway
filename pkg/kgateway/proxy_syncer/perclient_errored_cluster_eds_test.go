@@ -53,8 +53,8 @@ import (
 // Mechanism, each link verified against the code in this repo:
 //
 //  1. backendconfigpolicy's validateXDS attaches the Envoy validation error to the
-//     PolicyWrapper (plugin.go), so runPolicies -> TranslateBackend returns an
-//     error plus a blackhole cluster (irtranslator/backend.go).
+//     PolicyWrapper (plugin.go), so runPolicies -> TranslateBackendBase records
+//     an error plus a blackhole cluster (irtranslator/backend.go).
 //  2. snapshotPerClient drops errored clusters from the CDS payload (perclient.go:
 //     `if c.Error != nil { ... continue }`), so echo-server's cluster is no longer
 //     sent to Envoy. Envoy removes the cluster and unsubscribes from its EDS

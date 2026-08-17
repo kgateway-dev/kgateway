@@ -91,41 +91,6 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 		b.Cluster.GetLoadAssignment() == nil
 }
 
-// TranslateBackend translates a BackendObjectIR to an Envoy Cluster. If we encounter any
-// errors during translation, a blackhole cluster is returned along with the error. The error
-// return value is what matters as consumers (pkg/kgateway/proxy_syncer/perclient.go) will
-// drop errored clusters from the xDS snapshot and track them separately for status reporting.
-// The blackhole cluster itself is not sent to Envoy but provides a consistent return structure.
-//
-// This is a convenience wrapper that combines TranslateBackendBase and ApplyPerClient.
-// Hot-path callers should invoke them separately so the base cluster can be shared
-// across UCCs.
-func (t *BackendTranslator) TranslateBackend(
-	ctx context.Context,
-	kctx krt.HandlerContext,
-	ucc ir.UniquelyConnectedClient,
-	backend *ir.BackendObjectIR,
-) (*envoyclusterv3.Cluster, error) {
-	base := t.TranslateBackendBase(ctx, backend)
-	if base == nil {
-		return nil, errors.New("no backend translator found for " + backend.GetGroupKind().String())
-	}
-	if base.Error != nil {
-		return base.Cluster, base.Error
-	}
-	perClient, err := t.ApplyPerClient(kctx, ctx, ucc, backend, base)
-	if err != nil {
-		if perClient != nil {
-			return perClient, err
-		}
-		return buildBlackholeCluster(backend), err
-	}
-	if perClient != nil {
-		return perClient, nil
-	}
-	return base.Cluster, nil
-}
-
 // TranslateBackendBase performs the UCC-invariant phase of cluster translation. The
 // returned BaseCluster can be shared across all UCCs targeting this backend.
 //
