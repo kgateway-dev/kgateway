@@ -179,11 +179,10 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{ucc}),
 		Deltas: map[string]uccClusterDelta{
 			ucc.ResourceName(): {
-				Client:          ucc,
-				Name:            "c",
-				BaseFingerprint: oldFingerprint,
-				Cluster:         sharedproto.Wrap(staleDelta),
-				ClusterVersion:  99,
+				Client:         ucc,
+				Name:           "c",
+				Cluster:        sharedproto.Wrap(staleDelta),
+				ClusterVersion: 99,
 			},
 		},
 	}})
@@ -213,11 +212,10 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{ucc}),
 		Deltas: map[string]uccClusterDelta{
 			ucc.ResourceName(): {
-				Client:          ucc,
-				Name:            "c",
-				BaseFingerprint: newFingerprint,
-				Cluster:         sharedproto.Wrap(newDelta),
-				ClusterVersion:  100,
+				Client:         ucc,
+				Name:           "c",
+				Cluster:        sharedproto.Wrap(newDelta),
+				ClusterVersion: 100,
 			},
 		},
 	})

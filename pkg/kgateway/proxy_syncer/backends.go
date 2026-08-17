@@ -131,10 +131,6 @@ func fingerprintBase(backend *ir.BackendObjectIR, clusterVersion uint64) baseClu
 type uccClusterDelta struct {
 	Client ir.UniquelyConnectedClient
 	Name   string
-	// BaseFingerprint identifies the exact base/backend input this delta was
-	// cloned from. A mismatched delta is pending/stale and must never override a
-	// newer base.
-	BaseFingerprint baseClusterFingerprint
 	// Cluster is wrapped so consumers cannot mutate the proto interned across
 	// UCCs; see package sharedproto. Content equality is carried by
 	// ClusterVersion (the proto content hash; errored rows hash the error
@@ -153,7 +149,6 @@ func (d uccClusterDelta) ResourceName() string {
 func (d uccClusterDelta) Equals(in uccClusterDelta) bool {
 	return d.Client.Equals(in.Client) &&
 		d.Name == in.Name &&
-		d.BaseFingerprint == in.BaseFingerprint &&
 		d.ClusterVersion == in.ClusterVersion &&
 		errString(d.Error) == errString(in.Error)
 }
@@ -394,7 +389,7 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 			return nil
 		}
 		if d, ok := set.Deltas[ucc.ResourceName()]; ok {
-			if !d.Client.Equals(ucc) || d.BaseFingerprint != b.Fingerprint {
+			if !d.Client.Equals(ucc) {
 				return nil
 			}
 		} else if b.NeedsInlineCLA {
@@ -484,7 +479,7 @@ func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt
 			return out
 		}
 		for _, d := range set.Deltas {
-			if d.Error == nil || d.BaseFingerprint != b.Fingerprint {
+			if d.Error == nil {
 				continue
 			}
 			out = append(out, uccWithCluster{
@@ -623,9 +618,8 @@ func NewPerClientEnvoyClusters(
 					set.Deltas = make(map[string]uccClusterDelta)
 				}
 				set.Deltas[ucc.ResourceName()] = uccClusterDelta{
-					Client:          ucc,
-					Name:            name,
-					BaseFingerprint: b.Fingerprint,
+					Client: ucc,
+					Name:   name,
 					// Hash 0: errored rows are never published, so they opt
 					// out of tripwire verification.
 					Cluster:        sharedproto.WrapPrehashed(perClient, 0),
@@ -650,11 +644,10 @@ func NewPerClientEnvoyClusters(
 				set.Deltas = make(map[string]uccClusterDelta)
 			}
 			set.Deltas[ucc.ResourceName()] = uccClusterDelta{
-				Client:          ucc,
-				Name:            perClient.GetName(),
-				BaseFingerprint: b.Fingerprint,
-				Cluster:         shared,
-				ClusterVersion:  clusterVersion,
+				Client:         ucc,
+				Name:           perClient.GetName(),
+				Cluster:        shared,
+				ClusterVersion: clusterVersion,
 			}
 		}
 		return set

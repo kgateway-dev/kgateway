@@ -35,7 +35,6 @@ func newTestPerClientClustersRaw(
 			if delta.Name != base.Name {
 				continue
 			}
-			delta.BaseFingerprint = base.Fingerprint
 			if set.Deltas == nil {
 				set.Deltas = make(map[string]uccClusterDelta)
 			}
