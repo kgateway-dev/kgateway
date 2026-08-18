@@ -450,7 +450,32 @@ func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *kgate
 	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
 	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
 
+	// FilterEnabled/FilterEnforced are keyed per-domain so that distinct RateLimitProvider
+	// extensions in the same proxy (and their generated filters) can be toggled independently
+	// via runtime override, without one provider's key clobbering another's.
+	envoyRateLimit.FilterEnabled = &envoycorev3.RuntimeFractionalPercent{
+		RuntimeKey:   fmt.Sprintf("ratelimit.%s.filter_enabled", rateLimit.Domain),
+		DefaultValue: percentToFractionalPercent(rateLimit.PercentEnabled),
+	}
+	envoyRateLimit.FilterEnforced = &envoycorev3.RuntimeFractionalPercent{
+		RuntimeKey:   fmt.Sprintf("ratelimit.%s.filter_enforced", rateLimit.Domain),
+		DefaultValue: percentToFractionalPercent(rateLimit.PercentEnforced),
+	}
+
 	return envoyRateLimit
+}
+
+// percentToFractionalPercent converts an optional 0-100 percentage into an Envoy
+// FractionalPercent, defaulting to 100 (i.e. unset means "always") when nil.
+func percentToFractionalPercent(percent *int32) *envoytypev3.FractionalPercent {
+	numerator := uint32(100)
+	if percent != nil {
+		numerator = uint32(*percent) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+	return &envoytypev3.FractionalPercent{
+		Numerator:   numerator,
+		Denominator: envoytypev3.FractionalPercent_HUNDRED,
+	}
 }
 
 func convertXRL(in kgateway.XRateLimitHeadersStandard) ratev3.RateLimit_XRateLimitHeadersRFCVersion {
