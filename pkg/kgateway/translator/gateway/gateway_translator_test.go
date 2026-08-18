@@ -2214,6 +2214,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with grpcStats statsForAllMethods and enableUpstreamStats", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/grpc-stats.yaml"},
+			outputFile: "listener-policy-http/grpc-stats.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with grpcStats methodAllowlist", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/grpc-stats-method-allowlist.yaml"},
+			outputFile: "listener-policy-http/grpc-stats-method-allowlist.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with maxHeadersCount", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/max-headers-count.yaml"},
