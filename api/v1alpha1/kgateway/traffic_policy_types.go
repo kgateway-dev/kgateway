@@ -117,9 +117,11 @@ type TrafficPolicySpec struct {
 
 	// HTTPUpgrade configures HTTP protocol upgrades on the targeted routes.
 	// Route-level upgrade settings override the matching upgrade type configured
-	// on the listener. After an upgrade is established, tunneled payload is not
-	// inspected by HTTP filters. Authenticate and authorize the initial upgrade
-	// request, enable upgrades only for trusted clients, and avoid request buffering.
+	// on the listener. CONNECT termination is applied per route and cannot be
+	// configured on a listener. After an upgrade is established, tunneled payload
+	// is not inspected by HTTP filters. Authenticate and authorize the initial
+	// upgrade request, enable upgrades only for trusted clients, and avoid request
+	// buffering.
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	// +listType=map
@@ -292,9 +294,9 @@ type ConnectConfig struct {
 	// the request payload upstream as raw TCP data. When false or omitted, the
 	// CONNECT request is proxied upstream without termination.
 	//
-	// For ordinary HTTPS forward proxying through a DynamicForwardProxy Backend,
-	// leave the Backend's enableTls field unset so that the client's tunneled TLS
-	// session is forwarded directly. Enabling it adds a separate upstream TLS layer.
+	// Because the payload is forwarded as raw bytes, configuring TLS for the
+	// selected backend wraps those bytes in a separate upstream TLS session. Leave
+	// backend TLS disabled when the payload must reach the upstream unchanged.
 	// +optional
 	Terminate *bool `json:"terminate,omitempty"`
 }

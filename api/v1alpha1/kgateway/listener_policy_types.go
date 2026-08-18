@@ -1058,7 +1058,10 @@ const (
 
 // UpgradeConfig represents configuration for HTTP upgrades.
 type UpgradeConfig struct {
-	// List of upgrade types to enable (e.g. "websocket", "CONNECT", etc.)
+	// EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+	// and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+	// upstream without termination. To terminate CONNECT and forward its payload
+	// as raw TCP data, configure httpUpgrade in a TrafficPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +optional
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`
