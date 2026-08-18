@@ -50,6 +50,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/transformation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/websocket"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xds_starvation"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/xdsidentityrace"
 )
 
 // SuiteRunner returns the suite runner for the TestKgateway scenario.
@@ -108,6 +109,7 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("OAuth", oauth.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("WebSocket", websocket.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("XdsStarvation", xds_starvation.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("XdsIdentityRace", xdsidentityrace.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }
