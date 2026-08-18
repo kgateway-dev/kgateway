@@ -14,6 +14,7 @@ import (
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_http_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -357,6 +358,58 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 						{
 							MaxConnections: &wrapperspb.UInt32Value{Value: 100},
 							TrackRemaining: true,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "circuit breakers with retry budget minimal",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					CircuitBreakers: &kgateway.CircuitBreakers{
+						RetryBudget: &kgateway.RetryBudget{
+							BudgetPercent: new(int32(25)),
+						},
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				CircuitBreakers: &envoyclusterv3.CircuitBreakers{
+					Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
+						{
+							RetryBudget: &envoyclusterv3.CircuitBreakers_Thresholds_RetryBudget{
+								BudgetPercent: &typev3.Percent{Value: 25},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "circuit breakers with retry budget full configuration",
+			policy: &kgateway.BackendConfigPolicy{
+				Spec: kgateway.BackendConfigPolicySpec{
+					CircuitBreakers: &kgateway.CircuitBreakers{
+						RetryBudget: &kgateway.RetryBudget{
+							BudgetPercent:       new(int32(25)),
+							BudgetInterval:      &metav1.Duration{Duration: 10 * time.Second},
+							MinRetryConcurrency: new(int32(5)),
+						},
+					},
+				},
+			},
+			want: &envoyclusterv3.Cluster{
+				CircuitBreakers: &envoyclusterv3.CircuitBreakers{
+					Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{
+						{
+							RetryBudget: &envoyclusterv3.CircuitBreakers_Thresholds_RetryBudget{
+								BudgetPercent:       &typev3.Percent{Value: 25},
+								BudgetInterval:      durationpb.New(10 * time.Second),
+								MinRetryConcurrency: &wrapperspb.UInt32Value{Value: 5},
+							},
 						},
 					},
 				},
