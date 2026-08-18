@@ -23,13 +23,14 @@ func newTestPerClientClustersRaw(
 	deltas []uccClusterDelta,
 	clients ...ir.UniquelyConnectedClient,
 ) PerClientEnvoyClusters {
-	clientFingerprint := fingerprintClients(clients)
+	clientSnapshot := newClientInputSnapshot(clients)
 	deltaSets := make([]backendClusterDeltaSet, 0, len(bases))
 	for _, base := range bases {
 		set := backendClusterDeltaSet{
 			Name:               base.Name,
 			BaseFingerprint:    base.Fingerprint,
-			ClientsFingerprint: clientFingerprint,
+			ClientsFingerprint: clientSnapshot.Fingerprint,
+			ResolvedClients:    clientSnapshot,
 		}
 		for _, delta := range deltas {
 			if delta.Name != base.Name {
@@ -88,13 +89,14 @@ func newTestPerClientClusters(initial []uccWithCluster) (PerClientEnvoyClusters,
 		clients = append(clients, client)
 	}
 
-	clientFingerprint := fingerprintClients(clients)
+	clientSnapshot := newClientInputSnapshot(clients)
 	deltaSets := make([]backendClusterDeltaSet, 0, len(bases))
 	for _, base := range bases {
 		deltaSets = append(deltaSets, backendClusterDeltaSet{
 			Name:               base.Name,
 			BaseFingerprint:    base.Fingerprint,
-			ClientsFingerprint: clientFingerprint,
+			ClientsFingerprint: clientSnapshot.Fingerprint,
+			ResolvedClients:    clientSnapshot,
 		})
 	}
 

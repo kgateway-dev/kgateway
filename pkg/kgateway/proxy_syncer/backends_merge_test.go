@@ -166,6 +166,7 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 	newFingerprint := baseClusterFingerprint{ClusterVersion: 2}
 	newBase := clusterNamed("c")
 	staleDelta := clusterNamed("c")
+	clientSnapshot := newClientInputSnapshot([]ir.UniquelyConnectedClient{ucc})
 
 	baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
 		Name:           "c",
@@ -176,7 +177,8 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 	deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
 		Name:               "c",
 		BaseFingerprint:    oldFingerprint,
-		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{ucc}),
+		ClientsFingerprint: clientSnapshot.Fingerprint,
+		ResolvedClients:    clientSnapshot,
 		Deltas: map[string]uccClusterDelta{
 			ucc.ResourceName(): {
 				Client:         ucc,
@@ -197,7 +199,8 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 	deltaCol.UpdateObject(backendClusterDeltaSet{
 		Name:               "c",
 		BaseFingerprint:    newFingerprint,
-		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{ucc}),
+		ClientsFingerprint: clientSnapshot.Fingerprint,
+		ResolvedClients:    clientSnapshot,
 	})
 	require.Eventually(t, func() bool {
 		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
@@ -209,7 +212,8 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 	deltaCol.UpdateObject(backendClusterDeltaSet{
 		Name:               "c",
 		BaseFingerprint:    newFingerprint,
-		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{ucc}),
+		ClientsFingerprint: clientSnapshot.Fingerprint,
+		ResolvedClients:    clientSnapshot,
 		Deltas: map[string]uccClusterDelta{
 			ucc.ResourceName(): {
 				Client:         ucc,
@@ -235,25 +239,61 @@ func TestFetchClustersForClient_WaitsForCurrentClientSet(t *testing.T) {
 	baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
 		Name: "c", Cluster: sharedproto.Wrap(base), ClusterVersion: 1, Fingerprint: fingerprint,
 	}})
+	emptySnapshot := newClientInputSnapshot(nil)
 	deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
 		Name:               "c",
 		BaseFingerprint:    fingerprint,
-		ClientsFingerprint: fingerprintClients(nil),
+		ClientsFingerprint: emptySnapshot.Fingerprint,
+		ResolvedClients:    emptySnapshot,
 	}})
 	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
 	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc))
+	clientSnapshot := newClientInputSnapshot([]ir.UniquelyConnectedClient{ucc})
 	deltaCol.UpdateObject(backendClusterDeltaSet{
 		Name:               "c",
 		BaseFingerprint:    fingerprint,
-		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{ucc}),
+		ClientsFingerprint: clientSnapshot.Fingerprint,
+		ResolvedClients:    clientSnapshot,
 	})
 	require.Eventually(t, func() bool {
 		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Is(base)
 	}, time.Second, 10*time.Millisecond)
+}
+
+// TestFetchClustersForClient_UnrelatedClientChurnIsNotAReadinessBarrier proves
+// that an established client can keep using a backend result evaluated before
+// another client connected. The old snapshot is authoritative for the stable
+// client because it contains that client's exact current inputs; only the new
+// client must wait for this backend to evaluate it.
+func TestFetchClustersForClient_UnrelatedClientChurnIsNotAReadinessBarrier(t *testing.T) {
+	stable := ir.NewUniquelyConnectedClient("stable", "ns", nil, ir.PodLocality{})
+	late := ir.NewUniquelyConnectedClient("late", "ns", nil, ir.PodLocality{})
+	base := clusterNamed("c")
+	fingerprint := baseClusterFingerprint{ClusterVersion: 1}
+	stableSnapshot := newClientInputSnapshot([]ir.UniquelyConnectedClient{stable})
+
+	baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
+		Name: "c", Cluster: sharedproto.Wrap(base), ClusterVersion: 1, Fingerprint: fingerprint,
+	}})
+	deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
+		Name:               "c",
+		BaseFingerprint:    fingerprint,
+		ClientsFingerprint: stableSnapshot.Fingerprint,
+		ResolvedClients:    stableSnapshot,
+	}})
+	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{stable, late})
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	waitSynced(t, pcc)
+
+	stableClusters := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
+	require.Len(t, stableClusters, 1, "unrelated client addition must not defer the established client")
+	require.True(t, stableClusters[0].Cluster.Is(base))
+	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, late),
+		"the newly connected client must wait until this backend evaluates it")
 }
 
 // TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability proves that
@@ -263,26 +303,35 @@ func TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability(t *testing
 	oldUcc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
 	currentUcc := oldUcc
 	currentUcc.KnowsLocalCluster = true
+	stable := ir.NewUniquelyConnectedClient("stable", "ns", nil, ir.PodLocality{})
 
 	base := clusterNamed("c")
 	fingerprint := baseClusterFingerprint{ClusterVersion: 1}
 	baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
 		Name: "c", Cluster: sharedproto.Wrap(base), ClusterVersion: 1, Fingerprint: fingerprint,
 	}})
+	oldSnapshot := newClientInputSnapshot([]ir.UniquelyConnectedClient{oldUcc, stable})
 	deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
 		Name:               "c",
 		BaseFingerprint:    fingerprint,
-		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{oldUcc}),
+		ClientsFingerprint: oldSnapshot.Fingerprint,
+		ResolvedClients:    oldSnapshot,
 	}})
-	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{currentUcc})
+	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{currentUcc, stable})
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
 	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc))
+	stableClusters := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
+	require.Len(t, stableClusters, 1, "another client's capability transition must not defer the stable client")
+	require.True(t, stableClusters[0].Cluster.Is(base))
+
+	currentSnapshot := newClientInputSnapshot([]ir.UniquelyConnectedClient{currentUcc, stable})
 	deltaCol.UpdateObject(backendClusterDeltaSet{
 		Name:               "c",
 		BaseFingerprint:    fingerprint,
-		ClientsFingerprint: fingerprintClients([]ir.UniquelyConnectedClient{currentUcc}),
+		ClientsFingerprint: currentSnapshot.Fingerprint,
+		ResolvedClients:    currentSnapshot,
 	})
 	require.Eventually(t, func() bool {
 		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc)

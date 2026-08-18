@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"context"
 	"hash/fnv"
+	"maps"
 	"slices"
+	"sync"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
@@ -164,9 +166,9 @@ func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) stri
 }
 
 // clientSetFingerprint versions the complete UCC input consumed while a
-// backend's sparse delta set was evaluated. It lets a newly connected or
-// changed client distinguish an explicitly resolved no-overlay result from an
-// older delta set that simply never evaluated that client.
+// backend's sparse delta set was evaluated. It drives KRT equality for the
+// retained snapshot; read-side readiness uses that snapshot's exact per-client
+// membership rather than comparing this fleet-wide value.
 type clientSetFingerprint uint64
 
 // fingerprintClients hashes the client set order-independently, over exactly the
@@ -196,17 +198,142 @@ func fingerprintClients(clients []ir.UniquelyConnectedClient) clientSetFingerpri
 	return clientSetFingerprint(hasher.Sum64())
 }
 
+// clientInputSnapshot is one immutable view of the UCC collection. Every
+// backend delta set computed from this view retains a shallow copy of the
+// snapshot, so the Clients slice and byName map are shared across backends.
+// This lets a reader prove that one specific client was evaluated without
+// requiring every backend to agree on the latest fleet-wide generation.
+type clientInputSnapshot struct {
+	Fingerprint clientSetFingerprint
+	Clients     []ir.UniquelyConnectedClient
+	// byName is derived from Clients and is immutable after construction.
+	// +noKrtEquals
+	byName map[string]ir.UniquelyConnectedClient
+}
+
+func newClientInputSnapshot(clients []ir.UniquelyConnectedClient) clientInputSnapshot {
+	return newClientInputSnapshotWithFingerprint(clients, fingerprintClients(clients))
+}
+
+func newClientInputSnapshotWithFingerprint(
+	clients []ir.UniquelyConnectedClient,
+	fingerprint clientSetFingerprint,
+) clientInputSnapshot {
+	ordered := slices.Clone(clients)
+	for i := range ordered {
+		// UCCs are values except for Labels. Clone that map so a plugin cannot
+		// mutate the resolution proof retained by every backend set.
+		ordered[i].Labels = maps.Clone(ordered[i].Labels)
+	}
+	slices.SortFunc(ordered, func(a, b ir.UniquelyConnectedClient) int {
+		return cmp.Compare(a.ResourceName(), b.ResourceName())
+	})
+	byName := make(map[string]ir.UniquelyConnectedClient, len(ordered))
+	for _, client := range ordered {
+		proof := client
+		proof.Labels = maps.Clone(client.Labels)
+		byName[client.ResourceName()] = proof
+	}
+	return clientInputSnapshot{
+		Fingerprint: fingerprint,
+		Clients:     ordered,
+		byName:      byName,
+	}
+}
+
+func (s clientInputSnapshot) matches(clients []ir.UniquelyConnectedClient) bool {
+	if len(s.Clients) != len(clients) {
+		return false
+	}
+	for _, client := range clients {
+		evaluated, ok := s.byName[client.ResourceName()]
+		if !ok || !evaluated.Equals(client) {
+			return false
+		}
+	}
+	return true
+}
+
+// ContainsCurrent reports whether this snapshot evaluated the exact current
+// version of client. ResourceName alone is insufficient because fields that do
+// not participate in the key, notably KnowsLocalCluster, affect overlays.
+func (s clientInputSnapshot) ContainsCurrent(client ir.UniquelyConnectedClient) bool {
+	evaluated, ok := s.byName[client.ResourceName()]
+	return ok && evaluated.Equals(client)
+}
+
+// clientInputSnapshotInterner shares one immutable snapshot across backend
+// transforms without inserting another KRT collection between UCC events and
+// delta recomputation. It retains only the most recently requested snapshot;
+// older snapshots stay alive solely while backend delta sets still reference
+// their slices and maps during convergence.
+type clientInputSnapshotInterner struct {
+	mu     sync.Mutex
+	latest *clientInputSnapshot
+}
+
+func (i *clientInputSnapshotInterner) intern(clients []ir.UniquelyConnectedClient) clientInputSnapshot {
+	fingerprint := fingerprintClients(clients)
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.latest != nil && i.latest.Fingerprint == fingerprint && i.latest.matches(clients) {
+		return *i.latest
+	}
+	snapshot := newClientInputSnapshotWithFingerprint(clients, fingerprint)
+	i.latest = &snapshot
+	return snapshot
+}
+
 // backendClusterDeltaSet is the atomic sparse overlay result for one backend.
-// A row exists even when Deltas is empty, making absence inside the map mean
-// "resolved with no overlay". Absence of the row, or a fingerprint mismatch,
-// means "pending" and causes the merged cluster view to defer publication.
+// A row exists even when Deltas is empty. ResolvedClients disambiguates "this
+// exact client was evaluated and needs no overlay" from "this client was not
+// evaluated yet" without making unrelated fleet churn a readiness barrier.
 type backendClusterDeltaSet struct {
-	Name               string
-	BaseFingerprint    baseClusterFingerprint
+	Name            string
+	BaseFingerprint baseClusterFingerprint
+	// ClientsFingerprint participates in KRT equality so a new resolution
+	// snapshot replaces the stored row. It is not a read-side readiness gate:
+	// readers validate only their own entry in ResolvedClients.
 	ClientsFingerprint clientSetFingerprint
+	// ResolvedClients is the exact immutable UCC snapshot consumed while Deltas
+	// was built. Its content equality is represented by ClientsFingerprint.
+	// +noKrtEquals
+	ResolvedClients clientInputSnapshot
 	// Deltas contains only clients whose cluster genuinely differs from base.
 	// +noKrtEquals
 	Deltas map[string]uccClusterDelta
+}
+
+// clientBackendDeltaView is the portion of one backend's delta set relevant to
+// one requesting client. FetchClustersForClient uses it with krt.PartialFetch so
+// changes concerning other clients do not retrigger this client's CDS assembly.
+type clientBackendDeltaView struct {
+	Name            string
+	BaseFingerprint baseClusterFingerprint
+	Resolved        bool
+	HasDelta        bool
+	Delta           uccClusterDelta
+}
+
+func (d clientBackendDeltaView) Equals(in clientBackendDeltaView) bool {
+	if d.Name != in.Name ||
+		d.BaseFingerprint != in.BaseFingerprint ||
+		d.Resolved != in.Resolved ||
+		d.HasDelta != in.HasDelta {
+		return false
+	}
+	return !d.HasDelta || d.Delta.Equals(in.Delta)
+}
+
+func (d backendClusterDeltaSet) forClient(client ir.UniquelyConnectedClient) clientBackendDeltaView {
+	delta, hasDelta := d.Deltas[client.ResourceName()]
+	return clientBackendDeltaView{
+		Name:            d.Name,
+		BaseFingerprint: d.BaseFingerprint,
+		Resolved:        d.ResolvedClients.ContainsCurrent(client),
+		HasDelta:        hasDelta,
+		Delta:           delta,
+	}
 }
 
 func (d backendClusterDeltaSet) ResourceName() string { return d.Name }
@@ -310,9 +437,8 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 //     proto is shared read-only by every client that targets it.
 //   - deltas holds one row per backend recording which clients — usually none —
 //     genuinely need a different cluster, and what it is.
-//   - clients is retained so a delta set can record the client set it resolved
-//     against, which is how a newly connected client tells "no overlay applies to
-//     me" apart from "I was not considered yet".
+//   - clients is retained so a read can verify that the requesting UCC is still
+//     connected without depending on unrelated clients.
 //
 // Consumers never read the fields directly: FetchClustersForClient merges base and
 // delta into the view a snapshot needs, and StatusClusters projects the errors out
@@ -340,9 +466,9 @@ func (iu *PerClientEnvoyClusters) HasSynced() bool {
 // FetchClustersForClient returns the merged set of clusters for a UCC: a
 // per-client delta for each backend that has one, and the shared base cluster
 // otherwise. Before returning anything it verifies that every backend's atomic
-// delta set was evaluated against the current base and client set. A mismatch
-// returns no rows, causing snapshot assembly to retain the last coherent xDS
-// snapshot while the dependent KRT transforms catch up.
+// delta set was evaluated against the current base and this exact client. A
+// mismatch returns no rows, causing snapshot assembly to retain this client's
+// last coherent xDS snapshot while the dependent KRT transforms catch up.
 //
 // The *Cluster protos in the returned slice are shared with other UCCs (base)
 // or unique to this UCC (delta); callers MUST NOT mutate them.
@@ -351,28 +477,26 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 	if iu.base != nil {
 		bases = krt.Fetch(kctx, iu.base)
 	}
-	var deltaSets []backendClusterDeltaSet
+	var deltaViews []clientBackendDeltaView
 	if iu.deltas != nil {
-		deltaSets = krt.Fetch(kctx, iu.deltas)
+		deltaViews = krt.PartialFetch(kctx, iu.deltas,
+			func(set backendClusterDeltaSet) clientBackendDeltaView {
+				return set.forClient(ucc)
+			},
+			clientBackendDeltaView.Equals,
+		)
 	}
 
-	deltaSetByName := make(map[string]*backendClusterDeltaSet, len(deltaSets))
-	for i := range deltaSets {
-		deltaSetByName[deltaSets[i].Name] = &deltaSets[i]
+	deltaViewByName := make(map[string]clientBackendDeltaView, len(deltaViews))
+	for _, view := range deltaViews {
+		deltaViewByName[view.Name] = view
 	}
 
-	var clientsFingerprint clientSetFingerprint
 	if iu.clients != nil {
-		clients := krt.Fetch(kctx, iu.clients)
-		clientsFingerprint = fingerprintClients(clients)
-		clientIsCurrent := false
-		for _, current := range clients {
-			if current.Equals(ucc) {
-				clientIsCurrent = true
-				break
-			}
-		}
-		if !clientIsCurrent {
+		// Narrow this dependency to the requesting UCC. Fleet churn must not
+		// retrigger every established client's cluster transform.
+		current := krt.FetchOne(kctx, iu.clients, krt.FilterKey(ucc.ResourceName()))
+		if current == nil || !current.Equals(ucc) {
 			return nil
 		}
 	}
@@ -381,15 +505,12 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 	// partial base/delta mix would let snapshotPerClient publish an incoherent
 	// CDS payload while collections converge.
 	for _, b := range bases {
-		set, ok := deltaSetByName[b.Name]
-		if !ok || set.BaseFingerprint != b.Fingerprint {
+		view, ok := deltaViewByName[b.Name]
+		if !ok || view.BaseFingerprint != b.Fingerprint || !view.Resolved {
 			return nil
 		}
-		if iu.clients != nil && set.ClientsFingerprint != clientsFingerprint {
-			return nil
-		}
-		if d, ok := set.Deltas[ucc.ResourceName()]; ok {
-			if !d.Client.Equals(ucc) {
+		if view.HasDelta {
+			if !view.Delta.Client.Equals(ucc) {
 				return nil
 			}
 		} else if b.NeedsInlineCLA {
@@ -400,8 +521,9 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 
 	out := make([]uccWithCluster, 0, len(bases))
 	for _, b := range bases {
-		set := deltaSetByName[b.Name]
-		if d, ok := set.Deltas[ucc.ResourceName()]; ok {
+		view := deltaViewByName[b.Name]
+		if view.HasDelta {
+			d := view.Delta
 			// Delta wins on cluster + version. Delta error wins over base error
 			// because a per-UCC failure (e.g. strict-mode validation of the
 			// post-overlay cluster) is the more specific signal — base errors
@@ -452,10 +574,9 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 // Unlike FetchClustersForClient, a stale delta set is skipped rather than treated as
 // a barrier. Status has no cross-backend coherence requirement, and withholding every
 // row mid-propagation would clear Accepted conditions that are still true. The
-// client-set fingerprint is deliberately not re-checked here: recomputing it would
-// cost O(backends*clients) hashing per event, and a delta set whose client set moved
-// is recomputed anyway (ClientsFingerprint participates in its Equals), so at worst a
-// departed client's error lingers for one propagation.
+// resolved-client snapshot is deliberately not re-checked here. A delta set whose
+// inputs moved is recomputed anyway (ClientsFingerprint participates in its Equals),
+// so at worst a departed client's error lingers for one propagation.
 func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt.Collection[uccWithCluster] {
 	if iu.base == nil {
 		return krt.NewStaticCollection[uccWithCluster](nil, nil, krtopts.ToOptions("BackendStatusClusters")...)
@@ -506,9 +627,10 @@ func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt
 // For a fleet where few backends vary per client, storage and translation cost stay
 // close to O(backends) instead of O(backends * clients).
 //
-// The two collections are versioned against each other by fingerprint, so a
-// consumer can always tell whether a delta set was computed against the base and
-// client set it is looking at. See FetchClustersForClient for how that is enforced.
+// The two collections are versioned against each other by fingerprint, and each
+// delta set retains the immutable client snapshot it consumed. A consumer can
+// therefore verify the base generation and the requesting client independently.
+// See FetchClustersForClient for how that is enforced.
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
@@ -516,6 +638,10 @@ func NewPerClientEnvoyClusters(
 	finalBackends krt.Collection[*ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 ) PerClientEnvoyClusters {
+	// Share immutable UCC snapshots across backend transforms without adding an
+	// extra KRT propagation hop between a UCC event and delta recomputation.
+	clientInputs := &clientInputSnapshotInterner{}
+
 	// Base clusters: one entry per backend, computed once and shared across all
 	// UCCs. Anything that does not depend on the UCC lives here:
 	// initializeCluster, InitEnvoyBackend, DNS lookup family, non-per-client
@@ -575,11 +701,12 @@ func NewPerClientEnvoyClusters(
 		if b.Fingerprint.Input != fingerprintBackendInput(backendObj) {
 			return nil
 		}
-		clients := krt.Fetch(kctx, uccs)
+		clientSnapshot := clientInputs.intern(krt.Fetch(kctx, uccs))
 		set := &backendClusterDeltaSet{
 			Name:               b.Name,
 			BaseFingerprint:    b.Fingerprint,
-			ClientsFingerprint: fingerprintClients(clients),
+			ClientsFingerprint: clientSnapshot.Fingerprint,
+			ResolvedClients:    clientSnapshot,
 		}
 		if b.Error != nil || b.Base == nil {
 			// Errored base: every UCC sees the same blackhole, no per-client
@@ -600,7 +727,7 @@ func NewPerClientEnvoyClusters(
 		// it on the dominant path where ApplyPerClient returns nil untouched.
 		perClientBase := *b.Base
 		perClientBase.Cluster = b.Cluster.Clone()
-		for _, ucc := range clients {
+		for _, ucc := range clientSnapshot.Clients {
 			perClient, err := translator.ApplyPerClient(kctx, ctx, ucc, backendObj, &perClientBase)
 			if err != nil {
 				// Emit a delta entry that carries the error so the snapshot
