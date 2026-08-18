@@ -108,7 +108,9 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 // the waypoint ingress-use-waypoint failure mode: a metadata-only Service label
 // update changes whether a per-client overlay applies, even though the shared
 // base cluster is byte-identical. Deltas must recompute from the backend update
-// itself, not only from base cluster equality changes.
+// itself, not only from base cluster equality changes. This is why the base
+// fence only needs ClusterVersion: finalBackends remains the delta transform's
+// primary input and carries metadata changes independently.
 func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesDeltas(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)

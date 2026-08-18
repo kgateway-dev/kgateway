@@ -110,6 +110,44 @@ func TestFetchClustersForClient_FiltersByClient(t *testing.T) {
 	require.Equal(t, uint64(1), gotB[0].ClusterVersion)
 }
 
+// TestFetchClustersForClient_MatchingDeltaDoesNotRequireResolutionProof pins
+// the sparse-read ordering: a materialized delta already carries the exact UCC
+// it was computed for, so client-set resolution is needed only when falling
+// back to the shared base. This models reading an older set while unrelated
+// fleet membership is converging.
+func TestFetchClustersForClient_MatchingDeltaDoesNotRequireResolutionProof(t *testing.T) {
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	base := clusterNamed("c")
+	delta := clusterNamed("c")
+	fingerprint := baseClusterFingerprint{ClusterVersion: 1}
+	emptySnapshot := newClientInputSnapshot(nil)
+
+	baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
+		Name: "c", Cluster: sharedproto.Wrap(base), ClusterVersion: 1, Fingerprint: fingerprint,
+	}})
+	deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
+		Name:               "c",
+		BaseFingerprint:    fingerprint,
+		ClientsFingerprint: emptySnapshot.Fingerprint,
+		ResolvedClients:    emptySnapshot,
+		Deltas: map[string]uccClusterDelta{
+			ucc.ResourceName(): {
+				Client:         ucc,
+				Name:           "c",
+				Cluster:        sharedproto.Wrap(delta),
+				ClusterVersion: 2,
+			},
+		},
+	}})
+	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	waitSynced(t, pcc)
+
+	got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	require.Len(t, got, 1)
+	require.True(t, got[0].Cluster.Is(delta), "the exact materialized delta must win without a fleet-resolution match")
+}
+
 // TestFetchClustersForClient_WithholdsInlineCLABaseUntilDeltaArrives pins the
 // publish-atomicity guard: a base whose CLA is built per client (nil
 // LoadAssignment on an inline-CLA cluster type) must NOT be surfaced for a UCC

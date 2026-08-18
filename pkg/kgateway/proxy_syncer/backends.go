@@ -34,9 +34,9 @@ type baseEnvoyCluster struct {
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	// Fingerprint fences per-client deltas to the exact base/backend input they
-	// were computed from. It intentionally includes metadata and policy inputs
-	// that may affect an overlay without changing the base Cluster proto.
+	// Fingerprint fences per-client deltas to the base cluster content they were
+	// cloned from. ClusterVersion includes the proto and any inline endpoint or
+	// policy inputs consumed later by ApplyPerClient.
 	Fingerprint baseClusterFingerprint
 	// Error is the translation error for this backend, if any. Compared by message in
 	// Equals because all errored clusters share one blackhole proto and baseClusterVersion
@@ -68,55 +68,15 @@ func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
 		errString(b.Error) == errString(in.Error)
 }
 
-// backendInputFingerprint captures the backend inputs that can change a
-// per-client overlay while leaving the shared base Cluster byte-identical.
-// ResourceVersion covers source-object changes; explicit metadata hashes also
-// cover synthetic/test objects that omit it; PolicyVersion covers attachment
-// changes sourced independently from the backend object.
-type backendInputFingerprint struct {
-	UID             string
-	ResourceVersion string
-	Generation      int64
-	Labels          uint64
-	Annotations     uint64
-	PolicyVersion   uint64
-}
-
-// baseClusterFingerprint identifies one exact base translation: both the backend
-// inputs it was computed from and the cluster proto it produced. A delta carrying a
-// different fingerprint than the base it is being merged with was computed against
-// a generation that no longer exists, and must not be published.
+// baseClusterFingerprint identifies the base cluster content a per-client delta
+// was cloned from. A delta set carrying a different ClusterVersion than the base
+// it is being merged with must not be published.
 type baseClusterFingerprint struct {
-	Input          backendInputFingerprint
 	ClusterVersion uint64
 }
 
-// fingerprintBackendInput hashes the backend inputs that a per-client overlay may
-// read. Returns the zero fingerprint for a nil backend or one with no source object,
-// which is what synthetic backends in tests look like.
-func fingerprintBackendInput(backend *ir.BackendObjectIR) backendInputFingerprint {
-	if backend == nil {
-		return backendInputFingerprint{}
-	}
-	fingerprint := backendInputFingerprint{PolicyVersion: backendEndpointVersionHash(backend)}
-	if backend.Obj == nil {
-		return fingerprint
-	}
-	fingerprint.UID = string(backend.Obj.GetUID())
-	fingerprint.ResourceVersion = backend.Obj.GetResourceVersion()
-	fingerprint.Generation = backend.Obj.GetGeneration()
-	fingerprint.Labels = utils.HashLabels(backend.Obj.GetLabels())
-	fingerprint.Annotations = utils.HashLabels(backend.Obj.GetAnnotations())
-	return fingerprint
-}
-
-// fingerprintBase pairs a backend's input fingerprint with the version of the base
-// cluster translated from it, producing the identity a delta pins itself to.
-func fingerprintBase(backend *ir.BackendObjectIR, clusterVersion uint64) baseClusterFingerprint {
-	return baseClusterFingerprint{
-		Input:          fingerprintBackendInput(backend),
-		ClusterVersion: clusterVersion,
-	}
+func fingerprintBase(clusterVersion uint64) baseClusterFingerprint {
+	return baseClusterFingerprint{ClusterVersion: clusterVersion}
 }
 
 // uccClusterDelta is a per-client cluster materialized only when at least one
@@ -167,8 +127,9 @@ func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) stri
 
 // clientSetFingerprint versions the complete UCC input consumed while a
 // backend's sparse delta set was evaluated. It drives KRT equality for the
-// retained snapshot; read-side readiness uses that snapshot's exact per-client
-// membership rather than comparing this fleet-wide value.
+// retained snapshot; when a sparse delta is absent, read-side readiness uses
+// that snapshot's exact per-client membership rather than comparing this
+// fleet-wide value.
 type clientSetFingerprint uint64
 
 // fingerprintClients hashes the client set order-independently, over exactly the
@@ -293,7 +254,8 @@ type backendClusterDeltaSet struct {
 	BaseFingerprint baseClusterFingerprint
 	// ClientsFingerprint participates in KRT equality so a new resolution
 	// snapshot replaces the stored row. It is not a read-side readiness gate:
-	// readers validate only their own entry in ResolvedClients.
+	// readers consult only their own entry in ResolvedClients, and only when no
+	// materialized delta already proves that exact client was evaluated.
 	ClientsFingerprint clientSetFingerprint
 	// ResolvedClients is the exact immutable UCC snapshot consumed while Deltas
 	// was built. Its content equality is represented by ClientsFingerprint.
@@ -318,11 +280,17 @@ type clientBackendDeltaView struct {
 func (d clientBackendDeltaView) Equals(in clientBackendDeltaView) bool {
 	if d.Name != in.Name ||
 		d.BaseFingerprint != in.BaseFingerprint ||
-		d.Resolved != in.Resolved ||
 		d.HasDelta != in.HasDelta {
 		return false
 	}
-	return !d.HasDelta || d.Delta.Equals(in.Delta)
+	if d.HasDelta {
+		// A materialized delta carries its exact UCC input, so fleet-resolution
+		// changes are irrelevant while that delta remains current.
+		return d.Delta.Equals(in.Delta)
+	}
+	// Resolution is needed only to interpret sparse absence as an affirmative
+	// "no overlay applies" result.
+	return d.Resolved == in.Resolved
 }
 
 func (d backendClusterDeltaSet) forClient(client ir.UniquelyConnectedClient) clientBackendDeltaView {
@@ -506,16 +474,21 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 	// CDS payload while collections converge.
 	for _, b := range bases {
 		view, ok := deltaViewByName[b.Name]
-		if !ok || view.BaseFingerprint != b.Fingerprint || !view.Resolved {
+		if !ok || view.BaseFingerprint != b.Fingerprint {
 			return nil
 		}
 		if view.HasDelta {
 			if !view.Delta.Client.Equals(ucc) {
 				return nil
 			}
-		} else if b.NeedsInlineCLA {
-			// Inline-CLA bases must always materialize a per-client delta.
-			return nil
+		} else {
+			if !view.Resolved {
+				return nil
+			}
+			if b.NeedsInlineCLA {
+				// Inline-CLA bases must always materialize a per-client delta.
+				return nil
+			}
 		}
 	}
 
@@ -667,7 +640,7 @@ func NewPerClientEnvoyClusters(
 			Name:              name,
 			Cluster:           sharedCluster,
 			ClusterVersion:    clusterVersion,
-			Fingerprint:       fingerprintBase(backendObj, clusterVersion),
+			Fingerprint:       fingerprintBase(clusterVersion),
 			Error:             baseRes.Error,
 			BackendSource:     backendObj.GetObjectSource(),
 			BackendGeneration: backendGeneration,
@@ -696,11 +669,6 @@ func NewPerClientEnvoyClusters(
 			return nil
 		}
 		b := *baseObj
-		// FetchOne can briefly return the prior base generation. Do not mark the
-		// new backend input resolved against that stale base.
-		if b.Fingerprint.Input != fingerprintBackendInput(backendObj) {
-			return nil
-		}
 		clientSnapshot := clientInputs.intern(krt.Fetch(kctx, uccs))
 		set := &backendClusterDeltaSet{
 			Name:               b.Name,
