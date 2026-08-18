@@ -17,10 +17,11 @@ type RetryOnCondition string
 type RetryHostPredicate string
 
 const (
-	// RetryHostPredicatePreviousHosts excludes hosts that have already been attempted during
-	// this request from being selected again for a retry, e.g. to avoid a host that already
-	// failed this request. Maps to the envoy.retry_host_predicates.previous_hosts Envoy
-	// extension.
+	// RetryHostPredicatePreviousHosts makes envoy attempt a limited number of host
+	// reselections (currently not configurable via this API) to avoid picking a host that
+	// already failed this request. Exclusion is therefore best-effort, not guaranteed: on
+	// small clusters (e.g. two hosts) a retry can still land back on the failed host. Maps to
+	// the envoy.retry_host_predicates.previous_hosts Envoy extension.
 	RetryHostPredicatePreviousHosts RetryHostPredicate = "PreviousHosts"
 	// RetryHostPredicateOmitCanaryHosts excludes hosts marked as canary hosts (via the
 	// envoy.lb "canary" host metadata) from being selected for a retry. Maps to the
@@ -86,5 +87,6 @@ type Retry struct {
 	// +optional
 	//
 	// +kubebuilder:validation:MinItems=1
+	// +listType=set
 	RetryHostPredicates []RetryHostPredicate `json:"retryHostPredicates,omitempty"`
 }

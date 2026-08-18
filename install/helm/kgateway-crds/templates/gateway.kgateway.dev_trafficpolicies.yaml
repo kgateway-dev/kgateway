@@ -2017,6 +2017,7 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                    x-kubernetes-list-type: set
                   retryOn:
                     description: RetryOn specifies the conditions under which a retry
                       should be attempted.
