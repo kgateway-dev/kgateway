@@ -1592,6 +1592,52 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              httpUpgrade:
+                description: |-
+                  HTTPUpgrade configures HTTP protocol upgrades on the targeted routes.
+                  Route-level upgrade settings override the matching upgrade type configured
+                  on the listener. After an upgrade is established, tunneled payload is not
+                  inspected by HTTP filters. Authenticate and authorize the initial upgrade
+                  request, enable upgrades only for trusted clients, and avoid request buffering.
+                items:
+                  description: ProtocolUpgradeConfig specifies configuration for an
+                    HTTP protocol upgrade.
+                  properties:
+                    connect:
+                      description: |-
+                        Connect configures CONNECT-specific behavior. It is valid only when type
+                        is "CONNECT".
+                      properties:
+                        terminate:
+                          description: |-
+                            Terminate causes the gateway to terminate the CONNECT request and forward
+                            the request payload upstream as raw TCP data. When false or omitted, the
+                            CONNECT request is proxied upstream without termination.
+
+                            For ordinary HTTPS forward proxying through a DynamicForwardProxy Backend,
+                            leave the Backend's enableTls field unset so that the client's tunneled TLS
+                            session is forwarded directly. Enabling it adds a separate upstream TLS layer.
+                          type: boolean
+                      type: object
+                    type:
+                      description: |-
+                        Type is the case-insensitive protocol upgrade token, such as "websocket",
+                        "CONNECT", or "spdy/3.1". Do not configure the same token more than once,
+                        including variants that differ only by letter case.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - type
+                  type: object
+                  x-kubernetes-validations:
+                  - message: connect configuration is only allowed when type is CONNECT
+                    rule: '!has(self.connect) || self.type.lowerAscii() == ''connect'''
+                maxItems: 16
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
               internalRedirect:
                 description: |-
                   InternalRedirect handles upstream 3xx redirects inside the gateway.
@@ -2678,10 +2724,23 @@ spec:
                 r.kind == ''HTTPRoute'' || r.kind == ''GRPCRoute'')) && (!has(self.targetSelectors)
                 || self.targetSelectors.all(r, r.kind == ''HTTPRoute'' || r.kind ==
                 ''GRPCRoute'')))'
+            - message: httpUpgrade can only be used when targeting Gateway, HTTPRoute,
+                or ListenerSet resources
+              rule: '!has(self.httpUpgrade) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''Gateway'' || r.kind == ''HTTPRoute'' || r.kind.endsWith(''ListenerSet'')))
+                && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind
+                == ''Gateway'' || r.kind == ''HTTPRoute'' || r.kind.endsWith(''ListenerSet''))))'
+            - message: httpUpgrade types must be unique ignoring ASCII case
+              rule: '!has(self.httpUpgrade) || self.httpUpgrade.all(x, self.httpUpgrade.exists_one(y,
+                y.type.lowerAscii() == x.type.lowerAscii()))'
             - message: retry.perTryTimeout must be less than timeouts.request
               rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
                 && has(self.timeouts.request) ? duration(self.retry.perTryTimeout)
                 < duration(self.timeouts.request) : true) : true'
+            - message: buffer cannot be used together with httpUpgrade unless buffering
+                is disabled
+              rule: '!has(self.buffer) || has(self.buffer.disable) || !has(self.httpUpgrade)
+                || self.httpUpgrade.size() == 0'
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within
