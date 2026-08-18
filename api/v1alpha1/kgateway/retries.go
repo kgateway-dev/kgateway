@@ -10,6 +10,24 @@ import (
 // +kubebuilder:validation:Enum={"5xx",gateway-error,reset,reset-before-request,connect-failure,envoy-ratelimited,retriable-4xx,refused-stream,retriable-status-codes,http3-post-connect-failure,cancelled,deadline-exceeded,internal,resource-exhausted,unavailable}
 type RetryOnCondition string
 
+// RetryHostPredicate specifies a predicate that envoy uses, in addition to health checking and
+// outlier detection, to determine whether a given host is eligible for a retry attempt.
+//
+// +kubebuilder:validation:Enum=PreviousHosts;OmitCanaryHosts
+type RetryHostPredicate string
+
+const (
+	// RetryHostPredicatePreviousHosts excludes hosts that have already been attempted during
+	// this request from being selected again for a retry, e.g. to avoid a host that already
+	// failed this request. Maps to the envoy.retry_host_predicates.previous_hosts Envoy
+	// extension.
+	RetryHostPredicatePreviousHosts RetryHostPredicate = "PreviousHosts"
+	// RetryHostPredicateOmitCanaryHosts excludes hosts marked as canary hosts (via the
+	// envoy.lb "canary" host metadata) from being selected for a retry. Maps to the
+	// envoy.retry_host_predicates.omit_canary_hosts Envoy extension.
+	RetryHostPredicateOmitCanaryHosts RetryHostPredicate = "OmitCanaryHosts"
+)
+
 // Retry defines the retry policy
 //
 // +kubebuilder:validation:XValidation:rule="has(self.retryOn) || has(self.statusCodes)",message="retryOn or statusCodes must be set."
@@ -62,4 +80,11 @@ type Retry struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.backoffBaseInterval must be at least 1ms."
 	BackoffBaseInterval *metav1.Duration `json:"backoffBaseInterval,omitempty"`
+
+	// RetryHostPredicates specifies predicates envoy uses to determine whether a given host is
+	// eligible for a retry attempt (e.g. avoiding a host that already failed this request).
+	// +optional
+	//
+	// +kubebuilder:validation:MinItems=1
+	RetryHostPredicates []RetryHostPredicate `json:"retryHostPredicates,omitempty"`
 }
