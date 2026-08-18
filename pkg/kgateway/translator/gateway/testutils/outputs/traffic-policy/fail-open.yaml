@@ -81,14 +81,6 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway-fail-open
-            filterEnabled:
-              defaultValue:
-                numerator: 100
-              runtimeKey: ratelimit.api-gateway-fail-open.filter_enabled
-            filterEnforced:
-              defaultValue:
-                numerator: 100
-              runtimeKey: ratelimit.api-gateway-fail-open.filter_enforced
             rateLimitService:
               grpcService:
                 envoyGrpc:

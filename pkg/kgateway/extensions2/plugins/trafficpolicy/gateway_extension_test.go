@@ -62,18 +62,20 @@ func TestBuildRateLimitFilterShadowMode(t *testing.T) {
 	int32Ptr := func(v int32) *int32 { return &v }
 
 	tests := []struct {
-		name            string
-		percentEnabled  *int32
-		percentEnforced *int32
-		wantEnabledNum  uint32
-		wantEnforcedNum uint32
+		name              string
+		percentEnabled    *int32
+		percentEnforced   *int32
+		wantEnabledUnset  bool
+		wantEnabledNum    uint32
+		wantEnforcedUnset bool
+		wantEnforcedNum   uint32
 	}{
 		{
-			name:            "unset defaults to fully enabled and enforced",
-			percentEnabled:  nil,
-			percentEnforced: nil,
-			wantEnabledNum:  100,
-			wantEnforcedNum: 100,
+			name:              "unset leaves both nil so Envoy falls back to its own default runtime keys",
+			percentEnabled:    nil,
+			percentEnforced:   nil,
+			wantEnabledUnset:  true,
+			wantEnforcedUnset: true,
 		},
 		{
 			name:            "shadow mode: fully enabled, not enforced",
@@ -96,6 +98,13 @@ func TestBuildRateLimitFilterShadowMode(t *testing.T) {
 			wantEnabledNum:  0,
 			wantEnforcedNum: 0,
 		},
+		{
+			name:              "only enabled set, enforced left to Envoy's default",
+			percentEnabled:    int32Ptr(100),
+			percentEnforced:   nil,
+			wantEnabledNum:    100,
+			wantEnforcedUnset: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -108,29 +117,51 @@ func TestBuildRateLimitFilterShadowMode(t *testing.T) {
 				PercentEnforced: tt.percentEnforced,
 			}
 
-			got := buildRateLimitFilter(&envoycorev3.GrpcService{}, provider)
+			got := buildRateLimitFilter("default/full-ratelimit", &envoycorev3.GrpcService{}, provider)
 
-			require.NotNil(t, got.FilterEnabled)
-			assert.Equal(t, "ratelimit.api-gateway.filter_enabled", got.FilterEnabled.RuntimeKey)
-			assert.Equal(t, tt.wantEnabledNum, got.FilterEnabled.DefaultValue.Numerator)
-			assert.Equal(t, typev3.FractionalPercent_HUNDRED, got.FilterEnabled.DefaultValue.Denominator)
+			if tt.wantEnabledUnset {
+				assert.Nil(t, got.FilterEnabled,
+					"nil PercentEnabled must leave FilterEnabled unset so Envoy consults its own global runtime key default")
+			} else {
+				require.NotNil(t, got.FilterEnabled)
+				assert.Equal(t, "ratelimit.default.full-ratelimit.filter_enabled", got.FilterEnabled.RuntimeKey)
+				assert.Equal(t, tt.wantEnabledNum, got.FilterEnabled.DefaultValue.Numerator)
+				assert.Equal(t, typev3.FractionalPercent_HUNDRED, got.FilterEnabled.DefaultValue.Denominator)
+			}
 
-			require.NotNil(t, got.FilterEnforced)
-			assert.Equal(t, "ratelimit.api-gateway.filter_enforced", got.FilterEnforced.RuntimeKey)
-			assert.Equal(t, tt.wantEnforcedNum, got.FilterEnforced.DefaultValue.Numerator)
-			assert.Equal(t, typev3.FractionalPercent_HUNDRED, got.FilterEnforced.DefaultValue.Denominator)
+			if tt.wantEnforcedUnset {
+				assert.Nil(t, got.FilterEnforced,
+					"nil PercentEnforced must leave FilterEnforced unset so Envoy consults its own global runtime key default")
+			} else {
+				require.NotNil(t, got.FilterEnforced)
+				assert.Equal(t, "ratelimit.default.full-ratelimit.filter_enforced", got.FilterEnforced.RuntimeKey)
+				assert.Equal(t, tt.wantEnforcedNum, got.FilterEnforced.DefaultValue.Numerator)
+				assert.Equal(t, typev3.FractionalPercent_HUNDRED, got.FilterEnforced.DefaultValue.Denominator)
+			}
 		})
 	}
 }
 
-func TestBuildRateLimitFilterRuntimeKeysAreDomainScoped(t *testing.T) {
-	providerA := &kgateway.RateLimitProvider{Domain: "tier-a", Timeout: metav1.Duration{Duration: 100 * time.Millisecond}}
-	providerB := &kgateway.RateLimitProvider{Domain: "tier-b", Timeout: metav1.Duration{Duration: 100 * time.Millisecond}}
+func TestBuildRateLimitFilterRuntimeKeysAreScopedByProviderNotDomain(t *testing.T) {
+	int32Ptr := func(v int32) *int32 { return &v }
 
-	filterA := buildRateLimitFilter(&envoycorev3.GrpcService{}, providerA)
-	filterB := buildRateLimitFilter(&envoycorev3.GrpcService{}, providerB)
+	// Two distinct GatewayExtensions may legitimately share the same Domain (kgateway does not
+	// enforce Domain uniqueness). The runtime key must still be per-provider, otherwise an
+	// operator overriding one provider's key at runtime would silently affect the other.
+	providerA := &kgateway.RateLimitProvider{
+		Domain:          "api-gateway",
+		Timeout:         metav1.Duration{Duration: 100 * time.Millisecond},
+		PercentEnforced: int32Ptr(25),
+	}
+	providerB := &kgateway.RateLimitProvider{
+		Domain:          "api-gateway",
+		Timeout:         metav1.Duration{Duration: 100 * time.Millisecond},
+		PercentEnforced: int32Ptr(75),
+	}
 
-	assert.NotEqual(t, filterA.FilterEnabled.RuntimeKey, filterB.FilterEnabled.RuntimeKey,
-		"distinct RateLimitProvider domains must get distinct runtime keys so one provider's override can't clobber another's")
-	assert.NotEqual(t, filterA.FilterEnforced.RuntimeKey, filterB.FilterEnforced.RuntimeKey)
+	filterA := buildRateLimitFilter("default/provider-a", &envoycorev3.GrpcService{}, providerA)
+	filterB := buildRateLimitFilter("default/provider-b", &envoycorev3.GrpcService{}, providerB)
+
+	assert.NotEqual(t, filterA.FilterEnforced.RuntimeKey, filterB.FilterEnforced.RuntimeKey,
+		"same-domain providers must still get distinct runtime keys so one provider's override can't clobber another's")
 }

@@ -43,14 +43,6 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
             domain: api-gateway
-            filterEnabled:
-              defaultValue:
-                numerator: 100
-              runtimeKey: ratelimit.api-gateway.filter_enabled
-            filterEnforced:
-              defaultValue:
-                numerator: 100
-              runtimeKey: ratelimit.api-gateway.filter_enforced
             rateLimitService:
               grpcService:
                 envoyGrpc:
@@ -67,11 +59,11 @@ Listeners:
             filterEnabled:
               defaultValue:
                 numerator: 100
-              runtimeKey: ratelimit.api-gateway.filter_enabled
+              runtimeKey: ratelimit.default.full-ratelimit.filter_enabled
             filterEnforced:
               defaultValue:
                 numerator: 25
-              runtimeKey: ratelimit.api-gateway.filter_enforced
+              runtimeKey: ratelimit.default.full-ratelimit.filter_enforced
             rateLimitService:
               grpcService:
                 envoyGrpc:
