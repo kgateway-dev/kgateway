@@ -115,6 +115,89 @@ func TestBuildRetryPolicy(t *testing.T) {
 			},
 		},
 		{
+			name: "retry policy with rate limited back-off reset headers using seconds format",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"envoy-ratelimited"},
+				Attempts: int32(3),
+				RateLimitedBackOff: &kgateway.RateLimitedRetryBackOff{
+					ResetHeaders: []kgateway.ResetHeader{
+						{Name: "Retry-After", Format: kgateway.ResetHeaderFormatSeconds},
+					},
+				},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:              "envoy-ratelimited",
+				NumRetries:           wrapperspb.UInt32(3),
+				RetriableStatusCodes: nil,
+				RateLimitedRetryBackOff: &envoyroutev3.RetryPolicy_RateLimitedRetryBackOff{
+					ResetHeaders: []*envoyroutev3.RetryPolicy_ResetHeader{
+						{Name: "Retry-After", Format: envoyroutev3.RetryPolicy_SECONDS},
+					},
+				},
+			},
+		},
+		{
+			name: "retry policy with rate limited back-off reset headers using unix timestamp format",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"envoy-ratelimited"},
+				Attempts: int32(3),
+				RateLimitedBackOff: &kgateway.RateLimitedRetryBackOff{
+					ResetHeaders: []kgateway.ResetHeader{
+						{Name: "X-RateLimit-Reset", Format: kgateway.ResetHeaderFormatUnixTimestamp},
+					},
+				},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:              "envoy-ratelimited",
+				NumRetries:           wrapperspb.UInt32(3),
+				RetriableStatusCodes: nil,
+				RateLimitedRetryBackOff: &envoyroutev3.RetryPolicy_RateLimitedRetryBackOff{
+					ResetHeaders: []*envoyroutev3.RetryPolicy_ResetHeader{
+						{Name: "X-RateLimit-Reset", Format: envoyroutev3.RetryPolicy_UNIX_TIMESTAMP},
+					},
+				},
+			},
+		},
+		{
+			name: "retry policy with rate limited back-off multiple reset headers and max interval",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"envoy-ratelimited"},
+				Attempts: int32(3),
+				RateLimitedBackOff: &kgateway.RateLimitedRetryBackOff{
+					ResetHeaders: []kgateway.ResetHeader{
+						{Name: "Retry-After", Format: kgateway.ResetHeaderFormatSeconds},
+						{Name: "X-RateLimit-Reset", Format: kgateway.ResetHeaderFormatUnixTimestamp},
+					},
+					MaxInterval: &metav1.Duration{Duration: 5 * time.Minute},
+				},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:              "envoy-ratelimited",
+				NumRetries:           wrapperspb.UInt32(3),
+				RetriableStatusCodes: nil,
+				RateLimitedRetryBackOff: &envoyroutev3.RetryPolicy_RateLimitedRetryBackOff{
+					ResetHeaders: []*envoyroutev3.RetryPolicy_ResetHeader{
+						{Name: "Retry-After", Format: envoyroutev3.RetryPolicy_SECONDS},
+						{Name: "X-RateLimit-Reset", Format: envoyroutev3.RetryPolicy_UNIX_TIMESTAMP},
+					},
+					MaxInterval: durationpb.New(5 * time.Minute),
+				},
+			},
+		},
+		{
+			name: "retry policy with nil rate limited back-off leaves envoy field unset",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"envoy-ratelimited"},
+				Attempts: int32(3),
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:                 "envoy-ratelimited",
+				NumRetries:              wrapperspb.UInt32(3),
+				RetriableStatusCodes:    nil,
+				RateLimitedRetryBackOff: nil,
+			},
+		},
+		{
 			name: "retry policy with only status codes (no retryOn)",
 			input: &kgateway.Retry{
 				Attempts:    int32(1),

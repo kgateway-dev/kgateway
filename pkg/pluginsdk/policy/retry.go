@@ -31,7 +31,42 @@ func BuildRetryPolicy(in *kgateway.Retry) *envoyroutev3.RetryPolicy {
 		}
 	}
 
+	if in.RateLimitedBackOff != nil {
+		policy.RateLimitedRetryBackOff = buildRateLimitedRetryBackOff(in.RateLimitedBackOff)
+	}
+
 	return policy
+}
+
+func buildRateLimitedRetryBackOff(in *kgateway.RateLimitedRetryBackOff) *envoyroutev3.RetryPolicy_RateLimitedRetryBackOff {
+	backOff := &envoyroutev3.RetryPolicy_RateLimitedRetryBackOff{
+		ResetHeaders: resetHeadersToEnvoy(in.ResetHeaders),
+	}
+	if in.MaxInterval != nil {
+		backOff.MaxInterval = durationpb.New(in.MaxInterval.Duration)
+	}
+	return backOff
+}
+
+func resetHeadersToEnvoy(headers []kgateway.ResetHeader) []*envoyroutev3.RetryPolicy_ResetHeader {
+	if len(headers) == 0 {
+		return nil
+	}
+	out := make([]*envoyroutev3.RetryPolicy_ResetHeader, len(headers))
+	for i, h := range headers {
+		out[i] = &envoyroutev3.RetryPolicy_ResetHeader{
+			Name:   string(h.Name),
+			Format: resetHeaderFormatToEnvoy(h.Format),
+		}
+	}
+	return out
+}
+
+func resetHeaderFormatToEnvoy(format kgateway.ResetHeaderFormat) envoyroutev3.RetryPolicy_ResetHeaderFormat {
+	if format == kgateway.ResetHeaderFormatUnixTimestamp {
+		return envoyroutev3.RetryPolicy_UNIX_TIMESTAMP
+	}
+	return envoyroutev3.RetryPolicy_SECONDS
 }
 
 // retryOnToString converts a slice of RetryOnCondition to a comma-separated string
