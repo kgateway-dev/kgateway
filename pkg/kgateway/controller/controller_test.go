@@ -713,7 +713,7 @@ func (s *ControllerSuite) startController(
 		return err
 	}
 
-	if err := mgr.GetClient().Create(ctx, &kgateway.GatewayParameters{
+	if err := s.client.Create(ctx, &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      selfManagedGatewayClassName,
 			Namespace: "default",
@@ -788,7 +788,7 @@ func (s *ControllerSuite) startController(
 	// This ensures the controller is fully started before tests run
 	s.EventuallyWithT(func(c *assert.CollectT) {
 		var gcList gwv1.GatewayClassList
-		err := mgr.GetClient().List(ctx, &gcList)
+		err := s.client.List(ctx, &gcList)
 		assert.NoError(c, err, assert.NoError)
 	}, defaultPollTimeout, 250*time.Millisecond, "timed out waiting for Manager to be ready")
 	select {

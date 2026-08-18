@@ -64,7 +64,7 @@ func processGcp(ir *GcpIr, out *envoyclusterv3.Cluster) error {
 
 	dnsClusterConfig, err := utils.MessageToAny(&envoydnsv3.DnsCluster{})
 	if err != nil {
-		return fmt.Errorf("failed to create dns cluster config: %v", err)
+		return fmt.Errorf("failed to create dns cluster config: %w", err)
 	}
 	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_ClusterType{
 		ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
@@ -101,7 +101,7 @@ func buildGcpIr(in *kgateway.GcpBackend) (*GcpIr, error) {
 		Sni: hostname,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create tls context: %v", err)
+		return nil, fmt.Errorf("failed to create tls context: %w", err)
 	}
 	transportSocket := &envoycorev3.TransportSocket{
 		Name: "envoy.transport_sockets.tls",
@@ -117,7 +117,7 @@ func buildGcpIr(in *kgateway.GcpBackend) (*GcpIr, error) {
 	}
 	audienceConfigAny, err := utils.MessageToAny(audienceConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create audience config: %v", err)
+		return nil, fmt.Errorf("failed to create audience config: %w", err)
 	}
 
 	return &GcpIr{

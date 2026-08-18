@@ -153,7 +153,7 @@ func getGVR(obj client.Object, scheme *runtime.Scheme) (schema.GroupVersionResou
 		// try unsafe guess
 		gvr, _ = meta.UnsafeGuessKindToResource(gvk)
 		if gvr == (schema.GroupVersionResource{}) {
-			return schema.GroupVersionResource{}, fmt.Errorf("failed to get GVR for object %s: %v", kubeutils.NamespacedNameFrom(obj), err)
+			return schema.GroupVersionResource{}, fmt.Errorf("failed to get GVR for object %s: %w", kubeutils.NamespacedNameFrom(obj), err)
 		}
 	}
 	if gvr.Group == "core" {

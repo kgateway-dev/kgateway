@@ -308,7 +308,7 @@ func TestTranslationWithExtraPlugins(
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
 		Secrets:       result.Proxy.Secrets,
-		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets, result.PolicyPlugins),
+		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -499,7 +499,7 @@ func GetHTTPRouteStatusError(
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -517,14 +517,13 @@ func GetHTTPRouteStatusError(
 
 func GetPolicyStatusError(
 	reportsMap reports.ReportMap,
-	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 	policy *reporter.PolicyKey,
 ) error {
 	for key := range reportsMap.Policies {
 		if policy != nil && *policy != key {
 			continue
 		}
-		status := buildPolicyStatus(reportsMap, policyPlugins, key, gwv1.PolicyStatus{})
+		status := buildPolicyStatus(reportsMap, key, gwv1.PolicyStatus{})
 		for ancestor, report := range status.Ancestors {
 			for _, c := range report.Conditions {
 				if c.Status != metav1.ConditionTrue {
@@ -536,7 +535,7 @@ func GetPolicyStatusError(
 	return nil
 }
 
-func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin) error {
+func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
 	err := GetHTTPRouteStatusError(reportsMap, nil)
 	if err != nil {
 		return err
@@ -549,7 +548,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -570,7 +569,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -591,7 +590,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildRouteStatus(context.Background(), &r, wellknown.DefaultGatewayClassName)
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
 		for ref, parentRefReport := range status.Parents {
 			for _, c := range parentRefReport.Conditions {
@@ -612,7 +611,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 				Namespace: nns.Namespace,
 			},
 		}
-		status := reportsMap.BuildGWStatus(context.Background(), g, nil)
+		status := reportsMap.BuildGWStatus(g, nil)
 		for _, c := range status.Conditions {
 			if c.Type == listener.GatewayConditionAttachedListenerSets {
 				// A gateway might or might not have AttachedListenerSets so skip this condition
@@ -633,7 +632,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 				},
 			}
 			l.SetGroupVersionKind(gvk)
-			status := reportsMap.BuildListenerSetStatus(context.Background(), l)
+			status := reportsMap.BuildListenerSetStatus(l)
 			for _, c := range status.Conditions {
 				if c.Status != metav1.ConditionTrue {
 					return fmt.Errorf("condition not accepted for listenerSet %s condition: %v", ls, c)
@@ -642,7 +641,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap, 
 		}
 	}
 
-	err = GetPolicyStatusError(reportsMap, policyPlugins, nil)
+	err = GetPolicyStatusError(reportsMap, nil)
 	if err != nil {
 		return err
 	}

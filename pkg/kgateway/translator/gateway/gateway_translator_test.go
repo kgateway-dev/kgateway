@@ -319,6 +319,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy request mirror behavior", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/request-mirror.yaml"},
+			outputFile: "traffic-policy/request-mirror.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy request mirror listener precedence", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/request-mirror-listener.yaml"},
+			outputFile: "traffic-policy/request-mirror-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with targetSelectors", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/label_based.yaml"},
@@ -2280,6 +2302,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with stripTrailingHostDot", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/strip-trailing-host-dot.yaml"},
+			outputFile: "listener-policy-http/strip-trailing-host-dot.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy_proxy100Continue", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/proxy-100-continue.yaml"},
@@ -3484,8 +3517,8 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 	resultTwo, ok := results[gatewayTwo]
 	require.True(t, ok, "expected second gateway result")
 
-	statusOne := resultOne.ReportsMap.BuildGWStatus(ctx, *resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
-	statusTwo := resultTwo.ReportsMap.BuildGWStatus(ctx, *resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
+	statusOne := resultOne.ReportsMap.BuildGWStatus(*resultOne.Gateways[gatewayOne], map[string]uint{"http": 1})
+	statusTwo := resultTwo.ReportsMap.BuildGWStatus(*resultTwo.Gateways[gatewayTwo], map[string]uint{"http": 1})
 	require.NotNil(t, statusOne)
 	require.NotNil(t, statusTwo)
 

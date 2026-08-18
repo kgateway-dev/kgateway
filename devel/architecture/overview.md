@@ -152,6 +152,34 @@ IR (add filters, add filter route config, etc..). Then policy plugins are
 invoked with the attached policy IR, and can modify the envoy protobufs as
 needed.
 
+## Status Contributions
+
+xDS translation is scoped to a Gateway, but Kubernetes status is owned by the
+individual Gateway, Route, ListenerSet, Policy, or Backend object. Translation
+therefore emits one `StatusContribution` per status owner instead of exposing a
+cluster-wide report singleton. Each contribution is keyed by both its target
+object and its producing translation unit.
+
+KRT indexes contributions by target and reduces them into one `ResourceReports`
+value per raw Kubernetes object. The retained value is a compact typed fragment;
+the legacy `ReportMap` shape is materialized only while building a status write.
+This has two important properties:
+
+- A change to one Gateway or Backend invalidates only the status owners to
+  which it contributed.
+- The per-object reduction remains present with an empty report after its last
+  contribution disappears, allowing the writer to clear stale controller-owned
+  status without synthetic marker reports.
+
+Status writers queue only the object identity and build the desired status from
+the latest per-object reduction immediately before writing it. Raw object
+events are also registered so status-only updates and write conflicts remain
+self-healing.
+
+Gateway translation exposes separate xDS and status projections. Status-only
+changes therefore update contribution collections without invalidating the xDS
+snapshot collection.
+
 # Diagram of the translation lifecycle
 
 ![](translation.svg)
