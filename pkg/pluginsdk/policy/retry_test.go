@@ -221,6 +221,34 @@ func TestBuildRetryPolicy(t *testing.T) {
 				RetriableStatusCodes: nil,
 			},
 		},
+		{
+			// The kgateway.Retry CRD enforces, via a CEL XValidation rule on the Retry
+			// struct (api/v1alpha1/kgateway/retries.go), that rateLimitedBackOff can only
+			// be set when retryOn includes "envoy-ratelimited". That constraint is
+			// enforced at CRD admission time, not by BuildRetryPolicy, so this test only
+			// documents that BuildRetryPolicy itself still translates the field correctly
+			// when the (CEL-required) envoy-ratelimited condition is present.
+			name: "retry policy with rate limited back-off and envoy-ratelimited in retryOn (CEL-valid input)",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"envoy-ratelimited", "5xx"},
+				Attempts: int32(3),
+				RateLimitedBackOff: &kgateway.RateLimitedRetryBackOff{
+					ResetHeaders: []kgateway.ResetHeader{
+						{Name: "Retry-After", Format: kgateway.ResetHeaderFormatSeconds},
+					},
+				},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:              "5xx,envoy-ratelimited",
+				NumRetries:           wrapperspb.UInt32(3),
+				RetriableStatusCodes: nil,
+				RateLimitedRetryBackOff: &envoyroutev3.RetryPolicy_RateLimitedRetryBackOff{
+					ResetHeaders: []*envoyroutev3.RetryPolicy_ResetHeader{
+						{Name: "Retry-After", Format: envoyroutev3.RetryPolicy_SECONDS},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -229,6 +257,45 @@ func TestBuildRetryPolicy(t *testing.T) {
 			got := BuildRetryPolicy(tt.input)
 			diff := cmp.Diff(got, tt.want, protocmp.Transform())
 			a.Empty(diff)
+		})
+	}
+}
+
+func TestResetHeaderFormatToEnvoy(t *testing.T) {
+	tests := []struct {
+		name   string
+		format kgateway.ResetHeaderFormat
+		want   envoyroutev3.RetryPolicy_ResetHeaderFormat
+	}{
+		{
+			name:   "seconds format",
+			format: kgateway.ResetHeaderFormatSeconds,
+			want:   envoyroutev3.RetryPolicy_SECONDS,
+		},
+		{
+			name:   "unix timestamp format",
+			format: kgateway.ResetHeaderFormatUnixTimestamp,
+			want:   envoyroutev3.RetryPolicy_UNIX_TIMESTAMP,
+		},
+		{
+			// Not reachable via the CRD (the enum is validated by
+			// +kubebuilder:validation:Enum=Seconds;UnixTimestamp), but the switch's
+			// default case must still return the proto3 zero-value (SECONDS) for any
+			// unrecognized format rather than panicking or leaving the field unset.
+			name:   "unrecognized format falls back to SECONDS zero-value",
+			format: kgateway.ResetHeaderFormat("bogus"),
+			want:   envoyroutev3.RetryPolicy_SECONDS,
+		},
+		{
+			name:   "empty format falls back to SECONDS zero-value",
+			format: kgateway.ResetHeaderFormat(""),
+			want:   envoyroutev3.RetryPolicy_SECONDS,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, resetHeaderFormatToEnvoy(tt.format))
 		})
 	}
 }

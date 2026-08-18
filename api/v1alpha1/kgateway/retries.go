@@ -13,6 +13,7 @@ type RetryOnCondition string
 // Retry defines the retry policy
 //
 // +kubebuilder:validation:XValidation:rule="has(self.retryOn) || has(self.statusCodes)",message="retryOn or statusCodes must be set."
+// +kubebuilder:validation:XValidation:rule="!has(self.rateLimitedBackOff) || (has(self.retryOn) && self.retryOn.exists(r, r == 'envoy-ratelimited'))",message="rateLimitedBackOff requires retryOn to include envoy-ratelimited"
 type Retry struct {
 	// RetryOn specifies the conditions under which a retry should be attempted.
 	// +optional
@@ -80,10 +81,12 @@ type RateLimitedRetryBackOff struct {
 	// ResetHeaders are response headers, such as "Retry-After" or "X-RateLimit-Reset", consulted
 	// in order to compute the back-off interval. The first header present on the response that
 	// parses successfully according to its Format is used; remaining headers are ignored.
-	// +optional
+	// Required: Envoy's RateLimitedRetryBackOff message requires at least one reset header
+	// whenever it is present, so this cannot be left empty.
+	// +required
 	//
 	// +kubebuilder:validation:MinItems=1
-	ResetHeaders []ResetHeader `json:"resetHeaders,omitempty"`
+	ResetHeaders []ResetHeader `json:"resetHeaders"`
 
 	// MaxInterval caps the back-off interval envoy will honor from a reset header.
 	// If a header specifies a longer interval, it is discarded and the next header, if any, is tried.
@@ -91,6 +94,7 @@ type RateLimitedRetryBackOff struct {
 	// It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
 	// +optional
 	//
+	// +kubebuilder:default="300s"
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
@@ -116,7 +120,7 @@ const (
 type ResetHeader struct {
 	// Name is the response header to consult, e.g. "Retry-After" or "X-RateLimit-Reset".
 	// +required
-	Name HeaderName `json:"name"`
+	Name gwv1.HTTPHeaderName `json:"name"`
 
 	// Format specifies how to interpret the header's value.
 	// +required

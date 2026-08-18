@@ -63,10 +63,17 @@ func resetHeadersToEnvoy(headers []kgateway.ResetHeader) []*envoyroutev3.RetryPo
 }
 
 func resetHeaderFormatToEnvoy(format kgateway.ResetHeaderFormat) envoyroutev3.RetryPolicy_ResetHeaderFormat {
-	if format == kgateway.ResetHeaderFormatUnixTimestamp {
+	switch format {
+	case kgateway.ResetHeaderFormatUnixTimestamp:
 		return envoyroutev3.RetryPolicy_UNIX_TIMESTAMP
+	case kgateway.ResetHeaderFormatSeconds:
+		return envoyroutev3.RetryPolicy_SECONDS
+	default:
+		// proto3 enum zero-value semantics: SECONDS is RetryPolicy_ResetHeaderFormat's
+		// zero value, so this is the correct fallback for any unrecognized format
+		// (CRD validation should prevent this in practice).
+		return envoyroutev3.RetryPolicy_SECONDS
 	}
-	return envoyroutev3.RetryPolicy_SECONDS
 }
 
 // retryOnToString converts a slice of RetryOnCondition to a comma-separated string
