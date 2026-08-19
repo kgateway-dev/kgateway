@@ -1,8 +1,11 @@
 package trafficpolicy
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -123,6 +126,7 @@ func constructOAuth2(
 }
 
 func buildOAuth2ProviderConfig(
+	ctx context.Context,
 	krtctx krt.HandlerContext,
 	ext *ir.GatewayExtension,
 	backends *krtcollections.BackendIndex,
@@ -139,36 +143,41 @@ func buildOAuth2ProviderConfig(
 		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
 	}
 
-	if in.IssuerURI != nil {
-		// only discover config if we need to, i.e., when either tokenEndpoint, authorizationEndpoint, or endSessionEndpoint is not provided
-		if in.TokenEndpoint == nil || in.AuthorizationEndpoint == nil || in.EndSessionEndpoint == nil || (in.JWT != nil && in.JWT.JWKSURI == nil) {
-			openidCfg, err := discoverer.get(*in.IssuerURI)
-			if err != nil {
-				return nil, err
-			}
-			if tokenEndpoint == "" {
-				tokenEndpoint = openidCfg.TokenEndpoint
-			}
-			if authorizationEndpoint == "" {
-				authorizationEndpoint = openidCfg.AuthorizationEndpoint
-			}
-			if endSessionEndpoint == "" {
-				endSessionEndpoint = ptr.Deref(openidCfg.EndSessionEndpoint, "")
-			}
-			if jwksURI == "" {
-				jwksURI = openidCfg.JWKSURI
-			}
+	// Only discover if we need to, i.e. when the issuer is set and at least one endpoint is
+	// left for the well-known document to supply.
+	if oidcDiscoveryRequired(in) {
+		// Register a dependency on the discovery cache before fetching, so this extension
+		// is re-translated when the discovered config changes. This is what un-latches a
+		// discovery failure: the provider is not a Kubernetes resource, so without it a
+		// provider that was down at startup would keep this extension (and every
+		// TrafficPolicy referencing it) rejected until the control plane restarted.
+		discoverer.markDependant(krtctx)
+		openidCfg, err := discoverer.get(ctx, *in.IssuerURI)
+		if err != nil {
+			return nil, err
+		}
+		if tokenEndpoint == "" {
+			tokenEndpoint = openidCfg.TokenEndpoint
+		}
+		if authorizationEndpoint == "" {
+			authorizationEndpoint = openidCfg.AuthorizationEndpoint
+		}
+		if endSessionEndpoint == "" {
+			endSessionEndpoint = ptr.Deref(openidCfg.EndSessionEndpoint, "")
+		}
+		if jwksURI == "" {
+			jwksURI = openidCfg.JWKSURI
 		}
 	}
 
 	if tokenEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 token endpoint not specified or not found in issuer well-known configuration")
+		return nil, errors.New("oauth2 token endpoint not specified or not found in issuer well-known configuration")
 	}
 	if authorizationEndpoint == "" {
-		return nil, fmt.Errorf("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
+		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
 	}
 
-	backend, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, in.BackendRef.BackendObjectReference)
+	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
 	if err != nil || backend == nil {
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
@@ -177,7 +186,7 @@ func buildOAuth2ProviderConfig(
 	// This is needed when the JWKS endpoint is on a different domain than the token endpoint.
 	jwksBackend := backend
 	if in.JWT != nil && in.JWT.JWKSBackendRef != nil {
-		resolved, err := resolveBackend(krtctx, backends, false, ext.ObjectSource, *in.JWT.JWKSBackendRef)
+		resolved, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, *in.JWT.JWKSBackendRef)
 		if err != nil {
 			return nil, fmt.Errorf("error resolving JWKS backend %v: %w", *in.JWT.JWKSBackendRef, err)
 		}
@@ -522,5 +531,5 @@ func (p *trafficPolicyPluginGwPass) handleOauth2(filterChain string, perFilterCo
 // getCookieSuffix generates a unique suffix for cookie names based on the given object
 func getCookieSuffix(src ir.ObjectSource) string {
 	hash := utils.HashString(src.NamespacedName().String())
-	return fmt.Sprintf("%x", hash)
+	return strconv.FormatUint(hash, 16)
 }
