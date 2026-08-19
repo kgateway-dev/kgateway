@@ -300,13 +300,14 @@ func FetchLatestRelease(ctx context.Context) (string, error) {
 	return strings.TrimSpace(stdout.String()), nil
 }
 
-// FetchLatestRelease returns the most recent n-1 release tag that is an ancestor of HEAD.
+// FetchLatestRelease returns the most recent n-1 release tag that is an ancestor of `latestTag`.
 // This mirrors `git describe --tags --abbrev=0` but works in shallow checkouts where
-// tags are not fetched, by resolving HEAD via git then checking ancestry via the GitHub API.
-func FetchPreviousMinorRelease(ctx context.Context) (string, error) {
+// tags are not fetched, by resolving `latestTag` via git then checking ancestry via the GitHub API.
+func FetchPreviousMinorRelease(ctx context.Context, latestTag string) (string, error) {
 	script := filepath.Join(fsutils.GetModuleRoot(), "hack", "get-release.sh")
 	var stdout bytes.Buffer
-	cmd := cmdutils.Command(ctx, script, "--previous").
+	cmd := cmdutils.Command(ctx, script, "--previous", latestTag).
+		WithStdout(&stdout).
 		WithStdout(&stdout).
 		WithStderr(os.Stderr)
 	if err := cmd.Run(); err != nil {

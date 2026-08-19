@@ -28,7 +28,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 		RunFromVersion(t, factory, latestTag)
 	})
 
-	previousMinor, err1 := upgradefeature.FetchPreviousMinorRelease(t.Context())
+	previousMinor, err1 := upgradefeature.FetchPreviousMinorRelease(t.Context(), latestTag)
 	if err1 != nil {
 		t.Fatalf("failed to get previous minor release: %v", err1)
 	}
