@@ -42,7 +42,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			gk: {
 				Name:                    "destrule",
-				PerClientProcessBackend: d.processBackend,
+				PerClientClusterOverlay: d.clusterOverlay,
 				PerClientEditEndpoints:  d.processEndpoints,
 			},
 		},
@@ -79,22 +79,25 @@ func (d *destrulePlugin) processEndpoints(
 	return hasher.Sum64()
 }
 
-func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, outCluster *envoyclusterv3.Cluster) {
+func (d *destrulePlugin) clusterOverlay(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
 	if destrule == nil {
-		return
+		return nil
 	}
 
 	trafficPolicy := getTrafficPolicy(destrule, uint32(in.GetPort())) //nolint:gosec // G115: BackendObjectIR port is int32 representing a port number, always in valid range
 	outlier := trafficPolicy.GetOutlierDetection()
 	if outlier == nil {
-		return
+		return nil
 	}
 
-	// All of the following are only applied when outlier detection is present
-	applyLocalityLbConfig(trafficPolicy, outCluster)
-	applyOutlierDetection(outlier, outCluster)
-	applyTCPKeepalive(trafficPolicy, outCluster)
+	return &sdk.ClusterOverlay{
+		Mutate: func(outCluster *envoyclusterv3.Cluster) {
+			applyLocalityLbConfig(trafficPolicy, outCluster)
+			applyOutlierDetection(outlier, outCluster)
+			applyTCPKeepalive(trafficPolicy, outCluster)
+		},
+	}
 }
 
 func applyLocalityLbConfig(trafficPolicy *v1alpha3.TrafficPolicy, outCluster *envoyclusterv3.Cluster) {

@@ -69,7 +69,7 @@ func NewPlugin(
 			// Contributing a PerClientProcessEndpoints function can return an empty CLA but
 			// it is still redundant.
 			VirtualWaypointGK: {
-				PerClientProcessBackend: pcp.processBackend,
+				PerClientClusterOverlay: pcp.clusterOverlay,
 			},
 		}
 	}
@@ -83,19 +83,19 @@ type PerClientProcessor struct {
 	waypointGatewayClassName string
 }
 
-func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func (t *PerClientProcessor) clusterOverlay(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 	// Cheap UCC-only filter first: if the ucc doesn't have the
 	// ambient.istio.io/redirection=enabled annotation, nothing this plugin does
 	// can affect the output. Skipping here avoids the expensive Gateway
 	// FetchOne below for the dominant case (most UCCs are not ambient).
 	if val, ok := ucc.Labels[istioannot.AmbientRedirection.Name]; !ok || val != "enabled" {
-		return
+		return nil
 	}
 
 	// Cheap backend filter next: skip backends (and their namespaces/aliases)
 	// that aren't opted in to ingress-use-waypoint.
 	if !HasIngressUseWaypointLabel(kctx, t.commonCols, in) {
-		return
+		return nil
 	}
 
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
@@ -113,7 +113,7 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))
 	if gwir == nil || gwir.Obj == nil || string(gwir.Obj.Spec.GatewayClassName) == t.waypointGatewayClassName {
 		// no op
-		return
+		return nil
 	}
 
 	// Verify that the service is indeed attached to a waypoint by querying the reverse
@@ -121,11 +121,15 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	waypointForService := t.waypointQueries.GetServiceWaypoint(kctx, ctx, in.Obj)
 	if waypointForService == nil {
 		// no op
-		return
+		return nil
 	}
 
 	// All preliminary checks passed, apply ingress-use-waypoint cluster changes
-	ApplyIngressUseWaypointCluster(in, out, &t.commonCols.Settings)
+	return &sdk.ClusterOverlay{
+		Mutate: func(out *envoyclusterv3.Cluster) {
+			ApplyIngressUseWaypointCluster(in, out, &t.commonCols.Settings)
+		},
+	}
 }
 
 // ApplyIngressUseWaypointCluster mutates out to configure a STATIC cluster with inlined
