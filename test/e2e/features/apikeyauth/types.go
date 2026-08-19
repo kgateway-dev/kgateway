@@ -21,6 +21,7 @@ var (
 	apiKeyAuthManifestSecretUpdate = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-secret-update.yaml")
 	apiKeyAuthManifestOverride     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-override.yaml")
 	apiKeyAuthManifestDisable      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-disable.yaml")
+	apiKeyAuthManifestDuplicate    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "api-key-auth-duplicate.yaml")
 
 	expectStatus200Success = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
@@ -28,6 +29,12 @@ var (
 	}
 	expectAPIKeyAuthDenied = &matchers.HttpResponse{
 		StatusCode: http.StatusUnauthorized,
+		Body:       nil,
+	}
+	// A policy that fails to translate replaces its route with a 500, rather than leaving the
+	// gateway on stale config.
+	expectRouteReplaced = &matchers.HttpResponse{
+		StatusCode: http.StatusInternalServerError,
 		Body:       nil,
 	}
 
@@ -57,6 +64,9 @@ var (
 		"TestAPIKeyAuthRouteOverrideGateway": {
 			Manifests:       []string{apiKeyAuthManifestOverride},
 			MinGwApiVersion: base.GwApiRequireRouteNames,
+		},
+		"TestAPIKeyAuthDuplicateKeyValues": {
+			Manifests: []string{apiKeyAuthManifestDuplicate},
 		},
 		"TestAPIKeyAuthDisableAtRouteLevel": {
 			Manifests:       []string{apiKeyAuthManifestDisable},
