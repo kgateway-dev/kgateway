@@ -21,6 +21,10 @@ controller:
   extraEnv:
     KGW_WEIGHTED_ROUTE_PRECEDENCE: "true" # enable weighted route precedence by default in tests
     KGW_ENABLE_AUTH_METADATA: "true" # enable the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
+    # Test-only: trip loudly (panic) if any code path mutates a Cluster/CLA proto that is
+    # shared across client snapshots (see pkg/kgateway/proxy_syncer/sharedproto). The
+    # re-hash this enables is the marshal cost the interning avoids in production.
+    ASSERT_SHARED_PROTO_IMMUTABILITY: "true"
     # TODO enable other values
   # deployment:
   #   livenessProbeEnabled: true
