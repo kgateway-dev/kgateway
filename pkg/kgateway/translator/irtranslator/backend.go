@@ -1,8 +1,10 @@
 package irtranslator
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -46,54 +48,227 @@ type BackendTranslator struct {
 	Mode                apisettings.ValidationMode
 }
 
-// TranslateBackend translates a BackendObjectIR to an Envoy Cluster. If we encounter any
-// errors during translation, a blackhole cluster is returned along with the error. The error
-// return value is what matters as consumers (pkg/kgateway/proxy_syncer/perclient.go) will
-// drop errored clusters from the xDS snapshot and track them separately for status reporting.
-// The blackhole cluster itself is not sent to Envoy but provides a consistent return structure.
-func (t *BackendTranslator) TranslateBackend(
+// BaseCluster is the UCC-invariant result of translating a backend into an Envoy
+// cluster. The Cluster field is shared across all UCCs that target this backend —
+// callers MUST NOT mutate it. Per-client mutations layer on top via ApplyPerClient,
+// which clones before mutating.
+//
+// When Error is non-nil, Cluster is a blackhole cluster and all UCCs targeting this
+// backend should treat it as errored. There is no per-client variation when the base
+// is errored, so ApplyPerClient is a no-op in that case.
+type BaseCluster struct {
+	Cluster *envoyclusterv3.Cluster
+	// EndpointInputs carries inline endpoints from InitEnvoyBackend, if the backend
+	// produced any. Used by per-client overlay to build the inline CLA and to drive
+	// per-client endpoint hooks.
+	EndpointInputs *endpoints.EndpointsInputs
+	// SupportsInlineCLA is true when the cluster type accepts an inline
+	// ClusterLoadAssignment (STATIC, STRICT_DNS, LOGICAL_DNS, or the DNS extension).
+	// When this is true AND EndpointInputs is non-nil AND Cluster.LoadAssignment is
+	// nil, the per-client overlay must always build a CLA — the CLA varies per UCC
+	// via PrioritizeEndpoints and so cannot live on the shared base.
+	SupportsInlineCLA bool
+	// DefaultedLocalityConfig records that defaultLocalityConfig — not a policy
+	// plugin — chose this cluster's locality mode. Its guard depends on the cluster
+	// still being a kgateway-managed EDS cluster, which a per-client overlay can
+	// invalidate after the fact, so ApplyPerClient re-evaluates the guard and undoes
+	// the default when it no longer holds. Nothing else may be inferred from it: a
+	// false value means either "a policy chose the mode" or "no mode applies".
+	DefaultedLocalityConfig bool
+	Error                   error
+}
+
+// NeedsInlineCLA reports whether this base cluster is incomplete without a
+// per-client ClusterLoadAssignment: the cluster type takes an inline CLA, the
+// backend produced inline endpoints, and no plugin already set a LoadAssignment.
+// For such clusters ApplyPerClient always materializes a per-client cluster, and
+// the CLA-less base proto must be neither validated nor published as-is.
+func (b *BaseCluster) NeedsInlineCLA() bool {
+	return b != nil &&
+		b.Error == nil &&
+		b.SupportsInlineCLA &&
+		b.EndpointInputs != nil &&
+		b.Cluster.GetLoadAssignment() == nil
+}
+
+// TranslateBackendBase performs the UCC-invariant phase of cluster translation. The
+// returned BaseCluster can be shared across all UCCs targeting this backend.
+//
+// Returns nil only when the backend GK has no contributed translator at all — a
+// configuration error that prevents producing even a blackhole cluster.
+func (t *BackendTranslator) TranslateBackendBase(
 	ctx context.Context,
-	kctx krt.HandlerContext,
-	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
-) (*envoyclusterv3.Cluster, error) {
-	// defensive checks that the backend is supported and has a plugin that can translate it.
+) *BaseCluster {
 	gk := backend.GetGroupKind()
 	process, ok := t.ContributedBackends[gk]
-	if !ok {
-		return nil, errors.New("no backend translator found for " + gk.String())
-	}
-	if process.InitEnvoyBackend == nil {
-		return nil, errors.New("no backend plugin found for " + gk.String())
+	if !ok || process.InitEnvoyBackend == nil {
+		return nil
 	}
 
-	// Check for pre-existing errors in the Backend IR before starting translation.
-	// Exit translation early if we have errors
 	if backend.Errors != nil {
 		logger.Error("backend has pre-existing errors", "backend", backend.GetName(), "errors", backend.Errors)
-		return buildBlackholeCluster(backend), errors.Join(backend.Errors...)
+		return &BaseCluster{
+			Cluster: buildBlackholeCluster(backend),
+			Error:   errors.Join(backend.Errors...),
+		}
 	}
 
-	// Initialize the cluster with minimal configuration
 	out := initializeCluster(backend)
 	inlineEps := process.InitEnvoyBackend(ctx, *backend, out)
 	processDnsLookupFamily(out, t.CommonCols)
 
-	// Apply policies to the computed cluster
-	if err := t.runPolicies(kctx, ctx, ucc, backend, inlineEps, out); err != nil {
+	// Apply non-per-client policies. Plugins with PerClientClusterOverlay run
+	// later in ApplyPerClient; plugins with ProcessBackend are UCC-invariant
+	// and run here once.
+	if err := t.applyBasePolicies(ctx, backend, out); err != nil {
 		logger.Error("failed to apply policies to cluster", "cluster", out.GetName(), "error", err)
-		return buildBlackholeCluster(backend), err
+		return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
 	}
-	defaultLocalityConfig(out)
+	defaultedLocality := defaultLocalityConfig(out)
 	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
 		logger.Error("failed to apply gateway backend client certificate", "cluster", out.GetName(), "error", err)
-		return buildBlackholeCluster(backend), err
+		return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
 	}
 
-	// In strict mode, validate the final cluster configuration using Envoy
-	if t.Mode == apisettings.ValidationStrict && t.Validator != nil {
+	var endpointInputs *endpoints.EndpointsInputs
+	if inlineEps != nil {
+		endpointInputs = &endpoints.EndpointsInputs{EndpointsForBackend: *inlineEps}
+		endpointInputs.EndpointsForBackend.AttachedPolicies = backend.AttachedPolicies
+	}
+
+	result := &BaseCluster{
+		Cluster:                 out,
+		EndpointInputs:          endpointInputs,
+		SupportsInlineCLA:       clusterSupportsInlineCLA(out),
+		DefaultedLocalityConfig: defaultedLocality,
+	}
+
+	// Skip strict-mode validation when the CLA is built per client: the base
+	// proto has no LoadAssignment yet, and Envoy rejects some CLA-less clusters
+	// outright (e.g. logical-DNS semantics require exactly one endpoint), which
+	// would blackhole a valid backend for every client. ApplyPerClient always
+	// materializes for these clusters and validates the complete per-client
+	// cluster, so nothing escapes validation.
+	if t.Mode == apisettings.ValidationStrict && t.Validator != nil && !result.NeedsInlineCLA() {
 		if err := t.validateClusterConfig(ctx, out); err != nil {
 			logger.Error("cluster failed xDS validation in strict mode", "cluster", out.GetName(), "error", err)
+			return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
+		}
+	}
+
+	return result
+}
+
+// ApplyPerClient computes per-client cluster mutations on top of base. Returns nil
+// when the (ucc, backend) pair needs no per-client processing — callers must then
+// reference base.Cluster directly. When non-nil, the returned cluster is a freshly
+// allocated proto that callers may retain independently of base.Cluster.
+//
+// When base.Error is non-nil, this is a no-op (returns nil, nil).
+func (t *BackendTranslator) ApplyPerClient(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	backend *ir.BackendObjectIR,
+	base *BaseCluster,
+) (*envoyclusterv3.Cluster, error) {
+	// A base error is terminal for every client — base.Cluster is already the blackhole,
+	// so there is nothing to overlay. It is deliberately not propagated: the base row is
+	// what carries it to status, and returning it here would attribute the same failure
+	// a second time, once per connected client.
+	if base == nil || base.Error != nil {
+		return nil, nil //nolint:nilerr // base.Error is reported by the base row, not per client
+	}
+
+	// Gather overlays. Each plugin must self-determine applicability and return
+	// nil in the common case; this keeps the per-client cluster collection sparse.
+	type overlayEntry struct {
+		gk schema.GroupKind
+		ov *sdk.ClusterOverlay
+	}
+	var overlays []overlayEntry
+	for gk, policyPlugin := range t.ContributedPolicies {
+		switch {
+		case policyPlugin.PerClientClusterOverlay != nil:
+			if ov := policyPlugin.PerClientClusterOverlay(kctx, ctx, ucc, *backend); ov != nil {
+				overlays = append(overlays, overlayEntry{gk: gk, ov: ov})
+			}
+		case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
+			legacy := policyPlugin.PerClientProcessBackend //nolint:staticcheck // wrapped as an always-applicable overlay
+			overlays = append(overlays, overlayEntry{gk: gk, ov: &sdk.ClusterOverlay{
+				Mutate: func(out *envoyclusterv3.Cluster) {
+					legacy(kctx, ctx, ucc, *backend, out)
+				},
+			}})
+		}
+	}
+	// ContributedPolicies is a map, so gathering order is nondeterministic. When
+	// more than one overlay applies, apply in GroupKind order so the mutated proto
+	// (and therefore its version hash, which drives KRT equality and interning) is
+	// byte-stable across recomputes.
+	if len(overlays) > 1 {
+		slices.SortFunc(overlays, func(a, b overlayEntry) int {
+			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
+				return c
+			}
+			return cmp.Compare(a.gk.Kind, b.gk.Kind)
+		})
+	}
+
+	// Determine whether we need to build an inline CLA. Even with no overlays,
+	// inline-CLA clusters need a per-client CLA because PrioritizeEndpoints is
+	// UCC-dependent (locality, labels). This depends only on the base, not the UCC.
+	needsInlineCLA := base.NeedsInlineCLA()
+
+	if len(overlays) == 0 && !needsInlineCLA {
+		return nil, nil
+	}
+
+	// Materialize a per-client cluster. Clone is required because the base proto
+	// is shared across UCCs and must remain unmodified.
+	out, ok := proto.Clone(base.Cluster).(*envoyclusterv3.Cluster)
+	if !ok {
+		return nil, errors.New("failed to clone base cluster")
+	}
+
+	for _, entry := range overlays {
+		if entry.ov.Mutate != nil {
+			entry.ov.Mutate(out)
+		}
+	}
+
+	// Overlays can change the cluster shape out from under decisions the base made
+	// on the shape it saw, so re-evaluate those before the CLA and validation below.
+	if base.DefaultedLocalityConfig {
+		undoDefaultedLocalityConfig(out)
+	}
+
+	if needsInlineCLA {
+		// Gather endpoint plugins lazily — only inline-CLA clusters consume them,
+		// so the common EDS path (which returns early above) never pays for this.
+		// Resolve through the copy-on-write editor. Modern plugins clone only
+		// endpoint protos they modify; legacy raw mutators receive a one-time
+		// defensive deep copy of the entire nested input graph.
+		epIn, _ := ResolveEndpointInputs(kctx, ctx, ucc, *base.EndpointInputs, t.orderedEndpointPlugins())
+		// Re-check LoadAssignment: an overlay may have set it.
+		if out.GetLoadAssignment() == nil {
+			out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
+		}
+	}
+
+	// Strict-mode validation on the post-overlay cluster. Non-inline-CLA bases
+	// were already validated in TranslateBackendBase (inline-CLA bases defer
+	// validation to here, where the CLA exists), but overlays (destrule,
+	// waypoint, …) run here and can produce invalid configs that Envoy would
+	// NACK at runtime.
+	// We must reject them at translation time when the user opted into strict
+	// validation. Returning the blackhole keeps the same shape as base errors,
+	// so the snapshot consumer's erroredClusters tracking still works.
+	if t.Mode == apisettings.ValidationStrict && t.Validator != nil {
+		if err := t.validateClusterConfig(ctx, out); err != nil {
+			logger.Error("per-client cluster failed xDS validation in strict mode",
+				"cluster", out.GetName(), "ucc", ucc.ResourceName(), "error", err)
 			return buildBlackholeCluster(backend), err
 		}
 	}
@@ -106,22 +281,26 @@ func (t *BackendTranslator) TranslateBackend(
 // cluster_manager.local_cluster_name, and once the gateway fleet spans multiple
 // zones Envoy's implicit zone-aware defaults (routing_enabled 100%,
 // min_cluster_size 6) would otherwise engage with no policy configured.
-func defaultLocalityConfig(c *envoyclusterv3.Cluster) {
+//
+// Reports whether it set the specifier, so ApplyPerClient can undo it if a
+// per-client overlay later invalidates the EDS guard below. See
+// undoDefaultedLocalityConfig.
+func defaultLocalityConfig(c *envoyclusterv3.Cluster) bool {
 	if c.GetLoadBalancingPolicy() != nil {
 		// Typed load balancing policies carry their own locality_lb_config and
 		// ignore common_lb_config.locality_config_specifier (see the
 		// backendconfigpolicy plugin's buildTypedLocalityLbConfig).
-		return
+		return false
 	}
 	if c.GetCommonLbConfig().GetLocalityConfigSpecifier() != nil {
 		// A policy plugin already chose a locality mode.
-		return
+		return false
 	}
 	if c.GetEdsClusterConfig() == nil {
 		// Only kgateway-managed EDS clusters are guaranteed to carry locality
 		// load-balancing weights on their CLAs; leave plugin-provided inline
 		// clusters untouched.
-		return
+		return false
 	}
 	if c.CommonLbConfig == nil {
 		c.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
@@ -129,37 +308,50 @@ func defaultLocalityConfig(c *envoyclusterv3.Cluster) {
 	c.CommonLbConfig.LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 		LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 	}
+	return true
 }
 
-func (t *BackendTranslator) runPolicies(
-	kctx krt.HandlerContext,
+// undoDefaultedLocalityConfig removes the locality mode defaultLocalityConfig applied
+// to the base when a per-client overlay has since replaced the EDS cluster with a
+// plugin-provided inline one — the waypoint ingress redirect (STATIC cluster with an
+// inlined CLA) does exactly this.
+//
+// Before base/overlay translation was split, per-client hooks ran ahead of
+// defaultLocalityConfig, so its EDS guard saw the final cluster shape and skipped
+// these. Now the guard runs on the base, where the cluster is still EDS, and the
+// overlay invalidates it afterwards. Left in place, the cluster asks for locality
+// weighting while carrying a CLA whose LocalityLbEndpoints have no
+// load_balancing_weight — which Envoy rejects, and which strict-mode validation
+// turns into a blackholed cluster for every affected client.
+func undoDefaultedLocalityConfig(c *envoyclusterv3.Cluster) {
+	if c.GetEdsClusterConfig() != nil {
+		// Still an EDS cluster; the guard that admitted the default still holds.
+		return
+	}
+	if _, ok := c.GetCommonLbConfig().GetLocalityConfigSpecifier().(*envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_); !ok {
+		// An overlay replaced the specifier with its own choice. That is the
+		// overlay's call to make, so leave it alone.
+		return
+	}
+	c.CommonLbConfig.LocalityConfigSpecifier = nil
+	if proto.Equal(c.GetCommonLbConfig(), &envoyclusterv3.Cluster_CommonLbConfig{}) {
+		// defaultLocalityConfig allocated CommonLbConfig itself and nothing else
+		// ever populated it. Drop it so the emitted cluster is byte-identical to
+		// what the pre-split ordering produced.
+		c.CommonLbConfig = nil
+	}
+}
+
+// applyBasePolicies runs only the UCC-invariant ProcessBackend hooks. Per-client
+// hooks (PerClientClusterOverlay and endpoint editors) are handled by
+// ApplyPerClient.
+func (t *BackendTranslator) applyBasePolicies(
 	ctx context.Context,
-	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
-	inlineEps *ir.EndpointsForBackend,
 	out *envoyclusterv3.Cluster,
 ) error {
-	// if the backend was initialized with inlineEps then we
-	// need an EndpointsInputs to run plugins against
-	var endpointInputs *endpoints.EndpointsInputs
-	if inlineEps != nil {
-		endpointInputs = &endpoints.EndpointsInputs{
-			EndpointsForBackend: *inlineEps,
-		}
-		endpointInputs.EndpointsForBackend.AttachedPolicies = backend.AttachedPolicies
-	}
-
 	var errs []error
 	for gk, policyPlugin := range t.ContributedPolicies {
-		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
-		// the the per-client processing for each client.
-		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
-		// now, until we have more backend plugin examples to properly understand what it should look
-		// like.
-		if policyPlugin.PerClientProcessBackend != nil {
-			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, *backend, out)
-		}
-		// if the policy plugin has no ProcessBackend function, skip it
 		if policyPlugin.ProcessBackend == nil {
 			continue
 		}
@@ -167,8 +359,6 @@ func (t *BackendTranslator) runPolicies(
 		if policyPlugin.MergePolicies != nil && len(policies) > 0 {
 			policies = []ir.PolicyAtt{policyPlugin.MergePolicies(policies)}
 		}
-		// apply plugins to the backend. we want to skip applying the plugin if the
-		// attached IR encountered any errors during construction.
 		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
@@ -178,22 +368,6 @@ func (t *BackendTranslator) runPolicies(
 			policyPlugin.ProcessBackend(ctx, polAttachment.PolicyIr, *backend, out)
 		}
 	}
-
-	if endpointInputs != nil {
-		resolved, _ := ResolveEndpointInputs(kctx, ctx, ucc, *endpointInputs, t.orderedEndpointPlugins())
-		endpointInputs = &resolved
-	}
-
-	// for clusters that want a CLA _and_ initialized with inlineEps, build the CLA.
-	// never overwrite the CLA that was already initialized (potentially within a plugin).
-	if out.GetLoadAssignment() == nil && endpointInputs != nil && clusterSupportsInlineCLA(out) {
-		out.LoadAssignment = endpoints.PrioritizeEndpoints(
-			logger,
-			ucc,
-			*endpointInputs,
-		)
-	}
-
 	return errors.Join(errs...)
 }
 
