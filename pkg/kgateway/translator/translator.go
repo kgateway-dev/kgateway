@@ -36,7 +36,7 @@ type CombinedTranslator struct {
 	gwtranslator      sdk.KGwTranslator
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
-	endpointPlugins   []sdk.EndpointPlugin
+	endpointPlugins   []irtranslator.EndpointPlugin
 
 	logger *slog.Logger
 }
@@ -142,13 +142,8 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 }
 
 func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64) {
-	epInputs := endpoints.EndpointsInputs{
+	epInputs, hash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
-	}
-	var hash uint64
-	for _, processEndpoints := range s.endpointPlugins {
-		additionalHash := processEndpoints(kctx, context.TODO(), ucc, &epInputs)
-		hash ^= additionalHash
-	}
+	}, s.endpointPlugins)
 	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
 }

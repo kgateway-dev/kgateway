@@ -24,9 +24,26 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type (
-	EndpointsInputs = endpoints.EndpointsInputs
-	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
-	EndpointPlugin  func(
+	EndpointsInputs      = endpoints.EndpointsInputs
+	EndpointInputsEditor = endpoints.EndpointInputsEditor
+	EndpointSetBuilder   = endpoints.EndpointSetBuilder
+	EndpointView         = endpoints.EndpointView
+	ProcessBackend       func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
+	// EndpointEditorPlugin edits per-client endpoint inputs through a
+	// copy-on-write API. Read-only source state is exposed through accessors;
+	// endpoint rewrites build a replacement set and clone only modified protos.
+	// The returned hash must capture effects not already represented by the
+	// replacement endpoint set's LbEpsEqualityHash.
+	EndpointEditorPlugin func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniquelyConnectedClient,
+		out EndpointInputsEditor,
+	) uint64
+	// EndpointPlugin is the legacy mutable endpoint hook.
+	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
+	// mutable nested state before invoking this hook.
+	EndpointPlugin func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniquelyConnectedClient,
@@ -58,8 +75,10 @@ type PolicyPlugin struct {
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
-	ProcessBackend            ProcessBackend
-	PerClientProcessBackend   PerClientProcessBackend
+	ProcessBackend          ProcessBackend
+	PerClientProcessBackend PerClientProcessBackend
+	PerClientEditEndpoints  EndpointEditorPlugin
+	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
 
 	Policies       krt.Collection[ir.PolicyWrapper]
