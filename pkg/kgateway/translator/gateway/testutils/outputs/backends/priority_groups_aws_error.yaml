@@ -55,11 +55,6 @@ Clusters:
             hostname: nginx.nginx-shared.svc
           hostname: nginx.nginx-shared.svc
   name: backend_default_primary-nginx_0
-- loadAssignment:
-    clusterName: backend_default_priority-groups_0
-  metadata: {}
-  name: backend_default_priority-groups_0
-  type: STATIC
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
