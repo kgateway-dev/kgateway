@@ -10,7 +10,6 @@ import (
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/stretchr/testify/require"
-	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -53,19 +52,25 @@ func validationTestBackend(name string) *ir.BackendObjectIR {
 	return &b
 }
 
+func translateValidationTestBase(t *testing.T, tr *BackendTranslator, backend *ir.BackendObjectIR) (*envoyclusterv3.Cluster, error) {
+	t.Helper()
+	base := tr.TranslateBackendBase(t.Context(), backend)
+	require.NotNil(t, base)
+	return base.Cluster, base.Error
+}
+
 func TestStrictValidationCachedByClusterContent(t *testing.T) {
 	counting := &recordingValidator{}
 	tr := validationTestTranslator(validator.NewCaching(counting, 0))
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
 
 	for range 5 {
-		c, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+		c, err := translateValidationTestBase(t, tr, validationTestBackend("b1"))
 		require.NoError(t, err)
 		require.NotNil(t, c)
 	}
 	require.EqualValues(t, 1, counting.calls.Load(), "identical cluster content must be validated once")
 
-	_, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b2"))
+	_, err := translateValidationTestBase(t, tr, validationTestBackend("b2"))
 	require.NoError(t, err)
 	require.EqualValues(t, 2, counting.calls.Load(), "distinct cluster content must be validated separately")
 }
@@ -73,10 +78,9 @@ func TestStrictValidationCachedByClusterContent(t *testing.T) {
 func TestStrictValidationCachesInvalidVerdicts(t *testing.T) {
 	counting := &recordingValidator{err: fmt.Errorf("%w: bad cluster", validator.ErrInvalidXDS)}
 	tr := validationTestTranslator(validator.NewCaching(counting, 0))
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
 
 	for range 3 {
-		c, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+		c, err := translateValidationTestBase(t, tr, validationTestBackend("b1"))
 		require.ErrorIs(t, err, validator.ErrInvalidXDS)
 		require.NotNil(t, c, "errored translation returns the blackhole cluster")
 	}
@@ -86,13 +90,12 @@ func TestStrictValidationCachesInvalidVerdicts(t *testing.T) {
 func TestStrictValidationDoesNotCacheTransientErrors(t *testing.T) {
 	counting := &recordingValidator{err: errors.New("exec: envoy binary not found")}
 	tr := validationTestTranslator(validator.NewCaching(counting, 0))
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
 
-	_, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+	_, err := translateValidationTestBase(t, tr, validationTestBackend("b1"))
 	require.Error(t, err)
 
 	counting.err = nil
-	c, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+	c, err := translateValidationTestBase(t, tr, validationTestBackend("b1"))
 	require.NoError(t, err)
 	require.NotNil(t, c)
 	require.EqualValues(t, 2, counting.calls.Load(), "a transient failure must not be served from cache")
