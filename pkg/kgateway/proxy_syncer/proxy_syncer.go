@@ -265,7 +265,8 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		krtopts,
 		s.uniqueClients,
 		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
-		s.translator.TranslateEndpoints,
+		s.translator.ResolveEndpoints,
+		s.translator.BuildClusterLoadAssignment,
 	)
 	localClusterEpPerClient := NewPerClientLocalClusterEndpoints(
 		krtopts,
