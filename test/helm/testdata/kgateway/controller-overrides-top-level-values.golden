@@ -387,10 +387,6 @@ spec:
               value: "[]"
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
               value: "[]"
-            - name: KGW_SECRET_DISCOVERY_MODE
-              value: "ALL"
-            - name: KGW_CONFIG_MAP_DISCOVERY_MODE
-              value: "ALL"
             - name: KGW_POLICY_MERGE
               value: "{}"
             - name: KGW_VALIDATION_MODE
