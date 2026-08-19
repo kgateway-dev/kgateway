@@ -41,6 +41,15 @@ type CombinedTranslator struct {
 	logger *slog.Logger
 }
 
+// ResolvedEndpoints is the UCC-resolved endpoint state produced by ResolveEndpoints:
+// the plugin-augmented inputs plus the hashes that identify when the resulting CLA
+// varies per client. BuildClusterLoadAssignment turns it into a ClusterLoadAssignment.
+type ResolvedEndpoints struct {
+	Inputs            endpoints.EndpointsInputs
+	AdditionalHash    uint64
+	LoadBalancingHash uint64
+}
+
 func NewCombinedTranslator(
 	ctx context.Context,
 	extensions sdk.Plugin,
@@ -141,15 +150,24 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	return &xdsSnap, rm
 }
 
-func (s *CombinedTranslator) TranslateEndpoints(
-	kctx krt.HandlerContext,
-	ucc ir.UniquelyConnectedClient,
-	ep ir.EndpointsForBackend,
-) (*envoyendpointv3.ClusterLoadAssignment, uint64, uint64) {
-	epInputs, additionalHash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
+// ResolveEndpoints runs the endpoint plugins for a (ucc, backend) pair and captures
+// the inputs plus the hashes that determine whether the resulting CLA is UCC-specific.
+// It does NOT build the CLA — that is BuildClusterLoadAssignment — so callers can dedup
+// the (relatively expensive) CLA construction across UCCs that resolve identically.
+func (s *CombinedTranslator) ResolveEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) ResolvedEndpoints {
+	epInputs, hash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
 	}, s.endpointPlugins)
-	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs),
-		epInputs.EndpointsForBackend.LbEpsEqualityHash,
-		additionalHash
+	return ResolvedEndpoints{
+		Inputs:            epInputs,
+		AdditionalHash:    hash,
+		LoadBalancingHash: endpoints.LoadBalancingContextHash(ucc, epInputs),
+	}
+}
+
+// BuildClusterLoadAssignment turns resolved endpoint state into a ClusterLoadAssignment.
+// It is pure given (ucc, resolved); UCCs that share the resolved hashes produce identical
+// output, which is what lets NewPerClientEnvoyEndpoints intern the result.
+func (s *CombinedTranslator) BuildClusterLoadAssignment(ucc ir.UniquelyConnectedClient, resolved ResolvedEndpoints) *envoyendpointv3.ClusterLoadAssignment {
+	return endpoints.PrioritizeEndpoints(s.logger, ucc, resolved.Inputs)
 }
