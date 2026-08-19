@@ -4,6 +4,7 @@ import (
 	"context"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
@@ -80,15 +81,29 @@ func NewPerClientEnvoyClusters(
 ) PerClientEnvoyClusters {
 	clusters := krt.NewManyCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) []uccWithCluster {
 		backendLogger := logger.With("backend", backendObj)
-		uccs := krt.Fetch(kctx, uccs)
-		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
+		clients := krt.Fetch(kctx, uccs)
+		if len(clients) == 0 {
+			return nil
+		}
+		base := translator.TranslateBackendBase(ctx, backendObj)
+		if base == nil {
+			return nil
+		}
+		uccWithClusterRet := make([]uccWithCluster, 0, len(clients))
 
-		for _, ucc := range uccs {
+		for _, ucc := range clients {
 			backendLogger.Debug("applying destination rules for backend", "ucc", ucc.ResourceName())
 
-			c, err := translator.TranslateBackend(ctx, kctx, ucc, backendObj)
+			c, err := translator.ApplyPerClient(kctx, ctx, ucc, backendObj, base)
 			if c == nil {
-				continue
+				// Keep the existing dense ownership model for this preparatory
+				// change: every KRT row receives its own proto even when no overlay
+				// applies. A later change can make sharing explicit and enforce
+				// immutability at the collection boundary.
+				c = proto.Clone(base.Cluster).(*envoyclusterv3.Cluster)
+				if err == nil {
+					err = base.Error
+				}
 			}
 			var backendGeneration int64
 			if backendObj.Obj != nil {

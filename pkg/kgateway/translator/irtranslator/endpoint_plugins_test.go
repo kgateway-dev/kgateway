@@ -105,8 +105,12 @@ func TestBackendTranslatorRunsOrderedEndpointPluginsForInlineEndpoints(t *testin
 		},
 	}
 
-	cluster, err := translator.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, backendPtr)
+	ctx := context.Background()
+	base := translator.TranslateBackendBase(ctx, backendPtr)
+	require.NotNil(t, base)
+	cluster, err := translator.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backendPtr, base)
 	require.NoError(t, err)
+	require.NotNil(t, cluster, "inline endpoints must materialize a per-client cluster")
 	assert.Equal(t, []string{"backendconfigpolicy", "destrule"}, calls)
 
 	assignment := cluster.GetLoadAssignment()
