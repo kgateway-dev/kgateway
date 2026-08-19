@@ -346,13 +346,18 @@ func addCompressionFiltersIfNeeded(staged []filters.StagedHttpFilter, p *traffic
 		filter.Filter.Disabled = true
 		staged = append(staged, filter)
 	}
-	// One disabled-by-default decompressor filter per codec. Order is not significant (Envoy
-	// selects by Content-Encoding), and same-stage filters sort deterministically by name.
+	// One disabled-by-default decompressor filter per codec. Order among the codecs is not
+	// significant (Envoy selects by Content-Encoding), and same-stage filters sort
+	// deterministically by name.
+	//
+	// They run at the head of the chain, ahead of Buffer at FaultStage-2: Envoy requires request
+	// decompression to happen before Buffer, so that a per-route max_request_bytes is measured
+	// against the decompressed body rather than the encoded bytes.
 	for _, entry := range p.decompressorInChain[fcn] {
 		filter := filters.MustNewStagedFilter(
 			entry.filterName,
 			entry.decompressor,
-			filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage)),
+			filters.RelativeToStage(filters.FaultStage, -3),
 		)
 		filter.Filter.Disabled = true
 		staged = append(staged, filter)

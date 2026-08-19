@@ -667,30 +667,31 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Register Buffer after request decompression and before every filter that reads the request
-	// body.
+	// Register Buffer between request decompression and every filter that reads the request body,
+	// establishing the invariant: decompression (FaultStage-3) -> Buffer (FaultStage-2) -> the
+	// earliest body-reading filter (BeforeStage(FaultStage), the earliest position reachable
+	// through GatewayExtension.filterStage).
 	//
-	// The filter enforces max_request_bytes only while it is the filter accumulating the body: it
-	// sets the limit with setDecoderBufferLimit in decodeHeaders, and Envoy emits the 413 when the
+	// Buffer enforces max_request_bytes only while it is the filter accumulating the body: it sets
+	// the limit with setDecoderBufferLimit in decodeHeaders, and Envoy emits the 413 when the
 	// buffered request data crosses that watermark. A filter ahead of it that holds or parses the
 	// body first therefore makes the limit inert in both directions - a limit smaller than the
 	// per-stream default stops rejecting oversized bodies, and a larger one never raises the
 	// default. ext_proc does this whenever it waits on its server, and body transformations do it
 	// by construction.
 	//
-	// It has to stay behind the decompressors (AfterStage(CorsStage)) though: buffering the
-	// encoded bytes would measure the request against the compressed size, letting a small
-	// compressed body expand past the limit. WafStage-2 is after every Cors-stage filter and ahead
-	// of the earliest body-reading filter in the chain.
+	// Buffer stays behind the decompressors because Envoy requires request decompression to run
+	// first: buffering the encoded bytes would measure the request against its compressed size,
+	// letting a small compressed body expand past the limit.
 	//
-	// Filters explicitly staged before decompression - reachable through
-	// GatewayExtension.filterStage - still see the body first and are not covered; honoring the
-	// configured limit against decompressed bytes takes precedence.
+	// Both filters are disabled by default and enabled per route, so mixed listeners behave: a
+	// decompression-only route leaves Buffer disabled, a buffer-only route leaves the
+	// decompressors disabled, and with both enabled Buffer limits the decompressed body.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(
 			bufferFilterName,
 			f,
-			filters.RelativeToStage(filters.WafStage, -2),
+			filters.RelativeToStage(filters.FaultStage, -2),
 		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)

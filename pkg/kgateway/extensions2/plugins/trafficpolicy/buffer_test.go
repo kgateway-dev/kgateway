@@ -69,10 +69,13 @@ func TestBufferIREquals(t *testing.T) {
 	}
 }
 
-// TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders asserts the Buffer filter sorts
-// behind request decompression - so max_request_bytes is measured against decompressed bytes - and
-// ahead of every filter that reads or holds the request body. Staged after one of those, its
-// per-route limit renders in the Envoy config but never takes effect.
+// TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders asserts the chain invariant
+// request decompression -> Buffer -> every body-reading filter, with the ext_proc provider at
+// BeforeStage(FaultStage), the earliest position a GatewayExtension can ask for.
+//
+// Staged after a filter that reads the body, Buffer's per-route max_request_bytes renders in the
+// Envoy config but never takes effect; staged ahead of decompression, it measures the request
+// against its compressed size and a small compressed body expands past the limit.
 func TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders(t *testing.T) {
 	const filterChainName = "test-filter-chain"
 
@@ -102,7 +105,8 @@ func TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders(t *testing.T) {
 						Name:    "ext-proc",
 						ExtProc: &envoymatchingv3.ExtensionWithMatcher{},
 					},
-					FilterStage: defaultExtProcFilterStage,
+					// the earliest stage a GatewayExtension can ask for
+					FilterStage: filters.BeforeStage(filters.FaultStage),
 				}},
 			},
 		},
@@ -122,16 +126,19 @@ func TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders(t *testing.T) {
 		names = append(names, f.Filter.GetName())
 	}
 
-	assert.Equal(t, []string{
-		extProcGlobalDisableFilterName,
-		faultFilterName,
-		decompressorFilterNameFor(kgateway.CompressionGzip),
-		bufferFilterName,
-		extProcFilterName("ext-proc"),
-		rustformationFilterNamePrefix,
-	}, names)
+	require.Equal(t, decompressorFilterNameFor(kgateway.CompressionGzip), names[0], "got %v", names)
+	require.Equal(t, bufferFilterName, names[1], "got %v", names)
+	assert.Equal(t, filters.RelativeToStage(filters.FaultStage, -3), sortedFilters[0].Stage)
+	assert.Equal(t, filters.RelativeToStage(filters.FaultStage, -2), sortedFilters[1].Stage)
 
-	bufferIdx := slices.Index(names, bufferFilterName)
-	require.NotEqual(t, -1, bufferIdx)
-	assert.Equal(t, filters.RelativeToStage(filters.WafStage, -2), sortedFilters[bufferIdx].Stage)
+	// everything that reads or holds the request body sorts behind Buffer
+	for _, name := range []string{
+		extProcFilterName("ext-proc"),
+		faultFilterName,
+		rustformationFilterNamePrefix,
+	} {
+		idx := slices.Index(names, name)
+		require.NotEqual(t, -1, idx, "%s missing from %v", name, names)
+		assert.Greater(t, idx, 1, "%s must sort behind Buffer, got %v", name, names)
+	}
 }
