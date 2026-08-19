@@ -34,14 +34,17 @@ type (
 	// copy-on-write API. Read-only source state is exposed through accessors;
 	// endpoint rewrites build a replacement set and clone only modified protos.
 	// The returned hash must capture effects not already represented by the
-	// replacement endpoint set's LbEpsEqualityHash.
+	// replacement endpoint set's LbEpsEqualityHash or the framework's
+	// load-balancing-context hash.
 	EndpointEditorPlugin func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniquelyConnectedClient,
 		out EndpointInputsEditor,
 	) uint64
-	// EndpointPlugin is the legacy mutable endpoint hook.
+	// EndpointPlugin is the legacy mutable endpoint hook. Its returned hash must
+	// capture every per-client effect not reflected by the resolved endpoint or
+	// load-balancing-context hashes because those hashes key CLA interning.
 	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
 	// mutable nested state before invoking this hook.
 	EndpointPlugin func(
