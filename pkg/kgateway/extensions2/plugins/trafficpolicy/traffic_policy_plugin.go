@@ -667,13 +667,24 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Register Buffer immediately before Rustformation so its per-route request
-	// limit is established before a body-parsing transformation buffers data.
+	// Register Buffer at the front of the chain so its per-route request limit is established
+	// before any filter reads the request body.
+	//
+	// The filter enforces max_request_bytes only while it is the filter accumulating the body: it
+	// sets the limit with setDecoderBufferLimit in decodeHeaders, and Envoy emits the 413 when the
+	// buffered request data crosses that watermark. A filter ahead of it that holds or parses the
+	// body first therefore makes the limit inert in both directions - a limit smaller than the
+	// per-stream default stops rejecting oversized bodies, and a larger one never raises the
+	// default. ext_proc does this whenever it waits on its server, and body transformations do it
+	// by construction.
+	//
+	// FaultStage-2 keeps Buffer ahead of the earliest stage reachable through
+	// GatewayExtension.filterStage, which is BeforeStage(FaultStage).
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(
 			bufferFilterName,
 			f,
-			filters.RelativeToStage(filters.AcceptedStage, -2),
+			filters.RelativeToStage(filters.FaultStage, -2),
 		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
