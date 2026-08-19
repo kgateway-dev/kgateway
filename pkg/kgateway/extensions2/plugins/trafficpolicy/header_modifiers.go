@@ -22,42 +22,6 @@ const (
 
 var defaultHeaderMutationFilterStage = filters.DuringStage(filters.RouteStage)
 
-// convertHeaderMutationFilterStage converts a user-facing shared.FilterStageSpec to an
-// internal filters.FilterStage. Returns the provided default if cfg is nil.
-func convertHeaderMutationFilterStage(
-	cfg *shared.FilterStageSpec,
-	defaultStage filters.FilterStage[filters.WellKnownFilterStage],
-) filters.FilterStage[filters.WellKnownFilterStage] {
-	if cfg == nil {
-		return defaultStage
-	}
-
-	var stage filters.WellKnownFilterStage
-	switch cfg.Stage {
-	case shared.FilterStageFault:
-		stage = filters.FaultStage
-	case shared.FilterStageAuthN:
-		stage = filters.AuthNStage
-	case shared.FilterStageAuthZ:
-		stage = filters.AuthZStage
-	case shared.FilterStageRateLimit:
-		stage = filters.RateLimitStage
-	case shared.FilterStageRoute:
-		stage = filters.RouteStage
-	default:
-		return defaultStage
-	}
-
-	switch cfg.Predicate {
-	case shared.FilterStagePredicateBefore:
-		return filters.BeforeStage(stage)
-	case shared.FilterStagePredicateAfter:
-		return filters.AfterStage(stage)
-	default:
-		return filters.DuringStage(stage)
-	}
-}
-
 type headerModifiersIR struct {
 	policy      *header_mutationv3.HeaderMutationPerRoute
 	filterStage *shared.FilterStageSpec

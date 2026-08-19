@@ -166,52 +166,6 @@ func TestHeaderModifiersIRValidate(t *testing.T) {
 	}
 }
 
-func TestConvertHeaderMutationFilterStage(t *testing.T) {
-	tests := []struct {
-		name     string
-		cfg      *shared.FilterStageSpec
-		expected filters.FilterStage[filters.WellKnownFilterStage]
-	}{
-		{
-			name:     "nil config returns default",
-			cfg:      nil,
-			expected: defaultHeaderMutationFilterStage,
-		},
-		{
-			name:     "before AuthN",
-			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageAuthN, Predicate: shared.FilterStagePredicateBefore},
-			expected: filters.BeforeStage(filters.AuthNStage),
-		},
-		{
-			name:     "during AuthZ",
-			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageAuthZ, Predicate: shared.FilterStagePredicateDuring},
-			expected: filters.DuringStage(filters.AuthZStage),
-		},
-		{
-			name:     "after Fault",
-			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageFault, Predicate: shared.FilterStagePredicateAfter},
-			expected: filters.AfterStage(filters.FaultStage),
-		},
-		{
-			name:     "empty predicate defaults to during",
-			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageRateLimit},
-			expected: filters.DuringStage(filters.RateLimitStage),
-		},
-		{
-			name:     "unknown stage returns default",
-			cfg:      &shared.FilterStageSpec{Stage: "Unknown", Predicate: shared.FilterStagePredicateBefore},
-			expected: defaultHeaderMutationFilterStage,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := convertHeaderMutationFilterStage(tt.cfg, defaultHeaderMutationFilterStage)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestHttpFiltersHeaderModifiersFilterStage(t *testing.T) {
 	t.Run("default stage matches current fixed behavior", func(t *testing.T) {
 		plugin := &trafficPolicyPluginGwPass{
