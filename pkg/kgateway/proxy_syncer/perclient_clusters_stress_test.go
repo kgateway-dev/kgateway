@@ -3,10 +3,12 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -59,6 +61,67 @@ func (s *stressUccSource) del(rn string) {
 	delete(s.clients, rn)
 	s.mu.Unlock()
 	s.trigger.TriggerRecomputation()
+}
+
+// A stable client must retain a complete CDS view while unrelated clients
+// continuously connect, disconnect, and change a capability that overlays may
+// inspect. This asserts availability during churn, not merely eventual recovery
+// after the input settles.
+func TestPerClientClusters_UnrelatedTriggerChurnNeverWithholdsStableClient(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	stable := clustersTestClient("role-stable")
+	src, uccs := newStressUccSource(krtopts, []ir.UniquelyConnectedClient{stable})
+
+	backendNames := []string{"b1", "b2", "b3", "b4", "b5"}
+	backends := make([]*ir.BackendObjectIR, 0, len(backendNames))
+	for _, name := range backendNames {
+		backends = append(backends, clustersTestBackend(name))
+	}
+	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
+	eventuallyClusterCount(t, clusters, stable, len(backendNames))
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	for g := range 6 {
+		wg.Add(1)
+		go func(g int) {
+			defer wg.Done()
+			client := clustersTestClient(fmt.Sprintf("role-churn-%d", g))
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				src.add(client)
+				client.KnowsLocalCluster = !client.KnowsLocalCluster
+				src.add(client)
+				src.del(client.ResourceName())
+			}
+		}(g)
+	}
+
+	deadline := time.Now().Add(time.Second)
+	var samples int
+	var observed int
+	for time.Now().Before(deadline) {
+		observed = len(clusterNamesForClient(clusters, stable))
+		samples++
+		if observed != len(backendNames) {
+			break
+		}
+		runtime.Gosched()
+	}
+	close(stop)
+	wg.Wait()
+
+	require.Equal(t, len(backendNames), observed,
+		"unrelated client churn withheld the stable client's CDS view after %d samples", samples)
+	require.Greater(t, samples, 1, "test did not sample the stable client during churn")
 }
 
 // A stable client whose Envoy "blips" (delete + re-add of the SAME client)

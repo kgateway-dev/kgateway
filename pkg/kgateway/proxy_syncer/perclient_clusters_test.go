@@ -19,10 +19,12 @@ import (
 )
 
 // Contract and concurrency coverage for NewPerClientEnvoyClusters (the per-client
-// CDS collection). These pin the invariant that the clusters returned for a
-// connected client track (connected-client set) x (finalBackends) across any
-// sequence of client/backend add/remove, plus that a client which stays connected
-// is never left permanently without its clusters while other clients churn.
+// CDS collection). Under the base/delta split, base clusters are shared across
+// clients — every queried client resolves a cluster for every backend — while
+// per-client deltas are the only client-scoped rows. These pin that a connected
+// client sees all backends across any sequence of client/backend add/remove, that
+// removing one client leaves the others untouched, and that a client which stays
+// connected is never left permanently without its clusters while others churn.
 //
 // Added while investigating #14184 (proxies stranded with empty per-client config).
 // They document the behavior the collection must preserve and pass against the
@@ -131,8 +133,10 @@ func TestPerClientClusters_BackendAddedPropagatesToAllClients(t *testing.T) {
 	eventuallyClusterCount(t, clusters, b, 2)
 }
 
-// Removing a client clears its rows and leaves other clients untouched.
-func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T) {
+// Removing a client leaves other clients untouched and clears the removed
+// client's resolved view. Treating an absent client as resolved against shared
+// bases would make sparse delta absence ambiguous during reconnect.
+func TestPerClientClusters_ClientRemovedLeavesOthersUnaffected(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	uccs, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
@@ -142,8 +146,10 @@ func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T)
 	eventuallyClusterCount(t, clusters, b, 2)
 
 	uccs.DeleteObject(b.ResourceName())
-	eventuallyClusterCount(t, clusters, b, 0)
+	// The surviving client keeps its full set...
 	eventuallyClusterCount(t, clusters, a, 2)
+	// ...while the disconnected client no longer has a resolved generation.
+	eventuallyClusterCount(t, clusters, b, 0)
 }
 
 // Each client's index entry returns only that client's clusters.
@@ -162,8 +168,11 @@ func TestPerClientClusters_IndexIsolation(t *testing.T) {
 	}
 }
 
-// Removing then re-adding the same client restores its full cluster set.
-func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
+// Churning a client through disconnect/reconnect keeps its full cluster set and
+// does not disturb a co-connected client. Base clusters are client-independent, so
+// cycling a client through the delta index must neither drop nor duplicate the rows
+// it resolves.
+func TestPerClientClusters_ReAddClientKeepsRows(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	uccs, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
@@ -171,9 +180,9 @@ func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
 	)
 	eventuallyClusterCount(t, clusters, b, 2)
 	uccs.DeleteObject(b.ResourceName())
-	eventuallyClusterCount(t, clusters, b, 0)
 	uccs.UpdateObject(b)
 	eventuallyClusterCount(t, clusters, b, 2)
+	eventuallyClusterCount(t, clusters, a, 2)
 }
 
 // A client that stays connected must never be left permanently without its clusters

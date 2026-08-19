@@ -85,7 +85,7 @@ func snapshotPerClient(
 				erroredClustersHash ^= utils.HashString(c.Name)
 				continue
 			}
-			clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
+			clustersProto = append(clustersProto, c.Cluster.ResourceWithTTL())
 			clustersHash ^= c.ClusterVersion
 		}
 		clustersVersion := strconv.FormatUint(clustersHash, 10)
