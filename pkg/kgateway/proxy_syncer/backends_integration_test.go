@@ -28,8 +28,8 @@ import (
 //   - A UCC the overlay declines sees the shared base proto (no delta emitted).
 //   - A UCC the overlay matches sees a distinct per-client proto carrying the
 //     mutation, while the base proto stays pristine.
-//   - Two matching UCCs receive independently owned delta protos; interning is
-//     intentionally left to a later optimization.
+//   - Two UCCs whose overlay produces byte-identical clusters share one interned
+//     delta proto, so equivalent clients do not each retain a clone.
 func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
@@ -99,8 +99,8 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 	assert.NotNil(t, gotA[0].Cluster.Clone().GetOutlierDetection(), "matched client must see the overlay mutation")
 	assert.False(t, sharedproto.Same(gotOther[0].Cluster, gotA[0].Cluster), "matched client must not share the base proto")
 
-	assert.False(t, sharedproto.Same(gotA[0].Cluster, gotB[0].Cluster),
-		"the sparse-correctness layer must not depend on delta interning")
+	assert.True(t, sharedproto.Same(gotA[0].Cluster, gotB[0].Cluster),
+		"clients whose overlay output is byte-identical must share one interned proto")
 
 	// The delta transform lends the base proto to ApplyPerClient rather than
 	// handing it a defensive copy, so the overlay pass above ran against the
