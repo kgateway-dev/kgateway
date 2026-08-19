@@ -1,10 +1,12 @@
 package trafficpolicy
 
 import (
+	"slices"
 	"testing"
 
 	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
+	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	faulthttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,10 +69,11 @@ func TestBufferIREquals(t *testing.T) {
 	}
 }
 
-// TestBufferFilterRunsFirst asserts the Buffer filter sorts ahead of every filter that reads or
-// holds the request body. Staged after one of them, its per-route max_request_bytes renders in the
-// Envoy config but never takes effect.
-func TestBufferFilterRunsFirst(t *testing.T) {
+// TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders asserts the Buffer filter sorts
+// behind request decompression - so max_request_bytes is measured against decompressed bytes - and
+// ahead of every filter that reads or holds the request body. Staged after one of those, its
+// per-route limit renders in the Envoy config but never takes effect.
+func TestBufferFilterRunsAfterDecompressionAndBeforeBodyReaders(t *testing.T) {
 	const filterChainName = "test-filter-chain"
 
 	plugin := &trafficPolicyPluginGwPass{
@@ -85,6 +88,12 @@ func TestBufferFilterRunsFirst(t *testing.T) {
 		faultInChain: map[string]*faulthttpv3.HTTPFault{
 			filterChainName: {},
 		},
+		decompressorInChain: map[string][]decompressorEntry{
+			filterChainName: {{
+				filterName:   decompressorFilterNameFor(kgateway.CompressionGzip),
+				decompressor: &decompressorv3.Decompressor{},
+			}},
+		},
 		extProcPerProvider: ProviderNeededMap{
 			Providers: map[string][]Provider{
 				filterChainName: {{
@@ -93,8 +102,7 @@ func TestBufferFilterRunsFirst(t *testing.T) {
 						Name:    "ext-proc",
 						ExtProc: &envoymatchingv3.ExtensionWithMatcher{},
 					},
-					// the earliest stage a GatewayExtension can ask for
-					FilterStage: filters.BeforeStage(filters.FaultStage),
+					FilterStage: defaultExtProcFilterStage,
 				}},
 			},
 		},
@@ -114,8 +122,16 @@ func TestBufferFilterRunsFirst(t *testing.T) {
 		names = append(names, f.Filter.GetName())
 	}
 
-	require.Equal(t, bufferFilterName, names[0], "buffer must sort first, got %v", names)
-	assert.Equal(t, filters.RelativeToStage(filters.FaultStage, -2), sortedFilters[0].Stage)
-	assert.Contains(t, names, rustformationFilterNamePrefix)
-	assert.Contains(t, names, extProcFilterName("ext-proc"))
+	assert.Equal(t, []string{
+		extProcGlobalDisableFilterName,
+		faultFilterName,
+		decompressorFilterNameFor(kgateway.CompressionGzip),
+		bufferFilterName,
+		extProcFilterName("ext-proc"),
+		rustformationFilterNamePrefix,
+	}, names)
+
+	bufferIdx := slices.Index(names, bufferFilterName)
+	require.NotEqual(t, -1, bufferIdx)
+	assert.Equal(t, filters.RelativeToStage(filters.WafStage, -2), sortedFilters[bufferIdx].Stage)
 }

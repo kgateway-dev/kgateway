@@ -667,8 +667,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Register Buffer at the front of the chain so its per-route request limit is established
-	// before any filter reads the request body.
+	// Register Buffer after request decompression and before every filter that reads the request
+	// body.
 	//
 	// The filter enforces max_request_bytes only while it is the filter accumulating the body: it
 	// sets the limit with setDecoderBufferLimit in decodeHeaders, and Envoy emits the 413 when the
@@ -678,13 +678,19 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 	// default. ext_proc does this whenever it waits on its server, and body transformations do it
 	// by construction.
 	//
-	// FaultStage-2 keeps Buffer ahead of the earliest stage reachable through
-	// GatewayExtension.filterStage, which is BeforeStage(FaultStage).
+	// It has to stay behind the decompressors (AfterStage(CorsStage)) though: buffering the
+	// encoded bytes would measure the request against the compressed size, letting a small
+	// compressed body expand past the limit. WafStage-2 is after every Cors-stage filter and ahead
+	// of the earliest body-reading filter in the chain.
+	//
+	// Filters explicitly staged before decompression - reachable through
+	// GatewayExtension.filterStage - still see the body first and are not covered; honoring the
+	// configured limit against decompressed bytes takes precedence.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
 		filter := filters.MustNewStagedFilter(
 			bufferFilterName,
 			f,
-			filters.RelativeToStage(filters.FaultStage, -2),
+			filters.RelativeToStage(filters.WafStage, -2),
 		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
