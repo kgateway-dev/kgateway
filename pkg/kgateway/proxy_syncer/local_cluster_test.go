@@ -78,7 +78,7 @@ func TestNewPerClientLocalClusterEndpointsBuildsGatewayLocalities(t *testing.T) 
 		return got
 	}).Should(gomega.HaveLen(1))
 
-	cla := got[0].Endpoints
+	cla := got[0].Endpoints.Clone()
 	g.Expect(cla.GetClusterName()).To(gomega.Equal("gw.ns"))
 	g.Expect(cla.GetEndpoints()).To(gomega.HaveLen(2))
 
@@ -138,7 +138,7 @@ func TestNewPerClientLocalClusterEndpointsUsesSafeClusterNameForLongGateways(t *
 		return got
 	}).Should(gomega.HaveLen(1))
 
-	g.Expect(got[0].Endpoints.GetClusterName()).To(gomega.Equal(safeGatewayName + ".ns"))
+	g.Expect(got[0].Endpoints.Clone().GetClusterName()).To(gomega.Equal(safeGatewayName + ".ns"))
 }
 
 // TestNewPerClientLocalClusterEndpointsSkipsUnknownClients guards against #14471: a client
