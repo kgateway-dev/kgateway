@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2/tools
 
-go 1.26.6
+go 1.26.7
 
 tool (
 	github.com/google/yamlfmt/cmd/yamlfmt
