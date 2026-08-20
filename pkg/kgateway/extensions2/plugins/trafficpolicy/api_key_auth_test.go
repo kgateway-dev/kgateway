@@ -492,8 +492,6 @@ func TestDedupeAPIKeyCredentials(t *testing.T) {
 		},
 		{
 			name: "the same credential in two secrets is collapsed without an error",
-			// This is the ZD-9420 shape: a Secret copied to the app namespace during a
-			// migration, then selected alongside the original once a ReferenceGrant lands.
 			parsed: []parsedAPIKey{
 				{client: "client1", key: "key-1", secret: "gateway-system/keys"},
 				{client: "client1", key: "key-1", secret: "app/keys"},

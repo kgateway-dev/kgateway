@@ -139,12 +139,7 @@ func constructBasicAuth(
 	// Validate and filter users to only include SHA hashed passwords
 	validUsers, invalidUsers := validateAndFilterSHAUsers(htpasswdData)
 
-	// An entry we could not represent is an authoring error, and the policy error is the only
-	// Kubernetes-facing signal for it: it reports Accepted=False and replaces the route with a
-	// 500. Return before building the IR rather than alongside it -- the caller skips the plugin
-	// for any policy that errors, so a config built here would be discarded either way, and
-	// building one reads as though the surviving users are being served when they are not.
-	//
+	// Report invalid users if any were found.
 	// Checked before the empty case because it names the entries that were dropped.
 	if len(invalidUsers) > 0 {
 		return fmt.Errorf("basic auth: dropped %d user(s), invalid hash format (only {SHA} is supported), malformed entry, or a username listed twice with different hashes: %v",
@@ -231,7 +226,6 @@ func fetchHtpasswdFromSecret(
 //
 // Returns the entries to emit and, for anything dropped, an identifier the caller can put in the
 // policy error: the username, or a line number where the entry is too malformed to have one.
-// Neither ever carries the password hash, because that error reaches policy status.
 //
 // A username repeated with the identical hash is the same entry written twice, so it is collapsed
 // and not reported: that is what an htpasswd file concatenated with a copy of itself looks like.
