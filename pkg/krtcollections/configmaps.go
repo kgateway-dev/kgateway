@@ -46,7 +46,7 @@ func (c *ConfigMapIndex) GetConfigMap(kctx krt.HandlerContext, from From, config
 	}
 
 	if !c.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
-		return nil, ErrMissingReferenceGrant
+		return nil, &MissingReferenceGrantError{From: from, To: to}
 	}
 
 	nn := types.NamespacedName{
