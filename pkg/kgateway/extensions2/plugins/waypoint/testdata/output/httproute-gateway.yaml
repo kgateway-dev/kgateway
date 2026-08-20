@@ -178,7 +178,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 0
+      - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
