@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -31,11 +34,19 @@ var (
 		StatusCode: http.StatusUnauthorized,
 		Body:       nil,
 	}
-	// A policy that fails to translate replaces its route with a 500, rather than leaving the
-	// gateway on stale config.
+	// proxyObjectMeta targets the shared gateway deployment for Envoy admin API access.
+	proxyObjectMeta = metav1.ObjectMeta{
+		Name:      "gateway",
+		Namespace: "kgateway-base",
+	}
+
+	// expectRouteReplaced matches the direct response kgateway substitutes for a route whose
+	// policy failed to translate. The body is what makes the assertion specific: a bare 500 could
+	// come from the upstream, from Envoy itself, or from a connection failure, none of which would
+	// show that the route was replaced rather than left serving stale config.
 	expectRouteReplaced = &matchers.HttpResponse{
 		StatusCode: http.StatusInternalServerError,
-		Body:       nil,
+		Body:       gomega.ContainSubstring("invalid route configuration detected and replaced with a direct response."),
 	}
 
 	// Base test setup - common infrastructure for all tests
