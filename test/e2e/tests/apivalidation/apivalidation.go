@@ -579,10 +579,10 @@ spec:
 			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
-			name: "HTTPListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist",
+			name: "ListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: http-listener-policy-grpcstats-both
 spec:
@@ -599,10 +599,10 @@ spec:
 			wantErrors: []string{"exactly one of statsForAllMethods or methodAllowlist must be set"},
 		},
 		{
-			name: "HTTPListenerPolicy: grpcStats accepts statsForAllMethods only",
+			name: "ListenerPolicy: grpcStats accepts statsForAllMethods only",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: http-listener-policy-grpcstats-all
 spec:
@@ -616,10 +616,10 @@ spec:
 `,
 		},
 		{
-			name: "HTTPListenerPolicy: grpcStats accepts methodAllowlist only",
+			name: "ListenerPolicy: grpcStats accepts methodAllowlist only",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: http-listener-policy-grpcstats-allowlist
 spec:
