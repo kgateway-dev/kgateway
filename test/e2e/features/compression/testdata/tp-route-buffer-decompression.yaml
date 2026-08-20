@@ -1,0 +1,39 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-buffer-decompress
+  namespace: kgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "buffer-decompress.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: httpbin
+          port: 8000
+---
+# A request size limit alongside request decompression. The limit has to be measured against the
+# decompressed body, which only holds while the Buffer filter runs behind the decompressor: a body
+# that is small compressed and large decompressed must still be rejected.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-buffer-decompress
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: httpbin-route-buffer-decompress
+  buffer:
+    maxRequestSize: 1Ki
+  compression:
+    requestDecompression:
+      libraries:
+        - Gzip

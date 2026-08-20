@@ -13,14 +13,15 @@ import (
 
 var (
 	// manifests
-	serviceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
-	httpRoutesManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
-	routeCompressionManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-compression.yaml")
-	routeBrotliManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-brotli.yaml")
-	routeZstdManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-zstd.yaml")
-	routeNegotiationManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-negotiation.yaml")
-	routeDecompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
-	routeReqDecompressManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-request-decompression.yaml")
+	serviceManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	httpRoutesManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
+	routeCompressionManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-compression.yaml")
+	routeBrotliManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-brotli.yaml")
+	routeZstdManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-zstd.yaml")
+	routeNegotiationManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-negotiation.yaml")
+	routeDecompressionManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
+	routeReqDecompressManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-request-decompression.yaml")
+	routeBufferDecompressManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-buffer-decompression.yaml")
 
 	// proxy object meta for the shared gateway
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -56,6 +57,9 @@ var (
 		},
 		"TestZstdRequestDecompression": {
 			Manifests: []string{routeReqDecompressManifest},
+		},
+		"TestBufferLimitAppliesToDecompressedRequestBody": {
+			Manifests: []string{routeBufferDecompressManifest},
 		},
 	}
 )
