@@ -33,3 +33,23 @@ reason = "False positive: fixed in Istio 1.11.7 / 1.12.4 / 1.13.1. At the time t
 [[IgnoredVulns]]
 id = "CVE-2022-31045"
 reason = "False positive: fixed in Istio 1.12.18 / 1.13.5 / 1.14.1. At the time this entry was added our pin v0.0.0-20260605182440-f18fd540c0e8 was an Istio 1.31-dev build"
+
+# GO-2026-5932 is not a versioned vulnerability but a permanent "won't fix"
+# design advisory: golang.org/x/crypto/openpgp is unmaintained and unsafe by
+# design, so no fixed version will ever be published. Bumping x/crypto cannot
+# clear it.
+#
+# The package is linked into kgateway only through Helm's chart-signature
+# verification path (pkg/deployer -> helm.sh/helm/v3/pkg/action ->
+# helm.sh/helm/v3/pkg/provenance), never through our own code. It is not
+# reachable at runtime: pkg/deployer imports only Helm's action, chart,
+# storage and storage/driver packages, renders embedded charts in-process,
+# and never enables chart provenance verification or configures a keyring.
+#
+# Re-verify with:
+#   go list -deps -tags e2e ./... | grep x/crypto/openpgp
+#   grep -rn 'provenance\|Keyring\|Verify' pkg/deployer/
+
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "Won't-fix design advisory for golang.org/x/crypto/openpgp; no fixed version will ever exist. The package is linked into kgateway only via helm.sh/helm/v3/pkg/provenance (pulled in by pkg/deployer -> helm/pkg/action) and is never invoked: pkg/deployer imports Helm's action/chart/storage packages only, renders embedded charts in-process, and never enables chart provenance verification or configures a keyring"

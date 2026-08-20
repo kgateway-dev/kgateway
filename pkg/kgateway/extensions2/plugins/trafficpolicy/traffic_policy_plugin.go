@@ -97,6 +97,7 @@ type trafficPolicySpecIr struct {
 	cors             *corsIR
 	csrf             *csrfIR
 	headerModifiers  *headerModifiersIR
+	requestMirror    *requestMirrorIR
 	autoHostRewrite  *autoHostRewriteIR
 	retry            *retryIR
 	timeouts         *timeoutsIR
@@ -150,6 +151,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 	if !d.spec.headerModifiers.Equals(d2.spec.headerModifiers) {
+		return false
+	}
+	if !d.spec.requestMirror.Equals(d2.spec.requestMirror) {
 		return false
 	}
 	if !d.spec.autoHostRewrite.Equals(d2.spec.autoHostRewrite) {
@@ -219,6 +223,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.headerModifiers.Validate)
+	validators = append(validators, p.spec.requestMirror.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
 	validators = append(validators, p.spec.retry.Validate)
 	validators = append(validators, p.spec.timeouts.Validate)
@@ -263,13 +268,17 @@ type trafficPolicyPluginGwPass struct {
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
-	bufferInChain            map[string]*bufferv3.Buffer
-	compressorInChain        map[string][]compressorEntry
-	decompressorInChain      map[string][]decompressorEntry
-	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
-	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
-	faultInChain             map[string]*faulthttpv3.HTTPFault
-	httpACLInChain           map[string]bool
+	// Route names we've already applied requestMirror settings to on this pass, so the first
+	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
+	// pass, so the name is a safe key.
+	requestMirrorConfigured map[string]struct{}
+	bufferInChain           map[string]*bufferv3.Buffer
+	compressorInChain       map[string][]compressorEntry
+	decompressorInChain     map[string][]decompressorEntry
+	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain            map[string]*faulthttpv3.HTTPFault
+	httpACLInChain          map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -789,6 +798,7 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	action := out.GetRoute()
+	p.applyRequestMirror(spec.requestMirror, out)
 
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
