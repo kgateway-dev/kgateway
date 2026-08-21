@@ -1,7 +1,7 @@
 # EP-14184: Shared Base Clusters with Per-Client Overlays
 
 - Issue: [#14184](https://github.com/kgateway-dev/kgateway/issues/14184)
-- Originating PR: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (superseded by the 7-PR stack in [Delivery](#delivery))
+- Originating PR: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (superseded by the stack in [Delivery](#delivery))
 - Predecessors: [#14104](https://github.com/kgateway-dev/kgateway/pull/14104), [#14317](https://github.com/kgateway-dev/kgateway/pull/14317)
 - Related: [#13586](https://github.com/kgateway-dev/kgateway/issues/13586) (the *backends* axis of the same scaling problem)
 
@@ -165,6 +165,14 @@ instead of one flat per-pair collection:
 by key. Driving it off backends is what makes a backend *metadata-only* change — a Service
 label an overlay reads, with an unchanged base proto — still recompute deltas.
 
+That keyed lookup makes "the base row's key is `BackendObjectIR.ClusterName()`" load-bearing:
+a base with no matching delta set makes `FetchClustersForClient` withhold, so a cluster renamed
+during translation would blackhole every connected client rather than failing visibly. Nothing
+in tree renames it — `initializeCluster` and `buildBlackholeCluster` both take the name from
+`ClusterName`, and no plugin reassigns `Cluster.Name` — so the base transform checks the name
+it got and drops that one backend loudly instead. The blast radius of a future rename is then
+one backend, not the fleet.
+
 #### Cross-collection coherence
 
 Base and deltas are separate collections with no shared transaction, so a reader can observe
@@ -176,6 +184,7 @@ whole generation before exposing any row, because a partial base/delta mix would
 | --- | --- | --- |
 | Base generation | `baseClusterFingerprint{ClusterVersion}` stored on the delta set and compared against the live base | publishing deltas cloned from a superseded base |
 | Sparse absence | `clientInputSnapshot.ContainsCurrent(ucc)` — the exact immutable UCC snapshot the deltas were computed against | reading "no delta" as "no overlay applies" when the client was never evaluated |
+| Snapshot identity | `clientInputSnapshot.generation`, assigned by the interner behind its membership check and compared by `backendClusterDeltaSet.Equals` | a `ClientsFingerprint` collision retaining a stale snapshot, which withholds that client's CDS with no event able to recover it |
 | Inline CLA | `baseEnvoyCluster.NeedsInlineCLA` forces a materialized delta | publishing a host-less STRICT_DNS/STATIC cluster to a newly connected client |
 | Client identity | `krt.FetchOne(clients, FilterKey(ucc))` plus `Equals` | serving a client whose `KnowsLocalCluster` or labels have moved |
 
@@ -270,7 +279,7 @@ type EndpointInputsEditor interface {
     BackendLabels() map[string]string
     Hostname() string
     Port() uint32
-    PoliciesFor(schema.GroupKind) []ir.PolicyAtt
+    PoliciesFor(schema.GroupKind) []PolicyView
 
     SetPriorityInfo(*PriorityInfo)
     SetTrafficDistribution(wellknown.TrafficDistribution)
@@ -287,6 +296,12 @@ subsequently observed. `EndpointView` is read-only with an explicit `Clone`; unt
 endpoints are structurally shared through `AddUnchanged`. The deprecated hook is preserved
 behind `LegacyMutableInputs()`, which deep-copies the whole input graph at most once per
 client no matter how many legacy plugins run.
+
+Isolation here is a matter of what the API can reach, not of copying. `PolicyView` exposes the
+four things endpoint plugins actually ask of an attachment — its IR, whether it failed IR
+construction, its ref string, and its generation — and keeps `PolicyRef`, `Errors`, and
+`MergeOrigins` out of reach, so `PoliciesFor` needs no defensive deep copy on a path that runs
+per client per backend.
 
 `EndpointsForBackend.Add` retains each endpoint's already-computed hash contribution as
 unexported derived state. `AddUnchanged` reuses that contribution when the endpoint stays in
@@ -369,7 +384,8 @@ sorted has to be deliberate.
 ### Reporting
 
 Backend status previously read the flat per-pair collection, so one Backend's status depended
-on rows for every connected client. `StatusClusters(krtopts)` now projects exactly what
+on rows for every connected client. `StatusClusters()` — built once by the constructor, so a
+second caller cannot stand up a duplicate collection — now projects exactly what
 `GenerateBackendStatusReport` consumes: one row per base cluster carrying the source Backend
 identity and any UCC-invariant error, plus one row per **errored** per-client delta. Non-errored
 deltas contribute nothing. It is a collection rather than a `Fetch` helper so
@@ -470,9 +486,15 @@ every point in the stack.
   ordering, locality-default undo, strict-mode validation of overlay output.
 - `prioritize_test.go` — the CLA is byte-stable across repeated calls in all three priority
   modes, and localities are emitted in `(region, zone, subzone)` order.
-- `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations.
+- `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations;
+  `PolicyView` answers every question the plugins ask, including for a failed attachment;
+  a policy-only change survives the `ReplaceEndpoints` path.
+- `backends_resolution_test.go` — a delta set whose resolved snapshot moved must not compare
+  equal even under a forced `ClientsFingerprint` collision; a renamed cluster drops only its
+  own backend instead of withholding the client's whole CDS.
 - `sharedproto_test.go` — tripwire fires on mutation, skips uncaptured protos, respects the
-  flag; `Clone` independence; identity helpers.
+  flag; `Clone` independence; `BorrowForRead` aliases and stays tripwire-covered; identity
+  helpers.
 
 **Property.** `TestLoadBalancingContextHashSoundness` asserts `equal hash => proto.Equal(CLA)`
 over a diverse client set across three priority configurations, with a vacuity guard requiring
@@ -528,32 +550,6 @@ that makes it sound.
 
 ## Open Questions
 
-**`EndpointsForBackend.EmptyCopy()` drops the folded policy hash.** It resets
-`LbEpsEqualityHash` to `upstreamHash`, discarding the contribution
-`newFinalBackendEndpoints` folded in. Any endpoint plugin that uses the new
-`NewEndpointSet()` / `ReplaceEndpoints()` path therefore returns a resolved hash that no
-longer distinguishes policy states, weakening both the CLA interning key and
-`UccWithEndpoints.Equals`. No in-tree plugin takes that path yet, so this is a latent trap in
-a newly public API rather than an active bug; either `EmptyCopy` should carry the folded hash
-or the editor should document the requirement.
-
-**A `fingerprintClients` collision withholds a client permanently.** `ClientsFingerprint`
-participates in `backendClusterDeltaSet.Equals`, so if two different client sets hashed equal,
-KRT would keep the old row, its `ResolvedClients` would not contain the current client, and
-`FetchClustersForClient` would withhold that client's CDS with no event able to recover it.
-The fingerprint covers every field `UniquelyConnectedClient.Equals` compares, so this needs a
-64-bit FNV collision — but the failure mode is permanent rather than transient. Worth deciding
-whether the delta set should fall back to a membership comparison when the fingerprint matches
-but `matches()` does not.
-
-**The base name is an undocumented hard invariant.** The delta transform locates its base with
-`FetchOne(base, FilterKey(backendObj.ClusterName()))`. Every current path names the cluster
-from `BackendObjectIR.ClusterName()` (`initializeCluster` and `buildBlackholeCluster` both do,
-and no plugin reassigns `Cluster.Name`), but if a future `InitEnvoyBackend` or `ProcessBackend`
-renamed it, the base row would exist with no delta row and `FetchClustersForClient` would
-withhold that client's entire CDS forever. Cheap to make loud with a log or a defensive
-fallback.
-
 **A newly connected ambient client can see the un-overlaid base for one KRT propagation
 beat** before its waypoint delta is computed: in a sparse design, absence of a delta is
 indistinguishable from not-yet-computed. The deterministic half — 503s from CLA-less inline
@@ -565,18 +561,4 @@ follow-up issue.
 UCC collection, so any connect or disconnect re-runs it for every backend, and each run loops
 over every client calling `ApplyPerClient` and re-hashes the client set. Per-pair cost is now
 small and retained state is sparse, but the `O(N*M)` event fan-out remains — the same as
-before this EP. Narrowing it is a separate change.
-
-**`StatusClusters` constructs a KRT collection per call.** It is called once, but a second call
-would silently build a duplicate collection. Constructing it inside
-`NewPerClientEnvoyClusters` and returning it as a field would remove the hazard.
-
-**`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
-but PR 6 changes the field's type and gives its equality a real justification
-(`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
-that reason rather than remaining on the legacy-gap list.
-
-**Deep-cloning in `PoliciesFor`.** The editor deep-copies attachment metadata (`PolicyRef`,
-`Errors`, `MergeOrigins`) on every call, on a path that runs per client per backend, for
-consumers that only read. A documented read-only contract, or a view type, would avoid the
-allocation.
+before this EP. Narrowing it is a [non-goal](#non-goals) here and a separate change.
