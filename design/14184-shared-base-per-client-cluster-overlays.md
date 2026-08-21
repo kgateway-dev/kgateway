@@ -430,7 +430,10 @@ every point in the stack.
 
 **Property.** `TestLoadBalancingContextHashSoundness` asserts `equal hash => proto.Equal(CLA)`
 over a diverse client set across three priority configurations, with a vacuity guard requiring
-the discriminating scenarios to produce more than one hash.
+the discriminating scenarios to produce more than one hash. It compares the CLAs exactly as
+built — canonical locality ordering makes normalization unnecessary — so it also fails if that
+ordering regresses; its failure message names both causes and points at the byte-stability test
+first.
 
 **KRT integration.** `backends_integration_test.go` (sparse overlay wiring; backend
 metadata-only update recomputes deltas), `cla_intern_test.go` (equivalent clients share a CLA;
@@ -541,12 +544,6 @@ would silently build a duplicate collection. Constructing it inside
 but PR 6 changes the field's type and gives its equality a real justification
 (`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
 that reason rather than remaining on the legacy-gap list.
-
-**`normalizeCLA` in the property test is now redundant.** It exists to sort
-`ClusterLoadAssignment.Endpoints` before `proto.Equal` because
-`PrioritizeEndpoints` used to emit them in map order. Now that the order is canonical, it and
-its `localityKey` helper can go, and the comment explaining why they are needed is no longer
-true.
 
 **Deep-cloning in `PoliciesFor`.** The editor deep-copies attachment metadata (`PolicyRef`,
 `Errors`, `MergeOrigins`) on every call, on a path that runs per client per backend, for
