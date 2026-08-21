@@ -418,4 +418,3 @@ func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
 		},
 	}
 }
-
