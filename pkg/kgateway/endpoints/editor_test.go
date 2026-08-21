@@ -101,6 +101,30 @@ func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	require.Same(t, legacy, resolver.LegacyMutableInputs(), "legacy inputs should be cloned only once per client")
 }
 
+func TestEndpointInputsResolverPoliciesForDoesNotExposeMutableMetadata(t *testing.T) {
+	groupKind := schema.GroupKind{Group: "example.io", Kind: "Policy"}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+		groupKind: {{
+			PolicyRef:    &ir.AttachedPolicyRef{Name: "policy", Namespace: "ns"},
+			Errors:       []error{errors.New("base")},
+			MergeOrigins: ir.MergeOrigins{"field": sets.New("origin")},
+		}},
+	}}
+	base := EndpointsInputs{EndpointsForBackend: *ir.NewEndpointsForBackend(backend)}
+
+	policies := NewEndpointInputsResolver(base).PoliciesFor(groupKind)
+	require.Len(t, policies, 1)
+	policies[0].PolicyRef.Name = "mutated"
+	policies[0].Errors[0] = errors.New("mutated")
+	policies[0].MergeOrigins["field"].Insert("mutated")
+
+	basePolicy := base.EndpointsForBackend.AttachedPolicies.Policies[groupKind][0]
+	assert.Equal(t, "policy", basePolicy.PolicyRef.Name)
+	assert.EqualError(t, basePolicy.Errors[0], "base")
+	assert.False(t, basePolicy.MergeOrigins["field"].Has("mutated"))
+}
+
 func editorTestEndpoint(address, id string) ir.EndpointWithMd {
 	return ir.EndpointWithMd{
 		LbEndpoint: &envoyendpointv3.LbEndpoint{

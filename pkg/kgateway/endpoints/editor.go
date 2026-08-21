@@ -78,11 +78,10 @@ func (e *EndpointInputsResolver) Port() uint32 {
 	return e.inputs.EndpointsForBackend.Port
 }
 
-// PoliciesFor returns a copy of the attachment slice so plugins cannot reorder
-// or replace entries in the shared attachment container. PolicyIR values are
-// immutable KRT IR and remain shared.
+// PoliciesFor returns a copy of the attachments so plugins cannot mutate shared
+// attachment metadata. PolicyIR values are immutable KRT IR and remain shared.
 func (e *EndpointInputsResolver) PoliciesFor(groupKind schema.GroupKind) []ir.PolicyAtt {
-	return slices.Clone(e.inputs.EndpointsForBackend.AttachedPolicies.Policies[groupKind])
+	return clonePolicyAttachments(e.inputs.EndpointsForBackend.AttachedPolicies.Policies[groupKind])
 }
 
 func (e *EndpointInputsResolver) SetPriorityInfo(priorityInfo *PriorityInfo) {
@@ -195,22 +194,25 @@ func cloneAttachedPolicies(in ir.AttachedPolicies) ir.AttachedPolicies {
 	}
 	out := ir.AttachedPolicies{Policies: make(map[schema.GroupKind][]ir.PolicyAtt, len(in.Policies))}
 	for groupKind, attachments := range in.Policies {
-		cloned := make([]ir.PolicyAtt, len(attachments))
-		for i, attachment := range attachments {
-			cloned[i] = attachment
-			if attachment.PolicyRef != nil {
-				policyRef := *attachment.PolicyRef
-				cloned[i].PolicyRef = &policyRef
-			}
-			cloned[i].Errors = slices.Clone(attachment.Errors)
-			if attachment.MergeOrigins != nil {
-				cloned[i].MergeOrigins = make(ir.MergeOrigins, len(attachment.MergeOrigins))
-				for field, origins := range attachment.MergeOrigins {
-					cloned[i].MergeOrigins[field] = origins.Clone()
-				}
+		out.Policies[groupKind] = clonePolicyAttachments(attachments)
+	}
+	return out
+}
+
+func clonePolicyAttachments(in []ir.PolicyAtt) []ir.PolicyAtt {
+	out := slices.Clone(in)
+	for i := range out {
+		if out[i].PolicyRef != nil {
+			policyRef := *out[i].PolicyRef
+			out[i].PolicyRef = &policyRef
+		}
+		out[i].Errors = slices.Clone(out[i].Errors)
+		if out[i].MergeOrigins != nil {
+			out[i].MergeOrigins = make(ir.MergeOrigins, len(out[i].MergeOrigins))
+			for field, origins := range in[i].MergeOrigins {
+				out[i].MergeOrigins[field] = origins.Clone()
 			}
 		}
-		out.Policies[groupKind] = cloned
 	}
 	return out
 }
