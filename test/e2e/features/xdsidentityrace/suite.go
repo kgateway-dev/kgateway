@@ -4,7 +4,6 @@ package xdsidentityrace
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -32,10 +31,6 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 // (identity frozen on the first request).
 const identityChangeLog = "xds client identity changed; closing stream"
 
-// uccCollectionName is the KRT collection holding the UniquelyConnectedClients,
-// as registered with the KRT debugger (see uniqueclients.go buildCollection).
-const uccCollectionName = "UniqueConnectedClients"
-
 // uccNameRE matches a UniquelyConnectedClient resource name belonging to the base
 // "gateway" proxy in kgateway-base. The format is
 // role~hash(AugmentedLabels)~namespace, i.e.
@@ -50,10 +45,17 @@ var uccNameRE = regexp.MustCompile(`kgateway-kube-gateway-api~kgateway-base~gate
 // have its stream closed and re-identified against current state, rather than
 // serving config bound to the stale identity for the stream's lifetime.
 //
-// All signals are read from the controller admin API (KRT + xDS snapshots) and
-// the controller logs, reached via port-forward. We deliberately avoid curling
-// the gateway's LoadBalancer address, which is not routable from the host on
-// local kind.
+// All signals are read from the controller's xDS snapshot admin endpoint and the
+// controller logs, reached via port-forward. We deliberately avoid curling the
+// gateway's LoadBalancer address, which is not routable from the host on local
+// kind.
+//
+// The KRT snapshot endpoint would be the more direct read of UCC membership, but
+// it is deliberately not used: it marshals every registered collection in a
+// single json.Marshal (see krt.DebugHandler.MarshalJSON), so any one
+// unmarshalable object anywhere in the process turns the whole endpoint into a
+// 500 whose body is a "json: ..." error string. That coupling has nothing to do
+// with what this suite tests.
 type testingSuite struct {
 	*base.BaseTestingSuite
 }
@@ -83,14 +85,15 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 		Namespace: controllerNamespace,
 	}
 
-	// The stream is established when the proxy connects to xDS, which surfaces as
-	// the proxy's UCC in the controller's KRT snapshot. Capture that identity.
-	var preNames sets.Set[string]
+	// The stream is established when the proxy connects to xDS and a snapshot is
+	// published under its identity. Capture the identities present now, so we can
+	// later require one that is genuinely new.
+	var preNodes sets.Set[string]
 	a.AssertKgatewayAdminApi(ctx, controllerMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
 			a.Gomega.Eventually(func(g gomega.Gomega) {
-				preNames = proxyKrtNames(g, ctx, adminClient)
-				g.Expect(preNames.Len()).To(gomega.BeNumerically(">", 0), "proxy UCC present (stream established)")
+				preNodes = proxyXdsNodes(g, ctx, adminClient)
+				g.Expect(preNodes.Len()).To(gomega.BeNumerically(">", 0), "proxy xDS snapshot present (stream established)")
 			}).WithContext(ctx).WithTimeout(60 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
 		})
 
@@ -178,65 +181,30 @@ func (s *testingSuite) TestReidentifyOnPodLabelDrift() {
 		route2Applied = true
 	}
 
-	// SUPPORTING + HEAL assertion: the identity transitioned (a new UCC name
-	// appears and the stale one is released), and the reconnect re-identified
-	// against current state — proven by a published xDS snapshot keyed by the new
-	// identity.
+	// SUPPORTING + HEAL assertion: the reconnect re-identified against CURRENT
+	// state, proven by an xDS snapshot published under an identity that did not
+	// exist before the drift. This is what distinguishes the fix from a plain
+	// disconnect: the client comes back under a corrected identity and is served.
+	//
+	// We do not also assert that the stale identity disappeared. xDS cache entries
+	// are deliberately never cleared when a UCC goes away (see the RegisterBatch
+	// delete-is-a-no-op in pkg/kgateway/proxy_syncer/proxy_syncer.go), so the old
+	// key legitimately lingers here. Release of the stale UCC itself is covered by
+	// TestUniqueClientsReidentifyOnPodChange in pkg/krtcollections.
 	a.AssertKgatewayAdminApi(ctx, controllerMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
 			a.Gomega.Eventually(func(g gomega.Gomega) {
-				postNames := proxyKrtNames(g, ctx, adminClient)
-				newNames := postNames.Difference(preNames)
-				g.Expect(newNames.Len()).To(gomega.BeNumerically(">", 0),
-					"a new UCC identity should exist after the label drift")
-				g.Expect(preNames.Difference(postNames).Len()).To(gomega.BeNumerically(">", 0),
-					"the stale UCC identity should be released after the stream closes")
-
-				xdsNodes := proxyXdsNodes(g, ctx, adminClient)
-				g.Expect(xdsNodes.Intersection(newNames).Len()).To(gomega.BeNumerically(">", 0),
-					"an xDS snapshot should be published for the re-identified client")
+				postNodes := proxyXdsNodes(g, ctx, adminClient)
+				g.Expect(postNodes.Difference(preNodes).Len()).To(gomega.BeNumerically(">", 0),
+					"an xDS snapshot should be published under a new identity after the label drift")
 			}).WithContext(ctx).WithTimeout(90 * time.Second).WithPolling(3 * time.Second).Should(gomega.Succeed())
 		})
 }
 
-// proxyKrtNames returns the set of UniquelyConnectedClient resource names for the
-// base gateway proxy, read from the UniqueConnectedClients collection in the
-// controller KRT snapshot. The scan is scoped to that single collection: other
-// debug-registered collections (per-client snapshots, endpoints) also embed UCC
-// resource names in their dumps and may lag the source of truth, which would
-// make a whole-dump scan flaky.
-func proxyKrtNames(g gomega.Gomega, ctx context.Context, adminClient *admincli.Client) sets.Set[string] {
-	snap, err := adminClient.GetKrtSnapshot(ctx)
-	g.Expect(err).NotTo(gomega.HaveOccurred(), "can get krt snapshot")
-
-	var collections []struct {
-		Name  string `json:"name"`
-		State struct {
-			Outputs map[string]json.RawMessage `json:"outputs"`
-		} `json:"state"`
-	}
-	g.Expect(json.Unmarshal([]byte(snap), &collections)).To(gomega.Succeed(), "krt snapshot parses as JSON")
-
-	out := sets.New[string]()
-	found := false
-	for _, col := range collections {
-		if col.Name != uccCollectionName {
-			continue
-		}
-		found = true
-		for key := range col.State.Outputs {
-			if uccNameRE.MatchString(key) {
-				out.Insert(key)
-			}
-		}
-	}
-	g.Expect(found).To(gomega.BeTrue(), "krt snapshot contains the %s collection", uccCollectionName)
-	return out
-}
-
 // proxyXdsNodes returns the set of xDS snapshot node-id keys for the base
-// gateway proxy. A key present here means a snapshot is published for that
-// identity.
+// gateway proxy. Each key is a UniquelyConnectedClient resource name, so a key
+// present here means the client identified as that UCC and had a snapshot
+// published for it.
 func proxyXdsNodes(g gomega.Gomega, ctx context.Context, adminClient *admincli.Client) sets.Set[string] {
 	snap, err := adminClient.GetXdsSnapshot(ctx)
 	g.Expect(err).NotTo(gomega.HaveOccurred(), "can get xds snapshot")
