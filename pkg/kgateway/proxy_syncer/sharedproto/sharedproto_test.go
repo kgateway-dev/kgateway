@@ -140,3 +140,25 @@ func TestWithTTLRetainsValueWithoutAliasing(t *testing.T) {
 	expiring.BorrowForRead().Name = "mutated"
 	require.Panics(t, func() { expiring.ResourceWithTTL() }, "TTL retains the mutation tripwire")
 }
+
+func TestInternerUsesContentEqualityWithinHashBuckets(t *testing.T) {
+	withAssertions(t, true)
+	var interner Interner[*envoyclusterv3.Cluster]
+	first := &envoyclusterv3.Cluster{Name: "first"}
+	second := &envoyclusterv3.Cluster{Name: "second"}
+	const collidingHash = 42
+
+	sharedFirst := interner.Intern(first, collidingHash)
+	sharedSecond := interner.Intern(second, collidingHash)
+	sharedFirstCopy := interner.Intern(&envoyclusterv3.Cluster{Name: "first"}, collidingHash)
+
+	require.False(t, Same(sharedFirst, sharedSecond),
+		"distinct protos in the same hash bucket must not alias")
+	require.True(t, Same(sharedFirst, sharedFirstCopy),
+		"equal protos in the same hash bucket must share one wrapper")
+	require.Len(t, interner.byHash[collidingHash], 2,
+		"one collision bucket must retain each distinct proto exactly once")
+	require.Equal(t, utils.HashProto(first), sharedFirst.hash,
+		"a non-content bucket hash must not be reused as the mutation-tripwire hash")
+	require.NotPanics(t, func() { sharedFirst.ResourceWithTTL() })
+}
