@@ -439,8 +439,9 @@ Apple M4 Max, `-benchtime=20x`:
 | istio=true heavy=true | 1,689,979 | 703,883 | 52,800 | 10,201 | 5.06 MB | 911 KB |
 
 Roughly 10x on the no-overlay path and 2x with a sparsely-matching destination rule, with
-allocation counts down 5-13x. The benchmark measures the translator only; see
-[Open Questions](#open-questions) for a collection-level cost it does not model.
+allocation counts down 5-13x. The benchmark measures the translator in isolation; the delta
+collection wrapped around it adds no per-backend copy of its own, which is what
+[`BorrowForRead`](#interning-and-immutability) is for.
 
 ### Delivery
 
