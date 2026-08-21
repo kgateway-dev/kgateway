@@ -101,28 +101,75 @@ func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	require.Same(t, legacy, resolver.LegacyMutableInputs(), "legacy inputs should be cloned only once per client")
 }
 
-func TestEndpointInputsResolverPoliciesForDoesNotExposeMutableMetadata(t *testing.T) {
+// PoliciesFor hands out views rather than copies, so the mutable attachment
+// metadata is unreachable by construction instead of defensively cloned on a
+// per-client-per-backend path. What the views must still do is answer every
+// question the endpoint plugins ask, including for an attachment that failed IR
+// construction.
+func TestEndpointInputsResolverPoliciesForExposesReadsOnly(t *testing.T) {
 	groupKind := schema.GroupKind{Group: "example.io", Kind: "Policy"}
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
 	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
-		groupKind: {{
-			PolicyRef:    &ir.AttachedPolicyRef{Name: "policy", Namespace: "ns"},
-			Errors:       []error{errors.New("base")},
-			MergeOrigins: ir.MergeOrigins{"field": sets.New("origin")},
-		}},
+		groupKind: {
+			{
+				PolicyRef:  &ir.AttachedPolicyRef{Group: "example.io", Kind: "Policy", Name: "good", Namespace: "ns"},
+				Generation: 7,
+			},
+			{
+				PolicyRef:    &ir.AttachedPolicyRef{Group: "example.io", Kind: "Policy", Name: "broken", Namespace: "ns"},
+				Errors:       []error{errors.New("bad config")},
+				MergeOrigins: ir.MergeOrigins{"field": sets.New("origin")},
+			},
+		},
 	}}
 	base := EndpointsInputs{EndpointsForBackend: *ir.NewEndpointsForBackend(backend)}
 
 	policies := NewEndpointInputsResolver(base).PoliciesFor(groupKind)
-	require.Len(t, policies, 1)
-	policies[0].PolicyRef.Name = "mutated"
-	policies[0].Errors[0] = errors.New("mutated")
-	policies[0].MergeOrigins["field"].Insert("mutated")
+	require.Len(t, policies, 2)
 
-	basePolicy := base.EndpointsForBackend.AttachedPolicies.Policies[groupKind][0]
-	assert.Equal(t, "policy", basePolicy.PolicyRef.Name)
-	assert.EqualError(t, basePolicy.Errors[0], "base")
-	assert.False(t, basePolicy.MergeOrigins["field"].Has("mutated"))
+	assert.False(t, policies[0].HasErrors())
+	assert.Equal(t, "example.io/Policy/ns/good/", policies[0].RefString())
+	assert.Equal(t, int64(7), policies[0].Generation())
+
+	assert.True(t, policies[1].HasErrors(), "an attachment that failed IR construction must report it")
+	assert.Equal(t, "example.io/Policy/ns/broken/", policies[1].RefString())
+
+	assert.Nil(t, NewEndpointInputsResolver(base).PoliciesFor(schema.GroupKind{Kind: "Absent"}),
+		"a kind with no attachments should allocate nothing")
+}
+
+// TestReplaceEndpointsKeepsFoldedVersion covers the trap in building a
+// replacement endpoint set: EmptyCopy reseeds the equality hash from backend
+// identity, so anything the row's owner folded in afterwards — the
+// attached-policy hash, in production — would vanish and stop distinguishing
+// the states it was folded in to distinguish. The resolved hash keys CLA
+// interning, so two policy states must not resolve alike.
+func TestReplaceEndpointsKeepsFoldedVersion(t *testing.T) {
+	locality := ir.PodLocality{Region: "r", Zone: "z"}
+
+	resolvedHashFor := func(policyVersion uint64) uint64 {
+		backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+		source := ir.NewEndpointsForBackend(backend)
+		source.Add(locality, editorTestEndpoint("10.0.0.1", "ep"))
+		// Mirrors newFinalBackendEndpoints folding the attached-policy hash into
+		// the row it publishes.
+		source.FoldVersion(policyVersion)
+
+		resolver := NewEndpointInputsResolver(EndpointsInputs{EndpointsForBackend: *source})
+		// A plugin that rebuilds the set without changing any endpoint.
+		replacement := resolver.NewEndpointSet()
+		resolver.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
+			replacement.AddUnchanged(locality, endpoint)
+			return true
+		})
+		resolver.ReplaceEndpoints(replacement)
+		return resolver.Inputs().EndpointsForBackend.LbEpsEqualityHash
+	}
+
+	assert.NotEqual(t, resolvedHashFor(1), resolvedHashFor(2),
+		"a policy-only change must survive the replacement path")
+	assert.Equal(t, resolvedHashFor(1), resolvedHashFor(1),
+		"the replacement path must stay deterministic for equal inputs")
 }
 
 func editorTestEndpoint(address, id string) ir.EndpointWithMd {

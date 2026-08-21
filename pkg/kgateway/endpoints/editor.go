@@ -25,7 +25,7 @@ type EndpointInputsEditor interface {
 	BackendLabels() map[string]string
 	Hostname() string
 	Port() uint32
-	PoliciesFor(schema.GroupKind) []ir.PolicyAtt
+	PoliciesFor(schema.GroupKind) []PolicyView
 
 	SetPriorityInfo(*PriorityInfo)
 	SetTrafficDistribution(wellknown.TrafficDistribution)
@@ -78,10 +78,20 @@ func (e *EndpointInputsResolver) Port() uint32 {
 	return e.inputs.EndpointsForBackend.Port
 }
 
-// PoliciesFor returns a copy of the attachments so plugins cannot mutate shared
-// attachment metadata. PolicyIR values are immutable KRT IR and remain shared.
-func (e *EndpointInputsResolver) PoliciesFor(groupKind schema.GroupKind) []ir.PolicyAtt {
-	return clonePolicyAttachments(e.inputs.EndpointsForBackend.AttachedPolicies.Policies[groupKind])
+// PoliciesFor returns read-only views of the policies of one kind attached to
+// this backend. A view cannot reach the attachment's mutable metadata, so no
+// copy of it is made: this runs per client per backend, and the callers only
+// read.
+func (e *EndpointInputsResolver) PoliciesFor(groupKind schema.GroupKind) []PolicyView {
+	attachments := e.inputs.EndpointsForBackend.AttachedPolicies.Policies[groupKind]
+	if len(attachments) == 0 {
+		return nil
+	}
+	views := make([]PolicyView, len(attachments))
+	for i, attachment := range attachments {
+		views[i] = PolicyView{attachment: attachment}
+	}
+	return views
 }
 
 func (e *EndpointInputsResolver) SetPriorityInfo(priorityInfo *PriorityInfo) {
@@ -113,7 +123,52 @@ func (e *EndpointInputsResolver) ReplaceEndpoints(replacement *EndpointSetBuilde
 	if replacement == nil {
 		return
 	}
+	// The builder started from EmptyCopy, which reseeds the equality hash from
+	// backend identity, so it carries no trace of anything the row's owner
+	// folded in after construction — newFinalBackendEndpoints folds the
+	// attached-policy hash, which changes what the endpoints translate into
+	// without changing the endpoints. Fold the source row's hash back in: the
+	// resolved hash keys CLA interning and the KRT equality of the resolved
+	// row, so dropping it would serve one policy state's load assignment for
+	// another's. This over-discriminates (the result now varies with the source
+	// endpoints too, costing a missed dedup at worst) which is the safe
+	// direction.
+	replacement.endpoints.FoldVersion(e.inputs.EndpointsForBackend.LbEpsEqualityHash)
 	e.inputs.EndpointsForBackend = replacement.endpoints
+}
+
+// PolicyView is an immutable view of one policy attachment. It exposes what
+// endpoint plugins actually need — the policy IR, whether the attachment failed
+// IR construction, and the identity a plugin folds into its version hash —
+// while keeping PolicyRef, Errors, and MergeOrigins out of reach. That is what
+// lets [EndpointInputsResolver.PoliciesFor] hand out attachments without
+// deep-copying metadata that no caller writes.
+type PolicyView struct {
+	attachment ir.PolicyAtt
+}
+
+// PolicyIR returns the attached policy's IR, which is immutable KRT state and
+// therefore safe to share across clients.
+func (p PolicyView) PolicyIR() ir.PolicyIR {
+	return p.attachment.PolicyIr
+}
+
+// HasErrors reports whether this attachment failed IR construction, in which
+// case its PolicyIR must not be applied.
+func (p PolicyView) HasErrors() bool {
+	return len(p.attachment.Errors) > 0
+}
+
+// RefString identifies the attached policy object. Plugins hash it to version
+// their contribution; see [EndpointEditorPlugin] on why that hash is
+// load-bearing.
+func (p PolicyView) RefString() string {
+	return ir.PolicyRefString(p.attachment.PolicyRef)
+}
+
+// Generation is the observed generation of the attached policy object.
+func (p PolicyView) Generation() int64 {
+	return p.attachment.Generation
 }
 
 // EndpointView is an immutable view of one endpoint from shared input state.

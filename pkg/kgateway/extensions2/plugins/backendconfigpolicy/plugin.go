@@ -527,18 +527,18 @@ func (p *backendConfigEndpointPlugin) processEndpoints(
 	out.SetTrafficDistribution(wellknown.TrafficDistributionAny)
 
 	hasher := fnv.New64()
-	hasher.Write([]byte(ir.PolicyRefString(pol.PolicyRef)))
-	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation))
+	hasher.Write([]byte(pol.RefString()))
+	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation()))
 	return hasher.Sum64()
 }
 
-func selectZoneAwareBackendConfigPolicy(policies []ir.PolicyAtt) (ir.PolicyAtt, *BackendConfigPolicyIR) {
+func selectZoneAwareBackendConfigPolicy(policies []endpoints.PolicyView) (endpoints.PolicyView, *BackendConfigPolicyIR) {
 	for _, pol := range policies {
-		bcpIR, ok := pol.PolicyIr.(*BackendConfigPolicyIR)
-		if !ok || len(pol.Errors) > 0 || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
+		bcpIR, ok := pol.PolicyIR().(*BackendConfigPolicyIR)
+		if !ok || pol.HasErrors() || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
 			continue
 		}
 		return pol, bcpIR
 	}
-	return ir.PolicyAtt{}, nil
+	return endpoints.PolicyView{}, nil
 }

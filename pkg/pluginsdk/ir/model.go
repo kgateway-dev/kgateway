@@ -239,6 +239,19 @@ func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 	}
 }
 
+// FoldVersion mixes an extra input into this row's equality hash. Use it for
+// state that changes what these endpoints translate into without changing the
+// endpoints themselves — newFinalBackendEndpoints folds in the attached-policy
+// hash for exactly that reason.
+//
+// Fold rather than assign LbEpsEqualityHash: EmptyCopy reseeds the hash from
+// backend identity alone, so a replacement endpoint set built through the
+// endpoint editor would otherwise silently drop the contribution and stop
+// distinguishing the states it was added to distinguish.
+func (e *EndpointsForBackend) FoldVersion(extra uint64) {
+	e.LbEpsEqualityHash = hash(e.LbEpsEqualityHash, extra)
+}
+
 func hashEndpoints(l PodLocality, emd EndpointWithMd) uint64 {
 	hasher := fnv.New64a()
 	hasher.Write([]byte(l.Region))

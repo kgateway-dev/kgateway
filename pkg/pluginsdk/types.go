@@ -28,6 +28,7 @@ type (
 	EndpointInputsEditor = endpoints.EndpointInputsEditor
 	EndpointSetBuilder   = endpoints.EndpointSetBuilder
 	EndpointView         = endpoints.EndpointView
+	PolicyView           = endpoints.PolicyView
 	ProcessBackend       func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
 	// EndpointEditorPlugin edits per-client endpoint inputs through a
 	// copy-on-write API. Read-only source state is exposed through accessors;
