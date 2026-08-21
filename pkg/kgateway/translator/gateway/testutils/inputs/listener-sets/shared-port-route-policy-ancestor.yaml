@@ -21,8 +21,8 @@ spec:
 # targeted by a TrafficPolicy. If route-level policy status ancestor
 # reporting is fixed to "whichever ListenerSet built the merged listener
 # first", the policy's status will show the WRONG ListenerSet as ancestor.
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: a-listenerset
 spec:
@@ -39,8 +39,8 @@ spec:
       namespaces:
         from: All
 ---
-apiVersion: gateway.networking.x-k8s.io/v1alpha1
-kind: XListenerSet
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
 metadata:
   name: b-listenerset
 spec:
@@ -64,8 +64,8 @@ metadata:
 spec:
   parentRefs:
   - name: a-listenerset
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   hostnames:
   - "a.example.com"
   rules:
@@ -84,8 +84,8 @@ metadata:
 spec:
   parentRefs:
   - name: b-listenerset
-    group: gateway.networking.x-k8s.io
-    kind: XListenerSet
+    group: gateway.networking.k8s.io
+    kind: ListenerSet
   hostnames:
   - "b.example.com"
   rules:

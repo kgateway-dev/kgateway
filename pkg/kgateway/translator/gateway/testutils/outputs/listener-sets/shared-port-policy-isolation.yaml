@@ -25,6 +25,31 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        useRemoteAddress: true
+    name: listener~8080
+  name: listener~8080
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
       portValue: 9090
   filterChains:
   - filters:
@@ -51,6 +76,8 @@ Listeners:
     name: listener~9090
   name: listener~9090
 Routes:
+- ignorePortInHostMatching: true
+  name: listener~8080
 - ignorePortInHostMatching: true
   name: listener~9090
   virtualHosts:
@@ -80,16 +107,13 @@ Routes:
         '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
         allowOriginStringMatch:
         - exact: https://team-b-only.example.com
+        forwardNotMatchingPreflights: false
         maxAge: "5"
 Statuses:
   gateways:
     default/example-gateway:
+      attachedListenerSets: 2
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsAttached
-        status: "True"
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
@@ -100,6 +124,40 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http-8080
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
   httpRoutes:
     default/specific-route:
       parents:
@@ -116,8 +174,8 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: specific-listenerset
     default/wildcard-route:
       parents:
@@ -134,8 +192,8 @@ Statuses:
           type: ResolvedRefs
         controllerName: kgateway
         parentRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: wildcard-listenerset
   listenerSets:
     default/specific-listenerset:
@@ -174,7 +232,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http-9090
-        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -216,7 +273,6 @@ Statuses:
           status: "True"
           type: Programmed
         name: http-9090
-        port: 9090
         supportedKinds:
         - group: gateway.networking.k8s.io
           kind: HTTPRoute
@@ -226,8 +282,8 @@ Statuses:
     TrafficPolicy/default/specific-listener-policy:
       ancestors:
       - ancestorRef:
-          group: gateway.networking.x-k8s.io
-          kind: XListenerSet
+          group: gateway.networking.k8s.io
+          kind: ListenerSet
           name: specific-listenerset
           namespace: default
         conditions:

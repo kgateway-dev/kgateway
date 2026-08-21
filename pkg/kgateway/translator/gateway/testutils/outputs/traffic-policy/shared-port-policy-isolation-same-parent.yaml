@@ -80,16 +80,12 @@ Routes:
         '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
         allowOriginStringMatch:
         - exact: https://team-b-only.example.com
+        forwardNotMatchingPreflights: false
         maxAge: "5"
 Statuses:
   gateways:
     default/example-gateway:
       conditions:
-      - lastTransitionTime: null
-        message: ""
-        reason: ListenerSetsNotAllowed
-        status: Unknown
-        type: AttachedListenerSets
       - lastTransitionTime: null
         message: Successfully accepted Gateway
         reason: Accepted
@@ -100,6 +96,11 @@ Statuses:
         reason: Programmed
         status: "True"
         type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
       listeners:
       - attachedRoutes: 1
         conditions:
@@ -176,6 +177,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: specific-listener
     default/wildcard-route:
       parents:
       - conditions:
@@ -194,6 +196,7 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+          sectionName: wildcard-listener
   policies:
     TrafficPolicy/default/specific-listener-policy:
       ancestors:
