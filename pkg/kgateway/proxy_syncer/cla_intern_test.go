@@ -156,4 +156,3 @@ func TestNewPerClientEnvoyEndpointsKeysInterningOnResolvedEndpointHash(t *testin
 	require.NotEqual(t, fetchedA[0].EndpointsHash, fetchedB[0].EndpointsHash)
 	require.Equal(t, 2, buildCalls)
 }
-
