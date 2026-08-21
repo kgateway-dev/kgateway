@@ -38,4 +38,3 @@ func TestClusterOverlay_NilForNonAmbientClient(t *testing.T) {
 		})
 	}
 }
-
