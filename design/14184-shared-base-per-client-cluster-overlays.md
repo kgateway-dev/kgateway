@@ -211,10 +211,30 @@ Sharing a proto across snapshots means a post-creation mutation corrupts every s
 *and* the copy KRT stores — and is invisible to KRT equality, because version hashes are
 computed at store time. The new `sharedproto` package makes that unrepresentable rather than
 merely forbidden: `Shared[M]` holds the proto in an unexported field, so the only exits are
-`Clone()` (the one legitimate mutation path) and `ResourceWithTTL()` (the one legitimate sink,
-the envoycache snapshot). When `ASSERT_SHARED_PROTO_IMMUTABILITY` is set, `Wrap` captures the
-content hash and `ResourceWithTTL` re-hashes and panics on drift, naming the resource. It is
-off by default because the re-hash is exactly the marshal cost the interning exists to avoid.
+named for what they permit — `Clone()` (the one legitimate mutation path),
+`ResourceWithTTL()` (the one legitimate sink, the envoycache snapshot), and `BorrowForRead()`
+(below). When `ASSERT_SHARED_PROTO_IMMUTABILITY` is set, `Wrap` captures the content hash and
+`ResourceWithTTL` re-hashes and panics on drift, naming the resource. It is off by default
+because the re-hash is exactly the marshal cost the interning exists to avoid.
+
+`BorrowForRead` exists because `ApplyPerClient` takes a plain `*Cluster` base that it only
+reads — it clones internally before letting an overlay touch anything — so unsealing the base
+with a copy would add a per-backend deep copy on every delta recompute whose sole purpose is
+to satisfy the signature, and would pay it on the dominant path where nothing is mutated at
+all. Lending the pointer instead makes `ApplyPerClient`'s internal clone the only one, so a
+materialized delta costs one clone and a declined pair costs none. Measured over 200 backends
+x 20 clients with no overlay applying:
+
+| | Unseal by `Clone` | Unseal by `BorrowForRead` |
+| --- | --- | --- |
+| light backends | 182,567 ns/op, 202 KB, 2,000 allocs | 40,447 ns/op, **0 B, 0 allocs** |
+| heavy backends | 208,678 ns/op, 241 KB, 2,800 allocs | 37,224 ns/op, **0 B, 0 allocs** |
+
+The borrow does not weaken the guarantee, because the borrowed pointer is the same one
+`ResourceWithTTL` publishes: `TestNewPerClientEnvoyClusters_SparseOverlayWiring` runs the real
+collections and then publishes the declined client's base through the sink, so a mutation
+anywhere on the overlay path trips the tripwire with the offending cluster named. This is also
+the treatment `BaseCluster.EndpointInputs` — one field over — already received.
 
 ### Plugin
 
@@ -411,8 +431,9 @@ Apple M4 Max, `-benchtime=20x`:
 | istio=true heavy=true | 1,689,979 | 703,883 | 52,800 | 10,201 | 5.06 MB | 911 KB |
 
 Roughly 10x on the no-overlay path and 2x with a sparsely-matching destination rule, with
-allocation counts down 5-13x. The benchmark measures the translator only; see
-[Open Questions](#open-questions) for a collection-level cost it does not model.
+allocation counts down 5-13x. The benchmark measures the translator in isolation; the delta
+collection wrapped around it adds no per-backend copy of its own, which is what
+[`BorrowForRead`](#interning-and-immutability) is for.
 
 ### Delivery
 
@@ -506,16 +527,6 @@ the established pattern in this codebase, and `sharedproto` exists to protect th
 that makes it sound.
 
 ## Open Questions
-
-**The base clone is unconditional.** `NewPerClientEnvoyClusters` does
-`perClientBase.Cluster = b.Cluster.Clone()` once per backend per recompute, before knowing
-whether any client will materialize a delta — and `ApplyPerClient` clones again from that copy
-when it does materialize. For 200 light backends the wasted clone measures 126 us / 202 KB /
-2000 allocs, against 80 us / 214 KB / 2201 allocs for the entire new translation path: it
-roughly doubles the cost and allocation count of the dominant no-overlay case, and it is not
-modelled by `BenchmarkPerClientClusters`. `ApplyPerClient` decides applicability before it
-touches `base.Cluster`, so passing a `func() *Cluster` (or the `Shared` wrapper) instead of a
-materialized clone would make it lazy and remove the double clone.
 
 **`EndpointsForBackend.EmptyCopy()` drops the folded policy hash.** It resets
 `LbEpsEqualityHash` to `upstreamHash`, discarding the contribution
