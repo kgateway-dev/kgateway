@@ -1,7 +1,7 @@
 # EP-14184: Shared Base Clusters with Per-Client Overlays
 
 - Issue: [#14184](https://github.com/kgateway-dev/kgateway/issues/14184)
-- Originating PR: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (superseded by the 7-PR stack in [Delivery](#delivery))
+- Originating PR: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (superseded by the stack in [Delivery](#delivery))
 - Predecessors: [#14104](https://github.com/kgateway-dev/kgateway/pull/14104), [#14317](https://github.com/kgateway-dev/kgateway/pull/14317)
 - Related: [#13586](https://github.com/kgateway-dev/kgateway/issues/13586) (the *backends* axis of the same scaling problem)
 
@@ -276,7 +276,7 @@ type EndpointInputsEditor interface {
     BackendLabels() map[string]string
     Hostname() string
     Port() uint32
-    PoliciesFor(schema.GroupKind) []ir.PolicyAtt
+    PoliciesFor(schema.GroupKind) []PolicyView
 
     SetPriorityInfo(*PriorityInfo)
     SetTrafficDistribution(wellknown.TrafficDistribution)
@@ -293,6 +293,12 @@ subsequently observed. `EndpointView` is read-only with an explicit `Clone`; unt
 endpoints are structurally shared through `AddUnchanged`. The deprecated hook is preserved
 behind `LegacyMutableInputs()`, which deep-copies the whole input graph at most once per
 client no matter how many legacy plugins run.
+
+Isolation here is a matter of what the API can reach, not of copying. `PolicyView` exposes the
+four things endpoint plugins actually ask of an attachment — its IR, whether it failed IR
+construction, its ref string, and its generation — and keeps `PolicyRef`, `Errors`, and
+`MergeOrigins` out of reach, so `PoliciesFor` needs no defensive deep copy on a path that runs
+per client per backend.
 
 `EndpointsForBackend.Add` retains each endpoint's already-computed hash contribution as
 unexported derived state. `AddUnchanged` reuses that contribution when the endpoint stays in
@@ -475,9 +481,15 @@ every point in the stack.
   ordering, locality-default undo, strict-mode validation of overlay output.
 - `prioritize_test.go` — the CLA is byte-stable across repeated calls in all three priority
   modes, and localities are emitted in `(region, zone, subzone)` order.
-- `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations.
+- `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations;
+  `PolicyView` answers every question the plugins ask, including for a failed attachment;
+  a policy-only change survives the `ReplaceEndpoints` path.
+- `backends_resolution_test.go` — a delta set whose resolved snapshot moved must not compare
+  equal even under a forced `ClientsFingerprint` collision; a renamed cluster drops only its
+  own backend instead of withholding the client's whole CDS.
 - `sharedproto_test.go` — tripwire fires on mutation, skips uncaptured protos, respects the
-  flag; `Clone` independence; identity helpers.
+  flag; `Clone` independence; `BorrowForRead` aliases and stays tripwire-covered; identity
+  helpers.
 
 **Property.** `TestLoadBalancingContextHashSoundness` asserts `equal hash => proto.Equal(CLA)`
 over a diverse client set across three priority configurations, with a vacuity guard requiring
@@ -601,11 +613,6 @@ install only backends that actually have a rule keep the per-client inline CLA; 
 once on the base. The predicate fetches through the base translation's `HandlerContext`, which is
 why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first rule to appear for
 a host re-translates that backend's base and moves it back to the per-client path.
-
-**`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
-but PR 5 (#14604) changes the field's type and gives its equality a real justification
-(`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
-that reason rather than remaining on the legacy-gap list.
 
 **Deep-cloning in `PoliciesFor`.** The editor deep-copies attachment metadata (`PolicyRef`,
 `Errors`, `MergeOrigins`) on every call, on a path that runs per client per backend, for
