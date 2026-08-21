@@ -36,13 +36,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Setup Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - name: Restore envoyinit BuildKit cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/.buildx-cache-envoyinit
           key: ${{ runner.os }}-buildx-envoyinit-v1-${{ hashFiles('internal/envoy_modules/Cargo.lock', 'internal/envoy_modules/**/Cargo.toml', 'cmd/envoyinit/Dockerfile.tmpl', 'cmd/envoyinit/generate-dockerfile.sh') }}
@@ -63,7 +63,7 @@ jobs:
             mv /tmp/.buildx-cache-envoyinit-new /tmp/.buildx-cache-envoyinit
           fi
       - name: Upload shared e2e images
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: e2e-shared-images
           path: _output/e2e-images/shared-images.tar
@@ -95,17 +95,17 @@ jobs:
         version-files:
           - file: './.github/workflows/.env/pr-tests/versions.env'
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.version-files.file }}
           log-variables: true
       - name: Download shared e2e images
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: e2e-shared-images
           path: _output/e2e-images
