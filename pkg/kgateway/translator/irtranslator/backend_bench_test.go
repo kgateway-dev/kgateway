@@ -197,4 +197,3 @@ func BenchmarkPerClientClusters(b *testing.B) {
 		}
 	}
 }
-
