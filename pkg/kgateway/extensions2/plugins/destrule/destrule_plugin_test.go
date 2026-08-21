@@ -96,4 +96,3 @@ func TestClusterOverlay_AppliesOutlierDetection(t *testing.T) {
 	assert.NotNil(t, out.GetOutlierDetection(), "overlay must apply outlier detection to the cluster")
 	assert.Equal(t, uint32(5), out.GetOutlierDetection().GetConsecutive_5Xx().GetValue())
 }
-
