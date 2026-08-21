@@ -113,4 +113,3 @@ func editorTestEndpoint(address, id string) ir.EndpointWithMd {
 		EndpointMd: ir.EndpointMetadata{Labels: map[string]string{"id": id}},
 	}
 }
-
