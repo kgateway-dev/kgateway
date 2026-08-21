@@ -376,4 +376,3 @@ func TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability(t *testing
 		return len(got) == 1 && got[0].Cluster.Is(base)
 	}, time.Second, 10*time.Millisecond)
 }
-
