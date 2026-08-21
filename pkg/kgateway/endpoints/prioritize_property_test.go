@@ -1,10 +1,7 @@
 package endpoints
 
 import (
-	"cmp"
-	"fmt"
 	"maps"
-	"slices"
 	"testing"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -31,6 +28,12 @@ import (
 // CLAs). That only costs a missed dedup, never a wrong one. A future change to
 // PrioritizeEndpoints that reads a UCC field not folded into the hash would break
 // this test by producing equal-hash UCCs with differing CLAs.
+//
+// The CLAs are compared as built, with no normalization: PrioritizeEndpoints emits
+// locality groups in canonical order (see sortedLocalities), which
+// TestPrioritizeEndpointsIsByteStable pins independently. That coupling means a
+// locality-ordering regression also fails here, which the failure message calls
+// out — check the byte-stability test before hunting for a missing hash input.
 func TestLoadBalancingContextHashSoundness(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "core",
@@ -85,7 +88,7 @@ func TestLoadBalancingContextHashSoundness(t *testing.T) {
 			distinctHashes := map[uint64]struct{}{}
 			for i, ucc := range uccs {
 				hashes[i] = LoadBalancingContextHash(ucc, inputs)
-				claList[i] = normalizeCLA(PrioritizeEndpoints(nil, ucc, inputs))
+				claList[i] = PrioritizeEndpoints(nil, ucc, inputs)
 				distinctHashes[hashes[i]] = struct{}{}
 			}
 
@@ -94,7 +97,9 @@ func TestLoadBalancingContextHashSoundness(t *testing.T) {
 				for j := i + 1; j < len(uccs); j++ {
 					if hashes[i] == hashes[j] {
 						require.True(t, proto.Equal(claList[i], claList[j]),
-							"UCCs %q and %q share hash %d but built different CLAs — hash misses a UCC-dependent input",
+							"UCCs %q and %q share hash %d but built different CLAs: either the hash misses a "+
+								"UCC-dependent input, or PrioritizeEndpoints is no longer emitting locality "+
+								"groups in canonical order (check TestPrioritizeEndpointsIsByteStable first)",
 							uccs[i].ResourceName(), uccs[j].ResourceName(), hashes[i])
 					}
 				}
@@ -142,20 +147,4 @@ func addEndpoint(ep *ir.EndpointsForBackend, region, zone, path string) {
 			},
 		},
 	})
-}
-
-// normalizeCLA sorts the locality endpoint groups into a canonical order so that
-// proto.Equal is stable: PrioritizeEndpoints ranges over a locality map, so the
-// order of ClusterLoadAssignment.Endpoints is otherwise non-deterministic across
-// calls. (region, zone, subzone, priority) is unique per group.
-func normalizeCLA(cla *envoyendpointv3.ClusterLoadAssignment) *envoyendpointv3.ClusterLoadAssignment {
-	slices.SortStableFunc(cla.Endpoints, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
-		return cmp.Compare(localityKey(a), localityKey(b))
-	})
-	return cla
-}
-
-func localityKey(lle *envoyendpointv3.LocalityLbEndpoints) string {
-	loc := lle.GetLocality()
-	return fmt.Sprintf("%s/%s/%s/%d", loc.GetRegion(), loc.GetZone(), loc.GetSubZone(), lle.GetPriority())
 }
