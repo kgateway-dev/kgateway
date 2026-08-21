@@ -303,6 +303,30 @@ Both the EDS path and the inline-CLA path now go through the same `ResolveEndpoi
 helper, so their ownership and plugin-composition semantics cannot diverge. Backend and
 local-cluster EDS resources are wrapped in the same `sharedproto.Shared` boundary.
 
+#### Deterministic CLA construction
+
+Interning and content-hash versioning both require that identical inputs produce identical
+*bytes*, which `prioritizeWithLbInfo` did not: it ranged `ep.LbEps` — a map — and appended each
+locality's groups to `cla.Endpoints` in map order. Locality order carries no meaning to Envoy,
+but the CLA's serialized form versions per-client xDS and keys the interning, so map order made
+identical inputs hash differently on every recompute. `sortedLocalities` now orders localities
+by `(region, zone, subzone)` before the loop. The renormalization in `applyLocalityFailover`
+depends only on the *set* of distinct priority values and each group's own priority, not on
+slice order, so the assigned priorities are unchanged.
+
+This was a pre-existing bug — `main` also hashed the whole cluster including its inline CLA, so
+the version churn predates this EP — but the interning added here is the first thing whose
+*correctness of purpose* depends on byte-stability. Measured on a 5-locality inline-CLA backend:
+
+| | Before | After |
+| --- | --- | --- |
+| Distinct CLA content hashes over 200 identical `PrioritizeEndpoints` calls | 5 | 1 |
+| Distinct interning keys across 20 clients sharing one load-balancing context | 5 | 1 |
+
+`TestPrioritizeEndpointsIsByteStable` locks byte-stability across all three priority modes and
+pins the canonical order, so a later change that is stable but no longer sorted has to be
+deliberate.
+
 ### Reporting
 
 Backend status previously read the flat per-pair collection, so one Backend's status depended
@@ -367,23 +391,24 @@ allocation counts down 5-13x. The benchmark measures the translator only; see
 
 ### Delivery
 
-The work landed as a 7-PR stack rather than as #14343, so that the translator contract, the
+The work landed as a 6-PR stack rather than as #14343, so that the translator contract, the
 KRT topology change, and the allocation optimizations can be reviewed and reverted
 independently.
 
 | # | PR | Scope | Topology change |
 | --- | --- | --- | --- |
-| 1 | #14599 | endpoint mutation boundary (`EndpointInputsEditor`) | no |
-| 2 | #14600 | `TranslateBackendBase` / `ApplyPerClient` / `ClusterOverlay`, dense storage retained | no |
-| 3 | #14601 | gateway translation fixtures for the errored-cluster output change | no |
-| 4 | #14602 | sparse CDS storage, fencing, `sharedproto` | **yes** |
-| 5 | #14603 | intern equivalent per-client cluster deltas | no |
-| 6 | #14604 | intern equivalent per-client CLAs, `LoadBalancingContextHash` | no |
-| 7 | #14605 | arm the immutability tripwire in e2e and conformance CI | no |
+| 1 | #14599 | endpoint mutation boundary (`EndpointInputsEditor`), deterministic CLA construction | no |
+| 2 | #14600 | `TranslateBackendBase` / `ApplyPerClient` / `ClusterOverlay`, dense storage retained, gateway fixtures for the errored-cluster output change | no |
+| 3 | #14602 | sparse CDS storage, fencing, `sharedproto` | **yes** |
+| 4 | #14603 | intern equivalent per-client cluster deltas | no |
+| 5 | #14604 | intern equivalent per-client CLAs, `LoadBalancingContextHash` | no |
+| 6 | #14605 | arm the immutability tripwire in e2e and conformance CI | no |
 
-PRs 1-3 are shippable before the topology change. PR 2 deliberately keeps dense storage and
+PRs 1-2 are shippable before the topology change. PR 2 deliberately keeps dense storage and
 an independently owned proto per row so reviewers can validate the translation contract
-without also reasoning about cross-collection synchronization.
+without also reasoning about cross-collection synchronization. Its output change — errored
+clusters omitted from CDS — is carried with its own fixture updates so the tree is green at
+every point in the stack.
 
 ## Test Plan
 
@@ -397,6 +422,8 @@ without also reasoning about cross-collection synchronization.
   *not* a readiness barrier.
 - `backend_overlay_test.go`, `backend_validation_test.go` — overlay gathering, deterministic
   ordering, locality-default undo, strict-mode validation of overlay output.
+- `prioritize_test.go` — the CLA is byte-stable across repeated calls in all three priority
+  modes, and localities are emitted in `(region, zone, subzone)` order.
 - `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations.
 - `sharedproto_test.go` — tripwire fires on mutation, skips uncaptured protos, respects the
   flag; `Clone` independence; identity helpers.
@@ -452,20 +479,6 @@ that makes it sound.
 
 ## Open Questions
 
-**`PrioritizeEndpoints` output is not byte-stable, which the delta version and the interning
-both assume.** `prioritizeWithLbInfo` ranges over the `LbEps` locality map and appends to
-`cla.Endpoints` in map order, so identical inputs produce different `Endpoints` orderings
-across calls. A probe over 200 identical calls with 5 localities produced 5 distinct
-`utils.HashProto` values. Consequences: `uccClusterDelta.ClusterVersion` for inline-CLA
-backends churns spuriously, and the PR 5 interning of byte-identical per-client clusters
-degrades to probabilistic. Multi-locality inline-CLA backends are reachable today — a STATIC
-or DNS `ServiceEntry` whose inline endpoints carry `locality:` fields lands in
-`endpointsFromWorkloads` as `eps.Add(workload.Locality, ep)`. The version churn is
-pre-existing (main also hashed the whole cluster including the CLA); the interning dependency
-is new. Sorting the locality keys in `prioritizeWithLbInfo` — or sorting `cla.Endpoints` before
-returning — would fix both, and would let the existing property test drop its `normalizeCLA`
-helper.
-
 **The base clone is unconditional.** `NewPerClientEnvoyClusters` does
 `perClientBase.Cluster = b.Cluster.Clone()` once per backend per recompute, before knowing
 whether any client will materialize a delta — and `ApplyPerClient` clones again from that copy
@@ -515,13 +528,6 @@ over every client calling `ApplyPerClient` and re-hashes the client set. Per-pai
 small and retained state is sparse, but the `O(N*M)` event fan-out remains — the same as
 before this EP. Narrowing it is a separate change.
 
-**PR 2 of the stack is red on its own.** #14600 changes which clusters the golden helper emits
-but leaves the seven affected fixtures for #14601, so `pkg/kgateway/translator/gateway` fails
-on #14600 (`TestBasic/Priority_groups_backend_with_non-static_member_reports_error`,
-`TestBasic/Backend_TLS_Policy_with_terminated_TLSRoute_invalid_CA`, and five
-`TestValidation/*/backendconfigpolicy/*` cases). Either the fixtures move into #14600 or the
-two PRs must merge as a unit; as stacked, `main` is briefly broken and bisect is poisoned.
-
 **`ASSERT_SHARED_PROTO_IMMUTABILITY` is unconditional in conformance CI.** The tripwire adds a
 full deterministic marshal per resource per snapshot rebuild in every conformance and e2e run.
 The suites are green today, but unlike `ordered-ads` there is no action input to turn it off,
@@ -535,6 +541,12 @@ would silently build a duplicate collection. Constructing it inside
 but PR 6 changes the field's type and gives its equality a real justification
 (`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
 that reason rather than remaining on the legacy-gap list.
+
+**`normalizeCLA` in the property test is now redundant.** It exists to sort
+`ClusterLoadAssignment.Endpoints` before `proto.Equal` because
+`PrioritizeEndpoints` used to emit them in map order. Now that the order is canonical, it and
+its `localityKey` helper can go, and the comment explaining why they are needed is no longer
+true.
 
 **Deep-cloning in `PoliciesFor`.** The editor deep-copies attachment metadata (`PolicyRef`,
 `Errors`, `MergeOrigins`) on every call, on a path that runs per client per backend, for
