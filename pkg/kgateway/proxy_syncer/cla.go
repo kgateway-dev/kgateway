@@ -21,8 +21,12 @@ import (
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
 	// Endpoints is wrapped so consumers cannot mutate the CLA interned across
-	// every UCC that resolved identically; see package sharedproto.
-	// +krtEqualsTodo compare load assignments when equality matters
+	// every UCC that resolved identically; see package sharedproto. Content
+	// equality is carried by EndpointsHash, which combines the resolved endpoint
+	// content, the endpoint plugins' contributions, and the load-balancing
+	// context — exactly the inputs BuildClusterLoadAssignment reads — so the two
+	// fields cannot disagree.
+	// +noKrtEquals EndpointsHash is a content hash over the same inputs
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
 	endpointsName string

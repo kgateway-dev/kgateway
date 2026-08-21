@@ -55,6 +55,48 @@ type Shared[M proto.Message] struct {
 	hash uint64
 }
 
+// Interner shares immutable protos with equal content. The caller supplies a
+// hash used to select candidates; equal hashes are only a bucket lookup, never
+// proof of equality. This keeps 64-bit hash collisions from making distinct
+// xDS resources alias the same proto.
+//
+// The zero value is ready to use. Intern takes ownership of msg only when it
+// returns a newly wrapped value; when an equal value was already interned, msg
+// is discarded and the existing wrapper is returned.
+type Interner[M proto.Message] struct {
+	byHash map[uint64][]Shared[M]
+}
+
+// Intern returns the existing shared proto whose content equals msg, or wraps
+// and records msg when its bucket contains no equal proto. bucketHash need not
+// be the proto's content hash; Wrap captures the correct tripwire hash when
+// immutability assertions are enabled.
+func (i *Interner[M]) Intern(msg M, bucketHash uint64) Shared[M] {
+	return i.intern(msg, bucketHash, Wrap[M])
+}
+
+// InternPrehashed is Intern for callers whose bucket hash is utils.HashProto(msg).
+// It reuses that hash when arming the immutability tripwire.
+func (i *Interner[M]) InternPrehashed(msg M, contentHash uint64) Shared[M] {
+	return i.intern(msg, contentHash, func(msg M) Shared[M] {
+		return WrapPrehashed(msg, contentHash)
+	})
+}
+
+func (i *Interner[M]) intern(msg M, bucketHash uint64, wrap func(M) Shared[M]) Shared[M] {
+	for _, existing := range i.byHash[bucketHash] {
+		if proto.Equal(existing.msg, msg) {
+			return existing
+		}
+	}
+	shared := wrap(msg)
+	if i.byHash == nil {
+		i.byHash = make(map[uint64][]Shared[M])
+	}
+	i.byHash[bucketHash] = append(i.byHash[bucketHash], shared)
+	return shared
+}
+
 // Wrap takes ownership of msg as a shared, read-only proto. The caller must
 // not retain or mutate msg after wrapping; hand out copies via Clone.
 func Wrap[M proto.Message](msg M) Shared[M] {
