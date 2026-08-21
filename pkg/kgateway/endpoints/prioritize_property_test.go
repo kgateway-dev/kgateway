@@ -159,4 +159,3 @@ func localityKey(lle *envoyendpointv3.LocalityLbEndpoints) string {
 	loc := lle.GetLocality()
 	return fmt.Sprintf("%s/%s/%s/%d", loc.GetRegion(), loc.GetZone(), loc.GetSubZone(), lle.GetPriority())
 }
-
