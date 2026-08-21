@@ -56,4 +56,3 @@ func benchmarkEndpointInputs(endpointCount int) EndpointsInputs {
 	}
 	return EndpointsInputs{EndpointsForBackend: *backendEndpoints}
 }
-

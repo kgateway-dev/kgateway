@@ -234,4 +234,3 @@ func clonePriorityInfo(in *PriorityInfo) *PriorityInfo {
 	}
 	return &out
 }
-
