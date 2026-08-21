@@ -18,40 +18,6 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-<<<<<<< HEAD
-||||||| parent of f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
-type clustersWithErrors struct {
-	// +noKrtEquals
-	clusters envoycache.Resources
-	// +noKrtEquals
-	erroredClusters     []string
-	erroredClustersHash uint64
-	clustersHash        uint64
-	resourceName        string
-}
-
-=======
-// clustersWithErrors is one client's assembled CDS payload plus the clusters that
-// failed to translate for that client. Errored clusters are deliberately kept out of
-// the payload but tracked by name, because a route pointing at one must return a
-// direct response rather than silently falling through to a cluster that isn't there.
-//
-// The two hashes are the equality keys: publishable clusters are versioned by
-// content, errored ones only by name, so an error changing its message does not
-// churn a snapshot Envoy will never see.
-type clustersWithErrors struct {
-	// +noKrtEquals
-	clusters envoycache.Resources
-	// +noKrtEquals
-	erroredClusters     []string
-	erroredClustersHash uint64
-	clustersHash        uint64
-	resourceName        string
-}
-
-// endpointsWithUccName is one client's assembled EDS payload, keyed by client.
-// envoycache.Resources already carries a version, which is the equality key.
->>>>>>> f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
 type endpointsWithUccName struct {
 	endpoints    envoycache.Resources
 	resourceName string
@@ -89,109 +55,11 @@ func snapshotPerClient(
 	clusters PerClientEnvoyClusters,
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
-<<<<<<< HEAD
 	// Per-client CDS payloads are assembled by PerClientEnvoyClusters, one row per
 	// connected client, from the shared bases plus that client's own overlays. The
 	// row is complete by construction, so there is nothing to wait for here beyond
 	// the row itself existing.
 	clusterSnapshot := clusters.perClient
-||||||| parent of f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
-	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
-		clustersForUcc, deferral := clusters.FetchClustersForClient(kctx, ucc)
-		if deferral != deferralNone {
-			// Expected once per connected client per base change while the
-			// deltas collection catches up (see FetchClustersForClient), so
-			// this is Debug. The counter carries the reason; a client that
-			// stays here shows on the deferred-clients gauge.
-			recordClusterDeferral(ucc.ResourceName(), deferral)
-			logger.Debug("no perclient clusters; defer building snapshot",
-				"client", ucc.ResourceName(), "reason", deferral)
-			return nil
-		}
-		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
-
-		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc))
-		var (
-			clustersHash        uint64
-			erroredClustersHash uint64
-			erroredClusters     []string
-		)
-		for _, c := range clustersForUcc {
-			if c.Error != nil {
-				erroredClusters = append(erroredClusters, c.Name)
-				// For errored clusters, we don't want to include the cluster version
-				// in the hash. The cluster version is the hash of the proto. because this cluster
-				// won't be sent to envoy anyway, there's no point trigger updates if it changes from
-				// one error state to a different error state.
-				erroredClustersHash ^= utils.HashString(c.Name)
-				continue
-			}
-			clustersProto = append(clustersProto, c.Cluster.ResourceWithTTL())
-			clustersHash ^= c.ClusterVersion
-		}
-		clustersVersion := strconv.FormatUint(clustersHash, 10)
-
-		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
-
-		return &clustersWithErrors{
-			clusters:            clusterResources,
-			erroredClusters:     erroredClusters,
-			clustersHash:        clustersHash,
-			erroredClustersHash: erroredClustersHash,
-			resourceName:        ucc.ResourceName(),
-		}
-	}, krtopts.ToOptions("ClusterResources")...)
-	trackDeferredClients(uccCol, clusterSnapshot)
-=======
-	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
-		clustersForUcc, deferral := clusters.FetchClustersForClient(kctx, ucc)
-		if deferral != deferralNone {
-			// Expected once per connected client per base change while the
-			// deltas collection catches up (see FetchClustersForClient), so
-			// this is Debug. The counter carries the reason; a client that
-			// stays here shows on the deferred-clients gauge.
-			recordClusterDeferral(ucc.ResourceName(), deferral)
-			logger.Debug("no perclient clusters; defer building snapshot",
-				"client", ucc.ResourceName(), "reason", deferral)
-			return nil
-		}
-		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
-
-		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc))
-		var (
-			clustersHash        uint64
-			erroredClustersHash uint64
-			erroredClusters     []string
-		)
-		for _, c := range clustersForUcc {
-			if c.Error != nil {
-				erroredClusters = append(erroredClusters, c.Name)
-				// For errored clusters, we don't want to include the cluster version
-				// in the hash. The cluster version is the hash of the proto. because this cluster
-				// won't be sent to envoy anyway, there's no point trigger updates if it changes from
-				// one error state to a different error state.
-				erroredClustersHash ^= utils.HashString(c.Name)
-				continue
-			}
-			// ResourceWithTTL is the only exit for the shared proto; it runs
-			// the mutation tripwire when armed. See package sharedproto.
-			clustersProto = append(clustersProto, c.Cluster.ResourceWithTTL())
-			clustersHash ^= c.ClusterVersion
-		}
-		clustersVersion := strconv.FormatUint(clustersHash, 10)
-
-		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
-
-		return &clustersWithErrors{
-			clusters:            clusterResources,
-			erroredClusters:     erroredClusters,
-			clustersHash:        clustersHash,
-			erroredClustersHash: erroredClustersHash,
-			resourceName:        ucc.ResourceName(),
-		}
-	}, krtopts.ToOptions("ClusterResources")...)
-	trackDeferredClients(uccCol, clusterSnapshot)
->>>>>>> f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
 
 	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)

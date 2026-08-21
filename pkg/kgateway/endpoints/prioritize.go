@@ -32,31 +32,10 @@ func PrioritizeEndpoints(
 	ucc ir.UniquelyConnectedClient,
 	inputs EndpointsInputs,
 ) *envoyendpointv3.ClusterLoadAssignment {
-<<<<<<< HEAD
-	lbInfo := LoadBalancingInfo{
-		PodLabels:    ucc.Labels,
-		PodLocality:  ucc.Locality,
-		PriorityInfo: ResolvedPriorityInfo(inputs),
-	}
-||||||| parent of f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
-	lbInfo := LoadBalancingInfo{
-		PodLabels:   ucc.Labels,
-		PodLocality: ucc.Locality,
-	}
-
-	if inputs.PriorityInfo == nil {
-		lbInfo.PriorityInfo = priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
-	} else {
-		lbInfo.PriorityInfo = inputs.PriorityInfo
-	}
-
-=======
 	lbInfo := loadBalancingInfoFor(ucc, inputs)
->>>>>>> f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
 	return prioritizeWithLbInfo(logger, inputs.EndpointsForBackend, lbInfo)
 }
 
-<<<<<<< HEAD
 // ResolvedPriorityInfo returns the priority configuration PrioritizeEndpoints
 // will apply to inputs: an explicit PriorityInfo set by an endpoint plugin, or
 // else the one implied by the backend's traffic distribution. Nil means the
@@ -79,8 +58,6 @@ func DependsOnClient(inputs EndpointsInputs) bool {
 	return ResolvedPriorityInfo(inputs) != nil
 }
 
-||||||| parent of f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
-=======
 // LoadBalancingContextHash returns a hash of exactly the UCC-dependent inputs
 // that influence PrioritizeEndpoints' output, so callers can dedup the CLAs they
 // build: two UCCs with the same hash produce identical ClusterLoadAssignments for
@@ -116,7 +93,6 @@ func LoadBalancingContextHash(ucc ir.UniquelyConnectedClient, inputs EndpointsIn
 	return hasher.Sum64()
 }
 
->>>>>>> f438ddbfa7 (proxy_syncer: intern equivalent per-client CLAs)
 type LoadBalancingInfo struct {
 	// pod info:
 
@@ -130,17 +106,11 @@ type LoadBalancingInfo struct {
 }
 
 func loadBalancingInfoFor(ucc ir.UniquelyConnectedClient, inputs EndpointsInputs) LoadBalancingInfo {
-	lbInfo := LoadBalancingInfo{
-		PodLabels:   ucc.Labels,
-		PodLocality: ucc.Locality,
+	return LoadBalancingInfo{
+		PodLabels:    ucc.Labels,
+		PodLocality:  ucc.Locality,
+		PriorityInfo: ResolvedPriorityInfo(inputs),
 	}
-
-	if inputs.PriorityInfo == nil {
-		lbInfo.PriorityInfo = priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
-	} else {
-		lbInfo.PriorityInfo = inputs.PriorityInfo
-	}
-	return lbInfo
 }
 
 type PriorityInfo struct {
