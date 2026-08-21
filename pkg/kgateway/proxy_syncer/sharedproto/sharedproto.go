@@ -125,4 +125,3 @@ func resourceLabel(m proto.Message) string {
 	}
 	return "<unnamed>"
 }
-

@@ -89,4 +89,3 @@ func TestIsNil(t *testing.T) {
 	require.True(t, Wrap[*envoyclusterv3.Cluster](nil).IsNil(), "wrapped typed-nil is nil")
 	require.False(t, Wrap(&envoyclusterv3.Cluster{}).IsNil())
 }
-

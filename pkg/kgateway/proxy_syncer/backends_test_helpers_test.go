@@ -106,4 +106,3 @@ func newTestPerClientClusters(initial []uccWithCluster) (PerClientEnvoyClusters,
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	return pcc, &testClusterCols{bases: baseCol, deltas: deltaCol, clients: clientCol}
 }
-

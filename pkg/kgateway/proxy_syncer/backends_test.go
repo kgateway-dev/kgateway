@@ -193,4 +193,3 @@ func lbEndpointPipe(path string) *envoyendpointv3.LbEndpoint {
 		},
 	}
 }
-
