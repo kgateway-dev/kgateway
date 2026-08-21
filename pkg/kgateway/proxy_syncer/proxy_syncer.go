@@ -321,7 +321,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	}
 	backendContributions := backendStatusContributions(
 		kgwBackendCol,
-		clustersPerClient.StatusClusters(krtopts),
+		clustersPerClient.StatusClusters(),
 		kgwBackendExtraConditions,
 		krtopts,
 	)

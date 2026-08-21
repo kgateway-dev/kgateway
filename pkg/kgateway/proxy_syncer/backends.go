@@ -166,7 +166,17 @@ func fingerprintClients(clients []ir.UniquelyConnectedClient) clientSetFingerpri
 // requiring every backend to agree on the latest fleet-wide generation.
 type clientInputSnapshot struct {
 	Fingerprint clientSetFingerprint
-	Clients     []ir.UniquelyConnectedClient
+	// generation identifies this snapshot among those the interner has produced.
+	// It exists because Fingerprint alone is not safe to compare for equality:
+	// a delta set whose stored snapshot does not contain the requesting client
+	// withholds that client's CDS, and nothing re-triggers the transform once
+	// KRT has decided the row is unchanged. Two colliding fingerprints would
+	// therefore blackhole a client permanently. The interner only assigns a new
+	// generation after a full membership check, so equal generations mean the
+	// same client set, not merely the same hash.
+	// +noKrtEquals compared instead of, and more strictly than, Fingerprint
+	generation uint64
+	Clients    []ir.UniquelyConnectedClient
 	// byName is derived from Clients and is immutable after construction.
 	// +noKrtEquals
 	byName map[string]ir.UniquelyConnectedClient
@@ -231,6 +241,10 @@ func (s clientInputSnapshot) ContainsCurrent(client ir.UniquelyConnectedClient) 
 type clientInputSnapshotInterner struct {
 	mu     sync.Mutex
 	latest *clientInputSnapshot
+	// generations numbers the distinct client sets this interner has seen, so a
+	// stored snapshot can be compared by identity rather than by hash. See
+	// clientInputSnapshot.generation.
+	generations uint64
 }
 
 func (i *clientInputSnapshotInterner) intern(clients []ir.UniquelyConnectedClient) clientInputSnapshot {
@@ -240,7 +254,12 @@ func (i *clientInputSnapshotInterner) intern(clients []ir.UniquelyConnectedClien
 	if i.latest != nil && i.latest.Fingerprint == fingerprint && i.latest.matches(clients) {
 		return *i.latest
 	}
+	// matches() above ruled out an equal client set, so this really is a new
+	// one. Numbering it here — behind the same membership check — is what makes
+	// generation equality stronger than fingerprint equality downstream.
+	i.generations++
 	snapshot := newClientInputSnapshotWithFingerprint(clients, fingerprint)
+	snapshot.generation = i.generations
 	i.latest = &snapshot
 	return snapshot
 }
@@ -258,8 +277,10 @@ type backendClusterDeltaSet struct {
 	// materialized delta already proves that exact client was evaluated.
 	ClientsFingerprint clientSetFingerprint
 	// ResolvedClients is the exact immutable UCC snapshot consumed while Deltas
-	// was built. Its content equality is represented by ClientsFingerprint.
-	// +noKrtEquals
+	// was built. Equals compares its generation, which is stronger than
+	// ClientsFingerprint: the fingerprint is a hash, and a stale snapshot here
+	// withholds a client's CDS with nothing left to re-trigger the transform.
+	// +noKrtEquals generation is compared directly in Equals
 	ResolvedClients clientInputSnapshot
 	// Deltas contains only clients whose cluster genuinely differs from base.
 	// +noKrtEquals
@@ -310,6 +331,10 @@ func (d backendClusterDeltaSet) Equals(in backendClusterDeltaSet) bool {
 	if d.Name != in.Name ||
 		d.BaseFingerprint != in.BaseFingerprint ||
 		d.ClientsFingerprint != in.ClientsFingerprint ||
+		// Snapshot identity, not just its hash: see clientInputSnapshot.generation
+		// for why a fingerprint collision here would be unrecoverable. Rows built
+		// by hand (tests) carry generation 0 and fall back to the fingerprint.
+		d.ResolvedClients.generation != in.ResolvedClients.generation ||
 		len(d.Deltas) != len(in.Deltas) {
 		return false
 	}
@@ -415,6 +440,10 @@ type PerClientEnvoyClusters struct {
 	base    krt.Collection[baseEnvoyCluster]
 	deltas  krt.Collection[backendClusterDeltaSet]
 	clients krt.Collection[ir.UniquelyConnectedClient]
+	// status is built once by the constructor. Deriving it on demand instead
+	// would let a second caller stand up a duplicate collection over the same
+	// inputs, which KRT has no way to flag.
+	status krt.Collection[uccWithCluster]
 }
 
 // HasSynced reports whether both the base and delta collections have synced.
@@ -532,7 +561,14 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 	return out
 }
 
-// StatusClusters is the cluster view needed for fleet-wide Backend status
+// StatusClusters returns the status projection built by
+// [NewPerClientEnvoyClusters]; see newStatusClusters for what it contains. The
+// zero PerClientEnvoyClusters has none.
+func (iu *PerClientEnvoyClusters) StatusClusters() krt.Collection[uccWithCluster] {
+	return iu.status
+}
+
+// newStatusClusters builds the cluster view needed for fleet-wide Backend status
 // attribution: one row per base cluster (carrying the source Backend identity and
 // any UCC-invariant translation error) plus one row per errored per-client delta
 // (carrying the per-client translation error attributed to the same Backend). Only
@@ -550,11 +586,15 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 // resolved-client snapshot is deliberately not re-checked here. A delta set whose
 // inputs moved is recomputed anyway (ClientsFingerprint participates in its Equals),
 // so at worst a departed client's error lingers for one propagation.
-func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt.Collection[uccWithCluster] {
-	if iu.base == nil {
+func newStatusClusters(
+	krtopts krtutil.KrtOptions,
+	base krt.Collection[baseEnvoyCluster],
+	deltas krt.Collection[backendClusterDeltaSet],
+) krt.Collection[uccWithCluster] {
+	if base == nil {
 		return krt.NewStaticCollection[uccWithCluster](nil, nil, krtopts.ToOptions("BackendStatusClusters")...)
 	}
-	return krt.NewManyCollection(iu.base, func(kctx krt.HandlerContext, b baseEnvoyCluster) []uccWithCluster {
+	return krt.NewManyCollection(base, func(kctx krt.HandlerContext, b baseEnvoyCluster) []uccWithCluster {
 		// The base row carries the zero UCC, whose ResourceName is empty; a connected
 		// client's never is, so base and delta rows cannot collide on the KRT key.
 		out := []uccWithCluster{{
@@ -563,12 +603,12 @@ func (iu *PerClientEnvoyClusters) StatusClusters(krtopts krtutil.KrtOptions) krt
 			BackendSource:     b.BackendSource,
 			BackendGeneration: b.BackendGeneration,
 		}}
-		if iu.deltas == nil {
+		if deltas == nil {
 			return out
 		}
 		// The delta set's KRT key is its backend's cluster name, so a keyed FetchOne
 		// is both the narrowest dependency and cheaper than a secondary index.
-		set := krt.FetchOne(kctx, iu.deltas, krt.FilterKey(b.Name))
+		set := krt.FetchOne(kctx, deltas, krt.FilterKey(b.Name))
 		if set == nil || set.BaseFingerprint != b.Fingerprint {
 			return out
 		}
@@ -625,9 +665,24 @@ func NewPerClientEnvoyClusters(
 		if baseRes == nil {
 			return nil
 		}
+		name := baseRes.Cluster.GetName()
+		if name != backendObj.ClusterName() {
+			// The delta transform finds this row by the backend's memoized
+			// ClusterName, and FetchClustersForClient withholds a client's
+			// entire CDS for any base that has no matching delta set. A renamed
+			// cluster would therefore blackhole every connected client
+			// permanently, with no event able to recover it. Nothing in tree
+			// renames the cluster (initializeCluster and buildBlackholeCluster
+			// both take the name from ClusterName, and no plugin reassigns it);
+			// if that changes, drop this one backend loudly rather than the
+			// whole fleet silently.
+			logger.Error("backend translation renamed the cluster; dropping the backend",
+				"backend", backendObj.ResourceName(),
+				"expected", backendObj.ClusterName(), "got", name)
+			return nil
+		}
 		clusterVersion := baseClusterVersion(backendObj, baseRes)
 		needsInlineCLA := baseRes.NeedsInlineCLA()
-		name := baseRes.Cluster.GetName()
 		sharedCluster := sharedproto.Wrap(baseRes.Cluster)
 		// Seal the only retained raw alias. Per-client processing reconstructs a
 		// temporary BaseCluster whose Cluster is cloned from sharedCluster.
@@ -742,5 +797,6 @@ func NewPerClientEnvoyClusters(
 		base:    base,
 		deltas:  deltas,
 		clients: uccs,
+		status:  newStatusClusters(krtopts, base, deltas),
 	}
 }
