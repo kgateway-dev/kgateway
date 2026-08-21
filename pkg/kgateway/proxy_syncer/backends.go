@@ -681,14 +681,16 @@ func NewPerClientEnvoyClusters(
 			// variation possible. The empty set explicitly records resolution.
 			return set
 		}
-		// One clone for the whole client loop, not one per client. ApplyPerClient
-		// only reads this proto — it clones internally before letting an overlay
-		// touch it — so the copy exists solely to unseal the shared base, which is
-		// a per-backend concern. Cloning per client would restore the O(backends *
-		// clients) deep copy that the base/overlay split exists to remove, and pay
-		// it on the dominant path where ApplyPerClient returns nil untouched.
+		// Lend ApplyPerClient the shared base proto rather than a copy of it. It
+		// only reads this proto, and clones internally before letting an overlay
+		// touch one, so it already performs the single clone a materialized delta
+		// needs — and none at all on the dominant path where it returns nil
+		// untouched. Cloning here to produce the *Cluster it takes would add a
+		// per-backend deep copy on every recompute whose only purpose is to unseal
+		// the base, which measures on the same order as the whole translation it
+		// feeds. EndpointInputs, one field over, is already shared this way.
 		perClientBase := *b.Base
-		perClientBase.Cluster = b.Cluster.Clone()
+		perClientBase.Cluster = b.Cluster.BorrowForRead()
 		for _, ucc := range clientSnapshot.Clients {
 			perClient, err := translator.ApplyPerClient(kctx, ctx, ucc, backendObj, &perClientBase)
 			if err != nil {

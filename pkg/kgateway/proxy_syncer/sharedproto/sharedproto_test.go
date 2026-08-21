@@ -72,6 +72,24 @@ func TestCloneIsIndependent(t *testing.T) {
 	assert.Nil(t, cluster.GetOutlierDetection())
 }
 
+func TestBorrowForReadAliasesAndStaysCovered(t *testing.T) {
+	withAssertions(t, true)
+	cluster := &envoyclusterv3.Cluster{Name: "shared"}
+	s := Wrap(cluster)
+
+	borrowed := s.BorrowForRead()
+	require.Same(t, cluster, borrowed,
+		"BorrowForRead must lend the shared proto, not a copy — avoiding the copy is the point")
+	require.NotPanics(t, func() { s.ResourceWithTTL() },
+		"reading through a borrow must leave the proto verifiable")
+
+	// A borrower that breaks its contract is not silent: the borrowed pointer is
+	// the one ResourceWithTTL publishes, so the tripwire still catches it.
+	borrowed.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+	require.Panics(t, func() { s.ResourceWithTTL() },
+		"mutating a borrowed proto must trip the assertion")
+}
+
 func TestIdentityHelpers(t *testing.T) {
 	a := &envoyclusterv3.Cluster{Name: "a"}
 	b := &envoyclusterv3.Cluster{Name: "a"} // equal content, distinct instance

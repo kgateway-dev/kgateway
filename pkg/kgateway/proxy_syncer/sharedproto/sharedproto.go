@@ -5,13 +5,19 @@
 // corrupts every sibling client's snapshot plus the copy stored in KRT, and is
 // invisible to KRT equality because version hashes are computed at store time.
 //
-// Shared[M] holds the proto in an unexported field of this package, so
-// consumer code in proxy_syncer cannot reach the pointer at all: the only ways
-// out are ResourceWithTTL (which hands it to the envoycache snapshot, the one
-// legitimate sink, verifying the tripwire on the way) and Clone (the one
-// legitimate mutation path). The remaining seam is deliberate and greppable: a
-// caller can type-assert ResourceWithTTL().Resource back to the concrete
-// proto, but cannot do so by accident.
+// Shared[M] holds the proto in an unexported field of this package, so consumer
+// code in proxy_syncer cannot reach the pointer by accident. There are three
+// ways out, each named for what it permits:
+//
+//   - ResourceWithTTL hands it to the envoycache snapshot, the one legitimate
+//     sink, verifying the tripwire on the way.
+//   - Clone is the one legitimate mutation path.
+//   - BorrowForRead lends the pointer to code that only reads it, for callers
+//     that would otherwise clone just to satisfy a *M parameter.
+//
+// The remaining seam is deliberate and greppable: a caller can type-assert
+// ResourceWithTTL().Resource back to the concrete proto, but cannot do so by
+// accident.
 package sharedproto
 
 import (
@@ -80,6 +86,23 @@ func (s Shared[M]) IsNil() bool {
 // way to derive a mutable proto from a shared one.
 func (s Shared[M]) Clone() M {
 	return proto.Clone(s.msg).(M)
+}
+
+// BorrowForRead lends the shared proto to a caller that only reads it. The
+// borrower MUST NOT mutate it, transitively or otherwise, and MUST NOT retain
+// it past the call it was borrowed for; use Clone for anything else.
+//
+// This exists so that read-only code taking a plain *M does not have to be
+// handed a defensive copy. Cloning to satisfy a signature is not free: the
+// clone is a full deep copy of a proto that is often only read and discarded,
+// which on the per-client cluster path is a per-backend cost paid on every
+// recompute, dominated by the case where nothing is mutated at all.
+//
+// A mutation through a borrow is not silent: the borrowed proto is the same one
+// ResourceWithTTL publishes, so the tripwire catches it wherever
+// AssertImmutability is armed (see the note there for where that is).
+func (s Shared[M]) BorrowForRead() M {
+	return s.msg
 }
 
 // ResourceWithTTL hands the shared proto to the envoycache snapshot — the one

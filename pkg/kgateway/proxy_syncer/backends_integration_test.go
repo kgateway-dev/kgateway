@@ -101,6 +101,14 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 
 	assert.False(t, sharedproto.Same(gotA[0].Cluster, gotB[0].Cluster),
 		"the sparse-correctness layer must not depend on delta interning")
+
+	// The delta transform lends the base proto to ApplyPerClient rather than
+	// handing it a defensive copy, so the overlay pass above ran against the
+	// very proto the declined client is served. Publishing it through the
+	// snapshot sink re-verifies its wrap-time hash (TestMain arms the tripwire),
+	// which fails if anything on that path mutated the borrowed base.
+	require.NotPanics(t, func() { gotOther[0].Cluster.ResourceWithTTL() },
+		"the shared base must survive the per-client overlay pass unmutated")
 }
 
 // TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesDeltas covers
