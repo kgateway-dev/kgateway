@@ -3,6 +3,8 @@ package trafficpolicy
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
@@ -58,6 +60,15 @@ func (a *apiKeyAuthIR) Validate() error {
 		return nil
 	}
 	return a.config.Validate()
+}
+
+// parsedAPIKey is one credential paired with the Secret it came from, so that duplicate
+// reporting can name the source without echoing the key value.
+type parsedAPIKey struct {
+	client string
+	key    string
+	// secret is the "namespace/name" of the Secret the credential was read from.
+	secret string
 }
 
 // constructAPIKeyAuth translates the API key authentication spec into an Envoy API key auth per-route configuration
@@ -117,10 +128,8 @@ func constructAPIKeyAuth(
 		return errors.New("either secretRef or secretSelector must be specified")
 	}
 
-	// Parse secrets and build credentials
-	var credentials []*envoyapikeyauthv3.Credential
-	var errs []error
-
+	// Parse secrets into credentials, then de-duplicate before emitting.
+	var parsed []parsedAPIKey
 	for _, secret := range secrets {
 		for keyName, keyValue := range secret.Data {
 			// Skip empty values
@@ -130,21 +139,17 @@ func constructAPIKeyAuth(
 
 			// The value is expected to be a plain string representing the API key
 			// The secret key name becomes the client identifier
-			apiKey := string(keyValue)
-			if apiKey == "" {
-				errs = append(errs, fmt.Errorf("secret %s key %s has empty API key value", secret.ObjectSource.Name, keyName))
-				continue
-			}
-
-			credentials = append(credentials, &envoyapikeyauthv3.Credential{
-				Key:    apiKey,
-				Client: keyName,
+			parsed = append(parsed, parsedAPIKey{
+				client: keyName,
+				key:    string(keyValue),
+				secret: secret.ObjectSource.Namespace + "/" + secret.ObjectSource.Name,
 			})
 		}
 	}
 
+	credentials, errs := dedupeAPIKeyCredentials(parsed, policy.Namespace+"/"+policy.Name)
 	if len(errs) > 0 {
-		return fmt.Errorf("errors processing API key secrets: %v", errs)
+		return fmt.Errorf("errors processing API key secrets: %w", errors.Join(errs...))
 	}
 
 	if len(credentials) == 0 {
@@ -206,6 +211,71 @@ func constructAPIKeyAuth(
 	}
 
 	return nil
+}
+
+// dedupeAPIKeyCredentials orders the parsed credentials and collapses duplicate key values.
+//
+// Envoy requires credential keys to be unique within a single ApiKeyAuth config
+// (source/extensions/filters/http/api_key_auth/api_key_auth.h) and NACKs the RouteConfiguration
+// that carries a repeated one. Because ApiKeyAuthPerRoute rides in typed_per_filter_config, that
+// rejection takes the whole RouteConfiguration with it and freezes config delivery for the entire
+// listener, while the policy and the route both keep reporting Accepted. The uniqueness rule is
+// knowable here, so never emit a list that violates it.
+//
+// Two duplicates are not the same mistake:
+//   - The same client with the same key is the same credential listed twice, which is what a Secret
+//     copied to a second namespace looks like once both copies are selected. Dropping the repeat is
+//     a no-op, so do it quietly.
+//   - Two clients sharing a key value is ambiguous. The client name is forwarded as the client id
+//     header and recorded in auth metadata, so keeping one of them silently would be picking an
+//     identity on an authn path. Report it: the caller turns that into Accepted=False on the policy
+//     and a 500 on the affected route, which is a smaller blast radius than a frozen listener.
+func dedupeAPIKeyCredentials(parsed []parsedAPIKey, policyRef string) ([]*envoyapikeyauthv3.Credential, []error) {
+	// Secret.Data is a map and neither GetSecretsBySelector nor krt.Fetch define an order, so sort
+	// before emitting. An unstable credential order makes apiKeyAuthIR.Equals report a change on
+	// every recompute, and it would make which duplicate survives, and which one is named in the
+	// error below, vary between translations of identical input.
+	slices.SortFunc(parsed, func(a, b parsedAPIKey) int {
+		if c := strings.Compare(a.client, b.client); c != 0 {
+			return c
+		}
+		if c := strings.Compare(a.key, b.key); c != 0 {
+			return c
+		}
+		return strings.Compare(a.secret, b.secret)
+	})
+
+	credentials := make([]*envoyapikeyauthv3.Credential, 0, len(parsed))
+	seen := make(map[string]parsedAPIKey, len(parsed))
+	var errs []error
+	for _, c := range parsed {
+		prev, dup := seen[c.key]
+		if !dup {
+			seen[c.key] = c
+			credentials = append(credentials, &envoyapikeyauthv3.Credential{
+				Key:    c.key,
+				Client: c.client,
+			})
+			continue
+		}
+
+		if prev.client == c.client {
+			logger.Debug("dropping duplicate api key credential",
+				"policy", policyRef,
+				"client", c.client,
+				"secret", c.secret,
+				"duplicate_of", prev.secret,
+			)
+			continue
+		}
+
+		// This message reaches policy status, so it must never contain the key value itself.
+		errs = append(errs, fmt.Errorf(
+			"duplicate API key value shared by client %q in secret %s and client %q in secret %s",
+			prev.client, prev.secret, c.client, c.secret))
+	}
+
+	return credentials, errs
 }
 
 // handleAPIKeyAuth configures the API key auth filter and per-route API key auth configuration.

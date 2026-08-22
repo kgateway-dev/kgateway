@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -447,4 +449,138 @@ func TestAPIKeyAuthPolicyPlugin(t *testing.T) {
 		assert.NotEmpty(t, pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName])
 		assert.NotContains(t, fmt.Sprintf("%s", pCtx.TypedFilterConfig[APIKeyAuthEnabledFilterName]), AuthSucceededMetadataKey, "api_key_auth_enabled must not set dynamic metadata if the policy is disabled at the route level")
 	})
+}
+
+func TestDedupeAPIKeyCredentials(t *testing.T) {
+	const policyRef = "app/apikey"
+	// A value distinctive enough that finding it anywhere in an error message is proof of a leak.
+	const apiKeyValue = "k-le4k-canary-1111" //nolint:gosec // G101: a test fixture, not a credential
+
+	cred := func(client, key string) *envoyapikeyauthv3.Credential {
+		return &envoyapikeyauthv3.Credential{Client: client, Key: key}
+	}
+
+	tests := []struct {
+		name     string
+		parsed   []parsedAPIKey
+		expected []*envoyapikeyauthv3.Credential
+		// errContains are substrings every returned error message together must cover.
+		errContains []string
+		errCount    int
+	}{
+		{
+			name: "distinct credentials are all emitted, ordered by client",
+			parsed: []parsedAPIKey{
+				{client: "client2", key: "key-2", secret: "app/keys"},
+				{client: "client1", key: "key-1", secret: "app/keys"},
+			},
+			expected: []*envoyapikeyauthv3.Credential{
+				cred("client1", "key-1"),
+				cred("client2", "key-2"),
+			},
+		},
+		{
+			name: "one client may hold several distinct keys",
+			parsed: []parsedAPIKey{
+				{client: "client1", key: "key-b", secret: "app/keys"},
+				{client: "client1", key: "key-a", secret: "app/keys"},
+			},
+			expected: []*envoyapikeyauthv3.Credential{
+				cred("client1", "key-a"),
+				cred("client1", "key-b"),
+			},
+		},
+		{
+			name: "the same credential in two secrets is collapsed without an error",
+			parsed: []parsedAPIKey{
+				{client: "client1", key: "key-1", secret: "gateway-system/keys"},
+				{client: "client1", key: "key-1", secret: "app/keys"},
+				{client: "client2", key: "key-2", secret: "app/keys"},
+			},
+			expected: []*envoyapikeyauthv3.Credential{
+				cred("client1", "key-1"),
+				cred("client2", "key-2"),
+			},
+		},
+		{
+			name: "two clients sharing a key value is reported",
+			parsed: []parsedAPIKey{
+				{client: "client2", key: apiKeyValue, secret: "app/keys-b"},
+				{client: "client1", key: apiKeyValue, secret: "app/keys-a"},
+			},
+			// Only the first of the conflicting pair survives, so the emitted list still
+			// satisfies Envoy's uniqueness rule even though the caller discards it.
+			expected: []*envoyapikeyauthv3.Credential{
+				cred("client1", apiKeyValue),
+			},
+			errCount:    1,
+			errContains: []string{`client "client1" in secret app/keys-a`, `client "client2" in secret app/keys-b`},
+		},
+		{
+			name: "every conflicting client is reported",
+			parsed: []parsedAPIKey{
+				{client: "client1", key: apiKeyValue, secret: "app/keys-a"},
+				{client: "client2", key: apiKeyValue, secret: "app/keys-b"},
+				{client: "client3", key: apiKeyValue, secret: "app/keys-c"},
+			},
+			expected: []*envoyapikeyauthv3.Credential{
+				cred("client1", apiKeyValue),
+			},
+			errCount:    2,
+			errContains: []string{`"client2"`, `"client3"`},
+		},
+		{
+			name:     "no credentials",
+			parsed:   nil,
+			expected: []*envoyapikeyauthv3.Credential{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			credentials, errs := dedupeAPIKeyCredentials(tt.parsed, policyRef)
+
+			require.Len(t, errs, tt.errCount)
+			joined := errors.Join(errs...)
+			for _, want := range tt.errContains {
+				require.ErrorContains(t, joined, want)
+			}
+			if tt.errCount > 0 {
+				// The message is copied verbatim into policy status, which is far more
+				// readable and more widely replicated than a log line.
+				assert.NotContains(t, joined.Error(), apiKeyValue, "error message must not contain the api key value")
+			}
+
+			require.Len(t, credentials, len(tt.expected))
+			for i, want := range tt.expected {
+				assert.True(t, proto.Equal(want, credentials[i]), "credential %d: want %v, got %v", i, want, credentials[i])
+			}
+		})
+	}
+}
+
+// TestDedupeAPIKeyCredentialsIsOrderIndependent guards the KRT contract: Secret.Data is a map
+// and the secret fetch is unordered, so the same inputs reaching the loop in a different order
+// must still produce byte-identical config. Otherwise apiKeyAuthIR.Equals reports a change on
+// every recompute and the gateway is pushed config it already has.
+func TestDedupeAPIKeyCredentialsIsOrderIndependent(t *testing.T) {
+	base := []parsedAPIKey{
+		{client: "client1", key: "key-1", secret: "app/keys-a"},
+		{client: "client2", key: "key-2", secret: "app/keys-b"},
+		{client: "client1", key: "key-1", secret: "gateway-system/keys-a"},
+		{client: "client3", key: "key-3", secret: "app/keys-c"},
+	}
+
+	want, errs := dedupeAPIKeyCredentials(base, "app/apikey")
+	require.Empty(t, errs)
+	wantCfg := &envoyapikeyauthv3.ApiKeyAuthPerRoute{Credentials: want}
+
+	// Every rotation of the input is a plausible map iteration order.
+	for i := range base {
+		rotated := append(append([]parsedAPIKey{}, base[i:]...), base[:i]...)
+		got, errs := dedupeAPIKeyCredentials(rotated, "app/apikey")
+		require.Empty(t, errs)
+		gotCfg := &envoyapikeyauthv3.ApiKeyAuthPerRoute{Credentials: got}
+		assert.True(t, proto.Equal(wantCfg, gotCfg), "rotation by %d produced a different config: %v", i, got)
+	}
 }
