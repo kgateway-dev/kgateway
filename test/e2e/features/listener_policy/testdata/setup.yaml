@@ -44,7 +44,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
+      image: curlimages/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
@@ -74,7 +74,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
+      image: curlimages/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
