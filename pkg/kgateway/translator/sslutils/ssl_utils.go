@@ -67,6 +67,22 @@ var (
 		return fmt.Errorf("invalid ca.crt kind %s in %s/%s: %w", kind, ns, n, ErrInvalidCACertificateKind)
 	}
 	ErrMissingCaCertificateRefGrant = errors.New("missing CA certificate reference grant")
+
+	// validSignatureAlgorithms is the set of signature algorithms supported by Envoy/BoringSSL
+	validSignatureAlgorithms = map[string]struct{}{
+		"rsa_pkcs1_sha256":    {},
+		"rsa_pkcs1_sha384":    {},
+		"rsa_pkcs1_sha512":    {},
+		"ecdsa_secp256r1_sha256": {},
+		"ecdsa_secp384r1_sha384": {},
+		"ecdsa_secp521r1_sha512": {},
+		"rsa_pss_rsae_sha256": {},
+		"rsa_pss_rsae_sha384": {},
+		"rsa_pss_rsae_sha512": {},
+		"ed25519":             {},
+		"rsa_pkcs1_sha1":      {},
+		"ecdsa_sha1":          {},
+	}
 )
 
 // ValidateTlsSecret and return a cleaned cert
@@ -175,11 +191,25 @@ func ApplyEcdhCurves(in string, out *ir.TLSConfig) error {
 
 func ApplySignatureAlgorithms(in string, out *ir.TLSConfig) error {
 	signatureAlgorithms := strings.Split(in, ",")
-	for i, suite := range signatureAlgorithms {
-		signatureAlgorithms[i] = strings.TrimSpace(suite)
+
+	var errs error
+	var validAlgorithms []string
+	for _, suite := range signatureAlgorithms {
+		trimmed := strings.TrimSpace(suite)
+		// Skip empty entries (from trailing commas or multiple consecutive commas)
+		if trimmed == "" {
+			continue
+		}
+		// Validate against known signature algorithms
+		if _, ok := validSignatureAlgorithms[trimmed]; !ok {
+			errs = errors.Join(errs, fmt.Errorf("invalid signature algorithm: %s", trimmed))
+			continue
+		}
+		validAlgorithms = append(validAlgorithms, trimmed)
 	}
-	out.SignatureAlgorithms = signatureAlgorithms
-	return nil
+
+	out.SignatureAlgorithms = validAlgorithms
+	return errs
 }
 
 func ApplyAlpnProtocols(in string, out *ir.TLSConfig) error {
