@@ -120,9 +120,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha255",
 			},
-			out: &ir.TLSConfig{
-				SignatureAlgorithms: []string{},
-			},
+			out: &ir.TLSConfig{},
 			errors: []string{
 				"invalid signature algorithm: rsa_pss_rsae_sha255",
 			},
