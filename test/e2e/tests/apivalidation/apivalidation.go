@@ -579,58 +579,61 @@ spec:
 			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
-			name: "HTTPListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist",
+			name: "ListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-grpcstats-both
+  name: listener-policy-grpcstats-both
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: test-gateway
-  httpSettings:
-    grpcStats:
-      statsForAllMethods: true
-      methodAllowlist:
-      - /pkg.Service/Method
+  default:
+    httpSettings:
+      grpcStats:
+        statsForAllMethods: true
+        methodAllowlist:
+        - /pkg.Service/Method
 `,
 			wantErrors: []string{"exactly one of statsForAllMethods or methodAllowlist must be set"},
 		},
 		{
-			name: "HTTPListenerPolicy: grpcStats accepts statsForAllMethods only",
+			name: "ListenerPolicy: grpcStats accepts statsForAllMethods only",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-grpcstats-all
+  name: listener-policy-grpcstats-all
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: test-gateway
-  httpSettings:
-    grpcStats:
-      statsForAllMethods: true
+  default:
+    httpSettings:
+      grpcStats:
+        statsForAllMethods: true
 `,
 		},
 		{
-			name: "HTTPListenerPolicy: grpcStats accepts methodAllowlist only",
+			name: "ListenerPolicy: grpcStats accepts methodAllowlist only",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-grpcstats-allowlist
+  name: listener-policy-grpcstats-allowlist
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: test-gateway
-  httpSettings:
-    grpcStats:
-      methodAllowlist:
-      - /pkg.Service/Method
+  default:
+    httpSettings:
+      grpcStats:
+        methodAllowlist:
+        - /pkg.Service/Method
 `,
 		},
 		{
