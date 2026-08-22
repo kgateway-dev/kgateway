@@ -27,7 +27,6 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var (
@@ -73,99 +72,6 @@ func TestGetBackendSameNamespace(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestProcessRouteStatusMarkers(t *testing.T) {
-	controllerName := gwv1.GatewayController(wellknown.DefaultGatewayControllerName)
-	parentStatus := []gwv1.RouteParentStatus{{
-		ControllerName: controllerName,
-		ParentRef: gwv1.ParentReference{
-			Name: "missing-gateway",
-		},
-	}}
-
-	routeKey := types.NamespacedName{Namespace: "default", Name: "orphaned-route"}
-
-	t.Run("grpc route", func(t *testing.T) {
-		routes := preRouteIndex(t, []any{
-			&gwv1.GRPCRoute{
-				ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
-				Status: gwv1.GRPCRouteStatus{
-					RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
-				},
-			},
-		})
-		reportMap := reports.NewReportMap()
-		routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
-
-		require.NotNil(t, reportMap.GRPCRoutes[routeKey])
-		require.Empty(t, reportMap.GRPCRoutes[routeKey].Parents)
-	})
-
-	t.Run("tcp route", func(t *testing.T) {
-		routes := preRouteIndex(t, []any{
-			&gwv1a2.TCPRoute{
-				ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
-				Status: gwv1a2.TCPRouteStatus{
-					RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
-				},
-			},
-		})
-		reportMap := reports.NewReportMap()
-		routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
-
-		require.NotNil(t, reportMap.TCPRoutes[routeKey])
-		require.Empty(t, reportMap.TCPRoutes[routeKey].Parents)
-	})
-
-	t.Run("tls route", func(t *testing.T) {
-		routes := preRouteIndex(t, []any{
-			&gwv1a2.TLSRoute{
-				ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
-				Status: gwv1a2.TLSRouteStatus{
-					RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
-				},
-			},
-		})
-		reportMap := reports.NewReportMap()
-		routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
-
-		require.NotNil(t, reportMap.TLSRoutes[routeKey])
-		require.Empty(t, reportMap.TLSRoutes[routeKey].Parents)
-	})
-}
-
-func TestProcessRouteStatusMarkersPreservesExistingReports(t *testing.T) {
-	controllerName := gwv1.GatewayController(wellknown.DefaultGatewayControllerName)
-	parentStatus := []gwv1.RouteParentStatus{{
-		ControllerName: controllerName,
-		ParentRef: gwv1.ParentReference{
-			Name: "gateway",
-		},
-	}}
-
-	routeKey := types.NamespacedName{Namespace: "default", Name: "reported-route"}
-	routes := preRouteIndex(t, []any{
-		&gwv1.GRPCRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: routeKey.Name, Namespace: routeKey.Namespace},
-			Status: gwv1.GRPCRouteStatus{
-				RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
-			},
-		},
-	})
-
-	reportMap := reports.NewReportMap()
-	reporter := reports.NewReporter(&reportMap)
-	reporter.Route(&gwv1.GRPCRoute{ObjectMeta: metav1.ObjectMeta{
-		Namespace: routeKey.Namespace,
-		Name:      routeKey.Name,
-	}}).ParentRef(&gwv1.ParentReference{Name: "gateway"})
-	before := reportMap.GRPCRoutes[routeKey]
-
-	routes.ProcessRouteStatusMarkers(krt.TestingDummyContext{}, reportMap)
-
-	require.Same(t, before, reportMap.GRPCRoutes[routeKey])
-	require.NotEmpty(t, reportMap.GRPCRoutes[routeKey].Parents)
 }
 
 func TestRoutesFor(t *testing.T) {
@@ -655,7 +561,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, wellknown.DefaultGatewayControllerName, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
+	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
 	services.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {

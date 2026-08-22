@@ -1,7 +1,6 @@
 package reports
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -38,10 +38,17 @@ const (
 	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
-// TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
+// The Build*Status functions below take a single typed report fragment, which is what the
+// status writers hold after a ReportMap is decomposed into per-resource contributions. The
+// *ReportMap methods are thin lookup-then-build wrappers, kept for callers that still have a
+// whole ReportMap in hand — the translator test harness in test/translator.
 
-func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
-	gwReport := r.GatewayNamespaceName(key(&gw))
+func (r *ReportMap) BuildGWStatus(gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
+	return BuildGWStatus(r.GatewayNamespaceName(key(&gw)), gw, attachedRoutes)
+}
+
+// BuildGWStatus builds a Gateway status directly from its typed report fragment.
+func BuildGWStatus(gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
 	if gwReport == nil {
 		return nil
 	}
@@ -269,8 +276,12 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
 }
 
-func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
-	lsReport := r.ListenerSet(&ls)
+func (r *ReportMap) BuildListenerSetStatus(ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
+	return BuildListenerSetStatus(r.ListenerSet(&ls), ls)
+}
+
+// BuildListenerSetStatus builds a ListenerSet status directly from its typed report fragment.
+func BuildListenerSetStatus(lsReport *ListenerSetReport, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	if lsReport == nil {
 		return nil
 	}
@@ -397,11 +408,17 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 // LastTransitionTime of unchanged conditions and any conditions we don't own. Returns nil
 // if the Backend has no report (i.e. it wasn't translated).
 func (r *ReportMap) BuildBackendStatus(
-	ctx context.Context,
 	obj metav1.Object,
 	currentStatus kgateway.BackendStatus,
 ) *kgateway.BackendStatus {
-	report := r.backend(obj)
+	return BuildBackendStatus(r.backend(obj), currentStatus)
+}
+
+// BuildBackendStatus builds a Backend status directly from its typed report fragment.
+func BuildBackendStatus(
+	report *BackendReport,
+	currentStatus kgateway.BackendStatus,
+) *kgateway.BackendStatus {
 	if report == nil {
 		return nil
 	}
@@ -452,20 +469,37 @@ var backendConditionTypesOwnedByKgateway = map[string]struct{}{
 // the route during translation, or the object is an unsupported route kind, nil is returned.
 // Supported route types are: HTTPRoute, TCPRoute, TLSRoute, GRPCRoute
 func (r *ReportMap) BuildRouteStatus(
-	ctx context.Context,
 	obj client.Object,
 	controller string,
 ) *gwv1.RouteStatus {
-	return r.BuildRouteStatusWithParentRefDefaulting(ctx, obj, controller, false)
+	return BuildRouteStatus(r.route(obj), obj, controller)
 }
 
 func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
-	ctx context.Context,
 	obj client.Object,
 	controller string,
 	defaultParentRef bool,
 ) *gwv1.RouteStatus {
-	routeReport := r.route(obj)
+	return BuildRouteStatusWithParentRefDefaulting(r.route(obj), obj, controller, defaultParentRef)
+}
+
+// BuildRouteStatus builds a Route status directly from its typed report fragment.
+func BuildRouteStatus(
+	routeReport *RouteReport,
+	obj client.Object,
+	controller string,
+) *gwv1.RouteStatus {
+	return BuildRouteStatusWithParentRefDefaulting(routeReport, obj, controller, false)
+}
+
+// BuildRouteStatusWithParentRefDefaulting builds a Route status directly from its typed
+// report fragment and optionally defaults parent reference fields.
+func BuildRouteStatusWithParentRefDefaulting(
+	routeReport *RouteReport,
+	obj client.Object,
+	controller string,
+	defaultParentRef bool,
+) *gwv1.RouteStatus {
 	if routeReport == nil {
 		logger.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		return nil
@@ -480,52 +514,41 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 
 	logger.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 
+	// Every supported route kind carries the same two facts; only the Go type differs. A
+	// missing case here is a silent status wipe (the nil return is indistinguishable from
+	// "nothing to report"), so keep the arms trivial and the shared handling below them.
+	// The v1alpha3 TLSRoute arm is reached whenever v1alpha3 is the served TLSRoute version,
+	// which is what the status writer hands us on Gateway API v1.4.x.
 	var existingStatus gwv1.RouteStatus
+	var specParentRefs []gwv1.ParentReference
+	switch route := obj.(type) {
+	case *gwv1.HTTPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.GRPCRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.TCPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a2.TCPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a2.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a3.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	default:
+		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
+		return nil
+	}
+
 	// Default to using spec.ParentRefs when building the parent statuses for a route.
 	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
 	// may not specify it. In this case, we infer the parentRefs form the RouteReport
 	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
 	var parentRefs []gwv1.ParentReference
-	switch route := obj.(type) {
-	case *gwv1.HTTPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.TCPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a2.TCPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.TLSRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a2.TLSRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.GRPCRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	default:
-		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
-		return nil
+	parentRefs = append(parentRefs, specParentRefs...)
+	if len(parentRefs) == 0 {
+		parentRefs = append(parentRefs, routeReport.parentRefs()...)
 	}
 	if defaultParentRef {
 		parentRefs = ensureParentRefNamespaces(parentRefs, obj.GetNamespace())
@@ -577,19 +600,19 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 		newStatus.Parents = append(newStatus.Parents, routeParentStatus)
 	}
 
-	// now we have a status object reflecting the state of translation according to our reportMap
-	// let's add status from other controllers on the current object status
-	var kgwStatus *gwv1.RouteStatus = &newStatus
-	for _, rps := range existingStatus.Parents {
-		if rps.ControllerName != gwv1.GatewayController(controller) {
-			kgwStatus.Parents = append(kgwStatus.Parents, rps)
-		}
-	}
-
+	// Parents owned by other controllers are deliberately absent: preserving them here
+	// produced entries that statussync.MergeRouteParentStatuses discarded and re-derived
+	// from its own authoritative read of the live object. existingStatus is still read
+	// above, for LastTransitionTime continuity.
+	//
+	// The sort is not redundant with the merge's: it makes this function's output
+	// deterministic for callers that consume the desired status directly, such as the
+	// golden-output translator tests.
+	//
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
-	slices.SortStableFunc(kgwStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
+	slices.SortStableFunc(newStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
 		return strings.Compare(ParentString(a.ParentRef), ParentString(b.ParentRef))
 	})
 	if newStatus.Parents == nil {

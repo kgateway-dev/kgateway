@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -125,6 +126,7 @@ func constructOAuth2(
 }
 
 func buildOAuth2ProviderConfig(
+	ctx context.Context,
 	krtctx krt.HandlerContext,
 	ext *ir.GatewayExtension,
 	backends *krtcollections.BackendIndex,
@@ -141,25 +143,30 @@ func buildOAuth2ProviderConfig(
 		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
 	}
 
-	if in.IssuerURI != nil {
-		// only discover config if we need to, i.e., when either tokenEndpoint, authorizationEndpoint, or endSessionEndpoint is not provided
-		if in.TokenEndpoint == nil || in.AuthorizationEndpoint == nil || in.EndSessionEndpoint == nil || (in.JWT != nil && in.JWT.JWKSURI == nil) {
-			openidCfg, err := discoverer.get(*in.IssuerURI)
-			if err != nil {
-				return nil, err
-			}
-			if tokenEndpoint == "" {
-				tokenEndpoint = openidCfg.TokenEndpoint
-			}
-			if authorizationEndpoint == "" {
-				authorizationEndpoint = openidCfg.AuthorizationEndpoint
-			}
-			if endSessionEndpoint == "" {
-				endSessionEndpoint = ptr.Deref(openidCfg.EndSessionEndpoint, "")
-			}
-			if jwksURI == "" {
-				jwksURI = openidCfg.JWKSURI
-			}
+	// Only discover if we need to, i.e. when the issuer is set and at least one endpoint is
+	// left for the well-known document to supply.
+	if oidcDiscoveryRequired(in) {
+		// Register a dependency on the discovery cache before fetching, so this extension
+		// is re-translated when the discovered config changes. This is what un-latches a
+		// discovery failure: the provider is not a Kubernetes resource, so without it a
+		// provider that was down at startup would keep this extension (and every
+		// TrafficPolicy referencing it) rejected until the control plane restarted.
+		discoverer.markDependant(krtctx)
+		openidCfg, err := discoverer.get(ctx, *in.IssuerURI)
+		if err != nil {
+			return nil, err
+		}
+		if tokenEndpoint == "" {
+			tokenEndpoint = openidCfg.TokenEndpoint
+		}
+		if authorizationEndpoint == "" {
+			authorizationEndpoint = openidCfg.AuthorizationEndpoint
+		}
+		if endSessionEndpoint == "" {
+			endSessionEndpoint = ptr.Deref(openidCfg.EndSessionEndpoint, "")
+		}
+		if jwksURI == "" {
+			jwksURI = openidCfg.JWKSURI
 		}
 	}
 

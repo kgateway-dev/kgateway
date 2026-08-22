@@ -68,8 +68,9 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		setCurrentClientCertDetails: &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
 			Subject: wrapperspb.Bool(true),
 		},
-		stripHostPortMode: new(kgateway.StripMatchingHostPortMode),
-		serverName:        new("envoy"),
+		stripHostPortMode:    new(kgateway.StripMatchingHostPortMode),
+		stripTrailingHostDot: new(true),
+		serverName:           new("envoy"),
 	}
 }
 
@@ -226,6 +227,10 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "stripHostPortMode",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripHostPortMode = new(kgateway.StripAnyHostPortMode) },
+		},
+		{
+			Field:  "stripTrailingHostDot",
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).stripTrailingHostDot = new(false) },
 		},
 		{
 			Field:  "serverName",

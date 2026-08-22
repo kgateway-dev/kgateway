@@ -22,13 +22,15 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -37,7 +39,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -96,6 +97,7 @@ type trafficPolicySpecIr struct {
 	cors             *corsIR
 	csrf             *csrfIR
 	headerModifiers  *headerModifiersIR
+	requestMirror    *requestMirrorIR
 	autoHostRewrite  *autoHostRewriteIR
 	retry            *retryIR
 	timeouts         *timeoutsIR
@@ -149,6 +151,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 	if !d.spec.headerModifiers.Equals(d2.spec.headerModifiers) {
+		return false
+	}
+	if !d.spec.requestMirror.Equals(d2.spec.requestMirror) {
 		return false
 	}
 	if !d.spec.autoHostRewrite.Equals(d2.spec.autoHostRewrite) {
@@ -218,6 +223,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.headerModifiers.Validate)
+	validators = append(validators, p.spec.requestMirror.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
 	validators = append(validators, p.spec.retry.Validate)
 	validators = append(validators, p.spec.timeouts.Validate)
@@ -262,13 +268,17 @@ type trafficPolicyPluginGwPass struct {
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
-	bufferInChain            map[string]*bufferv3.Buffer
-	compressorInChain        map[string][]compressorEntry
-	decompressorInChain      map[string][]decompressorEntry
-	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
-	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
-	faultInChain             map[string]*faulthttpv3.HTTPFault
-	httpACLInChain           map[string]bool
+	// Route names we've already applied requestMirror settings to on this pass, so the first
+	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
+	// pass, so the name is a safe key.
+	requestMirrorConfigured map[string]struct{}
+	bufferInChain           map[string]*bufferv3.Buffer
+	compressorInChain       map[string][]compressorEntry
+	decompressorInChain     map[string][]decompressorEntry
+	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain            map[string]*faulthttpv3.HTTPFault
+	httpACLInChain          map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -287,7 +297,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
-	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *kgateway.TrafficPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *kgateway.TrafficPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -305,14 +315,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			errors = append(errors, err)
 		}
 
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range policyCR.Status.Ancestors {
-			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
-		}
-
 		pol := &ir.PolicyWrapper{
 			ObjectSource:     objSrc,
 			Policy:           policyCR,
@@ -321,28 +323,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			Errors:           errors,
 			PrecedenceWeight: precedenceWeight,
 		}
-		return statusMarker, pol
+		return pol
 	}, commoncol.KrtOpts.ToOptions("TrafficPolicyWrapper")...)
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, statusCol)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
@@ -350,13 +332,20 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, rep reporter.Reporter) ir.ProxyTranslationPass {
 					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata)
 				},
-				Policies:                        policyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
+				Policies: policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
-				GetPolicyStatus:   getPolicyStatusFn(cli),
-				PatchPolicyStatus: patchPolicyStatusFn(cli),
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					wellknown.TrafficPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.TrafficPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.TrafficPolicy {
+						return &kgateway.TrafficPolicy{ObjectMeta: om, Status: st}
+					},
+				),
 			},
 		},
 		ExtraHasSynced: constructor.HasSynced,
@@ -678,10 +667,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Add Buffer filter to enable buffer for the listener.
-	// Requires the buffer policy to be set as typed_per_filter_config.
+	// Register Buffer immediately before Rustformation so its per-route request
+	// limit is established before a body-parsing transformation buffers data.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(bufferFilterName, f, filters.DuringStage(filters.RouteStage))
+		filter := filters.MustNewStagedFilter(
+			bufferFilterName,
+			f,
+			filters.RelativeToStage(filters.AcceptedStage, -2),
+		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}
@@ -805,6 +798,7 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	action := out.GetRoute()
+	p.applyRequestMirror(spec.requestMirror, out)
 
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set

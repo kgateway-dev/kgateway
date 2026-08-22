@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2/test/e2e/defaults/extproc
 
-go 1.26.5
+go 1.26.7
 
 require (
 	github.com/envoyproxy/go-control-plane/envoy v1.37.0
