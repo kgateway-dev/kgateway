@@ -243,9 +243,14 @@ jobs:
         run: |
           set -euo pipefail
           for v in "${VERSION}" "${VERSION#v}"; do
-            if ! go tool helm template kgateway "_test/kgateway-${v}.tgz" | grep -qF "/kgateway:${VERSION}"; then
+            # Render once and grep the capture. Piping helm into `grep -q` flakes under
+            # pipefail: -q exits at the first match, helm's remaining writes then die
+            # with SIGPIPE, and the resulting 141 pipeline status is indistinguishable
+            # from the image tag genuinely not resolving.
+            rendered=$(go tool helm template kgateway "_test/kgateway-${v}.tgz")
+            if ! grep -qF "/kgateway:${VERSION}" <<<"$rendered"; then
               echo "chart ${v}: default controller image did not resolve to ${VERSION}"
-              go tool helm template kgateway "_test/kgateway-${v}.tgz" | grep -E 'image:' || true
+              grep -E 'image:' <<<"$rendered" || true
               exit 1
             fi
           done
