@@ -73,6 +73,8 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 		ValidationLevel:           s.commonCols.Settings.ValidationMode,
 		Validator:                 s.validator,
 		EnableRouteSourceMetadata: s.commonCols.Settings.EnableRouteSourceMetadata,
+		NormalizePath:             s.commonCols.Settings.NormalizePath,
+		MergeSlashes:              s.commonCols.Settings.MergeSlashes,
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),

@@ -32,6 +32,8 @@ type Translator struct {
 	ValidationLevel           apisettings.ValidationMode
 	Validator                 validator.Validator
 	EnableRouteSourceMetadata bool
+	NormalizePath             bool
+	MergeSlashes              bool
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -126,6 +128,8 @@ func (t *Translator) ComputeListener(
 			routeConfigName: hfc.FilterChainName,
 			reporter:        reporter,
 			pluginPass:      pass,
+			normalizePath:   t.NormalizePath,
+			mergeSlashes:    t.MergeSlashes,
 		}
 
 		// compute routes

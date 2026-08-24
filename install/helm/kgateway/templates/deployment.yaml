@@ -157,6 +157,10 @@ spec:
             - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
               value: "true"
             {{- end }}
+            - name: KGW_NORMALIZE_PATH
+              value: {{ .Values.normalizePath | quote }}
+            - name: KGW_MERGE_SLASHES
+              value: {{ .Values.mergeSlashes | quote }}
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL

@@ -381,6 +381,10 @@ spec:
               value: "{}"
             - name: KGW_VALIDATION_MODE
               value: "standard"
+            - name: KGW_NORMALIZE_PATH
+              value: "true"
+            - name: KGW_MERGE_SLASHES
+              value: "true"
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY
               value: "false"
             - name: KGW_AWS_EC2_REFRESH_INTERVAL

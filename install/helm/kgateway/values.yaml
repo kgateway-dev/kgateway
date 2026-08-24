@@ -307,3 +307,12 @@ validation:
 # Default is false (disabled).
 # Note: This feature is experimental and subject to breaking changes in future releases.
 enableRouteSourceMetadata: false
+
+# -- Controls whether the HTTP Connection Manager normalizes request URL paths (RFC 3986)
+# before routing. Default is true (enabled).
+normalizePath: true
+
+# -- Controls whether the HTTP Connection Manager merges adjacent slashes in request URL
+# paths before routing. Disable this if backends (e.g. S3) rely on repeated slashes in the
+# path having meaning. Default is true (enabled).
+mergeSlashes: true

@@ -56,6 +56,8 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_ROUTE_SOURCE_METADATA":              "true",
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
+		"KGW_NORMALIZE_PATH":                            "false",
+		"KGW_MERGE_SLASHES":                             "false",
 	}
 }
 
@@ -114,6 +116,8 @@ func TestSettings(t *testing.T) {
 				GatewayClassParametersRefs:            GatewayClassParametersRefs{},
 				EnableAuthMetadata:                    false,
 				ServiceEntriesExclusionLabelSelectors: "[]",
+				NormalizePath:                         true,
+				MergeSlashes:                          true,
 			},
 		},
 		{
@@ -164,6 +168,8 @@ func TestSettings(t *testing.T) {
 				EnableAuthMetadata:        true,
 				EnableRouteSourceMetadata: true,
 				ReferenceGrantMode:        ReferenceGrantStrict,
+				NormalizePath:             false,
+				MergeSlashes:              false,
 			},
 		},
 		{
@@ -264,6 +270,8 @@ func TestSettings(t *testing.T) {
 				EnableExperimentalGatewayAPIFeatures:  true,
 				GatewayClassParametersRefs:            GatewayClassParametersRefs{},
 				ServiceEntriesExclusionLabelSelectors: "[]",
+				NormalizePath:                         true,
+				MergeSlashes:                          true,
 			},
 		},
 	}
