@@ -127,21 +127,13 @@ func IsDelegatedRouteMatch(
 // FilterDelegatedRuleMatches returns the matches of one delegatee route rule that
 // survive delegation from a parent match, in declaration order:
 //
-//   - When inheritMatcher is set (the child route carries the inherit-parent-matcher
-//     annotation), every child match is valid and is merged onto the parent match
-//     according to MergeParentChildRouteMatch. A rule that declares no matches
-//     inherits the parent match verbatim.
+//   - When inheritMatcher is set, every child match is valid and is merged onto the
+//     parent match via MergeParentChildRouteMatch. A rule with no matches inherits
+//     the parent match verbatim.
 //   - Otherwise, a child match survives only if IsDelegatedRouteMatch accepts it
-//     against the parent match, and it survives verbatim. A rule that declares no
-//     matches yields nothing.
+//     against the parent match. A rule with no matches yields nothing.
 //
-// A rule whose result is empty is not a valid delegatee rule and the translator
-// discards it. Returned matches are deep copies; neither input is mutated.
-//
-// This is the per-rule core of the translator's delegation flattening (see
-// filterDelegatedChildren in pkg/kgateway/translator/httproute). It is exported so
-// that consumers projecting delegated routes — without running the translator — apply
-// the same semantics the data plane gets.
+// Returned matches are deep copies; neither input is mutated.
 func FilterDelegatedRuleMatches(
 	parentMatch gwv1.HTTPRouteMatch,
 	ruleMatches []gwv1.HTTPRouteMatch,
@@ -149,23 +141,21 @@ func FilterDelegatedRuleMatches(
 ) []gwv1.HTTPRouteMatch {
 	var validMatches []gwv1.HTTPRouteMatch
 
-	// If the child route opts to inherit the parent's matcher and it does not specify
-	// its own matcher, simply inherit the parent's matcher.
 	if inheritMatcher && len(ruleMatches) == 0 {
 		validMatches = append(validMatches, *parentMatch.DeepCopy())
 	}
 
 	for _, match := range ruleMatches {
 		match := *match.DeepCopy()
-		if inheritMatcher {
-			// When inheriting the parent's matcher, all matches are valid.
-			// In this case, the child inherits the parents matcher so we merge
-			// the parent's matcher with the child's.
+		switch {
+		case inheritMatcher:
+			// When inheriting the parent's matcher, all matches are valid, so the
+			// parent's matcher is merged into the child's.
 			MergeParentChildRouteMatch(&parentMatch, &match)
 			validMatches = append(validMatches, match)
-		} else if ok := IsDelegatedRouteMatch(parentMatch, match); ok {
-			// Non-inherited matcher delegation requires matching child matcher to parent
-			// matcher to delegate from the parent route to the child.
+		case IsDelegatedRouteMatch(parentMatch, match):
+			// Non-inherited matcher delegation requires the child matcher to match the
+			// parent matcher to delegate from the parent route to the child.
 			validMatches = append(validMatches, match)
 		}
 	}

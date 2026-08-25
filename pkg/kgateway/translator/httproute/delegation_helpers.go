@@ -23,7 +23,7 @@ import (
 //     `delegationutils.IsDelegatedRouteMatch`. If they don't match, the child
 //     matcher will be discarded from the results.
 //
-// The per-rule filtering and merging is delegationutils.FilterDelegatedRuleMatches.
+// The per-rule filtering and merging is done by delegationutils.FilterDelegatedRuleMatches.
 // After that processing, if a child route rule does not have any valid
 // matches with respect to the parent, the rule is discarded. If the child route
 // does not have any remaining valid route rules, the whole route is discarded.
