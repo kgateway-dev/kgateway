@@ -86,6 +86,16 @@ linters:
           msg: use kclient.NewFilteredDelayed for CRDs and kclient.NewFiltered for core types, with discovery namespace ObjectFilter instead
         - pattern: ^client.Client$
           msg: use apiclient.Client instead of controller-runtime's client.Client
+        # The ^client.Client$ rule above only catches naming the type, so it misses an
+        # inline mgr.GetClient().List(...). Nothing reads through the controller-runtime
+        # manager any more: status syncing and translation both use the istio kclient/krt
+        # caches, which is why the manager currently holds no informers. Its cache starts
+        # one lazily on first read, so a single call here would silently add a second
+        # informer for every watched type, with nothing else in CI to catch it.
+        - pattern: \.GetClient$
+          msg: use apiclient.Client instead of the controller-runtime manager's client; mgr.GetClient() reads through the manager cache, which starts a duplicate informer per type
+        - pattern: \.GetCache$
+          msg: read through the krt collections instead of the controller-runtime manager's cache; mgr.GetCache() starts a duplicate informer per type
         - pattern: (\bt|\bT\(\))\.Cleanup
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
         - pattern: ^slog\.(Debug|DebugContext|Info|InfoContext|Warn|WarnContext|Error|ErrorContext|Log|LogAttrs)$

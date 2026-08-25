@@ -38,6 +38,7 @@ func MergeHttpPolicies(
 		mergeIdleTimeout,
 		mergeHttp2ProtocolOptions,
 		mergeHealthCheckPolicy,
+		mergeGrpcStats,
 		mergePreserveHttp1HeaderCase,
 		mergeAcceptHttp10,
 		mergeDefaultHostForHttp10,
@@ -382,6 +383,22 @@ func mergeHealthCheckPolicy(
 
 	p1.healthCheckPolicy = p2.healthCheckPolicy
 	mergeOrigins.SetOne(origin+"healthCheckPolicy", p2Ref, p2MergeOrigins)
+}
+
+func mergeGrpcStats(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.grpcStats, p2.grpcStats, opts) {
+		return
+	}
+
+	p1.grpcStats = p2.grpcStats
+	mergeOrigins.SetOne(origin+"grpcStats", p2Ref, p2MergeOrigins)
 }
 
 func mergeEarlyHeaderMutation(

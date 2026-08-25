@@ -1613,6 +1613,34 @@ spec:
                           This defaults to true. Generating a random UUID4 is expensive so in high throughput scenarios where this feature is not desired it can be disabled.
                           See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
                         type: boolean
+                      grpcStats:
+                        description: |-
+                          GrpcStats configures Envoy's gRPC statistics filter for per-service/method
+                          gRPC metrics (including grpc-status) on this listener.
+                        properties:
+                          enableUpstreamStats:
+                            description: EnableUpstreamStats emits a histogram for
+                              the upstream (wire) latency of each request.
+                            type: boolean
+                          methodAllowlist:
+                            description: |-
+                              MethodAllowlist entries are fully-qualified gRPC methods, e.g. "/pkg.Service/Method".
+                              Only methods in this list get per-method stats. Mutually exclusive with statsForAllMethods.
+                            items:
+                              type: string
+                            maxItems: 128
+                            minItems: 1
+                            type: array
+                          statsForAllMethods:
+                            description: |-
+                              StatsForAllMethods enables emitting stats for every gRPC method seen on the
+                              listener. Mutually exclusive with methodAllowlist.
+                            type: boolean
+                        type: object
+                        x-kubernetes-validations:
+                        - message: exactly one of statsForAllMethods or methodAllowlist
+                            must be set
+                          rule: has(self.statsForAllMethods) != has(self.methodAllowlist)
                       healthCheck:
                         description: HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
                         properties:
@@ -4880,6 +4908,34 @@ spec:
                                 This defaults to true. Generating a random UUID4 is expensive so in high throughput scenarios where this feature is not desired it can be disabled.
                                 See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
                               type: boolean
+                            grpcStats:
+                              description: |-
+                                GrpcStats configures Envoy's gRPC statistics filter for per-service/method
+                                gRPC metrics (including grpc-status) on this listener.
+                              properties:
+                                enableUpstreamStats:
+                                  description: EnableUpstreamStats emits a histogram
+                                    for the upstream (wire) latency of each request.
+                                  type: boolean
+                                methodAllowlist:
+                                  description: |-
+                                    MethodAllowlist entries are fully-qualified gRPC methods, e.g. "/pkg.Service/Method".
+                                    Only methods in this list get per-method stats. Mutually exclusive with statsForAllMethods.
+                                  items:
+                                    type: string
+                                  maxItems: 128
+                                  minItems: 1
+                                  type: array
+                                statsForAllMethods:
+                                  description: |-
+                                    StatsForAllMethods enables emitting stats for every gRPC method seen on the
+                                    listener. Mutually exclusive with methodAllowlist.
+                                  type: boolean
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of statsForAllMethods or methodAllowlist
+                                  must be set
+                                rule: has(self.statsForAllMethods) != has(self.methodAllowlist)
                             healthCheck:
                               description: HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
                               properties:
