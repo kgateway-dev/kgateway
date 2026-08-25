@@ -141,9 +141,15 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	return &xdsSnap, rm
 }
 
-func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64) {
-	epInputs, hash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
+func (s *CombinedTranslator) TranslateEndpoints(
+	kctx krt.HandlerContext,
+	ucc ir.UniquelyConnectedClient,
+	ep ir.EndpointsForBackend,
+) (*envoyendpointv3.ClusterLoadAssignment, uint64, uint64) {
+	epInputs, additionalHash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
 	}, s.endpointPlugins)
-	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
+	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs),
+		epInputs.EndpointsForBackend.LbEpsEqualityHash,
+		additionalHash
 }

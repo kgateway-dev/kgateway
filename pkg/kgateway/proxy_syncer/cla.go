@@ -53,18 +53,18 @@ func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 	kgatewayEndpoints krt.Collection[ir.EndpointsForBackend],
-	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64),
+	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64, uint64),
 ) PerClientEnvoyEndpoints {
 	eps := krt.NewManyCollection(kgatewayEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForBackend) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
-			cla, additionalHash := translateEndpoints(kctx, ucc, ep)
+			cla, resolvedEndpointsHash, additionalHash := translateEndpoints(kctx, ucc, ep)
 			epName := ep.ResourceName()
 			u := UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
-				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
+				EndpointsHash: resolvedEndpointsHash ^ additionalHash,
 				endpointsName: epName,
 				resourceName:  uccEndpointsResourceName(ucc, epName),
 			}
