@@ -59,9 +59,9 @@ func DependsOnClient(inputs EndpointsInputs) bool {
 }
 
 // LoadBalancingContextHash returns a hash of exactly the UCC-dependent inputs
-// that influence PrioritizeEndpoints' output, so callers can dedup the CLAs they
-// build: two UCCs with the same hash produce identical ClusterLoadAssignments for
-// a given EndpointsForBackend.
+// that influence PrioritizeEndpoints' output. Callers may use it to bucket CLAs
+// for interning, but must confirm content equality because the 64-bit hash can
+// collide.
 //
 // IMPORTANT: this must mirror the UCC-dependent branches of prioritizeWithLbInfo
 // /getEndpoints. When FailoverPriority is set, only the resolved priority-label
