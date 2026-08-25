@@ -152,8 +152,8 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 
 // ResolveEndpoints runs the endpoint plugins for a (ucc, backend) pair and captures
 // the inputs plus the hashes that determine whether the resulting CLA is UCC-specific.
-// It does NOT build the CLA — that is BuildClusterLoadAssignment — so callers can dedup
-// the (relatively expensive) CLA construction across UCCs that resolve identically.
+// It does NOT build the CLA — that is BuildClusterLoadAssignment. Callers can use
+// the hashes to bucket built CLAs for collision-safe content interning.
 func (s *CombinedTranslator) ResolveEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) ResolvedEndpoints {
 	epInputs, hash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
@@ -166,8 +166,8 @@ func (s *CombinedTranslator) ResolveEndpoints(kctx krt.HandlerContext, ucc ir.Un
 }
 
 // BuildClusterLoadAssignment turns resolved endpoint state into a ClusterLoadAssignment.
-// It is pure given (ucc, resolved); UCCs that share the resolved hashes produce identical
-// output, which is what lets NewPerClientEnvoyEndpoints intern the result.
+// It is pure given (ucc, resolved); NewPerClientEnvoyEndpoints uses the resolved hashes
+// to bucket results, then verifies protobuf equality before interning them.
 func (s *CombinedTranslator) BuildClusterLoadAssignment(ucc ir.UniquelyConnectedClient, resolved ResolvedEndpoints) *envoyendpointv3.ClusterLoadAssignment {
 	return endpoints.PrioritizeEndpoints(s.logger, ucc, resolved.Inputs)
 }
