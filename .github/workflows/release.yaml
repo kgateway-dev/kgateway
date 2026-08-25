@@ -18,7 +18,7 @@ on:
         type: boolean
         default: false
         description: |
-          Release even though the version that should precede this one was never tagged.
+          Override sequential version check.
   push:
     branches:
       - main
