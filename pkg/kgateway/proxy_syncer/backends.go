@@ -836,7 +836,7 @@ func NewPerClientEnvoyClusters(
 				continue
 			}
 			clusterVersion := utils.HashProto(perClient)
-			shared := clusterInterner.Intern(perClient, clusterVersion)
+			shared := clusterInterner.InternPrehashed(perClient, clusterVersion)
 			if set.Deltas == nil {
 				set.Deltas = make(map[string]uccClusterDelta)
 			}
