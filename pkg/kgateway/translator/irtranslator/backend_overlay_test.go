@@ -8,6 +8,8 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -192,6 +195,156 @@ func TestApplyPerClient_InlineCLAMaterializesAndIsolatesBaseEndpoints(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, clusterB)
 	assert.NotSame(t, clusterA, clusterB, "each client must get an independent inline-CLA proto")
+}
+
+func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
+	t.Run("overlay changes inline cluster to EDS", func(t *testing.T) {
+		endpointCalls := 0
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					}}
+				},
+				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+					endpointCalls++
+					return 0
+				},
+			},
+		}, nil)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.True(t, base.NeedsInlineCLA(), "precondition: the STRICT_DNS base needs a per-client CLA")
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.Equal(t, envoyclusterv3.Cluster_EDS, perClient.GetType())
+		assert.Nil(t, perClient.GetLoadAssignment(), "an EDS overlay must not inherit the base's inline-CLA requirement")
+		assert.Zero(t, endpointCalls, "endpoint hooks must stay lazy when the final cluster does not consume an inline CLA")
+	})
+
+	t.Run("overlay removes an existing inline load assignment", func(t *testing.T) {
+		original := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "original"}
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.LoadAssignment = nil
+					}}
+				},
+			},
+		}, original)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.False(t, base.NeedsInlineCLA(), "precondition: the base already has an inline CLA")
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		require.NotNil(t, perClient.GetLoadAssignment(), "the final inline cluster must get a replacement CLA")
+		assert.Equal(t, backend.ClusterName(), perClient.GetLoadAssignment().GetClusterName())
+		assert.NotSame(t, original, perClient.GetLoadAssignment())
+	})
+
+	t.Run("overlay supplies its own load assignment", func(t *testing.T) {
+		endpointCalls := 0
+		overlayCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "overlay"}
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.LoadAssignment = overlayCLA
+					}}
+				},
+				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+					endpointCalls++
+					return 0
+				},
+			},
+		}, nil)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.True(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.Same(t, overlayCLA, perClient.GetLoadAssignment(), "the overlay's CLA must remain authoritative")
+		assert.Zero(t, endpointCalls, "endpoint hooks must not run when the overlay already supplied the CLA")
+	})
+}
+
+func TestApplyPerClient_ReappliesGatewayBackendClientCertificateAfterOverlay(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+					out.TransportSocket = upstreamTLSTransportSocket(t, "overlay.example.com", "overlay-sds-secret")
+				}}
+			},
+		},
+	})
+	backend := overlayBackend()
+	backend.GatewayBackendClientCertificate = &ir.GatewayBackendClientCertificateIR{
+		Certificate: ir.TLSCertificate{
+			CertChain:  []byte("gateway-cert"),
+			PrivateKey: []byte("gateway-key"),
+		},
+	}
+	base := bt.TranslateBackendBase(t.Context(), backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient)
+
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, perClient.GetTransportSocket().GetTypedConfig().UnmarshalTo(tlsContext))
+	assert.Equal(t, "overlay.example.com", tlsContext.GetSni(), "the overlay's TLS settings must be preserved")
+	require.Len(t, tlsContext.GetCommonTlsContext().GetTlsCertificates(), 1)
+	assert.Equal(t, "gateway-cert", tlsContext.GetCommonTlsContext().GetTlsCertificates()[0].GetCertificateChain().GetInlineString())
+	assert.Equal(t, "gateway-key", tlsContext.GetCommonTlsContext().GetTlsCertificates()[0].GetPrivateKey().GetInlineString())
+	assert.Empty(t, tlsContext.GetCommonTlsContext().GetTlsCertificateSdsSecretConfigs(),
+		"the resolved Gateway certificate must replace an overlay-provided SDS client identity")
+}
+
+func inlineEndpointBackendTranslator(
+	policies map[schema.GroupKind]sdk.PolicyPlugin,
+	loadAssignment *envoyendpointv3.ClusterLoadAssignment,
+) *irtranslator.BackendTranslator {
+	return &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			{Group: "group", Kind: "kind"}: {
+				InitEnvoyBackend: func(_ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
+					out.LoadAssignment = loadAssignment
+					eps := ir.NewEndpointsForBackend(in)
+					eps.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: pipeEndpoint("endpoint")})
+					return eps
+				},
+			},
+		},
+		ContributedPolicies: policies,
+	}
+}
+
+func upstreamTLSTransportSocket(t *testing.T, sni, sdsSecret string) *envoycorev3.TransportSocket {
+	t.Helper()
+	typedConfig, err := utils.MessageToAny(&envoytlsv3.UpstreamTlsContext{
+		Sni: sni,
+		CommonTlsContext: &envoytlsv3.CommonTlsContext{
+			TlsCertificateSdsSecretConfigs: []*envoytlsv3.SdsSecretConfig{{Name: sdsSecret}},
+		},
+	})
+	require.NoError(t, err)
+	return &envoycorev3.TransportSocket{
+		Name:       envoywellknown.TransportSocketTls,
+		ConfigType: &envoycorev3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+	}
 }
 
 func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T) {
