@@ -732,6 +732,132 @@ func TestFilterDelegatedRuleMatches(t *testing.T) {
 	}
 }
 
+func TestMergeParentChildRouteMatch(t *testing.T) {
+	testCases := []struct {
+		name     string
+		parent   gwv1.HTTPRouteMatch
+		child    gwv1.HTTPRouteMatch
+		expected gwv1.HTTPRouteMatch
+	}{
+		{
+			name:     "joins parent and child paths",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/users")},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api/users")},
+		},
+		{
+			name:     "normalizes redundant slashes in the joined path",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api/")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/users/")},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api/users")},
+		},
+		{
+			name:     "child keeps its own path match type",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchExact, "/users")},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchExact, "/api/users")},
+		},
+		{
+			name:   "a nil child path defaults to the parent path",
+			parent: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api")},
+			child:  gwv1.HTTPRouteMatch{Method: new(gwv1.HTTPMethodPost)},
+			expected: gwv1.HTTPRouteMatch{
+				Path:   pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+				Method: new(gwv1.HTTPMethodPost),
+			},
+		},
+		{
+			name: "parent header wins a name conflict and the union is name-sorted",
+			parent: gwv1.HTTPRouteMatch{
+				Path: pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+				Headers: []gwv1.HTTPHeaderMatch{
+					{Name: "x-shared", Value: "parent"},
+					{Name: "x-parent", Value: "p"},
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: pathMatch(gwv1.PathMatchPathPrefix, "/users"),
+				Headers: []gwv1.HTTPHeaderMatch{
+					{Name: "x-shared", Value: "child"},
+					{Name: "x-child", Value: "c"},
+				},
+			},
+			expected: gwv1.HTTPRouteMatch{
+				Path: pathMatch(gwv1.PathMatchPathPrefix, "/api/users"),
+				Headers: []gwv1.HTTPHeaderMatch{
+					{Name: "x-child", Value: "c"},
+					{Name: "x-parent", Value: "p"},
+					{Name: "x-shared", Value: "parent"},
+				},
+			},
+		},
+		{
+			name: "parent query param wins a name conflict and the union is name-sorted",
+			parent: gwv1.HTTPRouteMatch{
+				Path: pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+				QueryParams: []gwv1.HTTPQueryParamMatch{
+					{Name: "version", Value: "v1"},
+					{Name: "zone", Value: "us"},
+				},
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path: pathMatch(gwv1.PathMatchPathPrefix, "/users"),
+				QueryParams: []gwv1.HTTPQueryParamMatch{
+					{Name: "version", Value: "v2"},
+					{Name: "page", Value: "1"},
+				},
+			},
+			expected: gwv1.HTTPRouteMatch{
+				Path: pathMatch(gwv1.PathMatchPathPrefix, "/api/users"),
+				QueryParams: []gwv1.HTTPQueryParamMatch{
+					{Name: "page", Value: "1"},
+					{Name: "version", Value: "v1"},
+					{Name: "zone", Value: "us"},
+				},
+			},
+		},
+		{
+			name: "parent method overwrites the child method",
+			parent: gwv1.HTTPRouteMatch{
+				Path:   pathMatch(gwv1.PathMatchPathPrefix, "/api"),
+				Method: new(gwv1.HTTPMethodGet),
+			},
+			child: gwv1.HTTPRouteMatch{
+				Path:   pathMatch(gwv1.PathMatchPathPrefix, "/users"),
+				Method: new(gwv1.HTTPMethodDelete),
+			},
+			expected: gwv1.HTTPRouteMatch{
+				Path:   pathMatch(gwv1.PathMatchPathPrefix, "/api/users"),
+				Method: new(gwv1.HTTPMethodGet),
+			},
+		},
+		{
+			name:   "child keeps its method when the parent has none",
+			parent: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api")},
+			child: gwv1.HTTPRouteMatch{
+				Path:   pathMatch(gwv1.PathMatchPathPrefix, "/users"),
+				Method: new(gwv1.HTTPMethodDelete),
+			},
+			expected: gwv1.HTTPRouteMatch{
+				Path:   pathMatch(gwv1.PathMatchPathPrefix, "/api/users"),
+				Method: new(gwv1.HTTPMethodDelete),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			parentBefore := *tc.parent.DeepCopy()
+
+			MergeParentChildRouteMatch(&tc.parent, &tc.child)
+
+			assert.Equal(t, tc.expected, tc.child)
+			// The merge writes only to the child.
+			assert.Equal(t, parentBefore, tc.parent)
+		})
+	}
+}
+
 func TestMergeParentChildRouteMatchNilSafety(t *testing.T) {
 	child := gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/users")}
 	childBefore := *child.DeepCopy()
