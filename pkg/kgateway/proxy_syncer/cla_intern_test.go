@@ -19,8 +19,8 @@ import (
 
 // TestNewPerClientEnvoyEndpointsSharesClaAcrossEquivalentContexts verifies the
 // CLA interning: UCCs that resolve to the same load-balancing context (e.g. the
-// same locality for a zone-aware backend) share one ClusterLoadAssignment proto
-// and trigger a single build, while a UCC in a different locality gets its own.
+// same locality for a zone-aware backend) share one ClusterLoadAssignment proto,
+// while a UCC in a different locality gets its own.
 func TestNewPerClientEnvoyEndpointsSharesClaAcrossEquivalentContexts(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
@@ -109,14 +109,15 @@ func TestNewPerClientEnvoyEndpointsSharesClaAcrossEquivalentContexts(t *testing.
 	require.False(t, sharedproto.Same(fetchedA[0].Endpoints, fetchedC[0].Endpoints),
 		"distinct contexts must not share a CLA proto")
 	require.NotEqual(t, fetchedA[0].EndpointsHash, fetchedC[0].EndpointsHash)
-	// Two distinct load-balancing contexts -> exactly two builds across three UCCs.
-	require.Equal(t, 2, buildCalls)
+	// Every client is built so the interner can confirm content equality instead
+	// of trusting the 64-bit input hash; equal results are then shared in memory.
+	require.Equal(t, 3, buildCalls)
 }
 
-// TestNewPerClientEnvoyEndpointsKeysInterningOnResolvedEndpointHash verifies
-// that a plugin-built replacement endpoint set participates in the interning
-// key even when the plugin needs no separate additional hash.
-func TestNewPerClientEnvoyEndpointsKeysInterningOnResolvedEndpointHash(t *testing.T) {
+// TestNewPerClientEnvoyEndpointsDoesNotAliasHashCollisions forces two different
+// resolved endpoint sets into the same hash bucket and verifies that the built
+// CLAs remain distinct.
+func TestNewPerClientEnvoyEndpointsDoesNotAliasHashCollisions(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "default", Name: "backend"}, 80, "", "")
@@ -136,6 +137,9 @@ func TestNewPerClientEnvoyEndpointsKeysInterningOnResolvedEndpointHash(t *testin
 		func(_ krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) translator.ResolvedEndpoints {
 			resolved := ep.EmptyCopy()
 			resolved.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: lbEndpointPipe(ucc.Role)})
+			// Force a collision in the complete interning key. The old map keyed
+			// only by this hash returned uccA's CLA for both clients.
+			resolved.LbEpsEqualityHash = 42
 			return translator.ResolvedEndpoints{Inputs: endpoints.EndpointsInputs{EndpointsForBackend: resolved}}
 		},
 		func(ucc ir.UniquelyConnectedClient, resolved translator.ResolvedEndpoints) *envoyendpointv3.ClusterLoadAssignment {
@@ -152,7 +156,12 @@ func TestNewPerClientEnvoyEndpointsKeysInterningOnResolvedEndpointHash(t *testin
 	}, time.Second, 20*time.Millisecond)
 
 	require.False(t, sharedproto.Same(fetchedA[0].Endpoints, fetchedB[0].Endpoints),
-		"different resolved endpoint sets must not share an interned CLA")
-	require.NotEqual(t, fetchedA[0].EndpointsHash, fetchedB[0].EndpointsHash)
+		"different CLAs in one hash bucket must not share an interned proto")
+	require.Equal(t, fetchedA[0].EndpointsHash, fetchedB[0].EndpointsHash,
+		"precondition: the resolved inputs must collide on the interning hash")
+	require.NotEqual(t,
+		fetchedA[0].Endpoints.Clone().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetPipe().GetPath(),
+		fetchedB[0].Endpoints.Clone().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetPipe().GetPath(),
+		"each client must retain its own resolved endpoint")
 	require.Equal(t, 2, buildCalls)
 }
