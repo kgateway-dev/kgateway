@@ -59,6 +59,48 @@ func TestMergePoliciesPreservesErrors(t *testing.T) {
 	assert.True(t, errors.Is(byName["p2"], err2))
 }
 
+func TestMergeRequestMirror(t *testing.T) {
+	p2Ref := &ir.AttachedPolicyRef{Name: "p2", Namespace: "default"}
+	mergeOptions := policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}
+
+	t.Run("higher priority false wins over lower priority true", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(false)}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(true)}}
+
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, mergeOptions, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+		require.NotNil(t, p1.spec.requestMirror)
+		require.NotNil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
+		assert.False(t, *p1.spec.requestMirror.disableShadowHostSuffixAppend)
+	})
+
+	t.Run("lower priority value fills an unset field", func(t *testing.T) {
+		p1 := &TrafficPolicy{}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(true)}}
+
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, mergeOptions, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+		require.NotNil(t, p1.spec.requestMirror)
+		require.NotNil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
+		assert.True(t, *p1.spec.requestMirror.disableShadowHostSuffixAppend)
+	})
+
+	// requestMirror is merged as a whole block: a more-specific block wins entirely rather than
+	// combining field-by-field with a less-specific one.
+	t.Run("more-specific block wins entirely, no field-by-field combine", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithLiteral("literal.example:8080")}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithValue(true)}}
+
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, mergeOptions, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+		require.NotNil(t, p1.spec.requestMirror)
+		// The more-specific block only had the literal, so the less-specific bool must not leak in.
+		require.NotNil(t, p1.spec.requestMirror.hostRewriteLiteral)
+		assert.Equal(t, "literal.example:8080", *p1.spec.requestMirror.hostRewriteLiteral)
+		assert.Nil(t, p1.spec.requestMirror.disableShadowHostSuffixAppend)
+	})
+}
+
 // TestMergePoliciesDoesNotMutateSourceIRs covers the delegated-route shape from
 // test/e2e/features/route_delegation: one child route reached through two parents with
 // different inherited-policy-priority annotations.
