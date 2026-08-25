@@ -297,6 +297,11 @@ type HTTPSettings struct {
 	// +optional
 	HealthCheck *EnvoyHealthCheck `json:"healthCheck,omitempty"`
 
+	// GrpcStats configures Envoy's gRPC statistics filter for per-service/method
+	// gRPC metrics (including grpc-status) on this listener.
+	// +optional
+	GrpcStats *GrpcStats `json:"grpcStats,omitempty"`
+
 	// PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 request headers.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
 	// +optional
@@ -1096,6 +1101,31 @@ type EnvoyHealthCheck struct {
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
 	// +required
 	Path string `json:"path"`
+}
+
+// GrpcStats configures Envoy's gRPC statistics HTTP filter
+// (envoy.filters.http.grpc_stats), emitting per-service/method gRPC metrics
+// that upstream_rq_xx cannot express (gRPC is HTTP 200 regardless of grpc-status).
+//
+// Exactly one of statsForAllMethods or methodAllowlist must be set.
+//
+// +kubebuilder:validation:XValidation:message="exactly one of statsForAllMethods or methodAllowlist must be set",rule="has(self.statsForAllMethods) != has(self.methodAllowlist)"
+type GrpcStats struct {
+	// StatsForAllMethods enables emitting stats for every gRPC method seen on the
+	// listener. Mutually exclusive with methodAllowlist.
+	// +optional
+	StatsForAllMethods *bool `json:"statsForAllMethods,omitempty"`
+
+	// MethodAllowlist entries are fully-qualified gRPC methods, e.g. "/pkg.Service/Method".
+	// Only methods in this list get per-method stats. Mutually exclusive with statsForAllMethods.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=128
+	MethodAllowlist []string `json:"methodAllowlist,omitempty"`
+
+	// EnableUpstreamStats emits a histogram for the upstream (wire) latency of each request.
+	// +optional
+	EnableUpstreamStats *bool `json:"enableUpstreamStats,omitempty"`
 }
 
 // UuidRequestIdConfig configures the UUID request ID extension.

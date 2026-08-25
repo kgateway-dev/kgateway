@@ -413,4 +413,5 @@ jobs:
       - name: Run load tests
         run: make run-load-tests
         env:
+          KGATEWAY_RUN_LOAD_TESTS: "true"
           VERSION: ${{ needs.setup.outputs.version }}
