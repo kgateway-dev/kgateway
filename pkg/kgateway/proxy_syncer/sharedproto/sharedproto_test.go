@@ -116,6 +116,7 @@ func TestIsNil(t *testing.T) {
 }
 
 func TestInternerUsesContentEqualityWithinHashBuckets(t *testing.T) {
+	withAssertions(t, true)
 	var interner Interner[*envoyclusterv3.Cluster]
 	first := &envoyclusterv3.Cluster{Name: "first"}
 	second := &envoyclusterv3.Cluster{Name: "second"}
@@ -131,4 +132,7 @@ func TestInternerUsesContentEqualityWithinHashBuckets(t *testing.T) {
 		"equal protos in the same hash bucket must share one wrapper")
 	require.Len(t, interner.byHash[collidingHash], 2,
 		"one collision bucket must retain each distinct proto exactly once")
+	require.Equal(t, utils.HashProto(first), sharedFirst.hash,
+		"a non-content bucket hash must not be reused as the mutation-tripwire hash")
+	require.NotPanics(t, func() { sharedFirst.ResourceWithTTL() })
 }
