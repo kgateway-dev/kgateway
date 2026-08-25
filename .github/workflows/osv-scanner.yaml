@@ -23,7 +23,7 @@ permissions:
 
 env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.3.5
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.5.0
   # Severity used to report a scan target that this repository does not have.
   # Forks routinely track a subset of the release branches and do not publish
   # release images, so a gap there is expected; on the repository that cuts
@@ -123,7 +123,7 @@ jobs:
         branch: ${{ fromJson(needs.determine_branches.outputs.branches) }}
     steps:
       - name: Checkout branch
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ matrix.branch }}
@@ -141,7 +141,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Run source scanner
-        uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+        uses: google/osv-scanner-action/osv-scanner-action@8deb546fdb875b9996d27d4950be7312dac076a1 # v2.5.0
         with:
           scan-args: |-
             --output=results.json
@@ -153,7 +153,7 @@ jobs:
         continue-on-error: true
 
       - name: Convert source results to SARIF
-        uses: google/osv-scanner-action/osv-reporter-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+        uses: google/osv-scanner-action/osv-reporter-action@8deb546fdb875b9996d27d4950be7312dac076a1 # v2.5.0
         with:
           scan-args: |-
             --output=results.sarif
@@ -163,7 +163,7 @@ jobs:
 
       - name: Upload source SARIF
         if: ${{ !cancelled() && hashFiles('results.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
           sarif_file: results.sarif
           ref: ${{ steps.metadata.outputs.ref }}
@@ -199,7 +199,7 @@ jobs:
           - envoy-wrapper
     steps:
       - name: Checkout branch
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ matrix.branch }}
@@ -465,7 +465,7 @@ jobs:
 
       - name: Upload image SARIF
         if: ${{ !cancelled() && hashFiles('image-result.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
         with:
           sarif_file: image-result.sarif
           ref: ${{ steps.metadata.outputs.ref }}

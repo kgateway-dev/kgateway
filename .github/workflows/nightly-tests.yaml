@@ -82,11 +82,11 @@ jobs:
             label: min_versions
         gateway-api-channel: ['experimental', 'standard']
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.env-versions.file }}
@@ -115,11 +115,11 @@ jobs:
           - file: "./.github/workflows/.env/nightly-tests/min_versions.env"
             label: min_versions
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.env-versions.file }}
@@ -163,13 +163,13 @@ jobs:
         controllers:
           - regex: "^TestKgateway|^TestAPIValidation|^TestListenerSet|^TestCustomGWP$$|^TestRouteReplacement$$|^TestZeroDowntimeRollout$$/^TestZeroDowntimeRollout$$|^TestControlPlaneTLS$$"
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ matrix.ref.checkout_ref }}
       # Runs before the guard step below so the guard can key its Kubernetes-version check off
       # the real kubectl_version output instead of guessing from the min/max label.
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.env-versions.file }}

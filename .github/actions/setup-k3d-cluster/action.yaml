@@ -34,7 +34,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
+    - uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
       id: kubectl
       with:
         version: ${{ inputs.kubectl-version }}

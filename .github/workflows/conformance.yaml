@@ -29,9 +29,9 @@ jobs:
         test-type: [gateway-api]
         arch: ['amd64', 'arm64']
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: "./.github/workflows/.env/pr-tests/versions.env"
