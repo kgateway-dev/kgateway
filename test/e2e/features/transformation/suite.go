@@ -606,7 +606,7 @@ func selectTestCases(indices ...int) []transformationTestCase {
 					// the modification did not happen because "andy" is only 4 characters
 					"x-my-name": gomega.MatchRegexp(`.....+`),
 				},
-				Body: fmt.Sprintf("321-%s", httpbin_echo_base_path),
+				Body: "321-" + httpbin_echo_base_path,
 			},
 		},
 		{

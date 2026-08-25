@@ -177,7 +177,7 @@ func TestUniqueClients(t *testing.T) {
 					},
 				},
 			},
-			result: sets.New(fmt.Sprintf(wellknown.GatewayApiProxyValue + "~best-proxy-role")),
+			result: sets.New(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
 		},
 	}
 

@@ -4,6 +4,7 @@ package tests_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -514,7 +515,7 @@ func collectDistribution(ctx context.Context, ti *e2e.TestInstallation, gatewayP
 func expectEvenDistribution(counts zoneCounts) error {
 	total := counts.total()
 	if total == 0 {
-		return fmt.Errorf("no responses recorded")
+		return errors.New("no responses recorded")
 	}
 	for _, zone := range zoneAwareZones {
 		if counts[zone] < total/5 || counts[zone] > total*3/5 {
@@ -528,7 +529,7 @@ func expectEvenDistribution(counts zoneCounts) error {
 func expectAllLocal(counts zoneCounts) error {
 	total := counts.total()
 	if total == 0 {
-		return fmt.Errorf("no responses recorded")
+		return errors.New("no responses recorded")
 	}
 	if counts[zoneA] != total {
 		return fmt.Errorf("expected all %d requests to route to %s, got %s", total, zoneA, counts)
@@ -542,7 +543,7 @@ func expectAllLocal(counts zoneCounts) error {
 func expectSomeCrossZone(counts zoneCounts) error {
 	total := counts.total()
 	if total == 0 {
-		return fmt.Errorf("no responses recorded")
+		return errors.New("no responses recorded")
 	}
 	if counts[zoneA] == 0 {
 		return fmt.Errorf("expected some local-zone traffic, got %s", counts)

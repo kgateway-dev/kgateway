@@ -526,7 +526,10 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 		{
 			name: "full metadata",
 			in: ir.HttpRouteRuleMatchIR{
-				Name: "test-rule",
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				RuleName:   "test-rule",
 				Parent: &ir.HttpRouteIR{
 					ObjectSource: ir.ObjectSource{
 						Kind:      "HTTPRoute",
@@ -542,6 +545,31 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 				"name":      "test-route",
 				"namespace": "default",
 				"rule":      "test-rule",
+				"match":     "_match-2",
+			},
+		},
+		{
+			name: "missing original rule name",
+			in: ir.HttpRouteRuleMatchIR{
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "_rule-1",
+				"match":     "_match-2",
 			},
 		},
 		{
@@ -692,7 +720,8 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 			assert.Equal(t, "gateway.networking.k8s.io", fields["group"].GetStringValue())
 			assert.Equal(t, "my-route", fields["name"].GetStringValue())
 			assert.Equal(t, "default", fields["namespace"].GetStringValue())
-			assert.Equal(t, "my-rule", fields["rule"].GetStringValue())
+			assert.Equal(t, "_rule-0", fields["rule"].GetStringValue())
+			assert.Equal(t, "_match-0", fields["match"].GetStringValue())
 		})
 	}
 }

@@ -22,7 +22,7 @@ Name|Version|License
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [jwt/v5](https://github.com/golang-jwt/jwt)|v5.3.0|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
-[google/cel-go](https://github.com/google/cel-go)|v0.28.1|Apache License 2.0
+[google/cel-go](https://github.com/google/cel-go)|v0.29.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
