@@ -21,11 +21,10 @@ import (
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
 	// Endpoints is wrapped so consumers cannot mutate the CLA interned across
-	// every UCC that resolved identically; see package sharedproto. Content
-	// equality is carried by EndpointsHash, which combines the resolved endpoint
-	// content, the endpoint plugins' contributions, and the load-balancing
-	// context — exactly the inputs BuildClusterLoadAssignment reads — so the two
-	// fields cannot disagree.
+	// every UCC whose built result is equal; see package sharedproto. EndpointsHash
+	// combines the resolved endpoint content, endpoint-plugin contributions, and
+	// load-balancing context into a compact version fingerprint. Interning uses it
+	// only as a bucket key and separately verifies protobuf equality.
 	// +noKrtEquals EndpointsHash is a content hash over the same inputs
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
@@ -87,8 +86,8 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 //
 // Endpoints must vary per client (that is what locality-aware routing means), so
 // unlike clusters there is no base to share. What is shared is the output: clients
-// whose resolution hashes agree are handed the same read-only CLA proto, which is
-// why a large fleet in one locality costs about as much as a single client.
+// whose built CLAs are equal are handed the same read-only proto. Resolution hashes
+// narrow the equality checks to a bucket but are not themselves proof of equality.
 func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -101,21 +100,15 @@ func NewPerClientEnvoyEndpoints(
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		// Loop-invariant: every row in this transform shares the same backend.
 		epName := ep.ResourceName()
-		// Intern CLAs across UCCs that resolve identically. The CLA varies per
-		// client only through PrioritizeEndpoints (locality, labels) and the
-		// plugin-applied PriorityInfo; UCCs sharing those hashes get one shared
-		// read-only proto instead of a freshly built copy each.
-		sharedClas := map[uint64]sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]{}
+		// Intern equal CLAs across UCCs. The resolved-input hash selects a small
+		// candidate bucket; the interner confirms protobuf equality so a 64-bit
+		// collision cannot make different clients share the wrong assignment.
+		var claInterner sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]
 		for _, ucc := range uccs {
 			resolved := resolveEndpoints(kctx, ucc, ep)
 			endpointsHash := combineEndpointHash(resolved.Inputs.EndpointsForBackend.LbEpsEqualityHash, resolved.AdditionalHash, resolved.LoadBalancingHash)
-			cla, ok := sharedClas[endpointsHash]
-			if !ok {
-				// Wrap captures the tripwire hash once per distinct CLA; rows
-				// that reuse the interned CLA copy the wrapper.
-				cla = sharedproto.Wrap(buildClusterLoadAssignment(ucc, resolved))
-				sharedClas[endpointsHash] = cla
-			}
+			candidate := buildClusterLoadAssignment(ucc, resolved)
+			cla := claInterner.Intern(candidate, endpointsHash)
 			u := UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
