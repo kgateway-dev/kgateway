@@ -767,6 +767,30 @@ func TestMergeParentChildRouteMatch(t *testing.T) {
 			},
 		},
 		{
+			name:     "a nil parent path leaves the child path alone",
+			parent:   gwv1.HTTPRouteMatch{Method: new(gwv1.HTTPMethodGet)},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchExact, "/users")},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchExact, "/users"), Method: new(gwv1.HTTPMethodGet)},
+		},
+		{
+			name:     "a nil parent path value leaves the child path alone",
+			parent:   gwv1.HTTPRouteMatch{Path: &gwv1.HTTPPathMatch{Type: new(gwv1.PathMatchPathPrefix)}},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/users")},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/users")},
+		},
+		{
+			name:     "a valueless child path is treated as unset and inherits the parent path as a prefix match",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api")},
+			child:    gwv1.HTTPRouteMatch{Path: &gwv1.HTTPPathMatch{Type: new(gwv1.PathMatchExact)}},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/api")},
+		},
+		{
+			name:     "paths absent on both sides resolve to the root prefix",
+			parent:   gwv1.HTTPRouteMatch{Method: new(gwv1.HTTPMethodGet)},
+			child:    gwv1.HTTPRouteMatch{},
+			expected: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/"), Method: new(gwv1.HTTPMethodGet)},
+		},
+		{
 			name: "parent header wins a name conflict and the union is name-sorted",
 			parent: gwv1.HTTPRouteMatch{
 				Path: pathMatch(gwv1.PathMatchPathPrefix, "/api"),

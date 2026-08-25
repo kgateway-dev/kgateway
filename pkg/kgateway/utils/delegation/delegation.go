@@ -133,29 +133,35 @@ func IsDelegatedRouteMatch(
 //   - Otherwise, a child match survives only if IsDelegatedRouteMatch accepts it
 //     against the parent match. A rule with no matches yields nothing.
 //
-// Returned matches are deep copies; neither input is mutated.
+// Neither input is mutated. Matches derived from ruleMatches are deep copies, but
+// an inherited parent match is a shallow copy that shares parentMatch's pointer and
+// slice fields, so callers must not mutate the returned matches in place.
 func FilterDelegatedRuleMatches(
 	parentMatch gwv1.HTTPRouteMatch,
 	ruleMatches []gwv1.HTTPRouteMatch,
 	inheritMatcher bool,
 ) []gwv1.HTTPRouteMatch {
+	// We use validMatches to store the matches in the child rule that are valid
+	// with respect to the parent matcher.
 	var validMatches []gwv1.HTTPRouteMatch
 
+	// If the child route opts to inherit the parent's matcher and it does not specify its own matcher,
+	// simply inherit the parent's matcher.
 	if inheritMatcher && len(ruleMatches) == 0 {
-		validMatches = append(validMatches, *parentMatch.DeepCopy())
+		validMatches = append(validMatches, parentMatch)
 	}
 
 	for _, match := range ruleMatches {
 		match := *match.DeepCopy()
-		switch {
-		case inheritMatcher:
-			// When inheriting the parent's matcher, all matches are valid, so the
-			// parent's matcher is merged into the child's.
+		if inheritMatcher {
+			// When inheriting the parent's matcher, all matches are valid.
+			// In this case, the child inherits the parents matcher so we merge
+			// the parent's matcher with the child's.
 			MergeParentChildRouteMatch(&parentMatch, &match)
 			validMatches = append(validMatches, match)
-		case IsDelegatedRouteMatch(parentMatch, match):
-			// Non-inherited matcher delegation requires the child matcher to match the
-			// parent matcher to delegate from the parent route to the child.
+		} else if ok := IsDelegatedRouteMatch(parentMatch, match); ok {
+			// Non-inherited matcher delegation requires matching child matcher to parent matcher
+			// to delegate from the parent route to the child.
 			validMatches = append(validMatches, match)
 		}
 	}
@@ -171,6 +177,10 @@ func FilterDelegatedRuleMatches(
 //   - the resulting query parameters consist of the combined query parameters from parent and child, with parent
 //     query params taking precedence on any name conflicts
 //   - the child inherits the parent's method if specified; otherwise the child retains its own method
+//
+// A path match without a value is treated as unset: it contributes an empty
+// segment to the join, so a child with no usable path inherits the parent's path
+// as a prefix match.
 func MergeParentChildRouteMatch(
 	parent *gwv1.HTTPRouteMatch,
 	child *gwv1.HTTPRouteMatch,
@@ -179,13 +189,21 @@ func MergeParentChildRouteMatch(
 		return
 	}
 
-	if child.Path == nil {
+	// A child path match without a value is treated as an unset path: the child
+	// inherits the parent's path as a prefix match.
+	if child.Path == nil || child.Path.Value == nil {
 		child.Path = &gwv1.HTTPPathMatch{
 			Type:  new(gwv1.PathMatchPathPrefix),
 			Value: new(""),
 		}
 	}
-	child.Path.Value = new(path.Join(*parent.Path.Value, *child.Path.Value))
+	joined := path.Join(pathMatchValue(parent.Path), *child.Path.Value)
+	if joined == "" {
+		// Gateway API path values must be absolute, so a join of two empty paths
+		// resolves to the root prefix rather than the empty string.
+		joined = "/"
+	}
+	child.Path.Value = new(joined)
 
 	// Inherit parent and child headers and query parameters while augmenting the merge
 	// with additions specified on the child
@@ -196,6 +214,15 @@ func MergeParentChildRouteMatch(
 	if parent.Method != nil {
 		child.Method = new(*parent.Method)
 	}
+}
+
+// pathMatchValue returns the value of a path match, treating an unset match or an
+// unset value as an empty path.
+func pathMatchValue(p *gwv1.HTTPPathMatch) string {
+	if p == nil || p.Value == nil {
+		return ""
+	}
+	return *p.Value
 }
 
 // mergeHeaders merges parent and child header matches. If a header name is specified on both
