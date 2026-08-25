@@ -216,12 +216,12 @@ func (t *BackendTranslator) ApplyPerClient(
 		})
 	}
 
-	// Determine whether we need to build an inline CLA. Even with no overlays,
-	// inline-CLA clusters need a per-client CLA because PrioritizeEndpoints is
-	// UCC-dependent (locality, labels). This depends only on the base, not the UCC.
-	needsInlineCLA := base.NeedsInlineCLA()
+	// Determine whether the unmodified base needs an inline CLA. This is only a
+	// fast-path decision: overlays can change the discovery type or load assignment,
+	// so the materialized cluster's requirement is re-evaluated below.
+	baseNeedsInlineCLA := base.NeedsInlineCLA()
 
-	if len(overlays) == 0 && !needsInlineCLA {
+	if len(overlays) == 0 && !baseNeedsInlineCLA {
 		return nil, nil
 	}
 
@@ -244,6 +244,9 @@ func (t *BackendTranslator) ApplyPerClient(
 		undoDefaultedLocalityConfig(out)
 	}
 
+	needsInlineCLA := base.EndpointInputs != nil &&
+		clusterSupportsInlineCLA(out) &&
+		out.GetLoadAssignment() == nil
 	if needsInlineCLA {
 		// Gather endpoint plugins lazily — only inline-CLA clusters consume them,
 		// so the common EDS path (which returns early above) never pays for this.
@@ -251,10 +254,16 @@ func (t *BackendTranslator) ApplyPerClient(
 		// endpoint protos they modify; legacy raw mutators receive a one-time
 		// defensive deep copy of the entire nested input graph.
 		epIn, _ := ResolveEndpointInputs(kctx, ctx, ucc, *base.EndpointInputs, t.orderedEndpointPlugins())
-		// Re-check LoadAssignment: an overlay may have set it.
-		if out.GetLoadAssignment() == nil {
-			out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
-		}
+		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
+	}
+
+	// Gateway-scoped client identity is authoritative over every policy-produced
+	// TLS socket. Base translation applies it for the shared fast path; apply it
+	// again after per-client overlays so a replacement socket cannot discard it.
+	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
+		logger.Error("failed to apply gateway backend client certificate to per-client cluster",
+			"cluster", out.GetName(), "ucc", ucc.ResourceName(), "error", err)
+		return buildBlackholeCluster(backend), err
 	}
 
 	// Strict-mode validation on the post-overlay cluster. Non-inline-CLA bases
