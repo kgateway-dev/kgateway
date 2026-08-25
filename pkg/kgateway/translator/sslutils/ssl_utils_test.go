@@ -246,7 +246,9 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 		},
 		{
 			name: "signature_algorithms_with_invalid",
-			out:  &ir.TLSConfig{},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"},
+			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.SignatureAlgorithms: "rsa_pkcs1_sha256,invalid_algo,ecdsa_secp256r1_sha256",
 			},
@@ -255,7 +257,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "signature_algorithms_trailing_comma",
+			name: "signature_algorithms_trailing_comma_filtered",
 			out: &ir.TLSConfig{
 				SignatureAlgorithms: []string{"rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"},
 			},
@@ -264,7 +266,7 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "signature_algorithms_multiple_commas",
+			name: "signature_algorithms_multiple_commas_filtered",
 			out: &ir.TLSConfig{
 				SignatureAlgorithms: []string{"rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"},
 			},
