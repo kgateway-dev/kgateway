@@ -789,7 +789,7 @@ func NewPerClientEnvoyClusters(
 		// Intern identical per-client clusters across UCCs. Inline-CLA backends
 		// materialize a delta for every UCC, but UCCs that share the relevant
 		// inputs often produce byte-identical clusters.
-		internByVersion := map[uint64]sharedproto.Shared[*envoyclusterv3.Cluster]{}
+		var clusterInterner sharedproto.Interner[*envoyclusterv3.Cluster]
 		// Lend ApplyPerClient the shared base proto rather than a copy of it. It
 		// only reads this proto, and clones internally before letting an overlay
 		// touch one, so it already performs the single clone a materialized delta
@@ -834,11 +834,7 @@ func NewPerClientEnvoyClusters(
 				continue
 			}
 			clusterVersion := utils.HashProto(perClient)
-			shared, ok := internByVersion[clusterVersion]
-			if !ok {
-				shared = sharedproto.WrapPrehashed(perClient, clusterVersion)
-				internByVersion[clusterVersion] = shared
-			}
+			shared := clusterInterner.Intern(perClient, clusterVersion)
 			if set.Deltas == nil {
 				set.Deltas = make(map[string]uccClusterDelta)
 			}
