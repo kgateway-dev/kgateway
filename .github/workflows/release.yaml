@@ -14,6 +14,11 @@ on:
         type: boolean
         default: false
         description: "Run load tests against the staged artifacts before publishing (does not gate the release)"
+      allow_missing_previous_version:
+        type: boolean
+        default: false
+        description: |
+          Release even though the version that should precede this one was never tagged.
   push:
     branches:
       - main
@@ -69,6 +74,7 @@ jobs:
           # Pass the user-controlled dispatch input through the environment rather than
           # interpolating it into the script, so a crafted version string can't inject shell.
           INPUT_VERSION: ${{ inputs.version }}
+          ALLOW_MISSING_PREVIOUS_VERSION: ${{ inputs.allow_missing_previous_version }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -x
@@ -150,8 +156,12 @@ jobs:
               exit 1
             fi
             # The script exits 0 only when publishing is safe and explains every other outcome
-            # itself, so a bare invocation is the whole guard.
-            ./hack/ci/assert-release-absent.sh "$VERSION"
+            # itself, so a bare invocation is the whole guard. Both of its checks run here: the
+            # version is unreleased, and it follows the version that should precede it. The
+            # predecessor check reads ALLOW_MISSING_PREVIOUS_VERSION from the step environment and
+            # compares against the local tag list, complete because this job checks out with
+            # fetch-depth: 0.
+            ./hack/ci/assert-release-version-valid.sh "$VERSION"
             # Find the previous tag for release notes generation
             PREVIOUS_TAG=$(find_previous_release_notes_tag "$VERSION")
             if [ -z "$PREVIOUS_TAG" ]; then
@@ -590,8 +600,12 @@ jobs:
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
+      # The version itself was validated in setup; this is the last-moment check that nothing else
+      # released it while this run was in flight, the one answer that can change mid-run. Hence
+      # --skip-predecessor: re-validating the version number here would add nothing, and this job
+      # checks out shallow so it has no tags to compare against anyway.
       - name: Refuse to republish an existing version
-        run: ./hack/ci/assert-release-absent.sh "${VERSION}"
+        run: ./hack/ci/assert-release-version-valid.sh --skip-predecessor "${VERSION}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.setup.outputs.version }}
@@ -768,7 +782,7 @@ jobs:
           if [[ "${VERSION}" != *-* ]]; then
             # Only a definite 404 means there is no latest release yet; treating any lookup failure
             # as "none" would hand Latest to a backport GA whenever the API hiccuped. Same pattern
-            # as assert-release-absent.sh: check the status first, fail closed on anything else.
+            # as assert-release-version-valid.sh: check the status first, fail closed on anything else.
             response="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --include 2>/dev/null || true)"
             http_code="$(awk 'NR == 1 {print $2}' <<<"$response")"
             current=""

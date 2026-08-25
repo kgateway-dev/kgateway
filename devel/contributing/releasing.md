@@ -134,6 +134,7 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
   will trigger the release process and result in a new GitHub release,
   [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3) for example.
 - Optionally enable "Run load tests" to exercise the load suite against the staged artifacts. Its results do not gate the release.
+- Leave "Allow missing previous version" unchecked unless the release is deliberately skipping a version.
 
 The workflow builds and stages the images under a non-semver tag, runs the container-structure and
 Gateway API conformance checks against that staged copy, and only if they pass does it promote the
