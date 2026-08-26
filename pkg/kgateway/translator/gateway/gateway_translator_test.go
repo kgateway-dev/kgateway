@@ -3913,6 +3913,10 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "inherit_parentref.yaml")
 	})
 
+	t.Run("RegularExpression parent matcher inheritance", func(t *testing.T) {
+		test(t, "inherit_parent_matcher_regex.yaml")
+	})
+
 	t.Run("Parent delegates to multiple chidren", func(t *testing.T) {
 		test(t, "multiple_children.yaml")
 	})

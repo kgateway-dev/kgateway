@@ -1,0 +1,70 @@
+# This test contains a parent route with a RegularExpression path matcher and two
+# children that inherit the parent matcher via the inherit-parent-matcher annotation.
+# The merged child matcher must remain a regular expression so the parent regex is
+# not mangled (https://github.com/kgateway-dev/kgateway/issues/13792).
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate ^/teams/[^/]+(?:/.*)?$ to routes in "a" namespace
+# - Child a/route-a (inherit-parent-matcher=true):
+#   - PathPrefix /members goes to a/svc-a
+# - Child a/route-b (inherit-parent-matcher=true):
+#   - Exact /owners goes to a/svc-a
+#
+# Expected output routes (child inherits parent regex, child path appended as regex):
+# - ^/teams/[^/]+(?:/.*)?/members(?:/.*)?$ -> a/svc-a
+# - ^/teams/[^/]+(?:/.*)?/owners$ -> a/svc-a
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: RegularExpression
+        value: ^/teams/[^/]+(?:/.*)?$
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: a
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /members
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-b
+  namespace: a
+  annotations:
+    delegation.kgateway.dev/inherit-parent-matcher: "true"
+spec:
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /owners
+    backendRefs:
+    - name: svc-a
+      port: 8080
