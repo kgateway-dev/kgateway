@@ -58,7 +58,6 @@ func TestGatewayExtensionRecoversFromOIDCDiscoveryFailure(t *testing.T) {
 	gwExt := &kgateway.GatewayExtension{
 		ObjectMeta: metav1.ObjectMeta{Name: "dex-auth", Namespace: "default"},
 		Spec: kgateway.GatewayExtensionSpec{
-			Type: new(kgateway.GatewayExtensionTypeOAuth2),
 			OAuth2: &kgateway.OAuth2Provider{
 				IssuerURI:  new(idp.URL),
 				LogoutPath: "/logout",
@@ -245,7 +244,6 @@ func TestProviderBlipDoesNotBreakHealthyExtension(t *testing.T) {
 	gwExt := &kgateway.GatewayExtension{
 		ObjectMeta: metav1.ObjectMeta{Name: "dex-auth", Namespace: "default"},
 		Spec: kgateway.GatewayExtensionSpec{
-			Type: new(kgateway.GatewayExtensionTypeOAuth2),
 			OAuth2: &kgateway.OAuth2Provider{
 				IssuerURI:  new(idp.URL),
 				LogoutPath: "/logout",

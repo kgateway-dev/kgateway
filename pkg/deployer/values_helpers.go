@@ -97,7 +97,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 	// NodePort and LoadBalancer both support explicit node ports; if not set, nil renders nothing.
 	var nodePort *int32 = nil
 	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil {
-		serviceType := *(gwp.Spec.GetKube().GetService().GetType())
+		serviceType := *gwp.Spec.GetKube().GetService().GetType()
 		if serviceType == corev1.ServiceTypeNodePort || serviceType == corev1.ServiceTypeLoadBalancer {
 			if idx := istioslices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 				return p.GetPort() == port

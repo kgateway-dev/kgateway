@@ -1374,8 +1374,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	}
 
-	var notFoundErr *krtcollections.NotFoundError
-	if errors.As(err, &notFoundErr) {
+	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
 			resourceType = "Resource"

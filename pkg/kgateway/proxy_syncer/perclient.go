@@ -121,7 +121,7 @@ func snapshotPerClient(
 	}, krtopts.ToOptions("EndpointResources")...)
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *XdsSnapWrapper {
-		defer (collectXDSTransformMetrics(ucc.ResourceName()))(nil)
+		defer collectXDSTransformMetrics(ucc.ResourceName())(nil)
 
 		listenerRouteSnapshot := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if listenerRouteSnapshot == nil {
