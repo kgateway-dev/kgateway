@@ -60,7 +60,7 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
 
 - Select the branch to release from
   - Minor release: Select the `main` branch.
-  - Patch release: Select the release branch, e.g. `v2.3.x`, that will be patched.
+  - Patch release: Select the release branch, e.g. `v2.0.x`, that will be patched.
 - Enter the version for the release to create, e.g. `v2.0.3`. Must be a `v`-prefixed semver with no
   build metadata (a `+` suffix is rejected because the version doubles as an image/chart tag). This
   will trigger the release process and result in a new GitHub release,
