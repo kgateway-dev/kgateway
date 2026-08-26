@@ -678,7 +678,7 @@ type ZoneAwareForce struct {
 // HealthCheck contains the options to configure the health check.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto) for more details.
 
-// +kubebuilder:validation:XValidation:rule="has(self.http) != has(self.grpc)",message="exactly one of http or grpc must be set"
+// +kubebuilder:validation:ExactlyOneOf=http;grpc;tcp
 type HealthCheck struct {
 	// Timeout is time to wait for a health check response. If the timeout is reached the
 	// health check attempt will be considered a failure.
@@ -717,7 +717,42 @@ type HealthCheck struct {
 	// Grpc contains the options to configure the gRPC health check.
 	// +optional
 	Grpc *HealthCheckGrpc `json:"grpc,omitempty"`
+
+	// Tcp contains the options to configure the TCP health check.
+	// +optional
+	Tcp *HealthCheckTcp `json:"tcp,omitempty"`
 }
+
+// HealthCheckTcp contains the options to configure the TCP health check.
+//
+// With no Send payload this is a connect-only check: Envoy opens a TCP
+// connection to the endpoint and closes it without writing any bytes. That is
+// the only active health check available for backends that expose no HTTP or
+// gRPC health endpoint on the port serving traffic, which is common for Static
+// backends pointing at L4 addresses outside the cluster.
+//
+// +kubebuilder:validation:XValidation:rule="has(self.send) || !has(self.receive)",message="receive requires send to be set"
+type HealthCheckTcp struct {
+	// Send is the hex-encoded payload written to the endpoint after connecting,
+	// for example "000000FF". Leave unset for a connect-only check.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=1024
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9A-Fa-f]{2})+$')",message="send must be an even-length hex string"
+	Send *string `json:"send,omitempty"`
+
+	// Receive is the list of hex-encoded payloads expected back, matched in
+	// order against the bytes the endpoint returns. Only meaningful alongside
+	// Send, since a connect-only check never reads a response.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:items:MinLength=1
+	// +kubebuilder:validation:items:MaxLength=1024
+	// +kubebuilder:validation:XValidation:rule="self.all(p, p.matches('^([0-9A-Fa-f]{2})+$'))",message="each receive entry must be an even-length hex string"
+	Receive []string `json:"receive,omitempty"`
+}
+
 type HealthCheckHttp struct {
 	// Host is the value of the host header in the HTTP health check request. If
 	// unset, the name of the cluster this health check is associated

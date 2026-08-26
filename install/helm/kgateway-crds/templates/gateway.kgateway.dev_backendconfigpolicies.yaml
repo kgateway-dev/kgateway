@@ -259,6 +259,39 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  tcp:
+                    description: Tcp contains the options to configure the TCP health
+                      check.
+                    properties:
+                      receive:
+                        description: |-
+                          Receive is the list of hex-encoded payloads expected back, matched in
+                          order against the bytes the endpoint returns. Only meaningful alongside
+                          Send, since a connect-only check never reads a response.
+                        items:
+                          maxLength: 1024
+                          minLength: 1
+                          type: string
+                        maxItems: 16
+                        minItems: 1
+                        type: array
+                        x-kubernetes-validations:
+                        - message: each receive entry must be an even-length hex string
+                          rule: self.all(p, p.matches('^([0-9A-Fa-f]{2})+$'))
+                      send:
+                        description: |-
+                          Send is the hex-encoded payload written to the endpoint after connecting,
+                          for example "000000FF". Leave unset for a connect-only check.
+                        maxLength: 1024
+                        minLength: 1
+                        type: string
+                        x-kubernetes-validations:
+                        - message: send must be an even-length hex string
+                          rule: matches(self, '^([0-9A-Fa-f]{2})+$')
+                    type: object
+                    x-kubernetes-validations:
+                    - message: receive requires send to be set
+                      rule: has(self.send) || !has(self.receive)
                   timeout:
                     description: |-
                       Timeout is time to wait for a health check response. If the timeout is reached the
@@ -284,8 +317,9 @@ spec:
                 - unhealthyThreshold
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of http or grpc must be set
-                  rule: has(self.http) != has(self.grpc)
+                - message: exactly one of the fields in [http grpc tcp] must be set
+                  rule: '[has(self.http),has(self.grpc),has(self.tcp)].filter(x,x==true).size()
+                    == 1'
               http1ProtocolOptions:
                 description: Additional options when handling HTTP1 requests upstream.
                 properties:
