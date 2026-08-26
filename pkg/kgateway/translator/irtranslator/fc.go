@@ -37,8 +37,6 @@ type filterChainTranslator struct {
 	gateway         ir.GatewayIR
 	routeConfigName string
 	reporter        sdkreporter.Reporter
-	normalizePath   bool
-	mergeSlashes    bool
 
 	pluginPass TranslationPassPlugins
 }
@@ -122,8 +120,6 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChai
 		reporter:          n.reporter,
 		gateway:           n.gateway, // corresponds to Gateway API listener
 		policyAncestorRef: n.listener.PolicyAncestorRef,
-		normalizePath:     n.normalizePath,
-		mergeSlashes:      n.mergeSlashes,
 	}
 	networkFilters := sortNetworkFilters(n.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 	networkFilter, err := hcm.computeNetworkFilters(l)
@@ -200,8 +196,6 @@ type hcmNetworkFilterTranslator struct {
 	listener          ir.HttpFilterChainIR // policies attached to listener
 	gateway           ir.GatewayIR         // policies attached to gateway
 	policyAncestorRef gwv1.ParentReference
-	normalizePath     bool
-	mergeSlashes      bool
 }
 
 func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainIR) (*envoylistenerv3.Filter, error) {
@@ -264,8 +258,8 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	return &envoyhttp.HttpConnectionManager{
 		CodecType:        envoyhttp.HttpConnectionManager_AUTO,
 		StatPrefix:       statPrefix,
-		NormalizePath:    wrapperspb.Bool(h.normalizePath),
-		MergeSlashes:     h.mergeSlashes,
+		NormalizePath:    wrapperspb.Bool(true),
+		MergeSlashes:     true,
 		UseRemoteAddress: wrapperspb.Bool(true),
 		RouteSpecifier: &envoyhttp.HttpConnectionManager_Rds{
 			Rds: &envoyhttp.Rds{

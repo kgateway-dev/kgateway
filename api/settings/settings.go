@@ -346,15 +346,6 @@ type Settings struct {
 	// - "PERMISSIVE": ReferenceGrant required for BackendRef and SecretRef (default behavior).
 	// - "STRICT": ReferenceGrant required for all cross-namespace references including ExtensionRef.
 	ReferenceGrantMode ReferenceGrantMode `split_words:"true" default:"PERMISSIVE"`
-
-	// NormalizePath controls whether the HTTP Connection Manager normalizes request URL paths
-	// according to RFC 3986 before routing. Enabled by default.
-	NormalizePath bool `split_words:"true" default:"true"`
-
-	// MergeSlashes controls whether the HTTP Connection Manager merges adjacent slashes in
-	// request URL paths before routing. Enabled by default. Disable this if backends (e.g. S3)
-	// rely on repeated slashes in the path having meaning.
-	MergeSlashes bool `split_words:"true" default:"true"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
