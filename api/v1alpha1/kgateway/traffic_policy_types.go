@@ -296,10 +296,31 @@ type TransformationPolicy struct {
 	Response *Transform `json:"response,omitempty"`
 }
 
+// TransformationSecretRef defines a reference to a Kubernetes Secret for use in templates.
+type TransformationSecretRef struct {
+	// Name is the name given to the secret reference, used in the template function.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Name string `json:"name"`
+
+	// Secret is the reference to the Kubernetes Secret.
+	// +required
+	Secret gwv1.SecretObjectReference `json:"secret"`
+}
+
 // Transform defines the operations to be performed by the transformation.
 // These operations may include changing the actual request/response but may also cause side effects.
 // Side effects may include setting info that can be used in future steps (e.g. dynamic metadata) and can cause envoy to buffer.
 type Transform struct {
+	// SecretRefs defines a list of Kubernetes Secrets that can be referenced
+	// from the transformation templates using the `secret(name, key)` function.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=16
+	SecretRefs []TransformationSecretRef `json:"secretRefs,omitempty"`
+
 	// Set is a list of headers and the value they should be set to.
 	// +optional
 	// +listType=map
