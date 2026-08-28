@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"fmt"
+	"errors"
 	"net/netip"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -49,10 +49,10 @@ func buildStaticIr(in *kgateway.StaticBackend) (*StaticIr, error) {
 	var hostname string
 	for _, host := range in.Hosts {
 		if host.Host == "" {
-			return nil, fmt.Errorf("addr cannot be empty for host")
+			return nil, errors.New("addr cannot be empty for host")
 		}
 		if host.Port == 0 {
-			return nil, fmt.Errorf("port cannot be empty for host")
+			return nil, errors.New("port cannot be empty for host")
 		}
 
 		_, err := netip.ParseAddr(host.Host)

@@ -32,10 +32,6 @@ func (c *FakeGatewayKgateway) GatewayParameters(namespace string) kgateway.Gatew
 	return newFakeGatewayParameters(c, namespace)
 }
 
-func (c *FakeGatewayKgateway) HTTPListenerPolicies(namespace string) kgateway.HTTPListenerPolicyInterface {
-	return newFakeHTTPListenerPolicies(c, namespace)
-}
-
 func (c *FakeGatewayKgateway) ListenerPolicies(namespace string) kgateway.ListenerPolicyInterface {
 	return newFakeListenerPolicies(c, namespace)
 }

@@ -67,7 +67,7 @@ func NewTestingSuite(
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
 		"TestListenerPolicyRequestId":                {Manifests: []string{gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest}},
-		"TestHTTPListenerPolicyRequestId":            {Manifests: []string{gatewayManifest, requestIdEchoManifest, httpListenerPolicyRequestIdManifest}},
+		"TestListenerPolicyRequestIdPackTraceReason": {Manifests: []string{gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdPackTraceReasonManifest}},
 		"TestListenerPolicyMaxRequestsPerConnection": {Manifests: []string{gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest}},
 		"TestListenerPolicyMaxHeadersCount":          {Manifests: []string{gatewayManifest, httpRouteManifest, maxHeadersCountManifest}},
 		"TestStripHostPortAnyPort":                   {Manifests: []string{gatewayManifest, stripHostPortAnyPortManifest}},
@@ -92,7 +92,7 @@ func NewTestingSuite(
 }
 
 func (s *testingSuite) TestHttpListenerPolicyAllFields() {
-	// Test that the HTTPListenerPolicy with all additional fields is applied correctly
+	// Test that the ListenerPolicy with all additional fields is applied correctly
 	// The test verifies that the gateway is working and all policy fields are applied
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
@@ -121,7 +121,7 @@ func (s *testingSuite) TestHttpListenerPolicyAllFields() {
 }
 
 func (s *testingSuite) TestHttpListenerPolicyServerHeader() {
-	// Test that the HTTPListenerPolicy with serverHeaderTransformation field is applied correctly
+	// Test that the ListenerPolicy with serverHeaderTransformation field is applied correctly
 	// The test verifies that the server header is transformed as expected
 	// With PassThrough, the server header should be the backend server's header (nginx/1.28.0)
 	// instead of Envoy's default (envoy)
@@ -162,7 +162,7 @@ func (s *testingSuite) TestListenerPolicyHTTP2ProtocolOptions() {
 
 func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 	// The test verifies that the HTTP1 headers are preserved as expected in the request and response
-	// The HTTPListenerPolicy ensures that the header is preserved in the request,
+	// The ListenerPolicy ensures that the header is preserved in the request,
 	// and the BackendConfigPolicy ensures that the header is preserved in the response.
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
@@ -395,12 +395,12 @@ func (s *testingSuite) TestListenerPolicyRequestId() {
 		})
 }
 
-// TestHTTPListenerPolicyRequestId tests the RequestID configuration feature when applied
-// through an HTTPListenerPolicy resource. This end-to-end test verifies that:
+// TestListenerPolicyRequestIdPackTraceReason tests the RequestID configuration feature when
+// packTraceReason is enabled on a ListenerPolicy. This end-to-end test verifies that:
 // 1. The RequestID configuration is properly applied to the gateway
 // 2. Traffic flows correctly with the configuration in place
 // 3. The x-request-id header is generated with valid UUID format
-func (s *testingSuite) TestHTTPListenerPolicyRequestId() {
+func (s *testingSuite) TestListenerPolicyRequestIdPackTraceReason() {
 	// Verify x-request-id is generated with valid UUID format when not provided
 	// UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8-4-4-4-12 lowercase hex digits)
 	// The echo server returns all request headers in the response body, allowing us to verify

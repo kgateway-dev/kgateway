@@ -16,13 +16,14 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
-	tlsutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -31,9 +32,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	pluginutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
 var logger = logging.New("plugin/backendtlspolicy")
@@ -96,17 +95,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 	translate := buildTranslateFunc(commoncol.ConfigMaps.Collection(), commoncol.Secrets)
 
-	policyStatusMarker, tlsPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		tlsPolicyIR, err := translate(krtctx, i)
-
-		// Create status marker if existing status has kgateway controller
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range i.Status.Ancestors {
-			if string(ancestor.ControllerName) == kgwellknown.DefaultGatewayControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
-		}
 
 		pol := &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -117,46 +107,36 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			},
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
-			TargetRefs: pluginutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
+			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
 		}
 		if err != nil {
 			pol.Errors = []error{err}
 		}
-		return statusMarker, pol
+		return pol
 	})
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, policyStatusMarker)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     backendTlsPolicyGroupKind.Group,
-				Kind:      backendTlsPolicyGroupKind.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:                            "BackendTLSPolicy",
-				Policies:                        tlsPolicyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
-				ProcessBackend:                  processBackend,
-				MergePolicies:                   MergePolicies,
-				GetPolicyStatus:                 getPolicyStatusFn(cli),
-				PatchPolicyStatus:               patchPolicyStatusFn(cli),
-				BuildPolicyStatus:               buildPolicyStatusFn(),
-				PolicyStatusFromGatewayReports:  true,
+				Name:           "BackendTLSPolicy",
+				Policies:       tlsPolicyCol,
+				ProcessBackend: processBackend,
+				MergePolicies:  MergePolicies,
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
+					kgwellknown.BackendTLSPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *gwv1.BackendTLSPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
+						return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
+					},
+					BuildDesiredPolicyStatus,
+					// This status reports the Gateway API's own PolicyReasonAccepted, not the
+					// kgateway Valid/Pending vocabulary the standard grading expects.
+					pluginutils.NoConditionErrorMetric,
+				),
+				PolicyStatusFromGatewayReports: true,
 			},
 		},
 	}
@@ -283,7 +263,7 @@ func buildTranslateFunc(
 				if err != nil {
 					perr := &InvalidCACertificateRefError{
 						Ref:   localObjectRefString(refKind, certRef),
-						Cause: fmt.Errorf("%w: %v", ErrSecretNotFound, err),
+						Cause: fmt.Errorf("%w: %w", ErrSecretNotFound, err),
 					}
 					logger.Error("error fetching Secret", "error", perr, "policy_name", policyCR.Name)
 					return &policyIr, perr
@@ -303,7 +283,7 @@ func buildTranslateFunc(
 					Kind:  refKind,
 				}
 			}
-			tlsContextDefault, err = tlsutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
+			tlsContextDefault, err = pluginutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := &InvalidCACertificateRefError{
 					Ref:   localObjectRefString(refKind, certRef),

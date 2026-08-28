@@ -21,7 +21,7 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 	ctx, cancel := context.WithCancel(ctx)
 
 	// Set up the gRPC server
-	sdsServer := server.SetupEnvoySDS(secrets, sdsClient, sdsServerAddress)
+	sdsServer := server.SetupEnvoySDS(ctx, secrets, sdsClient, sdsServerAddress)
 	// Run the gRPC Server
 	serverStopped, err := sdsServer.Run(ctx) // runs the grpc server in internal goroutines
 	if err != nil {
