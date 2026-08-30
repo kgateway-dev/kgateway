@@ -1183,6 +1183,15 @@ spec:
                                       minimum: 1
                                       type: integer
                                   type: object
+                                timeout:
+                                  description: Timeout for fetching the remote JWKS.
+                                    If not specified, defaults to 5s.
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                  - message: timeout must be at least 1ms
+                                    rule: duration(self) >= duration('1ms')
                                 url:
                                   description: |-
                                     URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.

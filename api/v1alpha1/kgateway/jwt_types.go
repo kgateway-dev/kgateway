@@ -164,6 +164,13 @@ type RemoteJWKS struct {
 	// when the remote JWKS server is unavailable.
 	// +optional
 	RetryPolicy *JWKSRetryPolicy `json:"retryPolicy,omitempty"`
+
+	// Timeout for fetching the remote JWKS. If not specified, defaults to 5s.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms"
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 }
 
 // JWKSAsyncFetch configures asynchronous fetching of the remote JWKS.
