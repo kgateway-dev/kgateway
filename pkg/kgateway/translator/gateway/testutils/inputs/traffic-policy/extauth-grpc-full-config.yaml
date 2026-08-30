@@ -101,6 +101,7 @@ spec:
           maxInterval: 200ms      
     failOpen: true
     clearRouteCache: true
+    percentageEnabled: 10
     statusOnError: 400
     statPrefix: my_prefix
     withRequestBody:

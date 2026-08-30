@@ -74,6 +74,10 @@ Listeners:
               - exact: authorization
             clearRouteCache: true
             failureModeAllow: true
+            filterEnabled:
+              defaultValue:
+                numerator: 100
+              runtimeKey: ext_authz_enabled
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true

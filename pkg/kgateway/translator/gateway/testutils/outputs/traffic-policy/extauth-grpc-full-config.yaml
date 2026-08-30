@@ -68,6 +68,10 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
             clearRouteCache: true
             failureModeAllow: true
+            filterEnabled:
+              defaultValue:
+                numerator: 10
+              runtimeKey: ext_authz_enabled
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true

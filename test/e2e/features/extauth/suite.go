@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -37,6 +38,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		},
 		"TestRouteTargetedExtAuthPolicy": {
 			Manifests: []string{securedRouteManifest, insecureRouteManifest},
+		},
+		"TestPercentageEnabledExtAuthPolicy": {
+			Manifests: []string{percentageEnabledManifest},
 		},
 	}
 	return &testingSuite{
@@ -105,6 +109,61 @@ func (s *testingSuite) TestExtAuthPolicy() {
 					Body:       gomega.ContainSubstring(tc.expectedUpstreamBodyContents),
 				},
 				opts...)
+		})
+	}
+}
+
+// TestPercentageEnabledExtAuthPolicy tests that percentageEnabled on the GatewayExtension controls
+// the fraction of requests sent to the auth service. Only 0 and 100 are deterministic, so those are
+// the values exercised here.
+func (s *testingSuite) TestPercentageEnabledExtAuthPolicy() {
+	testCases := []struct {
+		name           string
+		headers        map[string]string
+		hostname       string
+		expectedStatus int
+		expectedBody   types.GomegaMatcher
+	}{
+		{
+			name:     "request not sent to the auth service at 0%",
+			hostname: "neverauthed.com",
+			headers: map[string]string{
+				// the auth service would deny this request if it were consulted
+				"x-ext-authz": "deny",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   gomega.Not(gomega.ContainSubstring("X-Ext-Authz-Check-Result")),
+		},
+		{
+			name:           "request allowed with allow header at 100%",
+			hostname:       "alwaysauthed.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			expectedStatus: http.StatusOK,
+			expectedBody:   gomega.ContainSubstring("X-Ext-Authz-Check-Result"),
+		},
+		{
+			name:           "request denied with deny header at 100%",
+			hostname:       "alwaysauthed.com",
+			headers:        map[string]string{"x-ext-authz": "deny"},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			opts := []curl.Option{
+				curl.WithHostHeader(tc.hostname),
+				curl.WithPort(80),
+			}
+			for k, v := range tc.headers {
+				opts = append(opts, curl.WithHeader(k, v))
+			}
+
+			resp := &testmatchers.HttpResponse{StatusCode: tc.expectedStatus}
+			if tc.expectedBody != nil {
+				resp.Body = tc.expectedBody
+			}
+			common.BaseGateway.Send(s.T(), resp, opts...)
 		})
 	}
 }
