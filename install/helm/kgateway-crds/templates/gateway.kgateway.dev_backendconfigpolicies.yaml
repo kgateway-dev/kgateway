@@ -1097,6 +1097,42 @@ spec:
                           type: string
                         type: array
                     type: object
+                  sds:
+                    description: |-
+                      SDS configures the proxy to fetch the client certificate and/or the
+                      validation context from a Secret Discovery Service server, instead of
+                      loading them from a Kubernetes Secret or from disk. This keeps private
+                      key material out of the Kubernetes API and lets the SDS server rotate
+                      certificates without restarting the proxy.
+                    properties:
+                      certificateSecretName:
+                        description: |-
+                          CertificateSecretName is the SDS resource name for the client certificate
+                          and private key used for mTLS to the backend. For SPIFFE/SPIRE this is the
+                          SPIFFE ID of the workload, for example spiffe://example.org/ns/default/sa/backend.
+                        minLength: 1
+                        type: string
+                      clusterName:
+                        description: |-
+                          ClusterName is the name of the Envoy cluster that serves SDS. The cluster
+                          must be present in the proxy bootstrap configuration.
+                        minLength: 1
+                        type: string
+                      validationContextName:
+                        description: |-
+                          ValidationContextName is the SDS resource name for the trust bundle used to
+                          validate the backend's certificate chain. For SPIFFE/SPIRE this is the trust
+                          domain ID, for example spiffe://example.org.
+                        minLength: 1
+                        type: string
+                    required:
+                    - clusterName
+                    type: object
+                    x-kubernetes-validations:
+                    - message: at least one of the fields in [certificateSecretName
+                        validationContextName] must be set
+                      rule: '[has(self.certificateSecretName),has(self.validationContextName)].filter(x,x==true).size()
+                        >= 1'
                   secretRef:
                     description: Reference to the TLS secret containing the certificate,
                       key, and optionally the root CA.
@@ -1141,9 +1177,9 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of the fields in [secretRef files insecureSkipVerify
+                - message: exactly one of the fields in [secretRef files sds insecureSkipVerify
                     wellKnownCACertificates] must be set
-                  rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
+                  rule: '[has(self.secretRef),has(self.files),has(self.sds),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
               upstreamProxyProtocol:
                 description: |-

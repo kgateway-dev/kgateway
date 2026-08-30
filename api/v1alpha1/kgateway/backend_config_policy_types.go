@@ -340,7 +340,7 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
+// +kubebuilder:validation:ExactlyOneOf=secretRef;files;sds;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -349,6 +349,14 @@ type TLS struct {
 	// File paths to certificates local to the proxy.
 	// +optional
 	Files *TLSFiles `json:"files,omitempty"`
+
+	// SDS configures the proxy to fetch the client certificate and/or the
+	// validation context from a Secret Discovery Service server, instead of
+	// loading them from a Kubernetes Secret or from disk. This keeps private
+	// key material out of the Kubernetes API and lets the SDS server rotate
+	// certificates without restarting the proxy.
+	// +optional
+	SDS *SDS `json:"sds,omitempty"`
 
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
@@ -422,6 +430,35 @@ type TLSParameters struct {
 
 	// +optional
 	SignatureAlgorithms []string `json:"signatureAlgorithms,omitempty"`
+}
+
+// SDS configures retrieval of TLS material from a Secret Discovery Service server.
+//
+// The referenced cluster must already exist in the proxy bootstrap. kgateway does
+// not create it; it is supplied by the deployer, for example the gateway_proxy_sds
+// cluster used by the Istio integration, or a cluster pointing at a SPIFFE/SPIRE
+// agent Unix domain socket.
+// +kubebuilder:validation:AtLeastOneOf=certificateSecretName;validationContextName
+type SDS struct {
+	// ClusterName is the name of the Envoy cluster that serves SDS. The cluster
+	// must be present in the proxy bootstrap configuration.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	ClusterName string `json:"clusterName"`
+
+	// CertificateSecretName is the SDS resource name for the client certificate
+	// and private key used for mTLS to the backend. For SPIFFE/SPIRE this is the
+	// SPIFFE ID of the workload, for example spiffe://example.org/ns/default/sa/backend.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	CertificateSecretName *string `json:"certificateSecretName,omitempty"`
+
+	// ValidationContextName is the SDS resource name for the trust bundle used to
+	// validate the backend's certificate chain. For SPIFFE/SPIRE this is the trust
+	// domain ID, for example spiffe://example.org.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	ValidationContextName *string `json:"validationContextName,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="has(self.tlsCertificate) || has(self.tlsKey) || has(self.rootCA)",message="At least one of tlsCertificate, tlsKey, or rootCA must be set in TLSFiles"
