@@ -17,7 +17,7 @@ jobs:
   # Run source-tree linting and formatting checks
   go-lint:
     name: Go
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out code into the Go module directory
@@ -32,7 +32,7 @@ jobs:
   # Lint Helm charts
   helm-lint:
     name: Helm
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check out code into the Go module directory
@@ -43,7 +43,7 @@ jobs:
   # Lint GitHub workflow files
   action-lint:
     name: GHA
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
