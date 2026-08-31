@@ -43,7 +43,29 @@ func translateHealthCheck(hc *kgateway.HealthCheck) *envoycorev3.HealthCheck {
 		if hc.Grpc.Authority != nil {
 			healthCheck.GetGrpcHealthCheck().Authority = *hc.Grpc.Authority
 		}
+	} else if hc.Tcp != nil {
+		tcpHealthCheck := &envoycorev3.HealthCheck_TcpHealthCheck{}
+		// Leaving Send unset is meaningful, not an omission: Envoy reads an
+		// empty payload as a connect-only check.
+		if hc.Tcp.Send != nil {
+			tcpHealthCheck.Send = hexPayload(*hc.Tcp.Send)
+		}
+		for _, r := range hc.Tcp.Receive {
+			tcpHealthCheck.Receive = append(tcpHealthCheck.Receive, hexPayload(r))
+		}
+		healthCheck.HealthChecker = &envoycorev3.HealthCheck_TcpHealthCheck_{
+			TcpHealthCheck: tcpHealthCheck,
+		}
 	}
 
 	return healthCheck
+}
+
+// hexPayload wraps a hex-encoded string in an Envoy health check payload.
+// Envoy's Payload_Text field is itself hex-encoded, so the value is passed
+// through as-is; the CRD validates that it is an even-length hex string.
+func hexPayload(s string) *envoycorev3.HealthCheck_Payload {
+	return &envoycorev3.HealthCheck_Payload{
+		Payload: &envoycorev3.HealthCheck_Payload_Text{Text: s},
+	}
 }
