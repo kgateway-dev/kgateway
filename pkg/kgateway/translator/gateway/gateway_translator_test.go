@@ -2865,6 +2865,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set and gateway with allowedListeners selector unset", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-sets/allowed-listeners-selector-unset.yaml"},
+			outputFile: "listener-sets/allowed-listeners-selector-unset.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set and gateway with an invalid allowedListeners selector", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-sets/allowed-listeners-selector-invalid.yaml"},
+			outputFile: "listener-sets/allowed-listeners-selector-invalid.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("listener set accepted with rejected individual listener", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-sets/accepted-ls-rejected-listener.yaml"},
