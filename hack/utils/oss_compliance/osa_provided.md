@@ -37,17 +37,6 @@ Name|Version|License
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.11.1|MIT License
-[go.opentelemetry.io/otel](https://go.opentelemetry.io/otel)|v1.44.0|Apache License 2.0
-[otlplog/otlploggrpc](https://go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc)|v0.19.0|Apache License 2.0
-[otlpmetric/otlpmetricgrpc](https://go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc)|v1.43.0|Apache License 2.0
-[otlptrace/otlptracegrpc](https://go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc)|v1.43.0|Apache License 2.0
-[stdout/stdoutlog](https://go.opentelemetry.io/otel/exporters/stdout/stdoutlog)|v0.19.0|Apache License 2.0
-[stdout/stdoutmetric](https://go.opentelemetry.io/otel/exporters/stdout/stdoutmetric)|v1.43.0|Apache License 2.0
-[stdout/stdouttrace](https://go.opentelemetry.io/otel/exporters/stdout/stdouttrace)|v1.43.0|Apache License 2.0
-[otel/sdk](https://go.opentelemetry.io/otel/sdk)|v1.43.0|Apache License 2.0
-[sdk/log](https://go.opentelemetry.io/otel/sdk/log)|v0.19.0|Apache License 2.0
-[sdk/metric](https://go.opentelemetry.io/otel/sdk/metric)|v1.43.0|Apache License 2.0
-[otel/trace](https://go.opentelemetry.io/otel/trace)|v1.44.0|Apache License 2.0
 [proto/otlp](https://go.opentelemetry.io/proto/otlp)|v1.10.0|Apache License 2.0
 [go.uber.org/atomic](https://go.uber.org/atomic)|v1.11.0|MIT License
 [go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
