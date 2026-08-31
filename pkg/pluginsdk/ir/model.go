@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"maps"
+	"slices"
 	"strings"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -267,6 +268,35 @@ func (e *EndpointsForBackend) Add(l PodLocality, emd EndpointWithMd) {
 	// won't result in different equality hashes.
 	e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
 	e.LbEps[l] = append(e.LbEps[l], emd)
+}
+
+// ReuseEndpointsFrom copies the endpoint entries and their precomputed
+// equality hash from base, avoiding a per-endpoint proto re-hash (which
+// marshals every LbEndpoint). The equality hashes are identical to what a full
+// re-Add of every endpoint would produce: epsEqualityHash only depends on the
+// endpoint set (shared with base), and the final hash mixes in this copy's own
+// upstreamHash for backend identity.
+// The per-locality slices are cloned to avoid append aliasing with base. The
+// endpoint map is rebuilt from scratch, so any stale localities previously
+// present in e are dropped.
+func (e *EndpointsForBackend) ReuseEndpointsFrom(base *EndpointsForBackend) {
+	e.epsEqualityHash = base.epsEqualityHash
+	e.LbEpsEqualityHash = e.upstreamHash
+	// Mirror what Add() computes. Distinguish the empty set by endpoint count,
+	// not by hash value: a non-empty set can xor to a zero epsEqualityHash
+	// (e.g. duplicate endpoints across localities), and Add() would still
+	// produce hash(0, upstreamHash) in that case.
+	nonEmpty := false
+	e.LbEps = make(LocalityLbMap, len(base.LbEps))
+	for l, eps := range base.LbEps {
+		if len(eps) > 0 {
+			nonEmpty = true
+		}
+		e.LbEps[l] = slices.Clone(eps)
+	}
+	if nonEmpty {
+		e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
+	}
 }
 
 func (c EndpointsForBackend) ResourceName() string {

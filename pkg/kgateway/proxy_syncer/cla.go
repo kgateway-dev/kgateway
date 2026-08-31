@@ -1,8 +1,6 @@
 package proxy_syncer
 
 import (
-	"fmt"
-
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -17,10 +15,23 @@ type UccWithEndpoints struct {
 	Endpoints     *envoyendpointv3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string
+	// resourceName caches the KRT identity key, which KRT recomputes for every row on
+	// every event. Rows are per-client x per-backend, so computing it on each call is a
+	// per-call allocation multiplied by both dimensions.
+	// +noKrtEquals derived from Client and endpointsName, both of which are compared
+	resourceName string
 }
 
 func (c UccWithEndpoints) ResourceName() string {
-	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.endpointsName)
+	// Fall back for rows built as bare struct literals (tests) that skip the cache.
+	if c.resourceName == "" {
+		return uccEndpointsResourceName(c.Client, c.endpointsName)
+	}
+	return c.resourceName
+}
+
+func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName string) string {
+	return client.ResourceName() + "/" + endpointsName
 }
 
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
@@ -49,11 +60,13 @@ func NewPerClientEnvoyEndpoints(
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
 			cla, additionalHash := translateEndpoints(kctx, ucc, ep)
+			epName := ep.ResourceName()
 			u := UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
 				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
-				endpointsName: ep.ResourceName(),
+				endpointsName: epName,
+				resourceName:  uccEndpointsResourceName(ucc, epName),
 			}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}

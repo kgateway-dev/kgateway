@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -25,7 +26,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -730,11 +730,11 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	out := &envoyroutev3.Route{
 		Match: translateMatcher(in.Match),
 	}
-	name := in.Name
-	if name != "" {
-		out.Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, name, in.MatchIndex)
+	matchIdx := strconv.Itoa(in.MatchIndex)
+	if name := in.Name; name != "" {
+		out.Name = generatedName + "-" + name + "-matcher-" + matchIdx
 	} else {
-		out.Name = fmt.Sprintf("%s-matcher-%d", generatedName, in.MatchIndex)
+		out.Name = generatedName + "-matcher-" + matchIdx
 	}
 
 	return out
@@ -793,7 +793,9 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch
 		}
 	case gwv1.PathMatchRegularExpression:
 		out.PathSpecifier = &envoyroutev3.RouteMatch_SafeRegex{
-			SafeRegex: regexutils.NewRegexWithProgramSize(pathValue, nil),
+			SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+				Regex: pathValue,
+			},
 		}
 	}
 }
@@ -819,7 +821,9 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoyroutev3.HeaderMatcher
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: matcher.Value,
+							},
 						},
 					},
 				}
@@ -859,7 +863,9 @@ func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoyroutev3.QueryParam
 				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegexWithProgramSize(matcher.Value, nil),
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								Regex: matcher.Value,
+							},
 						},
 					},
 				}

@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -62,12 +63,7 @@ func defaultGODEBUG(t *testing.T) godebugSettings {
 type godebugSettings string
 
 func (settings godebugSettings) contains(key, value string) bool {
-	for _, setting := range strings.Split(string(settings), ",") {
-		if setting == key+"="+value {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(strings.Split(string(settings), ","), key+"="+value)
 }
 
 const negativeSerialCertPEM = `-----BEGIN CERTIFICATE-----

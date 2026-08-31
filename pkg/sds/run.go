@@ -2,6 +2,7 @@ package sds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -23,7 +24,7 @@ var (
 )
 
 type Config struct {
-	SdsServerAddress string `split_words:"true" default:"0.0.0.0:8234"` // sds_config target_uri in the envoy instance that it provides secrets to
+	SdsServerAddress string `split_words:"true" default:"127.0.0.1:8234"` // sds_config target_uri in the envoy instance that it provides secrets to; loopback-only since Envoy always dials it from the same pod
 	SdsClient        string `split_words:"true"`
 
 	PodName      string `split_words:"true"`
@@ -87,7 +88,7 @@ func setup() Config {
 	}
 
 	if !c.IstioMtlsSdsEnabled {
-		err := fmt.Errorf("Istio Cert rotation must be enabled, using env var ISTIO_MTLS_SDS_ENABLED")
+		err := errors.New("Istio Cert rotation must be enabled, using env var ISTIO_MTLS_SDS_ENABLED")
 		log.Fatalf("invalid config: %v", err)
 	}
 	return c

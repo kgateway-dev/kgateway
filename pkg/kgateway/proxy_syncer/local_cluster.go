@@ -2,9 +2,9 @@ package proxy_syncer
 
 import (
 	"cmp"
-	"fmt"
 	"hash/fnv"
 	"slices"
+	"strconv"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -67,6 +67,7 @@ func NewPerClientLocalClusterEndpoints(
 			Endpoints:     cla,
 			EndpointsHash: hashLocalClusterLoadAssignment(cla),
 			endpointsName: localClusterName,
+			resourceName:  uccEndpointsResourceName(ucc, localClusterName),
 		}
 	}, krtopts.ToOptions("LocalClusterEndpoints")...)
 
@@ -168,7 +169,7 @@ func hashLocalClusterLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) 
 		for _, lbEndpoint := range localityEndpoints.GetLbEndpoints() {
 			socketAddress := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
 			utils.HashStringField(hasher, socketAddress.GetAddress())
-			utils.HashStringField(hasher, fmt.Sprintf("%d", socketAddress.GetPortValue()))
+			utils.HashStringField(hasher, strconv.FormatUint(uint64(socketAddress.GetPortValue()), 10))
 		}
 	}
 	return hasher.Sum64()

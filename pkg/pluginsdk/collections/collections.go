@@ -14,6 +14,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -47,6 +49,29 @@ type CommonCollections struct {
 	LocalityPods krt.Collection[krtcollections.LocalityPod]
 	RefGrants    *krtcollections.RefGrantIndex
 
+	// Raw informer-backed collections of the Gateway API resources kgateway writes status
+	// for. These share informers with the IR collections above; they are exposed so the
+	// status syncer can derive per-object desired-status collections that see live status
+	// changes (the IR collections may not re-emit on status-only updates).
+	// TCP and TLS routes are normalized to their v1alpha2 representation; legacy
+	// XListenerSets are normalized to gwv1.ListenerSet with their GroupVersionKind
+	// preserved as XListenerSet.
+	RawGateways     krt.Collection[*gwv1.Gateway]
+	RawListenerSets krt.Collection[*gwv1.ListenerSet]
+	RawHTTPRoutes   krt.Collection[*gwv1.HTTPRoute]
+	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
+	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
+	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+
+	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
+	// writes may go through, most preferred first, resolved from CRD discovery at startup.
+	// Normally one entry. More than one means discovery was not authoritative and the
+	// writer must dispatch to whichever version's informer actually holds the object.
+	// Read them through TCPRouteWriteVersions/TLSRouteWriteVersions, which supply the
+	// fallback for a CommonCollections built without InitCollections.
+	tcpRouteWriteGVRs []schema.GroupVersionResource
+	tlsRouteWriteGVRs []schema.GroupVersionResource
+
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
 	// static set of global Settings, non-krt based for dev speed
@@ -56,6 +81,26 @@ type CommonCollections struct {
 	ControllerName string
 
 	options *option
+}
+
+// TCPRouteWriteVersions returns the served TCPRoute API versions status writes may go
+// through, most preferred first. It never returns an empty slice, so callers can index the
+// preferred version unconditionally: a CommonCollections built without InitCollections
+// (which some tests do) would otherwise leave the kind with no write version at all.
+func (c *CommonCollections) TCPRouteWriteVersions() []schema.GroupVersionResource {
+	return routeWriteVersionsOrDefault(c.tcpRouteWriteGVRs, wellknown.TCPRouteV1GVR)
+}
+
+// TLSRouteWriteVersions is TCPRouteWriteVersions for TLSRoutes.
+func (c *CommonCollections) TLSRouteWriteVersions() []schema.GroupVersionResource {
+	return routeWriteVersionsOrDefault(c.tlsRouteWriteGVRs, wellknown.TLSRouteV1GVR)
+}
+
+func routeWriteVersionsOrDefault(gvrs []schema.GroupVersionResource, fallback schema.GroupVersionResource) []schema.GroupVersionResource {
+	if len(gvrs) == 0 {
+		return []schema.GroupVersionResource{fallback}
+	}
+	return gvrs
 }
 
 func (c *CommonCollections) HasSynced() bool {

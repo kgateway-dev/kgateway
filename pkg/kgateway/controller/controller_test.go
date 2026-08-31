@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -712,7 +713,7 @@ func (s *ControllerSuite) startController(
 		return err
 	}
 
-	if err := mgr.GetClient().Create(ctx, &kgateway.GatewayParameters{
+	if err := s.client.Create(ctx, &kgateway.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      selfManagedGatewayClassName,
 			Namespace: "default",
@@ -787,7 +788,7 @@ func (s *ControllerSuite) startController(
 	// This ensures the controller is fully started before tests run
 	s.EventuallyWithT(func(c *assert.CollectT) {
 		var gcList gwv1.GatewayClassList
-		err := mgr.GetClient().List(ctx, &gcList)
+		err := s.client.List(ctx, &gcList)
 		assert.NoError(c, err, assert.NoError)
 	}, defaultPollTimeout, 250*time.Millisecond, "timed out waiting for Manager to be ready")
 	select {
@@ -795,7 +796,7 @@ func (s *ControllerSuite) startController(
 		if err != nil {
 			return fmt.Errorf("controller-manager exited before it was ready: %w", err)
 		}
-		return fmt.Errorf("controller-manager exited before it was ready")
+		return errors.New("controller-manager exited before it was ready")
 	default:
 	}
 
