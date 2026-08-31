@@ -1162,7 +1162,9 @@ spec:
                                     cluster_name, node_name.
                                   type: boolean
                                 grpcService:
-                                  description: Send access logs to gRPC service
+                                  description: |-
+                                    Send access logs to gRPC service
+                                    Mutually exclusive with HttpService.
                                   properties:
                                     authority:
                                       description: |-
@@ -1351,6 +1353,139 @@ spec:
                                   - backendRef
                                   - logName
                                   type: object
+                                httpService:
+                                  description: |-
+                                    Send access logs to HTTP service
+                                    Mutually exclusive with GrpcService.
+                                  properties:
+                                    backendRef:
+                                      description: The backend HTTP service. Can be
+                                        any type of supported backend (Kubernetes
+                                        Service, kgateway Backend, etc..)
+                                      properties:
+                                        group:
+                                          default: ""
+                                          description: |-
+                                            Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                            When unspecified or empty string, core API group is inferred.
+                                          maxLength: 253
+                                          pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                          type: string
+                                        kind:
+                                          default: Service
+                                          description: |-
+                                            Kind is the Kubernetes resource kind of the referent. For example
+                                            "Service".
+
+                                            Defaults to "Service" when not specified.
+
+                                            ExternalName services can refer to CNAME DNS records that may live
+                                            outside of the cluster and as such are difficult to reason about in
+                                            terms of conformance. They also may not be safe to forward to (see
+                                            CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                            support ExternalName Services.
+
+                                            Support: Core (Services with a type other than ExternalName)
+
+                                            Support: Implementation-specific (Services with type ExternalName)
+                                          maxLength: 63
+                                          minLength: 1
+                                          pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                          type: string
+                                        name:
+                                          description: Name is the name of the referent.
+                                          maxLength: 253
+                                          minLength: 1
+                                          type: string
+                                        namespace:
+                                          description: |-
+                                            Namespace is the namespace of the backend. When unspecified, the local
+                                            namespace is inferred.
+
+                                            Note that when a namespace different than the local namespace is specified,
+                                            a ReferenceGrant object is required in the referent namespace to allow that
+                                            namespace's owner to accept the reference. See the ReferenceGrant
+                                            documentation for details.
+
+                                            Support: Core
+                                          maxLength: 63
+                                          minLength: 1
+                                          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                          type: string
+                                        port:
+                                          description: |-
+                                            Port specifies the destination port number to use for this resource.
+                                            Port is required when the referent is a Kubernetes Service. In this
+                                            case, the port number is the service port number, not the target port.
+                                            For other resources, destination port might be derived from the referent
+                                            resource or this field.
+                                          format: int32
+                                          maximum: 65535
+                                          minimum: 1
+                                          type: integer
+                                        weight:
+                                          default: 1
+                                          description: |-
+                                            Weight specifies the proportion of requests forwarded to the referenced
+                                            backend. This is computed as weight/(sum of all weights in this
+                                            BackendRefs list). For non-zero values, there may be some epsilon from
+                                            the exact proportion defined here depending on the precision an
+                                            implementation supports. Weight is not a percentage and the sum of
+                                            weights does not need to equal 100.
+
+                                            If only one backend is specified and it has a weight greater than 0, 100%
+                                            of the traffic is forwarded to that backend. If weight is set to 0, no
+                                            traffic should be forwarded for this entry. If unspecified, weight
+                                            defaults to 1.
+
+                                            Support for this field varies based on the context where used.
+                                          format: int32
+                                          maximum: 1000000
+                                          minimum: 0
+                                          type: integer
+                                      required:
+                                      - name
+                                      type: object
+                                      x-kubernetes-validations:
+                                      - message: Must have port for Service reference
+                                        rule: '(size(self.group) == 0 && self.kind
+                                          == ''Service'') ? has(self.port) : true'
+                                    logName:
+                                      description: name of log stream
+                                      type: string
+                                    requestHeadersToAdd:
+                                      description: |-
+                                        Additional request headers to add to each request sent to the HTTP service.
+                                        This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
+                                        which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                      items:
+                                        description: |-
+                                          Header name/value pair.
+                                          Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
+                                        properties:
+                                          key:
+                                            description: Header name.
+                                            type: string
+                                          value:
+                                            description: Header value.
+                                            type: string
+                                        required:
+                                        - key
+                                        type: object
+                                      type: array
+                                    timeout:
+                                      description: The timeout for the HTTP request.
+                                        If this field is not set, Envoy's default
+                                        timeout is used.
+                                      maxLength: 32
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: invalid duration value
+                                        rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                  required:
+                                  - backendRef
+                                  - logName
+                                  type: object
                                 resourceAttributes:
                                   description: |-
                                     Additional resource attributes that describe the resource.
@@ -1394,9 +1529,12 @@ spec:
                                         type: object
                                       type: array
                                   type: object
-                              required:
-                              - grpcService
                               type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of the fields in [grpcService
+                                  httpService] must be set
+                                rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()
+                                  == 1'
                           type: object
                         maxItems: 16
                         type: array
@@ -3015,7 +3153,9 @@ spec:
                                   Envoy's OTel tracer.
                                 properties:
                                   grpcService:
-                                    description: Send traces to the gRPC service
+                                    description: |-
+                                      Send traces to the gRPC service
+                                      Mutually exclusive with HttpService.
                                     properties:
                                       authority:
                                         description: |-
@@ -3202,6 +3342,135 @@ spec:
                                     required:
                                     - backendRef
                                     type: object
+                                  httpService:
+                                    description: |-
+                                      Send traces to the HTTP service
+                                      Mutually exclusive with GrpcService.
+                                    properties:
+                                      backendRef:
+                                        description: The backend HTTP service. Can
+                                          be any type of supported backend (Kubernetes
+                                          Service, kgateway Backend, etc..)
+                                        properties:
+                                          group:
+                                            default: ""
+                                            description: |-
+                                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                              When unspecified or empty string, core API group is inferred.
+                                            maxLength: 253
+                                            pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                            type: string
+                                          kind:
+                                            default: Service
+                                            description: |-
+                                              Kind is the Kubernetes resource kind of the referent. For example
+                                              "Service".
+
+                                              Defaults to "Service" when not specified.
+
+                                              ExternalName services can refer to CNAME DNS records that may live
+                                              outside of the cluster and as such are difficult to reason about in
+                                              terms of conformance. They also may not be safe to forward to (see
+                                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                              support ExternalName Services.
+
+                                              Support: Core (Services with a type other than ExternalName)
+
+                                              Support: Implementation-specific (Services with type ExternalName)
+                                            maxLength: 63
+                                            minLength: 1
+                                            pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                            type: string
+                                          name:
+                                            description: Name is the name of the referent.
+                                            maxLength: 253
+                                            minLength: 1
+                                            type: string
+                                          namespace:
+                                            description: |-
+                                              Namespace is the namespace of the backend. When unspecified, the local
+                                              namespace is inferred.
+
+                                              Note that when a namespace different than the local namespace is specified,
+                                              a ReferenceGrant object is required in the referent namespace to allow that
+                                              namespace's owner to accept the reference. See the ReferenceGrant
+                                              documentation for details.
+
+                                              Support: Core
+                                            maxLength: 63
+                                            minLength: 1
+                                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                            type: string
+                                          port:
+                                            description: |-
+                                              Port specifies the destination port number to use for this resource.
+                                              Port is required when the referent is a Kubernetes Service. In this
+                                              case, the port number is the service port number, not the target port.
+                                              For other resources, destination port might be derived from the referent
+                                              resource or this field.
+                                            format: int32
+                                            maximum: 65535
+                                            minimum: 1
+                                            type: integer
+                                          weight:
+                                            default: 1
+                                            description: |-
+                                              Weight specifies the proportion of requests forwarded to the referenced
+                                              backend. This is computed as weight/(sum of all weights in this
+                                              BackendRefs list). For non-zero values, there may be some epsilon from
+                                              the exact proportion defined here depending on the precision an
+                                              implementation supports. Weight is not a percentage and the sum of
+                                              weights does not need to equal 100.
+
+                                              If only one backend is specified and it has a weight greater than 0, 100%
+                                              of the traffic is forwarded to that backend. If weight is set to 0, no
+                                              traffic should be forwarded for this entry. If unspecified, weight
+                                              defaults to 1.
+
+                                              Support for this field varies based on the context where used.
+                                            format: int32
+                                            maximum: 1000000
+                                            minimum: 0
+                                            type: integer
+                                        required:
+                                        - name
+                                        type: object
+                                        x-kubernetes-validations:
+                                        - message: Must have port for Service reference
+                                          rule: '(size(self.group) == 0 && self.kind
+                                            == ''Service'') ? has(self.port) : true'
+                                      requestHeadersToAdd:
+                                        description: |-
+                                          Additional request headers to add to each request sent to the HTTP service.
+                                          This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
+                                          which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                        items:
+                                          description: |-
+                                            Header name/value pair.
+                                            Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
+                                          properties:
+                                            key:
+                                              description: Header name.
+                                              type: string
+                                            value:
+                                              description: Header value.
+                                              type: string
+                                          required:
+                                          - key
+                                          type: object
+                                        type: array
+                                      timeout:
+                                        description: The timeout for the HTTP request.
+                                          If this field is not set, Envoy's default
+                                          timeout is used.
+                                        maxLength: 32
+                                        type: string
+                                        x-kubernetes-validations:
+                                        - message: invalid duration value
+                                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                    required:
+                                    - backendRef
+                                    type: object
                                   resourceDetectors:
                                     description: An ordered list of resource detectors.
                                       Currently supported values are `EnvironmentResourceDetector`
@@ -3243,9 +3512,12 @@ spec:
                                       The name for the service. This will be populated in the ResourceSpan Resource attributes
                                       Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
                                     type: string
-                                required:
-                                - grpcService
                                 type: object
+                                x-kubernetes-validations:
+                                - message: exactly one of the fields in [grpcService
+                                    httpService] must be set
+                                  rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()
+                                    == 1'
                             type: object
                           randomSampling:
                             description: Target percentage of requests managed by
@@ -4461,7 +4733,9 @@ spec:
                                           zone_name, cluster_name, node_name.
                                         type: boolean
                                       grpcService:
-                                        description: Send access logs to gRPC service
+                                        description: |-
+                                          Send access logs to gRPC service
+                                          Mutually exclusive with HttpService.
                                         properties:
                                           authority:
                                             description: |-
@@ -4658,6 +4932,143 @@ spec:
                                         - backendRef
                                         - logName
                                         type: object
+                                      httpService:
+                                        description: |-
+                                          Send access logs to HTTP service
+                                          Mutually exclusive with GrpcService.
+                                        properties:
+                                          backendRef:
+                                            description: The backend HTTP service.
+                                              Can be any type of supported backend
+                                              (Kubernetes Service, kgateway Backend,
+                                              etc..)
+                                            properties:
+                                              group:
+                                                default: ""
+                                                description: |-
+                                                  Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                                  When unspecified or empty string, core API group is inferred.
+                                                maxLength: 253
+                                                pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                                type: string
+                                              kind:
+                                                default: Service
+                                                description: |-
+                                                  Kind is the Kubernetes resource kind of the referent. For example
+                                                  "Service".
+
+                                                  Defaults to "Service" when not specified.
+
+                                                  ExternalName services can refer to CNAME DNS records that may live
+                                                  outside of the cluster and as such are difficult to reason about in
+                                                  terms of conformance. They also may not be safe to forward to (see
+                                                  CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                                  support ExternalName Services.
+
+                                                  Support: Core (Services with a type other than ExternalName)
+
+                                                  Support: Implementation-specific (Services with type ExternalName)
+                                                maxLength: 63
+                                                minLength: 1
+                                                pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                                type: string
+                                              name:
+                                                description: Name is the name of the
+                                                  referent.
+                                                maxLength: 253
+                                                minLength: 1
+                                                type: string
+                                              namespace:
+                                                description: |-
+                                                  Namespace is the namespace of the backend. When unspecified, the local
+                                                  namespace is inferred.
+
+                                                  Note that when a namespace different than the local namespace is specified,
+                                                  a ReferenceGrant object is required in the referent namespace to allow that
+                                                  namespace's owner to accept the reference. See the ReferenceGrant
+                                                  documentation for details.
+
+                                                  Support: Core
+                                                maxLength: 63
+                                                minLength: 1
+                                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                                type: string
+                                              port:
+                                                description: |-
+                                                  Port specifies the destination port number to use for this resource.
+                                                  Port is required when the referent is a Kubernetes Service. In this
+                                                  case, the port number is the service port number, not the target port.
+                                                  For other resources, destination port might be derived from the referent
+                                                  resource or this field.
+                                                format: int32
+                                                maximum: 65535
+                                                minimum: 1
+                                                type: integer
+                                              weight:
+                                                default: 1
+                                                description: |-
+                                                  Weight specifies the proportion of requests forwarded to the referenced
+                                                  backend. This is computed as weight/(sum of all weights in this
+                                                  BackendRefs list). For non-zero values, there may be some epsilon from
+                                                  the exact proportion defined here depending on the precision an
+                                                  implementation supports. Weight is not a percentage and the sum of
+                                                  weights does not need to equal 100.
+
+                                                  If only one backend is specified and it has a weight greater than 0, 100%
+                                                  of the traffic is forwarded to that backend. If weight is set to 0, no
+                                                  traffic should be forwarded for this entry. If unspecified, weight
+                                                  defaults to 1.
+
+                                                  Support for this field varies based on the context where used.
+                                                format: int32
+                                                maximum: 1000000
+                                                minimum: 0
+                                                type: integer
+                                            required:
+                                            - name
+                                            type: object
+                                            x-kubernetes-validations:
+                                            - message: Must have port for Service
+                                                reference
+                                              rule: '(size(self.group) == 0 && self.kind
+                                                == ''Service'') ? has(self.port) :
+                                                true'
+                                          logName:
+                                            description: name of log stream
+                                            type: string
+                                          requestHeadersToAdd:
+                                            description: |-
+                                              Additional request headers to add to each request sent to the HTTP service.
+                                              This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
+                                              which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                            items:
+                                              description: |-
+                                                Header name/value pair.
+                                                Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
+                                              properties:
+                                                key:
+                                                  description: Header name.
+                                                  type: string
+                                                value:
+                                                  description: Header value.
+                                                  type: string
+                                              required:
+                                              - key
+                                              type: object
+                                            type: array
+                                          timeout:
+                                            description: The timeout for the HTTP
+                                              request. If this field is not set, Envoy's
+                                              default timeout is used.
+                                            maxLength: 32
+                                            type: string
+                                            x-kubernetes-validations:
+                                            - message: invalid duration value
+                                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                        required:
+                                        - backendRef
+                                        - logName
+                                        type: object
                                       resourceAttributes:
                                         description: |-
                                           Additional resource attributes that describe the resource.
@@ -4702,9 +5113,12 @@ spec:
                                               type: object
                                             type: array
                                         type: object
-                                    required:
-                                    - grpcService
                                     type: object
+                                    x-kubernetes-validations:
+                                    - message: exactly one of the fields in [grpcService
+                                        httpService] must be set
+                                      rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()
+                                        == 1'
                                 type: object
                               maxItems: 16
                               type: array
@@ -6340,7 +6754,9 @@ spec:
                                         for Envoy's OTel tracer.
                                       properties:
                                         grpcService:
-                                          description: Send traces to the gRPC service
+                                          description: |-
+                                            Send traces to the gRPC service
+                                            Mutually exclusive with HttpService.
                                           properties:
                                             authority:
                                               description: |-
@@ -6537,6 +6953,139 @@ spec:
                                           required:
                                           - backendRef
                                           type: object
+                                        httpService:
+                                          description: |-
+                                            Send traces to the HTTP service
+                                            Mutually exclusive with GrpcService.
+                                          properties:
+                                            backendRef:
+                                              description: The backend HTTP service.
+                                                Can be any type of supported backend
+                                                (Kubernetes Service, kgateway Backend,
+                                                etc..)
+                                              properties:
+                                                group:
+                                                  default: ""
+                                                  description: |-
+                                                    Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                                    When unspecified or empty string, core API group is inferred.
+                                                  maxLength: 253
+                                                  pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                                  type: string
+                                                kind:
+                                                  default: Service
+                                                  description: |-
+                                                    Kind is the Kubernetes resource kind of the referent. For example
+                                                    "Service".
+
+                                                    Defaults to "Service" when not specified.
+
+                                                    ExternalName services can refer to CNAME DNS records that may live
+                                                    outside of the cluster and as such are difficult to reason about in
+                                                    terms of conformance. They also may not be safe to forward to (see
+                                                    CVE-2021-25740 for more information). Implementations SHOULD NOT
+                                                    support ExternalName Services.
+
+                                                    Support: Core (Services with a type other than ExternalName)
+
+                                                    Support: Implementation-specific (Services with type ExternalName)
+                                                  maxLength: 63
+                                                  minLength: 1
+                                                  pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                                  type: string
+                                                name:
+                                                  description: Name is the name of
+                                                    the referent.
+                                                  maxLength: 253
+                                                  minLength: 1
+                                                  type: string
+                                                namespace:
+                                                  description: |-
+                                                    Namespace is the namespace of the backend. When unspecified, the local
+                                                    namespace is inferred.
+
+                                                    Note that when a namespace different than the local namespace is specified,
+                                                    a ReferenceGrant object is required in the referent namespace to allow that
+                                                    namespace's owner to accept the reference. See the ReferenceGrant
+                                                    documentation for details.
+
+                                                    Support: Core
+                                                  maxLength: 63
+                                                  minLength: 1
+                                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                                  type: string
+                                                port:
+                                                  description: |-
+                                                    Port specifies the destination port number to use for this resource.
+                                                    Port is required when the referent is a Kubernetes Service. In this
+                                                    case, the port number is the service port number, not the target port.
+                                                    For other resources, destination port might be derived from the referent
+                                                    resource or this field.
+                                                  format: int32
+                                                  maximum: 65535
+                                                  minimum: 1
+                                                  type: integer
+                                                weight:
+                                                  default: 1
+                                                  description: |-
+                                                    Weight specifies the proportion of requests forwarded to the referenced
+                                                    backend. This is computed as weight/(sum of all weights in this
+                                                    BackendRefs list). For non-zero values, there may be some epsilon from
+                                                    the exact proportion defined here depending on the precision an
+                                                    implementation supports. Weight is not a percentage and the sum of
+                                                    weights does not need to equal 100.
+
+                                                    If only one backend is specified and it has a weight greater than 0, 100%
+                                                    of the traffic is forwarded to that backend. If weight is set to 0, no
+                                                    traffic should be forwarded for this entry. If unspecified, weight
+                                                    defaults to 1.
+
+                                                    Support for this field varies based on the context where used.
+                                                  format: int32
+                                                  maximum: 1000000
+                                                  minimum: 0
+                                                  type: integer
+                                              required:
+                                              - name
+                                              type: object
+                                              x-kubernetes-validations:
+                                              - message: Must have port for Service
+                                                  reference
+                                                rule: '(size(self.group) == 0 && self.kind
+                                                  == ''Service'') ? has(self.port)
+                                                  : true'
+                                            requestHeadersToAdd:
+                                              description: |-
+                                                Additional request headers to add to each request sent to the HTTP service.
+                                                This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
+                                                which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                              items:
+                                                description: |-
+                                                  Header name/value pair.
+                                                  Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
+                                                properties:
+                                                  key:
+                                                    description: Header name.
+                                                    type: string
+                                                  value:
+                                                    description: Header value.
+                                                    type: string
+                                                required:
+                                                - key
+                                                type: object
+                                              type: array
+                                            timeout:
+                                              description: The timeout for the HTTP
+                                                request. If this field is not set,
+                                                Envoy's default timeout is used.
+                                              maxLength: 32
+                                              type: string
+                                              x-kubernetes-validations:
+                                              - message: invalid duration value
+                                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                          required:
+                                          - backendRef
+                                          type: object
                                         resourceDetectors:
                                           description: An ordered list of resource
                                             detectors. Currently supported values
@@ -6579,9 +7128,12 @@ spec:
                                             The name for the service. This will be populated in the ResourceSpan Resource attributes
                                             Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
                                           type: string
-                                      required:
-                                      - grpcService
                                       type: object
+                                      x-kubernetes-validations:
+                                      - message: exactly one of the fields in [grpcService
+                                          httpService] must be set
+                                        rule: '[has(self.grpcService),has(self.httpService)].filter(x,x==true).size()
+                                          == 1'
                                   type: object
                                 randomSampling:
                                   description: Target percentage of requests managed

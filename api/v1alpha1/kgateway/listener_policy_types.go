@@ -560,6 +560,37 @@ type CommonGrpcService struct {
 	RetryPolicy *RetryPolicy `json:"retryPolicy,omitempty"`
 }
 
+// Common HTTP service configuration created by setting `http_service` as the OTLP exporter transport.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/http_service.proto
+type CommonHttpService struct {
+	// The backend HTTP service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
+	// +required
+	BackendRef gwv1.BackendRef `json:"backendRef"`
+
+	// The timeout for the HTTP request. If this field is not set, Envoy's default timeout is used.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Additional request headers to add to each request sent to the HTTP service.
+	// This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
+	// which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+	// +optional
+	RequestHeadersToAdd []HeaderValue `json:"requestHeadersToAdd,omitempty"`
+}
+
+// Common configuration for HTTP access logs.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/http_service.proto
+type CommonAccessLogHttpService struct {
+	CommonHttpService `json:",inline"`
+
+	// name of log stream
+	// +required
+	LogName string `json:"logName"`
+}
+
 // Header name/value pair.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalue
 type HeaderValue struct {
@@ -606,10 +637,17 @@ type BackoffStrategy struct {
 
 // OpenTelemetryAccessLogService represents the OTel configuration for access logs.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/open_telemetry/v3/logs_service.proto
+// +kubebuilder:validation:ExactlyOneOf=grpcService;httpService
 type OpenTelemetryAccessLogService struct {
 	// Send access logs to gRPC service
-	// +required
-	GrpcService CommonAccessLogGrpcService `json:"grpcService"`
+	// Mutually exclusive with HttpService.
+	// +optional
+	GrpcService *CommonAccessLogGrpcService `json:"grpcService,omitempty"`
+
+	// Send access logs to HTTP service
+	// Mutually exclusive with GrpcService.
+	// +optional
+	HttpService *CommonAccessLogHttpService `json:"httpService,omitempty"`
 
 	// OpenTelemetry LogResource fields, following Envoy access logging formatting.
 	// +optional
@@ -1004,10 +1042,17 @@ type TracingProvider struct {
 
 // OpenTelemetryTracingConfig represents the top-level Envoy's OpenTelemetry tracer.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html
+// +kubebuilder:validation:ExactlyOneOf=grpcService;httpService
 type OpenTelemetryTracingConfig struct {
 	// Send traces to the gRPC service
-	// +required
-	GrpcService CommonGrpcService `json:"grpcService"`
+	// Mutually exclusive with HttpService.
+	// +optional
+	GrpcService *CommonGrpcService `json:"grpcService,omitempty"`
+
+	// Send traces to the HTTP service
+	// Mutually exclusive with GrpcService.
+	// +optional
+	HttpService *CommonHttpService `json:"httpService,omitempty"`
 
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
 	// Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
