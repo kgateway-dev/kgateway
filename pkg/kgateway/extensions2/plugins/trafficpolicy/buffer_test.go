@@ -1,9 +1,12 @@
 package trafficpolicy
 
 import (
+	"slices"
 	"testing"
 
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
+	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
+	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -44,6 +47,38 @@ func TestBufferIREquals(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "same size, different filter stage",
+			a: &kgateway.Buffer{
+				MaxRequestSize: new(resource.MustParse("1Ki")),
+			},
+			b: &kgateway.Buffer{
+				MaxRequestSize: new(resource.MustParse("1Ki")),
+				FilterStage: &kgateway.FilterStageSpec{
+					Stage:     kgateway.FilterStageAuthN,
+					Predicate: kgateway.FilterStagePredicateBefore,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "same size, same filter stage",
+			a: &kgateway.Buffer{
+				MaxRequestSize: new(resource.MustParse("1Ki")),
+				FilterStage: &kgateway.FilterStageSpec{
+					Stage:     kgateway.FilterStageAuthN,
+					Predicate: kgateway.FilterStagePredicateBefore,
+				},
+			},
+			b: &kgateway.Buffer{
+				MaxRequestSize: new(resource.MustParse("1Ki")),
+				FilterStage: &kgateway.FilterStageSpec{
+					Stage:     kgateway.FilterStageAuthN,
+					Predicate: kgateway.FilterStagePredicateBefore,
+				},
+			},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -72,9 +107,12 @@ func TestBufferFilterRunsImmediatelyBeforeRustformation(t *testing.T) {
 		setTransformationInChain: map[string]bool{
 			filterChainName: true,
 		},
-		bufferInChain: map[string]*bufferv3.Buffer{
+		bufferInChain: map[string]*bufferChainEntry{
 			filterChainName: {
-				MaxRequestBytes: &wrapperspb.UInt32Value{Value: 1024},
+				buffer: &bufferv3.Buffer{
+					MaxRequestBytes: &wrapperspb.UInt32Value{Value: 1024},
+				},
+				stage: defaultBufferFilterStage,
 			},
 		},
 	}
@@ -93,4 +131,186 @@ func TestBufferFilterRunsImmediatelyBeforeRustformation(t *testing.T) {
 	assert.Equal(t, filters.RelativeToStage(filters.AcceptedStage, -2), sortedFilters[0].Stage)
 	assert.Equal(t, rustformationFilterNamePrefix, sortedFilters[1].Filter.GetName())
 	assert.Equal(t, filters.BeforeStage(filters.AcceptedStage), sortedFilters[1].Stage)
+}
+
+func TestConstructBufferFilterStage(t *testing.T) {
+	tests := []struct {
+		name string
+		spec *kgateway.FilterStageSpec
+		want filters.FilterStage[filters.WellKnownFilterStage]
+	}{
+		{
+			name: "unset keeps the default placement, behind authn/authz/ratelimit",
+			want: defaultBufferFilterStage,
+		},
+		{
+			name: "before authn, so the limit enforces ahead of ext_authz",
+			spec: &kgateway.FilterStageSpec{
+				Stage:     kgateway.FilterStageAuthN,
+				Predicate: kgateway.FilterStagePredicateBefore,
+			},
+			want: filters.BeforeStage(filters.AuthNStage),
+		},
+		{
+			name: "earliest position the API can express",
+			spec: &kgateway.FilterStageSpec{
+				Stage:     kgateway.FilterStageFault,
+				Predicate: kgateway.FilterStagePredicateBefore,
+			},
+			want: filters.BeforeStage(filters.FaultStage),
+		},
+		{
+			name: "predicate defaults to during",
+			spec: &kgateway.FilterStageSpec{
+				Stage: kgateway.FilterStageAuthZ,
+			},
+			want: filters.DuringStage(filters.AuthZStage),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &trafficPolicySpecIr{}
+			constructBuffer(kgateway.TrafficPolicySpec{
+				Buffer: &kgateway.Buffer{
+					MaxRequestSize: new(resource.MustParse("1Ki")),
+					FilterStage:    tt.spec,
+				},
+			}, out)
+
+			require.NotNil(t, out.buffer)
+			assert.Equal(t, tt.want, out.buffer.filterStage)
+		})
+	}
+}
+
+// A configured stage moves the chain's buffer filter ahead of ext_authz, which is what makes
+// maxRequestSize enforce for a route whose body ext_authz would otherwise read first.
+func TestBufferFilterStageMovesBufferAheadOfExtAuth(t *testing.T) {
+	const filterChainName = "test-filter-chain"
+
+	plugin := &trafficPolicyPluginGwPass{
+		extAuthPerProvider: ProviderNeededMap{
+			Providers: map[string][]Provider{
+				filterChainName: {{
+					Name: "test-extension",
+					Extension: &TrafficPolicyGatewayExtensionIR{
+						Name:    "test-extension",
+						ExtAuth: &envoy_ext_authz_v3.ExtAuthz{},
+					},
+				}},
+			},
+		},
+	}
+
+	pCtx := &ir.TypedFilterConfigMap{}
+	plugin.handleBuffer(filterChainName, pCtx, &bufferIR{
+		perRoute:    &bufferv3.BufferPerRoute{},
+		filterStage: filters.BeforeStage(filters.AuthNStage),
+	})
+
+	httpFilters, err := plugin.HttpFilters(
+		ir.HttpFiltersContext{},
+		ir.FilterChainCommon{FilterChainName: filterChainName},
+	)
+	require.NoError(t, err)
+
+	sortedFilters := filters.StagedHttpFilterList(httpFilters)
+	sortedFilters.Sort()
+	names := filterNames(sortedFilters)
+
+	bufferIdx := slices.Index(names, bufferFilterName)
+	extAuthIdx := slices.Index(names, extAuthFilterName("test-extension"))
+	require.NotEqual(t, -1, bufferIdx, "buffer missing from %v", names)
+	require.NotEqual(t, -1, extAuthIdx, "ext_authz missing from %v", names)
+	assert.Less(t, bufferIdx, extAuthIdx, "buffer must sort ahead of ext_authz, got %v", names)
+}
+
+// A filter chain carries a single buffer filter, since Envoy resolves the per-route override by
+// filter name. When policies on the chain disagree, the earliest requested stage wins, whichever
+// order they are visited in.
+func TestBufferChainStageTakesTheEarliestRequested(t *testing.T) {
+	const filterChainName = "test-filter-chain"
+
+	early := &bufferIR{perRoute: &bufferv3.BufferPerRoute{}, filterStage: filters.BeforeStage(filters.AuthNStage)}
+	late := &bufferIR{perRoute: &bufferv3.BufferPerRoute{}, filterStage: defaultBufferFilterStage}
+
+	for _, tc := range []struct {
+		name  string
+		order []*bufferIR
+	}{
+		{name: "early first", order: []*bufferIR{early, late}},
+		{name: "late first", order: []*bufferIR{late, early}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plugin := &trafficPolicyPluginGwPass{}
+			for _, b := range tc.order {
+				plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, b)
+			}
+			require.NotNil(t, plugin.bufferInChain[filterChainName])
+			assert.Equal(t, filters.BeforeStage(filters.AuthNStage), plugin.bufferInChain[filterChainName].stage)
+		})
+	}
+}
+
+// Buffering the encoded bytes would measure the request against its compressed size, so the
+// decompressors have to stay ahead of the buffer filter wherever the buffer filter is staged.
+func TestDecompressorsStayAheadOfBuffer(t *testing.T) {
+	const filterChainName = "test-filter-chain"
+
+	tests := []struct {
+		name        string
+		bufferStage *filters.FilterStage[filters.WellKnownFilterStage]
+	}{
+		{name: "no buffer policy on the chain"},
+		{name: "default buffer stage", bufferStage: &defaultBufferFilterStage},
+		{name: "buffer moved before authn", bufferStage: new(filters.BeforeStage(filters.AuthNStage))},
+		{name: "buffer moved to the head of the chain", bufferStage: new(filters.BeforeStage(filters.FaultStage))},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plugin := &trafficPolicyPluginGwPass{
+				decompressorInChain: map[string][]decompressorEntry{
+					filterChainName: {{
+						filterName:   decompressorFilterNameFor(kgateway.CompressionGzip),
+						decompressor: &decompressorv3.Decompressor{},
+					}},
+				},
+			}
+			if tt.bufferStage != nil {
+				plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, &bufferIR{
+					perRoute:    &bufferv3.BufferPerRoute{},
+					filterStage: *tt.bufferStage,
+				})
+			}
+
+			httpFilters, err := plugin.HttpFilters(
+				ir.HttpFiltersContext{},
+				ir.FilterChainCommon{FilterChainName: filterChainName},
+			)
+			require.NoError(t, err)
+
+			sortedFilters := filters.StagedHttpFilterList(httpFilters)
+			sortedFilters.Sort()
+			names := filterNames(sortedFilters)
+
+			decompressorIdx := slices.Index(names, decompressorFilterNameFor(kgateway.CompressionGzip))
+			require.NotEqual(t, -1, decompressorIdx, "decompressor missing from %v", names)
+			if tt.bufferStage == nil {
+				return
+			}
+			bufferIdx := slices.Index(names, bufferFilterName)
+			require.NotEqual(t, -1, bufferIdx, "buffer missing from %v", names)
+			assert.Less(t, decompressorIdx, bufferIdx, "decompressor must sort ahead of buffer, got %v", names)
+		})
+	}
+}
+
+func filterNames(staged filters.StagedHttpFilterList) []string {
+	names := make([]string, 0, len(staged))
+	for _, f := range staged {
+		names = append(names, f.Filter.GetName())
+	}
+	return names
 }

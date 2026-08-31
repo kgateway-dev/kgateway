@@ -706,6 +706,7 @@ type LabelSelector struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
+// +kubebuilder:validation:XValidation:message="filterStage cannot be set when disable is set",rule="!(has(self.disable) && has(self.filterStage))"
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
@@ -718,6 +719,32 @@ type Buffer struct {
 	// Can be used to disable buffer policies applied at a higher level in the config hierarchy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+
+	// FilterStage specifies where in the HTTP filter chain the buffer filter is placed.
+	// By default the buffer filter runs late in the chain, after authentication, authorization
+	// and rate limiting, so that a request that is going to be rejected outright is rejected
+	// before its body is buffered.
+	//
+	// `maxRequestSize` is only enforced while the buffer filter is the filter accumulating the
+	// request body. A filter placed ahead of it that reads or holds the body first - for example
+	// an ext_proc that waits on its server, or a body transformation - consumes the body before
+	// the buffer filter ever sees it, and the limit is then inert. Move the buffer filter ahead
+	// of such a filter to make the limit enforce, at the cost of buffering bodies that a later
+	// authentication or authorization filter may go on to reject.
+	//
+	// The placement is a property of the whole filter chain rather than of a single route: the
+	// gateway installs one buffer filter per filter chain. If TrafficPolicies attached to the
+	// same listener ask for different stages, the earliest requested stage is used for the chain.
+	// The per-route `maxRequestSize` is unaffected and continues to apply per route.
+	//
+	// When request decompression is also configured, the decompressor filters are moved ahead of
+	// the buffer filter so that `maxRequestSize` is measured against the decompressed body rather
+	// than the encoded bytes.
+	//
+	// `filterStage.weight` has no effect here: it breaks ties between several filters of the same
+	// type at one stage, and a filter chain carries at most one buffer filter.
+	// +optional
+	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 // Compression configures HTTP response compression and request decompression behavior.
