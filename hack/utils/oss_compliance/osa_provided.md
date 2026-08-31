@@ -28,7 +28,7 @@ Name|Version|License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.1.0|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.28.1|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.28.2|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.41.0|MIT License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.23.2|Apache License 2.0
 [prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0

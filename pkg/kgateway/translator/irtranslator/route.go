@@ -904,8 +904,7 @@ func summarizeRuleErrors(err error) string {
 	for _, flatErr := range flatErrs {
 		// Extract key.
 		var refID, msg string
-		var pe *ir.PolicyError
-		if errors.As(flatErr, &pe) {
+		if pe, ok := errors.AsType[*ir.PolicyError](flatErr); ok {
 			if pe.Ref != nil {
 				refID = pe.Ref.IDWithSectionName()
 			}

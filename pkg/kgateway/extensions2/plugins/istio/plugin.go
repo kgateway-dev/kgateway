@@ -209,7 +209,7 @@ func createDefaultIstioMatch() *envoyclusterv3.Cluster_TransportSocketMatch {
 }
 
 func buildSni(upstream ir.BackendObjectIR) string {
-	port := upstream.GetPort() //nolint:gosec // G115: port is int32 representing a port number, always in valid range
+	port := upstream.GetPort()
 	switch us := upstream.Obj.(type) {
 	case *corev1.Service:
 		return buildDNSSrvSubsetKey(
@@ -218,13 +218,13 @@ func buildSni(upstream ir.BackendObjectIR) string {
 				us.Namespace,
 				"cluster.local", // TODO we need a setting like Istio has for trustDomain
 			),
-			uint32(port),
+			uint32(port), //nolint:gosec // G115: port is int32 representing a port number, always fits in uint32
 		)
 	default:
 		if port != 0 && upstream.CanonicalHostname != "" {
 			return buildDNSSrvSubsetKey(
 				upstream.CanonicalHostname,
-				uint32(port),
+				uint32(port), //nolint:gosec // G115: port is int32 representing a port number, always fits in uint32
 			)
 		}
 	}

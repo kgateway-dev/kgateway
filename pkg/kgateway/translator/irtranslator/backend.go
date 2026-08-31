@@ -171,7 +171,7 @@ func (t *BackendTranslator) runPolicies(
 		// attached IR encountered any errors during construction.
 		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
-				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
+				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policy_ref", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)
 				continue
 			}

@@ -19,7 +19,7 @@ linters:
     - forbidigo
     - ginkgolinter
     - gocritic
-    - gomodguard
+    - gomodguard_v2
     - gosec
     - govet
     - importas
@@ -56,16 +56,55 @@ linters:
         settings:
           linters:
             enable:
-              - "*"
+              - conditions
+              - conflictingmarkers
+              - dependenttags
+              - duplicatemarkers
+              - forbiddenmarkers
+              - nofloats
+              - nophase
+              - nonullable
+              - noreferences
+              - notimestamp
+              - optionalorrequired
+              - jsontags
+              - statusoptional
+              - statussubresource
+              - uniquemarkers
             disable:
-              - commentstart
-              - integers
-              - maxlength
-              - nobools
-              - nomaps
-              - optionalfields
-              - ssatags
+              - "*"
           lintersConfig:
+            conflictingmarkers:
+              conflicts:
+                - name: "default_vs_required"
+                  sets:
+                    - ["default", "kubebuilder:default"]
+                    - ["required", "kubebuilder:validation:Required", "k8s:required"]
+                  description: "A field with a default value cannot be required"
+            dependenttags:
+              rules:
+                - identifier: "kubebuilder:default"
+                  dependsOn: ["optional"]
+                  type: All
+            forbiddenmarkers:
+              markers:
+                - identifier: "+kubebuilder:pruning:PreserveUnknownFields"
+                - identifier: "+kubebuilder:validation:XPreserveUnknownFields"
+                - identifier: "+kubebuilder:validation:items:XPreserveUnknownFields"
+                - identifier: "+kubebuilder:validation:EmbeddedResource"
+                - identifier: "+kubebuilder:validation:XEmbeddedResource"
+                - identifier: "+kubebuilder:validation:items:XEmbeddedResource"
+            namingconventions:
+              conventions:
+                - name: "placeholder_convention"
+                  violationMatcher: "^PLACEHOLDER_$"
+                  operation: Inform
+                  message: "Placeholder naming convention"
+            preferredmarkers:
+              markers:
+                - identifier: "PLACEHOLDER_PREFERRED_MARKER"
+                  equivalentIdentifiers:
+                    - identifier: "PLACEHOLDER_PREFERRED_MARKER"
             conditions:
               isFirstField: Ignore
               useProtobuf: Forbid
@@ -100,6 +139,13 @@ linters:
           msg: require testutils.Cleanup in e2e tests (test/e2e/)
         - pattern: ^slog\.(Debug|DebugContext|Info|InfoContext|Warn|WarnContext|Error|ErrorContext|Log|LogAttrs)$
           msg: use a package-level logger created with logging.New instead of the global slog logger
+    govet:
+      disable:
+        # The inline analyzer flags compiler optimization hints (e.g. "cannot inline:
+        # type parameter inference is not yet supported") that are not actionable by
+        # library authors — they depend on the Go toolchain version and produce noise
+        # on generic code that is correct as written.
+        - inline
     gocritic:
       # Opt in to an explicit allowlist of correctness checks rather than gocritic's
       # default set, which is dominated by style opinions we don't want to enforce.
@@ -137,23 +183,22 @@ linters:
         - syncMapLoadAndDelete
         - truncateCmp
         - weakCond
-    gomodguard:
+    gomodguard_v2:
       blocked:
-        modules:
-          - github.com/rotisserie/eris:
-              recommendations:
-                - errors.Join
-              reason: Use the std-lib errors package with \\%w instead.
-          - github.com/hashicorp/go-multierror:
-              recommendations:
-                - errors.Join
-              reason: Use errors.Join (Go 1.20+) instead.
-          - github.com/pkg/errors:
-              recommendations:
-                - fmt.Errorf
-                - errors.New
-                - errors.Join
-              reason: Use the std-lib errors package and fmt.Errorf with \\%w instead.
+        - module: github.com/rotisserie/eris
+          recommendations:
+            - errors.Join
+          reason: Use the std-lib errors package with \\%w instead.
+        - module: github.com/hashicorp/go-multierror
+          recommendations:
+            - errors.Join
+          reason: Use errors.Join (Go 1.20+) instead.
+        - module: github.com/pkg/errors
+          recommendations:
+            - fmt.Errorf
+            - errors.New
+            - errors.Join
+          reason: Use the std-lib errors package and fmt.Errorf with \\%w instead.
     importas:
       alias:
         - pkg: k8s.io/api/apps/v1
@@ -275,6 +320,15 @@ linters:
       - path-except: "^api/v1alpha1"
         linters:
           - kubeapilinter
+      # gosec taint-analysis and credential-detection rules are noisy in tests
+      - path: _test\.go$
+        linters:
+          - gosec
+        text: 'G(101|703|704|705)'
+      - path: (^|/)test/
+        linters:
+          - gosec
+        text: 'G(101|118|703|704|705)'
 issues:
   max-same-issues: 0
   uniq-by-line: true

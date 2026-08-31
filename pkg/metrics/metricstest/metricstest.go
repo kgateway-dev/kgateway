@@ -146,7 +146,7 @@ Loop:
 
 		gathered := MustGatherPrometheusMetrics(t)
 
-		if gathered == nil || gathered.Length() == 0 {
+		if gathered.Length() == 0 {
 			continue Loop
 		}
 

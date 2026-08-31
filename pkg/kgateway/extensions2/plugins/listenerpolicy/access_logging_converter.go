@@ -360,8 +360,8 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 			cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
 		}
 		// Add filter if specified
-		if policies[i].Filter != nil {
-			filter, err := convertAccessLogFilter(policies[i].Filter)
+		if policies[i].Filter != nil { //nolint:gosec // G602: policies and configs are 1:1 from translateAccessLogs
+			filter, err := convertAccessLogFilter(policies[i].Filter) //nolint:gosec // G602: policies and configs are 1:1 from translateAccessLogs
 			if err != nil {
 				return nil, err
 			}
