@@ -1,10 +1,8 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE=cgr.dev/chainguard/glibc-dynamic:latest
 
 FROM $BASE_IMAGE
 
 ARG GOARCH=amd64
-
-RUN apk -U upgrade
 
 COPY sds-linux-$GOARCH /usr/local/bin/sds
 

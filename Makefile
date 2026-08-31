@@ -44,6 +44,9 @@ BUILD_TOOLS_VERSION ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo
 OSV_SCANNER_IMAGE ?= ghcr.io/google/osv-scanner-action:v2.3.5
 OSV_SCAN_IMAGES ?=
 OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
+# Set to any value to read images from the local Docker daemon (docker save) instead of pulling from a registry.
+# Used by osv-scan-local-images; not set by default so osv-scan always pulls fresh remote images.
+OSV_SCAN_LOCAL ?=
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
@@ -63,13 +66,20 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.4.0-main
+ROLLING_MAIN_VERSION ?= v2.5.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
+
+# Tag used for built image artifacts (per-arch images and multi-arch manifests). Distinct from
+# VERSION, which is compiled into the binary via LDFLAGS. Defaults to VERSION so local dev, PR
+# snapshots, and rolling-main builds are unchanged; the release workflow overrides it with a
+# non-semver staging tag (e.g. stage-<gitsha>-<version>) so consumption automation (Kargo, semver-only)
+# does not adopt the artifacts before they are validated and published.
+export ARTIFACT_TAG ?= $(VERSION)
 
 UNAME_M := $(shell uname -m)
 # if `GOARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
@@ -117,10 +127,10 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Base Alpine image used for SDS and dummy-idp containers. Exported for use in goreleaser.yaml.
+# Base Alpine image used for the dummy-idp container. Exported for use in goreleaser.yaml.
 export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
 
-# Distroless glibc base used for the kgateway controller container. Exported for use in goreleaser.yaml.
+# Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
 # to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
 # may be garbage-collected on the free tier. Release builds set DOCKER_NO_CACHE=1, which adds --pull so each
@@ -283,7 +293,10 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 			image_arch="$${image_platform#*/}"; \
 			image_arch="$${image_arch%%/*}"; \
 			rm -f "$$host_image_archive"; \
-			if command -v skopeo > /dev/null 2>&1; then \
+			if [[ -n "$(OSV_SCAN_LOCAL)" ]]; then \
+				echo "Saving local image $$image via docker save"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			elif command -v skopeo > /dev/null 2>&1; then \
 				if skopeo copy \
 					--override-os "$$image_os" \
 					--override-arch "$$image_arch" \
@@ -363,6 +376,13 @@ osv-scan: ## Run OSV-Scanner locally; set OSV_SCAN_IMAGES="image-ref ..." to als
 .PHONY: osv-scan-latest-main-images
 osv-scan-latest-main-images:
 	$(MAKE) osv-scan OSV_SCAN_IMAGES="ghcr.io/kgateway-dev/kgateway:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/sds:$(ROLLING_MAIN_VERSION) ghcr.io/kgateway-dev/envoy-wrapper:$(ROLLING_MAIN_VERSION)"
+
+.PHONY: osv-scan-local-images
+osv-scan-local-images: ## Build images from the current branch and run OSV-Scanner against them
+	$(MAKE) -B kgateway-docker sds-docker envoy-wrapper-docker
+	$(MAKE) osv-scan \
+		OSV_SCAN_LOCAL=1 \
+		OSV_SCAN_IMAGES="$(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)"
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -574,21 +594,21 @@ container-structure-test: container-structure-test-kgateway container-structure-
 .PHONY: container-structure-test-kgateway
 container-structure-test-kgateway: ## Run container structure tests for kgateway image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
 
 .PHONY: container-structure-test-sds
 container-structure-test-sds: ## Run container structure tests for sds image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/sds.yaml
 
 .PHONY: container-structure-test-envoy-wrapper
 container-structure-test-envoy-wrapper: ## Run container structure tests for envoy-wrapper image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/envoy-wrapper.yaml
 
@@ -808,7 +828,7 @@ $(SDS_OUTPUT_DIR)/Dockerfile.sds: cmd/sds/Dockerfile
 $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
 	$(BUILDX_BUILD) --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(SDS_CACHE_FROM) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
 	@touch $@
@@ -877,6 +897,7 @@ $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_D
 	$(BUILDX_BUILD) --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
 		$(ENVOYINIT_CACHE_FROM) \
 		$(ENVOYINIT_LOCAL_CACHE_FROM_ARG) \
 		$(ENVOYINIT_LOCAL_CACHE_TO_ARG) \
@@ -1014,7 +1035,7 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
-	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
+	./hack/generate-release-notes.sh -p "$${PREVIOUS_TAG:-}" -c "$${CURRENT_TAG:-HEAD}"
 
 #----------------------------------------------------------------------------------
 # MARK: Development
@@ -1233,7 +1254,7 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
 # This test uses port 9091 which is reserved for the metrics port. The test passes if the port in the conformance test is changed
-CONFORMANCE_SKIP_TESTS := 
+CONFORMANCE_SKIP_TESTS :=
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_REPORT_ARGS)
 
 CONFORMANCE_TEST_DIR ?= ./test/conformance/...

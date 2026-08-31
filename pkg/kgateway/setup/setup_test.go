@@ -46,6 +46,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestassets"
 	"github.com/kgateway-dev/kgateway/v2/test/envtestutil"
@@ -277,9 +278,9 @@ spec:
 		t.Cleanup(dumper.Close)
 		t.Cleanup(func() {
 			if t.Failed() {
-				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 			}
 		})
 
@@ -357,9 +358,9 @@ spec:
 		time.Sleep(time.Second * 2)
 		t.Cleanup(func() {
 			if t.Failed() {
-				logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 			} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-				logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+				logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 			}
 		})
 		initialDump, err := dumpXdsConfig(t, ctx, xdsPort, "http-gw")
@@ -395,10 +396,10 @@ spec:
 				return fmt.Errorf("failed to get updated xDS dump: %w", err)
 			}
 			if len(updatedDump.Routes) == 0 {
-				return fmt.Errorf("no routes found in updated dump")
+				return errors.New("no routes found in updated dump")
 			}
 			if !hasWebsocketUpgradeConfig(updatedDump) {
-				return fmt.Errorf("expected websocket upgrade configuration after updating appProtocol, but found none")
+				return errors.New("expected websocket upgrade configuration after updating appProtocol, but found none")
 			}
 			t.Logf("SUCCESS: Found websocket upgrade configuration after updating appProtocol")
 			return nil
@@ -561,9 +562,9 @@ func testScenario(
 
 	t.Cleanup(func() {
 		if t.Failed() {
-			logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+			logKrtState(t, "krt state for failed test: "+t.Name(), kdbg)
 		} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
-			logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
+			logKrtState(t, "krt state for successful test: "+t.Name(), kdbg)
 		}
 	})
 
@@ -575,17 +576,17 @@ func testScenario(
 			return err
 		}
 		if len(dump.Listeners) == 0 {
-			return fmt.Errorf("timed out waiting for listeners")
+			return errors.New("timed out waiting for listeners")
 		}
 		if write {
 			t.Logf("writing out file")
 			// serialize xdsDump to yaml
 			d, err := dump.ToYaml()
 			if err != nil {
-				return fmt.Errorf("failed to serialize xdsDump: %v", err)
+				return fmt.Errorf("failed to serialize xdsDump: %w", err)
 			}
 			os.WriteFile(fout, d, 0o600)
-			return fmt.Errorf("wrote out file - nothing to test")
+			return errors.New("wrote out file - nothing to test")
 		}
 		return dump.Compare(expectedXdsDump)
 	}, retry.Converge(2), retry.Timeout(10*time.Second))
@@ -644,7 +645,7 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		conn: conn,
 		// Build the local cluster name with the exact same helper the control plane uses, so the
 		// dumper subscribes to the resource that actually exists in the snapshot.
-		localClusterName: proxy_syncer.LocalClusterName(gwname, gwNamespace),
+		localClusterName: ir.LocalClusterName(gwname, gwNamespace),
 		dr: &envoy_service_discovery_v3.DiscoveryRequest{
 			Node: &envoycorev3.Node{
 				Id: "gateway." + gwNamespace,
@@ -689,14 +690,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		for i := 0; i < sent; i++ {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %w", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.cluster.v3.Cluster" {
 				for _, anyCluster := range dresp.GetResources() {
 					var cluster envoyclusterv3.Cluster
 					if err := anyCluster.UnmarshalTo(&cluster); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %w", err))
 					}
 					clusters = append(clusters, &cluster)
 				}
@@ -705,7 +706,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 				for _, anyListener := range dresp.GetResources() {
 					var listener envoylistenerv3.Listener
 					if err := anyListener.UnmarshalTo(&listener); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %w", err))
 					}
 					listeners = append(listeners, &listener)
 					needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
@@ -732,11 +733,11 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		errs = errors.Join(errs, fmt.Errorf("timed out waiting for listener/cluster xds dump"))
+		errs = errors.Join(errs, errors.New("timed out waiting for listener/cluster xds dump"))
 		return xdsDump{}, errs
 	}
 	if len(listeners) == 0 {
-		errs = errors.Join(errs, fmt.Errorf("no listeners found"))
+		errs = errors.Join(errs, errors.New("no listeners found"))
 		return xdsDump{}, errs
 	}
 	t.Logf("xds: found %d listeners and %d clusters", len(listeners), len(clusters))
@@ -786,14 +787,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		for range 2 {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %w", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.route.v3.RouteConfiguration" {
 				for _, anyRoute := range dresp.GetResources() {
 					var route envoyroutev3.RouteConfiguration
 					if err := anyRoute.UnmarshalTo(&route); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %w", err))
 					}
 					routes = append(routes, &route)
 				}
@@ -801,7 +802,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 				for _, anyCla := range dresp.GetResources() {
 					var cla envoyendpointv3.ClusterLoadAssignment
 					if err := anyCla.UnmarshalTo(&cla); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %w", err))
 					}
 					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them.
 					// also skip the per-gateway local cluster: it's requested only to satisfy the ADS
@@ -818,7 +819,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		// don't fatal yet as we want to dump the state while still connected
-		errs = errors.Join(errs, fmt.Errorf("timed out waiting for routes/cla xds dump"))
+		errs = errors.Join(errs, errors.New("timed out waiting for routes/cla xds dump"))
 		return xdsDump{}, errs
 	}
 
@@ -930,7 +931,7 @@ func (x *xdsDump) Compare(other xdsDump) error {
 func compareCla(c, otherc *envoyendpointv3.ClusterLoadAssignment) error {
 	if (c == nil) != (otherc == nil) {
 		if c == nil {
-			return fmt.Errorf("cluster is nil")
+			return errors.New("cluster is nil")
 		}
 		return fmt.Errorf("ep %v not found", c.ClusterName)
 	}

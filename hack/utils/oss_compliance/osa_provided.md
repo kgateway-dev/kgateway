@@ -22,7 +22,7 @@ Name|Version|License
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [jwt/v5](https://github.com/golang-jwt/jwt)|v5.3.0|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
-[google/cel-go](https://github.com/google/cel-go)|v0.28.1|Apache License 2.0
+[google/cel-go](https://github.com/google/cel-go)|v0.30.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
@@ -45,7 +45,7 @@ Name|Version|License
 [x/sync](https://golang.org/x/sync)|v0.22.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260427160629-7cedc36a6bc4|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.81.1|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.82.1|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.12-0.20260120151049-f2248ac996af|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.21.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271|Apache License 2.0
