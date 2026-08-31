@@ -268,6 +268,22 @@ spec:
                               (`service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"`).
                               Defaults to false.
                             type: boolean
+                          ioUring:
+                            description: |-
+                              IoUring configures the io_uring socket interface for the Envoy proxy.
+                              When enabled, the default socket interface is configured with io_uring
+                              options via a bootstrap extension, so Envoy uses io_uring instead of
+                              classic socket syscalls for network I/O. Requires a Linux kernel with
+                              io_uring support (5.11+). Defaults to disabled.
+                              See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/network/socket_interface/v3/default_socket_interface.proto
+                              for more information.
+                            properties:
+                              enabled:
+                                description: |-
+                                  Enabled enables io_uring for network I/O in the Envoy proxy.
+                                  Defaults to false.
+                                type: boolean
+                            type: object
                           logFormat:
                             description: |-
                               Envoy application log format. Does *not* affect access logs. Can be JSON or custom text format.

@@ -82,6 +82,7 @@ type HelmGateway struct {
 	// envoy bootstrap values
 	DnsResolver                       *HelmDnsResolver `json:"dnsResolver,omitempty"`
 	EnableReadinessProbeProxyProtocol *bool            `json:"enableReadinessProbeProxyProtocol,omitempty"`
+	IoUring                           *HelmIoUring     `json:"ioUring,omitempty"`
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
@@ -138,6 +139,10 @@ type HelmXdsTls struct {
 
 type HelmDnsResolver struct {
 	UdpMaxQueries *int32 `json:"udpMaxQueries,omitempty"`
+}
+
+type HelmIoUring struct {
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type HelmIstio struct {
