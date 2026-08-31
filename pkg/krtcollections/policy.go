@@ -48,7 +48,7 @@ type NotFoundError struct {
 }
 
 func (n *NotFoundError) Error() string {
-	return fmt.Sprintf("%s %s/%s not found", n.NotFoundObj.Kind, n.NotFoundObj.Namespace, n.NotFoundObj.Name)
+	return n.NotFoundObj.Kind + " " + n.NotFoundObj.Namespace + "/" + n.NotFoundObj.Name + " not found"
 }
 
 type BackendPortNotAllowedError struct {
@@ -649,7 +649,7 @@ type TargetRefIndexKey struct {
 }
 
 func (k TargetRefIndexKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace, k.SectionName)
+	return k.Group + "/" + k.Kind + "/" + k.Name + "/" + k.Namespace + "/" + k.SectionName
 }
 
 // HTTPRouteSelector is used to lookup HttpRouteIR using one of the following ways:
