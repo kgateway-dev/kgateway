@@ -7,9 +7,9 @@ set -ex
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the k3d cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-k3d}"
-# The Kubernetes node version (e.g. v1.35.0 or v1.35.0@sha256:...).
+# The Kubernetes node version (e.g. v1.36.1 or v1.36.1@sha256:...).
 # Strip any @sha256 suffix to get the semver, then build the k3s image tag.
-NODE_VERSION="${NODE_VERSION:-v1.35.0}"
+NODE_VERSION="${NODE_VERSION:-v1.36.1}"
 K3S_SEMVER="${NODE_VERSION%%@*}"
 K3D_NODE_IMAGE="${K3D_NODE_IMAGE:-rancher/k3s:${K3S_SEMVER}-k3s1}"
 # The version used to tag images

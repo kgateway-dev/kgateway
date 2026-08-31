@@ -111,6 +111,11 @@ Statuses:
             validation failed: invalid xds configuration: error initializing configuration '/dev/fd/0': Incorrect configuration: %REQ(Correlation-Id. Couldn't find valid command at position 0
           reason: RouteRuleReplaced
           status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references

@@ -40,11 +40,11 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
-// +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
-// +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
-// +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -90,6 +90,16 @@ type TrafficPolicySpec struct {
 	// +optional
 	HeaderModifiers *shared.HeaderModifiers `json:"headerModifiers,omitempty"`
 
+	// RequestMirror configures the behavior of request mirrors defined by
+	// HTTPRoute or GRPCRoute RequestMirror filters. It does not create request mirrors.
+	// It can target HTTPRoutes, GRPCRoutes, or Gateways (including individual Gateway listeners
+	// via sectionName). When attached above the route level it applies to every mirror on the
+	// routes it covers, and a more-specific policy wins the whole block: its settings are not
+	// combined field-by-field with a less-specific policy. If a covered route has no request
+	// mirror, this has no effect.
+	// +optional
+	RequestMirror *RequestMirrorPolicy `json:"requestMirror,omitempty"`
+
 	// AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
 	// NOTE: This field is only honored for HTTPRoute targets.
 	// NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
@@ -102,15 +112,28 @@ type TrafficPolicySpec struct {
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
 
-	// Timeouts defines the timeouts for requests
-	// It is applicable to HTTPRoutes and ignored for other targeted kinds.
+	// Timeouts defines the timeouts for requests.
+	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
+	// Gateway listeners via sectionName), and ignored for other targeted kinds.
+	// When attached above the route level, the timeouts apply to all routes it
+	// covers; a route-level timeout (from a more specific TrafficPolicy or the
+	// built-in HTTPRoute timeouts) takes precedence.
 	// +optional
 	Timeouts *shared.Timeouts `json:"timeouts,omitempty"`
 
 	// Retry defines the policy for retrying requests.
-	// It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
+	// It is applicable to HTTPRoutes, GRPCRoutes, Gateways, Gateway listeners, and
+	// ListenerSets, and ignored for other targeted kinds.
+	// When attached above the route level, the retry policy applies to all routes it
+	// covers; a route-level retry policy (from a more specific TrafficPolicy or the
+	// built-in HTTPRoute retry) takes precedence.
 	// +optional
 	Retry *Retry `json:"retry,omitempty"`
+
+	// InternalRedirect handles upstream 3xx redirects inside the gateway.
+	// Applies only to routes that forward traffic to a backend.
+	// +optional
+	InternalRedirect *InternalRedirect `json:"internalRedirect,omitempty"`
 
 	// RBAC specifies the role-based access control configuration for the policy.
 	// This defines the rules for authorization based on roles and permissions.
@@ -182,6 +205,54 @@ type TrafficPolicySpec struct {
 	// a route-level ACL completely replaces the gateway-level ACL for that route.
 	// +optional
 	ACL *shared.ACLPolicy `json:"acl,omitempty"`
+
+	// StatPrefix sets a custom prefix on the Envoy route so that per-route
+	// statistics are emitted for the targeted routes. When set, Envoy emits stats under
+	// `vhost.<vhost>.route.<statPrefix>.*`.
+	//
+	// The value is composed of stat-safe literal characters (letters, digits,
+	// and `_ % . -`) and/or `{{ ... }}` template tokens that are substituted at
+	// translation time with metadata from the route the policy is applied to.
+	// The supported template variables are:
+	//   - `{{route_name}}`: the name of the route resource (e.g. HTTPRoute).
+	//   - `{{route_namespace}}`: the namespace of the route resource.
+	//   - `{{rule_name}}`: the name of the matched route rule, or empty if the
+	//     rule is unnamed.
+	//
+	// For example, `{{route_namespace}}.{{route_name}}` renders to
+	// `my-ns.my-route`. Whitespace is permitted only inside the braces of a
+	// template token; unmatched braces, unsupported variable names, and any
+	// other characters are rejected.
+	//
+	// Recommended value: `{{route_namespace}}.{{route_name}}.{{rule_name}}`,
+	// which uniquely identifies each route rule.
+	//
+	// NOTE: This field is only honored for HTTPRoute and GRPCRoute targets.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	// +kubebuilder:validation:Pattern=`^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$`
+	StatPrefix *string `json:"statPrefix,omitempty"`
+}
+
+// RequestMirrorPolicy configures implementation-specific behavior for request mirrors.
+// +kubebuilder:validation:MinProperties=1
+type RequestMirrorPolicy struct {
+	// DisableShadowHostSuffixAppend controls whether Envoy appends the "-shadow" suffix to the
+	// Host/:authority header of mirrored requests. When true, the original Host/:authority is
+	// preserved; when false, Envoy appends the suffix. Cross-policy precedence applies to the whole
+	// RequestMirror block (see above), not to this field alone. If hostRewriteLiteral is set, Envoy
+	// suppresses the suffix regardless of this field.
+	// +optional
+	DisableShadowHostSuffixAppend *bool `json:"disableShadowHostSuffixAppend,omitempty"`
+
+	// HostRewriteLiteral replaces the entire Host/:authority header of mirrored requests with this
+	// value. The original port is not preserved, so include a port here if the mirror destination
+	// needs one. This implicitly disables appending the "-shadow" suffix, regardless of
+	// disableShadowHostSuffixAppend.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	HostRewriteLiteral *string `json:"hostRewriteLiteral,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -401,6 +472,8 @@ type TokenBucket struct {
 	// This value must be a valid duration string (e.g., "1s", "500ms").
 	// It determines the frequency of token replenishment.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('50ms')",message="must be at least 50ms"
 	FillInterval metav1.Duration `json:"fillInterval"`
@@ -647,11 +720,13 @@ type Buffer struct {
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
 
-// Compression configures HTTP gzip compression and decompression behavior.
+// Compression configures HTTP response compression and request decompression behavior.
 // +kubebuilder:validation:AtLeastOneOf=responseCompression;requestDecompression
 type Compression struct {
 	// ResponseCompression controls response compression to the downstream.
-	// If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+	// If set, responses with a matching `Accept-Encoding` header and certain textual content types will be compressed.
+	// The compression codecs default to gzip and can be selected via `responseCompression.libraries`,
+	// which Envoy negotiates against the request's `Accept-Encoding` header.
 	// The content-types that will be compressed are:
 	// - `application/javascript`
 	// - `application/json`
@@ -665,20 +740,59 @@ type Compression struct {
 	ResponseCompression *ResponseCompression `json:"responseCompression,omitempty"`
 
 	// RequestDecompression controls request decompression.
-	// If set, gzip requests will be decompressed.
+	// If set, request bodies in the configured codecs are decompressed before forwarding.
 	// +optional
 	RequestDecompression *RequestDecompression `json:"requestDecompression,omitempty"`
 }
 
+// CompressionLibrary identifies a compression codec used to compress responses or decompress requests.
+// +kubebuilder:validation:Enum=Gzip;Brotli;Zstd
+type CompressionLibrary string
+
+const (
+	// CompressionGzip selects the gzip compressor.
+	CompressionGzip CompressionLibrary = "Gzip"
+	// CompressionBrotli selects the brotli compressor.
+	CompressionBrotli CompressionLibrary = "Brotli"
+	// CompressionZstd selects the zstd compressor.
+	CompressionZstd CompressionLibrary = "Zstd"
+)
+
 // ResponseCompression configures response compression.
 type ResponseCompression struct {
+	// Libraries lists the compression codecs to offer for responses.
+	// Envoy negotiates the codec based on the downstream request's `Accept-Encoding` header,
+	// picking the highest-quality codec the client accepts. On equal quality the client's
+	// ordering decides. If the client accepts none of the offered codecs, the response is
+	// sent uncompressed.
+	// Defaults to [Gzip].
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=3
+	// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, y == x))",message="libraries must not contain duplicates"
+	// +kubebuilder:default={Gzip}
+	Libraries []CompressionLibrary `json:"libraries,omitempty"`
+
 	// Disables compression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 }
 
-// RequestDecompression enables request gzip decompression.
+// RequestDecompression enables request decompression.
 type RequestDecompression struct {
+	// Libraries lists the codecs to decompress on request bodies. Envoy selects the decompressor
+	// by the request's `Content-Encoding` header, so the list order is not significant. Request
+	// bodies encoded with a codec not in this list are passed through to the backend unchanged.
+	// Defaults to [Gzip].
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=3
+	// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, y == x))",message="libraries must not contain duplicates"
+	// +kubebuilder:default={Gzip}
+	Libraries []CompressionLibrary `json:"libraries,omitempty"`
+
 	// Disables decompression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
@@ -765,6 +879,8 @@ type FaultInjectionPolicy struct {
 type FaultDelay struct {
 	// FixedDelay is the duration to delay before forwarding the request.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('1h')",message="must not exceed 1h"

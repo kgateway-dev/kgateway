@@ -29,7 +29,7 @@ var (
 	ErrInvalidTlsSecret = errors.New("invalid TLS secret")
 
 	InvalidTlsSecretError = func(n, ns string, err error) error {
-		return fmt.Errorf("%w %s/%s: %v", ErrInvalidTlsSecret, ns, n, err)
+		return fmt.Errorf("%w %s/%s: %w", ErrInvalidTlsSecret, ns, n, err)
 	}
 
 	NoCertificateFoundError = errors.New("no certificate information found")
@@ -37,14 +37,16 @@ var (
 	ErrMissingCACertKey = errors.New("ca.crt key missing")
 
 	ErrInvalidCACertificate = func(n, ns string, err error) error {
-		return fmt.Errorf("invalid ca.crt in ConfigMap %s/%s: %v", ns, n, err)
+		return fmt.Errorf("invalid ca.crt in ConfigMap %s/%s: %w", ns, n, err)
 	}
 
 	ErrInvalidCACertificateSecret = func(n, ns string, err error) error {
-		return fmt.Errorf("invalid ca.crt in Secret %s/%s: %v", ns, n, err)
+		return fmt.Errorf("invalid ca.crt in Secret %s/%s: %w", ns, n, err)
 	}
 
 	ErrVerifySubjectAltNamesRequiresCA = errors.New("verify-subject-alt-names annotation requires a trusted CA to be configured")
+
+	ErrUnknownTLSExtensionOption = errors.New("unknown tls option")
 
 	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
 	tlsProtocolMap = map[string]envoytlsv3.TlsParameters_TlsProtocol{
@@ -171,6 +173,15 @@ func ApplyEcdhCurves(in string, out *ir.TLSConfig) error {
 	return nil
 }
 
+func ApplySignatureAlgorithms(in string, out *ir.TLSConfig) error {
+	signatureAlgorithms := strings.Split(in, ",")
+	for i, suite := range signatureAlgorithms {
+		signatureAlgorithms[i] = strings.TrimSpace(suite)
+	}
+	out.SignatureAlgorithms = signatureAlgorithms
+	return nil
+}
+
 func ApplyAlpnProtocols(in string, out *ir.TLSConfig) error {
 	alpnProtocols := strings.Split(in, ",")
 	for i, protocol := range alpnProtocols {
@@ -286,6 +297,7 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 	annotations.MaxTLSVersion:         ApplyMaxTLSVersion,
 	annotations.VerifySubjectAltNames: ApplyVerifySubjectAltNames,
 	annotations.EcdhCurves:            ApplyEcdhCurves,
+	annotations.SignatureAlgorithms:   ApplySignatureAlgorithms,
 	annotations.AlpnProtocols:         ApplyAlpnProtocols,
 	annotations.VerifyCertificateHash: ApplyVerifyCertificateHash,
 }
@@ -301,7 +313,7 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 				errs = errors.Join(errs, err)
 			}
 		} else {
-			errs = errors.Join(errs, fmt.Errorf("unknown tls option: %s", key))
+			errs = errors.Join(errs, fmt.Errorf("%w: %s", ErrUnknownTLSExtensionOption, key))
 		}
 	}
 

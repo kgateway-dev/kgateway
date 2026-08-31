@@ -20,11 +20,16 @@ Certificates are organized into subdirectories:
   - `client-matching-san-secret.yaml` - Client certificate with matching SAN (Secret)
   - `client-non-matching-san-secret.yaml` - Client certificate with non-matching SAN (Secret)
 
+- **`certs/ca-sigalgs/`** - CA certificate and client certificates for signature-algorithms tests:
+  - `ca-sigalgs-configmap.yaml` - CA certificate (ConfigMap)
+  - `client-matching-signature-secret.yaml` - Client certificate with matching RSA signature (Secret)
+  - `client-non-matching-signature-secret.yaml` - Client certificate with non-matching ECDSA signature (Secret)
+
 **Note**: Tests only use the Kubernetes secrets (YAML manifests) which contain base64-encoded certificates. Raw certificate files (`.crt`, `.key`, `.pem`) are not present in this repository - they are artifacts from certificate generation that can be regenerated using the commands in the Certificate Generation section below.
 
 **Note**: During certificate generation, intermediate files like `.csr` (Certificate Signing Request) and `.srl` (serial number) files may be created. These are temporary artifacts and are not committed to the repository - only the final certificates in the YAML manifests are required.
 
-**Note**: The server TLS certificate (`tls-secret.yaml`) is located at the testdata root level alongside other Kubernetes manifests like `gw.yaml`, `curl-pod-with-certs.yaml`, and `curl-namespace.yaml` (which creates the `curl` namespace the curl pod and its mounted client-cert Secrets live in).
+**Note**: The server TLS certificates (`tls-rsa-secret.yaml`, `tls-ecdsa-p256-secret.yaml`) are located at the testdata root level alongside other Kubernetes manifests like `gw.yaml`, `curl-pod-with-certs.yaml`, and `curl-namespace.yaml` (which creates the `curl` namespace the curl pod and its mounted client-cert Secrets live in).
 
 These certificates are signed by the CA certificates in `certs/ca1/ca-cert-configmap.yaml` and `certs/ca2/ca-cert-2-configmap.yaml`, allowing them to work with both validation mechanisms:
 - `verify-certificate-hash`: Validates the specific certificate hash (certificate pinning)
@@ -128,6 +133,7 @@ In the tests, these certificates are mounted into the curl pod from Kubernetes s
 - **Port 8445** (example.com): FrontendTLSConfig per-port (AllowValidOnly) - client cert required
 - **Port 8446** (*.example.com): FrontendTLSConfig per-port (AllowValidOnly) with **multiple CA cert refs** (ca-cert and ca-cert-2) for wildcard domain - client cert required, accepts certs signed by either CA
 - **Port 8447** (mtls.example.com): `verify-subject-alt-names: "mtls.example.com"` + FrontendTLSConfig per-port (AllowValidOnly) with `ca-alt-names-cert` CA - client cert required with SAN validation
+- **Port 8448** (mtls.example.com): `signature-algorithms: "rsa_pss_rsae_sha256"` + FrontendTLSConfig per-port (AllowValidOnly) with `ca-sigalgs-cert` CA - client cert required with supported signature
 
 ### Test Validation
 
@@ -142,6 +148,11 @@ The test suite uses these certificates with curl's `--cert` and `--key` flags to
 The test suite validates that client certificates are checked for matching Subject Alternative Name extensions:
 1. **Port 8447** requires `verify-subject-alt-names: "mtls.example.com"` - accepts `client-matching-san.crt` (has matching `DNS:mtls.example.com` SAN), rejects `client-non-matching-san.crt` (has non-matching `DNS:mtls-alt.example.com` SAN)
 2. Ensures that certificates without the required SAN entries are properly rejected during mutual TLS handshake
+
+#### signature-algorithms Tests (TestVerifySubjectAltNames)
+The test suite validates that client certificates are only accepted if they have supported signature algorithms:
+1. **Port 8448** requires `signature-algorithms: "rsa_pss_rsae_sha256"` - accepts `client-matching-signature.crt` (has matching `RSA+SHA256` signature), rejects `client-non-matching-signature.crt` (has non-matching `ECDSA+SHA256` signature)
+2. Ensures that certificates without the supported signatures are properly rejected during mutual TLS handshake
 
 #### FrontendTLSConfig Tests (TestFrontendTLSConfig)
 The test suite validates FrontendTLSConfig behavior:
@@ -159,4 +170,3 @@ The test suite validates that FrontendTLSConfig supports multiple CA certificate
 **Note**: Both `verify-certificate-hash` and `FrontendTLSConfig` can be used together on the same listener. The `verify-certificate-hash` validates the specific certificate hash (certificate pinning), while `FrontendTLSConfig` validates the certificate chain against the CA.
 
 **Multiple CA Support**: FrontendTLSConfig supports multiple CA certificate references in the `caCertificateRefs` array. When multiple CAs are configured, client certificates signed by any of the configured CAs will be accepted. This is useful for scenarios where you need to support clients with certificates from different certificate authorities (e.g., during CA migration or supporting multiple client organizations). This feature works with wildcard domains, allowing multiple root CA certs for the same wildcard domain pattern (e.g., `*.example.com`).
-

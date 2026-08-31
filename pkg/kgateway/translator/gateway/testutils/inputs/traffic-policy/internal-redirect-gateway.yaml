@@ -1,0 +1,81 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: test
+---
+# Route 1: inherits internal redirect from gateway-level policy
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-1
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+# Route 2: has its own route-level internal redirect (303 overrides gateway-level 302)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route-2
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example2.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+---
+# Gateway-level policy: internal redirect on 302 for all routes unless overridden
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-redirect
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  internalRedirect:
+    redirectResponseCodes: [302]
+    maxRedirects: 1
+---
+# Route-level policy: 303 overrides gateway-level 302 for example-route-2
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-2-redirect
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route-2
+  internalRedirect:
+    redirectResponseCodes: [303]
+    allowCrossSchemeRedirect: true
+    maxRedirects: 3

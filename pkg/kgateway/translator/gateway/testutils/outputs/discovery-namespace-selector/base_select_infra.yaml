@@ -88,6 +88,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"abc","value":"custom-value-abc"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
 Statuses:
   gateways:
     infra/example-gateway:
@@ -150,6 +151,11 @@ Statuses:
           reason: Accepted
           status: "True"
           type: Accepted
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

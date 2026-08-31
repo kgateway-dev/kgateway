@@ -84,6 +84,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
+	// Construct request mirror specific IR
+	constructRequestMirror(policyCR.Spec, &outSpec)
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
@@ -96,6 +98,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	}
 	// Construct timeout and retry specific IR
 	constructTimeoutRetry(policyCR.Spec, &outSpec)
+	// Construct internal redirect specific IR
+	constructInternalRedirect(policyCR.Spec, &outSpec)
 
 	// Construct rbac specific IR
 	if err := constructRBAC(policyCR, &outSpec); err != nil {
@@ -120,6 +124,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructRouteTracing(policyCR.Spec, &outSpec)
 	// Construct url rewrite specific IR
 	constructURLRewrite(policyCR.Spec, &outSpec)
+	// Construct stat prefix specific IR
+	constructStatPrefix(policyCR.Spec, &outSpec)
 	// Construct basic auth specific IR
 	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
 		errors = append(errors, err)

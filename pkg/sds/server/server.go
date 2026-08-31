@@ -9,10 +9,10 @@ import (
 	"hash"
 	"hash/fnv"
 	"log"
-	"log/slog"
 	"math"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -24,7 +24,11 @@ import (
 	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/mitchellh/hashstructure"
 	"google.golang.org/grpc"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
+
+var logger = logging.New("sds/server")
 
 var grpcOptions = []grpc.ServerOption{
 	grpc.MaxConcurrentStreams(10000),
@@ -63,7 +67,7 @@ func (s *Server) ID(_ *envoycorev3.Node) string {
 }
 
 // SetupEnvoySDS creates a new SDSServer. The returned server can be started with Run()
-func SetupEnvoySDS(secrets []Secret, sdsClient, serverAddress string) *Server {
+func SetupEnvoySDS(ctx context.Context, secrets []Secret, sdsClient, serverAddress string) *Server {
 	grpcServer := grpc.NewServer(grpcOptions...)
 	sdsServer := &Server{
 		secrets:    secrets,
@@ -74,7 +78,7 @@ func SetupEnvoySDS(secrets []Secret, sdsClient, serverAddress string) *Server {
 	snapshotCache := cache.NewSnapshotCache(false, sdsServer, nil)
 	sdsServer.snapshotCache = snapshotCache
 
-	svr := server.NewServer(context.Background(), snapshotCache, nil)
+	svr := server.NewServer(ctx, snapshotCache, nil)
 
 	// register services
 	envoy_service_secret_v3.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
@@ -87,7 +91,7 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("sds server listening", "address", s.address)
+	logger.Info("sds server listening", "address", s.address)
 
 	// Create channels for synchronization
 	serveStarted := make(chan struct{})
@@ -109,7 +113,7 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 
 		// Now wait for context cancellation
 		<-ctx.Done()
-		slog.Info("stopping sds server", "address", s.address)
+		logger.Info("stopping sds server", "address", s.address)
 		s.grpcServer.GracefulStop()
 		serverStopped <- struct{}{}
 	}()
@@ -132,10 +136,10 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
 	if err != nil {
-		slog.Error("error getting snapshot version", "error", err)
+		logger.Error("error getting snapshot version", "error", err)
 		return err
 	}
-	slog.Info("updating SDS config", "client", s.sdsClient, "snapshot_version", snapshotVersion)
+	logger.Info("updating SDS config", "client", s.sdsClient, "snapshot_version", snapshotVersion)
 
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
@@ -208,7 +212,7 @@ func readAndValidateSecret(ctx context.Context, sec Secret) ([][]byte, []cache_t
 	}
 
 	if attempts > 1 {
-		slog.Info(
+		logger.Info(
 			"recovered SDS secret after retrying torn cert rotation",
 			"server_cert", sec.ServerCert,
 			"attempts", attempts,
@@ -225,7 +229,7 @@ func readAndValidateSecret(ctx context.Context, sec Secret) ([][]byte, []cache_t
 // GetSnapshotVersion generates a version string by hashing the certs
 func GetSnapshotVersion(certs ...any) (string, error) {
 	hash, err := hashAllSafe(fnv.New64(), certs...)
-	return fmt.Sprintf("%d", hash), err
+	return strconv.FormatUint(hash, 10), err
 }
 
 // hashAllSafe replicates the behavior of hashutils.HashAllSafe from github.com/solo-io/go-utils

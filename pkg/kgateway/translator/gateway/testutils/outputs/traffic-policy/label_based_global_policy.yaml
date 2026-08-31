@@ -88,21 +88,21 @@ Listeners:
     name: listener~80
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        accessLog:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
-        accessLogConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        accessLog:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
-        accessLogConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/infra/accesslog
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/infra/accesslog
   name: listener~80
   virtualHosts:
   - domains:
@@ -133,6 +133,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"response":{"add":[{"name":"abc","value":"custom-value-abc"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation
         envoy.filters.http.cors:
           '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
           allowOriginStringMatch:
@@ -216,13 +217,18 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
           kind: ""
           name: example-gateway
   policies:
-    HTTPListenerPolicy/infra/accesslog:
+    ListenerPolicy/infra/accesslog:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

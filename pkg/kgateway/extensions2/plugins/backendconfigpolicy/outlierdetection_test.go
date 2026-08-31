@@ -39,6 +39,21 @@ func TestTranslateOutlierDetection(t *testing.T) {
 			},
 		},
 		{
+			name: "enforce local origin failures and disable external 5xx ejections",
+			config: &kgateway.OutlierDetection{
+				SplitExternalLocalOriginErrors:         new(true),
+				ConsecutiveLocalOriginFailure:          new(int32(10)),
+				EnforcingConsecutiveLocalOriginFailure: new(int32(100)),
+				EnforcingConsecutive5xx:                new(int32(0)),
+			},
+			expected: &envoyclusterv3.OutlierDetection{
+				SplitExternalLocalOriginErrors:         true,
+				ConsecutiveLocalOriginFailure:          &wrapperspb.UInt32Value{Value: 10},
+				EnforcingConsecutiveLocalOriginFailure: &wrapperspb.UInt32Value{Value: 100},
+				EnforcingConsecutive_5Xx:               &wrapperspb.UInt32Value{Value: 0},
+			},
+		},
+		{
 			name: "full outlier detection config",
 			config: &kgateway.OutlierDetection{
 				Consecutive5xx:     new(int32(2)),

@@ -69,9 +69,10 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 
 	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{
-		ContributedPolicies: s.extensions.ContributesPolicies,
-		ValidationLevel:     s.commonCols.Settings.ValidationMode,
-		Validator:           s.validator,
+		ContributedPolicies:       s.extensions.ContributesPolicies,
+		ValidationLevel:           s.commonCols.Settings.ValidationMode,
+		Validator:                 s.validator,
+		EnableRouteSourceMetadata: s.commonCols.Settings.EnableRouteSourceMetadata,
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
@@ -21,9 +20,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer/strategicpatch"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/helm"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 var (
+	logger = logging.New("gateway-deployer")
+
 	// ErrNoValidPorts is returned when no valid ports are found for the Gateway
 	ErrNoValidPorts = errors.New("no valid ports")
 
@@ -36,10 +38,7 @@ func NewGatewayParameters(cli apiclient.Client, inputs *deployer.Inputs) *Gatewa
 		inputs: inputs,
 	}
 
-	// Only create the kgateway parameters client if Envoy is enabled
-	if inputs.CommonCollections.Settings.EnableEnvoy {
-		gp.kgwParameters = newkgatewayParameters(cli, inputs)
-	}
+	gp.kgwParameters = newkgatewayParameters(cli, inputs)
 
 	return gp
 }
@@ -61,13 +60,10 @@ func (gp *GatewayParameters) WithHelmValuesGeneratorOverride(generator deployer.
 	return gp
 }
 
-// GetGatewayParametersClient returns the GatewayParameters client if Envoy is enabled, nil otherwise.
+// GetGatewayParametersClient returns the GatewayParameters client.
 // This allows the reconciler to reuse the same client for watching changes.
 func (gp *GatewayParameters) GetGatewayParametersClient() kclient.Client[*kgateway.GatewayParameters] {
-	if gp.kgwParameters != nil {
-		return gp.kgwParameters.gwParamClient
-	}
-	return nil
+	return gp.kgwParameters.gwParamClient
 }
 
 func LoadEnvoyChart() (*chart.Chart, error) {
@@ -88,11 +84,7 @@ func (gp *GatewayParameters) GetCacheSyncHandlers() []cache.InformerSynced {
 		return gp.helmValuesGeneratorOverride.GetCacheSyncHandlers()
 	}
 
-	var handlers []cache.InformerSynced
-	if gp.kgwParameters != nil {
-		handlers = append(handlers, gp.kgwParameters.GetCacheSyncHandlers()...)
-	}
-	return handlers
+	return gp.kgwParameters.GetCacheSyncHandlers()
 }
 
 // PostProcessObjects implements deployer.ObjectPostProcessor.
@@ -152,7 +144,7 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 	}
 
 	if gp.helmValuesGeneratorOverride != nil {
-		slog.Debug("using override HelmValuesGenerator for Gateway",
+		logger.Debug("using override HelmValuesGenerator for Gateway",
 			"gateway_name", gw.GetName(),
 			"gateway_namespace", gw.GetNamespace(),
 		)
@@ -160,9 +152,9 @@ func (gp *GatewayParameters) getHelmValuesGenerator(obj client.Object) (deployer
 	}
 
 	if gp.kgwParameters == nil {
-		return nil, fmt.Errorf("no parameter clients available")
+		return nil, errors.New("no parameter clients available")
 	}
-	slog.Debug("using default HelmValuesGenerator for Gateway",
+	logger.Debug("using default HelmValuesGenerator for Gateway",
 		"gateway_name", gw.GetName(),
 		"gateway_namespace", gw.GetNamespace(),
 	)
@@ -211,7 +203,7 @@ func (k *kgatewayParameters) getGatewayParametersForGateway(gw *gwv1.Gateway) (*
 	// attempt to get the GatewayParameters name from the Gateway. If we can't find it,
 	// we'll check for the default GWP for the GatewayClass.
 	if gw.Spec.Infrastructure == nil || gw.Spec.Infrastructure.ParametersRef == nil {
-		slog.Debug("no GatewayParameters found for Gateway, using default",
+		logger.Debug("no GatewayParameters found for Gateway, using default",
 			"gateway_name", gw.GetName(),
 			"gateway_namespace", gw.GetNamespace(),
 		)
@@ -293,7 +285,7 @@ func (k *kgatewayParameters) resolveGatewayClassParameters(gwc *gwv1.GatewayClas
 	gwpName := paramRef.Name
 	if gwpName == "" {
 		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
-		slog.Error("could not get gateway parameters for gateway class",
+		logger.Error("could not get gateway parameters for gateway class",
 			"error", err,
 			"gatewayClassName", gwc.GetName(),
 		)

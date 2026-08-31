@@ -1,10 +1,10 @@
 package proxy_syncer
 
 import (
-	"fmt"
+	"cmp"
 	"hash/fnv"
-	"sort"
-	"strings"
+	"slices"
+	"strconv"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -12,14 +12,15 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
+// localClusterEndpointPort is the port used in local-cluster CLA endpoints.
+// The value is arbitrary, and the admin port is used since it is guaranteed
+// to be listening on every Envoy pod.
 const localClusterEndpointPort uint32 = 19000
 
 type localClusterEndpoint struct {
@@ -28,23 +29,45 @@ type localClusterEndpoint struct {
 	locality     ir.PodLocality
 }
 
+func gatewayPodIndexKey(namespace, gatewayName string) string {
+	return namespace + "/" + gatewayName
+}
+
 func NewPerClientLocalClusterEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 	localityPods krt.Collection[krtcollections.LocalityPod],
 ) PerClientEnvoyEndpoints {
+	podsByGateway := krtpkg.UnnamedIndex(localityPods, func(pod krtcollections.LocalityPod) []string {
+		gwName := ir.GatewayNameFromLabels(pod.AugmentedLabels)
+		if gwName == "" {
+			return nil
+		}
+		return []string{gatewayPodIndexKey(pod.Namespace, gwName)}
+	})
+
 	endpoints := krt.NewCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *UccWithEndpoints {
-		localClusterName, gatewayName, gatewayNamespace := localClusterInfo(ucc)
+		if !ucc.KnowsLocalCluster {
+			// Client's own EDS subscription has never named this resource (old Envoy with
+			// no matching static bootstrap cluster). Never emit it for this client: an
+			// unrequested resource in the snapshot makes go-control-plane's ADS "superset"
+			// check withhold the client's *entire* EDS response. See issue #14471.
+			return nil
+		}
+		localClusterName, gatewayName, gatewayNamespace := ucc.LocalClusterInfo()
 		if localClusterName == "" || gatewayName == "" || gatewayNamespace == "" {
 			return nil
 		}
 
-		cla := buildLocalClusterLoadAssignment(localClusterName, gatewayName, gatewayNamespace, krt.Fetch(kctx, localityPods))
+		logger.Debug("building local cluster CLA", "local_cluster_name", localClusterName, "gateway", gatewayName, "namespace", gatewayNamespace)
+		gwPods := krt.Fetch(kctx, localityPods, krt.FilterIndex(podsByGateway, gatewayPodIndexKey(gatewayNamespace, gatewayName)))
+		cla := buildLocalClusterLoadAssignment(localClusterName, gwPods)
 		return &UccWithEndpoints{
 			Client:        ucc,
 			Endpoints:     cla,
 			EndpointsHash: hashLocalClusterLoadAssignment(cla),
 			endpointsName: localClusterName,
+			resourceName:  uccEndpointsResourceName(ucc, localClusterName),
 		}
 	}, krtopts.ToOptions("LocalClusterEndpoints")...)
 
@@ -58,45 +81,12 @@ func NewPerClientLocalClusterEndpoints(
 	}
 }
 
-func localClusterInfo(ucc ir.UniquelyConnectedClient) (clusterName, gatewayName, gatewayNamespace string) {
-	gatewayNamespace = ucc.Namespace
-	gatewayName = gatewayNameFromLabels(ucc.Labels)
-
-	roleParts := strings.Split(ucc.Role, ir.KeyDelimiter)
-	if len(roleParts) == 3 {
-		if gatewayNamespace == "" {
-			gatewayNamespace = roleParts[1]
-		}
-		if gatewayName == "" {
-			gatewayName = roleParts[2]
-		}
-	}
-
-	if gatewayName == "" || gatewayNamespace == "" {
-		return "", gatewayName, gatewayNamespace
-	}
-	return LocalClusterName(gatewayName, gatewayNamespace), gatewayName, gatewayNamespace
-}
-
-// LocalClusterName returns the name of the per-gateway "local cluster" EDS resource that
-// kgateway programs for native zone-aware routing. It is the single source of truth for this
-// name and must stay in sync with the bootstrap config produced by the Helm template
-// (see kgateway.gateway.fullname in pkg/kgateway/helm/envoy/templates/_helpers.tpl).
-func LocalClusterName(gatewayName, gatewayNamespace string) string {
-	return fmt.Sprintf("%s.%s", kubeutils.SafeGatewayLabelValue(gatewayName), gatewayNamespace)
-}
-
 func buildLocalClusterLoadAssignment(
 	clusterName string,
-	gatewayName string,
-	gatewayNamespace string,
 	pods []krtcollections.LocalityPod,
 ) *envoyendpointv3.ClusterLoadAssignment {
 	localEndpoints := make([]localClusterEndpoint, 0, len(pods))
 	for _, pod := range pods {
-		if pod.Namespace != gatewayNamespace || gatewayNameFromLabels(pod.AugmentedLabels) != gatewayName {
-			continue
-		}
 		address := pod.Address()
 		if address == "" {
 			continue
@@ -108,14 +98,14 @@ func buildLocalClusterLoadAssignment(
 		})
 	}
 
-	sort.Slice(localEndpoints, func(i, j int) bool {
-		if localEndpoints[i].locality != localEndpoints[j].locality {
-			return localEndpoints[i].locality.String() < localEndpoints[j].locality.String()
+	slices.SortFunc(localEndpoints, func(a, b localClusterEndpoint) int {
+		if a.locality != b.locality {
+			return cmp.Compare(a.locality.String(), b.locality.String())
 		}
-		if localEndpoints[i].resourceName != localEndpoints[j].resourceName {
-			return localEndpoints[i].resourceName < localEndpoints[j].resourceName
+		if a.resourceName != b.resourceName {
+			return cmp.Compare(a.resourceName, b.resourceName)
 		}
-		return localEndpoints[i].address < localEndpoints[j].address
+		return cmp.Compare(a.address, b.address)
 	})
 
 	endpointsByLocality := make(map[ir.PodLocality][]localClusterEndpoint)
@@ -168,16 +158,6 @@ func buildLocalClusterLoadAssignment(
 	return cla
 }
 
-func gatewayNameFromLabels(labels map[string]string) string {
-	if labels == nil {
-		return ""
-	}
-	if gatewayName := labels[wellknown.GatewayNameAnnotation]; gatewayName != "" {
-		return gatewayName
-	}
-	return labels[wellknown.GatewayNameLabel]
-}
-
 func hashLocalClusterLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
 	hasher := fnv.New64a()
 	utils.HashStringField(hasher, cla.GetClusterName())
@@ -189,7 +169,7 @@ func hashLocalClusterLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) 
 		for _, lbEndpoint := range localityEndpoints.GetLbEndpoints() {
 			socketAddress := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
 			utils.HashStringField(hasher, socketAddress.GetAddress())
-			utils.HashStringField(hasher, fmt.Sprintf("%d", socketAddress.GetPortValue()))
+			utils.HashStringField(hasher, strconv.FormatUint(uint64(socketAddress.GetPortValue()), 10))
 		}
 	}
 	return hasher.Sum64()

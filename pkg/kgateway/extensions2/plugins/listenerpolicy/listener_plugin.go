@@ -8,6 +8,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	grpcstatsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_stats/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -19,16 +20,15 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	kgwwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -37,7 +37,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
@@ -47,15 +46,13 @@ type ListenerPolicyIR struct {
 	ct            time.Time
 	defaultPolicy listenerPolicy
 	perPortPolicy map[uint32]listenerPolicy
-
-	NoOrigin bool // +noKrtEquals reason: When set to true, suppress source reporting metadata from
-	// ListenerPolicy specific fields that are irrelevant to the (now deprecated) HTTPListenerPolicy. Remove when HTTPListenerPolicy is removed.
 }
 
 type listenerPolicy struct {
 	proxyProtocol                 *anypb.Any
 	tcpKeepalive                  *envoycorev3.TcpKeepalive
 	perConnectionBufferLimitBytes *uint32
+	transportSocketConnectTimeout *durationpb.Duration
 	// only for default policy
 	clientCertificateValidation *ir.ClientCertificateValidationIR
 	// +noKrtEquals
@@ -73,12 +70,17 @@ func newListenerPolicy(
 	if i.PerConnectionBufferLimitBytes != nil {
 		perConnectionBufferLimitBytes = new(uint32(*i.PerConnectionBufferLimitBytes)) //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 2147483647, safe for uint32
 	}
+	var tsct *durationpb.Duration
+	if i.TransportSocketConnectTimeout != nil {
+		tsct = durationpb.New(i.TransportSocketConnectTimeout.Duration)
+	}
 	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
 		tcpKeepalive:                  backendconfigpolicy.TranslateTCPKeepalive(i.TCPKeepalive),
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
+		transportSocketConnectTimeout: tsct,
 		http:                          http,
 	}, errs
 }
@@ -144,6 +146,10 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 
+	if !proto.Equal(d.transportSocketConnectTimeout, d2.transportSocketConnectTimeout) {
+		return false
+	}
+
 	if (d.clientCertificateValidation == nil) != (d2.clientCertificateValidation == nil) {
 		return false
 	}
@@ -161,40 +167,6 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	return true
 }
 
-func getPolicyStatusFn(
-	cl kclient.Client[*kgateway.ListenerPolicy],
-) sdk.GetPolicyStatusFn {
-	return func(ctx context.Context, nn types.NamespacedName) (gwv1.PolicyStatus, error) {
-		res := cl.Get(nn.Name, nn.Namespace)
-		if res == nil {
-			return gwv1.PolicyStatus{}, sdk.ErrNotFound
-		}
-		return res.Status, nil
-	}
-}
-
-func patchPolicyStatusFn(
-	cl kclient.Client[*kgateway.ListenerPolicy],
-) sdk.PatchPolicyStatusFn {
-	return func(ctx context.Context, nn types.NamespacedName, policyStatus gwv1.PolicyStatus) error {
-		cur := cl.Get(nn.Name, nn.Namespace)
-		if cur == nil {
-			return sdk.ErrNotFound
-		}
-		if _, err := cl.UpdateStatus(&kgateway.ListenerPolicy{
-			ObjectMeta: sdk.CloneObjectMetaForStatus(cur.ObjectMeta),
-			Status:     policyStatus,
-		}); err != nil {
-			if errors.IsConflict(err) {
-				logger.Debug("error updating stale status", "ref", nn, "error", err)
-				return nil // let the conflicting Status update trigger a KRT event to requeue the updated object
-			}
-			return fmt.Errorf("error updating status for ListenerPolicy %s: %w", nn.String(), err)
-		}
-		return nil
-	}
-}
-
 var _ ir.PolicyIR = &ListenerPolicyIR{}
 
 type listenerPolicyPluginGwPass struct {
@@ -202,11 +174,12 @@ type listenerPolicyPluginGwPass struct {
 	reporter reporter.Reporter
 
 	healthCheckPolicy map[uint32]*healthcheckv3.HealthCheck
+	grpcStats         map[uint32]*grpcstatsv3.FilterConfig
 }
 
 var _ ir.ProxyTranslationPass = &listenerPolicyPluginGwPass{}
 
-func NewListenerPolicyIR(
+func newListenerPolicyIR(
 	krtctx krt.HandlerContext,
 	commoncol *collections.CommonCollections,
 	ct time.Time,
@@ -243,7 +216,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("ListenerPolicy")...)
 	gk := kgwwellknown.ListenerPolicyGVK.GroupKind()
 
-	policyStatusMarker, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, i *kgateway.ListenerPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.ListenerPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -251,16 +224,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			Name:      i.Name,
 		}
 
-		// Create status marker if existing status has kgateway controller
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range i.Status.Ancestors {
-			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
-		}
-
-		polIr, errs := NewListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
+		polIr, errs := newListenerPolicyIR(krtctx, commoncol, i.CreationTimestamp.Time, &i.Spec, objSrc)
 		pol := &ir.PolicyWrapper{
 			ObjectSource: objSrc,
 			Policy:       i,
@@ -269,37 +233,24 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 			Errors:       errs,
 		}
 
-		return statusMarker, pol
+		return pol
 	}, commoncol.KrtOpts.ToOptions("ListenerPolicyWrapper")...)
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, policyStatusMarker)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 	return sdk.Plugin{
 		ExtraHasSynced: col.HasSynced,
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			kgwwellknown.ListenerPolicyGVK.GroupKind(): {
-				NewGatewayTranslationPass:       NewGatewayTranslationPass,
-				Policies:                        policyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
-				GetPolicyStatus:                 getPolicyStatusFn(cli),
-				PatchPolicyStatus:               patchPolicyStatusFn(cli),
+				NewGatewayTranslationPass: NewGatewayTranslationPass,
+				Policies:                  policyCol,
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					kgwwellknown.ListenerPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.ListenerPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.ListenerPolicy {
+						return &kgateway.ListenerPolicy{ObjectMeta: om, Status: st}
+					},
+				),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, MergePolicies, "" /*no merge settings*/)
 				},
@@ -312,6 +263,7 @@ func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Repor
 	return &listenerPolicyPluginGwPass{
 		reporter:          reporter,
 		healthCheckPolicy: map[uint32]*healthcheckv3.HealthCheck{},
+		grpcStats:         map[uint32]*grpcstatsv3.FilterConfig{},
 	}
 }
 
@@ -353,27 +305,61 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	}
 	if http := cfg.http; http != nil {
 		p.healthCheckPolicy[pCtx.Port] = http.healthCheckPolicy
+		p.grpcStats[pCtx.Port] = http.grpcStats
+	}
+}
+
+// ApplyPostListener runs after FilterChains have been built so the plugin can set
+// FilterChain level fields like transport_socket_connect_timeout. It is invoked once per
+// FilterChain on the listener.
+func (p *listenerPolicyPluginGwPass) ApplyPostListener(
+	pCtx *ir.ListenerContext,
+	out *envoylistenerv3.Listener,
+) {
+	cfg := p.getPolicy(pCtx.Policy, pCtx.Port)
+	if cfg.transportSocketConnectTimeout == nil {
+		return
+	}
+	for _, fc := range out.GetFilterChains() {
+		if pCtx.FilterChainName != "" && fc.GetName() != pCtx.FilterChainName {
+			continue
+		}
+		fc.TransportSocketConnectTimeout = cfg.transportSocketConnectTimeout
 	}
 }
 
 func (p *listenerPolicyPluginGwPass) HttpFilters(hCtx ir.HttpFiltersContext, fc ir.FilterChainCommon) ([]filters.StagedHttpFilter, error) {
-	healthCheckPolicy := p.healthCheckPolicy[hCtx.ListenerPort]
-	if healthCheckPolicy == nil {
-		return nil, nil
+	var stagedFilters []filters.StagedHttpFilter
+
+	if healthCheckPolicy := p.healthCheckPolicy[hCtx.ListenerPort]; healthCheckPolicy != nil {
+		// Add the health check filter after the authz filter but before the rate limit filter
+		// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
+		stagedFilter, err := filters.NewStagedFilter(
+			"envoy.filters.http.health_check",
+			healthCheckPolicy,
+			filters.AfterStage(filters.AuthZStage),
+		)
+		if err != nil {
+			return nil, err
+		}
+		stagedFilters = append(stagedFilters, stagedFilter)
 	}
 
-	// Add the health check filter after the authz filter but before the rate limit filter
-	// This allows the health check filter to be secured by authz if needed, but ensures it won't be rate limited
-	stagedFilter, err := filters.NewStagedFilter(
-		"envoy.filters.http.health_check",
-		healthCheckPolicy,
-		filters.AfterStage(filters.AuthZStage),
-	)
-	if err != nil {
-		return nil, err
+	if grpcStats := p.grpcStats[hCtx.ListenerPort]; grpcStats != nil {
+		// Place the gRPC stats filter just before the router so it observes the
+		// final request/response and can emit per-method grpc-status metrics.
+		stagedFilter, err := filters.NewStagedFilter(
+			"envoy.filters.http.grpc_stats",
+			grpcStats,
+			filters.BeforeStage(filters.RouteStage),
+		)
+		if err != nil {
+			return nil, err
+		}
+		stagedFilters = append(stagedFilters, stagedFilter)
 	}
 
-	return []filters.StagedHttpFilter{stagedFilter}, nil
+	return stagedFilters, nil
 }
 
 func (p *listenerPolicyPluginGwPass) ApplyHCM(
@@ -416,6 +402,15 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	if policy.generateRequestId != nil {
 		out.GenerateRequestId = wrapperspb.Bool(*policy.generateRequestId)
 	}
+	if policy.normalizePath != nil {
+		out.NormalizePath = wrapperspb.Bool(*policy.normalizePath)
+	}
+	if policy.mergeSlashes != nil {
+		out.MergeSlashes = *policy.mergeSlashes
+	}
+	if policy.proxy100Continue != nil {
+		out.Proxy_100Continue = *policy.proxy100Continue
+	}
 
 	// translate xffNumTrustedHops
 	if policy.xffNumTrustedHops != nil {
@@ -444,6 +439,11 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	// translate serverHeaderTransformation
 	if policy.serverHeaderTransformation != nil {
 		out.ServerHeaderTransformation = *policy.serverHeaderTransformation
+	}
+
+	// translate serverName
+	if policy.serverName != nil {
+		out.ServerName = *policy.serverName
 	}
 
 	// translate streamIdleTimeout
@@ -547,6 +547,9 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 			// so Go protobuf requires a wrapper struct rather than a plain bool assignment.
 			out.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{StripAnyHostPort: true}
 		}
+	}
+	if policy.stripTrailingHostDot != nil {
+		out.StripTrailingHostDot = *policy.stripTrailingHostDot
 	}
 
 	return nil

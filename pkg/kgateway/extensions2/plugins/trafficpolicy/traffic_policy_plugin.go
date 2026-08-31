@@ -9,10 +9,8 @@ import (
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
-	compressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
-	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	faulthttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
@@ -24,13 +22,15 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -39,7 +39,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
@@ -65,6 +64,13 @@ func DisableFilterPerRoute() *envoyroutev3.FilterConfig {
 	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true}
 }
 
+// DisableFilterPerRouteOptional disables a filter on a route, marking the config optional so
+// Envoy ignores it when the named filter is absent from the chain. Used when a route must
+// disable a set of filters that may not all be present (e.g. multiple compression codecs).
+func DisableFilterPerRouteOptional() *envoyroutev3.FilterConfig {
+	return &envoyroutev3.FilterConfig{Config: &anypb.Any{}, Disabled: true, IsOptional: true}
+}
+
 // PolicySubIR documents the expected interface that all policy sub-IRs should implement.
 type PolicySubIR interface {
 	// Equals compares this policy with another policy
@@ -82,29 +88,32 @@ type TrafficPolicy struct {
 }
 
 type trafficPolicySpecIr struct {
-	buffer          *bufferIR
-	extProc         *extprocIR
-	rustformation   *rustformationIR
-	extAuth         *extAuthIR
-	localRateLimit  *localRateLimitIR
-	globalRateLimit *globalRateLimitIR
-	cors            *corsIR
-	csrf            *csrfIR
-	headerModifiers *headerModifiersIR
-	autoHostRewrite *autoHostRewriteIR
-	retry           *retryIR
-	timeouts        *timeoutsIR
-	rbac            *rbacIR
-	jwt             *jwtIr
-	compression     *compressionIR
-	decompression   *decompressionIR
-	basicAuth       *basicAuthIR
-	urlRewrite      *urlRewriteIR
-	apiKeyAuth      *apiKeyAuthIR
-	oauth2          *oauthIR
-	tracing         *routeTracingIR
-	faultInjection  *faultInjectionIR
-	httpACL         *httpACLIR
+	buffer           *bufferIR
+	extProc          *extprocIR
+	rustformation    *rustformationIR
+	extAuth          *extAuthIR
+	localRateLimit   *localRateLimitIR
+	globalRateLimit  *globalRateLimitIR
+	cors             *corsIR
+	csrf             *csrfIR
+	headerModifiers  *headerModifiersIR
+	requestMirror    *requestMirrorIR
+	autoHostRewrite  *autoHostRewriteIR
+	retry            *retryIR
+	timeouts         *timeoutsIR
+	internalRedirect *internalRedirectIR
+	rbac             *rbacIR
+	jwt              *jwtIr
+	compression      *compressionIR
+	decompression    *decompressionIR
+	basicAuth        *basicAuthIR
+	urlRewrite       *urlRewriteIR
+	apiKeyAuth       *apiKeyAuthIR
+	oauth2           *oauthIR
+	tracing          *routeTracingIR
+	faultInjection   *faultInjectionIR
+	httpACL          *httpACLIR
+	statPrefix       *statPrefixIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -144,6 +153,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.headerModifiers.Equals(d2.spec.headerModifiers) {
 		return false
 	}
+	if !d.spec.requestMirror.Equals(d2.spec.requestMirror) {
+		return false
+	}
 	if !d.spec.autoHostRewrite.Equals(d2.spec.autoHostRewrite) {
 		return false
 	}
@@ -154,6 +166,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 	if !d.spec.timeouts.Equals(d2.spec.timeouts) {
+		return false
+	}
+	if !d.spec.internalRedirect.Equals(d2.spec.internalRedirect) {
 		return false
 	}
 	if !d.spec.rbac.Equals(d2.spec.rbac) {
@@ -189,6 +204,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.httpACL.Equals(d2.spec.httpACL) {
 		return false
 	}
+	if !d.spec.statPrefix.Equals(d2.spec.statPrefix) {
+		return false
+	}
 	return true
 }
 
@@ -205,7 +223,10 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.csrf.Validate)
 	validators = append(validators, p.spec.cors.Validate)
 	validators = append(validators, p.spec.headerModifiers.Validate)
+	validators = append(validators, p.spec.requestMirror.Validate)
 	validators = append(validators, p.spec.buffer.Validate)
+	validators = append(validators, p.spec.retry.Validate)
+	validators = append(validators, p.spec.timeouts.Validate)
 	validators = append(validators, p.spec.autoHostRewrite.Validate)
 	validators = append(validators, p.spec.rbac.Validate)
 	validators = append(validators, p.spec.jwt.Validate)
@@ -218,6 +239,8 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.tracing.Validate)
 	validators = append(validators, p.spec.faultInjection.Validate)
 	validators = append(validators, p.spec.httpACL.Validate)
+	validators = append(validators, p.spec.internalRedirect.Validate)
+	validators = append(validators, p.spec.statPrefix.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -245,13 +268,17 @@ type trafficPolicyPluginGwPass struct {
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
-	bufferInChain            map[string]*bufferv3.Buffer
-	compressorInChain        map[string]*compressorv3.Compressor
-	decompressorInChain      map[string]*decompressorv3.Decompressor
-	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
-	apiKeyAuthInChain        map[string]*envoy_api_key_auth_v3.ApiKeyAuth
-	faultInChain             map[string]*faulthttpv3.HTTPFault
-	httpACLInChain           map[string]bool
+	// Route names we've already applied requestMirror settings to on this pass, so the first
+	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
+	// pass, so the name is a safe key.
+	requestMirrorConfigured map[string]struct{}
+	bufferInChain           map[string]*bufferv3.Buffer
+	compressorInChain       map[string][]compressorEntry
+	decompressorInChain     map[string][]decompressorEntry
+	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain            map[string]*faulthttpv3.HTTPFault
+	httpACLInChain          map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -270,7 +297,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	constructor := NewTrafficPolicyConstructor(ctx, commoncol)
 
 	// TrafficPolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
-	statusCol, policyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, policyCR *kgateway.TrafficPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *kgateway.TrafficPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
 			Kind:      gk.Kind,
@@ -288,14 +315,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			errors = append(errors, err)
 		}
 
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range policyCR.Status.Ancestors {
-			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
-		}
-
 		pol := &ir.PolicyWrapper{
 			ObjectSource:     objSrc,
 			Policy:           policyCR,
@@ -304,28 +323,8 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 			Errors:           errors,
 			PrecedenceWeight: precedenceWeight,
 		}
-		return statusMarker, pol
+		return pol
 	}, commoncol.KrtOpts.ToOptions("TrafficPolicyWrapper")...)
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, statusCol)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
@@ -333,13 +332,20 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, rep reporter.Reporter) ir.ProxyTranslationPass {
 					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata)
 				},
-				Policies:                        policyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
+				Policies: policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(pols, mergeTrafficPolicies, mergeSettings)
 				},
-				GetPolicyStatus:   getPolicyStatusFn(cli),
-				PatchPolicyStatus: patchPolicyStatusFn(cli),
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					wellknown.TrafficPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.TrafficPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.TrafficPolicy {
+						return &kgateway.TrafficPolicy{ObjectMeta: om, Status: st}
+					},
+				),
 			},
 		},
 		ExtraHasSynced: constructor.HasSynced,
@@ -374,12 +380,22 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 
 func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
 	for _, vh := range out.VirtualHosts {
-		for _, route := range vh.Routes {
-			if route.GetRoute() == nil {
-				continue
-			}
-			p.handlePerRoutePolicies(spec, route)
+		p.applyPerRouteSettings(spec, vh.Routes)
+	}
+}
+
+// applyPerRouteSettings applies the route-level settings of a policy (timeouts,
+// retries, url rewrite, etc.) to each of the given routes. It is used when a
+// policy attaches above the route level (at a Gateway or a Gateway listener
+// section) so that the route-level settings still take effect on the routes it
+// covers. Routes without a RouteAction (e.g. redirect/direct response) are
+// skipped by handlePerRoutePolicies.
+func (p *trafficPolicyPluginGwPass) applyPerRouteSettings(spec trafficPolicySpecIr, routes []*envoyroutev3.Route) {
+	for _, route := range routes {
+		if route.GetRoute() == nil {
+			continue
 		}
+		p.handlePerRoutePolicies(spec, route)
 	}
 }
 
@@ -392,7 +408,15 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 		return
 	}
 
-	p.handlePerVHostPolicies(policy.spec, out)
+	// Apply the route-level settings to each route rather than to the vhost.
+	// A Gateway listener section attaches at the vhost level, but settings such
+	// as timeouts and retries are route-action-level in Envoy, so they must be
+	// applied per route to take effect. A route-level value (set by a more
+	// specific TrafficPolicy or a builtin HTTPRoute policy) fully overrides the
+	// one applied here, and the "only set if not already set" guards in
+	// handlePerRoutePolicies keep that precedence explicit.
+	p.applyPerRouteSettings(policy.spec, out.Routes)
+
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 }
 
@@ -404,6 +428,10 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	}
 
 	p.handlePerRoutePolicies(policy.spec, outputRoute)
+	// Stat prefix is set on the Route itself (not the RouteAction) and needs the
+	// route metadata from pCtx to resolve its template, so it is applied here
+	// rather than in handlePerRoutePolicies.
+	applyStatPrefix(policy.spec.statPrefix, pCtx, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 
 	return nil
@@ -639,10 +667,14 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Add Buffer filter to enable buffer for the listener.
-	// Requires the buffer policy to be set as typed_per_filter_config.
+	// Register Buffer immediately before Rustformation so its per-route request
+	// limit is established before a body-parsing transformation buffers data.
 	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(bufferFilterName, f, filters.DuringStage(filters.RouteStage))
+		filter := filters.MustNewStagedFilter(
+			bufferFilterName,
+			f,
+			filters.RelativeToStage(filters.AcceptedStage, -2),
+		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}
@@ -766,6 +798,7 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	}
 
 	action := out.GetRoute()
+	p.applyRequestMirror(spec.requestMirror, out)
 
 	if spec.autoHostRewrite != nil && spec.autoHostRewrite.enabled != nil && spec.autoHostRewrite.enabled.GetValue() {
 		// Only apply TrafficPolicy's AutoHostRewrite if built-in policy's AutoHostRewrite is not already set
@@ -788,10 +821,10 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 		}
 	}
 
-	// Only set the retry policy if it is not already set, which implies that it was
-	// set by the builtin HTTPRouteRetry policy
-	if action.GetRetryPolicy() == nil && spec.retry != nil {
-		action.RetryPolicy = spec.retry.policy
+	applyRetryPolicy(spec.retry, out)
+
+	if action.GetInternalRedirectPolicy() == nil && spec.internalRedirect != nil {
+		action.InternalRedirectPolicy = spec.internalRedirect.policy
 	}
 
 	// Apply URL rewrite configuration
@@ -801,13 +834,20 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 	p.handleRouteTracing(spec, out)
 }
 
-// handlePerVHostPolicies handles policies that are meant to be processed at the vhost level
-func (p *trafficPolicyPluginGwPass) handlePerVHostPolicies(
-	spec trafficPolicySpecIr,
-	out *envoyroutev3.VirtualHost,
-) {
-	if spec.retry != nil {
-		out.RetryPolicy = spec.retry.policy
+func applyRetryPolicy(retry *retryIR, out *envoyroutev3.Route) {
+	if retry == nil || out == nil {
+		return
+	}
+
+	action := out.GetRoute()
+	if action == nil {
+		return
+	}
+
+	// Only set the retry policy if it is not already set, which implies that it was
+	// set by the builtin HTTPRouteRetry policy or a more specific TrafficPolicy.
+	if action.GetRetryPolicy() == nil {
+		action.RetryPolicy = retry.policy
 	}
 }
 

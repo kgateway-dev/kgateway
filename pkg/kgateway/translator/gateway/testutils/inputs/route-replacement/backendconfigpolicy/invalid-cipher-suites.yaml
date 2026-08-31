@@ -67,3 +67,7 @@ spec:
       - "invalid-curve-p256"
       - "bogus-secp384r1"
       - "fake-x25519"
+      # Invalid signature algorithms
+      signatureAlgorithms:
+      - "rsa_unknown_algo"
+      - "ecdsa_bogus"

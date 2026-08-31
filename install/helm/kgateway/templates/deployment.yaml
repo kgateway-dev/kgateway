@@ -4,6 +4,18 @@
 {{- $controllerPodSecurityContext := ternary .Values.controller.podSecurityContext .Values.podSecurityContext (not (kindIs "invalid" .Values.controller.podSecurityContext)) }}
 {{- $controllerSecurityContext := ternary .Values.controller.securityContext .Values.securityContext (not (kindIs "invalid" .Values.controller.securityContext)) }}
 {{- $controllerResources := ternary .Values.controller.resources .Values.resources (not (kindIs "invalid" .Values.controller.resources)) }}
+{{- $rawGoMemLimitPercent := .Values.controller.goMemLimitPercent }}
+{{- if kindIs "invalid" $rawGoMemLimitPercent }}
+{{- $rawGoMemLimitPercent = 0 }}
+{{- end }}
+{{- if not (regexMatch "^[0-9]+$" (printf "%v" $rawGoMemLimitPercent)) }}
+{{- fail (printf "controller.goMemLimitPercent must be an integer between 1 and 100, got %v" $rawGoMemLimitPercent) }}
+{{- end }}
+{{- $goMemLimitPercent := int $rawGoMemLimitPercent }}
+{{- $hasCustomGoMemLimit := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "GOMEMLIMIT") }}
+{{- if and (ne $goMemLimitPercent 0) $hasCustomGoMemLimit }}
+{{- fail "controller.goMemLimitPercent and controller.extraEnv.GOMEMLIMIT cannot both be set; use one or the other" }}
+{{- end }}
 {{- $controllerNodeSelector := ternary .Values.controller.nodeSelector .Values.nodeSelector (not (kindIs "invalid" .Values.controller.nodeSelector)) }}
 {{- $controllerAffinity := ternary .Values.controller.affinity .Values.affinity (not (kindIs "invalid" .Values.controller.affinity)) }}
 {{- $controllerTolerations := ternary .Values.controller.tolerations .Values.tolerations (not (kindIs "invalid" .Values.controller.tolerations)) }}
@@ -60,6 +72,9 @@ spec:
       labels:
         {{- include "kgateway.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: controller
+        {{- with .Values.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -96,11 +111,21 @@ spec:
           startupProbe:
             {{- toYaml $controllerStartupProbe | nindent 12 }}
           env:
+            {{- if not $hasCustomGoMemLimit }}
             - name: GOMEMLIMIT
+              {{- if ne $goMemLimitPercent 0 }}
+              {{- $memoryLimit := dig "limits" "memory" "" ($controllerResources | default dict) }}
+              {{- if not $memoryLimit }}
+              {{- fail "controller.resources.limits.memory must be set when controller.goMemLimitPercent is set" }}
+              {{- end }}
+              value: {{ include "kgateway.goMemLimit" (list $memoryLimit $goMemLimitPercent) | quote }}
+              {{- else }}
               valueFrom:
                 resourceFieldRef:
                   divisor: "1"
                   resource: limits.memory
+              {{- end }}
+            {{- end }}
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
@@ -122,10 +147,16 @@ spec:
               value: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
+            - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
+              value: {{ .Values.serviceEntriesExclusionLabelSelectors | toJson | quote }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
               value: {{ include "kgateway.validationLevel" . | quote }}
+            {{- if .Values.enableRouteSourceMetadata }}
+            - name: KGW_ENABLE_ROUTE_SOURCE_METADATA
+              value: "true"
+            {{- end }}
             - name: KGW_ENABLE_AWS_EC2_DISCOVERY
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
@@ -136,8 +167,6 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
-            - name: KGW_ENABLE_ENVOY
-              value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
             {{- if .Values.waypoint.enabled }}

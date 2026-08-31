@@ -5,11 +5,13 @@ import (
 	"net"
 	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	grpcstatsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_stats/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
@@ -42,13 +44,18 @@ type HttpListenerPolicyIr struct {
 	xffConfig                  *envoyxffv3.XffConfig
 	skipXffAppend              *bool
 	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
+	serverName                 *string
 	streamIdleTimeout          *time.Duration
 	idleTimeout                *time.Duration
 	http2ProtocolOptions       *envoycorev3.Http2ProtocolOptions
 	healthCheckPolicy          *healthcheckv3.HealthCheck
+	grpcStats                  *grpcstatsv3.FilterConfig
 	preserveHttp1HeaderCase    *bool
 	preserveExternalRequestId  *bool
 	generateRequestId          *bool
+	normalizePath              *bool
+	mergeSlashes               *bool
+	proxy100Continue           *bool
 	// For a better UX, we set the default serviceName for access logs to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
 	// Since the gateway name can only be determined during translation, the access log configs and policies
 	// are stored so that during translation, the default serviceName is set if not already provided
@@ -72,6 +79,7 @@ type HttpListenerPolicyIr struct {
 	forwardClientCertMode         *envoy_hcm.HttpConnectionManager_ForwardClientCertDetails
 	setCurrentClientCertDetails   *envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails
 	stripHostPortMode             *kgateway.StripHostPortMode
+	stripTrailingHostDot          *bool
 }
 
 func (d *HttpListenerPolicyIr) Equals(in any) bool {
@@ -125,8 +133,20 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.normalizePath, d2.normalizePath) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.mergeSlashes, d2.mergeSlashes) {
+		return false
+	}
+
 	// Check xffNumTrustedHops
 	if !cmputils.PointerValsEqual(d.xffNumTrustedHops, d2.xffNumTrustedHops) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.proxy100Continue, d2.proxy100Continue) {
 		return false
 	}
 
@@ -141,7 +161,12 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	// Check serverHeaderTransformation
-	if d.serverHeaderTransformation != d2.serverHeaderTransformation {
+	if !cmputils.PointerValsEqual(d.serverHeaderTransformation, d2.serverHeaderTransformation) {
+		return false
+	}
+
+	// Check serverName
+	if !cmputils.PointerValsEqual(d.serverName, d2.serverName) {
 		return false
 	}
 
@@ -172,6 +197,14 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 
 	// Check healthCheckPolicy
 	if !proto.Equal(d.healthCheckPolicy, d2.healthCheckPolicy) {
+		return false
+	}
+
+	// Check grpcStats
+	if (d.grpcStats == nil) != (d2.grpcStats == nil) {
+		return false
+	}
+	if d.grpcStats != nil && !proto.Equal(d.grpcStats, d2.grpcStats) {
 		return false
 	}
 
@@ -221,6 +254,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 		return false
 	}
 
+	if !cmputils.PointerValsEqual(d.stripTrailingHostDot, d2.stripTrailingHostDot) {
+		return false
+	}
+
 	return true
 }
 
@@ -249,6 +286,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 
 	upgradeConfigs := convertUpgradeConfig(h)
 	serverHeaderTransformation := convertServerHeaderTransformation(h.ServerHeaderTransformation)
+	serverName := h.ServerName
 
 	// Convert streamIdleTimeout from metav1.Duration to time.Duration
 	var streamIdleTimeout *time.Duration
@@ -276,6 +314,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 	}
 
 	healthCheckPolicy := convertHealthCheckPolicy(h)
+	grpcStats := convertGrpcStats(h)
 
 	var xffNumTrustedHops *uint32
 	if h.XffNumTrustedHops != nil {
@@ -386,14 +425,19 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		useRemoteAddress:              h.UseRemoteAddress,
 		preserveExternalRequestId:     h.PreserveExternalRequestId,
 		generateRequestId:             h.GenerateRequestId,
+		normalizePath:                 h.NormalizePath,
+		mergeSlashes:                  h.MergeSlashes,
+		proxy100Continue:              h.Proxy100Continue,
 		xffNumTrustedHops:             xffNumTrustedHops,
 		xffConfig:                     xffConfig,
 		skipXffAppend:                 h.SkipXffAppend,
 		serverHeaderTransformation:    serverHeaderTransformation,
+		serverName:                    serverName,
 		streamIdleTimeout:             streamIdleTimeout,
 		idleTimeout:                   idleTimeout,
 		http2ProtocolOptions:          http2ProtocolOptions,
 		healthCheckPolicy:             healthCheckPolicy,
+		grpcStats:                     grpcStats,
 		preserveHttp1HeaderCase:       h.PreserveHttp1HeaderCase,
 		acceptHttp10:                  h.AcceptHttp10,
 		defaultHostForHttp10:          h.DefaultHostForHttp10,
@@ -405,6 +449,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		forwardClientCertMode:         forwardClientCertMode,
 		setCurrentClientCertDetails:   setCurrentClientCertDetails,
 		stripHostPortMode:             h.StripHostPortMode,
+		stripTrailingHostDot:          h.StripTrailingHostDot,
 	}, errs
 }
 
@@ -453,6 +498,9 @@ func translateHttp2ProtocolOptions(http2ProtocolOptions *kgateway.ListenerHTTP2P
 	if http2ProtocolOptions.InitialConnectionWindowSize != nil {
 		out.InitialConnectionWindowSize = &wrapperspb.UInt32Value{Value: uint32(http2ProtocolOptions.InitialConnectionWindowSize.Value())} //nolint:gosec // G115: plugin validation ensures 65535-2147483647 range, safe for uint32
 	}
+	if http2ProtocolOptions.AllowConnect != nil {
+		out.AllowConnect = *http2ProtocolOptions.AllowConnect
+	}
 	return out
 }
 
@@ -500,6 +548,61 @@ func convertHealthCheckPolicy(policy *kgateway.HTTPSettings) *healthcheckv3.Heal
 		}
 	}
 	return nil
+}
+
+// convertGrpcStats builds the config for Envoy's gRPC statistics HTTP filter
+// (envoy.filters.http.grpc_stats). Returns nil when GrpcStats is not configured.
+func convertGrpcStats(policy *kgateway.HTTPSettings) *grpcstatsv3.FilterConfig {
+	if policy.GrpcStats == nil {
+		return nil
+	}
+	gs := policy.GrpcStats
+
+	cfg := &grpcstatsv3.FilterConfig{}
+	if gs.EnableUpstreamStats != nil {
+		cfg.EnableUpstreamStats = *gs.EnableUpstreamStats
+	}
+
+	switch {
+	case gs.StatsForAllMethods != nil:
+		cfg.PerMethodStatSpecifier = &grpcstatsv3.FilterConfig_StatsForAllMethods{
+			StatsForAllMethods: wrapperspb.Bool(*gs.StatsForAllMethods),
+		}
+	case len(gs.MethodAllowlist) > 0:
+		cfg.PerMethodStatSpecifier = &grpcstatsv3.FilterConfig_IndividualMethodStatsAllowlist{
+			IndividualMethodStatsAllowlist: buildGrpcMethodList(gs.MethodAllowlist),
+		}
+	}
+
+	return cfg
+}
+
+// buildGrpcMethodList converts fully-qualified gRPC methods ("/svc/method")
+// into an Envoy GrpcMethodList, grouping method names under their service.
+func buildGrpcMethodList(methods []string) *envoycorev3.GrpcMethodList {
+	// Preserve first-seen service order for deterministic output.
+	order := make([]string, 0)
+	byService := make(map[string][]string)
+	for _, m := range methods {
+		trimmed := strings.Trim(m, "/")
+		svc, method, ok := strings.Cut(trimmed, "/")
+		if !ok || svc == "" {
+			continue
+		}
+		if _, seen := byService[svc]; !seen {
+			order = append(order, svc)
+		}
+		byService[svc] = append(byService[svc], method)
+	}
+
+	list := &envoycorev3.GrpcMethodList{}
+	for _, svc := range order {
+		list.Services = append(list.Services, &envoycorev3.GrpcMethodList_Service{
+			Name:        svc,
+			MethodNames: byService[svc],
+		})
+	}
+	return list
 }
 
 func convertHeaderMutations(spec *gwv1.HTTPHeaderFilter) []*envoycorev3.TypedExtensionConfig {

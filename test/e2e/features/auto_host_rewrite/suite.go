@@ -8,63 +8,28 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite // makes the suite discoverable
 
 type testingSuite struct {
-	suite.Suite
-
-	ctx context.Context
-	ti  *e2e.TestInstallation
-
-	commonManifests []string
-	commonResources []client.Object
+	*base.BaseTestingSuite
 }
 
 func NewTestingSuite(ctx context.Context, ti *e2e.TestInstallation) suite.TestingSuite {
+	setup := base.TestCase{
+		Manifests: []string{defaults.HttpbinManifest, autoHostRewriteManifest},
+	}
 	return &testingSuite{
-		ctx:             ctx,
-		ti:              ti,
-		commonManifests: []string{defaults.HttpbinManifest, autoHostRewriteManifest},
-		commonResources: []client.Object{route, trafficPolicy},
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, ti, setup, nil),
 	}
-}
-
-/* ───────────────────────── Set-up / Tear-down ───────────────────────── */
-
-func (s *testingSuite) SetupSuite() {
-	for _, mf := range s.commonManifests {
-		s.Require().NoError(
-			s.ti.Actions.Kubectl().ApplyFile(s.ctx, mf),
-			"apply "+mf,
-		)
-	}
-	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, s.commonResources...)
-
-	// wait for httpbin to come up
-	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, defaults.HttpbinDeployment.GetNamespace(), metav1.ListOptions{
-		LabelSelector: defaults.HttpbinLabelSelector,
-	})
-}
-
-func (s *testingSuite) TearDownSuite() {
-	if testutils.ShouldSkipCleanup(s.T()) {
-		return
-	}
-	for _, mf := range s.commonManifests {
-		_ = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, mf)
-	}
-	s.ti.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, s.commonResources...)
 }
 
 /* ──────────────────────────── Test Cases ──────────────────────────── */

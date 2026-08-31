@@ -1,8 +1,9 @@
 package irtranslator
 
 import (
+	"cmp"
 	"context"
-	"sort"
+	"slices"
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -10,7 +11,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -27,9 +28,10 @@ import (
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
-	ValidationLevel     apisettings.ValidationMode
-	Validator           validator.Validator
+	ContributedPolicies       map[schema.GroupKind]sdk.PolicyPlugin
+	ValidationLevel           apisettings.ValidationMode
+	Validator                 validator.Validator
+	EnableRouteSourceMetadata bool
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -81,7 +83,7 @@ func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 }
 
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
-	listener := slices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
+	listener := istioslices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
 		return filterChainName == query.GenerateRouteKey(l.Parent, string(l.Name))
 	})
 	if listener == nil {
@@ -128,17 +130,18 @@ func (t *Translator) ComputeListener(
 
 		// compute routes
 		hr := httpRouteConfigurationTranslator{
-			gw:                       gw,
-			listener:                 lis,
-			routeConfigName:          hfc.FilterChainName,
-			fc:                       hfc.FilterChainCommon,
-			attachedPolicies:         hfc.AttachedPolicies,
-			reporter:                 reporter,
-			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
-			pluginPass:               pass,
-			logger:                   logger.With("route_config_name", hfc.FilterChainName),
-			validationLevel:          t.ValidationLevel,
-			validator:                t.Validator,
+			gw:                        gw,
+			listener:                  lis,
+			routeConfigName:           hfc.FilterChainName,
+			fc:                        hfc.FilterChainCommon,
+			attachedPolicies:          hfc.AttachedPolicies,
+			reporter:                  reporter,
+			requireTlsOnVirtualHosts:  hfc.FilterChainCommon.TLS != nil,
+			pluginPass:                pass,
+			logger:                    logger.With("route_config_name", hfc.FilterChainName),
+			validationLevel:           t.ValidationLevel,
+			validator:                 t.Validator,
+			enableRouteSourceMetadata: t.EnableRouteSourceMetadata,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {
@@ -190,12 +193,14 @@ func (t *Translator) ComputeListener(
 		}
 	}
 	// sort filter chains for idempotency
-	sort.Slice(ret.GetFilterChains(), func(i, j int) bool {
-		return ret.GetFilterChains()[i].GetName() < ret.GetFilterChains()[j].GetName()
+	slices.SortFunc(ret.GetFilterChains(), func(a, b *envoylistenerv3.FilterChain) int {
+		return cmp.Compare(a.GetName(), b.GetName())
 	})
 	if hasTls {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
 	}
+
+	t.runPostListenerPlugins(pass, gw, lis, ret)
 
 	return ret, routes
 }
@@ -234,6 +239,63 @@ func (t *Translator) runListenerPlugins(
 		}
 		out.Metadata = addMergeOriginsToFilterMetadata(gk, mergeOrigins, out.GetMetadata())
 		reportPolicyAttachmentStatus(reporter, l.PolicyAncestorRef, mergeOrigins, pols...)
+	}
+}
+
+// runPostListenerPlugins is called after a listener's FilterChains are built so that
+// plugins can mutate FilterChain-level fields via ApplyPostListener.
+// It is invoked once per FilterChain on the listener: section-specific policies attached to
+// an HttpFilterChain or TcpFilterChain are merged with gateway-wide policies before the hook
+// fires, and ListenerContext.FilterChainName carries the target chain name so plugins can
+// mutate only the matching FilterChain.
+func (t *Translator) runPostListenerPlugins(
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	l ir.ListenerIR,
+	out *envoylistenerv3.Listener,
+) {
+	chains := make([]struct {
+		name             string
+		attachedPolicies ir.AttachedPolicies
+	}, 0, len(l.HttpFilterChain)+len(l.TcpFilterChain))
+	for _, hfc := range l.HttpFilterChain {
+		chains = append(chains, struct {
+			name             string
+			attachedPolicies ir.AttachedPolicies
+		}{name: hfc.FilterChainName, attachedPolicies: hfc.AttachedPolicies})
+	}
+	for _, tfc := range l.TcpFilterChain {
+		chains = append(chains, struct {
+			name             string
+			attachedPolicies ir.AttachedPolicies
+		}{name: tfc.FilterChainName, attachedPolicies: ir.AttachedPolicies{}})
+	}
+
+	for _, chain := range chains {
+		var attachedPolicies ir.AttachedPolicies
+		attachedPolicies.Append(chain.attachedPolicies, l.AttachedPolicies, gw.AttachedHttpPolicies)
+		for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
+			pols := attachedPolicies.Policies[gk]
+			pass := pass[gk]
+			if pass == nil {
+				continue
+			}
+			policies, _ := mergePolicies(pass, pols)
+			for _, pol := range policies {
+				pctx := &ir.ListenerContext{
+					Port:            l.BindPort,
+					Policy:          pol.PolicyIr,
+					FilterChainName: chain.name,
+					PolicyAncestorRef: gwv1.ParentReference{
+						Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+						Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+						Namespace: new(gwv1.Namespace(gw.SourceObject.GetNamespace())),
+						Name:      gwv1.ObjectName(gw.SourceObject.GetName()),
+					},
+				}
+				pass.ApplyPostListener(pctx, out)
+			}
+		}
 	}
 }
 

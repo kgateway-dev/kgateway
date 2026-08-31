@@ -86,6 +86,9 @@ spec:
         - name: xds-token
           mountPath: /var/run/secrets/tokens
           readOnly: true
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: true
         {{- with $gateway.extraVolumeMounts }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -182,12 +185,14 @@ spec:
             name: sds
             protocol: TCP
         readinessProbe:
+          exec:
+            command:
+              - /usr/local/bin/sds
+              - healthcheck
           failureThreshold: 3
           initialDelaySeconds: 3
           periodSeconds: 10
           successThreshold: 1
-          tcpSocket:
-            port: 8234
           timeoutSeconds: 1
         {{- with $gateway.sdsContainer.resources }}
         resources:
@@ -338,6 +343,13 @@ spec:
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}
         name: envoy-config
+      # Projects the pod's labels for zone aware locality (PodTopologyLabelsAdmission, k8s >= 1.35).
+      - name: podinfo
+        downwardAPI:
+          items:
+          - path: labels
+            fieldRef:
+              fieldPath: metadata.labels
 {{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory

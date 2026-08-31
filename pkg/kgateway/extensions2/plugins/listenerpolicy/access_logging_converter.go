@@ -64,7 +64,7 @@ func convertAccessLogConfig(
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
-				return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
+				return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
 			}
 			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
 			continue
@@ -73,7 +73,7 @@ func convertAccessLogConfig(
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
 			// TODO: what is the correct behavior? maybe route to static blackhole?
 			if err != nil {
-				return nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
+				return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
 			}
 			grpcBackends[getLogId(log.OpenTelemetry.GrpcService.LogName, idx)] = backend
 		}

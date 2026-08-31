@@ -1,0 +1,101 @@
+# Adapted from test/e2e/features/backends/testdata/priority-groups.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: priority-groups-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "failover.example.com"
+  rules:
+    - backendRefs:
+        - name: priority-groups
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+# Group 0: the primary backend (shared nginx)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: primary-nginx
+  namespace: default
+spec:
+  static:
+    hosts:
+      - host: nginx.nginx-shared.svc
+        port: 8080
+---
+# Group 1, member 1: failover backend (shared http-echo)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: failover-echo
+  namespace: default
+spec:
+  static:
+    hosts:
+      - host: http-echo.http-echo.svc
+        port: 3000
+---
+# Group 1, member 2: failover backend (shared httpbin); shares group 1's
+# priority with failover-echo and is load balanced together with it
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: failover-httpbin
+  namespace: default
+spec:
+  static:
+    hosts:
+      - host: httpbin.default.svc
+        port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: priority-groups
+  namespace: default
+spec:
+  priorityGroups:
+    - backendRefs:
+        - name: primary-nginx
+    - backendRefs:
+        - name: failover-echo
+        - name: failover-httpbin
+---
+# Active health check on the priority-groups Backend. The referenced
+# backends' endpoints are merged into the cluster's load assignment, so the
+# health check probes them directly: a dead nginx marks priority 0 unhealthy
+# and Envoy spills traffic to priority 1.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: priority-groups-health
+  namespace: default
+spec:
+  targetRefs:
+    - name: priority-groups
+      group: gateway.kgateway.dev
+      kind: Backend
+  healthCheck:
+    timeout: 1s
+    interval: 1s
+    unhealthyThreshold: 1
+    healthyThreshold: 1
+    http:
+      path: /
+  connectTimeout: 10s

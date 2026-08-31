@@ -2,6 +2,8 @@ package helm
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -27,7 +30,7 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 	_, err = os.Stat(absHelmChartPath)
 	require.NoError(t, err, "helm chart not found at %s", absHelmChartPath)
 
-	helmCmd := exec.Command("helm", "template", "foobar", absHelmChartPath, "--namespace", "default")
+	helmCmd := helmCommand("template", "foobar", absHelmChartPath, "--namespace", "default")
 	grepCmd := exec.Command("grep", "-E", "-w", "-B", "1", "0\\.0\\.[12]")
 
 	helmOutput, err := helmCmd.StdoutPipe()
@@ -50,7 +53,8 @@ func TestHelmChartVersionAndAppVersion(t *testing.T) {
 
 	err = grepCmd.Wait()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
 			// No matches found - output will be empty. Diff will fail; test will fail.
 		} else {
 			require.NoError(t, err, "grep command failed: %s", stderr.String())
@@ -157,7 +161,7 @@ func TestImageTagVPrefix(t *testing.T) {
 					args = append(args, "--set", setValue)
 				}
 
-				helmCmd := exec.Command("helm", args...)
+				helmCmd := helmCommand(args...)
 				var output bytes.Buffer
 				var stderr bytes.Buffer
 				helmCmd.Stdout = &output
@@ -224,6 +228,34 @@ func TestHelmChartProbeHandlerOverrides(t *testing.T) {
 	require.Equal(t, int32(300), controller.StartupProbe.FailureThreshold)
 }
 
+func TestHelmChartRBACToggle(t *testing.T) {
+	t.Run("rbac disabled omits ClusterRole and ClusterRoleBinding", func(t *testing.T) {
+		output := string(renderHelmTemplate(t, "kgateway", `rbac:
+  create: false
+`, nil))
+
+		require.NotContains(t, output, "kind: ClusterRole",
+			"ClusterRole must be absent when rbac.create=false")
+		require.NotContains(t, output, "kind: ClusterRoleBinding",
+			"ClusterRoleBinding must be absent when rbac.create=false")
+		require.Contains(t, output, "kind: ServiceAccount",
+			"ServiceAccount must still be present when rbac.create=false")
+	})
+
+	t.Run("rbac enabled emits ClusterRole and ClusterRoleBinding", func(t *testing.T) {
+		output := string(renderHelmTemplate(t, "kgateway", `rbac:
+  create: true
+`, nil))
+
+		// Use newline-terminated strings to distinguish ClusterRole from ClusterRoleBinding
+		// (the latter contains the former as a substring).
+		require.Contains(t, output, "kind: ClusterRole\n",
+			"ClusterRole must be present when rbac.create=true")
+		require.Contains(t, output, "kind: ClusterRoleBinding\n",
+			"ClusterRoleBinding must be present when rbac.create=true")
+	})
+}
+
 // extractImageLines extracts lines containing "image:" from the output for debugging
 func extractImageLines(output string) string {
 	var lines []string
@@ -235,7 +267,7 @@ func extractImageLines(output string) string {
 	return strings.Join(lines, "\n")
 }
 
-func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) []byte {
+func runHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) ([]byte, string, error) {
 	t.Helper()
 
 	helmChartPath := filepath.Join("..", "..", "install", "helm", chart)
@@ -263,16 +295,22 @@ func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersio
 		args = append(args, "-f", valuesFile.Name())
 	}
 
-	helmCmd := exec.Command("helm", args...)
+	helmCmd := helmCommand(args...)
 	var output bytes.Buffer
 	var stderr bytes.Buffer
 	helmCmd.Stdout = &output
 	helmCmd.Stderr = &stderr
 
 	err = helmCmd.Run()
-	require.NoError(t, err, "helm template failed: %s", stderr.String())
+	return output.Bytes(), stderr.String(), err
+}
 
-	return output.Bytes()
+func renderHelmTemplate(t *testing.T, chart string, valuesYAML string, apiVersions []string) []byte {
+	t.Helper()
+
+	output, stderr, err := runHelmTemplate(t, chart, valuesYAML, apiVersions)
+	require.NoError(t, err, "helm template failed: %s", stderr)
+	return output
 }
 
 func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
@@ -294,6 +332,194 @@ func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
 
 	t.Fatal("deployment not found in rendered manifests")
 	return appsv1.Deployment{}
+}
+
+func findContainerEnvVar(t *testing.T, container corev1.Container, name string) corev1.EnvVar {
+	t.Helper()
+
+	for _, envVar := range container.Env {
+		if envVar.Name == name {
+			return envVar
+		}
+	}
+
+	t.Fatalf("environment variable %q not found", name)
+	return corev1.EnvVar{}
+}
+
+func TestControllerGoMemLimitPercent(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		memory  string
+		percent int
+		want    string
+	}{
+		{name: "binary quantity", memory: "2Gi", percent: 80, want: "1717986918"},
+		{name: "lower percentage boundary", memory: "2Gi", percent: 1, want: "21474836"},
+		{name: "upper percentage boundary", memory: "2Gi", percent: 100, want: "2147483648"},
+		{name: "decimal binary quantity", memory: "1.5Gi", percent: 80, want: "1288490188"},
+		{name: "decimal SI megabytes", memory: "512M", percent: 80, want: "409600000"},
+		{name: "decimal SI gigabyte", memory: "1G", percent: 80, want: "800000000"},
+		{name: "large decimal SI quantity", memory: "48G", percent: 80, want: "38400000000"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			values := fmt.Sprintf(`controller:
+  resources:
+    limits:
+      memory: %s
+  goMemLimitPercent: %d
+`, test.memory, test.percent)
+			output := renderHelmTemplate(t, "kgateway", values, nil)
+			deployment := findDeployment(t, output)
+			memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+			require.Equal(t, test.want, memoryLimit.Value)
+			require.Nil(t, memoryLimit.ValueFrom)
+		})
+	}
+
+	t.Run("uses deprecated top-level resources when controller resources are unset", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `resources:
+  limits:
+    memory: 1Gi
+controller:
+  goMemLimitPercent: 80
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Equal(t, "858993459", memoryLimit.Value)
+		require.Nil(t, memoryLimit.ValueFrom)
+	})
+
+	t.Run("preserves resourceFieldRef when percentage calculation is disabled", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  goMemLimitPercent: 0
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Empty(t, memoryLimit.Value)
+		require.NotNil(t, memoryLimit.ValueFrom)
+		require.NotNil(t, memoryLimit.ValueFrom.ResourceFieldRef)
+		require.Equal(t, "limits.memory", memoryLimit.ValueFrom.ResourceFieldRef.Resource)
+	})
+
+	t.Run("allows extraEnv to override the generated fallback", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  extraEnv:
+    GOMEMLIMIT: 700MiB
+`, nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		memoryLimit := findContainerEnvVar(t, container, "GOMEMLIMIT")
+		require.Equal(t, "700MiB", memoryLimit.Value)
+		require.Nil(t, memoryLimit.ValueFrom)
+
+		count := 0
+		for _, envVar := range container.Env {
+			if envVar.Name == "GOMEMLIMIT" {
+				count++
+			}
+		}
+		require.Equal(t, 1, count)
+	})
+
+	t.Run("allows a null percentage as unset", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  goMemLimitPercent: null
+`, nil)
+		deployment := findDeployment(t, output)
+		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+		require.Empty(t, memoryLimit.Value)
+		require.NotNil(t, memoryLimit.ValueFrom)
+		require.NotNil(t, memoryLimit.ValueFrom.ResourceFieldRef)
+		require.Equal(t, "limits.memory", memoryLimit.ValueFrom.ResourceFieldRef.Resource)
+	})
+
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		message    string
+	}{
+		{
+			name: "rejects a non-numeric percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: eighty
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got eighty",
+		},
+		{
+			name: "rejects a fractional percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: 80.5
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got 80.5",
+		},
+		{
+			name: "rejects a boolean percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: true
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got true",
+		},
+		{
+			name: "rejects a false boolean percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: false
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got false",
+		},
+		{
+			name: "rejects a negative percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: -1
+`,
+			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got -1",
+		},
+		{
+			name: "requires an explicit memory limit",
+			valuesYAML: `controller:
+  goMemLimitPercent: 80
+`,
+			message: "controller.resources.limits.memory must be set when controller.goMemLimitPercent is set",
+		},
+		{
+			name: "rejects a percentage above 100",
+			valuesYAML: `controller:
+  resources:
+    limits:
+      memory: 2Gi
+  goMemLimitPercent: 101
+`,
+			message: "goMemLimitPercent must be between 1 and 100",
+		},
+		{
+			name: "rejects an unsupported memory quantity",
+			valuesYAML: `controller:
+  resources:
+    limits:
+      memory: 512Zi
+  goMemLimitPercent: 80
+`,
+			message: "unsupported memory quantity \"512Zi\"",
+		},
+		{
+			name: "rejects a custom GOMEMLIMIT conflict",
+			valuesYAML: `controller:
+  resources:
+    limits:
+      memory: 2Gi
+  goMemLimitPercent: 80
+  extraEnv:
+    GOMEMLIMIT: 700MiB
+`,
+			message: "controller.goMemLimitPercent and controller.extraEnv.GOMEMLIMIT cannot both be set",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			require.Error(t, err)
+			require.Contains(t, stderr, test.message)
+		})
+	}
 }
 
 // helmTemplateCase is a single `helm template` scenario, shared by the golden
@@ -637,6 +863,12 @@ controller:
     failureThreshold: 60
 `,
 	},
+	{
+		name: "rbac-disabled",
+		valuesYAML: `rbac:
+  create: false
+`,
+	},
 }
 
 // TestHelmChartTemplate tests helm template output for the kgateway chart
@@ -678,7 +910,7 @@ func TestHelmChartTemplate(t *testing.T) {
 					args = append(args, "-f", valuesFile.Name())
 				}
 
-				helmCmd := exec.Command("helm", args...)
+				helmCmd := helmCommand(args...)
 				var output bytes.Buffer
 				var stderr bytes.Buffer
 				helmCmd.Stdout = &output
