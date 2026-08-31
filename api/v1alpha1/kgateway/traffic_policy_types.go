@@ -707,6 +707,7 @@ type LabelSelector struct {
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
 // +kubebuilder:validation:XValidation:message="filterStage cannot be set when disable is set",rule="!(has(self.disable) && has(self.filterStage))"
+// +kubebuilder:validation:XValidation:message="filterStage.weight has no effect for buffer and must be 0: a filter chain carries at most one buffer filter, so there is nothing to break ties against",rule="!has(self.filterStage) || self.filterStage.weight == 0"
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
@@ -732,17 +733,30 @@ type Buffer struct {
 	// of such a filter to make the limit enforce, at the cost of buffering bodies that a later
 	// authentication or authorization filter may go on to reject.
 	//
-	// The placement is a property of the whole filter chain rather than of a single route: the
-	// gateway installs one buffer filter per filter chain. If TrafficPolicies attached to the
-	// same listener ask for different stages, the earliest requested stage is used for the chain.
-	// The per-route `maxRequestSize` is unaffected and continues to apply per route.
+	// The placement is a property of the whole filter chain rather than of a single route, and
+	// setting it here affects every route on the listener. Envoy resolves the per-route buffer
+	// config by filter name, and that name-based lookup is what lets a route-level policy override
+	// a Gateway-level one, so the gateway installs exactly one buffer filter per filter chain. If
+	// TrafficPolicies attached to the same listener ask for different stages, the earliest
+	// requested stage is used for the whole chain.
 	//
-	// When request decompression is also configured, the decompressor filters are moved ahead of
-	// the buffer filter so that `maxRequestSize` is measured against the decompressed body rather
-	// than the encoded bytes.
+	// Setting it therefore relaxes, never tightens, what the other routes on the listener do:
+	// a route that asked for the default placement will have its bodies buffered before
+	// authentication and authorization run, spending memory on requests those filters would go on
+	// to reject. Keep buffer policies on a listener consistent, or split the listener, if that
+	// matters for a route. The per-route `maxRequestSize` is unaffected and continues to apply
+	// per route.
 	//
-	// `filterStage.weight` has no effect here: it breaks ties between several filters of the same
-	// type at one stage, and a filter chain carries at most one buffer filter.
+	// When request decompression is configured on the same filter chain, the decompressor filters
+	// stay ahead of the buffer filter, so that `maxRequestSize` is measured against the
+	// decompressed body rather than the encoded bytes - otherwise a small compressed body would
+	// satisfy the limit and expand past it upstream. Their default placement is already ahead of
+	// every stage except `Fault`, so this only moves them when the buffer filter is staged at
+	// `Fault`, and then it moves them for every route on the listener: request decompression on
+	// those routes runs ahead of fault injection, CORS, and any ext_proc staged at `Fault`.
+	//
+	// `filterStage.weight` must be 0: it breaks ties between several filters of the same type at
+	// one stage, and a filter chain carries at most one buffer filter.
 	// +optional
 	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }

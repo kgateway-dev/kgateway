@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
 	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	decompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
@@ -255,17 +256,44 @@ func TestBufferChainStageTakesTheEarliestRequested(t *testing.T) {
 
 // Buffering the encoded bytes would measure the request against its compressed size, so the
 // decompressors have to stay ahead of the buffer filter wherever the buffer filter is staged.
+//
+// wantStage pins where they land, not just that the order comes out right: AfterStage(CorsStage)
+// already precedes every stage FilterStageSpec can name except Fault, so most placements leave the
+// decompressors alone and only a buffer filter staged at Fault moves them.
 func TestDecompressorsStayAheadOfBuffer(t *testing.T) {
 	const filterChainName = "test-filter-chain"
+
+	defaultStage := filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage))
 
 	tests := []struct {
 		name        string
 		bufferStage *filters.FilterStage[filters.WellKnownFilterStage]
+		wantStage   filters.FilterStage[filters.WellKnownFilterStage]
 	}{
-		{name: "no buffer policy on the chain"},
-		{name: "default buffer stage", bufferStage: &defaultBufferFilterStage},
-		{name: "buffer moved before authn", bufferStage: new(filters.BeforeStage(filters.AuthNStage))},
-		{name: "buffer moved to the head of the chain", bufferStage: new(filters.BeforeStage(filters.FaultStage))},
+		{
+			name:      "no buffer policy on the chain",
+			wantStage: defaultStage,
+		},
+		{
+			name:        "default buffer stage leaves the decompressors alone",
+			bufferStage: &defaultBufferFilterStage,
+			wantStage:   defaultStage,
+		},
+		{
+			name:        "buffer before authn still leaves the decompressors alone",
+			bufferStage: new(filters.BeforeStage(filters.AuthNStage)),
+			wantStage:   defaultStage,
+		},
+		{
+			name:        "buffer at the head of the chain pulls them along",
+			bufferStage: new(filters.BeforeStage(filters.FaultStage)),
+			wantStage:   filters.RelativeToStage(filters.FaultStage, headOfStageWeight),
+		},
+		{
+			name:        "buffer after fault pulls them to the head of that stage",
+			bufferStage: new(filters.AfterStage(filters.FaultStage)),
+			wantStage:   filters.RelativeToStage(filters.FaultStage, headOfStageWeight),
+		},
 	}
 
 	for _, tt := range tests {
@@ -284,6 +312,8 @@ func TestDecompressorsStayAheadOfBuffer(t *testing.T) {
 					filterStage: *tt.bufferStage,
 				})
 			}
+
+			assert.Equal(t, tt.wantStage, decompressorStage(plugin, filterChainName))
 
 			httpFilters, err := plugin.HttpFilters(
 				ir.HttpFiltersContext{},
@@ -304,6 +334,62 @@ func TestDecompressorsStayAheadOfBuffer(t *testing.T) {
 			require.NotEqual(t, -1, bufferIdx, "buffer missing from %v", names)
 			assert.Less(t, decompressorIdx, bufferIdx, "decompressor must sort ahead of buffer, got %v", names)
 		})
+	}
+}
+
+// The decompressors must beat a body-reading filter sharing their well-known stage on stage alone.
+// CompareStagedFilters falls back to the filter name for equal stages, and the names happen to sort
+// the right way today, so assert on the stage rather than on the resulting order.
+func TestDecompressorsOutrankBodyReadersAtTheSameStage(t *testing.T) {
+	const filterChainName = "test-filter-chain"
+
+	plugin := &trafficPolicyPluginGwPass{
+		decompressorInChain: map[string][]decompressorEntry{
+			filterChainName: {{
+				filterName:   decompressorFilterNameFor(kgateway.CompressionGzip),
+				decompressor: &decompressorv3.Decompressor{},
+			}},
+		},
+		// the latest placement at Fault a GatewayExtension can ask for
+		extProcPerProvider: ProviderNeededMap{
+			Providers: map[string][]Provider{
+				filterChainName: {{
+					Name: "ext-proc",
+					Extension: &TrafficPolicyGatewayExtensionIR{
+						Name:    "ext-proc",
+						ExtProc: &envoymatchingv3.ExtensionWithMatcher{},
+					},
+					FilterStage: filters.AfterStage(filters.FaultStage),
+				}},
+			},
+		},
+	}
+	// staged behind that ext_proc, which is the placement that pulls the decompressors to Fault
+	plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, &bufferIR{
+		perRoute:    &bufferv3.BufferPerRoute{},
+		filterStage: filters.AfterStage(filters.FaultStage),
+	})
+
+	httpFilters, err := plugin.HttpFilters(
+		ir.HttpFiltersContext{},
+		ir.FilterChainCommon{FilterChainName: filterChainName},
+	)
+	require.NoError(t, err)
+
+	sortedFilters := filters.StagedHttpFilterList(httpFilters)
+	sortedFilters.Sort()
+
+	byName := make(map[string]filters.FilterStage[filters.WellKnownFilterStage], len(sortedFilters))
+	for _, f := range sortedFilters {
+		byName[f.Filter.GetName()] = f.Stage
+	}
+
+	decompressor := byName[decompressorFilterNameFor(kgateway.CompressionGzip)]
+	for _, name := range []string{bufferFilterName, extProcFilterName("ext-proc")} {
+		stage, ok := byName[name]
+		require.True(t, ok, "%s missing from %v", name, filterNames(sortedFilters))
+		assert.Less(t, filters.FilterStageComparison(decompressor, stage), 0,
+			"decompressor stage %v must sort ahead of %s at %v on stage alone", decompressor, name, stage)
 	}
 }
 
