@@ -8,13 +8,21 @@
 {{- if kindIs "invalid" $rawGoMemLimitPercent }}
 {{- $rawGoMemLimitPercent = 0 }}
 {{- end }}
+{{- $invalidGoMemLimitPercent := printf "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got %v" $rawGoMemLimitPercent }}
 {{- if not (regexMatch "^[0-9]+$" (printf "%v" $rawGoMemLimitPercent)) }}
-{{- fail (printf "controller.goMemLimitPercent must be an integer between 1 and 100, got %v" $rawGoMemLimitPercent) }}
+{{- fail $invalidGoMemLimitPercent }}
 {{- end }}
 {{- $goMemLimitPercent := int $rawGoMemLimitPercent }}
+{{- if gt $goMemLimitPercent 100 }}
+{{- fail $invalidGoMemLimitPercent }}
+{{- end }}
 {{- $hasCustomGoMemLimit := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "GOMEMLIMIT") }}
+{{- $hasCustomAutoMemoryLimit := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "AUTOMEMLIMIT") }}
 {{- if and (ne $goMemLimitPercent 0) $hasCustomGoMemLimit }}
 {{- fail "controller.goMemLimitPercent and controller.extraEnv.GOMEMLIMIT cannot both be set; use one or the other" }}
+{{- end }}
+{{- if and (ne $goMemLimitPercent 0) $hasCustomAutoMemoryLimit }}
+{{- fail "controller.goMemLimitPercent and controller.extraEnv.AUTOMEMLIMIT cannot both be set; use one or the other" }}
 {{- end }}
 {{- $controllerNodeSelector := ternary .Values.controller.nodeSelector .Values.nodeSelector (not (kindIs "invalid" .Values.controller.nodeSelector)) }}
 {{- $controllerAffinity := ternary .Values.controller.affinity .Values.affinity (not (kindIs "invalid" .Values.controller.affinity)) }}
@@ -111,20 +119,15 @@ spec:
           startupProbe:
             {{- toYaml $controllerStartupProbe | nindent 12 }}
           env:
-            {{- if not $hasCustomGoMemLimit }}
+            {{- if ne $goMemLimitPercent 0 }}
+            - name: AUTOMEMLIMIT
+              value: {{ printf "%.2f" (divf (float64 $goMemLimitPercent) 100.0) | quote }}
+            {{- else if and (not $hasCustomGoMemLimit) (not $hasCustomAutoMemoryLimit) }}
             - name: GOMEMLIMIT
-              {{- if ne $goMemLimitPercent 0 }}
-              {{- $memoryLimit := dig "limits" "memory" "" ($controllerResources | default dict) }}
-              {{- if not $memoryLimit }}
-              {{- fail "controller.resources.limits.memory must be set when controller.goMemLimitPercent is set" }}
-              {{- end }}
-              value: {{ include "kgateway.goMemLimit" (list $memoryLimit $goMemLimitPercent) | quote }}
-              {{- else }}
               valueFrom:
                 resourceFieldRef:
                   divisor: "1"
                   resource: limits.memory
-              {{- end }}
             {{- end }}
             - name: GOMAXPROCS
               valueFrom:

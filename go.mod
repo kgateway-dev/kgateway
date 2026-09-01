@@ -5,6 +5,7 @@ go 1.26.7
 godebug x509negativeserial=1
 
 require (
+	github.com/KimMachineGun/automemlimit v1.0.0
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
 	github.com/envoyproxy/go-control-plane v0.14.0
@@ -123,6 +124,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.13 // indirect
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
+	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/redis/go-redis/v9 v9.14.1 // indirect
