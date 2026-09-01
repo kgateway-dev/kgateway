@@ -5,7 +5,7 @@ Status: Proposed
 - Issue: [#13586](https://github.com/kgateway-dev/kgateway/issues/13586)
 - Related: [#10639](https://github.com/kgateway-dev/kgateway/issues/10639) (duplicate ask), [#14184](https://github.com/kgateway-dev/kgateway/issues/14184) (per-client xDS coherence)
 - Prerequisites: **none**. Every mechanism this EP relies on is either already merged or fully specified here.
-- Companion: `13586-referenced-only-cluster-discovery.md` specifies the same feature on top of the #14184 publication engine, plus #14343 and #14257. That is the smaller change if the stack lands, because the transition machinery is reused rather than written. The two share an irreducible core: the same over-approximating emitted set, the same unresolvable-reference guard, the same golden-corpus completeness property test, and the same de-reference grace. They differ only in whether the addition-side hold is specified here or grafted onto the engine's existing bounded hold.
+- Companion: `13586-referenced-only-cluster-discovery.md` specifies the same feature on top of the #14184 publication engine, plus #14257 and the base/overlay stack (#14599, #14600, #14602). That is the smaller change if the stack lands, because the transition machinery is reused rather than written. The two share an irreducible core: the same over-approximating emitted set, the same unresolvable-reference guard, the same golden-corpus completeness property test, and the same de-reference grace. They differ only in whether the addition-side hold is specified here or grafted onto the engine's existing bounded hold.
 
 ## Background
 
@@ -43,13 +43,13 @@ flowchart LR
 - Emit CDS and EDS only for clusters the generated Envoy configuration actually references, eliminating unreferenced-cluster bloat in `config_dump` and `/stats`.
 - Preserve make-before-break in **both** directions, with no `503 NC` on a route retarget and no endpoint drop on a de-reference.
 - Make referenced-set completeness a **CI-enforced invariant** rather than a review obligation, because under-collection is a silent outage.
-- Depend on no unmerged work, so this can land independently of #14184, #14343, and #14257 while composing cleanly with them.
+- Depend on no unmerged work, so this can land independently of #14184, #14257, and the base/overlay stack (#14599, #14600, #14602) while composing cleanly with them.
 - Keep the behavior opt-in until a soak proves it.
 
 ## Non-Goals
 
 - Changing how Services are watched at the informer level. This EP filters what is *emitted*, not what is *watched*. Coarser watch-level scoping remains the job of `discoveryNamespaceSelectors` and of the proposed Service label selector (Alternatives, Option B).
-- Shrinking **control-plane** per-client memory. Filtering at assembly shrinks what each Envoy holds and reports, which is what #13586 asks for. Per-client cluster rows still materialize every backend; collapsing that is #14343's job and composes with this EP (Alternatives, Option E).
+- Shrinking **control-plane** per-client memory. Filtering at assembly shrinks what each Envoy holds and reports, which is what #13586 asks for. Per-client cluster rows still materialize every backend; collapsing that is the base/overlay stack's job and composes with this EP (Alternatives, Option E).
 - A user-facing `Backend` kube type for explicit cluster declaration (Alternatives, Option C).
 - Per-client publication freezes, which are #14184.
 
@@ -304,11 +304,11 @@ A broader version of this EP's staged publication: split *any* snapshot whose pa
 
 This EP's two windows are the deliberately bounded slice: they stage publication only where transitions are *routine operation* rather than a bug class, they remain window-bounded with observation as an accelerator only, and they add no ladders.
 
-### Option E: build on the #14184 engine and #14343, rejected as a prerequisite
+### Option E: build on the #14184 engine and the base/overlay stack, rejected as a prerequisite
 
-The companion EP takes exactly that dependency. It is the better change *if* the stack lands: it needs no new publication machinery, gets EDS alignment for free, and shrinks per-client control-plane memory too. This variant exists so a user-visible fix does not have to wait on that scheduling, since everything it needs is either merged or small enough to specify here.
+The companion EP takes exactly that dependency, on the #14184 publication engine plus #14257 and the base/overlay stack (#14599 endpoint-mutation isolation, #14600 backend bases plus client overlays, #14602 sparse CDS storage). It is the better change *if* that stack lands: it needs no new publication machinery, gets EDS alignment for free, and shrinks per-client control-plane memory too. This variant exists so a user-visible fix does not have to wait on that scheduling, since everything it needs is either merged or small enough to specify here.
 
-They compose. If #14343's shared-base plus per-client-overlay translation lands, the same filter can additionally skip per-client materialization for unreferenced backends, shrinking control-plane memory as well as proxy memory. If the #14184 engine's `publishGate` lands, this EP's coordinator should be folded into it rather than kept alongside, since they are the same primitive with different release conditions.
+They compose. Once CDS is stored as shared bases plus sparse per-client overlays, the same filter can additionally skip per-client materialization for unreferenced backends, shrinking control-plane memory as well as proxy memory. If the #14184 engine's `publishGate` lands, this EP's coordinator should be folded into it rather than kept alongside, since they are the same primitive with different release conditions.
 
 ### Status quo mitigations
 

@@ -4,7 +4,7 @@ Status: Proposed
 
 - Issue: [#13586](https://github.com/kgateway-dev/kgateway/issues/13586)
 - Related: [#10639](https://github.com/kgateway-dev/kgateway/issues/10639) (duplicate ask), [#14184](https://github.com/kgateway-dev/kgateway/issues/14184) (per-client xDS coherence)
-- Depends on: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (shared-base plus per-client-overlay cluster translation), [#14257](https://github.com/kgateway-dev/kgateway/pull/14257) (EDS and CDS alignment), and the #14184 per-client publication engine. Enabled by [#14242](https://github.com/kgateway-dev/kgateway/pull/14242) and [#14253](https://github.com/kgateway-dev/kgateway/pull/14253) (validator cache).
+- Depends on: the base/overlay stack ([#14599](https://github.com/kgateway-dev/kgateway/pull/14599) endpoint-mutation isolation, [#14600](https://github.com/kgateway-dev/kgateway/pull/14600) backend bases plus client overlays, [#14602](https://github.com/kgateway-dev/kgateway/pull/14602) sparse CDS storage), [#14257](https://github.com/kgateway-dev/kgateway/pull/14257) (EDS and CDS alignment), and the #14184 per-client publication engine. Enabled by [#14242](https://github.com/kgateway-dev/kgateway/pull/14242) and [#14253](https://github.com/kgateway-dev/kgateway/pull/14253) (validator cache).
 - Companion: `13586-referenced-only-cluster-discovery-without-publication-engine.md` specifies the same feature with no prerequisites. This variant is the smaller change, and is the one to take if the stack above is close to landing.
 
 ## Background
@@ -32,7 +32,7 @@ The #14184 work replaces the whole-snapshot "publish only when complete" gate wi
 - `resolveDeferredPerCluster` (`kube_gw_translator_syncer.go`) is the make-before-break primitive. Per cluster: previously-published clusters that vanish from a build are carried forward with their CLAs; previously-referenced clusters publish their truth; only a retarget onto a newly-referenced, not-yet-present cluster is held, with routes and listeners staying at their published versions while the new CDS and EDS go out. A route is never published naming a cluster the snapshot lacks.
 - `publishGate` (`publish_gate.go`) serializes every cache mutation for a client under one lock, bounds the cold-start first publish, and arms a flip-release timer per held episode so a hold is always bounded. It is the template for any per-client timed publication state.
 - `filterEndpointResourcesForClusters` (`perclient.go`) aligns emitted EDS to emitted CDS, so shrinking CDS shrinks EDS automatically. Readiness is **strict presence**: a derived-but-empty CLA is publishable truth, so a legitimately empty backend never defers; only genuinely absent resources do.
-- #14343 splits per-client cluster translation into a shared `baseEnvoyCluster` collection plus sparse `uccClusterDelta`s, merged at assembly by `FetchClustersForClient`. Per-client CDS is materialized at assembly, which is where an emission filter is cheapest to apply.
+- The base/overlay stack splits cluster translation into `TranslateBackendBase`, run once per backend, plus self-gating `ClusterOverlay`s applied by `ApplyPerClient` (#14600), then stores CDS as one immutable base per backend plus an atomic sparse set holding only the clients whose materialized cluster differs, fenced against its inputs by `ClusterVersion` (#14602). `FetchClustersForClient` merges the two at snapshot assembly, which is where an emission filter is cheapest to apply.
 
 Transitions are therefore drop-free **for whatever set the snapshot chooses to emit**. That set is currently "all backends". This EP makes it "referenced clusters" and lets the same machinery carry the transitions.
 
@@ -90,7 +90,9 @@ Failing to *detect* is worse than failing to *claim*. A dynamic selector typical
 
 ### Emission filter
 
-Cluster translation under #14343 is a shared base plus sparse per-client deltas, materialized at snapshot assembly where `FetchClustersForClient` merges the two. The filter applies at that merge: the per-client cluster-resources transform in `snapshotPerClient` fetches the gateway's `ReferencedClustersForEmission` by `ucc.Role`, the same `krt.FetchOne` pattern already used for the gateway snapshot, and skips any entry whose name is neither in the set nor in a de-reference grace window.
+Cluster translation is a shared base plus sparse per-client overlays, materialized at snapshot assembly where `FetchClustersForClient` merges the two. The filter applies at that merge: the per-client cluster-resources transform in `snapshotPerClient` fetches the gateway's `ReferencedClustersForEmission` by `ucc.Role`, the same `krt.FetchOne` pattern already used for the gateway snapshot, and skips any entry whose name is neither in the set nor in a de-reference grace window.
+
+Skipping is the only operation the filter performs. Base cluster protos are shared read-only across clients and wrapped in an immutable ownership type with a CI tripwire (#14605), so an emission filter must never rewrite one, and it has no reason to.
 
 Two properties fall out of filtering at assembly rather than in translation. Base translation stays O(backends), computed once and shared, so nothing per-client is built for an unreferenced backend and both proxy config size and per-client snapshot size shrink. And EDS follows automatically, because `filterEndpointResourcesForClusters` already restricts emitted EDS to emitted CDS.
 
@@ -162,7 +164,7 @@ Two knobs rather than one, because they trade different things: de-reference gra
 | Never publish route naming a missing cluster | `resolveDeferredPerCluster` | New hold trigger for newly-emitted clusters |
 | Bounded, serialized publication and per-client timed state | `publishGate` | Reference-ahead release condition, de-reference gate modeled on it |
 | EDS aligned to emitted CDS, empty-CLA truth semantics | `filterEndpointResourcesForClusters` | Nothing; EDS follows the filtered CDS |
-| Shared-base translation, per-client materialization | #14343 | Filter applied at the assembly merge |
+| Shared-base translation, sparse per-client overlays | #14600 and #14602 | Filter applied at the assembly merge |
 | Restricting the emitted set at all | none | The filter, behind `ClusterDiscoveryMode` |
 
 The heavy lifting is per-cluster resolution, carry-forward, bounded holds, EDS alignment, and publication serialization, and it is all reused. This EP is a referenced-set filter plus a grace policy on top of the existing gate.
@@ -171,9 +173,9 @@ The heavy lifting is per-cluster resolution, carry-forward, bounded holds, EDS a
 
 ### Phase 0: foundation
 
-- Land #14343, #14257, and the #14184 publication engine, with strict presence semantics for empty CLAs.
+- Land the base/overlay stack (#14599, #14600, #14602), #14257, and the #14184 publication engine, with strict presence semantics for empty CLAs.
 - Exit criterion: `resolveDeferredPerCluster`, `publishGate`, `filterEndpointResourcesForClusters`, and `FetchClustersForClient` all present, and steady-state-empty referenced backends publish as truth rather than deferring, since referenced-only emission does not remove referenced-but-empty backends.
-- Second exit criterion: reconcile `filterEndpointResourcesForClusters` with the local-cluster CLA. That CLA belongs to a **bootstrap**-defined cluster with no CDS entry, so a "drop CLAs for clusters not in CDS" rule deletes it, while `Snapshot.Consistent()` requires the EDS set to equal the CDS-referenced EDS names and would reject keeping it. Per #14471, an EDS resource the client never named makes go-control-plane's ADS superset check withhold that client's entire EDS response, which is why the resource is offered only to clients whose subscription named it (`ucc.KnowsLocalCluster`). The workable resolution is a bootstrap-EDS allowlist threaded into the filter and exempted from the consistency comparison. This EP does not depend on which resolution is chosen, but it cannot ship on a filter that silently deletes the resource, and shrinking CDS makes the collision strictly more likely.
+- Second exit criterion: reconcile `filterEndpointResourcesForClusters` with the local-cluster CLA. That CLA belongs to a **bootstrap**-defined cluster with no CDS entry, so a "drop CLAs for clusters not in CDS" rule deletes it, while `Snapshot.Consistent()` requires the EDS set to equal the CDS-referenced EDS names and would reject keeping it. Per #14471, an EDS resource the client never named makes go-control-plane's ADS superset check withhold that client's entire EDS response, which is why the resource is offered only to clients whose subscription named it (`ucc.KnowsLocalCluster`), and why #14602 folds that flag into client identity including the first-EDS-request transition. The workable resolution is a bootstrap-EDS allowlist threaded into the filter and exempted from the consistency comparison. This EP does not depend on which resolution is chosen, but it cannot ship on a filter that silently deletes the resource, and shrinking CDS makes the collision strictly more likely.
 
 ### Phase 1: emission-scoped referenced set, dark
 
