@@ -33,6 +33,10 @@ func (f fakeDelayedHandlerRegistration) HasSynced() bool {
 	return f.synced
 }
 
+func (f fakeDelayedHandlerRegistration) HasSyncedChecker() cache.DoneChecker {
+	panic("not implemented; use HasSynced")
+}
+
 type fakeDelayedRawIndexer struct{}
 
 func (f *fakeDelayedRawIndexer) Lookup(string) []any {

@@ -354,6 +354,19 @@ spec:
 			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
+			// A policy with no targetRefs/targetSelectors is attached via an HTTPRoute
+			// ExtensionRef filter, so route-only fields must be accepted.
+			name: "TrafficPolicy: policy with autoHostRewrite and no targets is valid (ExtensionRef usage)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-ahr-extension-ref
+spec:
+  autoHostRewrite: true
+`,
+		},
+		{
 			name: "HTTPListenerPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

@@ -42,6 +42,11 @@ BUILD_TOOLS_DIR ?= tools/build-tools
 BUILD_TOOLS_IMAGE ?= kgateway-build-tools:dev
 BUILD_TOOLS_VERSION ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo dev)
 OSV_SCANNER_IMAGE ?= ghcr.io/google/osv-scanner-action:v2.3.5
+OSV_SCAN_IMAGES ?=
+OSV_SCAN_IMAGE_PLATFORM ?= linux/$(GOARCH)
+# Set to any value to read images from the local Docker daemon (docker save) instead of pulling from a registry.
+# Used by osv-scan-local-images; not set by default so osv-scan always pulls fresh remote images.
+OSV_SCAN_LOCAL ?=
 
 .PHONY: build-tools-image
 build-tools-image: ## Build the devcontainer build-tools image locally (override BUILD_TOOLS_IMAGE=... to change tag)
@@ -68,6 +73,13 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
+# Tag used for built image artifacts (per-arch images and multi-arch manifests). Distinct from
+# VERSION, which is compiled into the binary via LDFLAGS. Defaults to VERSION so local dev, PR
+# snapshots, and rolling-main builds are unchanged; the release workflow overrides it with a
+# non-semver staging tag (e.g. stage-<gitsha>-<version>) so consumption automation (Kargo, semver-only)
+# does not adopt the artifacts before they are validated and published.
+export ARTIFACT_TAG ?= $(VERSION)
+
 UNAME_M := $(shell uname -m)
 # if `GOARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
 # if the machines architecture is set to arm64 then we want to set the appropriate values, else we only support amd64
@@ -89,7 +101,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.5
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.37.6
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -250,17 +262,114 @@ osv-scan: ## Run OSV-Scanner locally for the current branch and write JSON/SARIF
 		echo "osv-reporter did not produce $$out_dir/results.sarif" >&2; \
 		exit 1; \
 	fi; \
+	image_scanner_status=0; \
+	image_reporter_status=0; \
+	if [[ -n "$(strip $(OSV_SCAN_IMAGES))" ]]; then \
+		image_dir="$$out_dir/images"; \
+		mkdir -p "$$image_dir"; \
+		echo "Scanning Docker images: $(OSV_SCAN_IMAGES)"; \
+		for image in $(OSV_SCAN_IMAGES); do \
+			safe_image_base="$$(printf '%s' "$$image" | sed 's/[^A-Za-z0-9_.-]/-/g')"; \
+			image_hash="$$(printf '%s' "$$image" | sha256sum | cut -d' ' -f1)"; \
+			safe_image="$$safe_image_base-$$image_hash"; \
+			image_json="/output/osv/$$safe_branch/images/$$safe_image.json"; \
+			image_sarif="/output/osv/$$safe_branch/images/$$safe_image.sarif"; \
+			image_archive="/output/osv/$$safe_branch/images/$$safe_image.tar"; \
+			host_image_json="$$image_dir/$$safe_image.json"; \
+			host_image_sarif="$$image_dir/$$safe_image.sarif"; \
+			host_image_archive="$$image_dir/$$safe_image.tar"; \
+			image_platform="$(OSV_SCAN_IMAGE_PLATFORM)"; \
+			image_os="$${image_platform%%/*}"; \
+			image_arch="$${image_platform#*/}"; \
+			image_arch="$${image_arch%%/*}"; \
+			rm -f "$$host_image_archive"; \
+			if [[ -n "$(OSV_SCAN_LOCAL)" ]]; then \
+				echo "Saving local image $$image via docker save"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			elif command -v skopeo > /dev/null 2>&1; then \
+				if skopeo copy \
+					--override-os "$$image_os" \
+					--override-arch "$$image_arch" \
+					"docker://$$image" \
+					"docker-archive:$$host_image_archive:$$image"; then \
+					:; \
+				else \
+					echo "skopeo archive export failed for $$image; falling back to docker save"; \
+					rm -f "$$host_image_archive"; \
+					echo "Pulling Docker image $$image for platform $$image_platform"; \
+					docker pull --platform "$$image_platform" "$$image"; \
+					docker save "$$image" -o "$$host_image_archive"; \
+				fi; \
+			else \
+				echo "Pulling Docker image $$image for platform $$image_platform"; \
+				docker pull --platform "$$image_platform" "$$image"; \
+				docker save "$$image" -o "$$host_image_archive"; \
+			fi; \
+			echo "Running OSV-Scanner for Docker image: $$image"; \
+			if docker run --rm \
+				$(OSV_SCANNER_PLATFORM) \
+				--entrypoint /root/osv-scanner \
+				-v "$(ROOTDIR):/workspace" \
+				-v "$(OUTPUT_DIR):/output" \
+				-w /workspace \
+				"$(OSV_SCANNER_IMAGE)" \
+				scan image \
+				--archive \
+				--config=/workspace/osv-scanner.toml \
+				--output-file="$$image_json" \
+				--format=json \
+				--verbosity=warn \
+				"$$image_archive"; then \
+				:; \
+			else \
+				image_scanner_status=$$?; \
+			fi; \
+			if [[ ! -f "$$host_image_json" ]]; then \
+				echo "osv-scanner did not produce $$host_image_json" >&2; \
+				exit 1; \
+			fi; \
+			rm -f "$$host_image_archive"; \
+			if docker run --rm \
+				$(OSV_SCANNER_PLATFORM) \
+				--entrypoint /root/osv-reporter \
+				-v "$(ROOTDIR):/workspace" \
+				-v "$(OUTPUT_DIR):/output" \
+				-w /workspace \
+				"$(OSV_SCANNER_IMAGE)" \
+				--output-files="sarif:$$image_sarif" \
+				--new="$$image_json" \
+				--fail-on-vuln=false; then \
+				:; \
+			else \
+				image_reporter_status=$$?; \
+			fi; \
+			if [[ ! -f "$$host_image_sarif" ]]; then \
+				echo "osv-reporter did not produce $$host_image_sarif" >&2; \
+				exit 1; \
+			fi; \
+			echo "Image JSON: $$host_image_json"; \
+			echo "Image SARIF: $$host_image_sarif"; \
+		done; \
+	fi; \
 	docker run --rm \
 		$(OSV_SCANNER_PLATFORM) \
 		--entrypoint /bin/chown \
 		-v "$(OUTPUT_DIR):/output" \
 		"$(OSV_SCANNER_IMAGE)" \
 		-R "$$(id -u):$$(id -g)" "/output/osv/$$safe_branch" > /dev/null; \
-	if [[ "$$scanner_status" -ne 0 || "$$reporter_status" -ne 0 ]]; then \
+	if [[ "$$scanner_status" -ne 0 || "$$reporter_status" -ne 0 || "$$image_scanner_status" -ne 0 || "$$image_reporter_status" -ne 0 ]]; then \
 		echo "OSV scan completed and wrote results despite non-zero scanner/reporter exit status."; \
 	fi; \
 	echo "JSON: $$out_dir/results.json"; \
 	echo "SARIF: $$out_dir/results.sarif"
+
+.PHONY: osv-scan-local-images
+osv-scan-local-images: ## Build images from the current branch and run OSV-Scanner against them
+	$(MAKE) -B kgateway-docker sds-docker envoy-wrapper-docker
+	$(MAKE) osv-scan \
+		OSV_SCAN_LOCAL=1 \
+		OSV_SCAN_IMAGES="$(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)"
+
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -436,21 +545,21 @@ container-structure-test: container-structure-test-kgateway container-structure-
 .PHONY: container-structure-test-kgateway
 container-structure-test-kgateway: ## Run container structure tests for kgateway image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
 
 .PHONY: container-structure-test-sds
 container-structure-test-sds: ## Run container structure tests for sds image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/sds.yaml
 
 .PHONY: container-structure-test-envoy-wrapper
 container-structure-test-envoy-wrapper: ## Run container structure tests for envoy-wrapper image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/envoy-wrapper.yaml
 
@@ -863,7 +972,7 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
-	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
+	./hack/generate-release-notes.sh -p "$${PREVIOUS_TAG:-}" -c "$${CURRENT_TAG:-HEAD}"
 
 #----------------------------------------------------------------------------------
 # MARK: Development

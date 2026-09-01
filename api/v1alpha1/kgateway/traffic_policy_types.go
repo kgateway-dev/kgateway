@@ -40,8 +40,8 @@ type TrafficPolicyList struct {
 }
 
 // TrafficPolicySpec defines the desired state of a traffic policy.
-// +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
-// +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) || (has(self.targetSelectors) && self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.autoHostRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="autoHostRewrite can only be used when targeting HTTPRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetRefs[].sectionName must be set when targeting Gateway resources with retry policy"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r, (r.kind == 'Gateway' ? has(r.sectionName) : true )) : true",message="targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy"
@@ -393,6 +393,8 @@ type TokenBucket struct {
 	// This value must be a valid duration string (e.g., "1s", "500ms").
 	// It determines the frequency of token replenishment.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('50ms')",message="must be at least 50ms"
 	FillInterval metav1.Duration `json:"fillInterval"`
@@ -757,6 +759,8 @@ type FaultInjectionPolicy struct {
 type FaultDelay struct {
 	// FixedDelay is the duration to delay before forwarding the request.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="must be at least 1ms"
 	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('1h')",message="must not exceed 1h"
