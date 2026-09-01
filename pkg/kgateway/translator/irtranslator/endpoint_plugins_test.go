@@ -46,6 +46,32 @@ func TestOrderedEndpointPluginsUsesStablePolicyOrder(t *testing.T) {
 	assert.Equal(t, []string{"example", "backendconfigpolicy", "destrule"}, calls)
 }
 
+func TestResolveEndpointInputsCombinesPluginHashesWithStableIdentity(t *testing.T) {
+	pluginA := schema.GroupKind{Group: "a.example.io", Kind: "Policy"}
+	pluginB := schema.GroupKind{Group: "b.example.io", Kind: "Policy"}
+	const contribution uint64 = 37
+
+	onlyA := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginA: {Name: "a", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+	})
+	onlyB := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginB: {Name: "b", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+	})
+	withZero := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginA: {Name: "a", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+		pluginB: {Name: "b", PerClientEditEndpoints: endpointHashPlugin(0)},
+	})
+	both := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginA: {Name: "a", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+		pluginB: {Name: "b", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+	})
+
+	assert.NotZero(t, both, "equal nonzero contributions from two plugins must not cancel")
+	assert.NotEqual(t, onlyA, onlyB, "plugin identity must participate in the combined hash")
+	assert.Equal(t, onlyA, withZero, "a zero contribution must remain a no-op")
+	assert.NotEqual(t, onlyA, both, "adding a nonzero plugin contribution must change the combined hash")
+}
+
 func TestBackendTranslatorRunsOrderedEndpointPluginsForInlineEndpoints(t *testing.T) {
 	backendGK := schema.GroupKind{Group: "example.io", Kind: "InlineBackend"}
 	var calls []string
@@ -128,6 +154,29 @@ func recordingEndpointPlugin(name string, calls *[]string) sdk.EndpointEditorPlu
 		*calls = append(*calls, name)
 		return 0
 	}
+}
+
+func endpointHashPlugin(contribution uint64) sdk.EndpointEditorPlugin {
+	return func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniquelyConnectedClient,
+		out endpoints.EndpointInputsEditor,
+	) uint64 {
+		return contribution
+	}
+}
+
+func resolveEndpointPluginHash(t *testing.T, policies sdk.ContributesPolicies) uint64 {
+	t.Helper()
+	_, combined := irtranslator.ResolveEndpointInputs(
+		krt.TestingDummyContext{},
+		context.Background(),
+		ir.UniquelyConnectedClient{},
+		endpoints.EndpointsInputs{},
+		irtranslator.OrderedEndpointPlugins(policies),
+	)
+	return combined
 }
 
 func endpointWithLabels(address string, labels map[string]string) ir.EndpointWithMd {

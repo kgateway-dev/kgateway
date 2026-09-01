@@ -8,6 +8,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/api/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -131,6 +132,36 @@ func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	want.Add(locality, legacy.EndpointsForBackend.LbEps[locality][0])
 	assert.Equal(t, want.LbEpsEqualityHash, replacement.state.endpoints.LbEpsEqualityHash,
 		"legacy mutation must invalidate the cached endpoint contribution")
+}
+
+func TestEndpointInputsResolverSetPriorityInfoClonesInput(t *testing.T) {
+	resolver := NewEndpointInputsResolver(EndpointsInputs{})
+	priorityInfo := &PriorityInfo{
+		FailoverPriority: NewPriorities([]string{"region=west", "zone"}),
+		Failover: []*v1alpha3.LocalityLoadBalancerSetting_Failover{
+			{From: "west", To: "east"},
+			nil,
+		},
+	}
+
+	resolver.SetPriorityInfo(priorityInfo)
+	installed := resolver.Inputs().PriorityInfo
+	require.NotSame(t, priorityInfo, installed)
+	require.NotSame(t, priorityInfo.FailoverPriority, installed.FailoverPriority)
+	require.NotSame(t, priorityInfo.Failover[0], installed.Failover[0])
+
+	priorityInfo.FailoverPriority.priorityLabels[0] = "mutated"
+	priorityInfo.FailoverPriority.priorityLabelOverrides["region"] = "mutated"
+	priorityInfo.Failover[0].From = "mutated"
+	priorityInfo.Failover = nil
+	priorityInfo.FailoverPriority = nil
+
+	assert.Equal(t, []string{"region", "zone"}, installed.FailoverPriority.priorityLabels)
+	assert.Equal(t, map[string]string{"region": "west"}, installed.FailoverPriority.priorityLabelOverrides)
+	require.Len(t, installed.Failover, 2)
+	assert.Equal(t, "west", installed.Failover[0].GetFrom())
+	assert.Equal(t, "east", installed.Failover[0].GetTo())
+	assert.Nil(t, installed.Failover[1])
 }
 
 func TestEndpointSetBuilderIsConsumedByReplace(t *testing.T) {

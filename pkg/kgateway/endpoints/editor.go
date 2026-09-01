@@ -100,7 +100,10 @@ func (e *EndpointInputsResolver) PoliciesFor(groupKind schema.GroupKind) []Polic
 }
 
 func (e *EndpointInputsResolver) SetPriorityInfo(priorityInfo *PriorityInfo) {
-	e.inputs.PriorityInfo = priorityInfo
+	// A plugin owns the value it passes in and may reuse or mutate it after this
+	// call. Snapshot the transitive graph so later writes cannot mutate resolved
+	// inputs behind the editor boundary.
+	e.inputs.PriorityInfo = clonePriorityInfo(priorityInfo)
 }
 
 func (e *EndpointInputsResolver) SetTrafficDistribution(distribution wellknown.TrafficDistribution) {

@@ -287,7 +287,9 @@ Both `PerClientProcessEndpoints` and `PerClientEditEndpoints` return a hash that
 **load-bearing**: it keys CLA interning across clients, so it must capture every per-client
 effect the plugin has that is not already reflected by the resolved endpoint hash or the
 load-balancing-context hash. An under-captured mutation aliases one client's load assignment
-onto another.
+onto another. Nonzero contributions are combined sequentially in deterministic plugin order
+and mixed with the plugin's group, kind, and name. Zero remains a no-op, while equal nonzero
+values from two plugins cannot cancel as they did under XOR.
 
 ### Endpoints
 
@@ -320,27 +322,29 @@ local-cluster EDS resources are wrapped in the same `sharedproto.Shared` boundar
 
 #### Deterministic CLA construction
 
-Interning and content-hash versioning both require that identical inputs produce identical
-*bytes*, which `prioritizeWithLbInfo` did not: it ranged `ep.LbEps` — a map — and appended each
-locality's groups to `cla.Endpoints` in map order. Locality order carries no meaning to Envoy,
-but the CLA's serialized form versions per-client xDS and keys the interning, so map order made
-identical inputs hash differently on every recompute. `sortedLocalities` now orders localities
-by `(region, zone, subzone)` before the loop. The renormalization in `applyLocalityFailover`
-depends only on the *set* of distinct priority values and each group's own priority, not on
-slice order, so the assigned priorities are unchanged.
+`prioritizeWithLbInfo` ranged `ep.LbEps` — a map — and appended each locality's groups to
+`cla.Endpoints` in map order. Locality order carries no meaning to Envoy, but inline-CLA
+backends embed those bytes in the cluster. `uccWithCluster.ClusterVersion` hashes the full
+cluster, KRT equality compares that field, and the aggregate CDS version folds it in. Random
+map order therefore produced a fresh CDS version on an unchanged recompute and re-warmed the
+cluster. EDS KRT equality instead uses `EndpointsForBackend.LbEpsEqualityHash`, a structural
+hash, so locality map order never affected EDS change detection.
 
-This was a pre-existing bug — `main` also hashed the whole cluster including its inline CLA, so
-the version churn predates this EP — but the interning added here is the first thing whose
-*correctness of purpose* depends on byte-stability. Measured on a 5-locality inline-CLA backend:
+`sortedLocalities` now orders localities by `(region, zone, subzone)` before the loop. The
+renormalization in `applyLocalityFailover` depends only on the *set* of distinct priority
+values and each group's own priority, not on slice order, so the assigned priorities are
+unchanged. Stable CLA bytes also keep content-addressed interning effective for equivalent
+clients. This is an independently user-visible fix for a pre-existing CDS churn bug, not only
+support for interning. Measured on a 5-locality inline-CLA backend:
 
 | | Before | After |
 | --- | --- | --- |
-| Distinct CLA content hashes over 200 identical `PrioritizeEndpoints` calls | 5 | 1 |
+| Distinct inline-cluster versions over 200 identical `PrioritizeEndpoints` calls | 5 | 1 |
 | Distinct interning keys across 20 clients sharing one load-balancing context | 5 | 1 |
 
-`TestPrioritizeEndpointsIsByteStable` locks byte-stability across all three priority modes and
-pins the canonical order, so a later change that is stable but no longer sorted has to be
-deliberate.
+`TestPrioritizeEndpointsIsByteStable` locks the inline-cluster version across all three
+priority modes and pins the canonical order, so a later change that is stable but no longer
+sorted has to be deliberate.
 
 ### Reporting
 

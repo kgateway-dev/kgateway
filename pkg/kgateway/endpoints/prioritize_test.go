@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,13 +14,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// TestPrioritizeEndpointsIsByteStable pins the determinism that per-client xDS
-// versioning and interning depend on. The CLA this builds is hashed by content:
-// utils.HashProto versions inline-CLA clusters for KRT change detection and keys
-// the sharing of one proto across clients that resolve identically. Ranging
-// LbEps directly would emit LocalityLbEndpoints in a fresh order on every call,
-// so identical inputs would hash differently, republishing unchanged config and
-// silently defeating the interning.
+// TestPrioritizeEndpointsIsByteStable pins the determinism of inline-CLA cluster
+// versions. The proxy syncer hashes the full cluster into ClusterVersion, which
+// contributes to the CDS version. Ranging LbEps directly would put the same CLA
+// localities in a fresh order, spuriously changing CDS and re-warming the cluster.
+// EDS KRT equality uses the structural endpoint hash and does not depend on these
+// serialized bytes.
 //
 // Every priority mode is covered because each takes a different path through
 // getEndpoints and applyLocalityFailover.
@@ -62,12 +62,16 @@ func TestPrioritizeEndpointsIsByteStable(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			inputs := EndpointsInputs{EndpointsForBackend: *backendEndpoints, PriorityInfo: priorityInfo}
 
-			hashes := map[uint64]struct{}{}
+			clusterVersions := map[uint64]struct{}{}
 			for range 200 {
-				hashes[utils.HashProto(PrioritizeEndpoints(nil, client, inputs))] = struct{}{}
+				cluster := &envoyclusterv3.Cluster{
+					Name:           "inline-cluster",
+					LoadAssignment: PrioritizeEndpoints(nil, client, inputs),
+				}
+				clusterVersions[utils.HashProto(cluster)] = struct{}{}
 			}
-			require.Len(t, hashes, 1,
-				"identical inputs must hash to one value; %d distinct hashes means the CLA is not byte-stable", len(hashes))
+			require.Len(t, clusterVersions, 1,
+				"identical inputs must produce one inline-cluster version; got %d", len(clusterVersions))
 
 			// Pin the canonical order too, so a change that is stable but no
 			// longer sorted is a deliberate decision rather than a silent one.

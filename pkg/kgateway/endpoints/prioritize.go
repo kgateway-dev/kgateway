@@ -115,11 +115,12 @@ func priorityLabelOverrides(labels []string) ([]string, map[string]string) {
 //
 // LbEps is a map, so ranging it directly would emit the CLA's LocalityLbEndpoints
 // in a different order on every call. Locality order carries no meaning to Envoy,
-// but the CLA's serialized bytes do: the content hash of the CLA (and of any
-// cluster carrying it inline) versions per-client xDS for KRT change detection and
-// keys the interning that shares one proto across equivalent clients. Map order
-// would make identical inputs hash differently on every recompute, republishing
-// unchanged config and defeating the interning.
+// but an inline CLA is part of the serialized cluster. The full cluster content
+// hash is its KRT equality version and contributes to the CDS version, so random
+// locality order would republish and re-warm an unchanged inline cluster on each
+// recompute. EDS rows are versioned from the structural endpoint hash instead;
+// their KRT change detection does not depend on CLA byte order. Stable bytes also
+// make content-addressed sharing of equivalent CLAs effective.
 func sortedLocalities(lbEps ir.LocalityLbMap) []ir.PodLocality {
 	out := make([]ir.PodLocality, 0, len(lbEps))
 	for loc := range lbEps {

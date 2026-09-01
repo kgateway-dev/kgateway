@@ -3,36 +3,45 @@ package irtranslator
 import (
 	"cmp"
 	"context"
+	"hash/fnv"
 	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// EndpointPlugin is the normalized internal endpoint hook. Editor plugins use
-// the resolver's restricted copy-on-write surface. Legacy plugins are adapted
-// by requesting a one-time deep-cloned mutable input graph from the resolver.
-type EndpointPlugin func(
+type endpointPluginFunc func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	ucc ir.UniquelyConnectedClient,
 	out *endpoints.EndpointInputsResolver,
 ) uint64
 
+// EndpointPlugin is a normalized internal endpoint hook together with its
+// stable policy identity. Editor plugins use the resolver's restricted
+// copy-on-write surface. Legacy plugins are adapted by requesting a one-time
+// deep-cloned mutable input graph from the resolver.
+type EndpointPlugin struct {
+	groupKind schema.GroupKind
+	name      string
+	process   endpointPluginFunc
+}
+
 type endpointPluginEntry struct {
 	groupKind schema.GroupKind
 	name      string
-	plugin    EndpointPlugin
+	plugin    endpointPluginFunc
 }
 
 func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
 	entries := make([]endpointPluginEntry, 0, len(policies))
 	for groupKind, policyPlugin := range policies {
-		var plugin EndpointPlugin
+		var plugin endpointPluginFunc
 		switch {
 		case policyPlugin.PerClientEditEndpoints != nil:
 			edit := policyPlugin.PerClientEditEndpoints
@@ -66,7 +75,11 @@ func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
 
 	endpointPlugins := make([]EndpointPlugin, 0, len(entries))
 	for _, entry := range entries {
-		endpointPlugins = append(endpointPlugins, entry.plugin)
+		endpointPlugins = append(endpointPlugins, EndpointPlugin{
+			groupKind: entry.groupKind,
+			name:      entry.name,
+			process:   entry.plugin,
+		})
 	}
 	return endpointPlugins
 }
@@ -83,9 +96,21 @@ func ResolveEndpointInputs(
 	plugins []EndpointPlugin,
 ) (endpoints.EndpointsInputs, uint64) {
 	resolver := endpoints.NewEndpointInputsResolver(inputs)
-	var hash uint64
+	hasher := fnv.New64a()
+	hasContribution := false
 	for _, plugin := range plugins {
-		hash ^= plugin(kctx, ctx, ucc, resolver)
+		contribution := plugin.process(kctx, ctx, ucc, resolver)
+		if contribution == 0 {
+			continue
+		}
+		hasContribution = true
+		utils.HashStringField(hasher, plugin.groupKind.Group)
+		utils.HashStringField(hasher, plugin.groupKind.Kind)
+		utils.HashStringField(hasher, plugin.name)
+		utils.HashUint64(hasher, contribution)
 	}
-	return resolver.Inputs(), hash
+	if !hasContribution {
+		return resolver.Inputs(), 0
+	}
+	return resolver.Inputs(), hasher.Sum64()
 }
