@@ -253,6 +253,30 @@ func TestTranslateTLSConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "invalid TLS config - unsupported cipher suite",
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
+					RootCA: new(CACert),
+				},
+				Parameters: &kgateway.TLSParameters{
+					CipherSuites: []string{"BOGUS_CIPHER_SUITE_1"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid TLS config - unsupported ECDH curve",
+			tlsConfig: &kgateway.TLS{
+				Files: &kgateway.TLSFiles{
+					RootCA: new(CACert),
+				},
+				Parameters: &kgateway.TLSParameters{
+					EcdhCurves: []string{"hello"},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "should not error with only rootca",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
