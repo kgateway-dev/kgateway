@@ -55,6 +55,65 @@ func (s *testingSuite) TestNoCompressionWithoutAcceptEncoding() {
 	s.assertHeaders("/html", nil, nil, []string{"Content-Encoding"})
 }
 
+// Verifies the route compresses with brotli when the TrafficPolicy selects the brotli codec
+func (s *testingSuite) TestBrotliResponseCompression() {
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "br"},
+		map[string]any{"Content-Encoding": "br"},
+		nil,
+	)
+}
+
+// Verifies the route compresses with zstd when the TrafficPolicy selects the zstd codec
+func (s *testingSuite) TestZstdResponseCompression() {
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "zstd"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+}
+
+// Verifies Accept-Encoding negotiation when the TrafficPolicy offers all three codecs
+// (libraries: [Brotli, Gzip, Zstd]). Selection is client-driven, so the codec the client lists
+// first wins the tie, a single accepted codec is used as-is, and an unsupported encoding yields
+// no compression.
+func (s *testingSuite) TestResponseCompressionNegotiation() {
+	// Client lists brotli first, so brotli wins the tie.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "br, gzip, zstd"},
+		map[string]any{"Content-Encoding": "br"},
+		nil,
+	)
+
+	// Same codecs, reversed client order: zstd now wins. Confirms the tie follows the client.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "zstd, gzip, br"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+
+	// Client accepts only gzip.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "gzip"},
+		map[string]any{"Content-Encoding": "gzip"},
+		nil,
+	)
+
+	// Client accepts only zstd.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "zstd"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+
+	// Client accepts only an unsupported codec, so the response is not compressed.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "deflate"},
+		nil,
+		[]string{"Content-Encoding"},
+	)
+}
+
 func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
 	common.BaseGateway.Send(
 		s.T(),
@@ -69,6 +128,70 @@ func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, 
 		curl.WithIgnoreBody(),
 		curl.WithHeaders(reqHeaders),
 	)
+}
+
+// Sends a brotli-encoded request body and asserts the brotli decompressor handles it.
+func (s *testingSuite) TestBrotliRequestDecompression() {
+	// Produce a brotli body by fetching a brotli-compressed response from the same route.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers:    map[string]any{"Content-Encoding": "br"},
+		},
+		curl.WithPort(80),
+		curl.WithPath("/html"),
+		curl.WithHostHeader("req-decompress.example.com"),
+		curl.WithArgs([]string{"--output", "/tmp/brfile"}),
+		curl.WithHeaders(map[string]string{"Accept-Encoding": "br"}),
+	)
+
+	// Post the brotli body back; kgateway should decompress it before forwarding.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+		curl.WithPort(80),
+		curl.WithPath("/post"),
+		curl.WithHostHeader("req-decompress.example.com"),
+		curl.WithBody("@/tmp/brfile"),
+		curl.WithHeaders(map[string]string{"Content-Encoding": "br", "Content-Type": "text/plain"}),
+	)
+
+	s.assertDecompressorMetric(".decompressor.brotli.request.decompressed")
+}
+
+// Sends a zstd-encoded request body and asserts the zstd decompressor handles it.
+func (s *testingSuite) TestZstdRequestDecompression() {
+	// Produce a zstd body by fetching a zstd-compressed response from the same route.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Headers:    map[string]any{"Content-Encoding": "zstd"},
+		},
+		curl.WithPort(80),
+		curl.WithPath("/html"),
+		curl.WithHostHeader("req-decompress.example.com"),
+		curl.WithArgs([]string{"--output", "/tmp/zstdfile"}),
+		curl.WithHeaders(map[string]string{"Accept-Encoding": "zstd"}),
+	)
+
+	// Post the zstd body back; kgateway should decompress it before forwarding.
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+		curl.WithPort(80),
+		curl.WithPath("/post"),
+		curl.WithHostHeader("req-decompress.example.com"),
+		curl.WithBody("@/tmp/zstdfile"),
+		curl.WithHeaders(map[string]string{"Content-Encoding": "zstd", "Content-Type": "text/plain"}),
+	)
+
+	s.assertDecompressorMetric(".decompressor.zstd.request.decompressed")
 }
 
 // Sends a gzip-encoded request body and asserts decompressor handles it
@@ -104,13 +227,17 @@ func (s *testingSuite) TestRequestDecompression() {
 		}),
 	)
 
-	// Verify decompressor filter emitted metrics indicating it handled the request via Envoy admin API
+	s.assertDecompressorMetric(".decompressor.gzip.request.decompressed")
+}
+
+// assertDecompressorMetric verifies the decompressor filter emitted a metric ending in
+// metricSuffix (indicating it decompressed a request) via the Envoy admin API.
+func (s *testingSuite) assertDecompressorMetric(metricSuffix string) {
 	s.TestInstallation.AssertionsT(s.T()).AssertEnvoyAdminApi(
 		s.Ctx,
 		proxyObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
 			s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-				metricSuffix := ".decompressor.gzip.request.decompressed"
 				out, err := adminClient.GetStats(ctx, map[string]string{
 					"format": "json",
 					"filter": ".*" + strings.ReplaceAll(metricSuffix, ".", "\\.") + "$",

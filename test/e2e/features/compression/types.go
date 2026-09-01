@@ -16,7 +16,11 @@ var (
 	serviceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
 	httpRoutesManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproutes.yaml")
 	routeCompressionManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-compression.yaml")
+	routeBrotliManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-brotli.yaml")
+	routeZstdManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-zstd.yaml")
+	routeNegotiationManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-negotiation.yaml")
 	routeDecompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
+	routeReqDecompressManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-request-decompression.yaml")
 
 	// proxy object meta for the shared gateway
 	proxyObjectMeta = metav1.ObjectMeta{
@@ -32,11 +36,26 @@ var (
 		"TestTrafficPolicyResponseCompressionForRoute": {
 			Manifests: []string{httpRoutesManifest, routeCompressionManifest},
 		},
+		"TestBrotliResponseCompression": {
+			Manifests: []string{httpRoutesManifest, routeBrotliManifest},
+		},
+		"TestZstdResponseCompression": {
+			Manifests: []string{httpRoutesManifest, routeZstdManifest},
+		},
+		"TestResponseCompressionNegotiation": {
+			Manifests: []string{httpRoutesManifest, routeNegotiationManifest},
+		},
 		"TestNoCompressionWithoutAcceptEncoding": {
 			Manifests: []string{httpRoutesManifest, routeCompressionManifest},
 		},
 		"TestRequestDecompression": {
 			Manifests: []string{httpRoutesManifest, routeCompressionManifest, routeDecompressionManifest},
+		},
+		"TestBrotliRequestDecompression": {
+			Manifests: []string{routeReqDecompressManifest},
+		},
+		"TestZstdRequestDecompression": {
+			Manifests: []string{routeReqDecompressManifest},
 		},
 	}
 )

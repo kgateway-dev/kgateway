@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+envoy-helpers = { path = "../envoy-helpers" }
 anyhow = "1.0.100"
 bitflags = "2.9.4"
 base64 = "0.22.1"

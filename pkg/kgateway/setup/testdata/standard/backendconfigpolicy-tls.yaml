@@ -112,3 +112,6 @@ spec:
       ecdhCurves:
         - "X25519"
         - "P-256"
+      signatureAlgorithms:
+        - "ecdsa_secp256r1_sha256"
+        - "rsa_pss_rsae_sha256"

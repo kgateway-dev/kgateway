@@ -21,6 +21,7 @@ func TestNewPerClientLocalClusterEndpointsBuildsGatewayLocalities(t *testing.T) 
 	ucc := ir.NewUniquelyConnectedClient(role, "ns", map[string]string{
 		wellknown.GatewayNameLabel: "gw",
 	}, ir.PodLocality{Region: "region-1", Zone: "zone-a"})
+	ucc.KnowsLocalCluster = true
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{
 		{
@@ -112,6 +113,7 @@ func TestNewPerClientLocalClusterEndpointsUsesSafeClusterNameForLongGateways(t *
 		wellknown.GatewayNameAnnotation: longGatewayName,
 		wellknown.GatewayNameLabel:      safeGatewayName,
 	}, ir.PodLocality{Region: "region-1", Zone: "zone-a"})
+	ucc.KnowsLocalCluster = true
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{
 		{
@@ -137,4 +139,40 @@ func TestNewPerClientLocalClusterEndpointsUsesSafeClusterNameForLongGateways(t *
 	}).Should(gomega.HaveLen(1))
 
 	g.Expect(got[0].Endpoints.GetClusterName()).To(gomega.Equal(safeGatewayName + ".ns"))
+}
+
+// TestNewPerClientLocalClusterEndpointsSkipsUnknownClients guards against #14471: a client
+// that has never proven (via its own EDS subscription) that it knows about the local cluster
+// resource must not have one built for it. Handing an old Envoy a resource name its bootstrap
+// never declared makes go-control-plane's ADS "superset" check withhold its entire EDS
+// response, not just the local cluster.
+func TestNewPerClientLocalClusterEndpointsSkipsUnknownClients(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniquelyConnectedClient(role, "ns", map[string]string{
+		wellknown.GatewayNameLabel: "gw",
+	}, ir.PodLocality{Region: "region-1", Zone: "zone-a"})
+	g.Expect(ucc.KnowsLocalCluster).To(gomega.BeFalse(), "must default to false until observed")
+
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{
+		{
+			Named: krt.Named{
+				Namespace: "ns",
+				Name:      "gw-zone-a",
+			},
+			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-a"},
+			AugmentedLabels: map[string]string{
+				wellknown.GatewayNameLabel: "gw",
+			},
+			Addresses: []string{"10.0.0.1"},
+		},
+	})
+
+	localEndpoints := NewPerClientLocalClusterEndpoints(krtutil.KrtOptions{}, uccs, pods)
+
+	g.Consistently(func() []UccWithEndpoints {
+		return localEndpoints.endpoints.List()
+	}).Should(gomega.BeEmpty())
 }

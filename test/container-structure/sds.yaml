@@ -1,7 +1,7 @@
 schemaVersion: 2.0.0
 
 # Container structure tests for the sds (Secret Discovery Service) image
-# Built on Alpine base
+# Built on Chainguard distroless base
 
 # UID 10101 must match the helm chart's securityContext.runAsUser
 # (see pkg/deployer/gateway_parameters.go)
@@ -21,8 +21,3 @@ commandTests:
     command: "/usr/local/bin/sds"
     exitCode: 1
     expectedError: ["invalid config"]
-
-  - name: "running as non-root user"
-    command: "id"
-    args: ["-u"]
-    expectedOutput: ["10101"]

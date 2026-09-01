@@ -2,9 +2,9 @@ package proxy_syncer
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"maps"
+	"slices"
+	"strconv"
 	"sync/atomic"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -32,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -42,12 +42,11 @@ var _ manager.LeaderElectionRunnable = &ProxySyncer{}
 // and setting the output xDS snapshot in the envoy snapshot cache,
 // resulting in each connected proxy getting the correct configuration.
 // It runs on all pods (leader or follower) as the xDS snapshot must be consistent across pods.
-// It queues the status reports resulting from translation on the `reportQueue` && `backendPolicyReportQueue`
-// to be handled by the statusSyncer.
+// It also derives per-object desired-status collections from the translation reports;
+// the StatusSyncer attaches them to a write queue on the leader.
 type ProxySyncer struct {
 	controllerName string
 
-	mgr        manager.Manager
 	commonCols *collections.CommonCollections
 	translator *translator.CombinedTranslator
 	plugins    plug.Plugin
@@ -57,24 +56,21 @@ type ProxySyncer struct {
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
 
-	statusReport            krt.Singleton[report]
-	backendPolicyReport     krt.Singleton[report]
-	backendStatusReport     krt.Singleton[report]
-	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
-	perclientSnapCollection krt.Collection[XdsSnapWrapper]
+	statusContributions         krt.Collection[reports.StatusContribution]
+	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
+	gatewayStatusSnapshots      krt.Collection[GatewayStatusSnapshot]
+	mostXdsSnapshots            krt.Collection[GatewayXdsResources]
+	perclientSnapCollection     krt.Collection[XdsSnapWrapper]
+
+	statusCollections *statussync.StatusCollections
+	statusWriters     map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
 
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
-
-	reportQueue              utils.AsyncQueue[reports.ReportMap]
-	backendPolicyReportQueue utils.AsyncQueue[reports.ReportMap]
-	backendStatusReportQueue utils.AsyncQueue[reports.ReportMap]
 }
 
 type GatewayXdsResources struct {
 	types.NamespacedName
-
-	reports reports.ReportMap
 	// Clusters are items in the CDS response payload.
 	// +krtEqualsTodo include CDC resources in equality for diff detection
 	Clusters     []envoycachetypes.ResourceWithTTL
@@ -88,14 +84,6 @@ type GatewayXdsResources struct {
 
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
-
-	// ReferencedClusters is the set of cluster names referenced by Routes and
-	// Listeners. It is derived from the proto contents, so it is a pure function
-	// of Routes.Version and Listeners.Version (already covered by Equals). Used
-	// by per-client snapshotting to avoid redundantly walking protos for every
-	// connected client on each update.
-	// +noKrtEquals
-	ReferencedClusters map[string]struct{}
 }
 
 func (r GatewayXdsResources) ResourceName() string {
@@ -104,11 +92,42 @@ func (r GatewayXdsResources) ResourceName() string {
 
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName &&
-		report{r.reports}.Equals(report{in.reports}) &&
 		r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
 		r.Secrets.Version == in.Secrets.Version
+}
+
+// GatewayStatusSnapshot is the status-only projection of one Gateway
+// translation. Keeping it separate prevents status-only changes from
+// invalidating the xDS projection.
+type GatewayStatusSnapshot struct {
+	types.NamespacedName
+	Contributions []reports.StatusContribution
+}
+
+func (r GatewayStatusSnapshot) ResourceName() string {
+	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
+}
+
+func (r GatewayStatusSnapshot) Equals(other GatewayStatusSnapshot) bool {
+	return r.NamespacedName == other.NamespacedName &&
+		slices.EqualFunc(r.Contributions, other.Contributions, func(a, b reports.StatusContribution) bool {
+			return a.Equals(b)
+		})
+}
+
+type gatewayTranslationOutput struct {
+	Xds    GatewayXdsResources
+	Status GatewayStatusSnapshot
+}
+
+func (r gatewayTranslationOutput) ResourceName() string {
+	return r.Xds.ResourceName()
+}
+
+func (r gatewayTranslationOutput) Equals(other gatewayTranslationOutput) bool {
+	return r.Xds.Equals(other.Xds) && r.Status.Equals(other.Status)
 }
 
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
@@ -126,25 +145,31 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 
 func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	r, h := sliceToResourcesHash(slice)
-	return envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", h), r)
+	return envoycache.NewResourcesWithTTL(strconv.FormatUint(h, 10), r)
 }
 
-func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
+func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *gatewayTranslationOutput {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
-	routes := sliceToResources(xdsSnap.Routes)
-	listeners := sliceToResources(xdsSnap.Listeners)
-	return &GatewayXdsResources{
-		NamespacedName: types.NamespacedName{
-			Namespace: gw.Obj.GetNamespace(),
-			Name:      gw.Obj.GetName(),
+	nn := types.NamespacedName{
+		Namespace: gw.Obj.GetNamespace(),
+		Name:      gw.Obj.GetName(),
+	}
+	return &gatewayTranslationOutput{
+		Xds: GatewayXdsResources{
+			NamespacedName: nn,
+			ClustersHash:   ch,
+			Clusters:       c,
+			Routes:         sliceToResources(xdsSnap.Routes),
+			Listeners:      sliceToResources(xdsSnap.Listeners),
+			Secrets:        sliceToResources(xdsSnap.Secrets),
 		},
-		reports:            r,
-		ClustersHash:       ch,
-		Clusters:           c,
-		Routes:             routes,
-		Listeners:          listeners,
-		Secrets:            sliceToResources(xdsSnap.Secrets),
-		ReferencedClusters: collectReferencedClusters(routes, listeners),
+		Status: GatewayStatusSnapshot{
+			NamespacedName: nn,
+			Contributions: reports.StatusContributionsFromReportMap(reports.StatusSource{
+				Kind: reports.GatewayStatusSource,
+				Name: nn.String(),
+			}, r),
+		},
 	}
 }
 
@@ -153,7 +178,6 @@ func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r report
 func NewProxySyncer(
 	ctx context.Context,
 	controllerName string,
-	mgr manager.Manager,
 	client apiclient.Client,
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient],
 	mergedPlugins plug.Plugin,
@@ -162,17 +186,13 @@ func NewProxySyncer(
 	validator validator.Validator,
 ) *ProxySyncer {
 	return &ProxySyncer{
-		controllerName:           controllerName,
-		commonCols:               commonCols,
-		mgr:                      mgr,
-		apiClient:                client,
-		proxyTranslator:          NewProxyTranslator(xdsCache),
-		uniqueClients:            uniqueClients,
-		translator:               translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
-		plugins:                  mergedPlugins,
-		reportQueue:              utils.NewAsyncQueue[reports.ReportMap](),
-		backendPolicyReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
-		backendStatusReportQueue: utils.NewAsyncQueue[reports.ReportMap](),
+		controllerName:  controllerName,
+		commonCols:      commonCols,
+		apiClient:       client,
+		proxyTranslator: NewProxyTranslator(xdsCache),
+		uniqueClients:   uniqueClients,
+		translator:      translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
+		plugins:         mergedPlugins,
 	}
 }
 
@@ -184,69 +204,6 @@ func NewProxyTranslator(xdsCache envoycache.SnapshotCache) ProxyTranslator {
 	return ProxyTranslator{
 		xdsCache: xdsCache,
 	}
-}
-
-type report struct {
-	// lower case so krt doesn't error in debug handler
-	reportMap reports.ReportMap
-}
-
-func (r report) ResourceName() string {
-	return "report"
-}
-
-// do we really need this for a singleton?
-func (r report) Equals(in report) bool {
-	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.ListenerSets, in.reportMap.ListenerSets,
-		func(a, b map[types.NamespacedName]*reports.ListenerSetReport) bool {
-			return maps.Equal(a, b)
-		}) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.TLSRoutes, in.reportMap.TLSRoutes) {
-		return false
-	}
-	if !maps.Equal(r.reportMap.Policies, in.reportMap.Policies) {
-		return false
-	}
-	if !maps.EqualFunc(r.reportMap.Backends, in.reportMap.Backends, backendReportEqual) {
-		return false
-	}
-	return true
-}
-
-// backendReportEqual reports whether two BackendReports hold the same conditions and observed generation.
-func backendReportEqual(a, b *reports.BackendReport) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	if a.GetObservedGeneration() != b.GetObservedGeneration() {
-		return false
-	}
-	ac, bc := a.GetConditions(), b.GetConditions()
-	if len(ac) != len(bc) {
-		return false
-	}
-	for i := range ac {
-		other := meta.FindStatusCondition(bc, ac[i].Type)
-		if other == nil ||
-			ac[i].Status != other.Status ||
-			ac[i].Reason != other.Reason ||
-			ac[i].Message != other.Message ||
-			ac[i].ObservedGeneration != other.ObservedGeneration {
-			return false
-		}
-	}
-	return true
 }
 
 var logger = logging.New("proxy_syncer")
@@ -290,7 +247,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	s.translator.Init(ctx)
 
-	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
+	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
 		// with controllerName matching s.controllerName (envoy controller). The filtering happens
 		// in GatewaysForEnvoyTransformationFunc in pkg/krtcollections/policy.go
@@ -301,8 +258,14 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 			return nil
 		}
 
-		return toResources(gw, *xdsSnap, rm)
+		return toTranslationOutput(gw, *xdsSnap, rm)
+	}, krtopts.ToOptions("GatewayTranslationOutputs")...)
+	s.mostXdsSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayXdsResources {
+		return &output.Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
+	s.gatewayStatusSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayStatusSnapshot {
+		return &output.Status
+	}, krtopts.ToOptions("GatewayStatusSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
@@ -339,137 +302,55 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		}
 	}
 
-	s.backendPolicyReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
-		backends := krt.Fetch(kctx, finalBackendsWithPolicyStatus)
-		merged := GenerateBackendPolicyReport(backends, excludedPolicyKinds)
+	backendPolicyContributions := backendPolicyStatusContributions(
+		finalBackendsWithPolicyStatus,
+		excludedPolicyKinds,
+		krtopts,
+	)
 
-		for _, plugin := range s.plugins.ContributesPolicies {
-			if plugin.ProcessPolicyStaleStatusMarkers != nil && plugin.ProcessBackend != nil && !plugin.PolicyStatusFromGatewayReports {
-				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
-			}
-		}
+	// Backend status is reduced per Backend. Indexed cluster and plugin-condition
+	// dependencies ensure one client's error only recomputes its owning Backend.
+	kgwBackendPlugin := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()]
+	kgwBackendCol := kgwBackendPlugin.Backends
+	kgwBackendExtraConditions := kgwBackendPlugin.ExtraConditions
+	if kgwBackendCol == nil {
+		kgwBackendCol = krt.NewStaticCollection[ir.BackendObjectIR](nil, nil, krtopts.ToOptions("NoBackendStatusInputs")...)
+	}
+	if kgwBackendExtraConditions == nil {
+		kgwBackendExtraConditions = krt.NewStaticCollection[ir.BackendObjectStatus](nil, nil, krtopts.ToOptions("NoBackendExtraConditions")...)
+	}
+	backendContributions := backendStatusContributions(
+		kgwBackendCol,
+		clustersPerClient.clusters,
+		kgwBackendExtraConditions,
+		krtopts,
+	)
 
-		return &report{merged}
-	}, krtopts.ToOptions("BackendsPolicyReport")...)
-
-	// backendStatusReport is the sole writer of the Backend Accepted condition: it merges
-	// each Backend's IR errors with its per-client translation errors.
-	kgwBackendCol := s.plugins.ContributesBackends[wellknown.BackendGVK.GroupKind()].Backends
-	s.backendStatusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
-		var kgwBackends []ir.BackendObjectIR
-		if kgwBackendCol != nil {
-			kgwBackends = krt.Fetch(kctx, kgwBackendCol)
-		}
-		clusters := krt.Fetch(kctx, clustersPerClient.clusters)
-		merged := GenerateBackendStatusReport(kgwBackends, clusters)
-		return &report{merged}
-	}, krtopts.ToOptions("BackendStatusReport")...)
-
-	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
-	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
-	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
-		proxies := krt.Fetch(kctx, s.mostXdsSnapshots)
-
-		merged := mergeProxyReports(proxies)
-
-		// Process status markers
-		objStatus := krt.Fetch(kctx, s.commonCols.Routes.GetHTTPRouteStatusMarkers())
-		s.commonCols.Routes.ProcessHTTPRouteStatusMarkers(objStatus, merged)
-
-		for _, plugin := range s.plugins.ContributesPolicies {
-			if plugin.ProcessPolicyStaleStatusMarkers != nil && (plugin.ProcessBackend == nil || plugin.PolicyStatusFromGatewayReports) {
-				plugin.ProcessPolicyStaleStatusMarkers(kctx, &merged)
-			}
-		}
-
-		return &report{merged}
-	})
+	// All status paths now meet as independently keyed contributions. Policy
+	// ancestors from Gateway and Backend translation naturally reduce under the
+	// same policy key without a competing singleton writer.
+	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+		gatewayStatusContributions(s.gatewayStatusSnapshots, krtopts),
+		backendPolicyContributions,
+		backendContributions,
+	}, krtopts.ToOptions("StatusContributions")...)
 
 	s.waitForSync = []cache.InformerSynced{
 		s.commonCols.HasSynced,
 		finalBackends.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
+		s.statusContributions.HasSynced,
 		s.plugins.HasSynced,
 		s.translator.HasSynced,
 	}
-}
 
-func mergeProxyReports(
-	proxies []GatewayXdsResources,
-) reports.ReportMap {
-	merged := reports.NewReportMap()
-	for _, p := range proxies {
-		// 1. merge GW Reports for all Proxies' status reports
-		maps.Copy(merged.Gateways, p.reports.Gateways)
-
-		// 2. merge LS Reports for all Proxies' status reports
-		maps.Copy(merged.ListenerSets, p.reports.ListenerSets)
-
-		// 3. merge httproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.HTTPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.HTTPRoutes[rnn]
-			if old == nil {
-				merged.HTTPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.HTTPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		// 4. merge tcproute parentRefs into RouteReports
-		for rnn, rr := range p.reports.TCPRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TCPRoutes[rnn]
-			if old == nil {
-				merged.TCPRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TCPRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.TLSRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.TLSRoutes[rnn]
-			if old == nil {
-				merged.TLSRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.TLSRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for rnn, rr := range p.reports.GRPCRoutes {
-			// if we haven't encountered this route, just copy it over completely
-			old := merged.GRPCRoutes[rnn]
-			if old == nil {
-				merged.GRPCRoutes[rnn] = rr
-				continue
-			}
-			// else, this route has already been seen for a proxy, merge this proxy's parents
-			// into the merged report
-			maps.Copy(merged.GRPCRoutes[rnn].Parents, rr.Parents)
-		}
-
-		for key, report := range p.reports.Policies {
-			// if we haven't encountered this policy, just copy it over completely
-			old := merged.Policies[key]
-			if old == nil {
-				merged.Policies[key] = report
-				continue
-			}
-			// else, let's merge our parentRefs into the existing map
-			// obsGen will stay as-is...
-			maps.Copy(merged.Policies[key].Ancestors, report.Ancestors)
-		}
-	}
-
-	return merged
+	// contextcheck sees a context.Background() deep in the registration chain, in the slog
+	// level check that guards the per-event debug log in statussync.registerResource. A level
+	// check takes a context only because slog.Handler.Enabled does; there is nothing to
+	// propagate, and pkg/kgateway/setup/controlplane.go checks levels the same way. Threading
+	// ctx through four exported statussync registration functions to reach it would be worse.
+	s.initStatusInfra(krtopts) //nolint:contextcheck // only ctx use in the chain is a slog level check
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -483,65 +364,35 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.waitForSync...,
 	)
 
-	// wait for ctrl-rtime caches to sync before accepting events
-	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return errors.New("kube gateway proxy syncer sync loop waiting for all caches to sync failed")
-	}
+	// Note: the controller-runtime manager cache is deliberately not waited on here.
+	// Nothing reads through it anymore (status syncing uses the istio/krt cache), so
+	// it holds no informers.
 	logger.Info("caches warm!")
 
 	// caches are warm, now we can do registrations
-
-	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
-	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
-	s.statusReport.Register(func(o krt.Event[report]) {
-		if o.Event == controllers.EventDelete {
-			// TODO: handle garbage collection
-			return
-		}
-		s.reportQueue.Enqueue(o.Latest().reportMap)
-	})
-
-	s.backendPolicyReport.Register(func(o krt.Event[report]) {
-		if o.Event == controllers.EventDelete {
-			return
-		}
-		s.backendPolicyReportQueue.Enqueue(o.Latest().reportMap)
-	})
-
-	s.backendStatusReport.Register(func(o krt.Event[report]) {
-		if o.Event == controllers.EventDelete {
-			return
-		}
-		s.backendStatusReportQueue.Enqueue(o.Latest().reportMap)
-	})
-
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
 			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
 
+			// Deletes are an intentional no-op. When snapshotPerClient returns
+			// nil (its per-client inputs weren't derived yet, so it deferred
+			// publishing), KRT surfaces a Delete for this UCC. Clearing the xDS
+			// cache here would withdraw Envoy's last coherent Snapshot for the
+			// duration of the defer, causing 500/NC on valid routes. Leaving the
+			// cache alone means Envoy keeps serving its previously-published
+			// config until a new snapshot overwrites it — "retain last good".
+			//
+			// Known leak: a Delete also arrives when a UCC truly goes away (Envoy
+			// pod replaced on rollout, scaled down, etc.), and we cannot
+			// distinguish that from the "defer" case here. The SnapshotCache entry
+			// for that UCC is therefore never cleared and accumulates over the
+			// controller's lifetime. Pre-existing behavior (the prior ClearSnapshot
+			// call was already commented out); reclaiming these entries requires a
+			// separate signal — e.g. cross-referencing uccCol membership — and is
+			// left to a follow-up.
 			if e.Event != controllers.EventDelete {
 				snapWrap := e.Latest()
 				s.proxyTranslator.syncXds(ctx, snapWrap)
-			} else {
-				// Intentional no-op. When snapshotPerClient returns nil (its
-				// readiness guards deferred publishing), KRT surfaces a Delete
-				// for this UCC. Clearing the xDS cache here would withdraw
-				// Envoy's last coherent Snapshot for the duration of the defer,
-				// causing 500/NC on valid routes. Leaving the cache alone means
-				// Envoy keeps serving its previously-published config until a
-				// new coherent snapshot overwrites it — the "retain last good"
-				// behavior that prevents unresolvable cluster references from
-				// stranding live traffic.
-				//
-				// Known leak: this branch also fires when a UCC truly goes
-				// away (Envoy pod replaced on rollout, scaled down, etc.),
-				// and we cannot distinguish that from the "defer" case here.
-				// The SnapshotCache entry for that UCC is therefore never
-				// cleared and accumulates over the controller's lifetime.
-				// Pre-existing behavior (the prior ClearSnapshot call was
-				// already commented out); reclaiming these entries requires
-				// a separate signal — e.g. cross-referencing uccCol
-				// membership — and is left to a follow-up.
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
@@ -566,22 +417,25 @@ func (r *ProxySyncer) NeedLeaderElection() bool {
 	return false
 }
 
-// ReportQueue returns the queue that contains the latest status reports.
-// It will be constantly updated to contain the merged status report for Kube Gateway status.
-func (s *ProxySyncer) ReportQueue() utils.AsyncQueue[reports.ReportMap] {
-	return s.reportQueue
+// StatusCollections returns the registered desired-status collections. The status syncer
+// enables them (attaching handlers that feed the write queue) on the leader.
+func (s *ProxySyncer) StatusCollections() *statussync.StatusCollections {
+	return s.statusCollections
 }
 
-// BackendPolicyReportQueue returns the queue that contains the latest status reports for all backend policies.
-// It will be constantly updated to contain the merged status report for backend policies.
-func (s *ProxySyncer) BackendPolicyReportQueue() utils.AsyncQueue[reports.ReportMap] {
-	return s.backendPolicyReportQueue
+// StatusWriters returns the per-GVK status writers used to persist desired statuses.
+func (s *ProxySyncer) StatusWriters() map[schema.GroupVersionKind]statussync.ResourceStatusSyncer {
+	return s.statusWriters
 }
 
-// BackendStatusReportQueue returns the queue that contains the latest status reports for Backends.
-// It will be constantly updated to contain the merged Accepted status report for Backends.
-func (s *ProxySyncer) BackendStatusReportQueue() utils.AsyncQueue[reports.ReportMap] {
-	return s.backendStatusReportQueue
+// StatusContributions returns the independently keyed status facts emitted by translation.
+func (s *ProxySyncer) StatusContributions() krt.Collection[reports.StatusContribution] {
+	return s.statusContributions
+}
+
+// StatusContributionsByTarget returns the index used to reduce facts per status owner.
+func (s *ProxySyncer) StatusContributionsByTarget() krt.Index[reports.StatusKey, reports.StatusContribution] {
+	return s.statusContributionsByTarget
 }
 
 // WaitForSync returns a list of functions that can be used to determine if all its informers have synced.

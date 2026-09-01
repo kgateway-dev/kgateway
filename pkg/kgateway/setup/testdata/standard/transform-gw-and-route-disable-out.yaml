@@ -28,7 +28,6 @@ endpoints:
           socketAddress:
             address: 10.244.1.11
             portValue: 8080
-      loadBalancingWeight: 1
     loadBalancingWeight: 1
     locality:
       region: r1
@@ -93,6 +92,7 @@ routes:
         value: '{"response":{"add":[{"name":"original-greatness","value":"{{request_headers(\"x-greatness\")}}"}],"body":{"parseAs":"AsJson","value":"{{
           body }}"}}}'
       filterName: rustformation
+      perRouteConfigName: rustformation
   virtualHosts:
   - domains:
     - www.example-gateway-only.com
@@ -129,3 +129,4 @@ routes:
             value: '{"request":{"add":[{"name":"x-greatness","value":"{{ length(headers(\":path\"))
               }}"}]}}'
           filterName: rustformation
+          perRouteConfigName: rustformation

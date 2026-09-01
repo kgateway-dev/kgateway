@@ -137,7 +137,6 @@ rules:
   - directresponses
   - gatewayextensions
   - gatewayparameters
-  - httplistenerpolicies
   - listenerpolicies
   - trafficpolicies
   verbs:
@@ -152,7 +151,6 @@ rules:
   - directresponses/status
   - gatewayextensions/status
   - gatewayparameters/status
-  - httplistenerpolicies/status
   - listenerpolicies/status
   - trafficpolicies/status
   verbs:
@@ -381,6 +379,8 @@ spec:
               value: IfNotPresent
             - name: KGW_DISCOVERY_NAMESPACE_SELECTORS
               value: "[]"
+            - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
+              value: "[]"
             - name: KGW_POLICY_MERGE
               value: "{}"
             - name: KGW_VALIDATION_MODE
@@ -389,8 +389,6 @@ spec:
               value: "false"
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: "30s"
-            - name: KGW_ENABLE_ENVOY
-              value: "true"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: "{}"
             - name: KGW_XDS_TLS

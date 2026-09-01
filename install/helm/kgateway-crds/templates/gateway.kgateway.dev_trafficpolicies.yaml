@@ -335,7 +335,7 @@ spec:
                 description: |-
                   AutoHostRewrite rewrites the Host header to the DNS name of the selected upstream.
                   NOTE: This field is only honored for HTTPRoute targets.
-                  NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/spec/#httpurlrewritefilter)
+                  NOTE: If `autoHostRewrite` is set on a route that also has a [URLRewrite filter](https://gateway-api.sigs.k8s.io/reference/api-spec/main/spec/#httpurlrewritefilter)
                   configured to override the `hostname`, the `hostname` value will be used and `autoHostRewrite` will be ignored.
                 type: boolean
               basicAuth:
@@ -436,16 +436,41 @@ spec:
                   requestDecompression:
                     description: |-
                       RequestDecompression controls request decompression.
-                      If set, gzip requests will be decompressed.
+                      If set, request bodies in the configured codecs are decompressed before forwarding.
                     properties:
                       disable:
                         description: Disables decompression.
                         type: object
+                      libraries:
+                        default:
+                        - Gzip
+                        description: |-
+                          Libraries lists the codecs to decompress on request bodies. Envoy selects the decompressor
+                          by the request's `Content-Encoding` header, so the list order is not significant. Request
+                          bodies encoded with a codec not in this list are passed through to the backend unchanged.
+                          Defaults to [Gzip].
+                        items:
+                          description: CompressionLibrary identifies a compression
+                            codec used to compress responses or decompress requests.
+                          enum:
+                          - Gzip
+                          - Brotli
+                          - Zstd
+                          type: string
+                        maxItems: 3
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: atomic
+                        x-kubernetes-validations:
+                        - message: libraries must not contain duplicates
+                          rule: self.all(x, self.exists_one(y, y == x))
                     type: object
                   responseCompression:
                     description: |-
                       ResponseCompression controls response compression to the downstream.
-                      If set, responses with the appropriate `Accept-Encoding` header with certain textual content types will be compressed using gzip.
+                      If set, responses with a matching `Accept-Encoding` header and certain textual content types will be compressed.
+                      The compression codecs default to gzip and can be selected via `responseCompression.libraries`,
+                      which Envoy negotiates against the request's `Accept-Encoding` header.
                       The content-types that will be compressed are:
                       - `application/javascript`
                       - `application/json`
@@ -459,6 +484,31 @@ spec:
                       disable:
                         description: Disables compression.
                         type: object
+                      libraries:
+                        default:
+                        - Gzip
+                        description: |-
+                          Libraries lists the compression codecs to offer for responses.
+                          Envoy negotiates the codec based on the downstream request's `Accept-Encoding` header,
+                          picking the highest-quality codec the client accepts. On equal quality the client's
+                          ordering decides. If the client accepts none of the offered codecs, the response is
+                          sent uncompressed.
+                          Defaults to [Gzip].
+                        items:
+                          description: CompressionLibrary identifies a compression
+                            codec used to compress responses or decompress requests.
+                          enum:
+                          - Gzip
+                          - Brotli
+                          - Zstd
+                          type: string
+                        maxItems: 3
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: atomic
+                        x-kubernetes-validations:
+                        - message: libraries must not contain duplicates
+                          rule: self.all(x, self.exists_one(y, y == x))
                     type: object
                 type: object
                 x-kubernetes-validations:
@@ -493,9 +543,9 @@ spec:
                       Multiple header names in the value of the `Access-Control-Allow-Headers`
                       response header are separated by a comma (",").
 
-                      When the `AllowHeaders` field is configured with one or more headers, the
+                      When the `allowHeaders` field is configured with one or more headers, the
                       gateway must return the `Access-Control-Allow-Headers` response header
-                      which value is present in the `AllowHeaders` field.
+                      which value is present in the `allowHeaders` field.
 
                       If any header name in the `Access-Control-Request-Headers` request header
                       is not included in the list of header names specified by the response
@@ -507,21 +557,20 @@ spec:
                       client side.
 
                       A wildcard indicates that the requests with all HTTP headers are allowed.
-                      If config contains the wildcard "*" in allowHeaders and the request is
-                      not credentialed, the `Access-Control-Allow-Headers` response header
-                      can either use the `*` wildcard or the value of
-                      Access-Control-Request-Headers from the request.
 
-                      When the request is credentialed, the gateway must not specify the `*`
-                      wildcard in the `Access-Control-Allow-Headers` response header. When
-                      also the `AllowCredentials` field is true and `AllowHeaders` field
-                      is specified with the `*` wildcard, the gateway must specify one or more
-                      HTTP headers in the value of the `Access-Control-Allow-Headers` response
-                      header. The value of the header `Access-Control-Allow-Headers` is same as
-                      the `Access-Control-Request-Headers` header provided by the client. If
-                      the header `Access-Control-Request-Headers` is not included in the
-                      request, the gateway will omit the `Access-Control-Allow-Headers`
-                      response header, instead of specifying the `*` wildcard.
+                      If the configuration contains the wildcard `*` in `allowHeaders` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Allow-Headers`
+                      response header may either contain the wildcard `*` or echo the value
+                      of the `Access-Control-Request-Headers` request header.
+
+                      If the configuration contains the wildcard `*` in `allowHeaders` and
+                      `allowCredentials` is set to `true`, the gateway must not return `*`
+                      in the `Access-Control-Allow-Headers` response header. Instead, it must
+                      return one or more header names matching the value of the
+                      `Access-Control-Request-Headers` request header.
+                      If the `Access-Control-Request-Headers` header is not present in the
+                      request, the gateway must omit the `Access-Control-Allow-Headers`
+                      response header.
 
                       Support: Extended
                     items:
@@ -565,32 +614,29 @@ spec:
                       A CORS-safelisted method is a method that is `GET`, `HEAD`, or `POST`.
                       (See https://fetch.spec.whatwg.org/#cors-safelisted-method) The
                       CORS-safelisted methods are always allowed, regardless of whether they
-                      are specified in the `AllowMethods` field.
+                      are specified in the `allowMethods` field.
 
-                      When the `AllowMethods` field is configured with one or more methods, the
+                      When the `allowMethods` field is configured with one or more methods, the
                       gateway must return the `Access-Control-Allow-Methods` response header
-                      which value is present in the `AllowMethods` field.
+                      which value is present in the `allowMethods` field.
 
                       If the HTTP method of the `Access-Control-Request-Method` request header
                       is not included in the list of methods specified by the response header
                       `Access-Control-Allow-Methods`, it will present an error on the client
                       side.
 
-                      If config contains the wildcard "*" in allowMethods and the request is
-                      not credentialed, the `Access-Control-Allow-Methods` response header
-                      can either use the `*` wildcard or the value of
-                      Access-Control-Request-Method from the request.
+                      If the configuration contains the wildcard `*` in `allowMethods` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Allow-Methods`
+                      response header may either contain the wildcard `*` or echo the value
+                      of the `Access-Control-Request-Method` request header.
 
-                      When the request is credentialed, the gateway must not specify the `*`
-                      wildcard in the `Access-Control-Allow-Methods` response header. When
-                      also the `AllowCredentials` field is true and `AllowMethods` field
-                      specified with the `*` wildcard, the gateway must specify one HTTP method
-                      in the value of the Access-Control-Allow-Methods response header. The
-                      value of the header `Access-Control-Allow-Methods` is same as the
-                      `Access-Control-Request-Method` header provided by the client. If the
-                      header `Access-Control-Request-Method` is not included in the request,
-                      the gateway will omit the `Access-Control-Allow-Methods` response header,
-                      instead of specifying the `*` wildcard.
+                      If the configuration contains the wildcard `*` in `allowMethods` and
+                      `allowCredentials` is set to `true`, the gateway must not return `*`
+                      in the `Access-Control-Allow-Methods` response header. Instead, it must
+                      return a single HTTP method matching the value of the
+                      `Access-Control-Request-Method` request header.
+                      If the `Access-Control-Request-Method` header is not present in the request,
+                      the gateway must omit the `Access-Control-Allow-Methods` response header.
 
                       Support: Extended
                     items:
@@ -639,7 +685,7 @@ spec:
                       An origin value that includes _only_ the `*` character indicates requests
                       from all `Origin`s are allowed.
 
-                      When the `AllowOrigins` field is configured with multiple origins, it
+                      When the `allowOrigins` field is configured with multiple origins, it
                       means the server supports clients from multiple origins. If the request
                       `Origin` matches the configured allowed origins, the gateway must return
                       the given `Origin` and sets value of the header
@@ -661,19 +707,15 @@ spec:
                       `Access-Control-Allow-Origin` to the same value as the `Origin`
                       header provided by the client.
 
-                      When config has the wildcard ("*") in allowOrigins, and the request
-                      is not credentialed (e.g., it is a preflight request), the
-                      `Access-Control-Allow-Origin` response header either contains the
-                      wildcard as well or the Origin from the request.
+                      If the configuration contains the wildcard `*` in `allowOrigins` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Allow-Origin`
+                      response header may either contain the wildcard `*` or echo the value
+                      of the `Origin` request header.
 
-                      When the request is credentialed, the gateway must not specify the `*`
-                      wildcard in the `Access-Control-Allow-Origin` response header. When
-                      also the `AllowCredentials` field is true and `AllowOrigins` field
-                      specified with the `*` wildcard, the gateway must return a single origin
-                      in the value of the `Access-Control-Allow-Origin` response header,
-                      instead of specifying the `*` wildcard. The value of the header
-                      `Access-Control-Allow-Origin` is same as the `Origin` header provided by
-                      the client.
+                      If the configuration contains the wildcard `*` in `allowOrigins` and
+                      `allowCredentials` is set to `true`, the gateway must not return `*`
+                      in the `Access-Control-Allow-Origin` response header. Instead, it must
+                      return a single origin matching the value of the `Origin` request header.
 
                       Support: Extended
                     items:
@@ -716,7 +758,7 @@ spec:
                       (See https://fetch.spec.whatwg.org/#cors-safelisted-response-header-name)
                       The CORS-safelisted response headers are exposed to client by default.
 
-                      When an HTTP header name is specified using the `ExposeHeaders` field,
+                      When an HTTP header name is specified using the `exposeHeaders` field,
                       this additional header will be exposed as part of the response to the
                       client.
 
@@ -726,12 +768,15 @@ spec:
                       response header are separated by a comma (",").
 
                       A wildcard indicates that the responses with all HTTP headers are exposed
-                      to clients. The `Access-Control-Expose-Headers` response header can only
-                      use `*` wildcard as value when the request is not credentialed.
+                      to clients.
 
-                      When the `exposeHeaders` config field contains the "*" wildcard and
-                      the request is credentialed, the gateway cannot use the `*` wildcard in
-                      the `Access-Control-Expose-Headers` response header.
+                      If the configuration contains the wildcard `*` in `exposeHeaders` and
+                      `allowCredentials` is set to `false`, the `Access-Control-Expose-Headers`
+                      response header can contain the wildcard `*`.
+
+                      If the configuration contains the wildcard `*` in `exposeHeaders` and
+                      `allowCredentials` is set to `true`, the gateway cannot use the `*`
+                      in the `Access-Control-Expose-Headers` response header.
 
                       Support: Extended
                     items:
@@ -1061,6 +1106,7 @@ spec:
                       fixedDelay:
                         description: FixedDelay is the duration to delay before forwarding
                           the request.
+                        maxLength: 32
                         type: string
                         x-kubernetes-validations:
                         - message: invalid duration value
@@ -1221,7 +1267,7 @@ spec:
                         description: |-
                           Remove the given header(s) from the HTTP request before the action. The
                           value of Remove is a list of HTTP header names. Note that header names are
-                          case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                          case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1428,7 +1474,7 @@ spec:
                         description: |-
                           Remove the given header(s) from the HTTP request before the action. The
                           value of Remove is a list of HTTP header names. Note that header names are
-                          case-insensitive (see https://datatracker.ietf.org/doc/html/rfc2616#section-4.2).
+                          case-insensitive (see [RFC 2616, Section 4.2](https://datatracker.ietf.org/doc/html/rfc2616#section-4.2)).
 
                           Input:
                             GET /foo HTTP/1.1
@@ -1546,6 +1592,73 @@ spec:
                     set
                   rule: '[has(self.request),has(self.response)].filter(x,x==true).size()
                     >= 1'
+              internalRedirect:
+                description: |-
+                  InternalRedirect handles upstream 3xx redirects inside the gateway.
+                  Applies only to routes that forward traffic to a backend.
+                properties:
+                  allowCrossSchemeRedirect:
+                    description: |-
+                      AllowCrossSchemeRedirect permits redirects across http/https schemes.
+                      Defaults to false.
+                    type: boolean
+                  maxRedirects:
+                    description: |-
+                      MaxRedirects caps followed redirects for a single downstream request.
+                      Defaults to 1.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  redirectResponseCodes:
+                    description: |-
+                      RedirectResponseCodes are upstream status codes that trigger internal redirects.
+                      If unset, only 302 redirects are followed.
+                    items:
+                      description: InternalRedirectResponseCode is a 3xx response
+                        code supported for internal redirects.
+                      enum:
+                      - 301
+                      - 302
+                      - 303
+                      - 307
+                      - 308
+                      format: int32
+                      type: integer
+                    maxItems: 5
+                    minItems: 1
+                    type: array
+                    x-kubernetes-validations:
+                    - message: redirectResponseCodes must not contain duplicates
+                      rule: self.all(c, self.exists_one(c2, c2 == c))
+                  responseHeadersToCopy:
+                    description: |-
+                      ResponseHeadersToCopy are copied from the redirect response to the
+                      internally redirected request.
+                    items:
+                      description: |-
+                        HTTPHeaderName is the name of an HTTP header.
+
+                        Valid values include:
+
+                        * "Authorization"
+                        * "Set-Cookie"
+
+                        Invalid values include:
+
+                          - ":method" - ":" is an invalid character. This means that HTTP/2 pseudo
+                            headers are not currently supported by this type.
+                          - "/invalid" - "/ " is an invalid character
+                      maxLength: 256
+                      minLength: 1
+                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                      type: string
+                    maxItems: 16
+                    minItems: 1
+                    type: array
+                    x-kubernetes-validations:
+                    - message: responseHeadersToCopy must not contain duplicates
+                      rule: self.all(h, self.exists_one(h2, h2 == h))
+                type: object
               jwtAuth:
                 description: |-
                   JWT specifies the JWT authentication configuration for the policy.
@@ -1744,6 +1857,7 @@ spec:
                               FillInterval defines the time duration between consecutive token fills.
                               This value must be a valid duration string (e.g., "1s", "500ms").
                               It determines the frequency of token replenishment.
+                            maxLength: 32
                             type: string
                             x-kubernetes-validations:
                             - message: invalid duration value
@@ -1817,7 +1931,11 @@ spec:
               retry:
                 description: |-
                   Retry defines the policy for retrying requests.
-                  It is applicable to HTTPRoutes, Gateway listeners and ListenerSets, and ignored for other targeted kinds.
+                  It is applicable to HTTPRoutes, GRPCRoutes, Gateways, Gateway listeners, and
+                  ListenerSets, and ignored for other targeted kinds.
+                  When attached above the route level, the retry policy applies to all routes it
+                  covers; a route-level retry policy (from a more specific TrafficPolicy or the
+                  built-in HTTPRoute retry) takes precedence.
                 properties:
                   attempts:
                     default: 1
@@ -1837,6 +1955,7 @@ spec:
                       The backoff interval is capped at a max of 10 times the base interval.
                       E.g., given a value of 25ms, the first retry will be delayed randomly by 0-24ms, the 2nd by 0-74ms,
                       the 3rd by 0-174ms, and so on, and capped to a max of 10 times the base interval (250ms).
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -1849,6 +1968,7 @@ spec:
                       If a global timeout is configured on a route, this timeout must be less than the global
                       route timeout.
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -1912,6 +2032,34 @@ spec:
                 x-kubernetes-validations:
                 - message: retryOn or statusCodes must be set.
                   rule: has(self.retryOn) || has(self.statusCodes)
+              statPrefix:
+                description: |-
+                  StatPrefix sets a custom prefix on the Envoy route so that per-route
+                  statistics are emitted for the targeted routes. When set, Envoy emits stats under
+                  `vhost.<vhost>.route.<statPrefix>.*`.
+
+                  The value is composed of stat-safe literal characters (letters, digits,
+                  and `_ % . -`) and/or `{{ "{{ ... }}" }}` template tokens that are substituted at
+                  translation time with metadata from the route the policy is applied to.
+                  The supported template variables are:
+                    - `{{ "{{route_name}}" }}`: the name of the route resource (e.g. HTTPRoute).
+                    - `{{ "{{route_namespace}}" }}`: the namespace of the route resource.
+                    - `{{ "{{rule_name}}" }}`: the name of the matched route rule, or empty if the
+                      rule is unnamed.
+
+                  For example, `{{ "{{route_namespace}}" }}.{{ "{{route_name}}" }}` renders to
+                  `my-ns.my-route`. Whitespace is permitted only inside the braces of a
+                  template token; unmatched braces, unsupported variable names, and any
+                  other characters are rejected.
+
+                  Recommended value: `{{ "{{route_namespace}}" }}.{{ "{{route_name}}" }}.{{ "{{rule_name}}" }}`,
+                  which uniquely identifies each route rule.
+
+                  NOTE: This field is only honored for HTTPRoute and GRPCRoute targets.
+                maxLength: 256
+                minLength: 1
+                pattern: ^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$
+                type: string
               targetRefs:
                 description: TargetRefs specifies the target resources by reference
                   to attach the policy to.
@@ -2011,8 +2159,12 @@ spec:
                     || r.kind == 'GRPCRoute' || r.kind.endsWith('ListenerSet')))
               timeouts:
                 description: |-
-                  Timeouts defines the timeouts for requests
-                  It is applicable to HTTPRoutes and ignored for other targeted kinds.
+                  Timeouts defines the timeouts for requests.
+                  It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
+                  Gateway listeners via sectionName), and ignored for other targeted kinds.
+                  When attached above the route level, the timeouts apply to all routes it
+                  covers; a route-level timeout (from a more specific TrafficPolicy or the
+                  built-in HTTPRoute timeouts) takes precedence.
                 properties:
                   request:
                     description: |-
@@ -2021,6 +2173,7 @@ spec:
                       processed and when the backend response has been completely processed.
                       A value of 0 effectively disables the timeout.
                       It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -2029,6 +2182,7 @@ spec:
                     description: |-
                       StreamIdle specifies a timeout for a requests' idle streams.
                       A value of 0 effectively disables the timeout.
+                    maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
@@ -2477,27 +2631,29 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: autoHostRewrite can only be used when targeting HTTPRoute resources
-              rule: '!has(self.autoHostRewrite) || ((has(self.targetRefs) && self.targetRefs.all(r,
-                r.kind == ''HTTPRoute'')) || (has(self.targetSelectors) && self.targetSelectors.all(r,
+              rule: '!has(self.autoHostRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) && (!has(self.targetSelectors) || self.targetSelectors.all(r,
+                r.kind == ''HTTPRoute'')))'
+            - message: urlRewrite can only be used when targeting HTTPRoute resources
+              rule: '!has(self.urlRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'')) && (!has(self.targetSelectors) || self.targetSelectors.all(r,
                 r.kind == ''HTTPRoute'')))'
             - message: tracing can only be used when targeting HTTPRoute or GRPCRoute
                 resources
-              rule: '!has(self.tracing) || ((has(self.targetRefs) && self.targetRefs.all(r,
-                r.kind == ''HTTPRoute'' || r.kind == ''GRPCRoute'')) || (has(self.targetSelectors)
-                && self.targetSelectors.all(r, r.kind == ''HTTPRoute'' || r.kind ==
+              rule: '!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'' || r.kind == ''GRPCRoute'')) && (!has(self.targetSelectors)
+                || self.targetSelectors.all(r, r.kind == ''HTTPRoute'' || r.kind ==
+                ''GRPCRoute'')))'
+            - message: statPrefix can only be used when targeting HTTPRoute or GRPCRoute
+                resources
+              rule: '!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r,
+                r.kind == ''HTTPRoute'' || r.kind == ''GRPCRoute'')) && (!has(self.targetSelectors)
+                || self.targetSelectors.all(r, r.kind == ''HTTPRoute'' || r.kind ==
                 ''GRPCRoute'')))'
             - message: retry.perTryTimeout must be less than timeouts.request
               rule: 'has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout)
                 && has(self.timeouts.request) ? duration(self.retry.perTryTimeout)
                 < duration(self.timeouts.request) : true) : true'
-            - message: targetRefs[].sectionName must be set when targeting Gateway
-                resources with retry policy
-              rule: 'has(self.retry) && has(self.targetRefs) ? self.targetRefs.all(r,
-                (r.kind == ''Gateway'' ? has(r.sectionName) : true )) : true'
-            - message: targetSelectors[].sectionName must be set when targeting Gateway
-                resources with retry policy
-              rule: 'has(self.retry) && has(self.targetSelectors) ? self.targetSelectors.all(r,
-                (r.kind == ''Gateway'' ? has(r.sectionName) : true )) : true'
           status:
             description: |-
               PolicyStatus defines the common attributes that all Policies should include within

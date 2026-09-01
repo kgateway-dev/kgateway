@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
@@ -37,6 +38,19 @@ func registerTypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.GatewayParameters] {
 			return c.(Client).Kgateway().GatewayKgateway().GatewayParameters(namespace)
+		},
+	)
+	kubeclient.Register(
+		wellknown.TCPRouteV1GVR,
+		wellknown.TCPRouteV1GVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.TCPRoute] {
+			return c.GatewayAPI().GatewayV1().TCPRoutes(namespace)
 		},
 	)
 	kubeclient.Register(
@@ -102,19 +116,6 @@ func registerTypes() {
 		},
 		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.DirectResponse] {
 			return c.(Client).Kgateway().GatewayKgateway().DirectResponses(namespace)
-		},
-	)
-	kubeclient.Register(
-		wellknown.HTTPListenerPolicyGVR,
-		wellknown.HTTPListenerPolicyGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().HTTPListenerPolicies(namespace).List(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().HTTPListenerPolicies(namespace).Watch(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.HTTPListenerPolicy] {
-			return c.(Client).Kgateway().GatewayKgateway().HTTPListenerPolicies(namespace)
 		},
 	)
 	kubeclient.Register(

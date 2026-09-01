@@ -46,6 +46,9 @@ func (e GatewayExtension) ResourceName() string {
 }
 
 func (e GatewayExtension) Equals(other GatewayExtension) bool {
+	if e.ObjectSource != other.ObjectSource {
+		return false
+	}
 	if !reflect.DeepEqual(e.ExtAuth, other.ExtAuth) {
 		return false
 	}

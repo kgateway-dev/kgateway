@@ -1,0 +1,79 @@
+##################################################################################################
+# ServiceEntry with NO spec.addresses, so Istio IP auto-allocation writes the VIP into
+# status.addresses only. This exercises the ingress-use-waypoint path where the backend VIP
+# is known solely from status (see the empty-STATIC-cluster 503 regression).
+##################################################################################################
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: se-autoalloc
+  labels:
+    istio.io/ingress-use-waypoint: "true"
+spec:
+  hosts:
+  - se-autoalloc.serviceentry.com
+  location: MESH_INTERNAL
+  resolution: STATIC
+  ports:
+  - number: 8080
+    name: http
+    protocol: HTTP
+    targetPort: 5678
+  workloadSelector:
+    labels:
+      app: svc-a
+---
+# Route attached to the ServiceEntry hostname. The waypoint applies it, adding the
+# traversed-waypoint header so a response proves traffic went through the waypoint.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hr-se-autoalloc-waypoint-header
+spec:
+  parentRefs:
+  - name: se-autoalloc.serviceentry.com
+    group: networking.istio.io
+    kind: Hostname
+  rules:
+  - backendRefs:
+    - name: se-autoalloc.serviceentry.com
+      group: networking.istio.io
+      kind: Hostname
+      port: 8080
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: "traversed-waypoint"
+          value: "true"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+# North-south route: ingress Gateway -> ServiceEntry hostname backend.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ingress-to-se-autoalloc
+spec:
+  parentRefs:
+  - name: gw
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: se-autoalloc.serviceentry.com
+      group: networking.istio.io
+      kind: Hostname
+      port: 8080

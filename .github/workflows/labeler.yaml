@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Sync /kind labels & enforce changelog fields
         if: github.event_name != 'merge_group'
-        uses: kgateway-dev/pr-kind-labeler@f15977b7f894730fbaefcc22e2cd4c7c3d3bfcf2 # untagged main
+        uses: kgateway-dev/pr-kind-labeler@7df01fd3b367aa68271aad255db94693e8f63f68 # untagged main
         with:
           # Github Actions cannot trigger Github Actions, but with this
           # Personal Access Token we can make labels that trigger

@@ -1,8 +1,6 @@
 package reports
 
 import (
-	"context"
-	"log/slog"
 	"slices"
 	"strings"
 
@@ -59,6 +57,11 @@ func (r *ReportMap) policy(key reporter.PolicyKey) *PolicyReport {
 	return r.Policies[key]
 }
 
+// PolicyReport returns the report for a policy, or nil if no report is present.
+func (r *ReportMap) PolicyReport(key reporter.PolicyKey) *PolicyReport {
+	return r.policy(key)
+}
+
 func (r *ReportMap) newPolicyReport(key reporter.PolicyKey, observedGeneration int64) *PolicyReport {
 	pr := &PolicyReport{
 		observedGeneration: observedGeneration,
@@ -104,12 +107,20 @@ func (r *PolicyReport) ancestorRefs() []gwv1.ParentReference {
 }
 
 func (r *ReportMap) BuildPolicyStatus(
-	ctx context.Context,
 	key reporter.PolicyKey,
 	controller string,
 	currentStatus gwv1.PolicyStatus,
 ) *gwv1.PolicyStatus {
-	report := r.policy(key)
+	return BuildPolicyStatus(r.policy(key), key, controller, currentStatus)
+}
+
+// BuildPolicyStatus builds a Policy status directly from its typed report fragment.
+func BuildPolicyStatus(
+	report *PolicyReport,
+	key reporter.PolicyKey,
+	controller string,
+	currentStatus gwv1.PolicyStatus,
+) *gwv1.PolicyStatus {
 	if report == nil {
 		// no report for this policy
 		return nil
@@ -126,7 +137,7 @@ func (r *ReportMap) BuildPolicyStatus(
 			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
 			continue
 		}
-		addMissingAncestorRefConditions(parentStatusReport)
+		ancestorConditions := ancestorRefConditionsWithDefaults(parentStatusReport.Conditions)
 
 		// Get the status of the current parentRef conditions if they exist
 		var currentParentRefConditions []metav1.Condition
@@ -138,7 +149,7 @@ func (r *ReportMap) BuildPolicyStatus(
 		}
 
 		// Build and append the Attached Condition.Type
-		existingConditions := addAttachmentCondition(parentStatusReport)
+		existingConditions := addAttachmentCondition(ancestorConditions, parentStatusReport.AttachmentState)
 
 		finalConditions := make([]metav1.Condition, 0, len(existingConditions))
 		for _, pCondition := range existingConditions {
@@ -166,33 +177,21 @@ func (r *ReportMap) BuildPolicyStatus(
 		status.Ancestors = append(status.Ancestors, ancestorStatus)
 	}
 
-	// now we have a status object reflecting the state of translation according to our reportMap
-	// let's add status from other controllers on the current object status
-	for _, ancestor := range currentStatus.Ancestors {
-		if ancestor.ControllerName != gwv1.GatewayController(controller) {
-			status.Ancestors = append(status.Ancestors, ancestor)
-		}
-	}
-
-	// sort all parents for consistency with Equals and for Update
-	// match sorting semantics of istio/istio, see:
-	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
+	// Ancestors owned by other controllers are deliberately absent, and so is the Gateway
+	// API cap. Both belong to the write path, which is the only layer holding an
+	// authoritative read of the live object: statussync.MergePolicyAncestorStatuses
+	// re-reads the live status, keeps every foreign ancestor, replaces ours, and caps the
+	// result. Preserving and capping here too produced entries the merge discarded and a
+	// second cap that had to be kept in lockstep with the first across two packages.
+	//
+	// currentStatus is still read above, for LastTransitionTime continuity.
+	//
+	// The sort is not redundant with the merge's: it makes this function's output
+	// deterministic for callers that consume the desired status directly, such as the
+	// golden-output translator tests.
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})
-
-	if len(status.Ancestors) > MaxPolicyStatusAncestors {
-		// Gateway API caps PolicyStatus.ancestors at 16 real entries. We can't
-		// invent a synthetic ancestor entry here, so log the truncation explicitly.
-		slog.WarnContext(ctx,
-			"truncating policy status ancestors to Gateway API limit",
-			"policy", key.DisplayString(),
-			"controller", controller,
-			"total_ancestors", len(status.Ancestors),
-			"dropped_ancestors", len(status.Ancestors)-MaxPolicyStatusAncestors,
-		)
-		status.Ancestors = status.Ancestors[:MaxPolicyStatusAncestors]
-	}
 
 	return &status
 }
@@ -202,43 +201,39 @@ func (r *ReportMap) BuildPolicyStatus(
 // If no report is found, nil is returned, signaling this parentRef is unknown to the report
 func (r *PolicyReport) getAncestorRefOrNil(parentRef *gwv1.ParentReference) *AncestorRefReport {
 	key := getParentRefKey(parentRef)
-	if r.Ancestors == nil {
-		r.Ancestors = make(map[ParentRefKey]*AncestorRefReport)
-	}
 	return r.Ancestors[key]
 }
 
-// addMissingAncestorRefConditions initializes the AncestorRefReport with a default Pending
-// condition reason for the Accepted and Attached conditions.
-// Positive conditions will be added when the policy is processed and attached to targeted resources.
-func addMissingAncestorRefConditions(report *AncestorRefReport) {
-	if cond := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAccepted)); cond == nil {
-		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
+func ancestorRefConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {
+	out := slices.Clone(conditions)
+	if cond := meta.FindStatusCondition(out, string(shared.PolicyConditionAccepted)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
 			Type:   string(shared.PolicyConditionAccepted),
 			Status: metav1.ConditionFalse,
 			Reason: string(shared.PolicyReasonPending),
 		})
 	}
-	if cond := meta.FindStatusCondition(report.Conditions, string(shared.PolicyConditionAttached)); cond == nil {
-		meta.SetStatusCondition(&report.Conditions, metav1.Condition{
+	if cond := meta.FindStatusCondition(out, string(shared.PolicyConditionAttached)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
 			Type:   string(shared.PolicyConditionAttached),
 			Status: metav1.ConditionFalse,
 			Reason: string(shared.PolicyReasonPending),
 		})
 	}
+	return out
 }
 
-func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
-	if report.AttachmentState == reporter.PolicyAttachmentStatePending {
+func addAttachmentCondition(conditions []metav1.Condition, attachmentState reporter.PolicyAttachmentState) []metav1.Condition {
+	if attachmentState == reporter.PolicyAttachmentStatePending {
 		// no attachment state set, return the conditions as is
-		return report.Conditions
+		return conditions
 	}
 
 	// avoid modifying the existing Conditions on the report
-	existing := slices.Clone(report.Conditions)
+	existing := slices.Clone(conditions)
 
 	switch {
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateOverridden):
+	case attachmentState.Has(reporter.PolicyAttachmentStateOverridden):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionFalse,
@@ -246,7 +241,7 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 			Message: reporter.PolicyOverriddenMsg,
 		})
 
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateMerged):
+	case attachmentState.Has(reporter.PolicyAttachmentStateMerged):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,
@@ -254,7 +249,7 @@ func addAttachmentCondition(report *AncestorRefReport) []metav1.Condition {
 			Message: reporter.PolicyMergedMsg,
 		})
 
-	case report.AttachmentState.Has(reporter.PolicyAttachmentStateAttached):
+	case attachmentState.Has(reporter.PolicyAttachmentStateAttached):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,

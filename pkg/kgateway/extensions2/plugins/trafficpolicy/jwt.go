@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"cmp"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -10,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -133,7 +134,7 @@ func constructJwt(
 
 	if spec.ExtensionRef == nil {
 		// shouldn't happen due to CRD validation
-		return fmt.Errorf("jwt: extensionRef is required if disable is not set")
+		return errors.New("jwt: extensionRef is required if disable is not set")
 	}
 	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
@@ -284,7 +285,7 @@ func translateJwks(
 		case jwkConfig.LocalJWKS.ConfigMapRef != nil:
 			cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, gwExtObj.Namespace)
 			if err != nil {
-				return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
+				return fmt.Errorf("failed to find configmap %s: %w", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
 			}
 			jwkSource, err := translateJwksConfigMap(cm)
 			if err != nil {
@@ -312,9 +313,41 @@ func translateJwks(
 		if remote.CacheDuration != nil {
 			jwksOut.RemoteJwks.CacheDuration = durationpb.New(remote.CacheDuration.Duration)
 		}
+		if remote.AsyncFetch != nil {
+			jwksOut.RemoteJwks.AsyncFetch = translateJwksAsyncFetch(remote.AsyncFetch)
+		}
+		if remote.RetryPolicy != nil {
+			jwksOut.RemoteJwks.RetryPolicy = translateJwksRetryPolicy(remote.RetryPolicy)
+		}
 		out.JwksSourceSpecifier = jwksOut
 	}
 	return nil
+}
+
+func translateJwksAsyncFetch(in *kgateway.JWKSAsyncFetch) *jwtauthnv3.JwksAsyncFetch {
+	asyncFetch := &jwtauthnv3.JwksAsyncFetch{
+		FastListener: ptr.Deref(in.FastListener, false),
+	}
+	if in.FailedRefetchDuration != nil {
+		asyncFetch.FailedRefetchDuration = durationpb.New(in.FailedRefetchDuration.Duration)
+	}
+	return asyncFetch
+}
+
+func translateJwksRetryPolicy(in *kgateway.JWKSRetryPolicy) *envoycorev3.RetryPolicy {
+	retryPolicy := &envoycorev3.RetryPolicy{}
+	if in.NumRetries != nil {
+		retryPolicy.NumRetries = wrapperspb.UInt32(uint32(*in.NumRetries)) //nolint:gosec // G115: kubebuilder validation ensures NumRetries is >= 1
+	}
+	if in.BackOff != nil {
+		retryPolicy.RetryBackOff = &envoycorev3.BackoffStrategy{
+			BaseInterval: durationpb.New(in.BackOff.BaseInterval.Duration),
+		}
+		if in.BackOff.MaxInterval != nil {
+			retryPolicy.RetryBackOff.MaxInterval = durationpb.New(in.BackOff.MaxInterval.Duration)
+		}
+	}
+	return retryPolicy
 }
 
 func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
@@ -328,12 +361,12 @@ func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_Local
 func translateJwksInline(inlineKey string) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
 	keyset, err := TranslateKey(inlineKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse inline jwks: %v", err)
+		return nil, fmt.Errorf("failed to parse inline jwks: %w", err)
 	}
 
 	keysetJson, err := json.Marshal(keyset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize inline jwks: %v", err)
+		return nil, fmt.Errorf("failed to serialize inline jwks: %w", err)
 	}
 
 	return &jwtauthnv3.JwtProvider_LocalJwks{
@@ -353,7 +386,7 @@ func TranslateKey(key string) (*jose.JSONWebKeySet, error) {
 	if err == nil {
 		return ks, nil
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("PEM %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("PEM %w", err))
 
 	ks, err = parseKeySet(key)
 	if err == nil {
@@ -362,15 +395,15 @@ func TranslateKey(key string) (*jose.JSONWebKeySet, error) {
 		}
 		err = errors.New("no keys in set")
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("JWKS %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("JWKS %w", err))
 
 	ks, err = parseKey(key)
 	if err == nil {
 		return ks, nil
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("JWK %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("JWK %w", err))
 
-	return nil, fmt.Errorf("cannot parse local jwks: %v", multierr)
+	return nil, fmt.Errorf("cannot parse local jwks: %w", multierr)
 }
 
 func parseKeySet(key string) (*jose.JSONWebKeySet, error) {
@@ -444,7 +477,9 @@ func buildJwtRequirementFromProviders(
 	}
 
 	// sort for idempotency
-	sort.Slice(reqs, func(i, j int) bool { return reqs[i].GetProviderName() < reqs[j].GetProviderName() })
+	slices.SortFunc(reqs, func(a, b *jwtauthnv3.JwtRequirement) int {
+		return cmp.Compare(a.GetProviderName(), b.GetProviderName())
+	})
 
 	var jwtReqs *jwtauthnv3.JwtRequirement
 	// if there is only one requirement, return it directly

@@ -54,7 +54,7 @@ spec:
     - host: example.com
       port: 80
 `,
-			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp\] must be set`},
+			wantErrors: []string{`exactly one of the fields in \[aws static dynamicForwardProxy gcp priorityGroups\] must be set`},
 		},
 		{
 			name: "Backend: empty lambda qualifier does not match pattern",
@@ -109,20 +109,23 @@ spec:
 			wantErrors: []string{`spec\.aws\.ec2\.addressType( in body should be one of|: Unsupported value: "InternalIP": supported values: "PrivateIP", "PublicIP")`},
 		},
 		{
-			name: "Backend: invalid EC2 role ARN",
+			name: "Backend: invalid AssumeRole role ARN",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
-  name: backend-ec2-role-arn
+  name: backend-assume-role-arn
 spec:
   type: AWS
   aws:
+    auth:
+      type: AssumeRole
+      assumeRole:
+        roleArn: not-an-arn
     ec2:
       port: 8080
-      roleArn: not-an-arn
 `,
-			wantErrors: []string{"spec.aws.ec2.roleArn in body should match"},
+			wantErrors: []string{"spec.aws.auth.assumeRole.roleArn in body should match"},
 		},
 		{
 			name: "Backend: EC2 tag filter requires exactly one branch",
@@ -343,6 +346,10 @@ spec:
   tcpKeepalive:
     keepAliveTime: 0s
     keepAliveInterval: "0"
+  http2ProtocolOptions:
+    connectionKeepalive:
+      timeout: 0s
+      interval: 1x
   healthCheck:
     timeout: a
     interval: b
@@ -364,6 +371,9 @@ spec:
 				"spec.connectTimeout: Invalid value: .*: invalid duration value",
 				"spec.healthCheck.interval: Invalid value: .*: invalid duration value",
 				"spec.healthCheck.timeout: Invalid value: .*: invalid duration value",
+				"spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: .*: invalid duration value",
+				"spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: .*: type conversion error from 'string' to 'google.protobuf.Duration' evaluating rule: interval must be at least 1ms",
+				"spec.http2ProtocolOptions.connectionKeepalive.timeout: Invalid value: .*: timeout must be at least 1ms",
 				"spec.loadBalancer.updateMergeWindow: Invalid value: .*: invalid duration value",
 				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: invalid duration value",
 				"spec.tcpKeepalive.keepAliveInterval: Invalid value: .*: keepAliveInterval must be at least 1 second",
@@ -430,12 +440,102 @@ spec:
 			wantErrors: []string{"autoHostRewrite can only be used when targeting HTTPRoute resources"},
 		},
 		{
-			name: "HTTPListenerPolicy: valid target references",
+			name: "TrafficPolicy: policy with urlRewrite can only target HTTPRoute",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: TrafficPolicy
 metadata:
-  name: http-listener-policy-valid-targets
+  name: traffic-policy-url-rewrite-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+`,
+			wantErrors: []string{"urlRewrite can only be used when targeting HTTPRoute resources"},
+		},
+		{
+			// A policy with no targetRefs/targetSelectors is attached via an HTTPRoute
+			// ExtensionRef filter, so route-only fields must be accepted.
+			name: "TrafficPolicy: policy with urlRewrite and no targets is valid (ExtensionRef usage)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-url-rewrite-extension-ref
+spec:
+  autoHostRewrite: true
+  urlRewrite:
+    pathRegex:
+      pattern: "^/foo"
+      substitution: "/bar"
+`,
+		},
+		{
+			name: "TrafficPolicy: policy with statPrefix can only target HTTPRoute or GRPCRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-invalid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+`,
+			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
+		},
+		{
+			name: "TrafficPolicy: policy with statPrefix may target HTTPRoute",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-valid-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+`,
+		},
+		{
+			// A valid targetRefs must not let a Gateway targetSelectors slip through:
+			// every populated targeting mechanism must be a route kind.
+			name: "TrafficPolicy: statPrefix rejects a Gateway targetSelectors alongside a valid targetRefs",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: traffic-policy-stat-prefix-mixed-target
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: test-route
+  targetSelectors:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    matchLabels:
+      gateway: example
+  statPrefix: "{{route_namespace}}.{{route_name}}"
+`,
+			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
+		},
+		{
+			name: "ListenerPolicy: valid target references",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-valid-targets
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -449,34 +549,34 @@ spec:
 `,
 		},
 		{
-			name: "HTTPListenerPolicy: invalid target reference - HTTPRoute not allowed",
+			name: "ListenerPolicy: invalid target reference - HTTPRoute not allowed",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-invalid-target-httproute
+  name: listener-policy-invalid-target-httproute
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: test-route
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
-			name: "HTTPListenerPolicy: invalid target reference - wrong resource type",
+			name: "ListenerPolicy: invalid target reference - wrong resource type",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-invalid-target
+  name: listener-policy-invalid-target
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: ListenerSet
     name: test-listener
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
 			name: "DirectResponse: empty body not allowed",
@@ -614,7 +714,7 @@ spec:
 			},
 		},
 		{
-			name: "TrafficPolicy: targetRefs[].sectionName must be set when targeting Gateway resources with retry policy",
+			name: "TrafficPolicy: retry may target a whole Gateway without a sectionName",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: TrafficPolicy
@@ -629,30 +729,6 @@ spec:
     retryOn:
     - gateway-error
 `,
-			wantErrors: []string{
-				`targetRefs\[\].sectionName must be set when targeting Gateway resources with retry policy`,
-			},
-		},
-		{
-			name: "TrafficPolicy: targetSelectors[].sectionName must be set when targeting Gateway resources with retry policy",
-			input: `---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: TrafficPolicy
-metadata:
-  name: test
-spec:
-  targetSelectors:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    matchLabels:
-      foo: bar
-  retry:
-    retryOn:
-    - gateway-error
-`,
-			wantErrors: []string{
-				`targetSelectors\[\].sectionName must be set when targeting Gateway resources with retry policy`,
-			},
 		},
 		{
 			name: "TrafficPolicy: timeouts.request must be a valid duration value",

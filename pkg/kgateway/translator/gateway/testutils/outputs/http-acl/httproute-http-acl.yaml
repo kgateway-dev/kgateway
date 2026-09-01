@@ -75,6 +75,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["2001:db8::/32"]},{"action":"allow","cidrs":["192.168.1.100"]},{"action":"allow","cidrs":["2001:db8::1"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
     - match:
         pathSeparatedPrefix: /bar
       metadata:
@@ -95,6 +96,7 @@ Routes:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: '{"defaultAction":"deny","rules":[{"action":"allow","cidrs":["10.0.0.0/8"]},{"action":"allow","cidrs":["2001:db8::/32"]},{"action":"allow","cidrs":["192.168.1.100"]},{"action":"allow","cidrs":["2001:db8::1"]}]}'
           filterName: http-acl
+          perRouteConfigName: http-acl
 Statuses:
   gateways:
     default/example-gateway:
@@ -157,6 +159,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

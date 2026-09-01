@@ -1,0 +1,73 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: xds-starvation-gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# A backend that can never become ready: an ExternalName Service produces no
+# EndpointSlices, so the referenced cluster never gets endpoints. This is the
+# steady-state shape (#14352) that made #13868's whole-snapshot readiness
+# gates permanently unsatisfiable; with the gates removed, routes to it fail
+# individually while everything else keeps publishing.
+apiVersion: v1
+kind: Service
+metadata:
+  name: never-resolves
+spec:
+  type: ExternalName
+  externalName: never.invalid
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xds-starvation-extname
+spec:
+  parentRefs:
+    - name: xds-starvation-gw
+  hostnames:
+    - "extname.example.com"
+  rules:
+    - backendRefs:
+        - name: never-resolves
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xds-starvation-valid
+spec:
+  parentRefs:
+    - name: xds-starvation-gw
+  hostnames:
+    - "valid.example.com"
+  rules:
+    - backendRefs:
+        - name: nginx
+          namespace: nginx-shared
+          port: 8080
+---
+# Authorizes this suite's default-namespace HTTPRoutes to reference the shared nginx
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: xds-starvation-allow-default-httproutes
+  namespace: nginx-shared
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: default
+  to:
+    - group: ""
+      kind: Service

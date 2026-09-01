@@ -1,0 +1,82 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test
+---
+# A single HTTPRoute produces one vhost with two routes: rule0 has its own
+# timeout TrafficPolicy attached, rule1 has none.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /own-timeout
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - name: rule1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /inherit-timeout
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+# Listener-attached timeout (via Gateway sectionName). This should fan out to
+# every route in the vhost that does not already carry its own timeout, i.e.
+# rule1 but not rule0.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: listener-timeout
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+    sectionName: http
+  timeouts:
+    request: 30s
+---
+# Route-rule-attached timeout on rule0. A more specific route-level timeout must
+# win over the listener-attached one, so rule0 keeps 5s.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: route-timeout
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+    sectionName: rule0
+  timeouts:
+    request: 5s

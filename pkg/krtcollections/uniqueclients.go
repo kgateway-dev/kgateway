@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -22,6 +26,45 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
+
+// xdsFirstConnectDelay is slept on the first DiscoveryRequest of every new
+// xDS stream, after the client has been registered (which kicks off
+// per-client translation) and before returning to go-control-plane, which
+// only then creates the stream's first watch. This gives the per-client
+// cluster and endpoint collections a head start so the first snapshot the
+// client observes is (almost always) fully converged rather than partially
+// translated — the reconnect-time race that #13868's whole-snapshot
+// readiness gates tried to close before they were reverted for causing
+// indefinite starvation (#14184). Each gRPC stream runs on its own
+// goroutine, so the sleep delays only this client and holds no locks; a
+// reconnecting warm Envoy keeps serving its existing config meanwhile.
+//
+// Stored as nanoseconds in an atomic so the test override cannot race the
+// stream goroutines that read it, and initialized lazily on first use so
+// test binaries can set the environment variable from TestMain (package
+// initialization would otherwise read the environment before any test code
+// runs). Override with KGW_XDS_FIRST_CONNECT_DELAY (Go duration, e.g. "2s";
+// "0" or negative disables).
+var (
+	xdsFirstConnectDelayNanos atomic.Int64
+	xdsFirstConnectDelayInit  sync.Once
+)
+
+func xdsFirstConnectDelay() time.Duration {
+	xdsFirstConnectDelayInit.Do(func() {
+		d := time.Second
+		if v := os.Getenv("KGW_XDS_FIRST_CONNECT_DELAY"); v != "" {
+			parsed, err := time.ParseDuration(v)
+			if err == nil {
+				d = parsed
+			} else {
+				logger.Warn("invalid KGW_XDS_FIRST_CONNECT_DELAY; using default", "value", v, "default", time.Second, "error", err)
+			}
+		}
+		xdsFirstConnectDelayNanos.Store(int64(d))
+	})
+	return time.Duration(xdsFirstConnectDelayNanos.Load())
+}
 
 type ConnectedClient struct {
 	uniqueClientName string
@@ -47,7 +90,21 @@ type callbacksCollection struct {
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
 	uniqClients      map[string]ir.UniquelyConnectedClient
-	stateLock        sync.RWMutex
+	// knownLocalClusterBySid records, per STREAM (not per UCC resource name), whether that
+	// stream's own EDS subscription has named its expected local-cluster resource (see
+	// ir.UniquelyConnectedClient.LocalClusterInfo). Old Envoys never name it (no matching
+	// static bootstrap cluster), so entries only ever go false -> true as real requests are
+	// observed.
+	//
+	// This must be tracked per stream rather than per UCC resource name: when pod-locality
+	// tracking is disabled (DISABLE_POD_LOCALITY_XDS=true), every replica of a gateway shares
+	// one UCC bucket/snapshot (see the augmentedPods-nil branch in add()). During a rolling
+	// upgrade some of those replicas' streams may confirm support while sibling streams on the
+	// same bucket haven't -- getClients() must only report the bucket as knowing the local
+	// cluster once every stream currently in that bucket has confirmed it, or the same
+	// full-EDS-withholding this file exists to prevent reappears for the still-old siblings.
+	knownLocalClusterBySid map[int64]bool
+	stateLock              sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
 }
@@ -122,12 +179,13 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
-			logger:           logger,
-			augmentedPods:    augmentedPods,
-			clients:          make(map[int64]ConnectedClient),
-			uniqClientsCount: make(map[string]uint64),
-			uniqClients:      make(map[string]ir.UniquelyConnectedClient),
-			trigger:          trigger,
+			logger:                 logger,
+			augmentedPods:          augmentedPods,
+			clients:                make(map[int64]ConnectedClient),
+			uniqClientsCount:       make(map[string]uint64),
+			uniqClients:            make(map[string]ir.UniquelyConnectedClient),
+			knownLocalClusterBySid: make(map[int64]bool),
+			trigger:                trigger,
 		}
 
 		callbacks.collection.Store(col)
@@ -170,10 +228,11 @@ func (x *callbacks) OnStreamClosed(sid int64, node *envoycorev3.Node) {
 }
 
 func (x *callbacksCollection) streamClosed(sid int64) {
-	ucc := x.del(sid)
-	if ucc != nil {
-		x.trigger.TriggerRecomputation()
-	}
+	x.del(sid)
+	// A disconnecting stream can change its bucket's derived KnowsLocalCluster (e.g. it may
+	// have been the only sibling still holding a shared bucket back from "all confirmed"), so
+	// always recompute -- not just when the whole bucket disappears.
+	x.trigger.TriggerRecomputation()
 }
 
 func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
@@ -182,6 +241,7 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 
 	c, ok := x.clients[sid]
 	delete(x.clients, sid)
+	delete(x.knownLocalClusterBySid, sid)
 	if ok {
 		resourceName := c.uniqueClientName
 		current := x.uniqClientsCount[resourceName]
@@ -204,14 +264,7 @@ func roleFromRequest(r *envoy_service_discovery_v3.DiscoveryRequest) string {
 // derived from the namespace and gateway name in labels.
 // If no gateway name is found, it returns originalRole unchanged.
 func NormalizeGatewayRole(originalRole, namespace string, labels map[string]string) string {
-	if labels == nil {
-		return originalRole
-	}
-
-	gwName := labels[wellknown.GatewayNameAnnotation]
-	if gwName == "" {
-		gwName = labels[wellknown.GatewayNameLabel]
-	}
+	gwName := ir.GatewayNameFromLabels(labels)
 	if gwName == "" {
 		return originalRole
 	}
@@ -219,14 +272,13 @@ func NormalizeGatewayRole(originalRole, namespace string, labels map[string]stri
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, namespace, gwName)
 }
 
-func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (string, bool, error) {
+func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream bool, err error) {
 	var pod *LocalityPod
 	// see if user wants to use pod locality info; this is only possible when podRef is set in getPeerInfo
 	if peer.podRef != nil {
 		k := krt.Named{Name: peer.podRef.Name, Namespace: peer.podRef.Namespace}.ResourceName()
 		pod = x.augmentedPods.GetKey(k)
 	}
-	addedNew := false
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 	c, ok := x.clients[sid]
@@ -257,10 +309,9 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 		if currentUnique == 0 {
 			x.uniqClients[ucc.ResourceName()] = ucc
-			addedNew = true
 		}
 	}
-	return c.uniqueClientName, addedNew, nil
+	return c.uniqueClientName, !ok, nil
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -290,7 +341,7 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 }
 
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNew, err := x.add(sid, r, peer)
+	ucc, isNewStream, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -298,6 +349,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	if ucc == "" {
 		return fmt.Errorf("got empty unique client name for sid %d", sid)
 	}
+	x.observeLocalClusterRequest(sid, ucc, r)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -313,8 +365,16 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	// the unique client resource name as well.
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc)
 	r.GetNode().Metadata = nodeMd
-	if isNew {
+	if isNewStream {
+		// A new stream joining an existing bucket (not just a brand new bucket) can change
+		// that bucket's derived KnowsLocalCluster (it starts as an unconfirmed member), so
+		// recompute on every new stream, not only isNewUCC.
 		x.trigger.TriggerRecomputation()
+	}
+	if delay := xdsFirstConnectDelay(); isNewStream && delay > 0 {
+		// See xdsFirstConnectDelay: give per-client translation a head start
+		// before go-control-plane creates this stream's first watch.
+		time.Sleep(delay)
 	}
 	return nil
 }
@@ -322,18 +382,74 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
+
+	// A bucket knows about the local cluster only if EVERY stream currently mapped to it has
+	// individually confirmed support -- a single un-confirmed sibling stream (sharing the
+	// bucket because pod-locality tracking is disabled) holds the whole bucket back. Track
+	// only the buckets held back, so the (usually much larger) uniqClients map only needs one
+	// pass below instead of two.
+	unconfirmedBuckets := make(map[string]struct{})
+	for sid, c := range x.clients {
+		if !x.knownLocalClusterBySid[sid] {
+			unconfirmedBuckets[c.uniqueClientName] = struct{}{}
+		}
+	}
+
 	clients := make([]ir.UniquelyConnectedClient, 0, len(x.uniqClients))
-	for _, c := range x.uniqClients {
+	for name, c := range x.uniqClients {
+		_, unconfirmed := unconfirmedBuckets[name]
+		c.KnowsLocalCluster = !unconfirmed
 		clients = append(clients, c)
 	}
 	return clients
+}
+
+// observeLocalClusterRequest records whether this STREAM's own EDS subscription has named its
+// expected local-cluster resource (see ir.UniquelyConnectedClient.LocalClusterInfo). It only
+// ever transitions a stream from unknown to known, and only triggers recomputation on that
+// transition — repeat ACKs on an already-known stream are a no-op.
+func (x *callbacksCollection) observeLocalClusterRequest(sid int64, uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) {
+	if r.GetTypeUrl() != resource.EndpointType {
+		return
+	}
+	// tryConfirmLocalCluster's lock must be released before triggering recomputation: the
+	// registered collection handler (getClients) takes stateLock.RLock, and since
+	// sync.RWMutex isn't reentrant, calling TriggerRecomputation while still holding the
+	// write lock here would deadlock if it's ever invoked synchronously on this goroutine.
+	if x.tryConfirmLocalCluster(sid, uccName, r) {
+		x.trigger.TriggerRecomputation()
+	}
+}
+
+// tryConfirmLocalCluster marks sid as knowing about the local cluster if this request proves
+// it, returning whether a false -> true transition actually happened.
+func (x *callbacksCollection) tryConfirmLocalCluster(sid int64, uccName string, r *envoy_service_discovery_v3.DiscoveryRequest) bool {
+	x.stateLock.Lock()
+	defer x.stateLock.Unlock()
+
+	if x.knownLocalClusterBySid[sid] {
+		return false
+	}
+	ucc, ok := x.uniqClients[uccName]
+	if !ok {
+		return false
+	}
+	localClusterName, _, _ := ucc.LocalClusterInfo()
+	if localClusterName == "" {
+		return false
+	}
+	if !slices.Contains(r.GetResourceNames(), localClusterName) {
+		return false
+	}
+	x.knownLocalClusterBySid[sid] = true
+	return true
 }
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 // request and respond with an error.
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	if x.xdsAuth {
-		return fmt.Errorf("OnFetchRequest not supported when xDS auth is enabled")
+		return errors.New("OnFetchRequest not supported when xDS auth is enabled")
 	}
 	if x.extraXDSCallbacks != nil {
 		if err := x.extraXDSCallbacks.OnFetchRequest(ctx, r); err != nil {

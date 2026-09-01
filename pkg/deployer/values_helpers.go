@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/netip"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -86,7 +86,7 @@ func SanitizePortName(name string) string {
 }
 
 func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.GatewayParameters) []HelmPort {
-	if slices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
+	if istioslices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
 		return gwPorts
 	}
 
@@ -99,7 +99,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil {
 		serviceType := *(gwp.Spec.GetKube().GetService().GetType())
 		if serviceType == corev1.ServiceTypeNodePort || serviceType == corev1.ServiceTypeLoadBalancer {
-			if idx := slices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
+			if idx := istioslices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 				return p.GetPort() == port
 			}); idx != -1 {
 				nodePort = gwp.Spec.GetKube().GetService().GetPorts()[idx].GetNodePort()
@@ -154,7 +154,7 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 // Returns the IP address if exactly one valid IP address is found, nil if no addresses are specified,
 // or an error if more than one address is specified or no valid IP address is found.
 func GetLoadBalancerIPFromGatewayAddresses(gw *gwv1.Gateway) (*string, error) {
-	ipAddresses := slices.MapFilter(gw.Spec.Addresses, func(addr gwv1.GatewaySpecAddress) *string {
+	ipAddresses := istioslices.MapFilter(gw.Spec.Addresses, func(addr gwv1.GatewaySpecAddress) *string {
 		if addr.Type == nil || *addr.Type == gwv1.IPAddressType {
 			return &addr.Value
 		}
@@ -338,6 +338,6 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 		}
 		parts = append(parts, fmt.Sprintf("%s:%s", k, v))
 	}
-	sort.Strings(parts)
+	slices.Sort(parts)
 	return strings.Join(parts, ","), nil
 }

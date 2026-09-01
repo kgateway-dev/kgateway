@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: zone-aware
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: zone-gw-params
+  namespace: zone-aware
+spec:
+  kube:
+    deployment:
+      replicas: 3
+      strategy:
+        type: Recreate
+    podTemplate:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: zone-gw
+            app.kubernetes.io/instance: zone-gw
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: zone-gw
+  namespace: zone-aware
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+      name: zone-gw-params
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zone-backend
+  namespace: zone-aware
+spec:
+  selector:
+    app.kubernetes.io/name: zone-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zone-backend-a
+  namespace: zone-aware
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zone-backend
+      zone: us-east-1a
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zone-backend
+        zone: us-east-1a
+    spec:
+      terminationGracePeriodSeconds: 0
+      nodeSelector:
+        topology.kubernetes.io/zone: us-east-1a
+      containers:
+      - name: nginx
+        image: nginx:1.28.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - printf 'us-east-1a\n' > /usr/share/nginx/html/index.html; exec nginx -g 'daemon off;'
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zone-backend-b
+  namespace: zone-aware
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zone-backend
+      zone: us-east-1b
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zone-backend
+        zone: us-east-1b
+    spec:
+      terminationGracePeriodSeconds: 0
+      nodeSelector:
+        topology.kubernetes.io/zone: us-east-1b
+      containers:
+      - name: nginx
+        image: nginx:1.28.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - printf 'us-east-1b\n' > /usr/share/nginx/html/index.html; exec nginx -g 'daemon off;'
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zone-backend-c
+  namespace: zone-aware
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zone-backend
+      zone: us-east-1c
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zone-backend
+        zone: us-east-1c
+    spec:
+      terminationGracePeriodSeconds: 0
+      nodeSelector:
+        topology.kubernetes.io/zone: us-east-1c
+      containers:
+      - name: nginx
+        image: nginx:1.28.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - printf 'us-east-1c\n' > /usr/share/nginx/html/index.html; exec nginx -g 'daemon off;'
+        ports:
+        - containerPort: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: zone-route
+  namespace: zone-aware
+spec:
+  parentRefs:
+  - name: zone-gw
+  rules:
+  - backendRefs:
+    - name: zone-backend
+      port: 80

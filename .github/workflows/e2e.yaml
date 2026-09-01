@@ -93,7 +93,7 @@ jobs:
           # May 29, 2026: ~8 minutes
           - cluster-name: 'cluster-four'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestCustomGWP$$'
+            go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestKgateway$$/^InternalRedirect$$|^TestCustomGWP$$'
             localstack: 'false'
           # May 29, 2026: ~10 minutes
           - cluster-name: 'cluster-five'
@@ -105,10 +105,11 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
             localstack: 'false'
+            ordered-ads: 'true'
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsWarming$$'
+            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$'
             localstack: 'false'
           # May 29, 2026: ~5 minutes
           - cluster-name: 'cluster-eight'
@@ -126,7 +127,7 @@ jobs:
             go-test-args: '-timeout=10m'
             go-test-run-regex: '^TestUpgrade'
             localstack: 'false'
-            gateway-api-version: 'v1.4.1'
+            gateway-api-version: 'v1.5.1'
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
         version-files:
@@ -185,6 +186,13 @@ jobs:
           CLUSTER_NAME: ${{ matrix.test.cluster-name }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         run: make cluster-load-extproc-server
+      - name: Enable ordered ADS soak
+        if: ${{ matrix.test.ordered-ads == 'true' }}
+        shell: bash
+        run: |
+          yq -i '.controller.extraEnv.KGW_ENABLE_ORDERED_ADS = "true"' \
+            test/e2e/tests/manifests/common-recommendations.yaml
+          echo "Set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=true for ${{ matrix.test.cluster-name }}"
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
         env:

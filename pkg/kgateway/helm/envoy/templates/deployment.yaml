@@ -86,6 +86,9 @@ spec:
         - name: xds-token
           mountPath: /var/run/secrets/tokens
           readOnly: true
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: true
         {{- with $gateway.extraVolumeMounts }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -338,6 +341,13 @@ spec:
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}
         name: envoy-config
+      # Projects the pod's labels for zone aware locality (PodTopologyLabelsAdmission, k8s >= 1.35).
+      - name: podinfo
+        downwardAPI:
+          items:
+          - path: labels
+            fieldRef:
+              fieldPath: metadata.labels
 {{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory

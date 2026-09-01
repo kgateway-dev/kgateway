@@ -1,3 +1,4 @@
+{{- if .Values.rbac.create }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -121,7 +122,6 @@ rules:
   - directresponses
   - gatewayextensions
   - gatewayparameters
-  - httplistenerpolicies
   - listenerpolicies
   - trafficpolicies
   verbs:
@@ -136,7 +136,6 @@ rules:
   - directresponses/status
   - gatewayextensions/status
   - gatewayparameters/status
-  - httplistenerpolicies/status
   - listenerpolicies/status
   - trafficpolicies/status
   verbs:
@@ -228,3 +227,4 @@ rules:
   - get
   - list
   - watch
+{{- end }}

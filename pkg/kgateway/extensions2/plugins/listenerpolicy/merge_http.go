@@ -28,10 +28,12 @@ func MergeHttpPolicies(
 		mergeUseRemoteAddress,
 		mergePreserveExternalRequestId,
 		mergeGenerateRequestId,
+		mergeProxy100Continue,
 		mergeXffNumTrustedHops,
 		mergeXffConfig,
 		mergeSkipXffAppend,
 		mergeServerHeaderTransformation,
+		mergeServerNameTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
 		mergeHttp2ProtocolOptions,
@@ -46,6 +48,7 @@ func MergeHttpPolicies(
 		mergeUuidRequestIdConfig,
 		mergeForwardClientCertDetails,
 		mergeStripHostPortMode,
+		mergeStripTrailingHostDot,
 	}
 	for _, mergeFunc := range mergeFuncs {
 		mergeFunc(origin, p1, p2, p2Ref, p2MergeOrigins, mergeOpts, mergeOrigins)
@@ -173,6 +176,22 @@ func mergeGenerateRequestId(
 	mergeOrigins.SetOne(origin+"generateRequestId", p2Ref, p2MergeOrigins)
 }
 
+func mergeProxy100Continue(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.proxy100Continue, p2.proxy100Continue, opts) {
+		return
+	}
+
+	p1.proxy100Continue = p2.proxy100Continue
+	mergeOrigins.SetOne(origin+"proxy100Continue", p2Ref, p2MergeOrigins)
+}
+
 func mergePreserveHttp1HeaderCase(
 	origin string,
 	p1, p2 *HttpListenerPolicyIr,
@@ -283,6 +302,22 @@ func mergeServerHeaderTransformation(
 
 	p1.serverHeaderTransformation = p2.serverHeaderTransformation
 	mergeOrigins.SetOne(origin+"serverHeaderTransformation", p2Ref, p2MergeOrigins)
+}
+
+func mergeServerNameTransformation(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.serverName, p2.serverName, opts) {
+		return
+	}
+
+	p1.serverName = p2.serverName
+	mergeOrigins.SetOne(origin+"serverName", p2Ref, p2MergeOrigins)
 }
 
 func mergeStreamIdleTimeout(
@@ -463,4 +498,20 @@ func mergeStripHostPortMode(
 
 	p1.stripHostPortMode = p2.stripHostPortMode
 	mergeOrigins.SetOne(origin+"stripHostPortMode", p2Ref, p2MergeOrigins)
+}
+
+func mergeStripTrailingHostDot(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.stripTrailingHostDot, p2.stripTrailingHostDot, opts) {
+		return
+	}
+
+	p1.stripTrailingHostDot = p2.stripTrailingHostDot
+	mergeOrigins.SetOne(origin+"stripTrailingHostDot", p2Ref, p2MergeOrigins)
 }

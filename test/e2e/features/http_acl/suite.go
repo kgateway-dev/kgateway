@@ -395,7 +395,7 @@ func (s *testingSuite) TestHttpACLDynamicMetadata() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(
 		s.Ctx, "acl-access-log", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue,
 	)
 
@@ -450,15 +450,24 @@ func (s *testingSuite) TestHttpACLDynamicMetadata() {
 		curl.WithHeader("X-Forwarded-For", "8.8.8.8"),
 	)
 
+	// Aggregate logs across all gateway pods: any of the three requests may have
+	// been served by a different replica, so we must not assume pods[0] saw all of
+	// them. A 30s window (matching the config dump check above) gives Envoy enough
+	// time to flush its access logs.
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
-			s.Ctx, proxyObjectMeta.GetNamespace(), pods[0],
-		)
-		s.Require().NoError(err)
-		assert.Contains(c, logs, `"blocked_by":"block-internal-range"`)
-		assert.Contains(c, logs, `"blocked_by":"rule"`)
-		assert.Contains(c, logs, `"blocked_by":"default"`)
-	}, 5*time.Second, 100*time.Millisecond)
+		var allLogs strings.Builder
+		for _, pod := range pods {
+			logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(
+				s.Ctx, proxyObjectMeta.GetNamespace(), pod,
+			)
+			assert.NoError(c, err)
+			allLogs.WriteString(logs)
+		}
+		combined := allLogs.String()
+		assert.Contains(c, combined, `"blocked_by":"block-internal-range"`)
+		assert.Contains(c, combined, `"blocked_by":"rule"`)
+		assert.Contains(c, combined, `"blocked_by":"default"`)
+	}, 30*time.Second, time.Second)
 }
 
 // TestHttpACLLargeRuleset verifies the control plane can accept and apply a TrafficPolicy

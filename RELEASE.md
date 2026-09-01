@@ -19,3 +19,6 @@ helm install kgateway oci://cr.kgateway.dev/kgateway-dev/charts/kgateway --versi
 ## Developer documentation
 
 Please refer to [devel/contributing/releasing.md](devel/contributing/releasing.md).
+That guide also covers the OSV scan workflow that maintainers should run before
+cutting a release, including how to use `hack/osvtool` and when to update the
+allowlist in `.github/workflows/osv-scanner.yaml`.

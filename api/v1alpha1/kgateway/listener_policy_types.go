@@ -119,6 +119,16 @@ type ListenerConfig struct {
 	// that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter.
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
+
+	// TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
+	// If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
+	// then never complete the TLS handshake. Applied to every filter chain on the listener.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#envoy-v3-api-field-config-listener-v3-filterchain-transport-socket-connect-timeout
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	TransportSocketConnectTimeout *metav1.Duration `json:"transportSocketConnectTimeout,omitempty"`
 }
 
 type ListenerDefaultConfig struct {
@@ -205,6 +215,11 @@ type HTTPSettings struct {
 	// See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
 	// +optional
 	GenerateRequestId *bool `json:"generateRequestId,omitempty"`
+	// Proxy100Continue determines whether Envoy forwards requests with an
+	// Expect: 100-continue header upstream and proxies upstream 100 Continue
+	// responses downstream. When unset or false, Envoy handles the response locally.
+	// +optional
+	Proxy100Continue *bool `json:"proxy100Continue,omitempty"`
 
 	// XffNumTrustedHops is the number of additional ingress proxy hops from the right side of the X-Forwarded-For HTTP header to trust when determining the origin client's IP address.
 	// This is mutually exclusive with XffTrustedCIDRs.
@@ -232,15 +247,25 @@ type HTTPSettings struct {
 	// +optional
 	ServerHeaderTransformation *ServerHeaderTransformation `json:"serverHeaderTransformation,omitempty"`
 
+	// ServerName determines the value of the server header.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-server-name
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	ServerName *string `json:"serverName,omitempty"`
+
 	// StreamIdleTimeout is the idle timeout for HTTP streams.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-stream-idle-timeout
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	StreamIdleTimeout *metav1.Duration `json:"streamIdleTimeout,omitempty"`
 
 	// IdleTimeout is the idle timeout for connections.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-httpprotocoloptions
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
@@ -325,6 +350,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:Enum=MatchingPort;AnyPort
 	// +optional
 	StripHostPortMode *StripHostPortMode `json:"stripHostPortMode,omitempty"`
+
+	// StripTrailingHostDot determines whether Envoy strips the trailing dot from the
+	// Host/authority header before any filter processing or route matching. Without this,
+	// a request whose host is a fully qualified domain name with a trailing dot (for example
+	// "example.com.") does not match routes configured for the hostname "example.com".
+	// The stripped value is also what gets forwarded upstream.
+	// If unset, the trailing dot is kept (Envoy's default).
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
+	// +optional
+	StripTrailingHostDot *bool `json:"stripTrailingHostDot,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -407,6 +442,15 @@ type ListenerHTTP2ProtocolOptions struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=2147483647
 	MaxConcurrentStreams *int32 `json:"maxConcurrentStreams,omitempty"`
+
+	// AllowConnect allows proxying of WebSocket and other upgrades over HTTP/2 by
+	// enabling Envoy to handle Extended CONNECT requests (RFC 8441) on the downstream
+	// connection. This is required for WebSocket-over-HTTP/2 when the listener advertises
+	// h2 in its ALPN; otherwise user agents that use Extended CONNECT (e.g. Firefox) fail
+	// to establish WebSocket connections.
+	// Defaults to false.
+	// +optional
+	AllowConnect *bool `json:"allowConnect,omitempty"`
 }
 
 // FileSink represents the file sink configuration for access logs.
@@ -478,6 +522,8 @@ type CommonGrpcService struct {
 
 	// The timeout for the gRPC request. This is the timeout for a specific request
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
@@ -523,11 +569,15 @@ type RetryPolicy struct {
 type BackoffStrategy struct {
 	// The base interval to be used for the next back off computation. It should be greater than zero and less than or equal to max_interval.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	BaseInterval metav1.Duration `json:"baseInterval"`
 
 	// Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the base_interval if set. The default is 10 times the base_interval.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
 }

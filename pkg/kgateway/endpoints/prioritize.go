@@ -2,7 +2,7 @@ package endpoints
 
 import (
 	"log/slog"
-	"sort"
+	"slices"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/api/label"
 	"istio.io/api/networking/v1alpha3"
-	"istio.io/istio/pkg/slices"
+	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -156,9 +156,18 @@ func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo
 	return cla
 }
 
+// lbWeight returns the per-endpoint load balancing weight, treating an unset
+// weight as 1, matching Envoy's default (LbEndpoint.load_balancing_weight).
+func lbWeight(ep *envoyendpointv3.LbEndpoint) uint32 {
+	if w := ep.GetLoadBalancingWeight(); w != nil {
+		return w.GetValue()
+	}
+	return 1
+}
+
 // ensure we don't send invalid endpoints to envoy and cause NACKs
 func filterInvalidEps(eps []ir.EndpointWithMd) []ir.EndpointWithMd {
-	return slices.Filter(eps, func(ewm ir.EndpointWithMd) bool {
+	return istioslices.Filter(eps, func(ewm ir.EndpointWithMd) bool {
 		sock := ewm.GetEndpoint().GetAddress().GetSocketAddress()
 		if sock != nil && sock.GetAddress() == "" {
 			return false
@@ -178,7 +187,7 @@ func getEndpoints(eps []ir.EndpointWithMd, lbinfo LoadBalancingInfo) []*envoyend
 	var weight uint32
 	for _, ep := range eps {
 		epsOut[0].LbEndpoints = append(epsOut[0].GetLbEndpoints(), ep.LbEndpoint)
-		weight += ep.LbEndpoint.GetLoadBalancingWeight().GetValue()
+		weight += lbWeight(ep.LbEndpoint)
 	}
 	// reset weight
 	if weight > 0 {
@@ -205,7 +214,7 @@ func applyFailoverPriorityPerLocality(
 	for priority := range priorityMap {
 		priorities = append(priorities, priority)
 	}
-	sort.Ints(priorities)
+	slices.Sort(priorities)
 
 	out := make([]*envoyendpointv3.LocalityLbEndpoints, len(priorityMap))
 	for i, priority := range priorities {
@@ -214,7 +223,7 @@ func applyFailoverPriorityPerLocality(
 		var weight uint32
 		for _, index := range priorityMap[priority] {
 			out[i].LbEndpoints = append(out[i].GetLbEndpoints(), eps[index].LbEndpoint)
-			weight += eps[index].GetLoadBalancingWeight().GetValue()
+			weight += lbWeight(eps[index].LbEndpoint)
 		}
 		// reset weight
 		if weight > 0 {
@@ -273,7 +282,7 @@ func applyLocalityFailover(
 	for priority := range priorityMap {
 		priorities = append(priorities, priority)
 	}
-	sort.Ints(priorities)
+	slices.Sort(priorities)
 	// 2.2 adjust LocalityLbEndpoints priority
 	// if the index and value of priorities array is not equal.
 	for i, priority := range priorities {

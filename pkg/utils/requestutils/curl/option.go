@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -28,8 +29,23 @@ const (
 	CurvePrime256v1 = "prime256v1"
 )
 
+// Signature algorithms constants for use with WithSignatureAlgorithms
+const (
+	SignatureAlgorithmRSAPSSRSAESHA256     = "rsa_pss_rsae_sha256"
+	SignatureAlgorithmECDSASECP256R1SHA256 = "ecdsa_secp256r1_sha256"
+)
+
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
+
+// Extend returns a new Option slice containing base followed by extra.
+//
+// Use this instead of append(base, extra...) whenever base is a shared or reused
+// slice: append may write into base's spare capacity, so two callers extending
+// the same base can silently clobber each other's options.
+func Extend(base []Option, extra ...Option) []Option {
+	return slices.Concat(base, extra)
+}
 
 // WithContext returns the Option to set a context on the curl request. The context
 // is used by ExecuteRequest to build the http.Request and aborts the in-flight
@@ -318,6 +334,14 @@ func WithCiphers(cipherList string) Option {
 func WithCurves(curveList string) Option {
 	return func(config *requestConfig) {
 		config.curves = curveList
+	}
+}
+
+// WithSignatureAlgorithms returns the Option to configure signature algorithms to use in TLS certificate validation
+// https://curl.se/docs/manpage.html#--sigalgs
+func WithSignatureAlgorithms(algorithmList string) Option {
+	return func(config *requestConfig) {
+		config.signatureAlgorithms = algorithmList
 	}
 }
 

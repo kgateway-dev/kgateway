@@ -1,9 +1,7 @@
 package reports
 
 import (
-	"context"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"strings"
 
@@ -14,11 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
 
 // Status message constants
@@ -35,13 +34,21 @@ const (
 	ValidRefsMessage               = "Successfully resolved all references"
 	ListenerProgrammedMessage      = "Successfully programmed Listener"
 	RouteAcceptedMessage           = "Successfully accepted Route"
+	RouteProgrammedMessage         = "Successfully programmed Route"
 	GatewayClassAcceptedMessage    = "GatewayClass accepted by kgateway controller"
 )
 
-// TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
+// The Build*Status functions below take a single typed report fragment, which is what the
+// status writers hold after a ReportMap is decomposed into per-resource contributions. The
+// *ReportMap methods are thin lookup-then-build wrappers, kept for callers that still have a
+// whole ReportMap in hand — the translator test harness in test/translator.
 
-func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
-	gwReport := r.Gateway(&gw)
+func (r *ReportMap) BuildGWStatus(gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
+	return BuildGWStatus(r.GatewayNamespaceName(key(&gw)), gw, attachedRoutes)
+}
+
+// BuildGWStatus builds a Gateway status directly from its typed report fragment.
+func BuildGWStatus(gwReport *GatewayReport, gw gwv1.Gateway, attachedRoutes map[string]uint) *gwv1.GatewayStatus {
 	if gwReport == nil {
 		return nil
 	}
@@ -51,20 +58,25 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	var invalidMessages []string
 
 	for _, lis := range gw.Spec.Listeners {
-		lisReport := gwReport.listener(string(lis.Name))
-		AddMissingListenerConditions(lisReport)
+		listenerStatus := listenerStatusFromGatewayReport(gwReport, lis)
 		// Get attached routes for this listener
 		if attachedRoutes != nil {
 			if count, exists := attachedRoutes[string(lis.Name)]; exists {
-				lisReport.Status.AttachedRoutes = int32(count) //nolint:gosec // G115: route count is always non-negative
+				listenerStatus.AttachedRoutes = int32(count) //nolint:gosec // G115: route count is always non-negative
 			}
 		}
 
-		finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
+		finalConditions := make([]metav1.Condition, 0, len(listenerStatus.Conditions))
 		oldLisStatusIndex := slices.IndexFunc(gw.Status.Listeners, func(l gwv1.ListenerStatus) bool {
 			return l.Name == lis.Name
 		})
-		for _, lisCondition := range lisReport.Status.Conditions {
+		for _, lisCondition := range listenerStatus.Conditions {
+			// Stamp the generation the report was built for, not the live object's
+			// generation. The report is produced by translation (istio cache) while
+			// the syncer reads the Gateway from a separate controller-runtime cache;
+			// using the live generation here lets the two caches disagree and freeze
+			// observedGeneration when they skew. The report's generation is internally
+			// consistent with the conditions it carries.
 			lisCondition.ObservedGeneration = gwReport.observedGeneration
 
 			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
@@ -83,33 +95,37 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 				}
 			}
 		}
-		lisReport.Status.Conditions = finalConditions
+		listenerStatus.Conditions = finalConditions
 
-		finalListeners = append(finalListeners, lisReport.Status)
+		finalListeners = append(finalListeners, listenerStatus)
 	}
+
+	gwConditions := slices.Clone(gwReport.GetConditions())
 
 	// If any listeners have Programmed=False, set Gateway Accepted=True with ListenersNotValid reason
 	if len(invalidListeners) > 0 {
-		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		message := "Some listeners are not programmed: " + strings.Join(invalidMessages, "; ")
 		if len(invalidMessages) == 0 {
-			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+			message = "Some listeners are not programmed: " + strings.Join(invalidListeners, ", ")
 		}
 
-		gwReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
+		meta.SetStatusCondition(&gwConditions, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Reason:  string(gwv1.GatewayReasonListenersNotValid),
 			Message: message,
 		})
 	}
 
-	handleInvalidAddresses(gwReport, &gw)
-	handleInsecureFrontendValidationMode(gwReport, &gw)
-
-	addMissingGatewayConditions(r.Gateway(&gw), &gw)
+	gwConditions = handleInvalidAddresses(gwConditions, &gw)
+	gwConditions = handleInsecureFrontendValidationMode(gwConditions, &gw)
+	gwConditions = gatewayConditionsWithDefaults(gwConditions, &gw, finalListeners)
 
 	finalConditions := make([]metav1.Condition, 0)
-	for _, gwCondition := range gwReport.GetConditions() {
+	for _, gwCondition := range gwConditions {
+		// See note above: stamp the report's generation, not the live object's, so a
+		// skew between the translation cache and the syncer's cache cannot freeze
+		// observedGeneration.
 		gwCondition.ObservedGeneration = gwReport.observedGeneration
 
 		// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
@@ -136,7 +152,43 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway, attached
 	return &finalGwStatus
 }
 
-func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
+func listenerStatusFromGatewayReport(report *GatewayReport, listener gwv1.Listener) gwv1.ListenerStatus {
+	var listeners map[string]*ListenerReport
+	if report != nil {
+		listeners = report.listeners
+	}
+	return listenerStatusFromReports(listeners, listener)
+}
+
+func listenerStatusFromListenerSetReport(report *ListenerSetReport, listener gwv1.Listener) gwv1.ListenerStatus {
+	var listeners map[string]*ListenerReport
+	if report != nil {
+		listeners = report.listeners
+	}
+	return listenerStatusFromReports(listeners, listener)
+}
+
+func listenerStatusFromReports(listeners map[string]*ListenerReport, listener gwv1.Listener) gwv1.ListenerStatus {
+	status := newListenerStatus(string(listener.Name))
+	if listeners != nil {
+		if listenerReport := listeners[string(listener.Name)]; listenerReport != nil {
+			status = listenerReport.Status
+			status.Conditions = slices.Clone(listenerReport.Status.Conditions)
+			status.SupportedKinds = slices.Clone(listenerReport.Status.SupportedKinds)
+		}
+	}
+	status.Conditions = listenerConditionsWithDefaults(status.Conditions)
+	return status
+}
+
+func newListenerStatus(name string) gwv1.ListenerStatus {
+	return gwv1.ListenerStatus{
+		Name:           gwv1.SectionName(name),
+		SupportedKinds: []gwv1.RouteGroupKind{},
+	}
+}
+
+func handleInvalidAddresses(conditions []metav1.Condition, g *gwv1.Gateway) []metav1.Condition {
 	for _, addr := range g.Spec.Addresses {
 		if addr.Type == nil {
 			continue
@@ -144,34 +196,36 @@ func handleInvalidAddresses(report *GatewayReport, g *gwv1.Gateway) {
 		switch *addr.Type {
 		case gwv1.IPAddressType:
 		case gwv1.HostnameAddressType:
-			report.SetCondition(reporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionProgrammed,
+			meta.SetStatusCondition(&conditions, metav1.Condition{
+				Type:    string(gwv1.GatewayConditionProgrammed),
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonAddressNotUsable,
+				Reason:  string(gwv1.GatewayReasonAddressNotUsable),
 				Message: "Hostname addresses may not be used",
 			})
 		default:
-			report.SetCondition(reporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
+			meta.SetStatusCondition(&conditions, metav1.Condition{
+				Type:    string(gwv1.GatewayConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonUnsupportedAddress,
+				Reason:  string(gwv1.GatewayReasonUnsupportedAddress),
 				Message: "Unknown address kind",
 			})
 		}
 	}
+	return conditions
 }
 
-func handleInsecureFrontendValidationMode(report *GatewayReport, g *gwv1.Gateway) {
+func handleInsecureFrontendValidationMode(conditions []metav1.Condition, g *gwv1.Gateway) []metav1.Condition {
 	if !gatewayUsesInsecureFrontendValidationMode(g) {
-		return
+		return conditions
 	}
 
-	report.SetCondition(reporter.GatewayCondition{
-		Type:    gwv1.GatewayConditionInsecureFrontendValidationMode,
+	meta.SetStatusCondition(&conditions, metav1.Condition{
+		Type:    string(gwv1.GatewayConditionInsecureFrontendValidationMode),
 		Status:  metav1.ConditionTrue,
-		Reason:  gwv1.GatewayReasonConfigurationChanged,
+		Reason:  string(gwv1.GatewayReasonConfigurationChanged),
 		Message: GatewayInsecureFallbackMessage,
 	})
+	return conditions
 }
 
 func gatewayUsesInsecureFrontendValidationMode(g *gwv1.Gateway) bool {
@@ -222,8 +276,12 @@ func shouldPreserveGatewayCondition(condition metav1.Condition, finalConditions 
 	return !isReporterOwnedGatewayConditionType(gwv1.GatewayConditionType(condition.Type))
 }
 
-func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
-	lsReport := r.ListenerSet(&ls)
+func (r *ReportMap) BuildListenerSetStatus(ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
+	return BuildListenerSetStatus(r.ListenerSet(&ls), ls)
+}
+
+// BuildListenerSetStatus builds a ListenerSet status directly from its typed report fragment.
+func BuildListenerSetStatus(lsReport *ListenerSetReport, ls gwv1.ListenerSet) *gwv1.ListenerSetStatus {
 	if lsReport == nil {
 		return nil
 	}
@@ -243,14 +301,15 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 	if !listenerSetRejected(lsReport) {
 		for _, l := range ls.Spec.Listeners {
 			lis := utils.ToListener(l)
-			lisReport := lsReport.listener(string(lis.Name))
-			AddMissingListenerConditions(lisReport)
+			listenerStatus := listenerStatusFromListenerSetReport(lsReport, lis)
 
-			finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))
+			finalConditions := make([]metav1.Condition, 0, len(listenerStatus.Conditions))
 			oldLisStatusIndex := slices.IndexFunc(ls.Status.Listeners, func(l gwv1.ListenerEntryStatus) bool {
 				return l.Name == lis.Name
 			})
-			for _, lisCondition := range lisReport.Status.Conditions {
+			for _, lisCondition := range listenerStatus.Conditions {
+				// Stamp the report's generation, not the live object's, for the same
+				// cross-cache reason as Gateway and Route status.
 				lisCondition.ObservedGeneration = lsReport.observedGeneration
 
 				// copy old condition from ls so LastTransitionTime is set correctly below by SetStatusCondition()
@@ -269,22 +328,24 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 					}
 				}
 			}
-			lisReport.Status.Conditions = finalConditions
-			finalListeners = append(finalListeners, lisReport.Status)
+			listenerStatus.Conditions = finalConditions
+			finalListeners = append(finalListeners, listenerStatus)
 		}
 	}
 
+	lsConditions := slices.Clone(lsReport.GetConditions())
+
 	// If any listeners have Programmed=False, set ListenerSet Accepted=True with ListenersNotValid reason
 	if len(invalidListeners) > 0 {
-		message := fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidMessages, "; "))
+		message := "Some listeners are not programmed: " + strings.Join(invalidMessages, "; ")
 		if len(invalidMessages) == 0 {
-			message = fmt.Sprintf("Some listeners are not programmed: %s", strings.Join(invalidListeners, ", "))
+			message = "Some listeners are not programmed: " + strings.Join(invalidListeners, ", ")
 		}
 
-		lsReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
+		meta.SetStatusCondition(&lsConditions, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonListenersNotValid,
+			Reason:  string(gwv1.GatewayReasonListenersNotValid),
 			Message: message,
 		})
 	}
@@ -292,25 +353,26 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 	// If there are no valid listeners, reject the listenerSet
 	if len(finalListeners) != 0 {
 		if len(invalidListeners) == len(finalListeners) {
-			lsReport.SetCondition(reporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionAccepted,
+			meta.SetStatusCondition(&lsConditions, metav1.Condition{
+				Type:    string(gwv1.GatewayConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Reason:  string(gwv1.GatewayReasonListenersNotValid),
 				Message: "No valid listeners",
 			})
-			lsReport.SetCondition(reporter.GatewayCondition{
-				Type:    gwv1.GatewayConditionProgrammed,
+			meta.SetStatusCondition(&lsConditions, metav1.Condition{
+				Type:    string(gwv1.GatewayConditionProgrammed),
 				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.GatewayReasonListenersNotValid,
+				Reason:  string(gwv1.GatewayReasonListenersNotValid),
 				Message: "No valid listeners",
 			})
 		}
 	}
 
-	AddMissingListenerSetConditions(r.ListenerSet(&ls))
+	lsConditions = listenerSetConditionsWithDefaults(lsConditions)
 
 	finalConditions := make([]metav1.Condition, 0)
-	for _, lsCondition := range lsReport.GetConditions() {
+	for _, lsCondition := range lsConditions {
+		// See note above: stamp the report's generation, not the live object's.
 		lsCondition.ObservedGeneration = lsReport.observedGeneration
 
 		// copy old condition from ls so LastTransitionTime is set correctly below by SetStatusCondition()
@@ -346,16 +408,24 @@ func (r *ReportMap) BuildListenerSetStatus(ctx context.Context, ls gwv1.Listener
 // LastTransitionTime of unchanged conditions and any conditions we don't own. Returns nil
 // if the Backend has no report (i.e. it wasn't translated).
 func (r *ReportMap) BuildBackendStatus(
-	ctx context.Context,
 	obj metav1.Object,
 	currentStatus kgateway.BackendStatus,
 ) *kgateway.BackendStatus {
-	report := r.backend(obj)
+	return BuildBackendStatus(r.backend(obj), currentStatus)
+}
+
+// BuildBackendStatus builds a Backend status directly from its typed report fragment.
+func BuildBackendStatus(
+	report *BackendReport,
+	currentStatus kgateway.BackendStatus,
+) *kgateway.BackendStatus {
 	if report == nil {
 		return nil
 	}
 
-	observedGeneration := obj.GetGeneration()
+	// Stamp the generation the report was built for, not the live object's, for
+	// the same cross-cache reason as Gateway and Route status.
+	observedGeneration := report.observedGeneration
 	finalConditions := make([]metav1.Condition, 0, len(report.Conditions))
 	for _, condition := range report.Conditions {
 		condition.ObservedGeneration = observedGeneration
@@ -365,14 +435,30 @@ func (r *ReportMap) BuildBackendStatus(
 		}
 		meta.SetStatusCondition(&finalConditions, condition)
 	}
-	// Preserve conditions on the current status whose type we do not own.
+	// Preserve conditions on the current status whose type we do not own. A condition
+	// type that kgateway manages (e.g. EndpointsDiscovered) but that the fresh report no
+	// longer contains must be dropped rather than carried forward: it means the backend
+	// stopped producing that condition (e.g. it is no longer an EC2 backend, or runtime
+	// discovery was disabled), so retaining it would advertise stale state forever.
 	for _, condition := range currentStatus.Conditions {
+		if _, owned := backendConditionTypesOwnedByKgateway[condition.Type]; owned {
+			continue
+		}
 		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
 			finalConditions = append(finalConditions, condition)
 		}
 	}
 
 	return &kgateway.BackendStatus{Conditions: finalConditions}
+}
+
+// backendConditionTypesOwnedByKgateway is the set of Backend status condition types
+// that kgateway is the authoritative writer for. When such a type is absent from a
+// freshly built report it is dropped from the persisted status instead of being
+// preserved, so a backend that stops contributing it does not retain a stale condition.
+var backendConditionTypesOwnedByKgateway = map[string]struct{}{
+	string(kgateway.BackendConditionAccepted):            {},
+	string(kgateway.BackendConditionEndpointsDiscovered): {},
 }
 
 // BuildRouteStatus returns a newly constructed and fully defined RouteStatus for the supplied route object
@@ -383,67 +469,86 @@ func (r *ReportMap) BuildBackendStatus(
 // the route during translation, or the object is an unsupported route kind, nil is returned.
 // Supported route types are: HTTPRoute, TCPRoute, TLSRoute, GRPCRoute
 func (r *ReportMap) BuildRouteStatus(
-	ctx context.Context,
 	obj client.Object,
 	controller string,
 ) *gwv1.RouteStatus {
-	return r.BuildRouteStatusWithParentRefDefaulting(ctx, obj, controller, false)
+	return BuildRouteStatus(r.route(obj), obj, controller)
 }
 
 func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
-	ctx context.Context,
 	obj client.Object,
 	controller string,
 	defaultParentRef bool,
 ) *gwv1.RouteStatus {
-	routeReport := r.route(obj)
+	return BuildRouteStatusWithParentRefDefaulting(r.route(obj), obj, controller, defaultParentRef)
+}
+
+// BuildRouteStatus builds a Route status directly from its typed report fragment.
+func BuildRouteStatus(
+	routeReport *RouteReport,
+	obj client.Object,
+	controller string,
+) *gwv1.RouteStatus {
+	return BuildRouteStatusWithParentRefDefaulting(routeReport, obj, controller, false)
+}
+
+// BuildRouteStatusWithParentRefDefaulting builds a Route status directly from its typed
+// report fragment and optionally defaults parent reference fields.
+func BuildRouteStatusWithParentRefDefaulting(
+	routeReport *RouteReport,
+	obj client.Object,
+	controller string,
+	defaultParentRef bool,
+) *gwv1.RouteStatus {
 	if routeReport == nil {
-		slog.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
+		logger.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		return nil
 	}
 
-	slog.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
+	// Stamp the generation the report was built for, not the live object's. As
+	// with Gateway status, the route is re-read by the syncer from a separate
+	// cache than the one translation used; sourcing the generation from the
+	// report keeps the sync trigger and the published value consistent and
+	// avoids freezing observedGeneration on a cache skew.
+	observedGeneration := routeReport.observedGeneration
 
+	logger.Debug("building status", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
+
+	// Every supported route kind carries the same two facts; only the Go type differs. A
+	// missing case here is a silent status wipe (the nil return is indistinguishable from
+	// "nothing to report"), so keep the arms trivial and the shared handling below them.
+	// The v1alpha3 TLSRoute arm is reached whenever v1alpha3 is the served TLSRoute version,
+	// which is what the status writer hands us on Gateway API v1.4.x.
 	var existingStatus gwv1.RouteStatus
+	var specParentRefs []gwv1.ParentReference
+	switch route := obj.(type) {
+	case *gwv1.HTTPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.GRPCRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.TCPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a2.TCPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a2.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1a3.TLSRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	default:
+		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
+		return nil
+	}
+
 	// Default to using spec.ParentRefs when building the parent statuses for a route.
 	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
 	// may not specify it. In this case, we infer the parentRefs form the RouteReport
 	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
 	var parentRefs []gwv1.ParentReference
-	switch route := obj.(type) {
-	case *gwv1.HTTPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a2.TCPRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.TLSRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1a2.TLSRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	case *gwv1.GRPCRoute:
-		existingStatus = route.Status.RouteStatus
-		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
-		if len(parentRefs) == 0 {
-			parentRefs = append(parentRefs, routeReport.parentRefs()...)
-		}
-	default:
-		slog.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
-		return nil
+	parentRefs = append(parentRefs, specParentRefs...)
+	if len(parentRefs) == 0 {
+		parentRefs = append(parentRefs, routeReport.parentRefs()...)
 	}
 	if defaultParentRef {
 		parentRefs = ensureParentRefNamespaces(parentRefs, obj.GetNamespace())
@@ -458,7 +563,7 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 			// probably because it's a parent that we don't control (e.g. Gateway from diff. controller)
 			continue
 		}
-		addMissingParentRefConditions(parentStatusReport)
+		parentConditions := parentRefConditionsWithDefaults(parentStatusReport.Conditions)
 
 		// Get the status of the current parentRef conditions if they exist
 		var currentParentRefConditions []metav1.Condition
@@ -469,9 +574,9 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 			currentParentRefConditions = existingStatus.Parents[currentParentRefIdx].Conditions
 		}
 
-		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
-		for _, pCondition := range parentStatusReport.Conditions {
-			pCondition.ObservedGeneration = routeReport.observedGeneration
+		finalConditions := make([]metav1.Condition, 0, len(parentConditions))
+		for _, pCondition := range parentConditions {
+			pCondition.ObservedGeneration = observedGeneration
 
 			// Copy old condition to preserve LastTransitionTime, if it exists
 			if cond := meta.FindStatusCondition(currentParentRefConditions, pCondition.Type); cond != nil {
@@ -495,19 +600,19 @@ func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
 		newStatus.Parents = append(newStatus.Parents, routeParentStatus)
 	}
 
-	// now we have a status object reflecting the state of translation according to our reportMap
-	// let's add status from other controllers on the current object status
-	var kgwStatus *gwv1.RouteStatus = &newStatus
-	for _, rps := range existingStatus.Parents {
-		if rps.ControllerName != gwv1.GatewayController(controller) {
-			kgwStatus.Parents = append(kgwStatus.Parents, rps)
-		}
-	}
-
+	// Parents owned by other controllers are deliberately absent: preserving them here
+	// produced entries that statussync.MergeRouteParentStatuses discarded and re-derived
+	// from its own authoritative read of the live object. existingStatus is still read
+	// above, for LastTransitionTime continuity.
+	//
+	// The sort is not redundant with the merge's: it makes this function's output
+	// deterministic for callers that consume the desired status directly, such as the
+	// golden-output translator tests.
+	//
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
 	// https://github.com/istio/istio/blob/6dcaa0206bcaf20e3e3b4e45e9376f0f96365571/pilot/pkg/config/kube/gateway/conditions.go#L188-L193
-	slices.SortStableFunc(kgwStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
+	slices.SortStableFunc(newStatus.Parents, func(a, b gwv1.RouteParentStatus) int {
 		return strings.Compare(ParentString(a.ParentRef), ParentString(b.ParentRef))
 	})
 	if newStatus.Parents == nil {
@@ -546,38 +651,36 @@ func ParentString(ref gwv1.ParentReference) string {
 		ptr.OrEmpty(ref.Namespace))
 }
 
-// Reports will initially only contain negative conditions found during translation,
-// so all missing conditions are assumed to be positive. Here we will add all missing conditions
-// to a given report, i.e. set healthy conditions
-func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
+func gatewayConditionsWithDefaults(conditions []metav1.Condition, gw *gwv1.Gateway, listeners []gwv1.ListenerStatus) []metav1.Condition {
+	out := slices.Clone(conditions)
 	// If the existing Gateway status contains an Accepted=False with Reason=InvalidParameters,
 	// we don't want to override it with a true Accepted status. The controller will set Accepted=True
 	// when the GatewayParameters are valid again. Otherwise there is a race condition between the controller and reporter.
 	// HACK: This is because both the controller and reporter set Accepted status.
 	existingAccepted := meta.FindStatusCondition(gw.Status.Conditions, string(gwv1.GatewayConditionAccepted))
 	hasInvalidParams := existingAccepted != nil && existingAccepted.Status == metav1.ConditionFalse && existingAccepted.Reason == string(gwv1.GatewayReasonInvalidParameters)
-	if !hasInvalidParams && meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionAccepted)) == nil {
-		gwReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
+	if !hasInvalidParams && meta.FindStatusCondition(out, string(gwv1.GatewayConditionAccepted)) == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonAccepted,
+			Reason:  string(gwv1.GatewayReasonAccepted),
 			Message: GatewayAcceptedMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionProgrammed)); cond == nil {
-		gwReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionProgrammed,
+	if cond := meta.FindStatusCondition(out, string(gwv1.GatewayConditionProgrammed)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionProgrammed),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonProgrammed,
+			Reason:  string(gwv1.GatewayReasonProgrammed),
 			Message: GatewayProgrammedMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(gwReport.GetConditions(), string(gwv1.GatewayConditionResolvedRefs)); cond == nil {
+	if cond := meta.FindStatusCondition(out, string(gwv1.GatewayConditionResolvedRefs)); cond == nil {
 		reason := gwv1.GatewayReasonResolvedRefs
 		status := metav1.ConditionTrue
 		message := GatewayResolvedRefsMessage
-		for _, lisReport := range gwReport.listeners {
-			lisResolvedRefs := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs))
+		for _, lisStatus := range listeners {
+			lisResolvedRefs := meta.FindStatusCondition(lisStatus.Conditions, string(gwv1.ListenerConditionResolvedRefs))
 			if lisResolvedRefs != nil && lisResolvedRefs.Status == metav1.ConditionFalse {
 				reason = gwv1.GatewayReasonListenersNotResolved
 				status = metav1.ConditionFalse
@@ -585,94 +688,114 @@ func addMissingGatewayConditions(gwReport *GatewayReport, gw *gwv1.Gateway) {
 				break
 			}
 		}
-		gwReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionResolvedRefs,
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionResolvedRefs),
 			Status:  status,
-			Reason:  reason,
+			Reason:  string(reason),
 			Message: message,
 		})
 	}
+	return out
 }
 
 // Reports will initially only contain negative conditions found during translation,
 // so all missing conditions are assumed to be positive. Here we will add all missing conditions
 // to a given report, i.e. set healthy conditions
 func AddMissingListenerSetConditions(lsReport *ListenerSetReport) {
-	if cond := meta.FindStatusCondition(lsReport.GetConditions(), string(gwv1.GatewayConditionAccepted)); cond == nil {
-		lsReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionAccepted,
+	lsReport.conditions = listenerSetConditionsWithDefaults(lsReport.conditions)
+}
+
+func listenerSetConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {
+	out := slices.Clone(conditions)
+	if cond := meta.FindStatusCondition(out, string(gwv1.GatewayConditionAccepted)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonAccepted,
+			Reason:  string(gwv1.GatewayReasonAccepted),
 			Message: ListenerSetAcceptedMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(lsReport.GetConditions(), string(gwv1.GatewayConditionProgrammed)); cond == nil {
-		lsReport.SetCondition(reporter.GatewayCondition{
-			Type:    gwv1.GatewayConditionProgrammed,
+	if cond := meta.FindStatusCondition(out, string(gwv1.GatewayConditionProgrammed)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.GatewayConditionProgrammed),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.GatewayReasonProgrammed,
+			Reason:  string(gwv1.GatewayReasonProgrammed),
 			Message: ListenerSetProgrammedMessage,
 		})
 	}
+	return out
 }
 
 // Reports will initially only contain negative conditions found during translation,
 // so all missing conditions are assumed to be positive. Here we will add all missing conditions
 // to a given report, i.e. set healthy conditions
 func AddMissingListenerConditions(lisReport *ListenerReport) {
+	lisReport.Status.Conditions = listenerConditionsWithDefaults(lisReport.Status.Conditions)
+}
+
+func listenerConditionsWithDefaults(conditions []metav1.Condition) []metav1.Condition {
+	out := slices.Clone(conditions)
 	// set healthy conditions for Condition Types not set yet (i.e. no negative status yet, we can assume positive)
-	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionAccepted)); cond == nil {
-		lisReport.SetCondition(reporter.ListenerCondition{
-			Type:    gwv1.ListenerConditionAccepted,
+	if cond := meta.FindStatusCondition(out, string(gwv1.ListenerConditionAccepted)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.ListenerConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.ListenerReasonAccepted,
+			Reason:  string(gwv1.ListenerReasonAccepted),
 			Message: ListenerAcceptedMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionConflicted)); cond == nil {
-		lisReport.SetCondition(reporter.ListenerCondition{
-			Type:    gwv1.ListenerConditionConflicted,
+	if cond := meta.FindStatusCondition(out, string(gwv1.ListenerConditionConflicted)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.ListenerConditionConflicted),
 			Status:  metav1.ConditionFalse,
-			Reason:  gwv1.ListenerReasonNoConflicts,
+			Reason:  string(gwv1.ListenerReasonNoConflicts),
 			Message: ListenerNoConflictsMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
-		lisReport.SetCondition(reporter.ListenerCondition{
-			Type:    gwv1.ListenerConditionResolvedRefs,
+	if cond := meta.FindStatusCondition(out, string(gwv1.ListenerConditionResolvedRefs)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.ListenerConditionResolvedRefs),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.ListenerReasonResolvedRefs,
+			Reason:  string(gwv1.ListenerReasonResolvedRefs),
 			Message: ValidRefsMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(lisReport.Status.Conditions, string(gwv1.ListenerConditionProgrammed)); cond == nil {
-		lisReport.SetCondition(reporter.ListenerCondition{
-			Type:    gwv1.ListenerConditionProgrammed,
+	if cond := meta.FindStatusCondition(out, string(gwv1.ListenerConditionProgrammed)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.ListenerConditionProgrammed),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.ListenerReasonProgrammed,
+			Reason:  string(gwv1.ListenerReasonProgrammed),
 			Message: ListenerProgrammedMessage,
 		})
 	}
+	return out
 }
 
-// Reports will initially only contain negative conditions found during translation,
-// so all missing conditions are assumed to be positive. Here we will add all missing conditions
-// to a given report, i.e. set healthy conditions
-func addMissingParentRefConditions(report *ParentRefReport) {
-	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionAccepted)); cond == nil {
-		report.SetCondition(reporter.RouteCondition{
-			Type:    gwv1.RouteConditionAccepted,
+func parentRefConditionsWithDefaults(conds []metav1.Condition) []metav1.Condition {
+	out := slices.Clone(conds)
+	if cond := meta.FindStatusCondition(out, string(gwv1.RouteConditionAccepted)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.RouteConditionAccepted),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.RouteReasonAccepted,
+			Reason:  string(gwv1.RouteReasonAccepted),
 			Message: RouteAcceptedMessage,
 		})
 	}
-	if cond := meta.FindStatusCondition(report.Conditions, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
-		report.SetCondition(reporter.RouteCondition{
-			Type:    gwv1.RouteConditionResolvedRefs,
+	if cond := meta.FindStatusCondition(out, string(gwv1.RouteConditionResolvedRefs)); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    string(gwv1.RouteConditionResolvedRefs),
 			Status:  metav1.ConditionTrue,
-			Reason:  gwv1.RouteReasonResolvedRefs,
+			Reason:  string(gwv1.RouteReasonResolvedRefs),
 			Message: ValidRefsMessage,
 		})
 	}
+	if cond := meta.FindStatusCondition(out, conditions.KgatewayConditionProgrammed); cond == nil {
+		meta.SetStatusCondition(&out, metav1.Condition{
+			Type:    conditions.KgatewayConditionProgrammed,
+			Status:  metav1.ConditionTrue,
+			Reason:  conditions.KgatewayReasonProgrammed,
+			Message: RouteProgrammedMessage,
+		})
+	}
+	return out
 }

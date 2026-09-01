@@ -135,6 +135,8 @@ type ExtGrpcService struct {
 
 	// RequestTimeout is the timeout for the gRPC request. This is the timeout for a specific request.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
@@ -159,6 +161,8 @@ type ExtHttpService struct {
 
 	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
@@ -193,6 +197,22 @@ type AuthorizationResponse struct {
 	// Common examples: ["x-current-user", "x-user-id", "x-auth-request-email"]
 	// +optional
 	HeadersToBackend []string `json:"headersToBackend,omitempty"`
+
+	// HeadersToClient specifies which headers from the authorization response
+	// should be forwarded back to the downstream client when the request is denied.
+	// Maps to Envoy's allowed_client_headers. Required for redirect-based flows
+	// (e.g. oauth2-proxy returning 302 + Location) so that the redirect Location
+	// header reaches the browser on denial.
+	// Common examples: ["location", "set-cookie", "www-authenticate"]
+	// +optional
+	HeadersToClient []string `json:"headersToClient,omitempty"`
+
+	// HeadersToClientOnSuccess specifies which headers from the authorization response
+	// should be forwarded back to the downstream client when the request is allowed.
+	// Maps to Envoy's allowed_client_headers_on_success.
+	// Common examples: ["set-cookie", "x-auth-token"]
+	// +optional
+	HeadersToClientOnSuccess []string `json:"headersToClientOnSuccess,omitempty"`
 }
 
 type ExtSvcRetryPolicy struct {
@@ -213,6 +233,8 @@ type ExtSvcRetryPolicy struct {
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
 type RetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
 	// +required
@@ -220,6 +242,8 @@ type RetryBackoff struct {
 
 	// MaxInterval specifies the maximum interval between retry attempts.
 	// Defaults to 10 times the BaseInterval if not set.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +optional
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
@@ -247,6 +271,8 @@ type RateLimitProvider struct {
 	// For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.
 	// See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="100ms"
 	Timeout metav1.Duration `json:"timeout,omitempty"`

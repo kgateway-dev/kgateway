@@ -1,16 +1,38 @@
 package irtranslator
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"testing"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
+
+type routeMockValidator struct {
+	validateFunc func(context.Context, *envoybootstrapv3.Bootstrap) error
+}
+
+var _ validator.Validator = &routeMockValidator{}
+
+func (m *routeMockValidator) Validate(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+	if m.validateFunc != nil {
+		return m.validateFunc(ctx, config)
+	}
+	return nil
+}
 
 func TestValidateWeightedClusters(t *testing.T) {
 	tests := []struct {
@@ -148,6 +170,197 @@ func TestSetEnvoyPathMatcher_PathPrefix(t *testing.T) {
 	}
 }
 
+func TestValidateRouteStrictSkipsMatcherOnlyEnvoyValidationForCommonMatchers(t *testing.T) {
+	pathPrefix := gwv1.PathMatchPathPrefix
+	pathExact := gwv1.PathMatchExact
+
+	tests := []struct {
+		name  string
+		match gwv1.HTTPRouteMatch
+	}{
+		{
+			name: "prefix",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefix,
+					Value: new("/"),
+				},
+			},
+		},
+		{
+			name: "exact",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathExact,
+					Value: new("/exact"),
+				},
+			},
+		},
+		{
+			name: "path separated prefix",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefix,
+					Value: new("/separated"),
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+				calls++
+				return nil
+			}}
+
+			err := validateRoute(context.Background(), testRouteWithMatch(translateMatcher(tt.match)), v, apisettings.ValidationStrict)
+
+			require.NoError(t, err)
+			assert.Equal(t, 1, calls, "strict validation should only run full-route Envoy validation")
+		})
+	}
+}
+
+func TestValidateRouteStrictInvalidGeneratedRegexMatcher(t *testing.T) {
+	pathRegex := gwv1.PathMatchRegularExpression
+	headerRegex := gwv1.HeaderMatchRegularExpression
+	queryRegex := gwv1.QueryParamMatchRegularExpression
+
+	tests := []struct {
+		name  string
+		match gwv1.HTTPRouteMatch
+	}{
+		{
+			name: "path regex",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathRegex,
+					Value: new("[[invalid"),
+				},
+			},
+		},
+		{
+			name: "header regex",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefixPtr,
+					Value: new("/"),
+				},
+				Headers: []gwv1.HTTPHeaderMatch{{
+					Type:  &headerRegex,
+					Name:  "x-test",
+					Value: "[[invalid",
+				}},
+			},
+		},
+		{
+			name: "query regex",
+			match: gwv1.HTTPRouteMatch{
+				Path: &gwv1.HTTPPathMatch{
+					Type:  &pathPrefixPtr,
+					Value: new("/"),
+				},
+				QueryParams: []gwv1.HTTPQueryParamMatch{{
+					Type:  &queryRegex,
+					Name:  "q",
+					Value: "[[invalid",
+				}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+				calls++
+				return nil
+			}}
+
+			err := validateRoute(context.Background(), testRouteWithMatch(translateMatcher(tt.match)), v, apisettings.ValidationStrict)
+
+			require.ErrorIs(t, err, ErrInvalidMatcher)
+			assert.Equal(t, 0, calls, "invalid generated matcher should be rejected before Envoy validation")
+		})
+	}
+}
+
+func TestComputeVirtualHostStrictBatchesFullRouteValidation(t *testing.T) {
+	calls := 0
+	var routeCounts []int
+	v := &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
+		calls++
+		routeCounts = append(routeCounts, len(routesFromValidationBootstrap(t, config)))
+		return nil
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+
+	out := h.computeVirtualHost(context.Background(), &ir.VirtualHost{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	})
+
+	require.Len(t, out.GetRoutes(), 2)
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []int{2}, routeCounts)
+}
+
+func TestComputeVirtualHostStrictIsolatesInvalidRouteAfterBatchFailure(t *testing.T) {
+	calls := 0
+	var routeCounts []int
+	v := &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
+		calls++
+		routes := routesFromValidationBootstrap(t, config)
+		routeCounts = append(routeCounts, len(routes))
+		switch calls {
+		case 1:
+			require.Len(t, routes, 2)
+			return errors.New("batch failed")
+		case 2:
+			require.Len(t, routes, 1)
+			assert.Contains(t, routes[0].GetName(), "route-0")
+			return nil
+		case 3:
+			require.Len(t, routes, 1)
+			assert.Contains(t, routes[0].GetName(), "route-1")
+			return errors.New("bad route")
+		case 4:
+			require.Len(t, routes, 1)
+			assert.Contains(t, routes[0].GetName(), "route-1")
+			return nil
+		case 5:
+			require.Len(t, routes, 2)
+			return nil
+		default:
+			t.Fatalf("unexpected validation call %d", calls)
+			return nil
+		}
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+
+	out := h.computeVirtualHost(context.Background(), &ir.VirtualHost{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	})
+
+	require.Len(t, out.GetRoutes(), 2)
+	_, ok := out.GetRoutes()[0].GetAction().(*envoyroutev3.Route_Route)
+	assert.True(t, ok)
+	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok)
+	assert.Equal(t, []int{2, 1, 1, 1, 2}, routeCounts)
+}
+
 func refFor(name string) *ir.AttachedPolicyRef {
 	return &ir.AttachedPolicyRef{
 		Group:     "gateway.kgateway.dev",
@@ -155,6 +368,69 @@ func refFor(name string) *ir.AttachedPolicyRef {
 		Namespace: "ns",
 		Name:      name,
 	}
+}
+
+func testRouteWithMatch(match *envoyroutev3.RouteMatch) *envoyroutev3.Route {
+	return &envoyroutev3.Route{
+		Name:  "test-route",
+		Match: match,
+		Action: &envoyroutev3.Route_Route{
+			Route: &envoyroutev3.RouteAction{
+				ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{
+					Cluster: "test-cluster",
+				},
+			},
+		},
+	}
+}
+
+var pathPrefixPtr = gwv1.PathMatchPathPrefix
+
+func testHTTPRouteTranslator(v validator.Validator, mode apisettings.ValidationMode) *httpRouteConfigurationTranslator {
+	return &httpRouteConfigurationTranslator{
+		gw: ir.GatewayIR{
+			SourceObject: &ir.Gateway{Obj: &gwv1.Gateway{
+				Spec: gwv1.GatewaySpec{GatewayClassName: "test-class"},
+			}},
+		},
+		pluginPass:      TranslationPassPlugins{},
+		logger:          slog.Default(),
+		validator:       v,
+		validationLevel: mode,
+	}
+}
+
+func testRouteIR(matchIndex int, path string, clusterName string) ir.HttpRouteRuleMatchIR {
+	return ir.HttpRouteRuleMatchIR{
+		MatchIndex: matchIndex,
+		Match: gwv1.HTTPRouteMatch{
+			Path: &gwv1.HTTPPathMatch{
+				Type:  &pathPrefixPtr,
+				Value: new(path),
+			},
+		},
+		Backends: []ir.HttpBackend{{
+			Backend: ir.BackendRefIR{
+				ClusterName: clusterName,
+				Weight:      1,
+			},
+		}},
+	}
+}
+
+func routesFromValidationBootstrap(t *testing.T, config *envoybootstrapv3.Bootstrap) []*envoyroutev3.Route {
+	t.Helper()
+	listeners := config.GetStaticResources().GetListeners()
+	require.Len(t, listeners, 1)
+	filterChains := listeners[0].GetFilterChains()
+	require.Len(t, filterChains, 1)
+	filters := filterChains[0].GetFilters()
+	require.NotEmpty(t, filters)
+	hcm := &envoy_hcm.HttpConnectionManager{}
+	require.NoError(t, filters[0].GetTypedConfig().UnmarshalTo(hcm))
+	vhosts := hcm.GetRouteConfig().GetVirtualHosts()
+	require.Len(t, vhosts, 1)
+	return vhosts[0].GetRoutes()
 }
 
 func TestSummarizeRuleErrors_NilReturnsEmpty(t *testing.T) {
@@ -237,4 +513,215 @@ func TestSummarizeRuleErrors_FlattensNestedJoins(t *testing.T) {
 		"gateway.kgateway.dev/TrafficPolicy/ns/b-pol: b\n" +
 		"gateway.kgateway.dev/TrafficPolicy/ns/c-pol: c"
 	assert.Equal(t, want, got)
+}
+
+func TestAddRouteSourceMetadata(t *testing.T) {
+	tests := []struct {
+		name            string
+		in              ir.HttpRouteRuleMatchIR
+		initialMetadata *envoycorev3.Metadata
+		expected        map[string]string
+		expectPreserved bool
+	}{
+		{
+			name: "full metadata",
+			in: ir.HttpRouteRuleMatchIR{
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				RuleName:   "test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "test-rule",
+				"match":     "_match-2",
+			},
+		},
+		{
+			name: "missing original rule name",
+			in: ir.HttpRouteRuleMatchIR{
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "_rule-1",
+				"match":     "_match-2",
+			},
+		},
+		{
+			name: "missing rule and kind",
+			in: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+			},
+		},
+		{
+			name: "nil parent",
+			in: ir.HttpRouteRuleMatchIR{
+				Name: "test-rule",
+			},
+			expected: nil,
+		},
+		{
+			name: "existing metadata preserved",
+			in: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind: "HTTPRoute",
+						Name: "test-route",
+					},
+				},
+			},
+			initialMetadata: &envoycorev3.Metadata{
+				FilterMetadata: map[string]*structpb.Struct{
+					"existing.key": {
+						Fields: map[string]*structpb.Value{
+							"foo": structpb.NewStringValue("bar"),
+						},
+					},
+				},
+			},
+			expectPreserved: true,
+			expected: map[string]string{
+				"kind": "HTTPRoute",
+				"name": "test-route",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metadata := addRouteSourceMetadata(tt.in, tt.initialMetadata)
+
+			if tt.expected == nil {
+				if metadata != nil && metadata.FilterMetadata != nil {
+					_, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+					assert.False(t, ok, "expected no route source metadata")
+				}
+				return
+			}
+
+			require.NotNil(t, metadata, "metadata should not be nil")
+			require.NotNil(t, metadata.FilterMetadata, "filter metadata should not be nil")
+
+			structPb, ok := metadata.FilterMetadata[routeSourceMetadataKey]
+			require.True(t, ok, "expected route source metadata key %q", routeSourceMetadataKey)
+
+			fields := structPb.Fields
+			assert.Equal(t, len(tt.expected), len(fields), "unexpected number of fields")
+
+			for k, v := range tt.expected {
+				val, ok := fields[k]
+				assert.True(t, ok, "missing expected key: %s", k)
+				assert.Equal(t, v, val.GetStringValue(), "value mismatch for key: %s", k)
+			}
+
+			if tt.expectPreserved {
+				existingPb, ok := metadata.FilterMetadata["existing.key"]
+				require.True(t, ok, "expected existing metadata key to be preserved")
+				assert.Equal(t, "bar", existingPb.Fields["foo"].GetStringValue(), "existing metadata value mismatch")
+			}
+		})
+	}
+}
+
+func TestRouteSourceMetadataFlag(t *testing.T) {
+	in := ir.HttpRouteRuleMatchIR{
+		Name: "my-rule",
+		Parent: &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{
+				Kind:      "HTTPRoute",
+				Group:     "gateway.networking.k8s.io",
+				Name:      "my-route",
+				Namespace: "default",
+			},
+		},
+	}
+
+	tests := []struct {
+		name        string
+		flagEnabled bool
+		wantMeta    bool
+	}{
+		{
+			name:        "disabled by default, no route_source metadata",
+			flagEnabled: false,
+			wantMeta:    false,
+		},
+		{
+			name:        "enabled, route_source metadata is attached",
+			flagEnabled: true,
+			wantMeta:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := &httpRouteConfigurationTranslator{
+				pluginPass:                TranslationPassPlugins{},
+				enableRouteSourceMetadata: tt.flagEnabled,
+			}
+
+			// Replicate the flag gate in envoyRoutes() without needing a
+			// fully-wired translator (no backends, validator, or GatewayIR required).
+			out := h.initRoutes(in, "generated-name")
+			if h.enableRouteSourceMetadata {
+				out.Metadata = addRouteSourceMetadata(in, out.GetMetadata())
+			}
+
+			if !tt.wantMeta {
+				if out.GetMetadata() != nil {
+					_, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+					assert.False(t, ok, "route_source metadata should be absent when the flag is off")
+				}
+				return
+			}
+
+			require.NotNil(t, out.GetMetadata(), "metadata must not be nil when the flag is on")
+			srcMeta, ok := out.GetMetadata().GetFilterMetadata()[routeSourceMetadataKey]
+			require.True(t, ok, "filter metadata must contain key %q", routeSourceMetadataKey)
+
+			fields := srcMeta.GetFields()
+			assert.Equal(t, "HTTPRoute", fields["kind"].GetStringValue())
+			assert.Equal(t, "gateway.networking.k8s.io", fields["group"].GetStringValue())
+			assert.Equal(t, "my-route", fields["name"].GetStringValue())
+			assert.Equal(t, "default", fields["namespace"].GetStringValue())
+			assert.Equal(t, "_rule-0", fields["rule"].GetStringValue())
+			assert.Equal(t, "_match-0", fields["match"].GetStringValue())
+		})
+	}
 }

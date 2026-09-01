@@ -19,11 +19,6 @@ func MergePolicies(
 		return
 	}
 
-	if p1.NoOrigin || p2.NoOrigin {
-		p1.NoOrigin = true
-		p2.NoOrigin = true
-	}
-
 	mergeFuncs := []func(*ListenerPolicyIR, *ListenerPolicyIR, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
 		mergeDefault,
 		mergePerPort,
@@ -41,11 +36,7 @@ func mergeDefault(
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	origin := "default."
-	if (p1 != nil && p1.NoOrigin) || (p2 != nil && p2.NoOrigin) {
-		origin = ""
-	}
-	mergeListenerPolicy(origin, &p1.defaultPolicy, &p2.defaultPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
+	mergeListenerPolicy("default.", &p1.defaultPolicy, &p2.defaultPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
 }
 
 func mergePerPort(
@@ -58,16 +49,10 @@ func mergePerPort(
 	for port, p2PortPolicy := range p2.perPortPolicy {
 		if p1PortPolicy, ok := p1.perPortPolicy[port]; ok {
 			f := fmt.Sprintf("perPortPolicy[%d].", port)
-			if (p1 != nil && p1.NoOrigin) || (p2 != nil && p2.NoOrigin) {
-				f = ""
-			}
 			mergeListenerPolicy(f, &p1PortPolicy, &p2PortPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
 			p1.perPortPolicy[port] = p1PortPolicy
 		} else {
 			f := fmt.Sprintf("perPortPolicy[%d]", port)
-			if (p1 != nil && p1.NoOrigin) || (p2 != nil && p2.NoOrigin) {
-				f = ""
-			}
 			if p1.perPortPolicy == nil {
 				p1.perPortPolicy = map[uint32]listenerPolicy{}
 			}
@@ -89,7 +74,8 @@ func mergeListenerPolicy(
 		mergeProxyProtocol,
 		mergeTCPKeepalive,
 		mergePerConnectionBufferLimitBytes,
-		// Not merging ClientCertificateValidation since its only used for tls config.
+		mergeTransportSocketConnectTimeout,
+		mergeClientCertificateValidation,
 		mergeHttpSettings,
 	}
 
@@ -130,6 +116,22 @@ func mergePerConnectionBufferLimitBytes(
 	mergeOrigins.SetOne(origin+"perConnectionBufferLimitBytes", p2Ref, p2MergeOrigins)
 }
 
+func mergeTransportSocketConnectTimeout(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.transportSocketConnectTimeout, p2.transportSocketConnectTimeout, opts) {
+		return
+	}
+
+	p1.transportSocketConnectTimeout = p2.transportSocketConnectTimeout
+	mergeOrigins.SetOne(origin+"transportSocketConnectTimeout", p2Ref, p2MergeOrigins)
+}
+
 func mergeTCPKeepalive(
 	origin string,
 	p1, p2 *listenerPolicy,
@@ -146,6 +148,22 @@ func mergeTCPKeepalive(
 	mergeOrigins.SetOne(origin+"tcpKeepalive", p2Ref, p2MergeOrigins)
 }
 
+func mergeClientCertificateValidation(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.clientCertificateValidation, p2.clientCertificateValidation, opts) {
+		return
+	}
+
+	p1.clientCertificateValidation = p2.clientCertificateValidation
+	mergeOrigins.SetOne(origin+"clientCertificateValidation", p2Ref, p2MergeOrigins)
+}
+
 func mergeHttpSettings(
 	origin string,
 	p1, p2 *listenerPolicy,
@@ -160,8 +178,6 @@ func mergeHttpSettings(
 	if p1.http == nil {
 		p1.http = &HttpListenerPolicyIr{}
 	}
-	if origin != "" {
-		origin += "httpSettings."
-	}
+	origin += "httpSettings."
 	MergeHttpPolicies(origin, p1.http, p2.http, p2Ref, p2MergeOrigins, opts, mergeOrigins, "" /*no merge settings*/)
 }

@@ -12,7 +12,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
+      image: curlimages/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
@@ -33,6 +33,12 @@ spec:
           readOnly: true
         - name: client-non-matching-san
           mountPath: /etc/client-non-matching-san
+          readOnly: true
+        - name: client-matching-signature
+          mountPath: /etc/client-matching-signature
+          readOnly: true
+        - name: client-non-matching-signature
+          mountPath: /etc/client-non-matching-signature
           readOnly: true
       resources:
         requests:
@@ -61,4 +67,12 @@ spec:
     - name: client-non-matching-san
       secret:
         secretName: client-non-matching-san
+        defaultMode: 0444
+    - name: client-matching-signature
+      secret:
+        secretName: client-matching-signature
+        defaultMode: 0444
+    - name: client-non-matching-signature
+      secret:
+        secretName: client-non-matching-signature
         defaultMode: 0444
