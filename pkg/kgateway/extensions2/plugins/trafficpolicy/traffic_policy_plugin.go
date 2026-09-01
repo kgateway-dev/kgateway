@@ -28,6 +28,7 @@ import (
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -257,17 +258,18 @@ type trafficPolicyPluginGwPass struct {
 	// should be set on routes that have been successfully authenticated
 	enableAuthMetadata bool
 
-	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
-	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
-	extAuthPerProvider       ProviderNeededMap
-	extProcPerProvider       ProviderNeededMap
-	jwtPerProvider           ProviderNeededMap
-	rateLimitPerProvider     ProviderNeededMap
-	oauth2PerProvider        ProviderNeededMap
-	rbacInChain              map[string]*envoyrbacv3.RBAC
-	corsInChain              map[string]*corsv3.Cors
-	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
-	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
+	setTransformationInChain  map[string]bool // TODO(nfuden): make this multi stage
+	localRateLimitInChain     map[string]*localratelimitv3.LocalRateLimit
+	extAuthPerProvider        ProviderNeededMap
+	extProcPerProvider        ProviderNeededMap
+	jwtPerProvider            ProviderNeededMap
+	rateLimitPerProvider      ProviderNeededMap
+	oauth2PerProvider         ProviderNeededMap
+	rbacInChain               map[string]*envoyrbacv3.RBAC
+	corsInChain               map[string]*corsv3.Cors
+	csrfInChain               map[string]*envoy_csrf_v3.CsrfPolicy
+	headerMutationInChain     map[string]*header_mutationv3.HeaderMutationPerRoute
+	headerMutationFilterStage map[string]*shared.FilterStageSpec
 	// Route names we've already applied requestMirror settings to on this pass, so the first
 	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
 	// pass, so the name is a safe key.
@@ -662,7 +664,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 	// Add header mutation filter.
 	if f := p.headerMutationInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(headerMutationFilterName, f, filters.DuringStage(filters.RouteStage))
+		stage := convertFilterStageSpec(p.headerMutationFilterStage[fcc.FilterChainName], defaultHeaderMutationFilterStage)
+		filter := filters.MustNewStagedFilter(headerMutationFilterName, f, stage)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}

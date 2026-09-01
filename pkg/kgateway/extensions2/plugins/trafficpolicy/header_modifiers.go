@@ -8,9 +8,11 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -18,8 +20,11 @@ const (
 	headerMutationFilterName = "envoy.extensions.filters.http.header_mutation"
 )
 
+var defaultHeaderMutationFilterStage = filters.DuringStage(filters.RouteStage)
+
 type headerModifiersIR struct {
-	policy *header_mutationv3.HeaderMutationPerRoute
+	policy      *header_mutationv3.HeaderMutationPerRoute
+	filterStage *shared.FilterStageSpec
 }
 
 var _ PolicySubIR = &headerModifiersIR{}
@@ -31,6 +36,12 @@ func (hm *headerModifiersIR) Equals(other PolicySubIR) bool {
 	}
 	if hm == nil || otherheaderModifiers == nil {
 		return hm == nil && otherheaderModifiers == nil
+	}
+
+	if hm.filterStage != otherheaderModifiers.filterStage {
+		if hm.filterStage == nil || otherheaderModifiers.filterStage == nil || *hm.filterStage != *otherheaderModifiers.filterStage {
+			return false
+		}
 	}
 
 	return proto.Equal(hm.policy, otherheaderModifiers.policy)
@@ -84,7 +95,7 @@ func constructHeaderModifiers(
 		p.Mutations = nil
 	}
 
-	out.headerModifiers = &headerModifiersIR{policy: p}
+	out.headerModifiers = &headerModifiersIR{policy: p, filterStage: spec.FilterStage}
 	return nil
 }
 
@@ -105,5 +116,12 @@ func (p *trafficPolicyPluginGwPass) handleHeaderModifiers(fcn string, typedFilte
 
 	if _, ok := p.headerMutationInChain[fcn]; !ok {
 		p.headerMutationInChain[fcn] = &header_mutationv3.HeaderMutationPerRoute{}
+	}
+
+	if p.headerMutationFilterStage == nil {
+		p.headerMutationFilterStage = make(map[string]*shared.FilterStageSpec)
+	}
+	if _, ok := p.headerMutationFilterStage[fcn]; !ok && ir.filterStage != nil {
+		p.headerMutationFilterStage[fcn] = ir.filterStage
 	}
 }

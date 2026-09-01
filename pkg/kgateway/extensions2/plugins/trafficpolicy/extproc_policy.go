@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -224,7 +225,7 @@ var defaultExtProcFilterStage = filters.AfterStage(filters.WellKnownFilterStage(
 // convertFilterStageSpec converts a user-facing FilterStageSpec to an
 // internal filters.FilterStage. Returns the provided default if cfg is nil.
 func convertFilterStageSpec(
-	cfg *kgateway.FilterStageSpec,
+	cfg *shared.FilterStageSpec,
 	defaultStage filters.FilterStage[filters.WellKnownFilterStage],
 ) filters.FilterStage[filters.WellKnownFilterStage] {
 	if cfg == nil {
@@ -233,24 +234,24 @@ func convertFilterStageSpec(
 
 	var stage filters.WellKnownFilterStage
 	switch cfg.Stage {
-	case kgateway.FilterStageFault:
+	case shared.FilterStageFault:
 		stage = filters.FaultStage
-	case kgateway.FilterStageAuthN:
+	case shared.FilterStageAuthN:
 		stage = filters.AuthNStage
-	case kgateway.FilterStageAuthZ:
+	case shared.FilterStageAuthZ:
 		stage = filters.AuthZStage
-	case kgateway.FilterStageRateLimit:
+	case shared.FilterStageRateLimit:
 		stage = filters.RateLimitStage
-	case kgateway.FilterStageRoute:
+	case shared.FilterStageRoute:
 		stage = filters.RouteStage
 	default:
 		return defaultStage
 	}
 
 	switch cfg.Predicate {
-	case kgateway.FilterStagePredicateBefore:
+	case shared.FilterStagePredicateBefore:
 		return filters.BeforeStage(stage)
-	case kgateway.FilterStagePredicateAfter:
+	case shared.FilterStagePredicateAfter:
 		return filters.AfterStage(stage)
 	default:
 		return filters.DuringStage(stage)

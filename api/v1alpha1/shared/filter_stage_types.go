@@ -1,4 +1,4 @@
-package kgateway
+package shared
 
 // FilterStage represents well-known positions in the HTTP filter chain.
 // +kubebuilder:validation:Enum=Fault;AuthN;AuthZ;RateLimit;Route
@@ -51,4 +51,19 @@ type FilterStageSpec struct {
 	// +optional
 	// +kubebuilder:default=0
 	Weight int32 `json:"weight,omitempty"`
+}
+
+// DeepCopyInto is a manually-written deepcopy for FilterStageSpec (value type, no pointers inside).
+func (in *FilterStageSpec) DeepCopyInto(out *FilterStageSpec) {
+	*out = *in
+}
+
+// DeepCopy creates a new FilterStageSpec.
+func (in *FilterStageSpec) DeepCopy() *FilterStageSpec {
+	if in == nil {
+		return nil
+	}
+	out := new(FilterStageSpec)
+	in.DeepCopyInto(out)
+	return out
 }

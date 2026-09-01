@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -42,7 +43,7 @@ type TrafficPolicyGatewayExtensionIR struct {
 	Jwt              *envoymatchingv3.ExtensionWithMatcher
 	OAuth2           *oauthPerProviderConfig
 	PrecedenceWeight int32
-	FilterStage      *kgateway.FilterStageSpec
+	FilterStage      *shared.FilterStageSpec
 	Err              error
 }
 
