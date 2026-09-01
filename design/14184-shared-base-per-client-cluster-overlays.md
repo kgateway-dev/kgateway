@@ -276,6 +276,13 @@ Exposing the legacy mutable graph invalidates reuse for the rest of that plugin 
 later editor safely rehashes rather than trusting a cache a legacy mutation may have made
 stale.
 
+Replacement builders are owner-bound and single-use. `ReplaceEndpoints` consumes shared
+builder state, so even a builder value copied before installation cannot mutate the installed
+endpoint map afterwards; nil, cross-resolver, repeated, and post-install uses panic as SDK
+contract violations. Endpoint-content hashes and folded semantic-version contributions are
+stored separately, allowing `EmptyCopy` to preserve the latter and preventing a subsequent
+`Add` from erasing policy versioning.
+
 Both `PerClientProcessEndpoints` and `PerClientEditEndpoints` return a hash that is now
 **load-bearing**: it keys CLA interning across clients, so it must capture every per-client
 effect the plugin has that is not already reflected by the resolved endpoint hash or the

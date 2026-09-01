@@ -125,25 +125,30 @@ func (e *EndpointInputsResolver) ForEachEndpoint(fn func(ir.PodLocality, Endpoin
 }
 
 func (e *EndpointInputsResolver) NewEndpointSet() *EndpointSetBuilder {
-	return &EndpointSetBuilder{endpoints: e.inputs.EndpointsForBackend.EmptyCopy()}
+	return &EndpointSetBuilder{state: &endpointSetBuilderState{
+		endpoints: e.inputs.EndpointsForBackend.EmptyCopy(),
+		owner:     e,
+	}}
 }
 
 func (e *EndpointInputsResolver) ReplaceEndpoints(replacement *EndpointSetBuilder) {
 	if replacement == nil {
-		return
+		panic("endpoint replacement builder is nil")
 	}
-	// The builder started from EmptyCopy, which reseeds the equality hash from
-	// backend identity, so it carries no trace of anything the row's owner
-	// folded in after construction — newFinalBackendEndpoints folds the
-	// attached-policy hash, which changes what the endpoints translate into
-	// without changing the endpoints. Fold the source row's hash back in: the
-	// resolved hash keys CLA interning and the KRT equality of the resolved
-	// row, so dropping it would serve one policy state's load assignment for
-	// another's. This over-discriminates (the result now varies with the source
-	// endpoints too, costing a missed dedup at worst) which is the safe
-	// direction.
-	replacement.endpoints.FoldVersion(e.inputs.EndpointsForBackend.LbEpsEqualityHash)
-	e.inputs.EndpointsForBackend = replacement.endpoints
+	state := replacement.mutableState()
+	if state.owner != e {
+		panic("endpoint replacement builder belongs to a different resolver")
+	}
+
+	// Consume the shared state rather than only this particular builder value:
+	// copying an EndpointSetBuilder before installation must not create another
+	// live handle to the installed map.
+	installed := state.endpoints
+	state.endpoints = ir.EndpointsForBackend{}
+	state.owner = nil
+	state.consumed = true
+
+	e.inputs.EndpointsForBackend = installed
 	e.endpointHashesReusable = true
 }
 
@@ -220,28 +225,48 @@ func (e EndpointView) Clone() ir.EndpointWithMd {
 
 // EndpointSetBuilder constructs a replacement EndpointsForBackend while
 // preserving its identity and precomputed hash semantics. Unchanged endpoints
-// may be structurally shared; modified endpoints must be added after Clone.
+// may be structurally shared; modified endpoints must be added after Clone. A
+// builder belongs to the resolver that created it and is consumed by
+// ReplaceEndpoints. Any later use panics, including through a copied builder
+// value.
 type EndpointSetBuilder struct {
+	state *endpointSetBuilderState
+}
+
+type endpointSetBuilderState struct {
 	endpoints ir.EndpointsForBackend
+	owner     *EndpointInputsResolver
+	consumed  bool
+}
+
+func (b *EndpointSetBuilder) mutableState() *endpointSetBuilderState {
+	if b == nil || b.state == nil {
+		panic("endpoint replacement builder is uninitialized")
+	}
+	if b.state.consumed {
+		panic("endpoint replacement builder has already been consumed")
+	}
+	return b.state
 }
 
 // AddUnchanged structurally shares an immutable endpoint and reuses its
 // precomputed contribution hash. Moving it to another locality, or using a view
 // exposed after a legacy mutable hook, safely falls back to a fresh hash.
 func (b *EndpointSetBuilder) AddUnchanged(locality ir.PodLocality, endpoint EndpointView) {
+	state := b.mutableState()
 	if locality != endpoint.locality || !endpoint.hashReusable {
 		// Locality participates in the endpoint contribution hash, so moving an
 		// otherwise unchanged endpoint still requires a fresh hash. A legacy
 		// plugin may also have mutated the endpoint behind the view, invalidating
 		// the cached contribution.
-		b.endpoints.Add(locality, endpoint.endpoint)
+		state.endpoints.Add(locality, endpoint.endpoint)
 		return
 	}
-	b.endpoints.ReuseEndpoint(locality, endpoint.endpoint)
+	state.endpoints.ReuseEndpoint(locality, endpoint.endpoint)
 }
 
 func (b *EndpointSetBuilder) Add(locality ir.PodLocality, endpoint ir.EndpointWithMd) {
-	b.endpoints.Add(locality, endpoint)
+	b.mutableState().endpoints.Add(locality, endpoint)
 }
 
 func cloneEndpointsInputs(in EndpointsInputs) EndpointsInputs {

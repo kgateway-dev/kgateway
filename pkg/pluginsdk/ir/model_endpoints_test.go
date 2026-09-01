@@ -161,6 +161,42 @@ func TestReuseEndpointUsesPrecomputedContribution(t *testing.T) {
 	}
 }
 
+func TestFoldVersionSurvivesEndpointAdds(t *testing.T) {
+	locality := PodLocality{Region: "r1", Zone: "z1"}
+	endpoint := testEndpointWithMd(1)
+
+	foldedBeforeAdd := NewEndpointsForBackend(epsBackend("svc"))
+	foldedBeforeAdd.FoldVersion(11)
+	foldedBeforeAdd.FoldVersion(22)
+	foldedBeforeAdd.Add(locality, endpoint)
+
+	foldedAfterAdd := NewEndpointsForBackend(epsBackend("svc"))
+	foldedAfterAdd.Add(locality, endpoint)
+	foldedAfterAdd.FoldVersion(11)
+	foldedAfterAdd.FoldVersion(22)
+
+	if foldedBeforeAdd.LbEpsEqualityHash != foldedAfterAdd.LbEpsEqualityHash {
+		t.Fatalf(
+			"Add erased or reordered folded versions: before-add=%d after-add=%d",
+			foldedBeforeAdd.LbEpsEqualityHash,
+			foldedAfterAdd.LbEpsEqualityHash,
+		)
+	}
+	if !foldedBeforeAdd.hasFoldedVersionHash || foldedBeforeAdd.foldedVersionHash != hash(11, 22) {
+		t.Fatalf("folded version state was not retained: has=%v hash=%d", foldedBeforeAdd.hasFoldedVersionHash, foldedBeforeAdd.foldedVersionHash)
+	}
+
+	emptyCopy := foldedBeforeAdd.EmptyCopy()
+	emptyCopy.Add(locality, endpoint)
+	if emptyCopy.LbEpsEqualityHash != foldedBeforeAdd.LbEpsEqualityHash {
+		t.Fatalf(
+			"EmptyCopy dropped folded versions: rebuilt=%d original=%d",
+			emptyCopy.LbEpsEqualityHash,
+			foldedBeforeAdd.LbEpsEqualityHash,
+		)
+	}
+}
+
 // reuseCmpOpts compares two EndpointsForBackend in full, including the unexported
 // equality hashes.
 //

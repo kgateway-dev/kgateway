@@ -75,7 +75,7 @@ func TestEndpointSetBuilderRehashesWhenLocalityChanges(t *testing.T) {
 
 	want := ir.NewEndpointsForBackend(backend)
 	want.Add(targetLocality, source.LbEps[sourceLocality][0])
-	assert.Equal(t, want.LbEpsEqualityHash, replacement.endpoints.LbEpsEqualityHash,
+	assert.Equal(t, want.LbEpsEqualityHash, replacement.state.endpoints.LbEpsEqualityHash,
 		"moving an endpoint must hash its new locality")
 }
 
@@ -129,8 +129,61 @@ func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	})
 	want := ir.NewEndpointsForBackend(backend)
 	want.Add(locality, legacy.EndpointsForBackend.LbEps[locality][0])
-	assert.Equal(t, want.LbEpsEqualityHash, replacement.endpoints.LbEpsEqualityHash,
+	assert.Equal(t, want.LbEpsEqualityHash, replacement.state.endpoints.LbEpsEqualityHash,
 		"legacy mutation must invalidate the cached endpoint contribution")
+}
+
+func TestEndpointSetBuilderIsConsumedByReplace(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	resolver := NewEndpointInputsResolver(EndpointsInputs{EndpointsForBackend: *ir.NewEndpointsForBackend(backend)})
+	builder := resolver.NewEndpointSet()
+	builderCopy := *builder
+	builder.Add(ir.PodLocality{}, editorTestEndpoint("10.0.0.1", "installed"))
+
+	resolver.ReplaceEndpoints(builder)
+	installed := resolver.Inputs().EndpointsForBackend
+	installedHash := installed.LbEpsEqualityHash
+
+	for name, candidate := range map[string]*EndpointSetBuilder{
+		"original":     builder,
+		"copied value": &builderCopy,
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.PanicsWithValue(t, "endpoint replacement builder has already been consumed", func() {
+				candidate.Add(ir.PodLocality{}, editorTestEndpoint("10.0.0.2", "late"))
+			})
+		})
+	}
+	assert.PanicsWithValue(t, "endpoint replacement builder has already been consumed", func() {
+		resolver.ReplaceEndpoints(builder)
+	})
+
+	got := resolver.Inputs().EndpointsForBackend
+	assert.Equal(t, installedHash, got.LbEpsEqualityHash, "rejected writes must not skew the installed hash")
+	assert.Len(t, got.LbEps[ir.PodLocality{}], 1, "rejected writes must not mutate installed endpoint content")
+}
+
+func TestEndpointSetBuilderRejectsWrongOwnerAndNil(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	inputs := EndpointsInputs{EndpointsForBackend: *ir.NewEndpointsForBackend(backend)}
+	owner := NewEndpointInputsResolver(inputs)
+	other := NewEndpointInputsResolver(inputs)
+	builder := owner.NewEndpointSet()
+
+	assert.PanicsWithValue(t, "endpoint replacement builder belongs to a different resolver", func() {
+		other.ReplaceEndpoints(builder)
+	})
+	// Rejection by the wrong owner does not consume the builder; its owner can
+	// still finish and install it.
+	builder.Add(ir.PodLocality{}, editorTestEndpoint("10.0.0.1", "owned"))
+	owner.ReplaceEndpoints(builder)
+
+	assert.PanicsWithValue(t, "endpoint replacement builder is nil", func() {
+		other.ReplaceEndpoints(nil)
+	})
+	assert.PanicsWithValue(t, "endpoint replacement builder is uninitialized", func() {
+		new(EndpointSetBuilder).Add(ir.PodLocality{}, editorTestEndpoint("10.0.0.2", "uninitialized"))
+	})
 }
 
 // PoliciesFor hands out views rather than copies, so the mutable attachment

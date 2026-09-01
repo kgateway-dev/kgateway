@@ -175,9 +175,11 @@ type EndpointsForBackend struct {
 	// Inherited from the backend object
 	TrafficDistribution wellknown.TrafficDistribution
 
-	LbEpsEqualityHash uint64
-	upstreamHash      uint64
-	epsEqualityHash   uint64
+	LbEpsEqualityHash    uint64
+	upstreamHash         uint64
+	epsEqualityHash      uint64
+	foldedVersionHash    uint64
+	hasFoldedVersionHash bool
 }
 
 func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
@@ -231,7 +233,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 // EmptyCopy creates a fresh EndpointsForBackend with no endpoints
 // for the same backend.
 func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
-	return EndpointsForBackend{
+	out := EndpointsForBackend{
 		BackendLabels:        e.BackendLabels,
 		AttachedPolicies:     e.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
@@ -239,10 +241,13 @@ func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 		UpstreamResourceName: e.UpstreamResourceName,
 		Port:                 e.Port,
 		Hostname:             e.Hostname,
-		LbEpsEqualityHash:    e.upstreamHash,
 		upstreamHash:         e.upstreamHash,
 		TrafficDistribution:  e.TrafficDistribution,
+		foldedVersionHash:    e.foldedVersionHash,
+		hasFoldedVersionHash: e.hasFoldedVersionHash,
 	}
+	out.refreshLbEpsEqualityHash(false)
+	return out
 }
 
 // FoldVersion mixes an extra input into this row's equality hash. Use it for
@@ -250,12 +255,17 @@ func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 // endpoints themselves — newFinalBackendEndpoints folds in the attached-policy
 // hash for exactly that reason.
 //
-// Fold rather than assign LbEpsEqualityHash: EmptyCopy reseeds the hash from
-// backend identity alone, so a replacement endpoint set built through the
-// endpoint editor would otherwise silently drop the contribution and stop
-// distinguishing the states it was added to distinguish.
+// Folded versions are tracked separately from endpoint content. EmptyCopy
+// preserves them, and Add recomputes the final equality hash from both parts,
+// so endpoint edits cannot silently erase an earlier contribution.
 func (e *EndpointsForBackend) FoldVersion(extra uint64) {
-	e.LbEpsEqualityHash = hash(e.LbEpsEqualityHash, extra)
+	if e.hasFoldedVersionHash {
+		e.foldedVersionHash = hash(e.foldedVersionHash, extra)
+	} else {
+		e.foldedVersionHash = extra
+		e.hasFoldedVersionHash = true
+	}
+	e.refreshLbEpsEqualityHash(e.hasEndpoints())
 }
 
 func hashEndpoints(l PodLocality, emd EndpointWithMd) uint64 {
@@ -294,12 +304,32 @@ func (e *EndpointsForBackend) addWithEndpointHash(l PodLocality, emd EndpointWit
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
 	e.epsEqualityHash ^= endpointHash
-	// we can't xor the endpoint hash with the upstream hash, because upstreams with
-	// different names and similar endpoints will cancel out, so endpoint changes
-	// won't result in different equality hashes.
-	e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
 	emd.endpointEqualityHash = endpointHash
 	e.LbEps[l] = append(e.LbEps[l], emd)
+	e.refreshLbEpsEqualityHash(true)
+}
+
+func (e *EndpointsForBackend) hasEndpoints() bool {
+	for _, endpoints := range e.LbEps {
+		if len(endpoints) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (e *EndpointsForBackend) refreshLbEpsEqualityHash(hasEndpoints bool) {
+	endpointHash := e.upstreamHash
+	if hasEndpoints {
+		// We can't xor the endpoint hash with the upstream hash, because
+		// upstreams with different names and similar endpoints will cancel out,
+		// so endpoint changes won't result in different equality hashes.
+		endpointHash = hash(e.epsEqualityHash, e.upstreamHash)
+	}
+	if e.hasFoldedVersionHash {
+		endpointHash = hash(endpointHash, e.foldedVersionHash)
+	}
+	e.LbEpsEqualityHash = endpointHash
 }
 
 // ReuseEndpointsFrom copies the endpoint entries and their precomputed
@@ -326,9 +356,7 @@ func (e *EndpointsForBackend) ReuseEndpointsFrom(base *EndpointsForBackend) {
 		}
 		e.LbEps[l] = slices.Clone(eps)
 	}
-	if nonEmpty {
-		e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
-	}
+	e.refreshLbEpsEqualityHash(nonEmpty)
 }
 
 func (c EndpointsForBackend) ResourceName() string {
@@ -336,5 +364,5 @@ func (c EndpointsForBackend) ResourceName() string {
 }
 
 func (c EndpointsForBackend) Equals(in EndpointsForBackend) bool {
-	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname && c.TrafficDistribution == in.TrafficDistribution && c.upstreamHash == in.upstreamHash && c.epsEqualityHash == in.epsEqualityHash
+	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname && c.TrafficDistribution == in.TrafficDistribution && c.upstreamHash == in.upstreamHash && c.epsEqualityHash == in.epsEqualityHash && c.foldedVersionHash == in.foldedVersionHash && c.hasFoldedVersionHash == in.hasFoldedVersionHash
 }
