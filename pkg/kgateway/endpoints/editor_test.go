@@ -59,6 +59,26 @@ func TestEndpointInputsResolverBuildsReplacementWithStructuralSharing(t *testing
 		"the replacement builder must hash its resolved endpoint content")
 }
 
+func TestEndpointSetBuilderRehashesWhenLocalityChanges(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	sourceLocality := ir.PodLocality{Region: "r1", Zone: "z1"}
+	targetLocality := ir.PodLocality{Region: "r2", Zone: "z2"}
+	source := ir.NewEndpointsForBackend(backend)
+	source.Add(sourceLocality, editorTestEndpoint("10.0.0.1", "moved"))
+
+	resolver := NewEndpointInputsResolver(EndpointsInputs{EndpointsForBackend: *source})
+	replacement := resolver.NewEndpointSet()
+	resolver.ForEachEndpoint(func(_ ir.PodLocality, endpoint EndpointView) bool {
+		replacement.AddUnchanged(targetLocality, endpoint)
+		return true
+	})
+
+	want := ir.NewEndpointsForBackend(backend)
+	want.Add(targetLocality, source.LbEps[sourceLocality][0])
+	assert.Equal(t, want.LbEpsEqualityHash, replacement.endpoints.LbEpsEqualityHash,
+		"moving an endpoint must hash its new locality")
+}
+
 func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	groupKind := schema.GroupKind{Group: "example.io", Kind: "Policy"}
 	policyRef := &ir.AttachedPolicyRef{Name: "policy", Namespace: "ns"}
@@ -99,6 +119,18 @@ func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	assert.Equal(t, "10.0.0.1", base.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
 	assert.Equal(t, "topology.kubernetes.io/zone", base.PriorityInfo.FailoverPriority.priorityLabels[0])
 	require.Same(t, legacy, resolver.LegacyMutableInputs(), "legacy inputs should be cloned only once per client")
+
+	// A later editor plugin must not reuse the contribution cached before the
+	// legacy mutation. AddUnchanged falls back to hashing the now-mutated proto.
+	replacement := resolver.NewEndpointSet()
+	resolver.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
+		replacement.AddUnchanged(locality, endpoint)
+		return true
+	})
+	want := ir.NewEndpointsForBackend(backend)
+	want.Add(locality, legacy.EndpointsForBackend.LbEps[locality][0])
+	assert.Equal(t, want.LbEpsEqualityHash, replacement.endpoints.LbEpsEqualityHash,
+		"legacy mutation must invalidate the cached endpoint contribution")
 }
 
 // PoliciesFor hands out views rather than copies, so the mutable attachment

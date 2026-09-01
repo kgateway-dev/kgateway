@@ -133,6 +133,12 @@ type EndpointMetadata struct {
 type EndpointWithMd struct {
 	*envoyendpointv3.LbEndpoint
 	EndpointMd EndpointMetadata
+
+	// endpointEqualityHash is the contribution hashEndpoints computed when this
+	// endpoint was added to its locality. It is derived state, not another hash
+	// input. Endpoint replacement builders reuse it for structurally shared
+	// endpoints instead of marshaling the same proto once per client.
+	endpointEqualityHash uint64
 }
 
 type LocalityLbMap map[PodLocality][]EndpointWithMd
@@ -273,13 +279,26 @@ func hash(a, b uint64) uint64 {
 }
 
 func (e *EndpointsForBackend) Add(l PodLocality, emd EndpointWithMd) {
+	e.addWithEndpointHash(l, emd, hashEndpoints(l, emd))
+}
+
+// ReuseEndpoint adds an immutable endpoint in the same locality from which it
+// was read, reusing the contribution hash computed by Add. Callers that change
+// either the endpoint or its locality must use Add so the contribution is
+// recomputed.
+func (e *EndpointsForBackend) ReuseEndpoint(l PodLocality, emd EndpointWithMd) {
+	e.addWithEndpointHash(l, emd, emd.endpointEqualityHash)
+}
+
+func (e *EndpointsForBackend) addWithEndpointHash(l PodLocality, emd EndpointWithMd, endpointHash uint64) {
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
-	e.epsEqualityHash ^= hashEndpoints(l, emd)
+	e.epsEqualityHash ^= endpointHash
 	// we can't xor the endpoint hash with the upstream hash, because upstreams with
 	// different names and similar endpoints will cancel out, so endpoint changes
 	// won't result in different equality hashes.
 	e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
+	emd.endpointEqualityHash = endpointHash
 	e.LbEps[l] = append(e.LbEps[l], emd)
 }
 

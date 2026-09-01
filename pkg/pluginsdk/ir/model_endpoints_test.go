@@ -139,6 +139,28 @@ func TestReuseEndpointsFromEmpty(t *testing.T) {
 	}
 }
 
+func TestReuseEndpointUsesPrecomputedContribution(t *testing.T) {
+	locality := PodLocality{Region: "r1", Zone: "z1"}
+	base := NewEndpointsForBackend(epsBackend("svc"))
+	base.Add(locality, testEndpointWithMd(1))
+	endpoint := base.LbEps[locality][0]
+
+	// Replace the cached value with a sentinel so this test distinguishes reuse
+	// from another call to hashEndpoints. The cache is unexported derived state;
+	// production values are populated only by Add.
+	const sentinel = uint64(42)
+	endpoint.endpointEqualityHash = sentinel
+
+	rebuilt := NewEndpointsForBackend(epsBackend("svc"))
+	rebuilt.ReuseEndpoint(locality, endpoint)
+	if rebuilt.epsEqualityHash != sentinel {
+		t.Fatalf("ReuseEndpoint rehashed the endpoint: got %d want %d", rebuilt.epsEqualityHash, sentinel)
+	}
+	if got := rebuilt.LbEps[locality][0].endpointEqualityHash; got != sentinel {
+		t.Fatalf("cached contribution was not preserved: got %d want %d", got, sentinel)
+	}
+}
+
 // reuseCmpOpts compares two EndpointsForBackend in full, including the unexported
 // equality hashes.
 //
@@ -232,7 +254,7 @@ func TestReuseEndpointsFromCopiesEmptyLocality(t *testing.T) {
 func TestEndpointHashInputsUnchanged(t *testing.T) {
 	for ty, want := range map[reflect.Type][]string{
 		reflect.TypeFor[PodLocality]():      {"Region", "Zone", "Subzone"},
-		reflect.TypeFor[EndpointWithMd]():   {"LbEndpoint", "EndpointMd"},
+		reflect.TypeFor[EndpointWithMd]():   {"LbEndpoint", "EndpointMd", "endpointEqualityHash"},
 		reflect.TypeFor[EndpointMetadata](): {"Labels"},
 	} {
 		var got []string

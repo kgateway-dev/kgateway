@@ -21,17 +21,22 @@ func BenchmarkEndpointInputsResolver(b *testing.B) {
 				endpointEditorBenchSink = resolver.Inputs()
 			}
 		})
-		b.Run(fmt.Sprintf("endpoints=%d/replacement-builder", endpointCount), func(b *testing.B) {
+		b.Run(fmt.Sprintf("endpoints=%d/replacement-all-unchanged", endpointCount), func(b *testing.B) {
 			b.ReportAllocs()
 			for range b.N {
-				resolver := NewEndpointInputsResolver(base)
-				replacement := resolver.NewEndpointSet()
-				resolver.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
-					replacement.AddUnchanged(locality, endpoint)
-					return true
-				})
-				resolver.ReplaceEndpoints(replacement)
-				endpointEditorBenchSink = resolver.Inputs()
+				benchmarkReplacement(base, 0)
+			}
+		})
+		b.Run(fmt.Sprintf("endpoints=%d/replacement-90pct-unchanged", endpointCount), func(b *testing.B) {
+			b.ReportAllocs()
+			for range b.N {
+				benchmarkReplacement(base, 10)
+			}
+		})
+		b.Run(fmt.Sprintf("endpoints=%d/replacement-50pct-unchanged", endpointCount), func(b *testing.B) {
+			b.ReportAllocs()
+			for range b.N {
+				benchmarkReplacement(base, 2)
 			}
 		})
 		b.Run(fmt.Sprintf("endpoints=%d/legacy-deep-copy", endpointCount), func(b *testing.B) {
@@ -43,6 +48,28 @@ func BenchmarkEndpointInputsResolver(b *testing.B) {
 			}
 		})
 	}
+}
+
+// benchmarkReplacement models the peering endpoint editor: most endpoints are
+// structurally shared while every modifyEvery-th endpoint is cloned and
+// rewritten. A zero modifyEvery keeps every endpoint unchanged.
+func benchmarkReplacement(base EndpointsInputs, modifyEvery int) {
+	resolver := NewEndpointInputsResolver(base)
+	replacement := resolver.NewEndpointSet()
+	index := 0
+	resolver.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
+		index++
+		if modifyEvery == 0 || index%modifyEvery != 0 {
+			replacement.AddUnchanged(locality, endpoint)
+			return true
+		}
+		cloned := endpoint.Clone()
+		cloned.GetEndpoint().GetAddress().GetSocketAddress().Address = "127.167.0.1"
+		replacement.Add(locality, cloned)
+		return true
+	})
+	resolver.ReplaceEndpoints(replacement)
+	endpointEditorBenchSink = resolver.Inputs()
 }
 
 func benchmarkEndpointInputs(endpointCount int) EndpointsInputs {

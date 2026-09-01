@@ -268,6 +268,14 @@ endpoints are structurally shared through `AddUnchanged`. The deprecated hook is
 behind `LegacyMutableInputs()`, which deep-copies the whole input graph at most once per
 client no matter how many legacy plugins run.
 
+`EndpointsForBackend.Add` retains each endpoint's already-computed hash contribution as
+unexported derived state. `AddUnchanged` reuses that contribution when the endpoint stays in
+the same locality, avoiding the per-client proto marshal that #14489 removed from the shared
+derived collections; cloned or relocated endpoints still go through `Add` and are rehashed.
+Exposing the legacy mutable graph invalidates reuse for the rest of that plugin chain, so a
+later editor safely rehashes rather than trusting a cache a legacy mutation may have made
+stale.
+
 Both `PerClientProcessEndpoints` and `PerClientEditEndpoints` return a hash that is now
 **load-bearing**: it keys CLA interning across clients, so it must capture every per-client
 effect the plugin has that is not already reflected by the resolved endpoint hash or the

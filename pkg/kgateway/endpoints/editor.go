@@ -39,15 +39,16 @@ type EndpointInputsEditor interface {
 // code retains the concrete resolver to retrieve the result; plugins receive only
 // the restricted [EndpointInputsEditor] interface.
 type EndpointInputsResolver struct {
-	inputs         EndpointsInputs
-	legacyIsolated bool
+	inputs                 EndpointsInputs
+	legacyIsolated         bool
+	endpointHashesReusable bool
 }
 
 // NewEndpointInputsResolver creates a per-client working view over shared
 // endpoint inputs. The shared nested state remains immutable until a plugin
 // explicitly builds a replacement or requests the legacy mutable view.
 func NewEndpointInputsResolver(inputs EndpointsInputs) *EndpointInputsResolver {
-	return &EndpointInputsResolver{inputs: inputs}
+	return &EndpointInputsResolver{inputs: inputs, endpointHashesReusable: true}
 }
 
 // Inputs returns the resolved per-client inputs after all plugins have run.
@@ -63,6 +64,10 @@ func (e *EndpointInputsResolver) LegacyMutableInputs() *EndpointsInputs {
 		e.inputs = cloneEndpointsInputs(e.inputs)
 		e.legacyIsolated = true
 	}
+	// A legacy plugin can mutate endpoint protos or metadata without going
+	// through EndpointsForBackend.Add, so their cached contribution hashes can
+	// no longer be trusted by a later editor plugin.
+	e.endpointHashesReusable = false
 	return &e.inputs
 }
 
@@ -108,7 +113,11 @@ func (e *EndpointInputsResolver) SetTrafficDistribution(distribution wellknown.T
 func (e *EndpointInputsResolver) ForEachEndpoint(fn func(ir.PodLocality, EndpointView) bool) {
 	for locality, localityEndpoints := range e.inputs.EndpointsForBackend.LbEps {
 		for _, endpoint := range localityEndpoints {
-			if !fn(locality, EndpointView{endpoint: endpoint}) {
+			if !fn(locality, EndpointView{
+				locality:     locality,
+				endpoint:     endpoint,
+				hashReusable: e.endpointHashesReusable,
+			}) {
 				return
 			}
 		}
@@ -135,6 +144,7 @@ func (e *EndpointInputsResolver) ReplaceEndpoints(replacement *EndpointSetBuilde
 	// direction.
 	replacement.endpoints.FoldVersion(e.inputs.EndpointsForBackend.LbEpsEqualityHash)
 	e.inputs.EndpointsForBackend = replacement.endpoints
+	e.endpointHashesReusable = true
 }
 
 // PolicyView is an immutable view of one policy attachment. It exposes what
@@ -174,7 +184,9 @@ func (p PolicyView) Generation() int64 {
 // EndpointView is an immutable view of one endpoint from shared input state.
 // Clone must be called before changing any endpoint proto or metadata label.
 type EndpointView struct {
-	endpoint ir.EndpointWithMd
+	locality     ir.PodLocality
+	endpoint     ir.EndpointWithMd
+	hashReusable bool
 }
 
 func (e EndpointView) Label(name string) string {
@@ -213,8 +225,19 @@ type EndpointSetBuilder struct {
 	endpoints ir.EndpointsForBackend
 }
 
+// AddUnchanged structurally shares an immutable endpoint and reuses its
+// precomputed contribution hash. Moving it to another locality, or using a view
+// exposed after a legacy mutable hook, safely falls back to a fresh hash.
 func (b *EndpointSetBuilder) AddUnchanged(locality ir.PodLocality, endpoint EndpointView) {
-	b.endpoints.Add(locality, endpoint.endpoint)
+	if locality != endpoint.locality || !endpoint.hashReusable {
+		// Locality participates in the endpoint contribution hash, so moving an
+		// otherwise unchanged endpoint still requires a fresh hash. A legacy
+		// plugin may also have mutated the endpoint behind the view, invalidating
+		// the cached contribution.
+		b.endpoints.Add(locality, endpoint.endpoint)
+		return
+	}
+	b.endpoints.ReuseEndpoint(locality, endpoint.endpoint)
 }
 
 func (b *EndpointSetBuilder) Add(locality ir.PodLocality, endpoint ir.EndpointWithMd) {
