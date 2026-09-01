@@ -37,8 +37,8 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	})
 }
 
-// RunFromVersion installs the given released version and runs the upgrade
-// suite against it.
+// RunFromVersion sets up the target Installation and runs the upgrade suite against it. Each
+// Test* method in the suite installs fromVersion for itself (see testingSuite.SetupTest).
 func RunFromVersion(t *testing.T, factory e2e.InstallationFactory, fromVersion string) {
 	ctx := t.Context()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-upgrade")
@@ -56,7 +56,9 @@ func RunFromVersion(t *testing.T, factory e2e.InstallationFactory, fromVersion s
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
-	// Register cleanup before installation so partial installs are also cleaned up.
+	// Register cleanup as a final safety net: each Test* method installs the released
+	// version fresh for itself (see testingSuite.SetupTest) and tears it back down again
+	// before returning, so by the time this runs there is normally nothing left to do.
 	testutils.Cleanup(t, func() {
 		ctx := context.Background() // t.Context() is canceled before t's cleanup runs
 		if !nsEnvPredefined {
@@ -67,9 +69,6 @@ func RunFromVersion(t *testing.T, factory e2e.InstallationFactory, fromVersion s
 		}
 		testInstallation.UninstallKgateway(ctx, t)
 	})
-
-	// Install the released version from the remote OCI registry.
-	testInstallation.InstallKgatewayFromRelease(ctx, t, fromVersion)
 
 	SuiteRunner(fromVersion).Run(ctx, t, testInstallation.Underlying())
 }

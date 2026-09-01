@@ -714,7 +714,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			}
 
 			By("Validating that the older TCPRoute is Accepted")
-			olderStatus := rm.BuildRouteStatus(ctx, olderRoute, wellknown.DefaultGatewayControllerName)
+			olderStatus := rm.BuildRouteStatus(olderRoute, wellknown.DefaultGatewayControllerName)
 			Expect(olderStatus).NotTo(BeNil())
 			Expect(olderStatus.Parents).To(HaveLen(1))
 			olderProgrammed := findProgrammed(olderStatus.Parents[0].Conditions)
@@ -723,7 +723,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 			Expect(olderProgrammed.Reason).To(Equal(conditions.KgatewayReasonProgrammed))
 
 			By("Validating that the newer conflicting TCPRoute is rejected")
-			newerStatus := rm.BuildRouteStatus(ctx, newerRoute, wellknown.DefaultGatewayControllerName)
+			newerStatus := rm.BuildRouteStatus(newerRoute, wellknown.DefaultGatewayControllerName)
 			Expect(newerStatus).NotTo(BeNil())
 			Expect(newerStatus.Parents).To(HaveLen(1))
 			newerProgrammed := findProgrammed(newerStatus.Parents[0].Conditions)

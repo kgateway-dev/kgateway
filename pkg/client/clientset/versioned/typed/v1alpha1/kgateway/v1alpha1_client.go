@@ -17,7 +17,6 @@ type GatewayKgatewayInterface interface {
 	DirectResponsesGetter
 	GatewayExtensionsGetter
 	GatewayParametersGetter
-	HTTPListenerPoliciesGetter
 	ListenerPoliciesGetter
 	TrafficPoliciesGetter
 }
@@ -45,10 +44,6 @@ func (c *GatewayKgatewayClient) GatewayExtensions(namespace string) GatewayExten
 
 func (c *GatewayKgatewayClient) GatewayParameters(namespace string) GatewayParametersInterface {
 	return newGatewayParameters(c, namespace)
-}
-
-func (c *GatewayKgatewayClient) HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface {
-	return newHTTPListenerPolicies(c, namespace)
 }
 
 func (c *GatewayKgatewayClient) ListenerPolicies(namespace string) ListenerPolicyInterface {

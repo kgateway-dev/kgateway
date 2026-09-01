@@ -2,7 +2,7 @@ package ir
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"maps"
 	"slices"
 	"time"
@@ -351,7 +351,7 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
 }
 
-var ErrNotAttachable = fmt.Errorf("policy is not attachable to this object")
+var ErrNotAttachable = errors.New("policy is not attachable to this object")
 
 type PolicyRun interface {
 	// Allocate state for single listener+rotue translation pass.

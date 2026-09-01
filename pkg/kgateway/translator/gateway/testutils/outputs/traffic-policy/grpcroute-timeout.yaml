@@ -52,7 +52,6 @@ Routes:
     routes:
     - match:
         safeRegex:
-          googleRe2: {}
           regex: /.+/foo
       metadata:
         filterMetadata:

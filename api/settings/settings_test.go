@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -372,7 +371,7 @@ func expectedEnvVars(settingsValue reflect.Value) map[string]any {
 
 		envVarName = strings.ToUpper(envVarName)
 		// Always have a prefix
-		envVarName = fmt.Sprintf("KGW_%s", envVarName)
+		envVarName = "KGW_" + envVarName
 
 		// If the field has an alt tag, use that as the env var name
 		if fieldType.Tag.Get("alt") != "" {
