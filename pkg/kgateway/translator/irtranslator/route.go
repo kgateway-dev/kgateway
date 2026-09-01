@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -729,11 +730,11 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	out := &envoyroutev3.Route{
 		Match: translateMatcher(in.Match),
 	}
-	name := in.Name
-	if name != "" {
-		out.Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, name, in.MatchIndex)
+	matchIdx := strconv.Itoa(in.MatchIndex)
+	if name := in.Name; name != "" {
+		out.Name = generatedName + "-" + name + "-matcher-" + matchIdx
 	} else {
-		out.Name = fmt.Sprintf("%s-matcher-%d", generatedName, in.MatchIndex)
+		out.Name = generatedName + "-matcher-" + matchIdx
 	}
 
 	return out

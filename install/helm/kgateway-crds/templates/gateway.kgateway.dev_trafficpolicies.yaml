@@ -1928,6 +1928,34 @@ spec:
                 required:
                 - policy
                 type: object
+              requestMirror:
+                description: |-
+                  RequestMirror configures the behavior of request mirrors defined by
+                  HTTPRoute or GRPCRoute RequestMirror filters. It does not create request mirrors.
+                  It can target HTTPRoutes, GRPCRoutes, or Gateways (including individual Gateway listeners
+                  via sectionName). When attached above the route level it applies to every mirror on the
+                  routes it covers, and a more-specific policy wins the whole block: its settings are not
+                  combined field-by-field with a less-specific policy. If a covered route has no request
+                  mirror, this has no effect.
+                minProperties: 1
+                properties:
+                  disableShadowHostSuffixAppend:
+                    description: |-
+                      DisableShadowHostSuffixAppend controls whether Envoy appends the "-shadow" suffix to the
+                      Host/:authority header of mirrored requests. When true, the original Host/:authority is
+                      preserved; when false, Envoy appends the suffix. Cross-policy precedence applies to the whole
+                      RequestMirror block (see above), not to this field alone. If hostRewriteLiteral is set, Envoy
+                      suppresses the suffix regardless of this field.
+                    type: boolean
+                  hostRewriteLiteral:
+                    description: |-
+                      HostRewriteLiteral replaces the entire Host/:authority header of mirrored requests with this
+                      value. The original port is not preserved, so include a port here if the mirror destination
+                      needs one. This implicitly disables appending the "-shadow" suffix, regardless of
+                      disableShadowHostSuffixAppend.
+                    minLength: 1
+                    type: string
+                type: object
               retry:
                 description: |-
                   Retry defines the policy for retrying requests.
