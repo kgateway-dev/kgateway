@@ -84,7 +84,7 @@ controller:
   securityContext: null
   # -- Configure resource requests and limits for the controller container.
   resources: null
-  # -- Keep the Go runtime memory limit at this percentage of the controller container's live cgroup memory limit. The cgroup limit is refreshed every 30 seconds to follow in-place container resizes. Valid values are 1-100; 0 disables container-aware calculation and preserves the existing resourceFieldRef behavior, which sets GOMEMLIMIT to 100% of the container memory limit at startup. 90 is the recommended starting point.
+  # -- Keep Go-runtime-managed memory at this percentage of the controller container's live cgroup memory limit. This limit does not account for memory allocated outside the Go runtime, so leave headroom for other container memory. The cgroup limit is refreshed every 30 seconds to follow in-place container resizes. Valid values are 1-100; 0 preserves the existing startup-time default of 100% of the container memory limit. 90 is the recommended starting point.
   goMemLimitPercent: 0
   # -- Set node selector labels for controller pod scheduling.
   nodeSelector: null
