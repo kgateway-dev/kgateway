@@ -9,29 +9,39 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/localstack"
+	"github.com/kgateway-dev/kgateway/v2/test/envoyutils/admincli"
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
+// stsSuccessStatRegex matches the 2xx request counter of the internal cluster
+// Envoy creates for its assume-role credential provider's STS calls.
+var stsSuccessStatRegex = regexp.MustCompile(`cluster\.sts_token_service_internal-us-east-1\.upstream_rq_2xx: (\d+)`)
+
 // testingSuite is a suite of Lambda backend routing tests
 type testingSuite struct {
 	suite.Suite
-	ctx         context.Context
-	ti          *e2e.TestInstallation
-	manifests   map[string][]string
-	endpointURL string
+	ctx          context.Context
+	ti           *e2e.TestInstallation
+	manifests    map[string][]string
+	endpointURL  string
+	stsServiceIP string
 }
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -61,9 +71,14 @@ func (s *testingSuite) SetupSuite() {
 		"TestLambdaBackendRouting":      {lambdaBackendManifest},
 		"TestLambdaBackendAsyncRouting": {lambdaAsyncManifest},
 		"TestLambdaBackendQualifier":    {lambdaQualifierManifest},
+		"TestLambdaBackendAssumeRole":   {lambdaAssumeRoleManifest},
 	}
 
+	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, stsServiceManifest)
+	s.NoError(err, "can apply "+stsServiceManifest)
+
 	s.extractLocalstackEndpoint()
+	s.extractSTSServiceIP()
 	s.createLambdaFunctions()
 }
 
@@ -75,6 +90,8 @@ func (s *testingSuite) TearDownSuite() {
 	s.NoError(err, "can delete setup manifest")
 	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can delete curl pod manifest")
+	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, stsServiceManifest)
+	s.NoError(err, "can delete sts service manifest")
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
@@ -88,8 +105,9 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		content, err := os.ReadFile(manifest)
 		s.Assert().NoError(err, "can read manifest "+manifest)
 
-		// Replace the endpointURL placeholder with actual URL
+		// Replace the endpointURL and STS service IP placeholders with the actual values
 		newContent := strings.Replace(string(content), "http://172.18.0.2:31566", s.endpointURL, -1)
+		newContent = strings.Replace(newContent, stsServiceIPPlaceholder, s.stsServiceIP, -1)
 		tmpFile, err := os.CreateTemp("", "lambda-manifest-*.yaml")
 		s.Assert().NoError(err, "can create temp file")
 		defer os.Remove(tmpFile.Name())
@@ -253,6 +271,54 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 	)
 }
 
+// TestLambdaBackendAssumeRole verifies STS role chaining: the proxy must use its
+// base credentials (env vars on the dedicated gateway's Envoy container) to call
+// sts:AssumeRole on the Backend's roleArn, then sign the Lambda invocation with
+// the temporary credentials STS returns.
+func (s *testingSuite) TestLambdaBackendAssumeRole() {
+	// BeforeTest waits on the shared gateway; this test brings its own.
+	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, assumeRoleProxyServiceMeta, assumeRoleProxyDeploymentMeta)
+	s.ti.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, lambdaNamespace, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", testdefaults.WellKnownAppLabel, assumeRoleGatewayName),
+	})
+
+	// The route must work end to end through the assumed role's credentials.
+	s.ti.AssertionsT(s.T()).AssertEventualCurlResponse(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(assumeRoleGatewayObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPort(8080),
+			curl.WithPath("/lambda"),
+		},
+		&testmatchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(`Hello from Lambda`),
+		},
+	)
+
+	// A 200 alone doesn't prove role chaining: localstack doesn't enforce IAM, so
+	// a proxy that (incorrectly) signs with its base credentials also gets a 200.
+	// Envoy only creates and uses the internal STS cluster when the assume-role
+	// credential provider is actually active, so require a successful AssumeRole
+	// call to have gone through it.
+	s.ti.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, assumeRoleProxyDeploymentMeta.ObjectMeta,
+		func(ctx context.Context, adminClient *admincli.Client) {
+			stats, err := adminClient.GetStats(ctx, map[string]string{
+				"filter": `cluster\.sts_token_service_internal-us-east-1\.upstream_rq_2xx`,
+			})
+			s.Assert().NoError(err, "can fetch envoy stats")
+			matches := stsSuccessStatRegex.FindStringSubmatch(stats)
+			s.Require().Len(matches, 2, "expected an upstream_rq_2xx stat for the STS cluster; "+
+				"its absence means Envoy never called sts:AssumeRole and signed with its base credentials instead. stats: %q", stats)
+			count, err := strconv.Atoi(matches[1])
+			s.Assert().NoError(err, "can parse STS 2xx stat value")
+			s.Assert().GreaterOrEqual(count, 1, "expected at least one successful sts:AssumeRole call")
+		},
+	)
+}
+
 func (s *testingSuite) extractLocalstackEndpoint() {
 	s.T().Log("extracting localstack endpoint URL from cluster")
 
@@ -262,6 +328,20 @@ func (s *testingSuite) extractLocalstackEndpoint() {
 
 	s.endpointURL = endpoint
 	s.T().Logf("localstack endpoint URL: %s", s.endpointURL)
+}
+
+// extractSTSServiceIP resolves the cluster IP of the localstack-sts service so
+// the assume-role test can alias sts.us-east-1.amazonaws.com (which Envoy's
+// assume-role credential provider hardcodes) to localstack via pod hostAliases.
+func (s *testingSuite) extractSTSServiceIP() {
+	svc := &corev1.Service{}
+	err := s.ti.ClusterContext.Client.Get(s.ctx,
+		client.ObjectKey{Namespace: "localstack", Name: "localstack-sts"}, svc)
+	s.Require().NoError(err, "can get localstack-sts service")
+	s.Require().NotEmpty(svc.Spec.ClusterIP, "localstack-sts service must have a cluster IP")
+
+	s.stsServiceIP = svc.Spec.ClusterIP
+	s.T().Logf("localstack STS service cluster IP: %s", s.stsServiceIP)
 }
 
 func (s *testingSuite) createLambdaFunctions() {
