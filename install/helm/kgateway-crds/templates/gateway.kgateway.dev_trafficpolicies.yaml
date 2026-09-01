@@ -2477,6 +2477,72 @@ spec:
                         maxItems: 16
                         type: array
                         x-kubernetes-list-type: set
+                      secretRefs:
+                        description: |-
+                          SecretRefs defines a list of Kubernetes Secrets that can be referenced
+                          from the transformation templates using the `secret(name, key)` function.
+                        items:
+                          description: TransformationSecretRef defines a reference
+                            to a Kubernetes Secret for use in templates.
+                          properties:
+                            name:
+                              description: Name is the name given to the secret reference,
+                                used in the template function.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            secret:
+                              description: Secret is the reference to the Kubernetes
+                                Secret.
+                              properties:
+                                group:
+                                  default: ""
+                                  description: |-
+                                    Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                    When unspecified or empty string, core API group is inferred.
+                                  maxLength: 253
+                                  pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
+                                kind:
+                                  default: Secret
+                                  description: Kind is kind of the referent. For example
+                                    "Secret".
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                  type: string
+                                name:
+                                  description: Name is the name of the referent.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the referenced object. When unspecified, the local
+                                    namespace is inferred.
+
+                                    Note that when a namespace different than the local namespace is specified,
+                                    a ReferenceGrant object is required in the referent namespace to allow that
+                                    namespace's owner to accept the reference. See the ReferenceGrant
+                                    documentation for details.
+
+                                    Support: Core
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                          required:
+                          - name
+                          - secret
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       set:
                         description: Set is a list of headers and the value they should
                           be set to.
@@ -2600,6 +2666,72 @@ spec:
                         maxItems: 16
                         type: array
                         x-kubernetes-list-type: set
+                      secretRefs:
+                        description: |-
+                          SecretRefs defines a list of Kubernetes Secrets that can be referenced
+                          from the transformation templates using the `secret(name, key)` function.
+                        items:
+                          description: TransformationSecretRef defines a reference
+                            to a Kubernetes Secret for use in templates.
+                          properties:
+                            name:
+                              description: Name is the name given to the secret reference,
+                                used in the template function.
+                              maxLength: 256
+                              minLength: 1
+                              type: string
+                            secret:
+                              description: Secret is the reference to the Kubernetes
+                                Secret.
+                              properties:
+                                group:
+                                  default: ""
+                                  description: |-
+                                    Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                                    When unspecified or empty string, core API group is inferred.
+                                  maxLength: 253
+                                  pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
+                                kind:
+                                  default: Secret
+                                  description: Kind is kind of the referent. For example
+                                    "Secret".
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                  type: string
+                                name:
+                                  description: Name is the name of the referent.
+                                  maxLength: 253
+                                  minLength: 1
+                                  type: string
+                                namespace:
+                                  description: |-
+                                    Namespace is the namespace of the referenced object. When unspecified, the local
+                                    namespace is inferred.
+
+                                    Note that when a namespace different than the local namespace is specified,
+                                    a ReferenceGrant object is required in the referent namespace to allow that
+                                    namespace's owner to accept the reference. See the ReferenceGrant
+                                    documentation for details.
+
+                                    Support: Core
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                          required:
+                          - name
+                          - secret
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       set:
                         description: Set is a list of headers and the value they should
                           be set to.

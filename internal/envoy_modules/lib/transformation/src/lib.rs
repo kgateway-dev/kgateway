@@ -9,6 +9,9 @@ pub mod jinja;
 #[derive(Clone, Deserialize)]
 pub struct LocalTransformationConfig {
     #[serde(default)]
+    pub secrets: std::collections::HashMap<String, std::collections::HashMap<String, String>>,
+
+    #[serde(default)]
     pub request: Option<LocalTransform>,
     #[serde(default)]
     pub response: Option<LocalTransform>,
