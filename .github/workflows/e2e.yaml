@@ -116,6 +116,18 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
             localstack: 'false'
+          # An IPv6-only cluster over the basic routing suites. This has to be
+          # ipv6-only rather than dual-stack to be worth running: kind's
+          # dual-stack mode is IPv4-primary and Services default to SingleStack
+          # IPv4, so a dual-stack job would exercise the same IPv4 paths as every
+          # other cluster here and would pass just as well without the IPv6 fixes.
+          # In an IPv6-only cluster the readiness probe, the xDS connection, and
+          # the request path are all IPv6 by construction.
+          - cluster-name: 'cluster-ipv6'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^Deployer$$'
+            localstack: 'false'
+            ip-family: 'ipv6'
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-multi-install'
             go-test-args: '-timeout=5m'
@@ -166,6 +178,7 @@ jobs:
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           localstack: ${{ matrix.test.localstack }}
           gateway-api-version: ${{ matrix.test.gateway-api-version }}
+          ip-family: ${{ matrix.test.ip-family || 'ipv4' }}
       - id: setup-k3d-cluster
         name: Setup k3d Cluster
         if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}

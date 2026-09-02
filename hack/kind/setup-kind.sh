@@ -30,12 +30,22 @@ HELM="${HELM:-go tool helm}"
 LOCALSTACK="${LOCALSTACK:-false}"
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND="${CLOUD_PROVIDER_KIND:-false}"
+# The IP family of the kind cluster: ipv4, ipv6, or dual.
+IP_FAMILY="${IP_FAMILY:-ipv4}"
 # Registry cache references for Docker builds (optional)
 ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
 CONTROLLER_CACHE_REF="${CONTROLLER_CACHE_REF:-}"
 SDS_CACHE_REF="${SDS_CACHE_REF:-}"
 
-export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF CONTROLLER_CACHE_REF SDS_CACHE_REF
+export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF CONTROLLER_CACHE_REF SDS_CACHE_REF IP_FAMILY
+
+case "$IP_FAMILY" in
+  ipv4|ipv6|dual) ;;
+  *)
+    echo "IP_FAMILY must be one of ipv4, ipv6, or dual; got '$IP_FAMILY'" >&2
+    exit 1
+    ;;
+esac
 
 function create_kind_cluster_or_skip() {
   activeClusters=$($KIND get clusters)
@@ -46,10 +56,16 @@ function create_kind_cluster_or_skip() {
     return
   fi
 
-  echo "creating cluster ${CLUSTER_NAME}"
+  echo "creating cluster ${CLUSTER_NAME} with ipFamily=${IP_FAMILY}"
   $KIND create cluster \
     --name "$CLUSTER_NAME" \
-    --image "kindest/node:$CLUSTER_NODE_VERSION"
+    --image "kindest/node:$CLUSTER_NODE_VERSION" \
+    --config - <<EOF
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: ${IP_FAMILY}
+EOF
   echo "Finished setting up cluster $CLUSTER_NAME"
 
   # so that you can just build the kind image alone if needed

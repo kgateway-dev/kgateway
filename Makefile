@@ -1047,9 +1047,15 @@ CLUSTER_NODE_VERSION ?= v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND ?= false
 
+# The IP family of the kind cluster: ipv4, ipv6, or dual. ipv6 and dual require
+# IPv6 to be enabled on the docker daemon.
+IP_FAMILY ?= ipv4
+
 .PHONY: kind-create
-kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+kind-create: ## Create a KinD cluster. IP_FAMILY=ipv4|ipv6|dual selects the cluster's IP family.
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || \
+		printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nnetworking:\n  ipFamily: $(IP_FAMILY)\n' | \
+		$(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION) --config -
 
 CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.6.1
@@ -1067,7 +1073,7 @@ endif
 
 .PHONY: metallb
 metallb: ## Install the MetalLB load balancer
-	./hack/kind/setup-metalllb-on-kind.sh
+	IP_FAMILY=$(IP_FAMILY) ./hack/kind/setup-metalllb-on-kind.sh
 
 .PHONY: cloud-provider-kind
 cloud-provider-kind:
@@ -1112,7 +1118,7 @@ undeploy-kgateway-crds: ## Undeploy the CRD chart from the cluster
 #----------------------------------------------------------------------------------
 
 kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
-	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
+	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} IP_FAMILY=$(IP_FAMILY) ./hack/kind/setup-kind.sh
 
 kind-load-%:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)
