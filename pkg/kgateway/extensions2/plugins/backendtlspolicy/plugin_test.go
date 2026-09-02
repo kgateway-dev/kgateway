@@ -99,3 +99,59 @@ func TestProcessBackend_NilPolicySocket(t *testing.T) {
 	processBackend(context.Background(), pol, ir.BackendObjectIR{}, cluster)
 	assert.Same(t, existing, cluster.TransportSocket)
 }
+
+const testCAPEM = "-----BEGIN CERTIFICATE-----\ntest-ca\n-----END CERTIFICATE-----"
+
+// TestUpstreamTLSValidation: the CA this policy validates the backend against is exposed so
+// that a control-plane client — OIDC discovery — can trust it too, instead of being stuck
+// with the system trust store. See kgateway-dev/kgateway#14062.
+func TestUpstreamTLSValidation(t *testing.T) {
+	tests := []struct {
+		name string
+		pol  *backendTlsPolicy
+		want *ir.UpstreamTLSValidation
+	}{
+		{
+			name: "nil policy",
+			pol:  nil,
+			want: nil,
+		},
+		{
+			name: "policy that failed to translate configures nothing",
+			pol:  &backendTlsPolicy{caPEM: testCAPEM},
+			want: nil,
+		},
+		{
+			name: "explicit CA bundle",
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM},
+			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM},
+		},
+		{
+			name: "system CA certificates resolve to an empty bundle",
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com")},
+			want: &ir.UpstreamTLSValidation{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.pol.UpstreamTLSValidation())
+		})
+	}
+}
+
+// TestEqualsComparesCA guards KRT change detection: rotating the CA has to be observed, or
+// the discovery cache keeps serving a config obtained under the old trust material.
+func TestEqualsComparesCA(t *testing.T) {
+	socket := tlsSocket(t, "example.com")
+	base := &backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM}
+
+	assert.True(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM}),
+		"identical policies should compare equal")
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: "rotated"}),
+		"a rotated CA must not compare equal")
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket}),
+		"dropping the CA must not compare equal")
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "other.example.com"), caPEM: testCAPEM}),
+		"a changed transport socket must not compare equal")
+}

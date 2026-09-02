@@ -472,7 +472,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			}
 
 			// Call the function
-			result, err := translateTLSConfig(secretGetter, tt.tlsConfig, "default")
+			result, _, err := translateTLSConfig(secretGetter, tt.tlsConfig, "default")
 
 			// Check error
 			if tt.wantErr {
@@ -548,4 +548,93 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestTranslateTLSConfigUpstreamValidation: alongside the Envoy TLS context, translation
+// reports the trust material a control-plane client would need to reach the same backend
+// itself. OIDC discovery uses it so that an issuer behind a private CA can be discovered
+// rather than failing on the system trust store. See kgateway-dev/kgateway#14062.
+func TestTranslateTLSConfigUpstreamValidation(t *testing.T) {
+	const caPEM = "-----BEGIN CERTIFICATE-----\ntest-ca\n-----END CERTIFICATE-----"
+
+	systemCA := gwv1.WellKnownCACertificatesSystem
+
+	tests := []struct {
+		name      string
+		tlsConfig *kgateway.TLS
+		secret    *ir.Secret
+		want      *ir.UpstreamTLSValidation
+	}{
+		{
+			name: "CA from a secret is exposed",
+			tlsConfig: &kgateway.TLS{
+				SecretRef: &corev1.LocalObjectReference{Name: "ca-secret"},
+				SimpleTLS: new(true),
+			},
+			secret: &ir.Secret{
+				ObjectSource: ir.ObjectSource{Name: "ca-secret", Namespace: "default"},
+				Data:         map[string][]byte{"ca.crt": []byte(caPEM)},
+			},
+			want: &ir.UpstreamTLSValidation{CAPEM: caPEM},
+		},
+		{
+			name: "insecureSkipVerify is carried through",
+			tlsConfig: &kgateway.TLS{
+				InsecureSkipVerify: new(true),
+			},
+			want: &ir.UpstreamTLSValidation{InsecureSkipVerify: true},
+		},
+		{
+			name: "system CA certificates resolve to an empty bundle",
+			tlsConfig: &kgateway.TLS{
+				WellKnownCACertificates: &systemCA,
+				SimpleTLS:               new(true),
+			},
+			want: &ir.UpstreamTLSValidation{},
+		},
+		{
+			name: "a CA given as a file path is not usable by the control plane",
+			tlsConfig: &kgateway.TLS{
+				Files:     &kgateway.TLSFiles{RootCA: new("/etc/ssl/certs/ca.crt")},
+				SimpleTLS: new(true),
+			},
+			want: nil,
+		},
+		{
+			name: "no trust material configured",
+			tlsConfig: &kgateway.TLS{
+				SimpleTLS: new(true),
+			},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			secretGetter := NewMockSecretGetter()
+			if tt.secret != nil {
+				secretGetter.AddSecret(tt.secret.Name, tt.secret.Namespace, tt.secret)
+			}
+
+			_, validation, err := translateTLSConfig(secretGetter, tt.tlsConfig, "default")
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, validation)
+		})
+	}
+}
+
+// TestBackendConfigPolicyIREqualsComparesTLSValidation guards KRT change detection: rotating
+// the CA must be observed, or the discovery cache keeps serving a config obtained under the
+// old trust material.
+func TestBackendConfigPolicyIREqualsComparesTLSValidation(t *testing.T) {
+	base := &BackendConfigPolicyIR{tlsValidation: &ir.UpstreamTLSValidation{CAPEM: "ca"}}
+
+	assert.True(t, base.Equals(&BackendConfigPolicyIR{tlsValidation: &ir.UpstreamTLSValidation{CAPEM: "ca"}}),
+		"identical policies should compare equal")
+	assert.False(t, base.Equals(&BackendConfigPolicyIR{tlsValidation: &ir.UpstreamTLSValidation{CAPEM: "rotated"}}),
+		"a rotated CA must not compare equal")
+	assert.False(t, base.Equals(&BackendConfigPolicyIR{}),
+		"dropping the trust material must not compare equal")
+	assert.False(t, base.Equals(&BackendConfigPolicyIR{tlsValidation: &ir.UpstreamTLSValidation{CAPEM: "ca", InsecureSkipVerify: true}}),
+		"skipping verification must not compare equal")
 }
