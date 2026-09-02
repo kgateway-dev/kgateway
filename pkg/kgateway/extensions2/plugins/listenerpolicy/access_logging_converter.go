@@ -70,12 +70,22 @@ func convertAccessLogConfig(
 			continue
 		}
 		if log.OpenTelemetry != nil {
-			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
-			// TODO: what is the correct behavior? maybe route to static blackhole?
-			if err != nil {
-				return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
+			switch {
+			case log.OpenTelemetry.GrpcService != nil:
+				backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
+				// TODO: what is the correct behavior? maybe route to static blackhole?
+				if err != nil {
+					return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
+				}
+				grpcBackends[getLogId(log.OpenTelemetry.GrpcService.LogName, idx)] = backend
+			case log.OpenTelemetry.HttpService != nil:
+				backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.OpenTelemetry.HttpService.BackendRef.BackendObjectReference)
+				// TODO: what is the correct behavior? maybe route to static blackhole?
+				if err != nil {
+					return nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
+				}
+				grpcBackends[getLogId(log.OpenTelemetry.HttpService.LogName, idx)] = backend
 			}
-			grpcBackends[getLogId(log.OpenTelemetry.GrpcService.LogName, idx)] = backend
 		}
 	}
 
@@ -214,6 +224,15 @@ func generateGrpcServiceConfig(grpcService kgateway.CommonAccessLogGrpcService, 
 	return ToEnvoyGrpc(grpcService.CommonGrpcService, backend)
 }
 
+func generateHttpServiceConfig(httpService kgateway.CommonAccessLogHttpService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoycorev3.HttpService, error) {
+	backend := grpcBackends[getLogId(httpService.LogName, accessLogId)]
+	if backend == nil {
+		return nil, errors.New("backend ref not found")
+	}
+
+	return ToEnvoyHttp(httpService.CommonHttpService, backend)
+}
+
 func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
 	config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
 	if err != nil {
@@ -228,13 +247,25 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgate
 }
 
 func copyOTelSettings(cfg *envoy_open_telemetry.OpenTelemetryAccessLogConfig, otelService *kgateway.OpenTelemetryAccessLogService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
-	config, err := generateGrpcServiceConfig(otelService.GrpcService, grpcBackends, accessLogId)
-	if err != nil {
-		return err
+	switch {
+	case otelService.GrpcService != nil:
+		config, err := generateGrpcServiceConfig(*otelService.GrpcService, grpcBackends, accessLogId)
+		if err != nil {
+			return err
+		}
+		cfg.LogName = otelService.GrpcService.LogName
+		cfg.GrpcService = config
+	case otelService.HttpService != nil:
+		config, err := generateHttpServiceConfig(*otelService.HttpService, grpcBackends, accessLogId)
+		if err != nil {
+			return err
+		}
+		cfg.LogName = otelService.HttpService.LogName
+		cfg.HttpService = config
+	default:
+		return errors.New("either grpcService or httpService must be configured for OpenTelemetry access log")
 	}
 
-	cfg.LogName = otelService.GrpcService.LogName
-	cfg.GrpcService = config
 	if otelService.Body != nil {
 		cfg.Body = &otelv1.AnyValue{
 			Value: &otelv1.AnyValue_StringValue{
