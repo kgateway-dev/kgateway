@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint"
@@ -57,26 +59,97 @@ func TestWaypointTranslator(t *testing.T) {
 			ctx := t.Context()
 			dir := fsutils.MustGetThisDir()
 
-			extraPluginsFn := func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {
-				return []pluginsdk.Plugin{waypoint.NewPlugin(ctx, commoncol, wellknown.DefaultWaypointClassName)}
-			}
-			settingOpt := func(s *apisettings.Settings) {
-				s.EnableExperimentalGatewayAPIFeatures = true
-				s.EnableIstioIntegration = true
-				s.EnableAuthMetadata = true
-			}
-			extraConfig := translatortest.ExtraConfig{
-				PluginsFn: extraPluginsFn,
-			}
 			translatortest.TestTranslationWithExtraPlugins(
 				t,
 				ctx,
 				[]string{filepath.Join(dir, "testdata/input", tt.file+".yaml")},
 				filepath.Join(dir, "testdata/output", tt.file+".yaml"),
 				tt.gw,
-				extraConfig,
-				settingOpt,
+				waypointExtraConfig(),
+				waypointSettings,
 			)
 		})
 	}
+}
+
+// TestWaypointListenerAttachedRoutes proves waypoint Gateways report AttachedRoutes
+// for HTTPRoutes collected at Gateway and Service attachment. Waypoint translation
+// skips the core translator's setAttachedRoutes, so this must be asserted here.
+func TestWaypointListenerAttachedRoutes(t *testing.T) {
+	tests := []struct {
+		name string
+		file string
+		want int32
+	}{
+		{
+			name: "HTTPRoute parented to the waypoint Gateway",
+			file: "httproute-gateway",
+			want: 1,
+		},
+		{
+			name: "HTTPRoute parented to a Service using the waypoint",
+			file: "httproute-svc",
+			want: 1,
+		},
+		{
+			name: "HTTPRoute parented to a ServiceEntry using the waypoint",
+			file: "httproute-se",
+			want: 1,
+		},
+		{
+			name: "no HTTPRoutes",
+			file: "empty",
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := runWaypointTranslation(t, tt.file)
+			gw := result.Gateways[exampleGw]
+			require.NotNil(t, gw, "gateway fixture must be present")
+
+			status := result.ReportsMap.BuildGWStatus(*gw, nil)
+			require.NotNil(t, status, "waypoint translation must produce a Gateway status report")
+
+			attached := proxyListenerAttachedRoutes(status)
+			require.Equal(t, tt.want, attached,
+				"proxy listener AttachedRoutes should count attached HTTPRoutes")
+		})
+	}
+}
+
+func waypointExtraConfig() translatortest.ExtraConfig {
+	return translatortest.ExtraConfig{
+		PluginsFn: func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin {
+			return []pluginsdk.Plugin{waypoint.NewPlugin(ctx, commoncol, wellknown.DefaultWaypointClassName)}
+		},
+	}
+}
+
+func waypointSettings(s *apisettings.Settings) {
+	s.EnableExperimentalGatewayAPIFeatures = true
+	s.EnableIstioIntegration = true
+	s.EnableAuthMetadata = true
+}
+
+func runWaypointTranslation(t *testing.T, inputFile string) translatortest.ActualTestResult {
+	t.Helper()
+	ctx := t.Context()
+	dir := fsutils.MustGetThisDir()
+	scheme := translatortest.NewScheme(nil)
+	results, err := (translatortest.TestCase{
+		InputFiles: []string{filepath.Join(dir, "testdata/input", inputFile+".yaml")},
+	}).Run(t, ctx, scheme, waypointExtraConfig(), waypointSettings)
+	require.NoError(t, err, "waypoint translation should succeed")
+	require.Contains(t, results, exampleGw, "expected waypoint Gateway in translation results")
+	return results[exampleGw]
+}
+
+func proxyListenerAttachedRoutes(status *gwv1.GatewayStatus) int32 {
+	for _, listener := range status.Listeners {
+		if listener.Name == "proxy" {
+			return listener.AttachedRoutes
+		}
+	}
+	return -1
 }
