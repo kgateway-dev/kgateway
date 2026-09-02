@@ -381,6 +381,15 @@ type Settings struct {
 	// values and semantics as SecretDiscoveryMode.
 	ConfigMapDiscoveryMode DiscoveryMode `split_words:"true" default:"ALL"`
 
+	// ServiceDiscoveryMode controls which Services kgateway watches, with the same values
+	// and semantics as SecretDiscoveryMode. Beyond bounding the informer cache, "LABELED"
+	// bounds the number of clusters kgateway sends to Envoy, because every Service it
+	// watches becomes a backend.
+	//
+	// Route backendRefs to an unlabeled Service are reported as not found, and an unlabeled
+	// Service is not matched as a waypoint.
+	ServiceDiscoveryMode DiscoveryMode `split_words:"true" default:"ALL"`
+
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:
 	// - "OFF": No ReferenceGrant validation. All cross-namespace references are permitted.

@@ -207,9 +207,14 @@ func NewCommonCollections(
 	), krtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol, settings.ReferenceGrantMode)
 
+	// The gateway controller opens a Service client of its own (see gw_controller.go) and
+	// applies this same selector, so the two share one informer.
 	serviceClient := kclient.NewFiltered[*corev1.Service](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		kclient.Filter{
+			LabelSelector: WatchLabelSelector(settings.ServiceDiscoveryMode),
+			ObjectFilter:  client.ObjectFilter(),
+		},
 	)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 

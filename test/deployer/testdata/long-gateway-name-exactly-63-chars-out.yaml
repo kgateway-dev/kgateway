@@ -248,6 +248,7 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
     kgateway: kube-gateway
+    kgateway.dev/watch: "true"
   name: very-long-gateway-name-that-is-exactly-sixty-three-characterslo
 spec:
   ports:

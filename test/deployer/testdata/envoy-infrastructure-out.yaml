@@ -265,6 +265,7 @@ metadata:
     gateway.networking.k8s.io/gateway-name: gw
     infra-and-params: infra
     kgateway: kube-gateway
+    kgateway.dev/watch: "true"
     my-label: my-value
   name: gw
 spec:

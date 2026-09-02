@@ -32,6 +32,15 @@ func configMapWithLabels(name string, lbls map[string]string) *corev1.ConfigMap 
 	}
 }
 
+func serviceWithLabels(name string, lbls map[string]string) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default", Labels: lbls},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{{Name: "http", Port: 80}},
+		},
+	}
+}
+
 func TestWatchLabelSelector(t *testing.T) {
 	// The empty string is what leaves a watch unfiltered, so ALL must produce exactly that.
 	require.Empty(t, collections.WatchLabelSelector(apisettings.DiscoveryAll))
@@ -39,12 +48,13 @@ func TestWatchLabelSelector(t *testing.T) {
 	require.Equal(t, "kgateway.dev/watch=true", collections.WatchLabelSelector(apisettings.DiscoveryLabeled))
 }
 
-// TestDiscoveryModeNarrowsSecretAndConfigMapCollections asserts that LABELED reaches the
-// Secret and ConfigMap informers, so unlabeled objects never land in the caches whose size
-// the setting exists to bound.
-func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
+// TestDiscoveryModeNarrowsWatchedCollections asserts that LABELED reaches the informers, so
+// unlabeled objects never land in the caches whose size the setting exists to bound, and that
+// each mode narrows only its own kind.
+func TestDiscoveryModeNarrowsWatchedCollections(t *testing.T) {
 	allSecrets := []string{"labeled-secret", "unlabeled-secret", "opted-out-secret"}
 	allConfigMaps := []string{"labeled-cm", "unlabeled-cm", "opted-out-cm"}
+	allServices := []string{"labeled-svc", "unlabeled-svc", "opted-out-svc"}
 
 	tests := []struct {
 		name     string
@@ -52,42 +62,57 @@ func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
 
 		wantSecrets    []string
 		wantConfigMaps []string
+		wantServices   []string
 	}{
 		{
 			name:           "unset watches everything",
 			settings:       apisettings.Settings{},
 			wantSecrets:    allSecrets,
 			wantConfigMaps: allConfigMaps,
+			wantServices:   allServices,
 		},
 		{
 			name: "ALL watches everything",
 			settings: apisettings.Settings{
 				SecretDiscoveryMode:    apisettings.DiscoveryAll,
 				ConfigMapDiscoveryMode: apisettings.DiscoveryAll,
+				ServiceDiscoveryMode:   apisettings.DiscoveryAll,
 			},
 			wantSecrets:    allSecrets,
 			wantConfigMaps: allConfigMaps,
+			wantServices:   allServices,
 		},
 		{
 			name:           "LABELED Secrets only narrows Secrets",
 			settings:       apisettings.Settings{SecretDiscoveryMode: apisettings.DiscoveryLabeled},
 			wantSecrets:    []string{"labeled-secret"},
 			wantConfigMaps: allConfigMaps,
+			wantServices:   allServices,
 		},
 		{
 			name:           "LABELED ConfigMaps only narrows ConfigMaps",
 			settings:       apisettings.Settings{ConfigMapDiscoveryMode: apisettings.DiscoveryLabeled},
 			wantSecrets:    allSecrets,
 			wantConfigMaps: []string{"labeled-cm"},
+			wantServices:   allServices,
 		},
 		{
-			name: "LABELED for both",
+			name:           "LABELED Services only narrows Services",
+			settings:       apisettings.Settings{ServiceDiscoveryMode: apisettings.DiscoveryLabeled},
+			wantSecrets:    allSecrets,
+			wantConfigMaps: allConfigMaps,
+			wantServices:   []string{"labeled-svc"},
+		},
+		{
+			name: "LABELED for all three",
 			settings: apisettings.Settings{
 				SecretDiscoveryMode:    apisettings.DiscoveryLabeled,
 				ConfigMapDiscoveryMode: apisettings.DiscoveryLabeled,
+				ServiceDiscoveryMode:   apisettings.DiscoveryLabeled,
 			},
 			wantSecrets:    []string{"labeled-secret"},
 			wantConfigMaps: []string{"labeled-cm"},
+			wantServices:   []string{"labeled-svc"},
 		},
 	}
 
@@ -106,6 +131,9 @@ func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
 				configMapWithLabels("labeled-cm", watchLabel),
 				configMapWithLabels("unlabeled-cm", nil),
 				configMapWithLabels("opted-out-cm", optedOut),
+				serviceWithLabels("labeled-svc", watchLabel),
+				serviceWithLabels("unlabeled-svc", nil),
+				serviceWithLabels("opted-out-svc", optedOut),
 			)
 
 			commoncol, err := collections.NewCommonCollections(
@@ -136,6 +164,14 @@ func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
 				}
 			}
 			require.ElementsMatch(t, tt.wantSecrets, gotSecrets)
+
+			svcCol := commoncol.Services
+			svcCol.WaitUntilSynced(ctx.Done())
+			gotServices := make([]string, 0, len(tt.wantServices))
+			for _, svc := range svcCol.List() {
+				gotServices = append(gotServices, svc.Name)
+			}
+			require.ElementsMatch(t, tt.wantServices, gotServices)
 		})
 	}
 }

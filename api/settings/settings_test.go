@@ -57,6 +57,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 		"KGW_SECRET_DISCOVERY_MODE":                     string(DiscoveryLabeled),
 		"KGW_CONFIG_MAP_DISCOVERY_MODE":                 string(DiscoveryLabeled),
+		"KGW_SERVICE_DISCOVERY_MODE":                    string(DiscoveryLabeled),
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 	}
 }
@@ -118,6 +119,7 @@ func TestSettings(t *testing.T) {
 				ServiceEntriesExclusionLabelSelectors: "[]",
 				SecretDiscoveryMode:                   DiscoveryAll,
 				ConfigMapDiscoveryMode:                DiscoveryAll,
+				ServiceDiscoveryMode:                  DiscoveryAll,
 			},
 		},
 		{
@@ -161,6 +163,7 @@ func TestSettings(t *testing.T) {
 				ServiceEntriesExclusionLabelSelectors: `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 				SecretDiscoveryMode:                   DiscoveryLabeled,
 				ConfigMapDiscoveryMode:                DiscoveryLabeled,
+				ServiceDiscoveryMode:                  DiscoveryLabeled,
 				GatewayClassParametersRefs: GatewayClassParametersRefs{
 					"kgateway": {
 						Name:      "custom-gwp",
@@ -272,6 +275,7 @@ func TestSettings(t *testing.T) {
 				ServiceEntriesExclusionLabelSelectors: "[]",
 				SecretDiscoveryMode:                   DiscoveryAll,
 				ConfigMapDiscoveryMode:                DiscoveryAll,
+				ServiceDiscoveryMode:                  DiscoveryAll,
 			},
 		},
 	}

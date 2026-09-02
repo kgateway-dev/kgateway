@@ -243,6 +243,7 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway-with-dns
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
+    kgateway.dev/watch: "true"
   name: gw
 spec:
   ports:

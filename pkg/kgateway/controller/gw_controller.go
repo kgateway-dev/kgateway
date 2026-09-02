@@ -89,6 +89,14 @@ func NewGatewayReconciler(
 	// selected here too (see the envoy chart's configmap.yaml).
 	configMapFilter := filter
 	configMapFilter.LabelSelector = collections.WatchLabelSelector(cfg.CommonCollections.Settings.ConfigMapDiscoveryMode)
+	// The Service watch is the same story. This controller only acts on the Service the
+	// deployer renders per proxy — it enqueues the owning Gateway and reads the Service to
+	// derive Gateway status.addresses — and the deployer stamps wellknown.WatchLabel on it
+	// (see the envoy chart's service.yaml), so scoping this watch the same way as the
+	// translation collection's keeps both on one informer. Left unfiltered, LABELED would
+	// buy nothing: the cluster-wide cache would still be there, just alongside a narrow one.
+	serviceFilter := filter
+	serviceFilter.LabelSelector = collections.WatchLabelSelector(cfg.CommonCollections.Settings.ServiceDiscoveryMode)
 	r := &gatewayReconciler{
 		deployer:            deployer,
 		gwParams:            gwParams,
@@ -99,7 +107,7 @@ func NewGatewayReconciler(
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
-		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
+		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, serviceFilter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
 		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, configMapFilter),

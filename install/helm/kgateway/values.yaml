@@ -270,6 +270,9 @@ secretDiscoveryMode: ALL
 # -- Which ConfigMaps kgateway watches: 'ALL' (the default) or 'LABELED'. Same semantics as secretDiscoveryMode.
 configMapDiscoveryMode: ALL
 
+# -- Which Services kgateway watches: 'ALL' (the default) or 'LABELED'. Same semantics as secretDiscoveryMode. Because every watched Service becomes a backend, 'LABELED' also bounds the number of clusters kgateway sends to Envoy. With 'LABELED', a route backendRef to an unlabeled Service is reported as not found, and an unlabeled Service is not matched as a waypoint.
+serviceDiscoveryMode: ALL
+
 # -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
 serviceEntriesExclusionLabelSelectors: []
 

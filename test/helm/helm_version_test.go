@@ -651,6 +651,7 @@ var helmChartTemplateCases = []helmTemplateCase{
 		name: "labeled-discovery-mode",
 		valuesYAML: `secretDiscoveryMode: LABELED
 configMapDiscoveryMode: labeled
+serviceDiscoveryMode: Labeled
 `,
 	},
 	{
