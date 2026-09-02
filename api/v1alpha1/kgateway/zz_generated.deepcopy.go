@@ -2539,6 +2539,16 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.NormalizePath != nil {
+		in, out := &in.NormalizePath, &out.NormalizePath
+		*out = new(bool)
+		**out = **in
+	}
+	if in.MergeSlashes != nil {
+		in, out := &in.MergeSlashes, &out.MergeSlashes
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Proxy100Continue != nil {
 		in, out := &in.Proxy100Continue, &out.Proxy100Continue
 		*out = new(bool)

@@ -2781,6 +2781,22 @@ spec:
                         format: int32
                         minimum: 0
                         type: integer
+                      mergeSlashes:
+                        description: |-
+                          MergeSlashes determines whether the connection manager merges adjacent slashes in the request
+                          path before routing. This defaults to true. Disable this if a backend (e.g. an S3-compatible
+                          object store) relies on repeated slashes in the path having meaning, such as object keys that
+                          contain "//".
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-merge-slashes
+                        type: boolean
+                      normalizePath:
+                        description: |-
+                          NormalizePath determines whether the connection manager normalizes the path per RFC 3986 before
+                          routing, e.g. collapsing `.` and `..` segments and decoding percent-encoded characters. This
+                          defaults to true. Disable this if a backend (e.g. an S3-compatible object store) needs to see
+                          the original, unnormalized request path.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-normalize-path
+                        type: boolean
                       preserveExternalRequestId:
                         description: |-
                           PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for
@@ -6085,6 +6101,22 @@ spec:
                               format: int32
                               minimum: 0
                               type: integer
+                            mergeSlashes:
+                              description: |-
+                                MergeSlashes determines whether the connection manager merges adjacent slashes in the request
+                                path before routing. This defaults to true. Disable this if a backend (e.g. an S3-compatible
+                                object store) relies on repeated slashes in the path having meaning, such as object keys that
+                                contain "//".
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-merge-slashes
+                              type: boolean
+                            normalizePath:
+                              description: |-
+                                NormalizePath determines whether the connection manager normalizes the path per RFC 3986 before
+                                routing, e.g. collapsing `.` and `..` segments and decoding percent-encoded characters. This
+                                defaults to true. Disable this if a backend (e.g. an S3-compatible object store) needs to see
+                                the original, unnormalized request path.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-normalize-path
+                              type: boolean
                             preserveExternalRequestId:
                               description: |-
                                 PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for

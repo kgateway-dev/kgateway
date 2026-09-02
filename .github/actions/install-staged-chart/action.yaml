@@ -1,0 +1,45 @@
+name: Install staged chart
+description: |-
+  Download the packaged charts artifact and install them into the current cluster,
+  pointing the images at the staged (not-yet-published) tag. Used by release validation jobs
+  to install the staged chart.
+
+inputs:
+  version:
+    description: Chart version to install (the packaged .tgz version)
+    required: true
+  image-registry:
+    description: Registry to pull the staged images from
+    required: true
+  stage-tag:
+    description: Image tag of the staged images
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download packaged charts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: helm-charts
+        path: _test
+
+    - name: Install the staged chart
+      shell: bash
+      # Pass inputs through the environment rather than interpolating them into the script.
+      env:
+        VERSION: ${{ inputs.version }}
+        IMAGE_REGISTRY: ${{ inputs.image-registry }}
+        STAGE_TAG: ${{ inputs.stage-tag }}
+      run: |
+        set -euo pipefail
+        # install the crds from the packaged crds chart
+        go tool helm install kgateway-crds "_test/kgateway-crds-${VERSION}.tgz" \
+          --wait --timeout 5m
+
+        # install the main chart, using the staged image tag and registry
+        go tool helm install --create-namespace --namespace kgateway-system kgateway \
+          "_test/kgateway-${VERSION}.tgz" \
+          --set "image.registry=${IMAGE_REGISTRY}" \
+          --set "image.tag=${STAGE_TAG}" \
+          --wait --timeout 5m
