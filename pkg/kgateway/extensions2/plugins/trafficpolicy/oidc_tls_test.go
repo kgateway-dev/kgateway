@@ -2,9 +2,15 @@ package trafficpolicy
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -20,6 +26,29 @@ import (
 )
 
 var errTestInvalidPolicy = errors.New("invalid CA certificate ref")
+
+// unrelatedCAPEM returns a freshly generated self-signed CA certificate in PEM form that signs
+// nothing any test server presents. Appending it to a server's CA yields a bundle that still
+// verifies that server but digests differently: a second, distinct trust configuration.
+func unrelatedCAPEM(t *testing.T) string {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	serial, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 62))
+	require.NoError(t, err)
+	tmpl := &x509.Certificate{
+		SerialNumber:          serial,
+		Subject:               pkix.Name{CommonName: "unrelated test CA"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
 
 // newTLSDiscoveryServer starts an HTTPS server serving a well-known OpenID configuration
 // under a self-signed certificate, and returns it with its CA bundle in PEM form and a
@@ -69,8 +98,8 @@ func TestOIDCDiscoveryHonorsBackendCA(t *testing.T) {
 			validation: &ir.UpstreamTLSValidation{CAPEM: caPEM},
 		},
 		{
-			name:       "verification can be skipped entirely",
-			validation: &ir.UpstreamTLSValidation{InsecureSkipVerify: true},
+			name:       "a bundle carrying additional roots still verifies the issuer",
+			validation: &ir.UpstreamTLSValidation{CAPEM: caPEM + unrelatedCAPEM(t)},
 		},
 		{
 			name:          "an unparseable CA bundle is reported, not silently ignored",
@@ -126,6 +155,28 @@ func TestOIDCDiscoveryAuthenticatesTheIssuerURLHost(t *testing.T) {
 	r.Contains(err.Error(), "certificate is valid for")
 }
 
+// TestTLSClientConfigExtendsSystemRoots pins that a policy's CA bundle is added to the system
+// roots rather than replacing them. Discovery dials the issuer URL, not the backend the policy
+// describes, and the two are routinely different servers: a private-CA backendRef fronting a
+// public-CA issuer discovered fine before backend policies were honored, and must keep doing so.
+func TestTLSClientConfigExtendsSystemRoots(t *testing.T) {
+	r := require.New(t)
+
+	system, err := x509.SystemCertPool()
+	if err != nil {
+		t.Skipf("no system cert pool on this platform: %v", err)
+	}
+	caPEM := unrelatedCAPEM(t)
+	want := system.Clone()
+	r.True(want.AppendCertsFromPEM([]byte(caPEM)))
+
+	cfg, err := tlsClientConfig(&ir.UpstreamTLSValidation{CAPEM: caPEM})
+	r.NoError(err)
+	r.NotNil(cfg)
+	r.True(cfg.RootCAs.Equal(want), "the client's roots should be the system roots plus the policy's CA")
+	r.False(cfg.RootCAs.Equal(system), "the policy's CA must actually be trusted")
+}
+
 // TestOIDCDiscoveryCacheKeyedByTrustMaterial asserts that the trust material is part of the
 // cache key. Two extensions naming the same issuer may validate it differently, and a config
 // discovered under one trust configuration must not be served for another.
@@ -137,14 +188,14 @@ func TestOIDCDiscoveryCacheKeyedByTrustMaterial(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	withCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
-	insecure := &ir.UpstreamTLSValidation{InsecureSkipVerify: true}
+	withExtraRoot := &ir.UpstreamTLSValidation{CAPEM: caPEM + unrelatedCAPEM(t)}
 
 	cfg, err := o.get(context.Background(), testExtName, issuer, withCA)
 	r.NoError(err)
 	r.NotNil(cfg)
 	r.Equal(int64(1), atomic.LoadInt64(requests))
 
-	cfg, err = o.get(context.Background(), testExtName, issuer, insecure)
+	cfg, err = o.get(context.Background(), testExtName, issuer, withExtraRoot)
 	r.NoError(err)
 	r.NotNil(cfg)
 	r.Equal(int64(2), atomic.LoadInt64(requests),
@@ -153,7 +204,7 @@ func TestOIDCDiscoveryCacheKeyedByTrustMaterial(t *testing.T) {
 	// Both entries are still cached, and each is served from its own slot.
 	_, err = o.get(context.Background(), testExtName, issuer, withCA)
 	r.NoError(err)
-	_, err = o.get(context.Background(), testExtName, issuer, insecure)
+	_, err = o.get(context.Background(), testExtName, issuer, withExtraRoot)
 	r.NoError(err)
 	r.Equal(int64(2), atomic.LoadInt64(requests), "both entries should be served from cache")
 }
@@ -176,9 +227,9 @@ func TestTLSDigestSeparatesDistinctConfigurations(t *testing.T) {
 
 	digests := map[string]string{}
 	for name, v := range map[string]*ir.UpstreamTLSValidation{
-		"ca a":     {CAPEM: "ca-a"},
-		"ca b":     {CAPEM: "ca-b"},
-		"insecure": {InsecureSkipVerify: true},
+		"ca a":       {CAPEM: "ca-a"},
+		"ca b":       {CAPEM: "ca-b"},
+		"ca a and b": {CAPEM: "ca-a" + "ca-b"},
 	} {
 		digest := tlsDigest(v)
 		r.NotEqual("", digest, "%s must not digest as system-trust verification", name)
@@ -202,14 +253,16 @@ func TestRefreshReleasesRotatedTrustKey(t *testing.T) {
 	issuer := server.URL
 	o := newTestDiscoverer(issuer)
 
-	oldKey := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(&ir.UpstreamTLSValidation{InsecureSkipVerify: true})}
-	newKey := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(&ir.UpstreamTLSValidation{CAPEM: caPEM})}
+	oldCA := &ir.UpstreamTLSValidation{CAPEM: caPEM + unrelatedCAPEM(t)}
+	newCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
+	oldKey := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(oldCA)}
+	newKey := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(newCA)}
 
-	_, err := o.get(context.Background(), testExtName, issuer, &ir.UpstreamTLSValidation{InsecureSkipVerify: true})
+	_, err := o.get(context.Background(), testExtName, issuer, oldCA)
 	r.NoError(err)
 
 	// The CA rotates: the same extension is translated again under new trust material.
-	_, err = o.get(context.Background(), testExtName, issuer, &ir.UpstreamTLSValidation{CAPEM: caPEM})
+	_, err = o.get(context.Background(), testExtName, issuer, newCA)
 	r.NoError(err)
 
 	_, cached := o.load(oldKey)
@@ -253,11 +306,11 @@ func TestRefreshRetainsSharedIssuerUnderDifferentCAs(t *testing.T) {
 	o.failureRetryInterval = time.Hour
 
 	withCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
-	insecure := &ir.UpstreamTLSValidation{InsecureSkipVerify: true}
+	withExtraRoot := &ir.UpstreamTLSValidation{CAPEM: caPEM + unrelatedCAPEM(t)}
 
 	_, err := o.get(context.Background(), testExtName, issuer, withCA)
 	r.NoError(err)
-	_, err = o.get(context.Background(), otherExtName, issuer, insecure)
+	_, err = o.get(context.Background(), otherExtName, issuer, withExtraRoot)
 	r.NoError(err)
 	r.Equal(int64(2), atomic.LoadInt64(requests))
 
@@ -265,15 +318,156 @@ func TestRefreshRetainsSharedIssuerUnderDifferentCAs(t *testing.T) {
 
 	_, cached := o.load(discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(withCA)})
 	r.True(cached, "the entry the first extension reads must survive")
-	_, cached = o.load(discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(insecure)})
+	_, cached = o.load(discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(withExtraRoot)})
 	r.True(cached, "the entry the second extension reads must survive")
 
 	// Both are still served from cache, so neither extension re-fetches on translation.
 	_, err = o.get(context.Background(), testExtName, issuer, withCA)
 	r.NoError(err)
-	_, err = o.get(context.Background(), otherExtName, issuer, insecure)
+	_, err = o.get(context.Background(), otherExtName, issuer, withExtraRoot)
 	r.NoError(err)
 	r.Equal(int64(2), atomic.LoadInt64(requests), "neither entry should have been re-discovered")
+}
+
+// TestRefreshKeepsBindingsMadeDuringLiveSnapshot covers the race between the refresh loop and
+// a transform for a GatewayExtension that has just been created. The live set is resolved off
+// the lock, so the transform can bind the new extension while the snapshot is being taken and
+// the snapshot may not include it. Releasing that binding would prune the entry on the next
+// pass without ever firing the trigger, leaving a discovery failure latched with nothing left
+// to retry it: exactly what the refresh loop exists to prevent.
+func TestRefreshKeepsBindingsMadeDuringLiveSnapshot(t *testing.T) {
+	r := require.New(t)
+
+	server, caPEM, _ := newTLSDiscoveryServer(t)
+	issuer := server.URL
+	withCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
+	key := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(withCA)}
+
+	lateSource := ir.ObjectSource{Namespace: "ns", Name: "late-ext"}
+	lateExtName := lateSource.ResourceName()
+
+	// The live set stands in for a krt List that has not caught up with lateExt yet. While it
+	// is being resolved, lateExt's transform runs and binds. The snapshot still omits it.
+	var o *oidcProviderConfigDiscoverer
+	bindDuringSnapshot := true
+	o = newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension {
+		if bindDuringSnapshot {
+			_, err := o.get(context.Background(), lateExtName, issuer, withCA)
+			r.NoError(err)
+		}
+		return nil
+	})
+	o.cacheRefreshInterval = time.Hour
+	o.failureRetryInterval = time.Hour
+
+	o.refreshOnce(context.Background())
+
+	o.mu.RLock()
+	_, bound := o.bindings[lateExtName]
+	o.mu.RUnlock()
+	r.True(bound, "a binding made during the live snapshot must survive the pass that took it")
+	_, cached := o.load(key)
+	r.True(cached, "the entry it names must survive with it")
+
+	// On the next pass the binding predates the snapshot, so the live set is authoritative:
+	// an extension that genuinely does not exist is released and its entry pruned.
+	bindDuringSnapshot = false
+	o.refreshOnce(context.Background())
+
+	o.mu.RLock()
+	_, bound = o.bindings[lateExtName]
+	o.mu.RUnlock()
+	r.False(bound, "a binding the live set has had a chance to see is released when not live")
+	_, cached = o.load(key)
+	r.False(cached, "and the entry nothing reads any more is pruned")
+}
+
+// TestUnbindReleasesEntry covers the translation that relies on discovery but gives up before
+// reaching get(): the backend does not resolve, or its BackendTLSPolicy is invalid. The
+// extension is still live, so without an explicit release the refresh loop would keep the
+// entry from the previous translation bound and re-discover it forever, under a CA or for an
+// issuer that nothing reads any more.
+func TestUnbindReleasesEntry(t *testing.T) {
+	r := require.New(t)
+
+	server, caPEM, requests := newTLSDiscoveryServer(t)
+	issuer := server.URL
+	o := newTestDiscoverer(issuer)
+	o.cacheRefreshInterval = time.Hour
+	o.failureRetryInterval = time.Hour
+
+	withCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
+	key := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(withCA)}
+
+	_, err := o.get(context.Background(), testExtName, issuer, withCA)
+	r.NoError(err)
+	r.Equal(int64(1), atomic.LoadInt64(requests))
+
+	// Without a release, a live extension's entry is kept across passes.
+	o.refreshOnce(context.Background())
+	_, cached := o.load(key)
+	r.True(cached, "a bound entry survives the pass")
+
+	// The extension's next translation fails before get(), and says so.
+	o.unbind(testExtName)
+	o.refreshOnce(context.Background())
+
+	_, cached = o.load(key)
+	r.False(cached, "an entry its only reader released must be pruned")
+	o.clients.mu.Lock()
+	_, kept := o.clients.clients[key.tlsDigest]
+	o.clients.mu.Unlock()
+	r.False(kept, "and its http client with it")
+	r.Equal(int64(1), atomic.LoadInt64(requests), "a released entry is not re-discovered")
+}
+
+// TestRefreshRetainsClientForBoundButUncachedKey covers the client memo's invariant against a
+// foreground get() in flight: get() binds its key before it discovers, and builds the client
+// before it inserts into the cache, so at the moment a refresh pass prunes, a key can be bound
+// with a client and no cache entry. Retention has to be computed from the bound keys, not the
+// cached ones, or that client is evicted underneath the fetch using it.
+func TestRefreshRetainsClientForBoundButUncachedKey(t *testing.T) {
+	r := require.New(t)
+
+	server, caPEM, _ := newTLSDiscoveryServer(t)
+	issuer := server.URL
+
+	otherSource := ir.ObjectSource{Namespace: "ns", Name: "other-ext"}
+	otherExtName := otherSource.ResourceName()
+	exts := []ir.GatewayExtension{
+		testExtension(issuer),
+		{ObjectSource: otherSource, OAuth2: testExtension(issuer).OAuth2},
+	}
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension { return exts })
+	o.cacheRefreshInterval = time.Hour
+	o.failureRetryInterval = time.Hour
+
+	oldCA := &ir.UpstreamTLSValidation{CAPEM: caPEM + unrelatedCAPEM(t)}
+	newCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
+	inFlightCA := &ir.UpstreamTLSValidation{CAPEM: caPEM + unrelatedCAPEM(t)}
+	oldDigest, inFlightDigest := tlsDigest(oldCA), tlsDigest(inFlightCA)
+	r.NotEqual(oldDigest, inFlightDigest)
+
+	// The first extension rotates its CA, leaving the old entry with no reader to be pruned.
+	_, err := o.get(context.Background(), testExtName, issuer, oldCA)
+	r.NoError(err)
+	_, err = o.get(context.Background(), testExtName, issuer, newCA)
+	r.NoError(err)
+
+	// The second extension is mid-fetch: bound, client built, nothing cached yet.
+	o.bind(otherExtName, discoveryKey{issuerURI: issuer, tlsDigest: inFlightDigest})
+	inFlightClient, err := o.clients.get(inFlightDigest, inFlightCA)
+	r.NoError(err)
+
+	o.refreshOnce(context.Background())
+
+	o.clients.mu.Lock()
+	_, oldKept := o.clients.clients[oldDigest]
+	kept, inFlightKept := o.clients.clients[inFlightDigest]
+	o.clients.mu.Unlock()
+	r.False(oldKept, "the pruned entry's client is released")
+	r.True(inFlightKept, "the in-flight key's client must survive the prune")
+	r.Same(inFlightClient, kept, "and be the very client the fetch is using")
 }
 
 // fakeTLSPolicyIR is a policy IR carrying trust material, standing in for a BackendTLSPolicy
