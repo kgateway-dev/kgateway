@@ -578,9 +578,8 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 	})
 
 	// The cluster-wide KGW_DNS_LOOKUP_FAMILY is stamped on the cluster before the
-	// policies run, so a policy that sets lookupFamily must win over it. This is
-	// what lets a single-stack cluster reach the other family through NAT64 for
-	// specific backends.
+	// policies run, so a policy that sets lookupFamily must win over it. That is
+	// what lets one backend resolve differently from the rest of the install.
 	t.Run("lookupFamily overrides the family already on the cluster", func(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{

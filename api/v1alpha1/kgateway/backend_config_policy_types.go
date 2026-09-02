@@ -183,10 +183,21 @@ type DNS struct {
 	// LookupFamily selects which address families Envoy resolves for this backend's
 	// hostnames, overriding the cluster-wide KGW_DNS_LOOKUP_FAMILY setting.
 	//
-	// This matters in single-stack clusters that reach the other family through a
-	// translation layer: an IPv6-only cluster using NAT64 can leave the global
-	// setting at IPv6Only and set IPv4Preferred or All on the specific backends
-	// that are only reachable over IPv4.
+	// In an IPv6-only cluster, the right value depends on how IPv4-only upstreams
+	// are reached, and the two common mechanisms want opposite things:
+	//
+	// With DNS64/NAT64 the pod has no IPv4 stack. A DNS64 resolver synthesizes an
+	// AAAA record for an IPv4-only name and the NAT64 gateway translates the
+	// traffic, so Envoy must dial the synthesized IPv6 address. Use IPv6Only or
+	// Auto. Do not use IPv4Preferred here: it returns the real IPv4 addresses
+	// whenever any exist, bypassing the synthesized record and leaving Envoy
+	// dialing an address the pod cannot route. All also reaches the backend, but
+	// only after attempting the unroutable IPv4 addresses.
+	//
+	// Where the pod instead keeps an IPv4 egress path - an IPv6 EKS cluster gives
+	// the pod a host-local IPv4 address and SNATs it through the node - IPv4-only
+	// upstreams are reachable over real IPv4 and no override is needed; set
+	// IPv4Preferred or All only to prefer that path explicitly.
 	// +optional
 	LookupFamily *DnsLookupFamily `json:"lookupFamily,omitempty"`
 }
