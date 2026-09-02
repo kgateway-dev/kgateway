@@ -3,7 +3,6 @@ package curl
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -12,11 +11,15 @@ import (
 // urlHost renders a host for use in a URL or in curl's --connect-to argument.
 // A bare IPv6 literal has to be bracketed, or the colons in the address are read
 // as the port separator; hostnames and IPv4 literals pass through unchanged.
+//
+// Any colon means brackets are needed, including in a v4-mapped literal such as
+// "::ffff:10.0.0.1": net.ParseIP reports that as IPv4, but it is still written
+// with colons and so still breaks the URL without them.
 func urlHost(host string) string {
 	if strings.HasPrefix(host, "[") {
 		return host
 	}
-	if ip := net.ParseIP(host); ip != nil && ip.To4() == nil {
+	if strings.Contains(host, ":") {
 		return "[" + host + "]"
 	}
 	return host

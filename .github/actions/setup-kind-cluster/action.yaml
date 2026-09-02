@@ -41,8 +41,15 @@ runs:
       shell: bash
       run: |
         sudo mkdir -p /etc/docker
-        echo '{"ipv6": true, "fixed-cidr-v6": "fd00:dead:beef::/64", "experimental": true, "ip6tables": true}' \
-          | sudo tee /etc/docker/daemon.json
+        # Merge rather than overwrite: the runner image ships a daemon.json and
+        # replacing it would drop whatever else it configures. Later keys win.
+        # ip6tables needs no "experimental" flag on the runner's Docker (28.x);
+        # it left experimental in 26.0.
+        existing=$(sudo cat /etc/docker/daemon.json 2>/dev/null || echo '{}')
+        printf '%s\n%s\n' \
+          "$existing" \
+          '{"ipv6": true, "fixed-cidr-v6": "fd00:dead:beef::/64", "ip6tables": true}' \
+          | jq -s 'add' | sudo tee /etc/docker/daemon.json
         sudo systemctl restart docker
         # sysctls the kind nodes need to route IPv6 between pods
         sudo sysctl -w net.ipv6.conf.all.forwarding=1
