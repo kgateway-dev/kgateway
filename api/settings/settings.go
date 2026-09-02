@@ -229,14 +229,6 @@ type Settings struct {
 	// This corresponds to the value of the `grpc-xds` port in the service.
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
 
-	// XdsBindAddress is the local address the xDS server binds to. The empty
-	// default binds the unspecified address, accepting both IPv4 and IPv6 clients.
-	// Setting an explicit IP both pins the server to that address and restricts it
-	// to that address's family, so "::" serves IPv6 clients only and "0.0.0.0"
-	// serves IPv4 clients only. Note that a wildcard here is not the same as the
-	// default: the default is dual-stack, either wildcard is single-family.
-	XdsBindAddress string `split_words:"true"`
-
 	// XdsAuth enables or disables xDS authentication between the data-plane and control-plane.
 	// By default, this is enabled.
 	XdsAuth bool `split_words:"true" default:"true"`

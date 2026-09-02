@@ -16,9 +16,9 @@ func TestURLHost(t *testing.T) {
 		"ipv6 literal":      {host: "fc00:f853:ccd:e793::1", want: "[fc00:f853:ccd:e793::1]"},
 		"ipv6 loopback":     {host: "::1", want: "[::1]"},
 		"already bracketed": {host: "[::1]", want: "[::1]"},
-		// A v4-mapped v6 address is written with colons but parses as IPv4; curl
-		// takes it either way, and leaving it alone keeps the output stable.
-		"ipv4 mapped": {host: "::ffff:10.0.0.1", want: "::ffff:10.0.0.1"},
+		// net.ParseIP reports a v4-mapped literal as IPv4, but it is still written
+		// with colons, so it needs brackets like any other colon-bearing host.
+		"ipv4 mapped": {host: "::ffff:10.0.0.1", want: "[::ffff:10.0.0.1]"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, tc.want, urlHost(tc.host))
