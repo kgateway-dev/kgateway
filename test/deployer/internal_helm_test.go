@@ -404,6 +404,19 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
+			// Without these fields the only way to get a dual-stack proxy Service
+			// was a serviceOverlay patch.
+			Name:      "gateway with service ipFamilies and ipFamilyPolicy",
+			InputFile: "service-ip-families",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "ipFamilyPolicy: SingleStack",
+					"ipFamilyPolicy should be set on the Service")
+				assert.Contains(t, outputYaml, "ipFamilies:\n  - IPv4",
+					"ipFamilies should be set on the Service")
+			},
+		},
+		{
 			Name:      "gateway with loadBalancerSourceRanges via overlay",
 			InputFile: "loadbalancer-source-ranges",
 			Validate: func(t *testing.T, outputYaml string) {

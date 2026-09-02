@@ -10,6 +10,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
@@ -59,6 +60,7 @@ type BackendConfigPolicyIR struct {
 	dnsRefreshRate                *durationpb.Duration
 	dnsJitter                     *durationpb.Duration
 	respectDnsTtl                 *bool
+	dnsLookupFamily               *envoycommondnsv3.DnsLookupFamily
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 }
 
@@ -134,6 +136,9 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 	if !cmputils.PointerValsEqual(d.respectDnsTtl, d2.respectDnsTtl) {
+		return false
+	}
+	if !cmputils.PointerValsEqual(d.dnsLookupFamily, d2.dnsLookupFamily) {
 		return false
 	}
 	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
@@ -423,6 +428,14 @@ func translate(
 			ir.dnsJitter = durationpb.New(pol.Spec.DNS.Jitter.Duration)
 		}
 		ir.respectDnsTtl = pol.Spec.DNS.RespectTTL
+		if pol.Spec.DNS.LookupFamily != nil {
+			family, err := toDnsLookupFamily(*pol.Spec.DNS.LookupFamily)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				ir.dnsLookupFamily = &family
+			}
+		}
 	}
 	if pol.Spec.UpstreamProxyProtocol != nil {
 		ir.upstreamProxyProtocol = translateUpstreamProxyProtocol(pol.Spec.UpstreamProxyProtocol)
@@ -430,8 +443,28 @@ func translate(
 	return &ir, errs
 }
 
+// toDnsLookupFamily maps the API enum onto the Envoy one. The API spells the
+// families the way the rest of the Kubernetes API does; the KGW_DNS_LOOKUP_FAMILY
+// setting spells them the way Envoy does.
+func toDnsLookupFamily(family kgateway.DnsLookupFamily) (envoycommondnsv3.DnsLookupFamily, error) {
+	switch family {
+	case kgateway.DnsLookupFamilyIPv4Preferred:
+		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED, nil
+	case kgateway.DnsLookupFamilyIPv4Only:
+		return envoycommondnsv3.DnsLookupFamily_V4_ONLY, nil
+	case kgateway.DnsLookupFamilyIPv6Only:
+		return envoycommondnsv3.DnsLookupFamily_V6_ONLY, nil
+	case kgateway.DnsLookupFamilyAuto:
+		return envoycommondnsv3.DnsLookupFamily_AUTO, nil
+	case kgateway.DnsLookupFamilyAll:
+		return envoycommondnsv3.DnsLookupFamily_ALL, nil
+	default:
+		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED, fmt.Errorf("unknown DNS lookup family %q", family)
+	}
+}
+
 func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Cluster) {
-	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil && pol.respectDnsTtl == nil {
+	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil && pol.respectDnsTtl == nil && pol.dnsLookupFamily == nil {
 		return
 	}
 
@@ -454,6 +487,11 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Clust
 	}
 	if pol.respectDnsTtl != nil {
 		dnsCluster.RespectDnsTtl = *pol.respectDnsTtl
+	}
+	if pol.dnsLookupFamily != nil {
+		// Overrides the cluster-wide default that processDnsLookupFamily already
+		// stamped on this cluster before the policies ran.
+		dnsCluster.DnsLookupFamily = *pol.dnsLookupFamily
 	}
 
 	typedConfig, err := utils.MessageToAny(dnsCluster)

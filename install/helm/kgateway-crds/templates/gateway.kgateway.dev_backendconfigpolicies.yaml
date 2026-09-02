@@ -165,6 +165,22 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  lookupFamily:
+                    description: |-
+                      LookupFamily selects which address families Envoy resolves for this backend's
+                      hostnames, overriding the cluster-wide KGW_DNS_LOOKUP_FAMILY setting.
+
+                      This matters in single-stack clusters that reach the other family through a
+                      translation layer: an IPv6-only cluster using NAT64 can leave the global
+                      setting at IPv6Only and set IPv4Preferred or All on the specific backends
+                      that are only reachable over IPv4.
+                    enum:
+                    - IPv4Preferred
+                    - IPv4Only
+                    - IPv6Only
+                    - Auto
+                    - All
+                    type: string
                   refreshRate:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.

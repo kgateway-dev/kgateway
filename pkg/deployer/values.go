@@ -121,6 +121,8 @@ type HelmService struct {
 	ExtraAnnotations         map[string]string `json:"extraAnnotations,omitempty"`
 	ExtraLabels              map[string]string `json:"extraLabels,omitempty"`
 	ExternalTrafficPolicy    *string           `json:"externalTrafficPolicy,omitempty"`
+	IPFamilies               []string          `json:"ipFamilies,omitempty"`
+	IPFamilyPolicy           *string           `json:"ipFamilyPolicy,omitempty"`
 }
 
 type HelmServiceAccount struct {

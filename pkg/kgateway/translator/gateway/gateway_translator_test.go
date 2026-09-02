@@ -2445,6 +2445,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// dns.lookupFamily overrides the cluster-wide KGW_DNS_LOOKUP_FAMILY, which is
+	// what lets a single-stack cluster reach the other family for one backend.
+	t.Run("Backend Config Policy with DNS lookup family", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/dns-lookup-family.yaml"},
+			outputFile: "backendconfigpolicy/dns-lookup-family.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with Health Check", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/healthcheck.yaml"},
