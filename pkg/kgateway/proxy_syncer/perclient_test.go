@@ -6,6 +6,7 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -461,6 +462,135 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 		return len(snapshots.List())
 	}, 500*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(1),
 		"snapshot must stay published after an unresolvable BackendRef arrives; withdrawing it strands Envoy on restart")
+}
+
+// TestSnapshotPerClientPublishesWithMissingOrUnusableEndpoints pins that endpoint
+// readiness is deliberately *not* a publication precondition. Publication proceeds
+// once the basic KRT inputs exist, even when a route-referenced EDS cluster has no
+// ClusterLoadAssignment at all, or has one whose only endpoint is UNHEALTHY.
+//
+// This is the inverse of the whole-snapshot readiness gate that #13868 added and
+// #14184 reverted: gating here could stay unsatisfied indefinitely, stranding warm
+// clients on stale endpoints and starving new pods into crashloops. Envoy's initial
+// fetch timeout covers the transient case of a CLA that has not landed yet.
+//
+// The first-connect delay in pkg/krtcollections/uniqueclients.go mitigates only
+// initial/reconnect convergence. It is not a make-before-break guarantee for live
+// route updates, and this test must not be relaxed into asserting one.
+func TestSnapshotPerClientPublishesWithMissingOrUnusableEndpoints(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
+		{
+			Name: "route-config",
+			VirtualHosts: []*envoyroutev3.VirtualHost{
+				{
+					Name:    "vhost",
+					Domains: []string{"*"},
+					Routes: []*envoyroutev3.Route{
+						{
+							Name: "route-to-cluster-without-cla",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-no-cla"},
+								},
+							},
+						},
+						{
+							Name: "route-to-cluster-with-unhealthy-cla",
+							Action: &envoyroutev3.Route_Route{
+								Route: &envoyroutev3.RouteAction{
+									ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "cluster-unhealthy"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
+		Routes:         routes,
+		Listeners:      listeners,
+	}})
+
+	edsCluster := func(name string) *envoyclusterv3.Cluster {
+		return &envoyclusterv3.Cluster{
+			Name:                 name,
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS},
+		}
+	}
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+		{Client: ucc, Name: "cluster-no-cla", Cluster: edsCluster("cluster-no-cla"), ClusterVersion: 1},
+		{Client: ucc, Name: "cluster-unhealthy", Cluster: edsCluster("cluster-unhealthy"), ClusterVersion: 2},
+	})
+
+	// cluster-no-cla intentionally has no row here at all.
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+		{
+			Client: ucc,
+			Endpoints: &envoyendpointv3.ClusterLoadAssignment{
+				ClusterName: "cluster-unhealthy",
+				Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
+					{
+						LbEndpoints: []*envoyendpointv3.LbEndpoint{
+							{HealthStatus: envoycorev3.HealthStatus_UNHEALTHY},
+						},
+					},
+				},
+			},
+			EndpointsHash: 3,
+			endpointsName: "cluster-unhealthy",
+		},
+	})
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		PerClientEnvoyClusters{
+			clusters: clusterCol,
+			index: krtpkg.UnnamedIndex(clusterCol, func(cluster uccWithCluster) []string {
+				return []string{cluster.Client.ResourceName()}
+			}),
+		},
+	)
+
+	g.Eventually(func() int {
+		return len(snapshots.List())
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal(1),
+		"snapshot must publish even though a referenced EDS cluster has no CLA and another has only an UNHEALTHY endpoint")
+
+	g.Consistently(func() int {
+		return len(snapshots.List())
+	}, 500*time.Millisecond, 20*time.Millisecond).Should(gomega.Equal(1),
+		"snapshot must stay published; deferring on endpoint readiness can strand clients indefinitely (#14184)")
+
+	snap := snapshots.List()[0]
+	g.Expect(snap.erroredClusters).To(gomega.BeEmpty(), "neither cluster failed translation")
+
+	clusterItems := snap.snap.Resources[envoycachetypes.Cluster].Items
+	g.Expect(clusterItems).To(gomega.HaveKey("cluster-no-cla"),
+		"a referenced EDS cluster with no CLA must still reach CDS")
+	g.Expect(clusterItems).To(gomega.HaveKey("cluster-unhealthy"))
+
+	endpointItems := snap.snap.Resources[envoycachetypes.Endpoint].Items
+	g.Expect(endpointItems).To(gomega.HaveKey("cluster-unhealthy"),
+		"an all-unhealthy CLA must be published, not withheld")
+	g.Expect(endpointItems).ToNot(gomega.HaveKey("cluster-no-cla"),
+		"no empty CLA is synthesized for a cluster whose endpoints have not landed; Envoy's initial fetch timeout covers it")
 }
 
 func mapKeys[M ~map[K]V, K comparable, V any](m M) []K {
