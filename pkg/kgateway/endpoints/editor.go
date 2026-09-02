@@ -4,7 +4,6 @@ import (
 	"maps"
 	"slices"
 
-	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/api/networking/v1alpha3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -151,7 +150,14 @@ func (e *EndpointInputsResolver) ReplaceEndpoints(replacement *EndpointSetBuilde
 	state.owner = nil
 	state.consumed = true
 
-	e.inputs.EndpointsForBackend = installed
+	// Take only what the builder owns — the endpoint set and its content hash.
+	// A builder is seeded from the inputs as they stood when it was created, so
+	// installing its whole EndpointsForBackend would roll back every setter
+	// called while the replacement was being populated. SetTrafficDistribution
+	// between NewEndpointSet and ReplaceEndpoints is exactly that shape, and it
+	// would fail silently: the resolved hash faithfully versions the reverted
+	// state.
+	e.inputs.EndpointsForBackend.AdoptEndpointsFrom(&installed)
 	e.endpointHashesReusable = true
 }
 
@@ -216,22 +222,29 @@ func (e EndpointView) LoadBalancingWeight() uint32 {
 	return e.endpoint.GetLoadBalancingWeight().GetValue()
 }
 
-// Clone returns a mutable, transitively isolated endpoint value.
+// Clone returns a mutable, transitively isolated endpoint value the caller
+// owns. Prefer [EndpointSetBuilder.AddModified] when the clone is only being
+// made in order to contribute a changed endpoint: it clones once where this
+// plus Add clones twice.
 func (e EndpointView) Clone() ir.EndpointWithMd {
-	out := e.endpoint
-	if e.endpoint.LbEndpoint != nil {
-		out.LbEndpoint = proto.Clone(e.endpoint.LbEndpoint).(*envoyendpointv3.LbEndpoint)
-	}
-	out.EndpointMd.Labels = maps.Clone(e.endpoint.EndpointMd.Labels)
-	return out
+	return e.endpoint.Clone()
 }
 
-// EndpointSetBuilder constructs a replacement EndpointsForBackend while
-// preserving its identity and precomputed hash semantics. Unchanged endpoints
-// may be structurally shared; modified endpoints must be added after Clone. A
-// builder belongs to the resolver that created it and is consumed by
+// EndpointSetBuilder accumulates a replacement endpoint set. Unchanged
+// endpoints are structurally shared with the immutable source and keep their
+// precomputed contribution hash; changed and synthesized ones are isolated by
+// the builder itself, so nothing a plugin holds stays reachable from the
+// resolved set.
+//
+// A builder belongs to the resolver that created it and is consumed by
 // ReplaceEndpoints. Any later use panics, including through a copied builder
-// value.
+// value. Only the endpoint set and its hash are installed: the identity fields
+// it is seeded with are inert.
+//
+// Those panics are deliberate and uncontained. A nil, foreign, or consumed
+// builder is a deterministic bug that a plugin's own tests hit on the first
+// run, and silently dropping the contribution instead would ship a client
+// whose endpoints nobody asked for.
 type EndpointSetBuilder struct {
 	state *endpointSetBuilderState
 }
@@ -255,6 +268,10 @@ func (b *EndpointSetBuilder) mutableState() *endpointSetBuilderState {
 // AddUnchanged structurally shares an immutable endpoint and reuses its
 // precomputed contribution hash. Moving it to another locality, or using a view
 // exposed after a legacy mutable hook, safely falls back to a fresh hash.
+//
+// This is the one path that installs an endpoint without copying it, and it can
+// be: a view only ever names source state the plugin has no way to write to.
+// Add and AddModified take values the plugin does own, so they copy.
 func (b *EndpointSetBuilder) AddUnchanged(locality ir.PodLocality, endpoint EndpointView) {
 	state := b.mutableState()
 	if locality != endpoint.locality || !endpoint.hashReusable {
@@ -268,8 +285,37 @@ func (b *EndpointSetBuilder) AddUnchanged(locality ir.PodLocality, endpoint Endp
 	state.endpoints.ReuseEndpoint(locality, endpoint.endpoint)
 }
 
+// AddModified contributes a changed version of an existing endpoint. The
+// builder clones base, hands the clone to modify, and hashes the result once
+// modify returns.
+//
+// This is the shape to reach for. The plugin never names the value it is
+// contributing, so it cannot accidentally retain it and mutate it after the
+// hash is taken or into a later client's pass, and the endpoint is cloned once
+// where [EndpointView.Clone] followed by Add clones twice. A plugin that
+// deliberately captures the pointer out of modify escapes that, which no Go
+// signature can prevent; use Add if you want the copy made unconditionally.
+func (b *EndpointSetBuilder) AddModified(locality ir.PodLocality, base EndpointView, modify func(*ir.EndpointWithMd)) {
+	state := b.mutableState()
+	if modify == nil {
+		panic("endpoint modifier is nil")
+	}
+	endpoint := base.endpoint.Clone()
+	modify(&endpoint)
+	state.endpoints.Add(locality, endpoint)
+}
+
+// Add contributes an endpoint the plugin synthesized itself. The value is deep
+// copied on the way in, so the caller keeps ownership of what it passed and may
+// go on mutating or reusing it. Without that copy a plugin that builds one
+// endpoint and adds it for every client would put a single proto pointer into
+// every client's resolved set, and a later write would reach back into clients
+// already resolved.
+//
+// Use [EndpointSetBuilder.AddModified] for endpoints derived from an existing
+// one; it avoids the second clone.
 func (b *EndpointSetBuilder) Add(locality ir.PodLocality, endpoint ir.EndpointWithMd) {
-	b.mutableState().endpoints.Add(locality, endpoint)
+	b.mutableState().endpoints.Add(locality, endpoint.Clone())
 }
 
 func cloneEndpointsInputs(in EndpointsInputs) EndpointsInputs {
@@ -287,7 +333,7 @@ func cloneEndpointsForBackend(in ir.EndpointsForBackend) ir.EndpointsForBackend 
 	for locality, localityEndpoints := range in.LbEps {
 		cloned := make([]ir.EndpointWithMd, len(localityEndpoints))
 		for i, endpoint := range localityEndpoints {
-			cloned[i] = EndpointView{endpoint: endpoint}.Clone()
+			cloned[i] = endpoint.Clone()
 		}
 		out.LbEps[locality] = cloned
 	}

@@ -63,9 +63,9 @@ func benchmarkReplacement(base EndpointsInputs, modifyEvery int) {
 			replacement.AddUnchanged(locality, endpoint)
 			return true
 		}
-		cloned := endpoint.Clone()
-		cloned.GetEndpoint().GetAddress().GetSocketAddress().Address = "127.167.0.1"
-		replacement.Add(locality, cloned)
+		replacement.AddModified(locality, endpoint, func(ep *ir.EndpointWithMd) {
+			ep.GetEndpoint().GetAddress().GetSocketAddress().Address = "127.167.0.1"
+		})
 		return true
 	})
 	resolver.ReplaceEndpoints(replacement)

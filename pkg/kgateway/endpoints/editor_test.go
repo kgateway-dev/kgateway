@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -36,10 +37,10 @@ func TestEndpointInputsResolverBuildsReplacementWithStructuralSharing(t *testing
 			replacement.AddUnchanged(locality, endpoint)
 			return true
 		}
-		cloned := endpoint.Clone()
-		cloned.EndpointMd.Labels["id"] = "modified"
-		cloned.GetEndpoint().GetAddress().GetSocketAddress().Address = "127.0.0.1"
-		replacement.Add(locality, cloned)
+		replacement.AddModified(locality, endpoint, func(ep *ir.EndpointWithMd) {
+			ep.EndpointMd.Labels["id"] = "modified"
+			ep.GetEndpoint().GetAddress().GetSocketAddress().Address = "127.0.0.1"
+		})
 		return true
 	})
 	resolver.ReplaceEndpoints(replacement)
@@ -286,6 +287,145 @@ func TestReplaceEndpointsKeepsFoldedVersion(t *testing.T) {
 		"a policy-only change must survive the replacement path")
 	assert.Equal(t, resolvedHashFor(1), resolvedHashFor(1),
 		"the replacement path must stay deterministic for equal inputs")
+}
+
+// A plugin that rebuilds the endpoint set without changing anything must land
+// on the source hash exactly, not merely on a stable one. The resolved hash is
+// this client's EDS resource version, so anything else republishes an identical
+// CLA to every connected Envoy on every recompute.
+func TestNoOpRebuildReproducesTheSourceHash(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	backend.Obj = &metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"scope": "peered"}}}
+	source := ir.NewEndpointsForBackend(backend)
+	source.Add(ir.PodLocality{Region: "r", Zone: "z1"}, editorTestEndpoint("10.0.0.1", "ep-1"))
+	source.Add(ir.PodLocality{Region: "r", Zone: "z2"}, editorTestEndpoint("10.0.0.2", "ep-2"))
+	source.Add(ir.PodLocality{}, editorTestEndpoint("10.0.0.3", "ep-3"))
+	source.FoldVersion(7)
+
+	resolver := NewEndpointInputsResolver(EndpointsInputs{EndpointsForBackend: *source})
+	replacement := resolver.NewEndpointSet()
+	resolver.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
+		replacement.AddUnchanged(locality, endpoint)
+		return true
+	})
+	resolver.ReplaceEndpoints(replacement)
+
+	assert.Equal(t, source.LbEpsEqualityHash, resolver.Inputs().EndpointsForBackend.LbEpsEqualityHash,
+		"a no-op rebuild must not bump the EDS version")
+	assert.True(t, source.Equals(resolver.Inputs().EndpointsForBackend),
+		"a no-op rebuild must be indistinguishable from its source to KRT")
+}
+
+// Add is the one entry point that takes a caller-owned mutable graph, so it is
+// the one that has to take ownership of it. A plugin that keeps the value it
+// contributed must not be able to reach into the resolved set — either to
+// change content the version hash was already taken over, or to reach a client
+// that has already been resolved.
+func TestEndpointSetBuilderAddCopiesCallerOwnedEndpoint(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	base := EndpointsInputs{EndpointsForBackend: *ir.NewEndpointsForBackend(backend)}
+	locality := ir.PodLocality{Region: "r", Zone: "z"}
+	retained := editorTestEndpoint("10.0.0.1", "original")
+
+	first := NewEndpointInputsResolver(base)
+	firstBuilder := first.NewEndpointSet()
+	firstBuilder.Add(locality, retained)
+	first.ReplaceEndpoints(firstBuilder)
+	firstResolved := first.Inputs().EndpointsForBackend
+	firstHash := firstResolved.LbEpsEqualityHash
+
+	// The plugin reuses the same endpoint value for the next client, mutating it
+	// on the way.
+	second := NewEndpointInputsResolver(base)
+	secondBuilder := second.NewEndpointSet()
+	retained.GetEndpoint().GetAddress().GetSocketAddress().Address = "10.0.0.2"
+	retained.EndpointMd.Labels["id"] = "reused"
+	secondBuilder.Add(locality, retained)
+	second.ReplaceEndpoints(secondBuilder)
+	secondResolved := second.Inputs().EndpointsForBackend
+
+	firstInstalled := firstResolved.LbEps[locality][0]
+	assert.Equal(t, "10.0.0.1", firstInstalled.GetEndpoint().GetAddress().GetSocketAddress().GetAddress(),
+		"a later client's pass must not reach an already resolved client")
+	assert.Equal(t, "original", firstInstalled.EndpointMd.Labels["id"])
+	require.NotSame(t, firstInstalled.LbEndpoint, secondResolved.LbEps[locality][0].LbEndpoint,
+		"two clients must not share one endpoint proto")
+	assert.Equal(t, firstHash, firstResolved.LbEpsEqualityHash)
+	assert.NotEqual(t, firstHash, secondResolved.LbEpsEqualityHash,
+		"different resolved content must resolve to different versions")
+
+	// The same aliasing within one client shows up as a version that no longer
+	// describes the installed content.
+	third := NewEndpointInputsResolver(base)
+	thirdBuilder := third.NewEndpointSet()
+	own := editorTestEndpoint("10.0.0.3", "own")
+	thirdBuilder.Add(locality, own)
+	own.GetEndpoint().GetAddress().GetSocketAddress().Address = "10.0.0.4"
+	third.ReplaceEndpoints(thirdBuilder)
+	assert.Equal(t, "10.0.0.3", third.Inputs().EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress(),
+		"mutating after Add must not change installed content the hash was taken over")
+}
+
+func TestEndpointSetBuilderAddModifiedClonesAndRehashes(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	locality := ir.PodLocality{Region: "r", Zone: "z"}
+	source := ir.NewEndpointsForBackend(backend)
+	source.Add(locality, editorTestEndpoint("10.0.0.1", "source"))
+	base := EndpointsInputs{EndpointsForBackend: *source}
+
+	resolver := NewEndpointInputsResolver(base)
+	builder := resolver.NewEndpointSet()
+	resolver.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
+		builder.AddModified(locality, endpoint, func(ep *ir.EndpointWithMd) {
+			ep.EndpointMd.Labels["id"] = "derived"
+			ep.GetEndpoint().GetAddress().GetSocketAddress().Address = "10.0.0.9"
+		})
+		return true
+	})
+	resolver.ReplaceEndpoints(builder)
+
+	resolved := resolver.Inputs().EndpointsForBackend.LbEps[locality][0]
+	assert.Equal(t, "derived", resolved.EndpointMd.Labels["id"])
+	assert.Equal(t, "10.0.0.9", resolved.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+	assert.Equal(t, "source", base.EndpointsForBackend.LbEps[locality][0].EndpointMd.Labels["id"],
+		"the immutable source must be untouched")
+	assert.Equal(t, "10.0.0.1", base.EndpointsForBackend.LbEps[locality][0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+	require.NotSame(t, base.EndpointsForBackend.LbEps[locality][0].LbEndpoint, resolved.LbEndpoint)
+
+	want := ir.NewEndpointsForBackend(backend)
+	want.Add(locality, resolved)
+	assert.Equal(t, want.LbEpsEqualityHash, resolver.Inputs().EndpointsForBackend.LbEpsEqualityHash,
+		"the modified endpoint must be hashed as it was installed")
+
+	assert.PanicsWithValue(t, "endpoint modifier is nil", func() {
+		other := NewEndpointInputsResolver(base)
+		otherBuilder := other.NewEndpointSet()
+		other.ForEachEndpoint(func(locality ir.PodLocality, endpoint EndpointView) bool {
+			otherBuilder.AddModified(locality, endpoint, nil)
+			return true
+		})
+	})
+}
+
+// A builder is seeded from the inputs as they stood when it was created, so
+// installing it wholesale would roll back anything a setter wrote while it was
+// being populated. That failure is silent: the resolved hash faithfully
+// versions the reverted state, so nothing downstream notices.
+func TestReplaceEndpointsKeepsSettersWrittenWhileBuilding(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
+	locality := ir.PodLocality{Region: "r", Zone: "z"}
+	resolver := NewEndpointInputsResolver(EndpointsInputs{EndpointsForBackend: *ir.NewEndpointsForBackend(backend)})
+
+	builder := resolver.NewEndpointSet()
+	// BackendConfigPolicy's zone-aware hook writes exactly this, and a plugin
+	// that also rewrote endpoints would build the replacement around it.
+	resolver.SetTrafficDistribution(wellknown.TrafficDistributionPreferSameZone)
+	builder.Add(locality, editorTestEndpoint("10.0.0.1", "ep"))
+	resolver.ReplaceEndpoints(builder)
+
+	assert.Equal(t, wellknown.TrafficDistributionPreferSameZone, resolver.Inputs().EndpointsForBackend.TrafficDistribution,
+		"installing a replacement must not revert the resolver's own fields")
+	assert.Len(t, resolver.Inputs().EndpointsForBackend.LbEps[locality], 1)
 }
 
 func editorTestEndpoint(address, id string) ir.EndpointWithMd {
