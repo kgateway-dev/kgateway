@@ -3,9 +3,24 @@ package curl
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
+	"strings"
 )
+
+// urlHost renders a host for use in a URL or in curl's --connect-to argument.
+// A bare IPv6 literal has to be bracketed, or the colons in the address are read
+// as the port separator; hostnames and IPv4 literals pass through unchanged.
+func urlHost(host string) string {
+	if strings.HasPrefix(host, "[") {
+		return host
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.To4() == nil {
+		return "[" + host + "]"
+	}
+	return host
+}
 
 // BuildArgs accepts a set of curl.Option and generates the list of arguments
 // that can be used to execute a curl request
@@ -198,11 +213,11 @@ func (c *requestConfig) generateArgs() []string {
 	var fullAddress string
 
 	if c.sni != "" {
-		sniResolution := fmt.Sprintf("%s:%d:%s:%d", c.sni, c.port, c.host, c.port)
-		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
+		sniResolution := fmt.Sprintf("%s:%d:%s:%d", urlHost(c.sni), c.port, urlHost(c.host), c.port)
+		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, urlHost(c.sni), c.port)
 		args = append(args, "--connect-to", sniResolution)
 	} else {
-		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.host, c.port, c.path)
+		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, urlHost(c.host), c.port, c.path)
 		if len(c.queryParameters) > 0 {
 			values := url.Values{}
 			for k, v := range c.queryParameters {
