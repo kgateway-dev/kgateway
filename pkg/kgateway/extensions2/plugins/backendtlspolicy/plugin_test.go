@@ -118,18 +118,25 @@ func TestUpstreamTLSValidation(t *testing.T) {
 		},
 		{
 			name: "policy that failed to translate configures nothing",
-			pol:  &backendTlsPolicy{caPEM: testCAPEM},
+			pol:  &backendTlsPolicy{caPEM: testCAPEM, hostname: "example.com"},
 			want: nil,
 		},
 		{
 			name: "explicit CA bundle",
-			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM},
-			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM},
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM, hostname: "example.com"},
+			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM, ServerName: "example.com"},
 		},
 		{
 			name: "system CA certificates resolve to an empty bundle",
-			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com")},
-			want: &ir.UpstreamTLSValidation{},
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), hostname: "example.com"},
+			want: &ir.UpstreamTLSValidation{ServerName: "example.com"},
+		},
+		{
+			// The hostname is what the certificate is verified against, so it must reach the
+			// control-plane client even when it differs from the name the client dials.
+			name: "the hostname is carried independently of the backend's address",
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM, hostname: "keycloak.example.com"},
+			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM, ServerName: "keycloak.example.com"},
 		},
 	}
 
@@ -144,14 +151,16 @@ func TestUpstreamTLSValidation(t *testing.T) {
 // the discovery cache keeps serving a config obtained under the old trust material.
 func TestEqualsComparesCA(t *testing.T) {
 	socket := tlsSocket(t, "example.com")
-	base := &backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM}
+	base := &backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM, hostname: "example.com"}
 
-	assert.True(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM}),
+	assert.True(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM, hostname: "example.com"}),
 		"identical policies should compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: "rotated"}),
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: "rotated", hostname: "example.com"}),
 		"a rotated CA must not compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket}),
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, hostname: "example.com"}),
 		"dropping the CA must not compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "other.example.com"), caPEM: testCAPEM}),
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM, hostname: "other.example.com"}),
+		"a changed hostname must not compare equal")
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "other.example.com"), caPEM: testCAPEM, hostname: "example.com"}),
 		"a changed transport socket must not compare equal")
 }

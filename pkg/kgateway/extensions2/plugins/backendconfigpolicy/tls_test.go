@@ -578,11 +578,32 @@ func TestTranslateTLSConfigUpstreamValidation(t *testing.T) {
 			want: &ir.UpstreamTLSValidation{CAPEM: caPEM},
 		},
 		{
+			name: "the SNI is the identity to verify",
+			tlsConfig: &kgateway.TLS{
+				SecretRef: &corev1.LocalObjectReference{Name: "ca-secret"},
+				SimpleTLS: new(true),
+				Sni:       new("example.com"),
+			},
+			secret: &ir.Secret{
+				ObjectSource: ir.ObjectSource{Name: "ca-secret", Namespace: "default"},
+				Data:         map[string][]byte{"ca.crt": []byte(caPEM)},
+			},
+			want: &ir.UpstreamTLSValidation{CAPEM: caPEM, ServerName: "example.com"},
+		},
+		{
 			name: "insecureSkipVerify is carried through",
 			tlsConfig: &kgateway.TLS{
 				InsecureSkipVerify: new(true),
 			},
 			want: &ir.UpstreamTLSValidation{InsecureSkipVerify: true},
+		},
+		{
+			name: "insecureSkipVerify still carries the SNI",
+			tlsConfig: &kgateway.TLS{
+				InsecureSkipVerify: new(true),
+				Sni:                new("example.com"),
+			},
+			want: &ir.UpstreamTLSValidation{ServerName: "example.com", InsecureSkipVerify: true},
 		},
 		{
 			name: "system CA certificates resolve to an empty bundle",
@@ -637,4 +658,6 @@ func TestBackendConfigPolicyIREqualsComparesTLSValidation(t *testing.T) {
 		"dropping the trust material must not compare equal")
 	assert.False(t, base.Equals(&BackendConfigPolicyIR{tlsValidation: &ir.UpstreamTLSValidation{CAPEM: "ca", InsecureSkipVerify: true}}),
 		"skipping verification must not compare equal")
+	assert.False(t, base.Equals(&BackendConfigPolicyIR{tlsValidation: &ir.UpstreamTLSValidation{CAPEM: "ca", ServerName: "example.com"}}),
+		"a changed SNI must not compare equal")
 }

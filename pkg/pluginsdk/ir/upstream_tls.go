@@ -9,14 +9,24 @@ package ir
 // for the data path, or a provider behind a private CA fails discovery even though the proxy
 // can reach it perfectly well.
 //
-// Only trust material is carried. SNI and SAN matchers are deliberately left out: a
-// control-plane client dials the upstream's URL directly rather than through the backend's
-// Envoy cluster, so the URL host is always the right name to verify against.
+// SAN matchers are deliberately left out: they match an identity in addition to the one the
+// connection is made under, which Go's own verification of ServerName already covers for the
+// single-host fetch a control-plane client performs.
 type UpstreamTLSValidation struct {
 	// CAPEM is the PEM-encoded CA bundle to verify the upstream against. Empty means the
 	// system trust store, which is also what a policy explicitly selecting the well-known
 	// system CA set resolves to.
 	CAPEM string
+
+	// ServerName is the identity to present as SNI and to verify the upstream's certificate
+	// against, empty to use the host from the URL being fetched.
+	//
+	// It matters because a backend's certificate is routinely issued for the name clients
+	// reach it by rather than for its in-cluster Service name: a Service "keycloak" fronting
+	// a certificate for "example.com", say. Envoy verifies the name the policy gives it, so a
+	// control-plane client has to do the same or it would reject a certificate the proxy
+	// accepts.
+	ServerName string
 
 	// InsecureSkipVerify disables certificate verification entirely.
 	InsecureSkipVerify bool
@@ -27,7 +37,9 @@ func (v *UpstreamTLSValidation) Equals(other *UpstreamTLSValidation) bool {
 	if v == nil || other == nil {
 		return v == nil && other == nil
 	}
-	return v.CAPEM == other.CAPEM && v.InsecureSkipVerify == other.InsecureSkipVerify
+	return v.CAPEM == other.CAPEM &&
+		v.ServerName == other.ServerName &&
+		v.InsecureSkipVerify == other.InsecureSkipVerify
 }
 
 // UpstreamTLSValidationProvider is implemented by backend-attached policy IRs that carry TLS

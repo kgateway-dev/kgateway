@@ -83,46 +83,51 @@ func (k discoveryKey) String() string {
 // tlsDigest identifies a trust configuration for cache keying. The CA bundle is not used as
 // the key itself: it is large, and a digest keeps keys cheap to compare and safe to log.
 //
-// Anything that resolves to the system trust store digests to the empty string, so a backend
-// with no policy at all and one that explicitly selects the well-known system CA set share a
-// cache entry rather than discovering the same issuer twice.
+// Anything that resolves to plain system-trust-store verification digests to the empty
+// string, so a backend with no policy at all and one that explicitly selects the well-known
+// system CA set share a cache entry rather than discovering the same issuer twice.
 func tlsDigest(v *ir.UpstreamTLSValidation) string {
-	switch {
-	case v == nil:
+	if v == nil || (v.CAPEM == "" && v.ServerName == "" && !v.InsecureSkipVerify) {
 		return ""
-	case v.InsecureSkipVerify:
-		return "insecure"
-	case v.CAPEM == "":
-		return ""
-	default:
-		sum := sha256.Sum256([]byte(v.CAPEM))
-		return hex.EncodeToString(sum[:])
 	}
+	verification := "verify"
+	if v.InsecureSkipVerify {
+		verification = "insecure"
+	}
+	// NUL-separate the fields so that no two distinct configurations can encode alike.
+	sum := sha256.Sum256([]byte(verification + "\x00" + v.ServerName + "\x00" + v.CAPEM))
+	return hex.EncodeToString(sum[:])
 }
 
 // tlsClientConfig builds the TLS config for a discovery client. A nil validation, or one
 // carrying nothing a Go client can act on, yields a nil config so that the client falls back
-// to the system trust store: the behavior before backend policies were honored here.
+// to plain system-trust-store verification: the behavior before backend policies were
+// honored here.
 //
 // A CA bundle replaces the system roots rather than extending them, matching what the same
 // bundle does to the Envoy cluster's validation context.
 func tlsClientConfig(v *ir.UpstreamTLSValidation) (*tls.Config, error) {
-	switch {
-	case v == nil:
+	if v == nil {
 		return nil, nil
-	case v.InsecureSkipVerify:
+	}
+	if v.InsecureSkipVerify {
 		// The user disabled verification for this backend; discovery is not the place to
 		// second-guess that, or discovery and the data path would disagree.
-		return &tls.Config{InsecureSkipVerify: true}, nil //nolint:gosec // G402: explicitly requested by the attached policy
-	case v.CAPEM == "":
+		return &tls.Config{ServerName: v.ServerName, InsecureSkipVerify: true}, nil //nolint:gosec // G402: explicitly requested by the attached policy
+	}
+	if v.CAPEM == "" && v.ServerName == "" {
 		return nil, nil
 	}
 
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM([]byte(v.CAPEM)) {
-		return nil, errors.New("no valid certificate found in the CA bundle configured for the issuer backend")
+	cfg := &tls.Config{ServerName: v.ServerName, MinVersion: tls.VersionTLS12}
+	if v.CAPEM != "" {
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM([]byte(v.CAPEM)) {
+			return nil, errors.New("no valid certificate found in the CA bundle configured for the issuer backend")
+		}
+		cfg.RootCAs = pool
 	}
-	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}, nil
+	return cfg, nil
 }
 
 // discoveryClients memoizes an http.Client per distinct trust configuration. Without it every

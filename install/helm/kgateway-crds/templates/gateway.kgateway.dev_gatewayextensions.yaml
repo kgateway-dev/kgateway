@@ -1547,6 +1547,10 @@ spec:
                       discovery is retried, so a provider that is unreachable when the configuration is first discovered is picked up once
                       it becomes reachable. Discovery stops once authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI
                       (when JWT parsing is configured) are all set explicitly, since none of the discovered values are then used.
+                      Discovery is performed by the control plane rather than the proxy, and validates the issuer using the
+                      BackendTLSPolicy or BackendConfigPolicy attached to backendRef: its CA certificates supply the trust anchors and
+                      its hostname is the identity verified. An issuer served under a private or self-signed CA therefore requires no
+                      additional trust configuration on the control plane beyond that policy.
                     pattern: ^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$
                     type: string
                   jwt:

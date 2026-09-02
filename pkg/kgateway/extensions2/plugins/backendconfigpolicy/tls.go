@@ -73,9 +73,10 @@ func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespa
 // Go client can act on. It returns nil when there is nothing such a client can use, leaving
 // the caller on its own default of the system trust store.
 func upstreamTLSValidation(tlsData *tlsData, tlsConfig *kgateway.TLS) *ir.UpstreamTLSValidation {
+	serverName := ptr.Deref(tlsConfig.Sni, "")
 	if ptr.Deref(tlsConfig.WellKnownCACertificates, "") == gwv1.WellKnownCACertificatesSystem {
 		// The system trust store, which is what an empty bundle already means.
-		return &ir.UpstreamTLSValidation{}
+		return &ir.UpstreamTLSValidation{ServerName: serverName}
 	}
 	if tlsData.rootCA == "" {
 		return nil
@@ -84,7 +85,7 @@ func upstreamTLSValidation(tlsData *tlsData, tlsConfig *kgateway.TLS) *ir.Upstre
 		// rootCA is a path on the proxy's filesystem, which does not exist here.
 		return nil
 	}
-	return &ir.UpstreamTLSValidation{CAPEM: tlsData.rootCA}
+	return &ir.UpstreamTLSValidation{CAPEM: tlsData.rootCA, ServerName: serverName}
 }
 
 type tlsData struct {
@@ -245,7 +246,10 @@ func translateTLSConfig(
 	var validation *ir.UpstreamTLSValidation
 	if tlsConfig.InsecureSkipVerify != nil && *tlsConfig.InsecureSkipVerify {
 		tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{}
-		validation = &ir.UpstreamTLSValidation{InsecureSkipVerify: true}
+		validation = &ir.UpstreamTLSValidation{
+			ServerName:         ptr.Deref(tlsConfig.Sni, ""),
+			InsecureSkipVerify: true,
+		}
 	} else {
 		validation, err = buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext)
 		if err != nil {

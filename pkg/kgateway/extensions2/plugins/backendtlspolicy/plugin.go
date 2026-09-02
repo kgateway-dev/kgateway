@@ -67,6 +67,11 @@ type backendTlsPolicy struct {
 	// without unpacking the Envoy proto. Empty when the policy selects the system trust
 	// store, since that is what an empty bundle already means to such a client.
 	caPEM string
+	// hostname is the identity this policy verifies the backend under, mirrored from the SNI
+	// on the transport socket. A control-plane client has to verify the same name: the
+	// certificate is routinely issued for the hostname rather than for the Service name the
+	// client dials.
+	hostname string
 }
 
 var (
@@ -83,7 +88,9 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return d.caPEM == d2.caPEM && proto.Equal(d.transportSocket, d2.transportSocket)
+	return d.caPEM == d2.caPEM &&
+		d.hostname == d2.hostname &&
+		proto.Equal(d.transportSocket, d2.transportSocket)
 }
 
 // UpstreamTLSValidation lets the control plane validate the backend the same way this policy
@@ -94,7 +101,7 @@ func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
 		// The policy failed to translate; it configures nothing, for Envoy or for us.
 		return nil
 	}
-	return &ir.UpstreamTLSValidation{CAPEM: d.caPEM}
+	return &ir.UpstreamTLSValidation{CAPEM: d.caPEM, ServerName: d.hostname}
 }
 
 func (d *backendTlsPolicy) PolicyHash() uint64 {
@@ -218,7 +225,8 @@ func buildTranslateFunc(
 	return func(krtctx krt.HandlerContext, policyCR *gwv1.BackendTLSPolicy) (*backendTlsPolicy, error) {
 		spec := policyCR.Spec
 		policyIr := backendTlsPolicy{
-			ct: policyCR.CreationTimestamp.Time,
+			ct:       policyCR.CreationTimestamp.Time,
+			hostname: string(spec.Validation.Hostname),
 		}
 		validationContext := &envoytlsv3.CertificateValidationContext{}
 		validationContext.MatchTypedSubjectAltNames = convertSubjectAltNames(spec.Validation)
