@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strconv"
 	"sync"
 
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -267,7 +268,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 	if s.xdsListener == nil {
 		var err error
-		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
+		s.xdsListener, err = newXDSListener(s.globalSettings.XdsBindAddress, s.globalSettings.XdsServicePort)
 		if err != nil {
 			logger.Error("error creating xds listener", "error", err)
 			return nil, err
@@ -384,9 +385,28 @@ func (s *setup) Start(ctx context.Context) error {
 	return mgr.Start(ctx)
 }
 
+// newXDSListener binds the xDS server.
+//
+// An empty ip binds the unspecified address on the "tcp" network, which accepts
+// both IPv4 and IPv6 clients. Note that Go reaches the same result for a literal
+// "0.0.0.0": it treats every wildcard as dual-stack and normalizes the socket to
+// AF_INET6 with IPV6_V6ONLY cleared, so "tcp" cannot express a single family.
+// An explicit address therefore selects "tcp4" or "tcp6" by its family, which is
+// what makes KGW_XDS_BIND_ADDRESS able to restrict the server to one of them.
 func newXDSListener(ip string, port uint32) (net.Listener, error) {
-	bindAddr := net.TCPAddr{IP: net.ParseIP(ip), Port: int(port)}
-	return net.Listen(bindAddr.Network(), bindAddr.String())
+	if ip == "" {
+		return net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(int(port))))
+	}
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return nil, fmt.Errorf("xds bind address %q is not a valid IP address", ip)
+	}
+	network := "tcp6"
+	if parsed.To4() != nil {
+		network = "tcp4"
+	}
+	bindAddr := net.TCPAddr{IP: parsed, Port: int(port)}
+	return net.Listen(network, bindAddr.String())
 }
 
 func (s *setup) buildKgatewayWithConfig(

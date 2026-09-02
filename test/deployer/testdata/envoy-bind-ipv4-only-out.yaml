@@ -37,8 +37,7 @@ data:
       - name: readiness_listener
         address:
           socket_address:
-            address: "::"
-            ipv4_compat: true
+            address: 0.0.0.0
             port_value: 8082
         filter_chains:
           - filters:
@@ -78,8 +77,7 @@ data:
       - name: prometheus_listener
         address:
           socket_address:
-            address: "::"
-            ipv4_compat: true
+            address: 0.0.0.0
             port_value: 9091
         filter_chains:
           - filters:
@@ -199,18 +197,6 @@ data:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 19000
-        - name: gateway_proxy_sds
-          connect_timeout: 0.25s
-          http2_protocol_options: {}
-          load_assignment:
-            cluster_name: gateway_proxy_sds
-            endpoints:
-              - lb_endpoints:
-                - endpoint:
-                    address:
-                      socket_address:
-                        address: 127.0.0.1
-                        port_value: 8234
     typed_dns_resolver_config:
       name: envoy.network.dns_resolver.cares
       typed_config:
@@ -388,131 +374,6 @@ spec:
         - mountPath: /etc/podinfo
           name: podinfo
           readOnly: true
-      - env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: ISTIO_MTLS_SDS_ENABLED
-          value: "true"
-        - name: LOG_LEVEL
-          value: info
-        image: ghcr.io/sds:v2.1.0-dev
-        name: sds
-        ports:
-        - containerPort: 8234
-          name: sds
-          protocol: TCP
-        readinessProbe:
-          failureThreshold: 3
-          initialDelaySeconds: 3
-          periodSeconds: 10
-          successThreshold: 1
-          tcpSocket:
-            port: 8234
-          timeoutSeconds: 1
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-        volumeMounts:
-        - mountPath: /etc/envoy
-          name: envoy-config
-        - mountPath: /etc/istio-certs/
-          name: istio-certs
-      - args:
-        - proxy
-        - sidecar
-        - --domain
-        - $(POD_NAMESPACE).svc.cluster.local
-        - --configPath
-        - /etc/istio/proxy
-        - --serviceCluster
-        - istio-proxy-prometheus
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --proxyLogLevel=warning
-        - --proxyComponentLogLevel=misc:error
-        - --connectTimeout
-        - 10s
-        - --controlPlaneAuthPolicy
-        - NONE
-        - --dnsRefreshRate
-        - 300s
-        - --controlPlaneBootstrap=false
-        env:
-        - name: OUTPUT_CERTS
-          value: /etc/istio-certs
-        - name: JWT_POLICY
-          value: third-party-jwt
-        - name: PILOT_CERT_PROVIDER
-          value: istiod
-        - name: CA_ADDR
-          value: istiod.istio-system.svc:15012
-        - name: ISTIO_META_MESH_ID
-          value: cluster.local
-        - name: ISTIO_META_CLUSTER_ID
-          value: Kubernetes
-        - name: PROXY_CONFIG
-          value: |
-            {"discoveryAddress": istiod.istio-system.svc:15012 }
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
-        - name: SERVICE_ACCOUNT
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
-        - name: HOST_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
-        - name: ISTIO_META_POD_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        - name: ISTIO_META_CONFIG_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: DISABLE_ENVOY
-          value: "true"
-        image: docker.io/istio/proxyv2:1.30.1
-        name: istio-proxy
-        resources: {}
-        volumeMounts:
-        - mountPath: /var/run/secrets/istio
-          name: istiod-ca-cert
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/istio-certs/
-          name: istio-certs
-        - mountPath: /var/run/secrets/tokens
-          name: istio-token
-        - mountPath: /var/run/secrets/credential-uds
-          name: credential-socket
-        - mountPath: /var/run/secrets/workload-spiffe-uds
-          name: workload-socket
-        - mountPath: /var/run/secrets/workload-spiffe-credentials
-          name: workload-certs
       serviceAccountName: gw
       terminationGracePeriodSeconds: 60
       volumes:
@@ -532,28 +393,4 @@ spec:
               fieldPath: metadata.labels
             path: labels
         name: podinfo
-      - emptyDir:
-          medium: Memory
-        name: istio-certs
-      - configMap:
-          defaultMode: 420
-          name: istio-ca-root-cert
-        name: istiod-ca-cert
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-token
-        projected:
-          defaultMode: 420
-          sources:
-          - serviceAccountToken:
-              audience: istio-ca
-              expirationSeconds: 43200
-              path: istio-token
-      - emptyDir: {}
-        name: credential-socket
-      - emptyDir: {}
-        name: workload-socket
-      - emptyDir: {}
-        name: workload-certs
 status: {}

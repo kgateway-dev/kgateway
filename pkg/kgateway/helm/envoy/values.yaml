@@ -13,6 +13,11 @@ gateway:
     host: ""
     port: 8080
 
+  # bind family for the proxy's own listeners (readiness, stats); set by the
+  # control plane from the KGW_LISTENER_BIND_IPV6 setting so that these match
+  # the bind family of the translated data-plane listeners
+  bindIpv6: true
+
   # actual default set in default GatewayParam service.type
   service:
     type: LoadBalancer

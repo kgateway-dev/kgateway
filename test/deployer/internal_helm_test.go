@@ -144,6 +144,12 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		return nil
 	}
 
+	// Bind override for the KGW_LISTENER_BIND_IPV6=false deployment mode
+	bindIpv4Override := func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
+		inputs.CommonCollections.Settings.ListenerBindIpv6 = false
+		return nil
+	}
+
 	tests := []HelmTestCase{
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
@@ -158,6 +164,32 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"envoy bootstrap local cluster should use EDS for multi-zone locality distribution")
 				assert.Contains(t, outputYaml, "eds_cluster_config:",
 					"envoy bootstrap local cluster should request endpoints over ADS")
+				// The readiness and stats listeners must bind the same family as the
+				// translated data-plane listeners. An IPv4 wildcard is unreachable on
+				// the pod address in an IPv6-only cluster, so the kubelet probe never
+				// succeeds and the proxy never goes Ready.
+				assert.Contains(t, outputYaml, `address: "::"`,
+					"the proxy's own listeners should bind the IPv6 wildcard by default")
+				assert.Contains(t, outputYaml, "ipv4_compat: true",
+					"the IPv6 wildcard bind should still accept IPv4 clients")
+				assert.NotContains(t, outputYaml, "address: 0.0.0.0",
+					"no listener should bind the IPv4 wildcard when ListenerBindIpv6 is set")
+			},
+		},
+		{
+			// Same gateway, but with KGW_LISTENER_BIND_IPV6=false: the bootstrap
+			// listeners follow the setting back to IPv4 rather than pinning a family.
+			Name:                        "gateway with ipv6 listener bind disabled",
+			InputFile:                   "envoy-bind-ipv4-only",
+			HelmValuesGeneratorOverride: bindIpv4Override,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "address: 0.0.0.0",
+					"the proxy's own listeners should bind the IPv4 wildcard when ListenerBindIpv6 is disabled")
+				assert.NotContains(t, outputYaml, `address: "::"`,
+					"no listener should bind the IPv6 wildcard when ListenerBindIpv6 is disabled")
+				assert.NotContains(t, outputYaml, "ipv4_compat",
+					"ipv4_compat is only valid on an IPv6 bind address")
 			},
 		},
 		{
