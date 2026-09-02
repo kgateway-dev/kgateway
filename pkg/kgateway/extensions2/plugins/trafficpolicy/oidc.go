@@ -2,7 +2,12 @@ package trafficpolicy
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -57,6 +62,117 @@ const (
 	backgroundDiscoveryConcurrency = 4
 )
 
+// discoveryKey identifies a cache entry: an issuer, plus the trust material used to reach it.
+//
+// The trust material is part of the key because two GatewayExtensions naming the same issuer
+// can validate it differently, and because rotating the CA on a backend must not keep serving
+// a config discovered against the old one.
+type discoveryKey struct {
+	issuerURI string
+	// tlsDigest is the digest of the trust configuration, empty for the system trust store.
+	tlsDigest string
+}
+
+func (k discoveryKey) String() string {
+	if k.tlsDigest == "" {
+		return k.issuerURI
+	}
+	return k.issuerURI + "|" + k.tlsDigest
+}
+
+// tlsDigest identifies a trust configuration for cache keying. The CA bundle is not used as
+// the key itself: it is large, and a digest keeps keys cheap to compare and safe to log.
+//
+// Anything that resolves to the system trust store digests to the empty string, so a backend
+// with no policy at all and one that explicitly selects the well-known system CA set share a
+// cache entry rather than discovering the same issuer twice.
+func tlsDigest(v *ir.UpstreamTLSValidation) string {
+	switch {
+	case v == nil:
+		return ""
+	case v.InsecureSkipVerify:
+		return "insecure"
+	case v.CAPEM == "":
+		return ""
+	default:
+		sum := sha256.Sum256([]byte(v.CAPEM))
+		return hex.EncodeToString(sum[:])
+	}
+}
+
+// tlsClientConfig builds the TLS config for a discovery client. A nil validation, or one
+// carrying nothing a Go client can act on, yields a nil config so that the client falls back
+// to the system trust store: the behavior before backend policies were honored here.
+//
+// A CA bundle replaces the system roots rather than extending them, matching what the same
+// bundle does to the Envoy cluster's validation context.
+func tlsClientConfig(v *ir.UpstreamTLSValidation) (*tls.Config, error) {
+	switch {
+	case v == nil:
+		return nil, nil
+	case v.InsecureSkipVerify:
+		// The user disabled verification for this backend; discovery is not the place to
+		// second-guess that, or discovery and the data path would disagree.
+		return &tls.Config{InsecureSkipVerify: true}, nil //nolint:gosec // G402: explicitly requested by the attached policy
+	case v.CAPEM == "":
+		return nil, nil
+	}
+
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM([]byte(v.CAPEM)) {
+		return nil, errors.New("no valid certificate found in the CA bundle configured for the issuer backend")
+	}
+	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}, nil
+}
+
+// discoveryClients memoizes an http.Client per distinct trust configuration. Without it every
+// refresh pass would re-parse the CA bundle and build a fresh connection pool.
+type discoveryClients struct {
+	mu      sync.Mutex
+	clients map[string]*http.Client
+}
+
+func (c *discoveryClients) get(digest string, v *ir.UpstreamTLSValidation) (*http.Client, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if client, ok := c.clients[digest]; ok {
+		return client, nil
+	}
+	tlsCfg, err := tlsClientConfig(v)
+	if err != nil {
+		return nil, err
+	}
+	client := &http.Client{Timeout: oidcDiscoveryHTTPTimeout}
+	if tlsCfg != nil {
+		// Clone the default transport rather than building one from scratch, so proxy and
+		// timeout defaults are kept and only the trust store differs.
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = tlsCfg
+		client.Transport = transport
+	}
+	if c.clients == nil {
+		c.clients = map[string]*http.Client{}
+	}
+	c.clients[digest] = client
+	return client, nil
+}
+
+// retain drops the clients whose trust configuration is no longer cached, so that a rotating
+// CA does not leak a connection pool per rotation.
+func (c *discoveryClients) retain(digests sets.Set[string]) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for digest, client := range c.clients {
+		if digests.Has(digest) {
+			continue
+		}
+		client.CloseIdleConnections()
+		delete(c.clients, digest)
+	}
+}
+
 // oidcProviderConfig maps the OpenID provider config response.
 // Refer to https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationResponse for more details.
 type oidcProviderConfig struct {
@@ -93,6 +209,13 @@ type oidcDiscoveryResult struct {
 	expiry time.Time
 	// failures counts consecutive failed discoveries, and drives the retry backoff.
 	failures int
+	// tls is the trust material this entry was discovered with. The refresh loop runs off
+	// the krt event loop and so cannot resolve a backend's policies itself, so the transform
+	// that cached the entry records them here for it to reuse.
+	tls *ir.UpstreamTLSValidation
+	// lastRead is when a translation last read this entry. It is what tells an entry still in
+	// use apart from one superseded by a CA rotation; see refreshOnce.
+	lastRead time.Time
 }
 
 // sameOutcome reports whether two results translate to the same GatewayExtension IR.
@@ -125,12 +248,15 @@ type oidcProviderConfigDiscoverer struct {
 	failureRetryInterval time.Duration
 
 	// mu guards cache. The cache is authoritative for get(): expiry is acted on only by the
-	// refresh loop, so a translation never blocks on discovery for an issuer already known.
+	// refresh loop, so a translation never blocks on discovery for a key already known.
 	mu    sync.RWMutex
-	cache map[string]oidcDiscoveryResult
+	cache map[discoveryKey]oidcDiscoveryResult
 
-	// discoverGroup deduplicates concurrent discover() calls for the same issuer URI,
-	// preventing redundant HTTP requests when several extensions share an issuer.
+	// clients holds one http.Client per distinct trust configuration in the cache.
+	clients discoveryClients
+
+	// discoverGroup deduplicates concurrent discover() calls for the same key, preventing
+	// redundant HTTP requests when several extensions share an issuer and trust material.
 	discoverGroup singleflight.Group
 }
 
@@ -146,7 +272,7 @@ func newOIDCProviderConfigDiscoverer(liveIssuerURIs func() []string, opts ...krt
 		liveIssuerURIs:       liveIssuerURIs,
 		cacheRefreshInterval: defaultOIDCCacheRefreshInterval,
 		failureRetryInterval: defaultOIDCFailureRetryInterval,
-		cache:                map[string]oidcDiscoveryResult{},
+		cache:                map[discoveryKey]oidcDiscoveryResult{},
 	}
 }
 
@@ -218,36 +344,60 @@ func (o *oidcProviderConfigDiscoverer) run(ctx context.Context) {
 	}
 }
 
-// refreshOnce prunes issuers no longer referenced by any GatewayExtension, re-discovers the
-// expired ones, and triggers a single recomputation if any outcome changed.
+// refreshOnce prunes the cache entries nothing reads any more, re-discovers the expired ones,
+// and triggers a single recomputation if any outcome changed.
 func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 	// Resolve the live set outside the lock: it calls into krt, which must not be done while
 	// holding o.mu.
 	live := sets.New(o.liveIssuerURIs()...)
 
-	// Only refresh issuers that are both still discovered-from and already cached. Entries are
+	// Only refresh keys that are both still discovered-from and already cached. Entries are
 	// only ever added by get(), so a config no extension has ever asked for is never
 	// discovered here; the live set additionally drops entries cached earlier that are no
 	// longer needed.
-	var pruned, expired []string
+	var pruned, expired []discoveryKey
+	// current tracks, per live issuer, the most recently read key. An issuer whose backend CA
+	// was rotated keeps its old entry in the cache with nothing left to read it, and the live
+	// set cannot spot that: it only knows issuer URIs, because it is resolved off the event
+	// loop where a backend's attached policies cannot be looked up. So treat any key older
+	// than the newest one for the same issuer as superseded and stop polling it. The key still
+	// in use is by definition the one a translation read most recently, which is why the
+	// refresh loop itself must never count as a reader.
+	current := map[string]discoveryKey{}
 	now := time.Now()
 	o.mu.RLock()
-	for issuerURI, result := range o.cache {
-		switch {
-		case !live.Has(issuerURI):
-			pruned = append(pruned, issuerURI)
-		case now.After(result.expiry):
-			expired = append(expired, issuerURI)
+	for key, result := range o.cache {
+		if !live.Has(key.issuerURI) {
+			pruned = append(pruned, key)
+			continue
+		}
+		if prev, ok := current[key.issuerURI]; ok {
+			if o.cache[prev].lastRead.After(result.lastRead) {
+				pruned = append(pruned, key)
+				continue
+			}
+			pruned = append(pruned, prev)
+		}
+		current[key.issuerURI] = key
+	}
+	for _, key := range current {
+		if now.After(o.cache[key].expiry) {
+			expired = append(expired, key)
 		}
 	}
 	o.mu.RUnlock()
 
 	if len(pruned) > 0 {
 		o.mu.Lock()
-		for _, issuerURI := range pruned {
-			delete(o.cache, issuerURI)
+		for _, key := range pruned {
+			delete(o.cache, key)
+		}
+		digests := sets.New[string]()
+		for key := range o.cache {
+			digests.Insert(key.tlsDigest)
 		}
 		o.mu.Unlock()
+		o.clients.retain(digests)
 	}
 
 	if len(expired) == 0 {
@@ -259,9 +409,9 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 	changed := make([]bool, len(expired))
 	var g errgroup.Group
 	g.SetLimit(backgroundDiscoveryConcurrency)
-	for i, issuerURI := range expired {
+	for i, key := range expired {
 		g.Go(func() error {
-			changed[i] = o.rediscover(ctx, issuerURI)
+			changed[i] = o.rediscover(ctx, key)
 			return nil
 		})
 	}
@@ -275,9 +425,9 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 	}
 }
 
-// rediscover re-runs discovery for issuerURI and replaces the cached entry, reporting whether
-// the new outcome differs from the cached one.
-func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuerURI string) bool {
+// rediscover re-runs discovery for key and replaces the cached entry, reporting whether the
+// new outcome differs from the cached one.
+func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, key discoveryKey) bool {
 	// Never let shutdown look like a provider failure. A refresh pass can be cancelled part
 	// way through, and overwriting a healthy cached config with "context canceled" would
 	// report a change, trigger a recomputation, and set Err on every OAuth2 extension on the
@@ -289,15 +439,24 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 	ctx, cancel := context.WithTimeout(parent, backgroundDiscoveryTimeout)
 	defer cancel()
 
-	discoveryURL, err := oidcDiscoveryURL(issuerURI)
+	discoveryURL, err := oidcDiscoveryURL(key.issuerURI)
 	if err != nil {
 		// Not reachable in practice: the entry could only have been cached by a get() that
 		// parsed the same URI successfully.
-		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", err)
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", key.issuerURI, "error", err)
 		return false
 	}
 
-	cfg, err := o.discover(ctx, discoveryURL)
+	// Reuse the trust material this entry was discovered with, which peek() reads without
+	// counting as a read: were the refresh loop to touch lastRead, an entry superseded by a
+	// CA rotation would keep itself alive and be polled forever.
+	cached, ok := o.peek(key)
+	if !ok {
+		// Pruned while a concurrent pass was running. Don't resurrect it.
+		return false
+	}
+
+	cfg, err := o.discover(ctx, discoveryURL, key.tlsDigest, cached.tls)
 	// Check the parent, not ctx: a genuinely slow provider hits our own
 	// backgroundDiscoveryTimeout and should be cached as the failure it is, whereas a
 	// cancelled parent means we are shutting down and learned nothing about the provider.
@@ -306,7 +465,7 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 	}
 
 	o.mu.Lock()
-	prev, ok := o.cache[issuerURI]
+	prev, ok := o.cache[key]
 	if !ok {
 		// The entry was pruned while we were discovering, because its GatewayExtension went
 		// away. Don't resurrect it.
@@ -314,6 +473,9 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 		return false
 	}
 	next := o.newResult(cfg, err, prev.failures)
+	// Carry forward what identifies the entry rather than its outcome: the trust material it
+	// is discovered with, and when a translation last read it.
+	next.tls, next.lastRead = prev.tls, prev.lastRead
 	// A refresh failure must not withdraw a configuration that was already discovered
 	// successfully. The provider document rarely changes, the proxies are running with the one
 	// we have, and caching the error instead would set Err on the GatewayExtension, which
@@ -325,11 +487,11 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 	if servingLastKnownGood {
 		next.cfg, next.err = prev.cfg, nil
 	}
-	o.cache[issuerURI] = next
+	o.cache[key] = next
 	o.mu.Unlock()
 
 	if err != nil {
-		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI,
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", key.issuerURI,
 			"serving_last_known_good", servingLastKnownGood, "consecutive_failures", next.failures,
 			"error", err)
 	}
@@ -340,8 +502,18 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 // cached. Both successes and failures are cached; run() owns re-discovering them and
 // triggering a recomputation when the outcome changes, so callers must have registered with
 // markDependant to observe that change.
-func (o *oidcProviderConfigDiscoverer) get(ctx context.Context, issuerURI string) (*oidcProviderConfig, error) {
-	if result, ok := o.load(issuerURI); ok {
+//
+// tlsValidation is the trust material to validate the issuer with, resolved from the policies
+// attached to the backend the extension names, and nil to use the system trust store. It is
+// part of the cache key, so re-pointing an extension at a different CA re-discovers rather
+// than serving a config obtained under the old trust.
+func (o *oidcProviderConfigDiscoverer) get(
+	ctx context.Context,
+	issuerURI string,
+	tlsValidation *ir.UpstreamTLSValidation,
+) (*oidcProviderConfig, error) {
+	key := discoveryKey{issuerURI: issuerURI, tlsDigest: tlsDigest(tlsValidation)}
+	if result, ok := o.read(key); ok {
 		return result.cfg, result.err
 	}
 
@@ -358,18 +530,19 @@ func (o *oidcProviderConfigDiscoverer) get(ctx context.Context, issuerURI string
 	ctx, cancel := context.WithTimeout(ctx, foregroundDiscoveryTimeout)
 	defer cancel()
 
-	// Use singleflight to deduplicate concurrent discovery calls for the same issuer;
-	// several transforms may call get() for the same issuer at once.
-	v, _, _ := o.discoverGroup.Do(issuerURI, func() (any, error) {
+	// Use singleflight to deduplicate concurrent discovery calls for the same key; several
+	// transforms may call get() for the same issuer at once.
+	v, _, _ := o.discoverGroup.Do(key.String(), func() (any, error) {
 		// Re-check the cache inside the singleflight function, as another caller
 		// may have populated it between our initial load and entering the group.
-		if result, ok := o.load(issuerURI); ok {
+		if result, ok := o.read(key); ok {
 			return result, nil
 		}
-		cfg, err := o.discover(ctx, discoveryURL)
+		cfg, err := o.discover(ctx, discoveryURL, key.tlsDigest, tlsValidation)
 		result := o.newResult(cfg, err, 0)
+		result.tls, result.lastRead = tlsValidation, time.Now()
 		o.mu.Lock()
-		o.cache[issuerURI] = result
+		o.cache[key] = result
 		o.mu.Unlock()
 		return result, nil
 	})
@@ -379,10 +552,27 @@ func (o *oidcProviderConfigDiscoverer) get(ctx context.Context, issuerURI string
 	return result.cfg, result.err
 }
 
-func (o *oidcProviderConfigDiscoverer) load(issuerURI string) (oidcDiscoveryResult, bool) {
+// read returns the cached result for key and records that a translation read it, which is
+// what keeps the key from being pruned as superseded. It takes the write lock for that, which
+// is affordable because get() only runs when a GatewayExtension is translated.
+func (o *oidcProviderConfigDiscoverer) read(key discoveryKey) (oidcDiscoveryResult, bool) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	result, ok := o.cache[key]
+	if !ok {
+		return oidcDiscoveryResult{}, false
+	}
+	result.lastRead = time.Now()
+	o.cache[key] = result
+	return result, true
+}
+
+// peek returns the cached result for key without recording a read. The refresh loop uses it
+// so that its own polling cannot keep a superseded entry alive.
+func (o *oidcProviderConfigDiscoverer) peek(key discoveryKey) (oidcDiscoveryResult, bool) {
 	o.mu.RLock()
 	defer o.mu.RUnlock()
-	result, ok := o.cache[issuerURI]
+	result, ok := o.cache[key]
 	return result, ok
 }
 
@@ -416,11 +606,23 @@ func oidcDiscoveryURL(issuerURI string) (string, error) {
 	return u.String(), nil
 }
 
-func (o *oidcProviderConfigDiscoverer) discover(ctx context.Context, discoveryURL string) (*oidcProviderConfig, error) {
+// discover fetches the provider configuration, validating the issuer with tlsValidation.
+// digest identifies that trust configuration, and is what the memoized client is keyed by.
+func (o *oidcProviderConfigDiscoverer) discover(
+	ctx context.Context,
+	discoveryURL string,
+	digest string,
+	tlsValidation *ir.UpstreamTLSValidation,
+) (*oidcProviderConfig, error) {
+	// A CA bundle that does not parse is a user error on the attached policy, so let it be
+	// cached and reported like an unreachable provider rather than retried in a loop.
+	client, err := o.clients.get(digest, tlsValidation)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &oidcProviderConfig{}
-	client := &http.Client{Timeout: oidcDiscoveryHTTPTimeout}
-	err := retry.Do(func() error {
-		// TODO: allow using custom certs for HTTPS Issuer URI
+	err = retry.Do(func() error {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoveryURL, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create request: %w", err)

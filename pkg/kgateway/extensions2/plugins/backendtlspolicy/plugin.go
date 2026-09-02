@@ -62,9 +62,17 @@ type backendTlsPolicy struct {
 	// +noKrtEquals
 	ct              time.Time
 	transportSocket *envoycorev3.TransportSocket
+	// caPEM is the resolved CA bundle this policy validates the backend against, kept
+	// alongside the transport socket so that control-plane clients can trust the same CA
+	// without unpacking the Envoy proto. Empty when the policy selects the system trust
+	// store, since that is what an empty bundle already means to such a client.
+	caPEM string
 }
 
-var _ ir.PolicyIR = &backendTlsPolicy{}
+var (
+	_ ir.PolicyIR                      = &backendTlsPolicy{}
+	_ ir.UpstreamTLSValidationProvider = &backendTlsPolicy{}
+)
 
 func (d *backendTlsPolicy) CreationTime() time.Time {
 	return d.ct
@@ -75,7 +83,18 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return proto.Equal(d.transportSocket, d2.transportSocket)
+	return d.caPEM == d2.caPEM && proto.Equal(d.transportSocket, d2.transportSocket)
+}
+
+// UpstreamTLSValidation lets the control plane validate the backend the same way this policy
+// makes Envoy validate it. Today the only caller is OIDC discovery, which fetches the OpenID
+// provider configuration itself and would otherwise be limited to the system trust store.
+func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
+	if d == nil || d.transportSocket == nil {
+		// The policy failed to translate; it configures nothing, for Envoy or for us.
+		return nil
+	}
+	return &ir.UpstreamTLSValidation{CAPEM: d.caPEM}
 }
 
 func (d *backendTlsPolicy) PolicyHash() uint64 {
@@ -283,6 +302,7 @@ func buildTranslateFunc(
 					Kind:  refKind,
 				}
 			}
+			policyIr.caPEM = caCert
 			tlsContextDefault, err = pluginutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := &InvalidCACertificateRefError{

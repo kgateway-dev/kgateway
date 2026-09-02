@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -125,6 +126,34 @@ func constructOAuth2(
 	return nil
 }
 
+// upstreamTLSValidationForBackend returns the trust material the control plane should use
+// when it talks to backend itself, taken from the TLS-configuring policies attached to it.
+//
+// BackendTLSPolicy wins over BackendConfigPolicy, mirroring the precedence the two already
+// apply to each other when both configure TLS on the same backend. A nil result means no
+// attached policy resolved to anything a Go client can act on, leaving the caller on its
+// default of the system trust store.
+func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) *ir.UpstreamTLSValidation {
+	if backend == nil {
+		return nil
+	}
+	for _, gk := range []schema.GroupKind{
+		wellknown.BackendTLSPolicyGVK.GroupKind(),
+		wellknown.BackendConfigPolicyGVK.GroupKind(),
+	} {
+		for _, att := range backend.AttachedPolicies.Policies[gk] {
+			provider, ok := att.PolicyIr.(ir.UpstreamTLSValidationProvider)
+			if !ok {
+				continue
+			}
+			if v := provider.UpstreamTLSValidation(); v != nil {
+				return v
+			}
+		}
+	}
+	return nil
+}
+
 func buildOAuth2ProviderConfig(
 	ctx context.Context,
 	krtctx krt.HandlerContext,
@@ -143,6 +172,16 @@ func buildOAuth2ProviderConfig(
 		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
 	}
 
+	// Resolve the backend before discovering, so that discovery can validate the issuer with
+	// the CA the user configured for the data path to it. Envoy talks to the issuer through
+	// this backend's cluster; the control plane dials the issuer URL directly, but it must
+	// trust the same CA or a provider behind a private CA fails discovery even though the
+	// proxy can reach it.
+	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
+	if err != nil || backend == nil {
+		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
+	}
+
 	// Only discover if we need to, i.e. when the issuer is set and at least one endpoint is
 	// left for the well-known document to supply.
 	if oidcDiscoveryRequired(in) {
@@ -152,7 +191,7 @@ func buildOAuth2ProviderConfig(
 		// provider that was down at startup would keep this extension (and every
 		// TrafficPolicy referencing it) rejected until the control plane restarted.
 		discoverer.markDependant(krtctx)
-		openidCfg, err := discoverer.get(ctx, *in.IssuerURI)
+		openidCfg, err := discoverer.get(ctx, *in.IssuerURI, upstreamTLSValidationForBackend(backend))
 		if err != nil {
 			return nil, err
 		}
@@ -175,11 +214,6 @@ func buildOAuth2ProviderConfig(
 	}
 	if authorizationEndpoint == "" {
 		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
-	}
-
-	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
-	if err != nil || backend == nil {
-		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
 
 	// Use a dedicated backend to fetch JWKS if specified, otherwise fall back to the primary backend.

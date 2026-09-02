@@ -177,7 +177,7 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 	o.cacheRefreshInterval = 0
 	o.failureRetryInterval = 5 * time.Millisecond
 
-	_, err := o.get(t.Context(), issuer)
+	_, err := o.get(t.Context(), issuer, nil)
 	r.NoError(err)
 
 	ctx, cancel := context.WithCancel(t.Context())

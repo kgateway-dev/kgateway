@@ -138,7 +138,7 @@ func TestOIDCConfigDiscovery(t *testing.T) {
 			o := newTestDiscoverer(issuer)
 
 			// Test the discovery
-			config, err := o.get(context.Background(), issuer)
+			config, err := o.get(context.Background(), issuer, nil)
 
 			if tt.expectError {
 				r.Error(err)
@@ -184,13 +184,13 @@ func TestOIDCConfigDiscoveryCache(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// First call should make HTTP request
-	config1, err := o.get(context.Background(), issuer)
+	config1, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.NotNil(config1)
 	r.Equal(1, requestCount)
 
 	// Second call should use cache
-	config2, err := o.get(context.Background(), issuer)
+	config2, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.NotNil(config2)
 	r.Equal(1, requestCount) // Should still be 1, no new request
@@ -216,13 +216,13 @@ func TestOIDCConfigDiscoveryFailureIsCached(t *testing.T) {
 	issuer := server.URL
 	o := newTestDiscoverer(issuer)
 
-	cfg, err := o.get(context.Background(), issuer)
+	cfg, err := o.get(context.Background(), issuer, nil)
 	r.Error(err)
 	r.Nil(cfg)
 	// 404 is unrecoverable, so exactly one request is made.
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
-	cfg, err = o.get(context.Background(), issuer)
+	cfg, err = o.get(context.Background(), issuer, nil)
 	r.Error(err)
 	r.Nil(cfg)
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount), "failed discovery should be served from cache")
@@ -255,7 +255,7 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	configs := make(chan *oidcProviderConfig, goroutines)
 	for range goroutines {
 		go func() {
-			cfg, err := o.get(context.Background(), issuer)
+			cfg, err := o.get(context.Background(), issuer, nil)
 			errs <- err
 			configs <- cfg
 		}()
@@ -281,7 +281,7 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	invalidIssuer := "://invalid-url"
 	o := newTestDiscoverer(invalidIssuer)
 
-	config, err := o.get(context.Background(), invalidIssuer)
+	config, err := o.get(context.Background(), invalidIssuer, nil)
 	r.Error(err)
 	r.Nil(config)
 	r.Contains(err.Error(), "error parsing discovery URL")
@@ -289,11 +289,11 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	// A malformed issuer URI is not cached: it can only be fixed by editing the
 	// GatewayExtension, which re-runs the transform on its own, so there is nothing for the
 	// refresh loop to retry and it must not be polled (or warned about) every pass forever.
-	_, cached := o.load(invalidIssuer)
+	_, cached := o.peek(discoveryKey{issuerURI: invalidIssuer})
 	r.False(cached, "malformed issuer URI should not be cached")
 
 	o.refreshOnce(context.Background())
-	_, cached = o.load(invalidIssuer)
+	_, cached = o.peek(discoveryKey{issuerURI: invalidIssuer})
 	r.False(cached, "refresh should not resurrect a malformed issuer URI")
 }
 
@@ -361,12 +361,12 @@ func TestOIDCConfigDiscoveryShutdownDoesNotClobberCache(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// Populate a healthy entry.
-	cfg, err := o.get(context.Background(), issuer)
+	cfg, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.NotNil(cfg)
 
 	assertCacheIntact := func(when string) {
-		got, ok := o.load(issuer)
+		got, ok := o.peek(discoveryKey{issuerURI: issuer})
 		r.True(ok, "entry should still be cached %s", when)
 		r.NoError(got.err, "cached config should survive %s", when)
 		r.NotNil(got.cfg, "cached config should survive %s", when)
@@ -376,14 +376,14 @@ func TestOIDCConfigDiscoveryShutdownDoesNotClobberCache(t *testing.T) {
 	// Cancelled before the pass starts.
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	r.False(o.rediscover(ctx, issuer), "a cancelled pass should not report a change")
+	r.False(o.rediscover(ctx, discoveryKey{issuerURI: issuer}), "a cancelled pass should not report a change")
 	assertCacheIntact("cancellation before the pass")
 
 	// Cancelled while the request is in flight.
 	serving.Store(true)
 	inflightCtx, cancelInflight := context.WithCancel(context.Background())
 	done := make(chan bool, 1)
-	go func() { done <- o.rediscover(inflightCtx, issuer) }()
+	go func() { done <- o.rediscover(inflightCtx, discoveryKey{issuerURI: issuer}) }()
 	require.Eventually(t, func() bool { return !serving.Load() }, 5*time.Second, 10*time.Millisecond,
 		"handler should have been entered")
 	cancelInflight()
@@ -449,23 +449,23 @@ func TestOIDCConfigDiscoveryRetriesFailureAndRecovers(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// Initial translation fails, exactly as reported in the issue.
-	cfg, err := o.get(context.Background(), issuer)
+	cfg, err := o.get(context.Background(), issuer, nil)
 	r.Error(err)
 	r.Nil(cfg)
 	r.Contains(err.Error(), "unexpected status code 521")
 
 	// While the provider is still down, refreshing must not report a change: the error is
 	// identical, so krt should not be churned.
-	r.False(o.rediscover(context.Background(), issuer), "unchanged failure should not trigger recomputation")
+	r.False(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "unchanged failure should not trigger recomputation")
 
 	// The provider comes back.
 	healthy.Store(true)
 
 	// The refresh loop re-discovers and reports the changed outcome.
-	r.True(o.rediscover(context.Background(), issuer), "recovery should trigger recomputation")
+	r.True(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "recovery should trigger recomputation")
 
 	// A subsequent translation now sees the discovered config instead of the latched error.
-	cfg, err = o.get(context.Background(), issuer)
+	cfg, err = o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.NotNil(cfg)
 	r.Equal("https://example.com/token", cfg.TokenEndpoint)
@@ -498,16 +498,16 @@ func TestProviderBlipKeepsCachedConfig(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// Steady state: discovery succeeded, translation is serving a real config.
-	cfg, err := o.get(context.Background(), issuer)
+	cfg, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.Equal("https://example.com/token", cfg.TokenEndpoint)
 
 	// The provider blips and a refresh pass lands in the window.
 	healthy.Store(false)
-	r.False(o.rediscover(context.Background(), issuer), "a transient refresh failure should not trigger a recomputation")
+	r.False(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "a transient refresh failure should not trigger a recomputation")
 
 	// What the next translation sees.
-	cfg, err = o.get(context.Background(), issuer)
+	cfg, err = o.get(context.Background(), issuer, nil)
 	r.NoError(err, "the last known good config should still be served during a blip")
 	r.NotNil(cfg, "the last known good config should still be served during a blip")
 	r.Equal("https://example.com/token", cfg.TokenEndpoint)
@@ -542,7 +542,7 @@ func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
 	o.failureRetryInterval = time.Second
 	o.cacheRefreshInterval = 4 * time.Second
 
-	_, err := o.get(context.Background(), issuer)
+	_, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 
 	// Two failed refresh passes while stale-serving: the retry backs off 1s -> 2s rather than
@@ -550,9 +550,9 @@ func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
 	healthy.Store(false)
 	for _, want := range []time.Duration{time.Second, 2 * time.Second} {
 		before := time.Now()
-		r.False(o.rediscover(context.Background(), issuer))
+		r.False(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}))
 
-		result, ok := o.load(issuer)
+		result, ok := o.peek(discoveryKey{issuerURI: issuer})
 		r.True(ok)
 		r.NotNil(result.cfg, "the last known good config must be retained across every failure")
 		r.NoError(result.err)
@@ -565,12 +565,12 @@ func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
 	token.Store("https://example.com/token/v2")
 	healthy.Store(true)
 
-	r.True(o.rediscover(context.Background(), issuer), "a changed config must trigger a recomputation")
-	cfg, err := o.get(context.Background(), issuer)
+	r.True(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "a changed config must trigger a recomputation")
+	cfg, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.Equal("https://example.com/token/v2", cfg.TokenEndpoint)
 
-	result, ok := o.load(issuer)
+	result, ok := o.peek(discoveryKey{issuerURI: issuer})
 	r.True(ok)
 	r.Equal(0, result.failures, "a successful refresh resets the backoff")
 }
@@ -598,7 +598,7 @@ func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
 	issuer := server.URL
 	o := newTestDiscoverer(issuer)
 
-	_, err := o.get(context.Background(), issuer)
+	_, err := o.get(context.Background(), issuer, nil)
 	r.Error(err)
 
 	ctx := t.Context()
@@ -607,7 +607,7 @@ func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
 	healthy.Store(true)
 
 	require.Eventually(t, func() bool {
-		cfg, err := o.get(context.Background(), issuer)
+		cfg, err := o.get(context.Background(), issuer, nil)
 		return err == nil && cfg != nil && cfg.TokenEndpoint == "https://example.com/token"
 	}, 5*time.Second, 10*time.Millisecond, "refresh loop should re-discover the recovered provider")
 }
@@ -644,20 +644,20 @@ func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 	o.cacheRefreshInterval = 0
 	o.failureRetryInterval = 0
 
-	_, err := o.get(context.Background(), issuer)
+	_, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
 	// While referenced, a refresh pass re-discovers.
 	o.refreshOnce(context.Background())
 	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
-	_, cached := o.load(issuer)
+	_, cached := o.peek(discoveryKey{issuerURI: issuer})
 	r.True(cached)
 
 	// Once the GatewayExtension is gone, the entry is pruned and no longer polled.
 	live.Store(false)
 	o.refreshOnce(context.Background())
-	_, cached = o.load(issuer)
+	_, cached = o.peek(discoveryKey{issuerURI: issuer})
 	r.False(cached, "issuer with no referencing GatewayExtension should be pruned")
 
 	countAfterPrune := atomic.LoadInt64(&requestCount)
@@ -808,14 +808,14 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	o.cacheRefreshInterval = 0
 	o.failureRetryInterval = 0
 
-	_, err := o.get(context.Background(), issuer)
+	_, err := o.get(context.Background(), issuer, nil)
 	r.NoError(err)
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
 	// While discovery is still required, the entry is refreshed.
 	o.refreshOnce(context.Background())
 	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
-	_, cached := o.load(issuer)
+	_, cached := o.peek(discoveryKey{issuerURI: issuer})
 	r.True(cached)
 
 	// The user fills in every endpoint. buildOAuth2ProviderConfig will no longer call get() for
@@ -825,7 +825,7 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	ext.EndSessionEndpoint = new(uri)
 
 	o.refreshOnce(context.Background())
-	_, cached = o.load(issuer)
+	_, cached = o.peek(discoveryKey{issuerURI: issuer})
 	r.False(cached, "issuer should be pruned once no extension discovers from it")
 
 	countAfterPrune := atomic.LoadInt64(&requestCount)
