@@ -292,7 +292,7 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 		gatewayWriter:     gatewayWriter(c, f, gateways, gatewayReports),
 		listenerSetWriter: listenerSetWriter(c, f, listenerSets, listenerSetReports),
 		routeWriter: routeWriter[*gwv1.HTTPRoute, *gwv1.HTTPRoute](c, f, routes, routeReports,
-			wellknown.HTTPRouteGVK, "httpRoute", wellknown.HTTPRouteGVR, wellknown.HTTPRouteKind, cycleController,
+			wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, cycleController,
 			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.HTTPRoute {
 				return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 			},
@@ -474,27 +474,27 @@ func TestStatusWritersConvergeAfterOneWrite(t *testing.T) {
 func TestStatusWritersAreIdempotent(t *testing.T) {
 	f := newStatusCycleFixture(t)
 
-	require.True(t, statussync.WriterWouldWrite(f.gatewayWriter, f.liveGateway(t)),
+	require.True(t, statussync.WriterWouldWrite(f.gatewayWriter, gatewayResource(), f.liveGateway(t)),
 		"the seeded gateway status must actually be written, or the check below proves nothing")
-	require.NoError(t, statussync.CheckWriterIdempotent(f.gatewayWriter, f.liveGateway(t),
+	require.NoError(t, statussync.CheckWriterIdempotent(f.gatewayWriter, gatewayResource(), f.liveGateway(t),
 		func(current *gwv1.Gateway, status gwv1.GatewayStatus) *gwv1.Gateway {
 			next := current.DeepCopy()
 			next.Status = *status.DeepCopy()
 			return next
 		}))
 
-	require.True(t, statussync.WriterWouldWrite(f.routeWriter, f.liveRoute(t)),
+	require.True(t, statussync.WriterWouldWrite(f.routeWriter, routeResource(), f.liveRoute(t)),
 		"the seeded route status must actually be written, or the check below proves nothing")
-	require.NoError(t, statussync.CheckWriterIdempotent(f.routeWriter, f.liveRoute(t),
+	require.NoError(t, statussync.CheckWriterIdempotent(f.routeWriter, routeResource(), f.liveRoute(t),
 		func(current *gwv1.HTTPRoute, status gwv1.RouteStatus) *gwv1.HTTPRoute {
 			next := current.DeepCopy()
 			next.Status.RouteStatus = *status.DeepCopy()
 			return next
 		}))
 
-	require.True(t, statussync.WriterWouldWrite(f.listenerSetWriter, f.liveListenerSet(t)),
+	require.True(t, statussync.WriterWouldWrite(f.listenerSetWriter, listenerSetResource(), f.liveListenerSet(t)),
 		"the seeded listener set status must actually be written, or the check below proves nothing")
-	require.NoError(t, statussync.CheckWriterIdempotent(f.listenerSetWriter, f.liveListenerSet(t),
+	require.NoError(t, statussync.CheckWriterIdempotent(f.listenerSetWriter, listenerSetResource(), f.liveListenerSet(t),
 		func(current *gwv1.ListenerSet, status gwv1.ListenerSetStatus) *gwv1.ListenerSet {
 			next := current.DeepCopy()
 			next.Status = *status.DeepCopy()

@@ -58,7 +58,6 @@ type ProxySyncer struct {
 
 	statusContributions         krt.Collection[reports.StatusContribution]
 	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
-	gatewayStatusSnapshots      krt.Collection[GatewayStatusSnapshot]
 	mostXdsSnapshots            krt.Collection[GatewayXdsResources]
 	perclientSnapCollection     krt.Collection[XdsSnapWrapper]
 
@@ -98,16 +97,15 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.Secrets.Version == in.Secrets.Version
 }
 
-// GatewayStatusSnapshot is the status-only projection of one Gateway
-// translation. Keeping it separate prevents status-only changes from
-// invalidating the xDS projection.
+// GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
+// separate field of gatewayTranslationOutput, with its own Equals, is what stops a
+// status-only change from invalidating the xDS projection derived from the same output.
+//
+// It is not itself a KRT collection element -- gatewayStatusContributions unpacks it straight
+// out of the translation output -- so it needs no ResourceName.
 type GatewayStatusSnapshot struct {
 	types.NamespacedName
 	Contributions []reports.StatusContribution
-}
-
-func (r GatewayStatusSnapshot) ResourceName() string {
-	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
 }
 
 func (r GatewayStatusSnapshot) Equals(other GatewayStatusSnapshot) bool {
@@ -263,10 +261,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.mostXdsSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayXdsResources {
 		return &output.Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
-	s.gatewayStatusSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayStatusSnapshot {
-		return &output.Status
-	}, krtopts.ToOptions("GatewayStatusSnapshots")...)
-
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		s.uniqueClients,
@@ -330,7 +324,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// ancestors from Gateway and Backend translation naturally reduce under the
 	// same policy key without a competing singleton writer.
 	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
-		gatewayStatusContributions(s.gatewayStatusSnapshots, krtopts),
+		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
 		backendContributions,
 	}, krtopts.ToOptions("StatusContributions")...)

@@ -46,7 +46,7 @@ func TestWithStatusRegistration(t *testing.T) {
 		// The proxy syncer contributes StatusCollections.HasSynced exactly once; the status
 		// syncer must carry it through rather than adding a second copy of its own.
 		CacheSyncs: []cache.InformerSynced{collections.HasSynced},
-	}, WithStatusRegistration(func(in StatusRegistrationInputs) {
+	}, WithStatusRegistration(func(in statussync.RegistrationInputs) {
 		called = true
 		assert.Same(t, collections, in.Collections)
 		assert.NotNil(t, in.StatusContributions)

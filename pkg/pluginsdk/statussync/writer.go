@@ -71,14 +71,24 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	// Desired builds the desired status from the latest object and report state. Returning
 	// false suppresses the write. It is invoked for every retry so neither the object nor
 	// report snapshot is retained in the work queue.
-	Desired func(current O) (S, bool)
+	//
+	// res is the identity the resource was enqueued under, and is what a builder must key its
+	// report lookup on — see ReportFor. Deriving the key from current instead recovers the
+	// name and namespace but not the GVK, so a writer for a normalized collection that serves
+	// several source kinds (ListenerSet/XListenerSet, the route versions) had to capture a
+	// GVK at construction that can disagree with the one the queue dispatched on.
+	Desired func(res Resource, current O) (S, bool)
 
 	// UpdateStatus persists s against the given ObjectMeta, which carries only the name,
 	// namespace and the resourceVersion the status was built from: the API server ignores
 	// spec on status writes, and the resourceVersion is what makes stale data rejected.
 	// It takes an ObjectMeta rather than an O so a normalized read type can be written back
 	// through the versioned client that actually serves it — see ClientWriter.
-	UpdateStatus func(om metav1.ObjectMeta, s S) error
+	//
+	// ctx is the one ApplyStatus was called with, so a writer that persists through a client
+	// needing a context (the dynamic client, for one) is a plain Writer like any other rather
+	// than a bespoke ResourceStatusSyncer built per call to capture one.
+	UpdateStatus func(ctx context.Context, om metav1.ObjectMeta, s S) error
 
 	// GetStatus extracts the live status from the current object. When set, a write is
 	// skipped if the (merged) desired status already matches the live status.
@@ -119,21 +129,24 @@ func CollectionSource[O controllers.ComparableObject](col krt.Collection[O]) fun
 func ClientWriter[W controllers.ComparableObject, S any](
 	cl kclient.Client[W],
 	build func(om metav1.ObjectMeta, s S) W,
-) func(metav1.ObjectMeta, S) error {
-	return func(om metav1.ObjectMeta, s S) error {
+) func(context.Context, metav1.ObjectMeta, S) error {
+	return func(_ context.Context, om metav1.ObjectMeta, s S) error {
 		_, err := cl.UpdateStatus(build(om, s))
 		return err
 	}
 }
 
-// RetryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
-// with exponential backoff, aborted on ctx cancellation. attempt must re-read the current
-// object each time and swallow (return nil for) conflicts and NotFound, which self-heal
-// via re-enqueue; only transient errors (throttling, 5xx, network) should be returned.
-// Custom ResourceStatusSyncer implementations should wrap their write in this so transient
-// failures are not silently dropped: after a failed write nothing changes on the informer,
-// so no event is guaranteed to re-enqueue the resource.
-func RetryStatusWrite(ctx context.Context, attempt func() error) error {
+// retryStatusWrite runs attempt with the standard status-write retry policy: 5 attempts
+// with exponential backoff, aborted on ctx cancellation. attempt re-reads the current object
+// each time and swallows (returns nil for) conflicts and NotFound, which self-heal via
+// re-enqueue; only transient errors (throttling, 5xx, network) are returned.
+//
+// Retrying is a property of the pipeline rather than of each writer: after a failed write
+// nothing changes on the informer, so no event is guaranteed to re-enqueue the resource.
+// ApplyStatus is the single place it is applied, which is why this is unexported — a custom
+// ResourceStatusSyncer that forgot to wrap its own write would silently drop transient
+// failures.
+func retryStatusWrite(ctx context.Context, attempt func() error) error {
 	return retry.Do(attempt,
 		retry.Context(ctx),
 		retry.Attempts(maxRetryAttempts),
@@ -157,8 +170,8 @@ type writeDecision[S any] struct {
 }
 
 // decide runs the build/merge/compare sequence for one object.
-func (w Writer[O, S]) decide(current O) writeDecision[S] {
-	desired, ok := w.Desired(current)
+func (w Writer[O, S]) decide(res Resource, current O) writeDecision[S] {
+	desired, ok := w.Desired(res, current)
 	if !ok {
 		return writeDecision[S]{}
 	}
@@ -172,41 +185,51 @@ func (w Writer[O, S]) decide(current O) writeDecision[S] {
 	return writeDecision[S]{status: merged, has: true, write: true}
 }
 
+// attemptOutcome is what the last write attempt saw, carried out of the retry closure for
+// OnSync. Keeping it in one value rather than three loose variables means the reader does not
+// have to work out which attempt last assigned each of them: they are always from the same one.
+type attemptOutcome[O controllers.ComparableObject, S any] struct {
+	current O
+	merged  S
+	has     bool
+}
+
 func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
-	log := logger.With("kind", w.Name, "resource", obj.NamespacedName.String())
 	start := time.Now()
-	var lastCurrent O
-	var lastMerged S
-	hasDesired := false
-	err := RetryStatusWrite(ctx, func() error {
-		hasDesired = false
+	// Log fields are passed inline rather than bound with logger.With: With clones the handler
+	// and preformats the attrs whatever the level, and the two dominant outcomes here are the
+	// debug-only "nothing to do" skips, on every informer event of every registered kind.
+	var last attemptOutcome[O, S]
+	err := retryStatusWrite(ctx, func() error {
+		last = attemptOutcome[O, S]{}
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
 		current := w.Current(obj)
 		if controllers.IsNil(current) {
 			// The resource was deleted between enqueue and write. Current reads the
 			// collection that enqueued it, so this cannot mean "not visible yet".
-			log.Debug("resource no longer present, skipping status update")
+			logger.Debug("resource no longer present, skipping status update",
+				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
 			return nil
 		}
-		lastCurrent = current
 
-		decision := w.decide(current)
+		decision := w.decide(obj, current)
 		if !decision.has {
-			log.Debug("resource has no desired status, skipping status update")
+			logger.Debug("resource has no desired status, skipping status update",
+				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
 			return nil
 		}
-		hasDesired = true
-		lastMerged = decision.status
+		last = attemptOutcome[O, S]{current: current, merged: decision.status, has: true}
 
 		if !decision.write {
-			log.Debug("status already up to date, skipping status update")
+			logger.Debug("status already up to date, skipping status update",
+				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
 			return nil
 		}
 
 		// Write with the collection's current resourceVersion so stale data is rejected;
 		// conflicts are expected and self-heal via re-enqueue.
-		err := w.UpdateStatus(metav1.ObjectMeta{
+		err := w.UpdateStatus(ctx, metav1.ObjectMeta{
 			Name:            obj.Name,
 			Namespace:       obj.Namespace,
 			ResourceVersion: current.GetResourceVersion(),
@@ -215,25 +238,29 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 			if apierrors.IsConflict(err) {
 				// This is normal. The raw collection will re-enqueue the write once the
 				// informer delivers the newer object.
-				log.Debug("updating stale status, skipping", "error", err)
+				logger.Debug("updating stale status, skipping",
+					"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
 				return nil
 			}
 			if apierrors.IsNotFound(err) {
 				// ignore status write after resource was deleted.
-				log.Debug("resource not found, skipping status update", "error", err)
+				logger.Debug("resource not found, skipping status update",
+					"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
 				return nil
 			}
-			log.Error("error updating status", "error", err)
+			logger.Error("error updating status",
+				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
 			return err
 		}
-		log.Debug("updated status")
+		logger.Debug("updated status", "kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
 		return nil
 	})
 	if err != nil {
-		log.Error("failed to sync status after retries", "error", err)
+		logger.Error("failed to sync status after retries",
+			"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
 	}
-	if hasDesired && w.OnSync != nil {
-		w.OnSync(obj, lastCurrent, lastMerged, time.Since(start), err)
+	if last.has && w.OnSync != nil {
+		w.OnSync(obj, last.current, last.merged, time.Since(start), err)
 	}
 }
 
@@ -341,6 +368,12 @@ func mergeOwnedStatusEntries[T any](
 
 	// Order ours deterministically before the cap, so which of them survives truncation does
 	// not depend on map/set iteration upstream.
+	//
+	// This is not redundant with the canonical sort below, and must not be made conditional on
+	// the cap: that sort is stable and keyed on ParentString, which collapses distinctions
+	// compareParentReference keeps (it canonicalizes nil Group/Kind to the Gateway API
+	// defaults, ParentString renders them empty). Entries that tie on ParentString therefore
+	// publish in whatever order they arrive in, and that order is what this pass fixes.
 	slices.SortFunc(ours, func(a, b T) int {
 		if c := cmp.Compare(controllerOf(a), controllerOf(b)); c != 0 {
 			return c
