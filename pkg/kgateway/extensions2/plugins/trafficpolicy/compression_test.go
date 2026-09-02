@@ -195,3 +195,48 @@ func TestConstructCompressionLibraries(t *testing.T) {
 		})
 	}
 }
+
+func TestParseCompressionPreference(t *testing.T) {
+	assert.Equal(t,
+		[]kgateway.CompressionLibrary{kgateway.CompressionZstd, kgateway.CompressionBrotli, kgateway.CompressionGzip},
+		parseCompressionPreference("zstd,brotli,gzip"))
+	// "br" is accepted for brotli, whitespace is trimmed, and unknown tokens are skipped.
+	assert.Equal(t,
+		[]kgateway.CompressionLibrary{kgateway.CompressionBrotli, kgateway.CompressionGzip},
+		parseCompressionPreference(" br , gzip , deflate "))
+	assert.Nil(t, parseCompressionPreference(""))
+}
+
+func TestOrderCompressorsByPreference(t *testing.T) {
+	entry := func(lib kgateway.CompressionLibrary) compressorEntry {
+		return compressorEntry{filterName: compressorFilterNameFor(lib), library: lib, compressor: newCompressor(lib)}
+	}
+	libs := func(entries []compressorEntry) []kgateway.CompressionLibrary {
+		out := make([]kgateway.CompressionLibrary, len(entries))
+		for i, e := range entries {
+			out[i] = e.library
+		}
+		return out
+	}
+
+	t.Run("orders most preferred last and sets choose_first", func(t *testing.T) {
+		out := orderCompressorsByPreference(
+			[]compressorEntry{entry(kgateway.CompressionBrotli), entry(kgateway.CompressionGzip), entry(kgateway.CompressionZstd)},
+			[]kgateway.CompressionLibrary{kgateway.CompressionZstd, kgateway.CompressionBrotli, kgateway.CompressionGzip},
+		)
+		assert.Equal(t, []kgateway.CompressionLibrary{kgateway.CompressionGzip, kgateway.CompressionBrotli, kgateway.CompressionZstd}, libs(out))
+		for _, e := range out {
+			assert.True(t, e.compressor.GetChooseFirst(), "choose_first on %s", e.library)
+		}
+	})
+
+	t.Run("codec absent from preference stays first without choose_first", func(t *testing.T) {
+		out := orderCompressorsByPreference(
+			[]compressorEntry{entry(kgateway.CompressionGzip), entry(kgateway.CompressionZstd)},
+			[]kgateway.CompressionLibrary{kgateway.CompressionZstd},
+		)
+		assert.Equal(t, []kgateway.CompressionLibrary{kgateway.CompressionGzip, kgateway.CompressionZstd}, libs(out))
+		assert.False(t, out[0].compressor.GetChooseFirst(), "gzip is unlisted")
+		assert.True(t, out[1].compressor.GetChooseFirst(), "zstd is preferred")
+	})
+}

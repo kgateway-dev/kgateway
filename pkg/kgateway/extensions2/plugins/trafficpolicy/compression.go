@@ -2,6 +2,7 @@ package trafficpolicy
 
 import (
 	"slices"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	brotlicompressorv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/brotli/compressor/v3"
@@ -126,6 +127,8 @@ func constructCompression(spec kgateway.TrafficPolicySpec, out *trafficPolicySpe
 type compressorEntry struct {
 	// filterName is the unique HTTP filter name for this compressor.
 	filterName string
+	// library is the codec this filter compresses, used to order the chain by server preference.
+	library    kgateway.CompressionLibrary
 	compressor *compressorv3.Compressor
 }
 
@@ -165,6 +168,7 @@ func (p *trafficPolicyPluginGwPass) handleCompression(fcn string, pCtxTypedFilte
 		if !hasCompressorNamed(p.compressorInChain[fcn], filterName) {
 			p.compressorInChain[fcn] = append(p.compressorInChain[fcn], compressorEntry{
 				filterName: filterName,
+				library:    library,
 				compressor: newCompressor(library),
 			})
 		}
@@ -191,6 +195,47 @@ func hasCompressorNamed(entries []compressorEntry, filterName string) bool {
 		}
 	}
 	return false
+}
+
+// parseCompressionPreference turns the gateway-wide setting into an ordered codec list, most
+// wanted first. Unknown tokens are skipped, and "br" is accepted for brotli since that is the
+// token clients use in Accept-Encoding.
+func parseCompressionPreference(pref string) []kgateway.CompressionLibrary {
+	var out []kgateway.CompressionLibrary
+	for tok := range strings.SplitSeq(pref, ",") {
+		switch strings.ToLower(strings.TrimSpace(tok)) {
+		case "gzip":
+			out = append(out, kgateway.CompressionGzip)
+		case "brotli", "br":
+			out = append(out, kgateway.CompressionBrotli)
+		case "zstd":
+			out = append(out, kgateway.CompressionZstd)
+		}
+	}
+	return out
+}
+
+// orderCompressorsByPreference returns a copy of entries ordered so the most preferred codec is
+// last, and sets choose_first on every codec named in the preference. Envoy picks the last
+// choose_first codec the client accepts, so the most preferred accepted codec wins when
+// Accept-Encoding weights are equal. Missing codecs from the preference keep choose_first unset and
+// sort first, so they fall back to the client's order.
+func orderCompressorsByPreference(entries []compressorEntry, pref []kgateway.CompressionLibrary) []compressorEntry {
+	// rank is higher for more preferred codecs. Missing codecs get 0 and sort first.
+	rank := make(map[kgateway.CompressionLibrary]int, len(pref))
+	for i, l := range pref {
+		rank[l] = len(pref) - i
+	}
+	out := slices.Clone(entries)
+	slices.SortStableFunc(out, func(a, b compressorEntry) int {
+		return rank[a.library] - rank[b.library]
+	})
+	for i := range out {
+		if rank[out[i].library] > 0 {
+			out[i].compressor.ChooseFirst = true
+		}
+	}
+	return out
 }
 
 // newCompressor builds a disabled baseline compressor filter for the given codec, using
@@ -335,9 +380,16 @@ func decompressorLibraryFor(library kgateway.CompressionLibrary) *envoycorev3.Ty
 
 // HttpFilters wiring is in traffic_policy_plugin.go
 func addCompressionFiltersIfNeeded(staged []filters.StagedHttpFilter, p *trafficPolicyPluginGwPass, fcn string) []filters.StagedHttpFilter {
-	// One disabled-by-default compressor filter per codec. Order is not significant to
-	// negotiation, so the weights only give deterministic output.
-	for i, entry := range p.compressorInChain[fcn] {
+	// One disabled-by-default compressor filter per codec. When a gateway-wide preference is set
+	// and a chain offers more than one codec, apply server-side preference: order the chain so the
+	// most preferred codec is last and set choose_first on every preferred codec, so Envoy picks
+	// the most preferred codec the client accepts when Accept-Encoding weights are equal. Without a
+	// preference the order is not significant and the weights only give deterministic output.
+	entries := p.compressorInChain[fcn]
+	if len(entries) > 1 && len(p.compressionPreference) > 0 {
+		entries = orderCompressorsByPreference(entries, p.compressionPreference)
+	}
+	for i, entry := range entries {
 		filter := filters.MustNewStagedFilter(
 			entry.filterName,
 			entry.compressor,

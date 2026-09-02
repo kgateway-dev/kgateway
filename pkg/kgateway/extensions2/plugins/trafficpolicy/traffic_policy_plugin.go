@@ -275,10 +275,13 @@ type trafficPolicyPluginGwPass struct {
 	bufferInChain           map[string]*bufferv3.Buffer
 	compressorInChain       map[string][]compressorEntry
 	decompressorInChain     map[string][]decompressorEntry
-	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
-	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
-	faultInChain            map[string]*faulthttpv3.HTTPFault
-	httpACLInChain          map[string]bool
+	// determines the gateway-wide response codec order used in case of codec weight tie in client side.
+	// Empty means no server preference.
+	compressionPreference []kgateway.CompressionLibrary
+	basicAuthInChain      map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain     map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain          map[string]*faulthttpv3.HTTPFault
+	httpACLInChain        map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -330,7 +333,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.TrafficPolicyGVK.GroupKind(): {
 				NewGatewayTranslationPass: func(tctx ir.GwTranslationCtx, rep reporter.Reporter) ir.ProxyTranslationPass {
-					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata)
+					return NewGatewayTranslationPass(tctx, rep, commoncol.Settings.EnableAuthMetadata, commoncol.Settings.CompressionLibraryPreference)
 				},
 				Policies: policyCol,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
@@ -352,10 +355,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, me
 	}
 }
 
-func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthMetadata bool) ir.ProxyTranslationPass {
+func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthMetadata bool, compressionLibraryPreference string) ir.ProxyTranslationPass {
 	return &trafficPolicyPluginGwPass{
 		reporter:                 reporter,
 		enableAuthMetadata:       enableAuthMetadata,
+		compressionPreference:    parseCompressionPreference(compressionLibraryPreference),
 		setTransformationInChain: map[string]bool{},
 		secrets:                  map[string]*envoytlsv3.Secret{},
 	}
