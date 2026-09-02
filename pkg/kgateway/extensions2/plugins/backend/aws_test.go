@@ -87,6 +87,10 @@ func TestConfigureAWSAuthAssumeRole(t *testing.T) {
 	assert.Equal(t, "arn:aws:iam::311275790335:role/project-invoke-role", assumeRole.GetRoleArn())
 	// base credentials must be left unset so Envoy falls back to the default provider chain (IRSA).
 	assert.Nil(t, assumeRole.GetCredentialProvider(), "base credential provider should be unset to use the gateway's ambient credentials")
+	// Envoy's default chain discards an assume-role provider passed as a modifier, so a custom
+	// chain is required for the provider to take effect at all.
+	assert.True(t, signing.GetCredentialProvider().GetCustomCredentialProviderChain(),
+		"custom credential provider chain must be set or Envoy silently ignores the assume role provider")
 }
 
 func TestBuildLambdaARNUsesPreferredNestedAccountID(t *testing.T) {
