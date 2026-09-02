@@ -353,6 +353,12 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			},
 		},
 	}
+	// The proxy's own listeners (readiness, stats) must bind the same address
+	// family as the translated data-plane listeners; otherwise the kubelet probe
+	// and the metrics scrape reach the pod on an address Envoy is not listening on.
+	if k.inputs.CommonCollections != nil {
+		gtw.BindIpv6 = new(k.inputs.CommonCollections.Settings.ListenerBindIpv6)
+	}
 	deployer.SetInfrastructureMetadataFromGateway(gw, gtw)
 	// construct the default values
 	vals := &deployer.HelmConfig{

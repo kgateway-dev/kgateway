@@ -84,6 +84,11 @@ type HelmGateway struct {
 	EnableReadinessProbeProxyProtocol *bool            `json:"enableReadinessProbeProxyProtocol,omitempty"`
 	MaxDownstreamConnections          *int64           `json:"maxDownstreamConnections,omitempty"`
 
+	// BindIpv6 selects the bind family for the proxy's own listeners (readiness,
+	// stats). It tracks the ListenerBindIpv6 setting that drives the bind family
+	// of the translated data-plane listeners.
+	BindIpv6 *bool `json:"bindIpv6,omitempty"`
+
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`
 
