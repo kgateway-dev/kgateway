@@ -18,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -42,6 +43,13 @@ const (
 	nonOAuthBackendHostPort        = "test.com:443"
 
 	backendURLSplit = "https://example.com/split/anything/split-test"
+
+	// The discovery route configures its OIDC provider by issuerURI alone, so the control
+	// plane has to fetch Keycloak's well-known document itself. See TestOIDCWithIssuerDiscovery.
+	backendURLDiscovery             = "https://example.com/anything/discovery"
+	expectedDiscoveryResponseSubstr = "/anything/discovery"
+	discoveryRoute                  = "oauth-discovery"
+	discoveryTrafficPolicy          = "oauth-route-discovery"
 )
 
 var (
@@ -53,6 +61,7 @@ var (
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "backend.yaml"),
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-2.yaml"),
 			filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-split-jwks.yaml"),
+			filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-discovery.yaml"),
 		},
 	}
 
@@ -225,6 +234,54 @@ func (s *tsuite) TestOIDCWithSeparateJWKSBackend() {
 		require.True(c, ok, "x-oauth2-preferred-username header not set")
 		require.Contains(c, xOAuth2PreferredUsernameHeaders, clientUsername)
 	}, 15*time.Second, 500*time.Millisecond, "OIDC flow with separate JWKS backend failed")
+}
+
+// TestOIDCWithIssuerDiscovery is the end-to-end regression test for
+// https://github.com/kgateway-dev/kgateway/issues/14062. Every other route in this suite
+// spells out tokenEndpoint and authorizationEndpoint, which skips discovery entirely; this one
+// sets only issuerURI, so the control plane fetches Keycloak's well-known document itself.
+//
+// Keycloak serves it under the private CA in the keycloak BackendTLSPolicy. Before the fix the
+// controller only trusted the system store, so discovery failed with "certificate signed by
+// unknown authority", the GatewayExtension carried that error, and the TrafficPolicy and
+// HTTPRoute referencing it were both rejected — even though the proxy could reach Keycloak
+// through the very same policy.
+func (s *tsuite) TestOIDCWithIssuerDiscovery() {
+	ctx := s.T().Context()
+	r := s.Require()
+
+	// The symptom the issue reports: discovery failing leaves the route and the policy
+	// unaccepted, so assert those before exercising the flow. A failure here means discovery
+	// never produced a config, and the request assertions below would only report a redirect
+	// loop or a 403 rather than the actual cause.
+	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
+		ctx, discoveryRoute, metav1.NamespaceDefault, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
+	// A discovery failure surfaces here as Accepted=False with the x509 error in the message.
+	s.TestInstallation.AssertionsT(s.T()).EventuallyTrafficPolicyCondition(
+		ctx, discoveryTrafficPolicy, metav1.NamespaceDefault, gwv1.PolicyConditionAccepted, metav1.ConditionTrue)
+
+	client := newClient(map[string]string{
+		backendHostPort: s.gatewayAddr,
+		keycloakHost:    s.keycloakAddr,
+	})
+
+	// The endpoints driving this flow are the discovered ones: the login redirect goes to the
+	// authorization_endpoint from the well-known document, and the code is exchanged at its
+	// token_endpoint.
+	r.EventuallyWithT(func(c *assert.CollectT) {
+		resp, err := client.Login(ctx, backendURLDiscovery,
+			map[string]string{"username": clientUsername, "password": clientPassword, "credentialId": ""})
+		require.NoError(c, err)
+		require.NotNil(c, resp)
+		require.Equal(c, http.StatusOK, resp.StatusCode)
+		require.Contains(c, string(resp.Body), expectedDiscoveryResponseSubstr)
+	}, 15*time.Second, 500*time.Millisecond, "OIDC flow using discovered endpoints failed")
+
+	// Session cookies are established just as they are for the explicitly configured routes.
+	url, err := neturl.Parse(backendURLDiscovery)
+	r.NoError(err)
+	foundCookies := s.assertCookies(r, client.Jar.Cookies(url))
+	s.T().Logf("found session cookies for %s: %v", backendURLDiscovery, foundCookies)
 }
 
 func (s *tsuite) getServiceExternalIP(ref types.NamespacedName) (string, error) {

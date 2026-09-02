@@ -446,6 +446,26 @@ func (p *Provider) EventuallyListenerPolicyCondition(
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
+// EventuallyTrafficPolicyCondition checks that provided TrafficPolicy condition is set to expect
+// on at least one of its ancestors.
+func (p *Provider) EventuallyTrafficPolicyCondition(
+	ctx context.Context,
+	name string,
+	namespace string,
+	cond gwv1.PolicyConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		tp := &kgateway.TrafficPolicy{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, tp)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get TrafficPolicy %s/%s", namespace, name))
+		g.Expect(extractAncestorConditions(tp.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 // EventuallyBackendCondition checks that provided Backend condition is set to expect.
 func (p *Provider) EventuallyBackendCondition(
 	ctx context.Context,
