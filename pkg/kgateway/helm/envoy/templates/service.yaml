@@ -9,9 +9,16 @@ metadata:
     {{- toYaml $annotations | nindent 4 }}
   {{- end }}
   labels:
+    {{- /*
+      kgateway.dev/watch marks this Service as one kgateway watches, so that the control
+      plane still sees it when serviceDiscoveryMode is LABELED — the gateway controller reads
+      it to derive Gateway status.addresses. It goes last in the merge so a user-set label of
+      the same key still wins. Keep in sync with wellknown.WatchLabel.
+    */}}
     {{- toYaml (merge
       (include "kgateway.gateway.allLabels" . | fromYaml)
       ((($gateway.service).extraLabels) | default dict)
+      (dict "kgateway.dev/watch" "true")
     ) | nindent 4 }}
 spec:
   type: {{ $gateway.service.type }}

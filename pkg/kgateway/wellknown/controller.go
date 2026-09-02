@@ -18,6 +18,17 @@ const (
 	// ManagedByLabel is the label key for the tool being used to manage the operation of an application
 	ManagedByLabel = "app.kubernetes.io/managed-by"
 
+	// WatchLabel marks an object as one that kgateway should watch. It is only consulted for
+	// kinds whose discovery mode is set to LABELED (see Settings.SecretDiscoveryMode and
+	// Settings.ConfigMapDiscoveryMode), where it is pushed to the API server as a watch
+	// selector so that unlabeled objects are never cached.
+	WatchLabel = "kgateway.dev/watch"
+
+	// WatchLabelValue is the only WatchLabel value that selects an object. Any other value
+	// (including "false") excludes it, so an object can be dropped from the watch without
+	// removing the label.
+	WatchLabelValue = "true"
+
 	// GatewayNameLabel is a label on GW pods to indicate the name of the gateway
 	// they are associated with. For gateway names > 63 chars, this contains a
 	// truncated name with hash suffix. Use GatewayNameAnnotation for the full name.

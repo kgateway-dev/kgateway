@@ -233,6 +233,7 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
+    kgateway.dev/watch: "true"
   name: gw
 ---
 apiVersion: v1
@@ -247,6 +248,7 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway
     gateway.networking.k8s.io/gateway-name: gw
     kgateway: kube-gateway
+    kgateway.dev/watch: "true"
   name: gw
 spec:
   loadBalancerIP: 203.0.113.10

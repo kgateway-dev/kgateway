@@ -36,6 +36,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -77,6 +78,25 @@ func NewGatewayReconciler(
 	controllerExtension pluginsdk.GatewayControllerExtension,
 ) *gatewayReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
+	// This controller only acts on the ConfigMaps the deployer renders per proxy, which it
+	// enqueues through their owning Gateway. It must use the same selector as the translation
+	// collection's ConfigMap watch: kclient shares informers keyed on
+	// {type, labelSelector, fieldSelector}, so matching selectors means these two watches
+	// share one cache. Leaving this one unfiltered in LABELED mode would keep a second,
+	// cluster-wide ConfigMap cache and negate the setting entirely.
+	//
+	// The deployer stamps wellknown.WatchLabel on the ConfigMaps it renders so they are
+	// selected here too (see the envoy chart's configmap.yaml).
+	configMapFilter := filter
+	configMapFilter.LabelSelector = collections.WatchLabelSelector(cfg.CommonCollections.Settings.ConfigMapDiscoveryMode)
+	// The Service watch is the same story. This controller only acts on the Service the
+	// deployer renders per proxy — it enqueues the owning Gateway and reads the Service to
+	// derive Gateway status.addresses — and the deployer stamps wellknown.WatchLabel on it
+	// (see the envoy chart's service.yaml), so scoping this watch the same way as the
+	// translation collection's keeps both on one informer. Left unfiltered, LABELED would
+	// buy nothing: the cluster-wide cache would still be there, just alongside a narrow one.
+	serviceFilter := filter
+	serviceFilter.LabelSelector = collections.WatchLabelSelector(cfg.CommonCollections.Settings.ServiceDiscoveryMode)
 	r := &gatewayReconciler{
 		deployer:            deployer,
 		gwParams:            gwParams,
@@ -87,10 +107,10 @@ func NewGatewayReconciler(
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
-		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
+		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, serviceFilter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
-		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
+		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, configMapFilter),
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.

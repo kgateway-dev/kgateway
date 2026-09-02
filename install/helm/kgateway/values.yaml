@@ -264,6 +264,15 @@ image:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
+# -- Which Secrets kgateway watches. 'ALL' (the default) watches every Secret in the discovered namespaces. 'LABELED' watches only Secrets labeled `kgateway.dev/watch: "true"`, which is an opt-in way to reduce control plane memory in clusters with many Secrets that kgateway never references: the label is pushed to the API server as a watch selector, so unlabeled Secrets are never cached. With 'LABELED', every Secret referenced by a Gateway, HTTPRoute or kgateway policy must carry the label, or the reference is reported as not found.
+secretDiscoveryMode: ALL
+
+# -- Which ConfigMaps kgateway watches: 'ALL' (the default) or 'LABELED'. Same semantics as secretDiscoveryMode.
+configMapDiscoveryMode: ALL
+
+# -- Which Services kgateway watches: 'ALL' (the default) or 'LABELED'. Same semantics as secretDiscoveryMode. Because every watched Service becomes a backend, 'LABELED' also bounds the number of clusters kgateway sends to Envoy. With 'LABELED', a route backendRef to an unlabeled Service is reported as not found, and an unlabeled Service is not matched as a waypoint.
+serviceDiscoveryMode: ALL
+
 # -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
 serviceEntriesExclusionLabelSelectors: []
 
