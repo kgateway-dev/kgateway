@@ -178,6 +178,20 @@ EOF
 
 Next, configure kgateway with your OIDC provider's details. This involves creating a `GatewayExtension` to hold the OIDC configuration, a `Backend` and `BackendTLSPolicy` to allow kgateway to communicate with Google's OIDC endpoints, and a `Secret` for your client secret.
 
+> **Note on private and self-signed CAs**
+>
+> When `tokenEndpoint` and `authorizationEndpoint` are omitted, the kgateway control plane
+> fetches the provider's `/.well-known/openid-configuration` document itself, so it needs to
+> trust the issuer's certificate too — not just the proxy. It validates the issuer using the
+> `BackendTLSPolicy` (or `BackendConfigPolicy`) attached to the `backendRef` above: its
+> `caCertificateRefs` supply the trust anchors and its `hostname` is the identity verified.
+> So an issuer served under a private or self-signed CA works as long as that CA is
+> referenced by the policy, with no extra configuration on the control-plane pod.
+>
+> Setting `tokenEndpoint`, `authorizationEndpoint`, `endSessionEndpoint` and (when `jwt` is
+> configured) `jwt.jwksURI` explicitly skips discovery altogether, in which case the control
+> plane never contacts the provider.
+
 Apply the following manifest, making sure to replace the placeholder values.
 
 ```bash

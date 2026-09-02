@@ -11,6 +11,7 @@ import (
 func baseHarnessUpstreamTLSValidation() UpstreamTLSValidation {
 	return UpstreamTLSValidation{
 		CAPEM:              "-----BEGIN CERTIFICATE-----\ntest-ca\n-----END CERTIFICATE-----",
+		ServerName:         "example.com",
 		InsecureSkipVerify: false,
 	}
 }
@@ -23,6 +24,10 @@ func TestHarnessUpstreamTLSValidationEquals(t *testing.T) {
 		{
 			Field:  "CAPEM",
 			Mutate: func(v *UpstreamTLSValidation) { v.CAPEM = "rotated" },
+		},
+		{
+			Field:  "ServerName",
+			Mutate: func(v *UpstreamTLSValidation) { v.ServerName = "other.example.com" },
 		},
 		{
 			Field:  "InsecureSkipVerify",

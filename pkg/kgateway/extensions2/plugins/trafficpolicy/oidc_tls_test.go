@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -127,23 +128,72 @@ func TestOIDCDiscoveryCacheKeyedByTrustMaterial(t *testing.T) {
 	r.Equal(int64(2), atomic.LoadInt64(requests), "both entries should be served from cache")
 }
 
-// TestTLSDigestNormalizesSystemTrustStore asserts that everything meaning "the system trust
-// store" digests alike, so a backend with no policy and one that explicitly selects the
-// well-known system CA set share a cache entry instead of discovering the issuer twice.
+// TestTLSDigestNormalizesSystemTrustStore asserts that everything meaning "verify against the
+// system trust store" digests alike, so a backend with no policy and one that explicitly
+// selects the well-known system CA set share a cache entry instead of discovering twice.
 func TestTLSDigestNormalizesSystemTrustStore(t *testing.T) {
 	r := require.New(t)
 
 	r.Equal("", tlsDigest(nil))
 	r.Equal("", tlsDigest(&ir.UpstreamTLSValidation{}))
 	r.Equal("", tlsDigest(&ir.UpstreamTLSValidation{CAPEM: ""}))
+}
 
-	r.Equal("insecure", tlsDigest(&ir.UpstreamTLSValidation{InsecureSkipVerify: true}))
+// TestTLSDigestSeparatesDistinctConfigurations asserts that every field that changes how the
+// issuer is reached also changes the cache key, so no configuration is ever served a config
+// discovered under another.
+func TestTLSDigestSeparatesDistinctConfigurations(t *testing.T) {
+	r := require.New(t)
 
-	caA := tlsDigest(&ir.UpstreamTLSValidation{CAPEM: "ca-a"})
-	caB := tlsDigest(&ir.UpstreamTLSValidation{CAPEM: "ca-b"})
-	r.NotEqual("", caA)
-	r.NotEqual(caA, caB, "distinct bundles must digest differently")
-	r.Equal(caA, tlsDigest(&ir.UpstreamTLSValidation{CAPEM: "ca-a"}), "digest must be stable")
+	digests := map[string]string{}
+	for name, v := range map[string]*ir.UpstreamTLSValidation{
+		"ca a":                  {CAPEM: "ca-a"},
+		"ca b":                  {CAPEM: "ca-b"},
+		"ca a, server name":     {CAPEM: "ca-a", ServerName: "example.com"},
+		"ca a, other name":      {CAPEM: "ca-a", ServerName: "other.example.com"},
+		"server name only":      {ServerName: "example.com"},
+		"insecure":              {InsecureSkipVerify: true},
+		"insecure, server name": {InsecureSkipVerify: true, ServerName: "example.com"},
+	} {
+		digest := tlsDigest(v)
+		r.NotEqual("", digest, "%s must not digest as plain system-trust verification", name)
+		if other, clash := digests[digest]; clash {
+			r.Failf("digest collision", "%q and %q digest alike", name, other)
+		}
+		digests[digest] = name
+	}
+
+	r.Equal(tlsDigest(&ir.UpstreamTLSValidation{CAPEM: "ca-a"}),
+		tlsDigest(&ir.UpstreamTLSValidation{CAPEM: "ca-a"}), "digest must be stable")
+}
+
+// TestOIDCDiscoveryVerifiesThePolicysHostname covers the shape the e2e suite runs and that
+// real deployments use: the issuer's certificate is issued for the hostname clients reach it
+// by, not for the in-cluster Service name the URL names. Envoy verifies the name the policy
+// gives it, so discovery has to as well or it rejects a certificate the proxy accepts.
+func TestOIDCDiscoveryVerifiesThePolicysHostname(t *testing.T) {
+	server, caPEM, _ := newTLSDiscoveryServer(t)
+
+	// The test server's certificate covers example.com and 127.0.0.1, but not localhost, so
+	// dialing it by that name stands in for a Service name absent from the certificate.
+	issuer := strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
+	r := require.New(t)
+	r.NotEqual(server.URL, issuer, "test server should be addressed by IP")
+
+	_, err := newTestDiscoverer(issuer).get(context.Background(), issuer,
+		&ir.UpstreamTLSValidation{CAPEM: caPEM})
+	r.Error(err, "the URL host is not an identity the certificate carries")
+	r.Contains(err.Error(), "certificate is valid for")
+
+	cfg, err := newTestDiscoverer(issuer).get(context.Background(), issuer,
+		&ir.UpstreamTLSValidation{CAPEM: caPEM, ServerName: "example.com"})
+	r.NoError(err, "the policy's hostname is the identity to verify")
+	r.NotNil(cfg)
+	r.Equal("https://private.example.com/token", cfg.TokenEndpoint)
+
+	_, err = newTestDiscoverer(issuer).get(context.Background(), issuer,
+		&ir.UpstreamTLSValidation{CAPEM: caPEM, ServerName: "wrong.example.net"})
+	r.Error(err, "a hostname the certificate does not carry must still fail")
 }
 
 // TestRefreshPrunesSupersededTrustKey asserts that rotating the CA on the issuer's backend
