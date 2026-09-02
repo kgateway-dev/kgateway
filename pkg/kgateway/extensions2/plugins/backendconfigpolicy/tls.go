@@ -41,51 +41,24 @@ func (g *DefaultSecretGetter) GetSecret(name, namespace string) (*ir.Secret, err
 	return g.secrets.GetSecretWithoutRefGrant(g.krtctx, name, namespace)
 }
 
-// buildTLSContext fills in tlsContext and returns the trust material it configured, in the
-// form a control-plane Go client needs. See ir.UpstreamTLSValidation for why that is useful.
-func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) (*ir.UpstreamTLSValidation, error) {
+func buildTLSContext(tlsConfig *kgateway.TLS, secretGetter SecretGetter, namespace string, tlsContext *envoytlsv3.CommonTlsContext) error {
 	// Extract TLS data from config
 	tlsData, err := extractTLSData(tlsConfig, secretGetter, namespace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract TLS data: %w", err)
+		return fmt.Errorf("failed to extract TLS data: %w", err)
 	}
 
 	// Skip client certificate processing for simple TLS
 	if tlsConfig.SimpleTLS != nil && *tlsConfig.SimpleTLS {
-		if err := buildValidationContext(tlsData, tlsConfig, tlsContext); err != nil {
-			return nil, err
-		}
-		return upstreamTLSValidation(tlsData, tlsConfig), nil
+		return buildValidationContext(tlsData, tlsConfig, tlsContext)
 	}
 
 	// Process client certificate for mutual TLS, if provided
 	if err := buildCertificateContext(tlsData, tlsContext); err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := buildValidationContext(tlsData, tlsConfig, tlsContext); err != nil {
-		return nil, err
-	}
-	return upstreamTLSValidation(tlsData, tlsConfig), nil
-}
-
-// upstreamTLSValidation reduces a resolved TLS config to the trust material a control-plane
-// Go client can act on. It returns nil when there is nothing such a client can use, leaving
-// the caller on its own default of the system trust store.
-func upstreamTLSValidation(tlsData *tlsData, tlsConfig *kgateway.TLS) *ir.UpstreamTLSValidation {
-	serverName := ptr.Deref(tlsConfig.Sni, "")
-	if ptr.Deref(tlsConfig.WellKnownCACertificates, "") == gwv1.WellKnownCACertificatesSystem {
-		// The system trust store, which is what an empty bundle already means.
-		return &ir.UpstreamTLSValidation{ServerName: serverName}
-	}
-	if tlsData.rootCA == "" {
-		return nil
-	}
-	if !tlsData.inlineDataSource {
-		// rootCA is a path on the proxy's filesystem, which does not exist here.
-		return nil
-	}
-	return &ir.UpstreamTLSValidation{CAPEM: tlsData.rootCA, ServerName: serverName}
+	return buildValidationContext(tlsData, tlsConfig, tlsContext)
 }
 
 type tlsData struct {
@@ -222,20 +195,18 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	return nil
 }
 
-// translateTLSConfig builds the upstream TLS context for Envoy, and alongside it the trust
-// material a control-plane client would need to reach the same backend itself.
 func translateTLSConfig(
 	secretGetter SecretGetter,
 	tlsConfig *kgateway.TLS,
 	namespace string,
-) (*envoytlsv3.UpstreamTlsContext, *ir.UpstreamTLSValidation, error) {
+) (*envoytlsv3.UpstreamTlsContext, error) {
 	tlsContext := &envoytlsv3.CommonTlsContext{
 		TlsParams: &envoytlsv3.TlsParameters{}, // default params
 	}
 
 	tlsParams, err := parseTLSParameters(tlsConfig.Parameters)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	tlsContext.TlsParams = tlsParams
 
@@ -243,17 +214,11 @@ func translateTLSConfig(
 		tlsContext.AlpnProtocols = tlsConfig.AlpnProtocols
 	}
 
-	var validation *ir.UpstreamTLSValidation
 	if tlsConfig.InsecureSkipVerify != nil && *tlsConfig.InsecureSkipVerify {
 		tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{}
-		validation = &ir.UpstreamTLSValidation{
-			ServerName:         ptr.Deref(tlsConfig.Sni, ""),
-			InsecureSkipVerify: true,
-		}
 	} else {
-		validation, err = buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext)
-		if err != nil {
-			return nil, nil, err
+		if err := buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext); err != nil {
+			return nil, err
 		}
 	}
 
@@ -261,7 +226,7 @@ func translateTLSConfig(
 		CommonTlsContext:   tlsContext,
 		Sni:                ptr.Deref(tlsConfig.Sni, ""),
 		AllowRenegotiation: ptr.Deref(tlsConfig.AllowRenegotiation, false),
-	}, validation, nil
+	}, nil
 }
 
 func parseTLSParameters(tlsParameters *kgateway.TLSParameters) (*envoytlsv3.TlsParameters, error) {

@@ -110,9 +110,7 @@ func TestGatewayExtensionRecoversFromOIDCDiscoveryFailure(t *testing.T) {
 
 	// Build the discoverer exactly as TranslateGatewayExtensionBuilder does, but with short
 	// intervals so the test does not wait out the production 30s retry floor.
-	discoverer := newOIDCProviderConfigDiscoverer(
-		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
-	)
+	discoverer := newOIDCProviderConfigDiscoverer(commoncol.GatewayExtensions.List)
 	discoverer.cacheRefreshInterval = 200 * time.Millisecond
 	discoverer.failureRetryInterval = 20 * time.Millisecond
 	go discoverer.run(ctx)
@@ -177,7 +175,7 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 	o.cacheRefreshInterval = 0
 	o.failureRetryInterval = 5 * time.Millisecond
 
-	_, err := o.get(t.Context(), issuer, nil)
+	_, err := o.get(t.Context(), testExtName, issuer, nil)
 	r.NoError(err)
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -293,9 +291,7 @@ func TestProviderBlipDoesNotBreakHealthyExtension(t *testing.T) {
 	require.NoError(t, err)
 	commoncol.InitPlugins(ctx, k8splugin.NewPlugin(ctx, commoncol), settings)
 
-	discoverer := newOIDCProviderConfigDiscoverer(
-		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
-	)
+	discoverer := newOIDCProviderConfigDiscoverer(commoncol.GatewayExtensions.List)
 	discoverer.cacheRefreshInterval = 100 * time.Millisecond
 	discoverer.failureRetryInterval = 100 * time.Millisecond
 	go discoverer.run(ctx)

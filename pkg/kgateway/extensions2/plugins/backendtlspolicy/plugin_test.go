@@ -118,25 +118,26 @@ func TestUpstreamTLSValidation(t *testing.T) {
 		},
 		{
 			name: "policy that failed to translate configures nothing",
-			pol:  &backendTlsPolicy{caPEM: testCAPEM, hostname: "example.com"},
+			pol:  &backendTlsPolicy{caPEM: testCAPEM},
 			want: nil,
 		},
 		{
 			name: "explicit CA bundle",
-			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM, hostname: "example.com"},
-			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM, ServerName: "example.com"},
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM},
+			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM},
+		},
+		{
+			// Only trust anchors are exposed. The policy's hostname is the identity Envoy
+			// verifies for the backend, which is not necessarily the issuer a control-plane
+			// client dials, so it deliberately does not travel with the CA.
+			name: "the policy's hostname is not exposed as an identity",
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "sni.example.com"), caPEM: testCAPEM},
+			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM},
 		},
 		{
 			name: "system CA certificates resolve to an empty bundle",
-			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), hostname: "example.com"},
-			want: &ir.UpstreamTLSValidation{ServerName: "example.com"},
-		},
-		{
-			// The hostname is what the certificate is verified against, so it must reach the
-			// control-plane client even when it differs from the name the client dials.
-			name: "the hostname is carried independently of the backend's address",
-			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM, hostname: "keycloak.example.com"},
-			want: &ir.UpstreamTLSValidation{CAPEM: testCAPEM, ServerName: "keycloak.example.com"},
+			pol:  &backendTlsPolicy{transportSocket: tlsSocket(t, "example.com")},
+			want: &ir.UpstreamTLSValidation{},
 		},
 	}
 
@@ -151,16 +152,14 @@ func TestUpstreamTLSValidation(t *testing.T) {
 // the discovery cache keeps serving a config obtained under the old trust material.
 func TestEqualsComparesCA(t *testing.T) {
 	socket := tlsSocket(t, "example.com")
-	base := &backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM, hostname: "example.com"}
+	base := &backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM}
 
-	assert.True(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM, hostname: "example.com"}),
+	assert.True(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "example.com"), caPEM: testCAPEM}),
 		"identical policies should compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: "rotated", hostname: "example.com"}),
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: "rotated"}),
 		"a rotated CA must not compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, hostname: "example.com"}),
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket}),
 		"dropping the CA must not compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: socket, caPEM: testCAPEM, hostname: "other.example.com"}),
-		"a changed hostname must not compare equal")
-	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "other.example.com"), caPEM: testCAPEM, hostname: "example.com"}),
+	assert.False(t, base.Equals(&backendTlsPolicy{transportSocket: tlsSocket(t, "other.example.com"), caPEM: testCAPEM}),
 		"a changed transport socket must not compare equal")
 }

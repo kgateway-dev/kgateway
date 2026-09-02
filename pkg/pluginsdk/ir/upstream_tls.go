@@ -9,24 +9,17 @@ package ir
 // for the data path, or a provider behind a private CA fails discovery even though the proxy
 // can reach it perfectly well.
 //
-// SAN matchers are deliberately left out: they match an identity in addition to the one the
-// connection is made under, which Go's own verification of ServerName already covers for the
-// single-host fetch a control-plane client performs.
+// Only trust anchors and the verification mode are carried. The identity to verify is
+// deliberately not: a control-plane client dials the upstream's own URL rather than routing
+// through the backend's Envoy cluster, and that URL's host is the name it must authenticate.
+// A policy's SNI/hostname describes the backend, which is not necessarily the same server —
+// an OAuth2 backendRef routinely points at a provider's token-endpoint host while the issuer
+// URI names a different one (accounts.google.com versus oauth2.googleapis.com, say).
 type UpstreamTLSValidation struct {
 	// CAPEM is the PEM-encoded CA bundle to verify the upstream against. Empty means the
 	// system trust store, which is also what a policy explicitly selecting the well-known
 	// system CA set resolves to.
 	CAPEM string
-
-	// ServerName is the identity to present as SNI and to verify the upstream's certificate
-	// against, empty to use the host from the URL being fetched.
-	//
-	// It matters because a backend's certificate is routinely issued for the name clients
-	// reach it by rather than for its in-cluster Service name: a Service "keycloak" fronting
-	// a certificate for "example.com", say. Envoy verifies the name the policy gives it, so a
-	// control-plane client has to do the same or it would reject a certificate the proxy
-	// accepts.
-	ServerName string
 
 	// InsecureSkipVerify disables certificate verification entirely.
 	InsecureSkipVerify bool
@@ -37,9 +30,7 @@ func (v *UpstreamTLSValidation) Equals(other *UpstreamTLSValidation) bool {
 	if v == nil || other == nil {
 		return v == nil && other == nil
 	}
-	return v.CAPEM == other.CAPEM &&
-		v.ServerName == other.ServerName &&
-		v.InsecureSkipVerify == other.InsecureSkipVerify
+	return v.CAPEM == other.CAPEM && v.InsecureSkipVerify == other.InsecureSkipVerify
 }
 
 // UpstreamTLSValidationProvider is implemented by backend-attached policy IRs that carry TLS
@@ -48,8 +39,8 @@ func (v *UpstreamTLSValidation) Equals(other *UpstreamTLSValidation) bool {
 //
 // Returning nil means the policy configures no trust material a Go client can use, and the
 // caller should fall back to its own default of the system trust store. A policy whose CA is
-// given as a file path on the proxy's filesystem is one such case: that path does not exist
-// in the control plane.
+// given as a file path on the proxy's filesystem would be one such case: that path does not
+// exist in the control plane.
 type UpstreamTLSValidationProvider interface {
 	UpstreamTLSValidation() *UpstreamTLSValidation
 }
