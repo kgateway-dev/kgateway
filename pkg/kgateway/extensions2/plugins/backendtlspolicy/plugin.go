@@ -62,11 +62,6 @@ type backendTlsPolicy struct {
 	// +noKrtEquals
 	ct              time.Time
 	transportSocket *envoycorev3.TransportSocket
-	// caPEM is the resolved CA bundle this policy validates the backend against, kept
-	// alongside the transport socket so that control-plane clients can trust the same CA
-	// without unpacking the Envoy proto. Empty when the policy selects the system trust
-	// store, since that is what an empty bundle already means to such a client.
-	caPEM string
 }
 
 var (
@@ -83,18 +78,31 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	return d.caPEM == d2.caPEM && proto.Equal(d.transportSocket, d2.transportSocket)
+	return proto.Equal(d.transportSocket, d2.transportSocket)
 }
 
 // UpstreamTLSValidation lets the control plane validate the backend the same way this policy
 // makes Envoy validate it. Today the only caller is OIDC discovery, which fetches the OpenID
 // provider configuration itself and would otherwise be limited to the system trust store.
+//
+// The CA is read back out of the transport socket rather than kept as a second copy on the
+// IR: the socket is the policy's single source of truth, so nothing can drift, and the handful
+// of backends a GatewayExtension names are the only ones that ever pay for the unpacking.
 func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
 	if d == nil || d.transportSocket == nil {
 		// The policy failed to translate; it configures nothing, for Envoy or for us.
 		return nil
 	}
-	return &ir.UpstreamTLSValidation{CAPEM: d.caPEM}
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	if typed := d.transportSocket.GetTypedConfig(); typed == nil || typed.UnmarshalTo(tlsContext) != nil {
+		// Not reachable for a socket this plugin built; treat it as configuring nothing.
+		return nil
+	}
+	// A policy that selects the system CA set carries a combined validation context that
+	// names no trusted CA, and so resolves to an empty bundle here: exactly what the system
+	// trust store means to a control-plane client.
+	caPEM := tlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()
+	return &ir.UpstreamTLSValidation{CAPEM: caPEM}
 }
 
 func (d *backendTlsPolicy) PolicyHash() uint64 {
@@ -302,7 +310,6 @@ func buildTranslateFunc(
 					Kind:  refKind,
 				}
 			}
-			policyIr.caPEM = caCert
 			tlsContextDefault, err = pluginutils.ResolveUpstreamSslConfigFromCA(caCert, validationContext, string(spec.Validation.Hostname))
 			if err != nil {
 				perr := &InvalidCACertificateRefError{

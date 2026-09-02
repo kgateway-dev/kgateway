@@ -12,24 +12,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
-	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 const (
@@ -262,7 +256,9 @@ func (s *tsuite) TestOIDCWithIssuerDiscovery() {
 	// loop or a 403 rather than the actual cause.
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		ctx, discoveryRoute, metav1.NamespaceDefault, gwv1.RouteConditionAccepted, metav1.ConditionTrue)
-	s.assertTrafficPolicyAccepted(discoveryTrafficPolicy)
+	// A discovery failure surfaces here as Accepted=False with the x509 error in the message.
+	s.TestInstallation.AssertionsT(s.T()).EventuallyTrafficPolicyCondition(
+		ctx, discoveryTrafficPolicy, metav1.NamespaceDefault, gwv1.PolicyConditionAccepted, metav1.ConditionTrue)
 
 	client := newClient(map[string]string{
 		backendHostPort: s.gatewayAddr,
@@ -286,24 +282,6 @@ func (s *tsuite) TestOIDCWithIssuerDiscovery() {
 	r.NoError(err)
 	foundCookies := s.assertCookies(r, client.Jar.Cookies(url))
 	s.T().Logf("found session cookies for %s: %v", backendURLDiscovery, foundCookies)
-}
-
-// assertTrafficPolicyAccepted waits for a TrafficPolicy to report Accepted on its ancestor.
-// A discovery failure surfaces here as Accepted=False with the x509 error in the message.
-func (s *tsuite) assertTrafficPolicyAccepted(name string) {
-	currentTimeout, pollingInterval := helpers.GetTimeouts()
-	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-		policy := &kgateway.TrafficPolicy{}
-		key := crclient.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault}
-		g.Expect(s.TestInstallation.ClusterContext.Client.Get(s.Ctx, key, policy)).
-			NotTo(gomega.HaveOccurred(), "failed to get TrafficPolicy %s", key)
-
-		g.Expect(policy.Status.Ancestors).To(gomega.HaveLen(1), "%s should have one ancestor", name)
-		cond := meta.FindStatusCondition(policy.Status.Ancestors[0].Conditions, string(shared.PolicyConditionAccepted))
-		g.Expect(cond).NotTo(gomega.BeNil(), "%s should report an Accepted condition", name)
-		g.Expect(cond.Status).To(gomega.Equal(metav1.ConditionTrue),
-			"%s should be accepted, but reports: %s", name, cond.Message)
-	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func (s *tsuite) getServiceExternalIP(ref types.NamespacedName) (string, error) {

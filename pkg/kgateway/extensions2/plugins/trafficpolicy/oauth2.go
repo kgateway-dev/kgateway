@@ -21,6 +21,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -128,13 +129,13 @@ func constructOAuth2(
 // upstreamTLSValidationForBackend returns the trust material the control plane should use
 // when it talks to backend itself, from the BackendTLSPolicy in effect on that backend.
 //
-// It resolves the *effective* policy the way the backend translator does, rather than
-// scanning attachments independently, so that discovery cannot end up trusting something the
-// proxy does not (see irtranslator's applyPolicies): several policies may target one backend,
-// in which case only the merge winner applies, and a policy carrying errors contributes
-// nothing at all. An erroring winner is reported rather than skipped, because skipping it
-// would silently fall back to the system trust store while the proxy gets no TLS config at
-// all from the same policy.
+// It resolves the *effective* policy with the very MergePolicies the backend translator uses
+// (see irtranslator's applyPolicies), rather than re-deriving the winner here, so that
+// discovery cannot end up trusting something the proxy does not: several policies may target
+// one backend, in which case only the merge winner applies, and a policy carrying errors
+// contributes nothing at all. An erroring winner is reported rather than skipped, because
+// skipping it would silently fall back to the system trust store while the proxy gets no TLS
+// config at all from the same policy.
 //
 // Only BackendTLSPolicy is consulted. BackendConfigPolicy's TLS is suppressed on the Envoy
 // side whenever a BackendTLSPolicy is attached, and honoring it here would need its
@@ -151,8 +152,7 @@ func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamT
 		return nil, nil
 	}
 
-	// Same winner the plugin's MergePolicies picks, by creation time with a ref tiebreak.
-	effective := attached[ir.WinnerPolicyIndexByCreationTimeAndRef(attached)]
+	effective := backendtlspolicy.MergePolicies(attached)
 	if len(effective.Errors) > 0 {
 		return nil, fmt.Errorf("BackendTLSPolicy in effect on the issuer backend is invalid: %w",
 			errors.Join(effective.Errors...))
@@ -190,6 +190,12 @@ func buildOAuth2ProviderConfig(
 	// proxy can reach it.
 	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
 	if err != nil || backend == nil {
+		// Giving up before get() leaves this extension reading no discovery entry, and the
+		// refresh loop has to be told so: the extension is still live, so on its own it would
+		// keep polling whatever the previous translation bound, under a CA or for an issuer
+		// that nothing reads any more. The backend is a tracked krt input, so its appearance
+		// re-runs this transform and binds afresh.
+		discoverer.unbind(ext.ResourceName())
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
 
@@ -204,6 +210,8 @@ func buildOAuth2ProviderConfig(
 		discoverer.markDependant(krtctx)
 		tlsValidation, err := upstreamTLSValidationForBackend(backend)
 		if err != nil {
+			// Same as above: the policy is a tracked input, so fixing it rebinds.
+			discoverer.unbind(ext.ResourceName())
 			return nil, err
 		}
 		openidCfg, err := discoverer.get(ctx, ext.ResourceName(), *in.IssuerURI, tlsValidation)
