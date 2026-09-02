@@ -3,6 +3,8 @@
 package compression
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -228,6 +230,48 @@ func (s *testingSuite) TestRequestDecompression() {
 	)
 
 	s.assertDecompressorMetric(".decompressor.gzip.request.decompressed")
+}
+
+// TestBufferLimitAppliesToDecompressedRequestBody verifies that a route's buffer.maxRequestSize is
+// enforced against the decompressed request body. The Buffer filter has to run behind the
+// decompressor for that: ahead of it, it would accumulate the encoded bytes, so a body that is
+// small compressed and large decompressed would satisfy the limit and expand past it upstream.
+func (s *testingSuite) TestBufferLimitAppliesToDecompressedRequestBody() {
+	// 8 KiB compresses to a few dozen bytes, well under the 1Ki limit, but exceeds it decompressed
+	s.postGzipped(8*1024, http.StatusRequestEntityTooLarge)
+
+	// under the limit once decompressed, so it is forwarded
+	s.postGzipped(256, http.StatusOK)
+}
+
+// postGzipped posts size bytes of gzip-compressed body to the buffer + decompression route and
+// asserts the response status.
+func (s *testingSuite) postGzipped(size int, expectedStatus int) {
+	s.T().Helper()
+
+	var compressed bytes.Buffer
+	w := gzip.NewWriter(&compressed)
+	_, err := w.Write([]byte(strings.Repeat("a", size)))
+	s.Require().NoError(err)
+	s.Require().NoError(w.Close())
+	s.Require().Less(compressed.Len(), 1024, "compressed body must fit under the configured limit")
+
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: expectedStatus,
+		},
+		curl.WithPort(80),
+		curl.WithPath("/post"),
+		curl.WithHostHeader("buffer-decompress.example.com"),
+		curl.WithMethod(http.MethodPost),
+		curl.WithBody(compressed.String()),
+		curl.WithHeaders(map[string]string{
+			"Content-Encoding": "gzip",
+			"Content-Type":     "text/plain",
+		}),
+		curl.WithIgnoreBody(),
+	)
 }
 
 // assertDecompressorMetric verifies the decompressor filter emitted a metric ending in
