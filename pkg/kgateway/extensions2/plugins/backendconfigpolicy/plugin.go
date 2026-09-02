@@ -52,25 +52,19 @@ type BackendConfigPolicyIR struct {
 	http1ProtocolOptions          *envoycorev3.Http1ProtocolOptions
 	http2ProtocolOptions          *envoycorev3.Http2ProtocolOptions
 	tlsConfig                     *envoytlsv3.UpstreamTlsContext
-	// tlsValidation is the trust material tlsConfig validates the backend against, in the
-	// form a control-plane client needs. See ir.UpstreamTLSValidation.
-	tlsValidation         *ir.UpstreamTLSValidation
-	loadBalancerConfig    *LoadBalancerConfigIR
-	healthCheck           *envoycorev3.HealthCheck
-	outlierDetection      *envoyclusterv3.OutlierDetection
-	circuitBreakers       *envoyclusterv3.CircuitBreakers
-	dnsRefreshRate        *durationpb.Duration
-	dnsJitter             *durationpb.Duration
-	respectDnsTtl         *bool
-	upstreamProxyProtocol *envoycorev3.ProxyProtocolConfig
+	loadBalancerConfig            *LoadBalancerConfigIR
+	healthCheck                   *envoycorev3.HealthCheck
+	outlierDetection              *envoyclusterv3.OutlierDetection
+	circuitBreakers               *envoyclusterv3.CircuitBreakers
+	dnsRefreshRate                *durationpb.Duration
+	dnsJitter                     *durationpb.Duration
+	respectDnsTtl                 *bool
+	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
 
-var (
-	_ ir.PolicyIR                      = &BackendConfigPolicyIR{}
-	_ ir.UpstreamTLSValidationProvider = &BackendConfigPolicyIR{}
-)
+var _ ir.PolicyIR = &BackendConfigPolicyIR{}
 
 func (d *BackendConfigPolicyIR) CreationTime() time.Time {
 	return d.ct
@@ -114,10 +108,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 
-	if !d.tlsValidation.Equals(d2.tlsValidation) {
-		return false
-	}
-
 	if !cmputils.CompareWithNils(d.loadBalancerConfig, d2.loadBalancerConfig, func(a, b *LoadBalancerConfigIR) bool {
 		return a.Equals(b)
 	}) {
@@ -150,16 +140,6 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 		return false
 	}
 	return true
-}
-
-// UpstreamTLSValidation lets the control plane validate a backend the same way this policy
-// makes Envoy validate it. Today the only caller is OIDC discovery, which fetches the OpenID
-// provider configuration itself and would otherwise be limited to the system trust store.
-func (d *BackendConfigPolicyIR) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
-	if d == nil {
-		return nil
-	}
-	return d.tlsValidation
 }
 
 func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v validator.Validator) sdk.Plugin {
@@ -383,12 +363,11 @@ func translate(
 	}
 
 	if pol.Spec.TLS != nil {
-		tlsConfig, tlsValidation, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
+		tlsConfig, err := translateTLSConfig(NewDefaultSecretGetter(commoncol.Secrets, krtctx), pol.Spec.TLS, pol.Namespace)
 		if err != nil {
 			errs = append(errs, err)
 		}
 		ir.tlsConfig = tlsConfig
-		ir.tlsValidation = tlsValidation
 	}
 
 	if pol.Spec.LoadBalancer != nil {

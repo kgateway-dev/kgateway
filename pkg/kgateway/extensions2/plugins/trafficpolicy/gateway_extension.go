@@ -121,7 +121,7 @@ func TranslateGatewayExtensionBuilder(
 	commoncol *collections.CommonCollections,
 ) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	oidcDiscoverer := newOIDCProviderConfigDiscoverer(
-		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
+		commoncol.GatewayExtensions.List,
 		commoncol.KrtOpts.ToOptions("OIDCDiscoveryTrigger")...,
 	)
 	go oidcDiscoverer.run(ctx)

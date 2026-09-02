@@ -17,7 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -127,31 +126,43 @@ func constructOAuth2(
 }
 
 // upstreamTLSValidationForBackend returns the trust material the control plane should use
-// when it talks to backend itself, taken from the TLS-configuring policies attached to it.
+// when it talks to backend itself, from the BackendTLSPolicy in effect on that backend.
 //
-// BackendTLSPolicy wins over BackendConfigPolicy, mirroring the precedence the two already
-// apply to each other when both configure TLS on the same backend. A nil result means no
-// attached policy resolved to anything a Go client can act on, leaving the caller on its
-// default of the system trust store.
-func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) *ir.UpstreamTLSValidation {
+// It resolves the *effective* policy the way the backend translator does, rather than
+// scanning attachments independently, so that discovery cannot end up trusting something the
+// proxy does not (see irtranslator's applyPolicies): several policies may target one backend,
+// in which case only the merge winner applies, and a policy carrying errors contributes
+// nothing at all. An erroring winner is reported rather than skipped, because skipping it
+// would silently fall back to the system trust store while the proxy gets no TLS config at
+// all from the same policy.
+//
+// Only BackendTLSPolicy is consulted. BackendConfigPolicy's TLS is suppressed on the Envoy
+// side whenever a BackendTLSPolicy is attached, and honoring it here would need its
+// field-wise merge, which is not reachable from this transform; see the issue tracker.
+//
+// A nil result means the effective policy configures nothing a Go client can act on, leaving
+// the caller on its default of the system trust store.
+func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamTLSValidation, error) {
 	if backend == nil {
-		return nil
+		return nil, nil
 	}
-	for _, gk := range []schema.GroupKind{
-		wellknown.BackendTLSPolicyGVK.GroupKind(),
-		wellknown.BackendConfigPolicyGVK.GroupKind(),
-	} {
-		for _, att := range backend.AttachedPolicies.Policies[gk] {
-			provider, ok := att.PolicyIr.(ir.UpstreamTLSValidationProvider)
-			if !ok {
-				continue
-			}
-			if v := provider.UpstreamTLSValidation(); v != nil {
-				return v
-			}
-		}
+	attached := backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
+	if len(attached) == 0 {
+		return nil, nil
 	}
-	return nil
+
+	// Same winner the plugin's MergePolicies picks, by creation time with a ref tiebreak.
+	effective := attached[ir.WinnerPolicyIndexByCreationTimeAndRef(attached)]
+	if len(effective.Errors) > 0 {
+		return nil, fmt.Errorf("BackendTLSPolicy in effect on the issuer backend is invalid: %w",
+			errors.Join(effective.Errors...))
+	}
+
+	provider, ok := effective.PolicyIr.(ir.UpstreamTLSValidationProvider)
+	if !ok {
+		return nil, nil
+	}
+	return provider.UpstreamTLSValidation(), nil
 }
 
 func buildOAuth2ProviderConfig(
@@ -191,7 +202,11 @@ func buildOAuth2ProviderConfig(
 		// provider that was down at startup would keep this extension (and every
 		// TrafficPolicy referencing it) rejected until the control plane restarted.
 		discoverer.markDependant(krtctx)
-		openidCfg, err := discoverer.get(ctx, *in.IssuerURI, upstreamTLSValidationForBackend(backend))
+		tlsValidation, err := upstreamTLSValidationForBackend(backend)
+		if err != nil {
+			return nil, err
+		}
+		openidCfg, err := discoverer.get(ctx, ext.ResourceName(), *in.IssuerURI, tlsValidation)
 		if err != nil {
 			return nil, err
 		}

@@ -12,16 +12,38 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// newTestDiscoverer returns a discoverer whose refresh loop considers the given issuer URIs
-// live, with short intervals so refresh behavior is observable in tests.
+// testExtensionSource identifies the GatewayExtension the tests discover as. Cache liveness
+// is consumer-aware, so a discoverer only retains entries a live extension is bound to.
+var testExtensionSource = ir.ObjectSource{Namespace: "ns", Name: "ext"}
+
+// testExtName is that extension's identity, derived the same way get() and the live set
+// derive it so the two cannot disagree on the binding key.
+var testExtName = testExtensionSource.ResourceName()
+
+// testExtension returns a GatewayExtension named testExtName that relies on discovery from
+// issuerURI, which is what makes the refresh loop treat its cache entry as live.
+func testExtension(issuerURI string) ir.GatewayExtension {
+	return ir.GatewayExtension{
+		ObjectSource: testExtensionSource,
+		OAuth2:       &kgwv1a1.OAuth2Provider{IssuerURI: &issuerURI},
+	}
+}
+
+// newTestDiscoverer returns a discoverer whose refresh loop considers an extension per given
+// issuer URI live, with short intervals so refresh behavior is observable in tests.
 func newTestDiscoverer(issuerURIs ...string) *oidcProviderConfigDiscoverer {
-	o := newOIDCProviderConfigDiscoverer(func() []string { return issuerURIs })
+	exts := make([]ir.GatewayExtension, 0, len(issuerURIs))
+	for _, issuerURI := range issuerURIs {
+		exts = append(exts, testExtension(issuerURI))
+	}
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension { return exts })
 	o.cacheRefreshInterval = 50 * time.Millisecond
 	o.failureRetryInterval = 20 * time.Millisecond
 	return o
@@ -138,7 +160,7 @@ func TestOIDCConfigDiscovery(t *testing.T) {
 			o := newTestDiscoverer(issuer)
 
 			// Test the discovery
-			config, err := o.get(context.Background(), issuer, nil)
+			config, err := o.get(context.Background(), testExtName, issuer, nil)
 
 			if tt.expectError {
 				r.Error(err)
@@ -184,13 +206,13 @@ func TestOIDCConfigDiscoveryCache(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// First call should make HTTP request
-	config1, err := o.get(context.Background(), issuer, nil)
+	config1, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.NotNil(config1)
 	r.Equal(1, requestCount)
 
 	// Second call should use cache
-	config2, err := o.get(context.Background(), issuer, nil)
+	config2, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.NotNil(config2)
 	r.Equal(1, requestCount) // Should still be 1, no new request
@@ -216,13 +238,13 @@ func TestOIDCConfigDiscoveryFailureIsCached(t *testing.T) {
 	issuer := server.URL
 	o := newTestDiscoverer(issuer)
 
-	cfg, err := o.get(context.Background(), issuer, nil)
+	cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.Error(err)
 	r.Nil(cfg)
 	// 404 is unrecoverable, so exactly one request is made.
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
-	cfg, err = o.get(context.Background(), issuer, nil)
+	cfg, err = o.get(context.Background(), testExtName, issuer, nil)
 	r.Error(err)
 	r.Nil(cfg)
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount), "failed discovery should be served from cache")
@@ -255,7 +277,7 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	configs := make(chan *oidcProviderConfig, goroutines)
 	for range goroutines {
 		go func() {
-			cfg, err := o.get(context.Background(), issuer, nil)
+			cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 			errs <- err
 			configs <- cfg
 		}()
@@ -281,7 +303,7 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	invalidIssuer := "://invalid-url"
 	o := newTestDiscoverer(invalidIssuer)
 
-	config, err := o.get(context.Background(), invalidIssuer, nil)
+	config, err := o.get(context.Background(), testExtName, invalidIssuer, nil)
 	r.Error(err)
 	r.Nil(config)
 	r.Contains(err.Error(), "error parsing discovery URL")
@@ -289,11 +311,11 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	// A malformed issuer URI is not cached: it can only be fixed by editing the
 	// GatewayExtension, which re-runs the transform on its own, so there is nothing for the
 	// refresh loop to retry and it must not be polled (or warned about) every pass forever.
-	_, cached := o.peek(discoveryKey{issuerURI: invalidIssuer})
+	_, cached := o.load(discoveryKey{issuerURI: invalidIssuer})
 	r.False(cached, "malformed issuer URI should not be cached")
 
 	o.refreshOnce(context.Background())
-	_, cached = o.peek(discoveryKey{issuerURI: invalidIssuer})
+	_, cached = o.load(discoveryKey{issuerURI: invalidIssuer})
 	r.False(cached, "refresh should not resurrect a malformed issuer URI")
 }
 
@@ -303,7 +325,7 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 func TestOIDCConfigDiscoveryFailureBacksOff(t *testing.T) {
 	r := require.New(t)
 
-	o := newOIDCProviderConfigDiscoverer(func() []string { return nil })
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension { return nil })
 	o.failureRetryInterval = time.Second
 	o.cacheRefreshInterval = 4 * time.Second
 	discoveryErr := errors.New("boom")
@@ -361,12 +383,12 @@ func TestOIDCConfigDiscoveryShutdownDoesNotClobberCache(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// Populate a healthy entry.
-	cfg, err := o.get(context.Background(), issuer, nil)
+	cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.NotNil(cfg)
 
 	assertCacheIntact := func(when string) {
-		got, ok := o.peek(discoveryKey{issuerURI: issuer})
+		got, ok := o.load(discoveryKey{issuerURI: issuer})
 		r.True(ok, "entry should still be cached %s", when)
 		r.NoError(got.err, "cached config should survive %s", when)
 		r.NotNil(got.cfg, "cached config should survive %s", when)
@@ -400,7 +422,7 @@ func TestOIDCConfigDiscoveryShutdownDoesNotClobberCache(t *testing.T) {
 // TestOIDCDiscovererRunClampsNonPositiveInterval guards against time.NewTicker panicking when a
 // discoverer is built with a zero interval, as the pruning test does.
 func TestOIDCDiscovererRunClampsNonPositiveInterval(t *testing.T) {
-	o := newOIDCProviderConfigDiscoverer(func() []string { return nil })
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension { return nil })
 	o.failureRetryInterval = 0
 	o.cacheRefreshInterval = 0
 
@@ -449,7 +471,7 @@ func TestOIDCConfigDiscoveryRetriesFailureAndRecovers(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// Initial translation fails, exactly as reported in the issue.
-	cfg, err := o.get(context.Background(), issuer, nil)
+	cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.Error(err)
 	r.Nil(cfg)
 	r.Contains(err.Error(), "unexpected status code 521")
@@ -465,7 +487,7 @@ func TestOIDCConfigDiscoveryRetriesFailureAndRecovers(t *testing.T) {
 	r.True(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "recovery should trigger recomputation")
 
 	// A subsequent translation now sees the discovered config instead of the latched error.
-	cfg, err = o.get(context.Background(), issuer, nil)
+	cfg, err = o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.NotNil(cfg)
 	r.Equal("https://example.com/token", cfg.TokenEndpoint)
@@ -498,7 +520,7 @@ func TestProviderBlipKeepsCachedConfig(t *testing.T) {
 	o := newTestDiscoverer(issuer)
 
 	// Steady state: discovery succeeded, translation is serving a real config.
-	cfg, err := o.get(context.Background(), issuer, nil)
+	cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.Equal("https://example.com/token", cfg.TokenEndpoint)
 
@@ -507,7 +529,7 @@ func TestProviderBlipKeepsCachedConfig(t *testing.T) {
 	r.False(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "a transient refresh failure should not trigger a recomputation")
 
 	// What the next translation sees.
-	cfg, err = o.get(context.Background(), issuer, nil)
+	cfg, err = o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err, "the last known good config should still be served during a blip")
 	r.NotNil(cfg, "the last known good config should still be served during a blip")
 	r.Equal("https://example.com/token", cfg.TokenEndpoint)
@@ -542,7 +564,7 @@ func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
 	o.failureRetryInterval = time.Second
 	o.cacheRefreshInterval = 4 * time.Second
 
-	_, err := o.get(context.Background(), issuer, nil)
+	_, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 
 	// Two failed refresh passes while stale-serving: the retry backs off 1s -> 2s rather than
@@ -552,7 +574,7 @@ func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
 		before := time.Now()
 		r.False(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}))
 
-		result, ok := o.peek(discoveryKey{issuerURI: issuer})
+		result, ok := o.load(discoveryKey{issuerURI: issuer})
 		r.True(ok)
 		r.NotNil(result.cfg, "the last known good config must be retained across every failure")
 		r.NoError(result.err)
@@ -566,11 +588,11 @@ func TestProviderBlipBacksOffAndPicksUpChanges(t *testing.T) {
 	healthy.Store(true)
 
 	r.True(o.rediscover(context.Background(), discoveryKey{issuerURI: issuer}), "a changed config must trigger a recomputation")
-	cfg, err := o.get(context.Background(), issuer, nil)
+	cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.Equal("https://example.com/token/v2", cfg.TokenEndpoint)
 
-	result, ok := o.peek(discoveryKey{issuerURI: issuer})
+	result, ok := o.load(discoveryKey{issuerURI: issuer})
 	r.True(ok)
 	r.Equal(0, result.failures, "a successful refresh resets the backoff")
 }
@@ -598,7 +620,7 @@ func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
 	issuer := server.URL
 	o := newTestDiscoverer(issuer)
 
-	_, err := o.get(context.Background(), issuer, nil)
+	_, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.Error(err)
 
 	ctx := t.Context()
@@ -607,7 +629,7 @@ func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
 	healthy.Store(true)
 
 	require.Eventually(t, func() bool {
-		cfg, err := o.get(context.Background(), issuer, nil)
+		cfg, err := o.get(context.Background(), testExtName, issuer, nil)
 		return err == nil && cfg != nil && cfg.TokenEndpoint == "https://example.com/token"
 	}, 5*time.Second, 10*time.Millisecond, "refresh loop should re-discover the recovered provider")
 }
@@ -634,30 +656,30 @@ func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 
 	var live atomic.Bool
 	live.Store(true)
-	o := newOIDCProviderConfigDiscoverer(func() []string {
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension {
 		if !live.Load() {
 			return nil
 		}
-		return []string{issuer}
+		return []ir.GatewayExtension{testExtension(issuer)}
 	})
 	// Expire immediately so every refresh pass re-discovers a live issuer.
 	o.cacheRefreshInterval = 0
 	o.failureRetryInterval = 0
 
-	_, err := o.get(context.Background(), issuer, nil)
+	_, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
 	// While referenced, a refresh pass re-discovers.
 	o.refreshOnce(context.Background())
 	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
-	_, cached := o.peek(discoveryKey{issuerURI: issuer})
+	_, cached := o.load(discoveryKey{issuerURI: issuer})
 	r.True(cached)
 
 	// Once the GatewayExtension is gone, the entry is pruned and no longer polled.
 	live.Store(false)
 	o.refreshOnce(context.Background())
-	_, cached = o.peek(discoveryKey{issuerURI: issuer})
+	_, cached = o.load(discoveryKey{issuerURI: issuer})
 	r.False(cached, "issuer with no referencing GatewayExtension should be pruned")
 
 	countAfterPrune := atomic.LoadInt64(&requestCount)
@@ -748,10 +770,15 @@ func TestOIDCDiscoveryRequired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, oidcDiscoveryRequired(tt.in))
 
-			// oidcIssuerURIs must agree: it lists exactly the issuers that will be discovered.
-			got := oidcIssuerURIs([]ir.GatewayExtension{{OAuth2: tt.in}})
+			// oidcDiscoveryConsumers must agree: it names exactly the extensions whose cache
+			// entries the refresh loop retains.
+			ext := ir.GatewayExtension{
+				ObjectSource: ir.ObjectSource{Namespace: "ns", Name: "ext"},
+				OAuth2:       tt.in,
+			}
+			got := oidcDiscoveryConsumers([]ir.GatewayExtension{ext})
 			if tt.want {
-				require.Equal(t, []string{issuer}, got)
+				require.Equal(t, sets.New(ext.ResourceName()), got)
 			} else {
 				require.Empty(t, got)
 			}
@@ -759,9 +786,10 @@ func TestOIDCDiscoveryRequired(t *testing.T) {
 	}
 }
 
-// TestOIDCIssuerURIsSharedIssuer asserts an issuer stays live while any one extension still
-// discovers from it, even if another has every endpoint configured explicitly.
-func TestOIDCIssuerURIsSharedIssuer(t *testing.T) {
+// TestOIDCDiscoveryConsumersSharedIssuer asserts that only the extension still discovering
+// from a shared issuer is reported, so the other one filling in every endpoint releases its
+// binding without dropping the entry the first still reads.
+func TestOIDCDiscoveryConsumersSharedIssuer(t *testing.T) {
 	issuer := "https://idp.example.com"
 	uri := kgwv1a1.HttpsUri("https://idp.example.com/x")
 
@@ -773,9 +801,18 @@ func TestOIDCIssuerURIsSharedIssuer(t *testing.T) {
 		EndSessionEndpoint:    new(uri),
 	}
 
-	require.Equal(t, []string{issuer}, oidcIssuerURIs([]ir.GatewayExtension{
-		{OAuth2: fullyExplicit}, {OAuth2: needsDiscovery},
-	}), "issuer should stay live while any extension still discovers from it")
+	explicitExt := ir.GatewayExtension{
+		ObjectSource: ir.ObjectSource{Namespace: "ns", Name: "explicit"},
+		OAuth2:       fullyExplicit,
+	}
+	discoveringExt := ir.GatewayExtension{
+		ObjectSource: ir.ObjectSource{Namespace: "ns", Name: "discovering"},
+		OAuth2:       needsDiscovery,
+	}
+
+	require.Equal(t, sets.New(discoveringExt.ResourceName()),
+		oidcDiscoveryConsumers([]ir.GatewayExtension{explicitExt, discoveringExt}),
+		"only the extension that still discovers should keep its binding")
 }
 
 // TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered covers the transition the deletion-based
@@ -801,21 +838,21 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	// The extension starts out relying on discovery, then is edited to spell out every endpoint
 	// while keeping issuerURI.
 	ext := &kgwv1a1.OAuth2Provider{IssuerURI: &issuer}
-	o := newOIDCProviderConfigDiscoverer(func() []string {
-		return oidcIssuerURIs([]ir.GatewayExtension{{OAuth2: ext}})
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension {
+		return []ir.GatewayExtension{{ObjectSource: testExtensionSource, OAuth2: ext}}
 	})
 	// Expire immediately so every pass re-discovers whatever is still live.
 	o.cacheRefreshInterval = 0
 	o.failureRetryInterval = 0
 
-	_, err := o.get(context.Background(), issuer, nil)
+	_, err := o.get(context.Background(), testExtName, issuer, nil)
 	r.NoError(err)
 	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
 
 	// While discovery is still required, the entry is refreshed.
 	o.refreshOnce(context.Background())
 	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
-	_, cached := o.peek(discoveryKey{issuerURI: issuer})
+	_, cached := o.load(discoveryKey{issuerURI: issuer})
 	r.True(cached)
 
 	// The user fills in every endpoint. buildOAuth2ProviderConfig will no longer call get() for
@@ -825,7 +862,7 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	ext.EndSessionEndpoint = new(uri)
 
 	o.refreshOnce(context.Background())
-	_, cached = o.peek(discoveryKey{issuerURI: issuer})
+	_, cached = o.load(discoveryKey{issuerURI: issuer})
 	r.False(cached, "issuer should be pruned once no extension discovers from it")
 
 	countAfterPrune := atomic.LoadInt64(&requestCount)

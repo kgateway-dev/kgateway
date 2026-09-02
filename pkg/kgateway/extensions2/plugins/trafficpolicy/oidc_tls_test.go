@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +18,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
+
+var errTestInvalidPolicy = errors.New("invalid CA certificate ref")
 
 // newTLSDiscoveryServer starts an HTTPS server serving a well-known OpenID configuration
 // under a self-signed certificate, and returns it with its CA bundle in PEM form and a
@@ -82,7 +85,7 @@ func TestOIDCDiscoveryHonorsBackendCA(t *testing.T) {
 			r := require.New(t)
 			o := newTestDiscoverer(issuer)
 
-			cfg, err := o.get(context.Background(), issuer, tt.validation)
+			cfg, err := o.get(context.Background(), testExtName, issuer, tt.validation)
 			if tt.expectError {
 				r.Error(err)
 				r.Nil(cfg)
@@ -94,6 +97,33 @@ func TestOIDCDiscoveryHonorsBackendCA(t *testing.T) {
 			r.Equal("https://private.example.com/token", cfg.TokenEndpoint)
 		})
 	}
+}
+
+// TestOIDCDiscoveryAuthenticatesTheIssuerURLHost pins that a backend policy supplies trust
+// anchors only, never the identity to verify. Discovery dials the issuer URL itself rather
+// than routing through the backend's Envoy cluster, so that URL's host is the name that must
+// be authenticated; borrowing the policy's SNI/hostname instead would authenticate a
+// different server, and would break the common case of an issuer whose host differs from the
+// backendRef's (accounts.google.com fronted by an oauth2.googleapis.com backend).
+func TestOIDCDiscoveryAuthenticatesTheIssuerURLHost(t *testing.T) {
+	r := require.New(t)
+
+	server, caPEM, _ := newTLSDiscoveryServer(t)
+
+	// The test server's certificate covers example.com and 127.0.0.1, but not localhost.
+	issuerByIP := server.URL
+	issuerByName := strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
+	r.NotEqual(issuerByIP, issuerByName, "test server should be addressed by IP")
+
+	cfg, err := newTestDiscoverer(issuerByIP).get(context.Background(), testExtName, issuerByIP,
+		&ir.UpstreamTLSValidation{CAPEM: caPEM})
+	r.NoError(err, "the issuer URL's host is covered by the certificate")
+	r.NotNil(cfg)
+
+	_, err = newTestDiscoverer(issuerByName).get(context.Background(), testExtName, issuerByName,
+		&ir.UpstreamTLSValidation{CAPEM: caPEM})
+	r.Error(err, "a host the certificate does not carry must fail even with the right CA")
+	r.Contains(err.Error(), "certificate is valid for")
 }
 
 // TestOIDCDiscoveryCacheKeyedByTrustMaterial asserts that the trust material is part of the
@@ -109,28 +139,28 @@ func TestOIDCDiscoveryCacheKeyedByTrustMaterial(t *testing.T) {
 	withCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
 	insecure := &ir.UpstreamTLSValidation{InsecureSkipVerify: true}
 
-	cfg, err := o.get(context.Background(), issuer, withCA)
+	cfg, err := o.get(context.Background(), testExtName, issuer, withCA)
 	r.NoError(err)
 	r.NotNil(cfg)
 	r.Equal(int64(1), atomic.LoadInt64(requests))
 
-	cfg, err = o.get(context.Background(), issuer, insecure)
+	cfg, err = o.get(context.Background(), testExtName, issuer, insecure)
 	r.NoError(err)
 	r.NotNil(cfg)
 	r.Equal(int64(2), atomic.LoadInt64(requests),
 		"a different trust configuration must discover rather than reuse the cached entry")
 
-	// Both entries now coexist, and each is served from its own cache slot.
-	_, err = o.get(context.Background(), issuer, withCA)
+	// Both entries are still cached, and each is served from its own slot.
+	_, err = o.get(context.Background(), testExtName, issuer, withCA)
 	r.NoError(err)
-	_, err = o.get(context.Background(), issuer, insecure)
+	_, err = o.get(context.Background(), testExtName, issuer, insecure)
 	r.NoError(err)
 	r.Equal(int64(2), atomic.LoadInt64(requests), "both entries should be served from cache")
 }
 
-// TestTLSDigestNormalizesSystemTrustStore asserts that everything meaning "verify against the
-// system trust store" digests alike, so a backend with no policy and one that explicitly
-// selects the well-known system CA set share a cache entry instead of discovering twice.
+// TestTLSDigestNormalizesSystemTrustStore asserts that everything meaning "the system trust
+// store" digests alike, so a backend with no policy and one that explicitly selects the
+// well-known system CA set share a cache entry instead of discovering the issuer twice.
 func TestTLSDigestNormalizesSystemTrustStore(t *testing.T) {
 	r := require.New(t)
 
@@ -139,24 +169,19 @@ func TestTLSDigestNormalizesSystemTrustStore(t *testing.T) {
 	r.Equal("", tlsDigest(&ir.UpstreamTLSValidation{CAPEM: ""}))
 }
 
-// TestTLSDigestSeparatesDistinctConfigurations asserts that every field that changes how the
-// issuer is reached also changes the cache key, so no configuration is ever served a config
-// discovered under another.
+// TestTLSDigestSeparatesDistinctConfigurations asserts that every configuration that changes
+// how the issuer is verified also changes the cache key.
 func TestTLSDigestSeparatesDistinctConfigurations(t *testing.T) {
 	r := require.New(t)
 
 	digests := map[string]string{}
 	for name, v := range map[string]*ir.UpstreamTLSValidation{
-		"ca a":                  {CAPEM: "ca-a"},
-		"ca b":                  {CAPEM: "ca-b"},
-		"ca a, server name":     {CAPEM: "ca-a", ServerName: "example.com"},
-		"ca a, other name":      {CAPEM: "ca-a", ServerName: "other.example.com"},
-		"server name only":      {ServerName: "example.com"},
-		"insecure":              {InsecureSkipVerify: true},
-		"insecure, server name": {InsecureSkipVerify: true, ServerName: "example.com"},
+		"ca a":     {CAPEM: "ca-a"},
+		"ca b":     {CAPEM: "ca-b"},
+		"insecure": {InsecureSkipVerify: true},
 	} {
 		digest := tlsDigest(v)
-		r.NotEqual("", digest, "%s must not digest as plain system-trust verification", name)
+		r.NotEqual("", digest, "%s must not digest as system-trust verification", name)
 		if other, clash := digests[digest]; clash {
 			r.Failf("digest collision", "%q and %q digest alike", name, other)
 		}
@@ -167,40 +192,10 @@ func TestTLSDigestSeparatesDistinctConfigurations(t *testing.T) {
 		tlsDigest(&ir.UpstreamTLSValidation{CAPEM: "ca-a"}), "digest must be stable")
 }
 
-// TestOIDCDiscoveryVerifiesThePolicysHostname covers the shape the e2e suite runs and that
-// real deployments use: the issuer's certificate is issued for the hostname clients reach it
-// by, not for the in-cluster Service name the URL names. Envoy verifies the name the policy
-// gives it, so discovery has to as well or it rejects a certificate the proxy accepts.
-func TestOIDCDiscoveryVerifiesThePolicysHostname(t *testing.T) {
-	server, caPEM, _ := newTLSDiscoveryServer(t)
-
-	// The test server's certificate covers example.com and 127.0.0.1, but not localhost, so
-	// dialing it by that name stands in for a Service name absent from the certificate.
-	issuer := strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
-	r := require.New(t)
-	r.NotEqual(server.URL, issuer, "test server should be addressed by IP")
-
-	_, err := newTestDiscoverer(issuer).get(context.Background(), issuer,
-		&ir.UpstreamTLSValidation{CAPEM: caPEM})
-	r.Error(err, "the URL host is not an identity the certificate carries")
-	r.Contains(err.Error(), "certificate is valid for")
-
-	cfg, err := newTestDiscoverer(issuer).get(context.Background(), issuer,
-		&ir.UpstreamTLSValidation{CAPEM: caPEM, ServerName: "example.com"})
-	r.NoError(err, "the policy's hostname is the identity to verify")
-	r.NotNil(cfg)
-	r.Equal("https://private.example.com/token", cfg.TokenEndpoint)
-
-	_, err = newTestDiscoverer(issuer).get(context.Background(), issuer,
-		&ir.UpstreamTLSValidation{CAPEM: caPEM, ServerName: "wrong.example.net"})
-	r.Error(err, "a hostname the certificate does not carry must still fail")
-}
-
-// TestRefreshPrunesSupersededTrustKey asserts that rotating the CA on the issuer's backend
-// stops the entry discovered under the old CA from being polled. The live set only knows
-// issuer URIs, so it cannot spot this on its own: the superseded key belongs to a live issuer
-// and would otherwise be re-discovered forever with nothing left to read it.
-func TestRefreshPrunesSupersededTrustKey(t *testing.T) {
+// TestRefreshReleasesRotatedTrustKey asserts that rotating the CA on the issuer's backend
+// stops the entry discovered under the old CA from being polled: the extension rebinds to the
+// new entry, leaving the old one with no consumer.
+func TestRefreshReleasesRotatedTrustKey(t *testing.T) {
 	r := require.New(t)
 
 	server, caPEM, _ := newTLSDiscoveryServer(t)
@@ -210,49 +205,89 @@ func TestRefreshPrunesSupersededTrustKey(t *testing.T) {
 	oldKey := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(&ir.UpstreamTLSValidation{InsecureSkipVerify: true})}
 	newKey := discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(&ir.UpstreamTLSValidation{CAPEM: caPEM})}
 
-	_, err := o.get(context.Background(), issuer, &ir.UpstreamTLSValidation{InsecureSkipVerify: true})
+	_, err := o.get(context.Background(), testExtName, issuer, &ir.UpstreamTLSValidation{InsecureSkipVerify: true})
 	r.NoError(err)
 
-	// Age the first entry so the rotation is unambiguously the more recent read, without
-	// depending on the clock resolution between two get() calls.
-	o.mu.Lock()
-	aged := o.cache[oldKey]
-	aged.lastRead = aged.lastRead.Add(-time.Minute)
-	o.cache[oldKey] = aged
-	o.mu.Unlock()
-
-	// The CA rotates: the transform now asks for the same issuer under new trust material.
-	_, err = o.get(context.Background(), issuer, &ir.UpstreamTLSValidation{CAPEM: caPEM})
+	// The CA rotates: the same extension is translated again under new trust material.
+	_, err = o.get(context.Background(), testExtName, issuer, &ir.UpstreamTLSValidation{CAPEM: caPEM})
 	r.NoError(err)
 
-	_, cached := o.peek(oldKey)
-	r.True(cached, "both keys are cached until a refresh pass runs")
+	_, cached := o.load(oldKey)
+	r.True(cached, "both entries are cached until a refresh pass runs")
 
 	o.refreshOnce(context.Background())
 
-	_, cached = o.peek(oldKey)
-	r.False(cached, "the key superseded by the rotation should be pruned")
-	_, cached = o.peek(newKey)
-	r.True(cached, "the key still in use must survive the prune")
+	_, cached = o.load(oldKey)
+	r.False(cached, "the entry the rotation released should be pruned")
+	_, cached = o.load(newKey)
+	r.True(cached, "the entry the extension is bound to must survive the prune")
 
-	// The client for the pruned trust configuration is dropped too, so a rotating CA does not
-	// leak a connection pool per rotation.
+	// The client for the released trust configuration is dropped too, so a rotating CA does
+	// not leak a connection pool per rotation.
 	o.clients.mu.Lock()
 	_, kept := o.clients.clients[oldKey.tlsDigest]
 	o.clients.mu.Unlock()
-	r.False(kept, "the superseded entry's http client should be released")
+	r.False(kept, "the released entry's http client should be released")
+}
+
+// TestRefreshRetainsSharedIssuerUnderDifferentCAs is the case a most-recently-used heuristic
+// cannot serve: two live extensions discover from the same issuer but validate it differently,
+// so both entries have a consumer and both must survive every refresh pass. Were either
+// pruned, its next translation would block the krt event loop on a foreground fetch, which is
+// what the cache exists to avoid.
+func TestRefreshRetainsSharedIssuerUnderDifferentCAs(t *testing.T) {
+	r := require.New(t)
+
+	server, caPEM, requests := newTLSDiscoveryServer(t)
+	issuer := server.URL
+
+	otherSource := ir.ObjectSource{Namespace: "ns", Name: "other-ext"}
+	otherExtName := otherSource.ResourceName()
+	exts := []ir.GatewayExtension{
+		testExtension(issuer),
+		{ObjectSource: otherSource, OAuth2: testExtension(issuer).OAuth2},
+	}
+	o := newOIDCProviderConfigDiscoverer(func() []ir.GatewayExtension { return exts })
+	// Never expire, so this test observes pruning alone rather than re-discovery.
+	o.cacheRefreshInterval = time.Hour
+	o.failureRetryInterval = time.Hour
+
+	withCA := &ir.UpstreamTLSValidation{CAPEM: caPEM}
+	insecure := &ir.UpstreamTLSValidation{InsecureSkipVerify: true}
+
+	_, err := o.get(context.Background(), testExtName, issuer, withCA)
+	r.NoError(err)
+	_, err = o.get(context.Background(), otherExtName, issuer, insecure)
+	r.NoError(err)
+	r.Equal(int64(2), atomic.LoadInt64(requests))
+
+	o.refreshOnce(context.Background())
+
+	_, cached := o.load(discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(withCA)})
+	r.True(cached, "the entry the first extension reads must survive")
+	_, cached = o.load(discoveryKey{issuerURI: issuer, tlsDigest: tlsDigest(insecure)})
+	r.True(cached, "the entry the second extension reads must survive")
+
+	// Both are still served from cache, so neither extension re-fetches on translation.
+	_, err = o.get(context.Background(), testExtName, issuer, withCA)
+	r.NoError(err)
+	_, err = o.get(context.Background(), otherExtName, issuer, insecure)
+	r.NoError(err)
+	r.Equal(int64(2), atomic.LoadInt64(requests), "neither entry should have been re-discovered")
 }
 
 // fakeTLSPolicyIR is a policy IR carrying trust material, standing in for a BackendTLSPolicy
-// or BackendConfigPolicy IR so this package need not depend on either plugin.
+// IR so this package need not depend on that plugin.
 type fakeTLSPolicyIR struct {
 	// Equals is deliberately unconditional here: these fakes are only ever compared for the
 	// provider behavior, never fed to a krt collection.
 	// +noKrtEquals
 	validation *ir.UpstreamTLSValidation
+	// +noKrtEquals
+	ct time.Time
 }
 
-func (f fakeTLSPolicyIR) CreationTime() time.Time                          { return time.Time{} }
+func (f fakeTLSPolicyIR) CreationTime() time.Time                          { return f.ct }
 func (f fakeTLSPolicyIR) Equals(any) bool                                  { return false }
 func (f fakeTLSPolicyIR) UpstreamTLSValidation() *ir.UpstreamTLSValidation { return f.validation }
 
@@ -270,13 +305,17 @@ func TestUpstreamTLSValidationForBackend(t *testing.T) {
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
 
-	btpCA := &ir.UpstreamTLSValidation{CAPEM: "btp-ca"}
-	bcpCA := &ir.UpstreamTLSValidation{CAPEM: "bcp-ca"}
+	older := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	newer := older.Add(time.Hour)
+
+	winnerCA := &ir.UpstreamTLSValidation{CAPEM: "winner-ca"}
+	loserCA := &ir.UpstreamTLSValidation{CAPEM: "loser-ca"}
 
 	tests := []struct {
-		name    string
-		backend *ir.BackendObjectIR
-		want    *ir.UpstreamTLSValidation
+		name          string
+		backend       *ir.BackendObjectIR
+		want          *ir.UpstreamTLSValidation
+		errorContains string
 	}{
 		{
 			name:    "no backend",
@@ -289,50 +328,77 @@ func TestUpstreamTLSValidationForBackend(t *testing.T) {
 			want:    nil,
 		},
 		{
-			name: "BackendTLSPolicy CA is used",
+			name: "the BackendTLSPolicy CA is used",
 			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
-				btpGK: {{PolicyIr: fakeTLSPolicyIR{validation: btpCA}}},
+				btpGK: {{PolicyIr: fakeTLSPolicyIR{validation: winnerCA, ct: older}}},
 			}),
-			want: btpCA,
+			want: winnerCA,
 		},
 		{
-			name: "BackendConfigPolicy CA is used",
-			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
-				bcpGK: {{PolicyIr: fakeTLSPolicyIR{validation: bcpCA}}},
-			}),
-			want: bcpCA,
-		},
-		{
-			name: "BackendTLSPolicy wins over BackendConfigPolicy",
-			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
-				btpGK: {{PolicyIr: fakeTLSPolicyIR{validation: btpCA}}},
-				bcpGK: {{PolicyIr: fakeTLSPolicyIR{validation: bcpCA}}},
-			}),
-			want: btpCA,
-		},
-		{
-			name: "a policy carrying no trust material is skipped",
+			// The backend translator collapses multiple attachments through MergePolicies,
+			// which picks the oldest. Scanning attachments in slice order would disagree.
+			name: "several policies resolve to the merge winner, not the first attachment",
 			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
 				btpGK: {
-					{PolicyIr: fakeTLSPolicyIR{validation: nil}},
-					{PolicyIr: fakeTLSPolicyIR{validation: btpCA}},
+					{PolicyIr: fakeTLSPolicyIR{validation: loserCA, ct: newer}},
+					{PolicyIr: fakeTLSPolicyIR{validation: winnerCA, ct: older}},
 				},
 			}),
-			want: btpCA,
+			want: winnerCA,
+		},
+		{
+			// An erroring policy contributes nothing to the cluster, and a BackendTLSPolicy
+			// being attached at all suppresses BackendConfigPolicy's TLS. So the proxy gets no
+			// TLS config here: falling back to the system trust store would have discovery
+			// quietly succeed against a backend the proxy cannot talk to.
+			name: "an invalid effective policy is reported rather than skipped",
+			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
+				btpGK: {{
+					PolicyIr: fakeTLSPolicyIR{ct: older},
+					Errors:   []error{errTestInvalidPolicy},
+				}},
+			}),
+			errorContains: "BackendTLSPolicy in effect on the issuer backend is invalid",
+		},
+		{
+			name: "an invalid loser does not mask a valid winner",
+			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
+				btpGK: {
+					{PolicyIr: fakeTLSPolicyIR{validation: winnerCA, ct: older}},
+					{PolicyIr: fakeTLSPolicyIR{ct: newer}, Errors: []error{errTestInvalidPolicy}},
+				},
+			}),
+			want: winnerCA,
+		},
+		{
+			// BackendConfigPolicy TLS is not consulted: honoring it needs its field-wise
+			// merge, which is not reachable here.
+			name: "a BackendConfigPolicy alone leaves the system trust store",
+			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
+				bcpGK: {{PolicyIr: fakeTLSPolicyIR{validation: loserCA, ct: older}}},
+			}),
+			want: nil,
 		},
 		{
 			name: "a policy IR that carries no TLS at all is ignored",
 			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
 				btpGK: {{PolicyIr: fakeOpaquePolicyIR{}}},
-				bcpGK: {{PolicyIr: fakeTLSPolicyIR{validation: bcpCA}}},
 			}),
-			want: bcpCA,
+			want: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, upstreamTLSValidationForBackend(tt.backend))
+			got, err := upstreamTLSValidationForBackend(tt.backend)
+			if tt.errorContains != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errorContains)
+				require.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
