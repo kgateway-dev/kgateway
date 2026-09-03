@@ -83,8 +83,13 @@ func (s Shared[M]) IsNil() bool {
 }
 
 // Clone returns a deep copy the caller owns and may mutate. This is the only
-// way to derive a mutable proto from a shared one.
+// way to derive a mutable proto from a shared one. An empty wrapper clones to
+// the zero value of M.
 func (s Shared[M]) Clone() M {
+	if s.IsNil() {
+		var zero M
+		return zero
+	}
 	return proto.Clone(s.msg).(M)
 }
 
