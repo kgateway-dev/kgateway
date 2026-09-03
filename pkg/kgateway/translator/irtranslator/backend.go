@@ -94,8 +94,9 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 // TranslateBackendBase performs the UCC-invariant phase of cluster translation. The
 // returned BaseCluster can be shared across all UCCs targeting this backend.
 //
-// Returns nil only when the backend GK has no contributed translator at all — a
-// configuration error that prevents producing even a blackhole cluster.
+// Returns nil when the backend GK has no contributed translator, or its
+// contributed translator has no InitEnvoyBackend hook — configuration errors
+// that prevent producing even a blackhole cluster.
 func (t *BackendTranslator) TranslateBackendBase(
 	ctx context.Context,
 	backend *ir.BackendObjectIR,
