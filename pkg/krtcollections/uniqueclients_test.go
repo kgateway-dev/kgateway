@@ -410,7 +410,7 @@ func TestUniqueClientsLocalClusterCapabilityGatingSharedBucket(t *testing.T) {
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Eventually(func() bool {
 		return uccCol.List()[0].KnowsLocalCluster
-	}).Should(BeFalse(), "the reconnected sibling must confirm support again")
+	}).Should(BeFalse(), "the reconnected sibling has not confirmed support yet, so the shared bucket must drop back to unconfirmed")
 
 	// sid 2 now also confirms support via its own EDS request; the bucket should flip back to
 	// confirmed since every stream sharing it now supports the resource.

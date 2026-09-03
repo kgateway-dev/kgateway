@@ -202,3 +202,60 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesDeltas(t *test
 		return len(got) == 1 && got[0].Cluster.Clone().GetOutlierDetection() == nil
 	}, 2*time.Second, 20*time.Millisecond)
 }
+
+// TestNewPerClientEnvoyClusters_ArmedTripwireCatchesBaseMutation is the negative
+// control for the immutability tripwire on a real collection row. TestMain arms
+// sharedproto.AssertImmutability for this package, so the base transform captures
+// each shared proto's content hash at wrap time; mutating the shared base through
+// a borrowed pointer — the aliasing a buggy overlay or snapshot consumer would
+// introduce — must make the publish path panic and name the cluster. Without this
+// check a change that quietly stopped capturing hashes (wrapping with hash 0, or
+// wrapping before the proto is final) would leave every NotPanics assertion in the
+// package passing while the tripwire guarded nothing.
+func TestNewPerClientEnvoyClusters_ArmedTripwireCatchesBaseMutation(t *testing.T) {
+	ctx := t.Context()
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+	require.True(t, sharedproto.AssertImmutability, "TestMain must arm the tripwire for this package")
+
+	backendGK := schema.GroupKind{Group: "group", Kind: "kind"}
+	translator := &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			backendGK: {
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					return nil
+				},
+			},
+		},
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{},
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "group", Kind: "kind", Namespace: "ns", Name: "svc"}, 80, "", "")
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
+	ucc := ir.NewUniquelyConnectedClient("c", "ns", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
+
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	var got []uccWithCluster
+	require.Eventually(t, func() bool {
+		got = pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		return len(got) == 1
+	}, 2*time.Second, 20*time.Millisecond)
+
+	shared := got[0].Cluster
+	require.NotPanics(t, func() { shared.ResourceWithTTL() }, "an unmutated shared base must publish")
+
+	// Reach the shared proto the way an aliasing bug would: through the borrow,
+	// without cloning. The wrapper exists to make exactly this loud.
+	shared.BorrowForRead().AltStatName = "mutated-through-alias"
+
+	var recovered any
+	func() {
+		defer func() { recovered = recover() }()
+		shared.ResourceWithTTL()
+	}()
+	require.NotNil(t, recovered, "publishing a shared base mutated after wrapping must panic")
+	msg, ok := recovered.(string)
+	require.True(t, ok, "the tripwire panics with a message, got %T", recovered)
+	assert.Contains(t, msg, backend.ClusterName(), "the tripwire must name the mutated cluster")
+	assert.Contains(t, msg, "mutated after creation")
+}

@@ -216,7 +216,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 		if len(fetched) != 1 || fetched[0].Cluster.IsNil() {
 			return false
 		}
-		return fetched[0].Cluster.Clone().GetTransportSocket() != nil && fetched[0].Cluster.Clone().GetTransportSocket().GetName() == "other.example.com"
+		return fetched[0].Cluster.Clone().GetTransportSocket().GetName() == "other.example.com"
 	}, 5*time.Second, 50*time.Millisecond)
 }
 
