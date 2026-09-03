@@ -52,10 +52,23 @@ type (
 	) uint64
 )
 
-// TODO: consider changing PerClientProcessBackend to look like this:
-// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR)
-// so that it only attaches the policy to the backend, and doesn't modify the backend (except for attached policies) or the cluster itself.
-// leaving as is for now as this requires better understanding of how krt would handle this.
+// ClusterOverlay carries per-client cluster mutations. Returning nil from a
+// PerClientClusterOverlay means the client/backend pair needs no mutation.
+// Mutate receives a fresh clone and must not retain it after returning.
+type ClusterOverlay struct {
+	Mutate func(out *envoyclusterv3.Cluster)
+}
+
+type PerClientClusterOverlay func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	in ir.BackendObjectIR,
+) *ClusterOverlay
+
+// PerClientProcessBackend is the legacy eager cluster mutation hook.
+// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
+// applicable to every client because they cannot report a no-op cheaply.
 type PerClientProcessBackend func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -77,6 +90,8 @@ type PolicyPlugin struct {
 
 	// Backend processing for envoy proxy
 	ProcessBackend          ProcessBackend
+	PerClientClusterOverlay PerClientClusterOverlay
+	// Deprecated: use PerClientClusterOverlay.
 	PerClientProcessBackend PerClientProcessBackend
 	PerClientEditEndpoints  EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.
