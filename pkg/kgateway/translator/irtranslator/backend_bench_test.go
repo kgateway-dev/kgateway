@@ -4,7 +4,8 @@ package irtranslator
 // the base+overlay refactor.
 //
 //	Old: full translation per (backend, client) pair, in place — no base cache, no clone, no fast
-//	     path. This faithfully reconstructs the former monolithic translation body.
+//	     path. This reconstructs the former monolithic translation body step for step, minus the
+//	     inline-CLA branch (see legacyTranslate).
 //	New: base translated once per backend (TranslateBackendBase), then a cheap per-client overlay
 //	     (ApplyPerClient) per pair. When no overlay applies, ApplyPerClient returns nil and the
 //	     caller shares the base proto — the dominant path for a sparsely-matched destination rule.
@@ -127,9 +128,11 @@ func benchUCCs(m int) []ir.UniquelyConnectedClient {
 }
 
 // legacyTranslate reconstructs the pre-refactor per-pair translation: a full, in-place translation
-// for every (backend, client), with no base caching, no clone, and no fast path. The benchmark uses
-// EDS backends (benchInit returns nil inline endpoints), so the inline-CLA branch is intentionally
-// omitted here — it would be dead code for this input and is identically absent on the New path.
+// for every (backend, client), with no base caching, no clone, and no fast path, in the order the
+// old TranslateBackend ran its steps (policies and per-client hooks, then the locality default,
+// then the gateway client certificate). The benchmark uses EDS backends (benchInit returns nil
+// inline endpoints), so the inline-CLA branch is intentionally omitted here — it would be dead code
+// for this input and is identically absent on the New path.
 func (t *BackendTranslator) legacyTranslate(ctx context.Context, kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, backend *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 	process := t.ContributedBackends[backend.GetGroupKind()]
 	out := initializeCluster(backend)
@@ -145,6 +148,8 @@ func (t *BackendTranslator) legacyTranslate(ctx context.Context, kctx krt.Handle
 			ov.Mutate(out)
 		}
 	}
+	// The old path defaulted the locality mode per pair too; New pays it once in the base.
+	defaultLocalityConfig(out)
 	_ = applyGatewayBackendClientCertificate(out, backend)
 	return out
 }
