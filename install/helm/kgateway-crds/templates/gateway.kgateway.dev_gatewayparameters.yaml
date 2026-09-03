@@ -7112,6 +7112,36 @@ spec:
                           Additional labels to add to the Service object metadata.
                           If the same label is present on `Gateway.spec.infrastructure.labels`, the `Gateway` takes precedence.
                         type: object
+                      ipFamilies:
+                        description: |-
+                          IPFamilies is the list of IP families (IPv4 and/or IPv6) assigned to the Service,
+                          in order of preference. If unset, the cluster's default is used. See
+                          https://kubernetes.io/docs/concepts/services-networking/dual-stack/
+                          This field is only honored for Services that allocate a cluster IP, and the
+                          families requested here must be configured on the cluster.
+                        items:
+                          description: |-
+                            IPFamily represents the IP Family (IPv4 or IPv6). This type is used
+                            to express the family of an IP expressed by a type (e.g. service.spec.ipFamilies).
+                          enum:
+                          - IPv4
+                          - IPv6
+                          type: string
+                        maxItems: 2
+                        type: array
+                        x-kubernetes-list-type: atomic
+                      ipFamilyPolicy:
+                        description: |-
+                          IPFamilyPolicy represents the dual-stack preference of the Service.
+                          `SingleStack` allocates one family, `PreferDualStack` allocates two when the
+                          cluster has dual-stack configured and falls back to one when it does not, and
+                          `RequireDualStack` fails allocation unless two families are available.
+                          If unset, the cluster's default is used.
+                        enum:
+                        - SingleStack
+                        - PreferDualStack
+                        - RequireDualStack
+                        type: string
                       loadBalancerClass:
                         description: |-
                           LoadBalancerClass is the class of the load balancer implementation this Service belongs to.

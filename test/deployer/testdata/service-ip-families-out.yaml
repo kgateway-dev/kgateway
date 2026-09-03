@@ -253,7 +253,10 @@ metadata:
     kgateway: kube-gateway
   name: gw
 spec:
-  loadBalancerClass: service.k8s.aws/nlb
+  ipFamilies:
+  - IPv6
+  - IPv4
+  ipFamilyPolicy: RequireDualStack
   ports:
   - name: listener-8080
     port: 8080

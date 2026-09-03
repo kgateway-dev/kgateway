@@ -8,6 +8,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
@@ -574,6 +575,85 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		assert.Equal(t, durationpb.New(60*time.Second), dnsCluster.GetDnsRefreshRate())
 		assert.Equal(t, durationpb.New(15*time.Second), dnsCluster.GetDnsJitter())
 		assert.True(t, dnsCluster.GetRespectDnsTtl())
+	})
+
+	// The cluster-wide KGW_DNS_LOOKUP_FAMILY is stamped on the cluster before the
+	// policies run, so a policy that sets lookupFamily must win over it. That is
+	// what lets one backend resolve differently from the rest of the install.
+	t.Run("lookupFamily overrides the family already on the cluster", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					LookupFamily: new(kgateway.DnsLookupFamilyAll),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name: dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{
+						DnsLookupFamily: envoycommondnsv3.DnsLookupFamily_V6_ONLY,
+					}),
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, envoycommondnsv3.DnsLookupFamily_ALL, dnsCluster.GetDnsLookupFamily())
+	})
+
+	t.Run("leaves the family alone when the policy does not set one", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					RespectTTL: new(true),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name: dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{
+						DnsLookupFamily: envoycommondnsv3.DnsLookupFamily_V6_ONLY,
+					}),
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, envoycommondnsv3.DnsLookupFamily_V6_ONLY, dnsCluster.GetDnsLookupFamily(),
+			"the cluster-wide default should survive a policy that only sets other DNS fields")
+	})
+
+	t.Run("every API lookupFamily maps to an envoy family", func(t *testing.T) {
+		for family, want := range map[kgateway.DnsLookupFamily]envoycommondnsv3.DnsLookupFamily{
+			kgateway.DnsLookupFamilyIPv4Preferred: envoycommondnsv3.DnsLookupFamily_V4_PREFERRED,
+			kgateway.DnsLookupFamilyIPv4Only:      envoycommondnsv3.DnsLookupFamily_V4_ONLY,
+			kgateway.DnsLookupFamilyIPv6Only:      envoycommondnsv3.DnsLookupFamily_V6_ONLY,
+			kgateway.DnsLookupFamilyAuto:          envoycommondnsv3.DnsLookupFamily_AUTO,
+			kgateway.DnsLookupFamilyAll:           envoycommondnsv3.DnsLookupFamily_ALL,
+		} {
+			got, err := toDnsLookupFamily(family)
+			require.NoError(t, err, "family %q", family)
+			assert.Equal(t, want, got, "family %q", family)
+		}
+
+		_, err := toDnsLookupFamily(kgateway.DnsLookupFamily("Nonsense"))
+		assert.ErrorContains(t, err, `unknown DNS lookup family "Nonsense"`)
 	})
 
 	t.Run("ignores dns settings for non-dns clusters", func(t *testing.T) {
