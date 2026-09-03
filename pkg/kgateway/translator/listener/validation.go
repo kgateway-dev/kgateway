@@ -313,9 +313,10 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 			Message: "No valid listeners",
 		})
 		reporter.Gateway(gw.Obj).SetCondition(reports.GatewayCondition{
-			Type:   gwv1.GatewayConditionProgrammed,
-			Status: metav1.ConditionFalse,
-			Reason: gwv1.GatewayReasonInvalid,
+			Type:    gwv1.GatewayConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.GatewayReasonInvalid,
+			Message: "No valid listeners",
 		})
 		return validListeners
 	}
