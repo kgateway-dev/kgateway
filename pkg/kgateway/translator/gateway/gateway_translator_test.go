@@ -3526,6 +3526,59 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+// TestSetupScenarios covers the fixtures migrated from the envtest-based scenario tests in
+// pkg/kgateway/setup. Each fixture YAML under testutils/inputs/setup/<group>/ defines a gateway
+// named http-gw-for-test in namespace gwtest; testutils/inputs/setup/common.yaml provides the
+// shared pods/nodes the fixtures rely on for endpoints (mirroring setup's testdata/setup_yaml).
+func TestSetupScenarios(t *testing.T) {
+	ctx := t.Context()
+	dir := fsutils.MustGetThisDir()
+
+	prevVersion := version.Version
+	version.Version = "v1.0.0-ci1"
+	defer func() {
+		version.Version = prevVersion
+	}()
+
+	groups := []struct {
+		name        string
+		settingOpts []translatortest.SettingsOpts
+	}{
+		{name: "standard"},
+		{name: "experimental", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		}}},
+		{name: "listenerbind/v4", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
+		}}},
+		{name: "listenerbind/v6", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = true
+		}}},
+		{name: "autodns", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
+		}}},
+	}
+
+	for _, g := range groups {
+		inputs, err := filepath.Glob(filepath.Join(dir, "testutils/inputs/setup", g.name, "*.yaml"))
+		require.NoError(t, err)
+		require.NotEmpty(t, inputs, "no input files found for group %s", g.name)
+		for _, input := range inputs {
+			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
+			require.NoError(t, err)
+			t.Run(strings.TrimSuffix(rel, ".yaml"), func(t *testing.T) {
+				translatortest.TestTranslation(t, ctx, []string{
+					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
+					input,
+				}, filepath.Join(dir, "testutils/outputs", rel), types.NamespacedName{
+					Namespace: "gwtest",
+					Name:      "http-gw-for-test",
+				}, g.settingOpts...)
+			})
+		}
+	}
+}
+
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
 	ctx := t.Context()
 

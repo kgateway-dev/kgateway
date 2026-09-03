@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"log"
 	"maps"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
@@ -474,7 +476,43 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	slices.SortFunc(clusters, func(a, b *envoyclusterv3.Cluster) int {
 		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
+	// Locality groups in a load assignment are built by iterating a map keyed by
+	// locality, so their order is nondeterministic. Sort for stable golden output.
+	// (Mirrors sortLocalityLbEndpoints in the pkg/kgateway/setup tests.)
+	for _, c := range clusters {
+		la := c.GetLoadAssignment()
+		if la == nil {
+			continue
+		}
+		slices.SortFunc(la.Endpoints, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
+			la, lb := a.GetLocality(), b.GetLocality()
+			if la.GetRegion() != lb.GetRegion() {
+				return stdcmp.Compare(la.GetRegion(), lb.GetRegion())
+			}
+			if la.GetZone() != lb.GetZone() {
+				return stdcmp.Compare(la.GetZone(), lb.GetZone())
+			}
+			if la.GetSubZone() != lb.GetSubZone() {
+				return stdcmp.Compare(la.GetSubZone(), lb.GetSubZone())
+			}
+			if a.GetPriority() != b.GetPriority() {
+				return stdcmp.Compare(a.GetPriority(), b.GetPriority())
+			}
+			return stdcmp.Compare(lbEndpointAddrs(a), lbEndpointAddrs(b))
+		})
+	}
 	return clusters
+}
+
+// lbEndpointAddrs returns a sorted, comma-joined string of the socket addresses
+// within a locality group, used as a sort tie-breaker.
+func lbEndpointAddrs(e *envoyendpointv3.LocalityLbEndpoints) string {
+	var addrs []string
+	for _, lb := range e.GetLbEndpoints() {
+		addrs = append(addrs, lb.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+	}
+	slices.Sort(addrs)
+	return strings.Join(addrs, ",")
 }
 
 func ReadYamlFile(file string, out any) error {
@@ -513,6 +551,49 @@ func GetHTTPRouteStatusError(
 		}
 	}
 	return nil
+}
+
+// waitForEndpointsToSettle waits for the endpoints collection to quiesce. Endpoint IRs
+// depend dynamically on pods and EndpointSlices: the collection's initial transform can
+// complete (and report synced) before a dependency-triggered recompute lands, so
+// snapshotting right after HasSynced races with that recompute and yields nondeterministic
+// endpoint output. Poll until the collection stops changing.
+func waitForEndpointsToSettle(t *testing.T, endpoints krt.Collection[ir.EndpointsForBackend]) {
+	t.Helper()
+	prev := endpoints.List()
+	const settlePolls = 3
+	stable := 0
+	for range 400 { // wait for pods to settle: 400 * 25ms = 10s max
+		time.Sleep(25 * time.Millisecond)
+		cur := endpoints.List()
+		if endpointsEqual(prev, cur) {
+			stable++
+			if stable >= settlePolls {
+				return
+			}
+		} else {
+			stable = 0
+		}
+		prev = cur
+	}
+	t.Fatal("endpoints collection did not settle within 10s")
+}
+
+func endpointsEqual(a, b []ir.EndpointsForBackend) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	byName := make(map[string]ir.EndpointsForBackend, len(a))
+	for _, e := range a {
+		byName[e.ResourceName()] = e
+	}
+	for _, e := range b {
+		o, ok := byName[e.ResourceName()]
+		if !ok || !o.Equals(e) {
+			return false
+		}
+	}
+	return true
 }
 
 func GetPolicyStatusError(
@@ -793,6 +874,7 @@ func (tc TestCase) Run(
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
+	waitForEndpointsToSettle(t, commoncol.Endpoints)
 	for i, plug := range extraPlugs {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
 	}
@@ -882,6 +964,17 @@ func (tc TestCase) Run(
 				// In strict mode, backend validation errors are expected and should not fail the test.
 				cluster, _ := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
 				if cluster != nil {
+					// Attach the EDS endpoint assignment to k8s service clusters so golden files
+					// also cover endpoint derivation (mirroring the CLA assertions of the
+					// envtest-based setup tests). Other EDS clusters (e.g. plugin backends)
+					// are left alone to keep the golden diff small.
+					if cluster.GetType() == envoyclusterv3.Cluster_EDS && backend.GetObjectSource().Kind == "Service" {
+						if ep := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName())); ep != nil && len(ep.LbEps) > 0 {
+							if cla, _ := translator.TranslateEndpoints(krt.TestingDummyContext{}, ucc, *ep); cla != nil {
+								cluster.LoadAssignment = cla
+							}
+						}
+					}
 					clusters = append(clusters, cluster)
 				}
 			}
