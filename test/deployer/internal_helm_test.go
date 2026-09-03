@@ -410,10 +410,12 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "service-ip-families",
 			Validate: func(t *testing.T, outputYaml string) {
 				t.Helper()
-				assert.Contains(t, outputYaml, "ipFamilyPolicy: SingleStack",
+				assert.Contains(t, outputYaml, "ipFamilyPolicy: RequireDualStack",
 					"ipFamilyPolicy should be set on the Service")
-				assert.Contains(t, outputYaml, "ipFamilies:\n  - IPv4",
-					"ipFamilies should be set on the Service")
+				// Order matters: ipFamilies[0] picks the primary family, so the
+				// list has to reach the Service in the order it was written.
+				assert.Contains(t, outputYaml, "ipFamilies:\n  - IPv6\n  - IPv4",
+					"ipFamilies should be set on the Service in the configured order")
 			},
 		},
 		{

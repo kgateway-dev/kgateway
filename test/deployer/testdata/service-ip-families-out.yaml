@@ -254,8 +254,9 @@ metadata:
   name: gw
 spec:
   ipFamilies:
+  - IPv6
   - IPv4
-  ipFamilyPolicy: SingleStack
+  ipFamilyPolicy: RequireDualStack
   ports:
   - name: listener-8080
     port: 8080

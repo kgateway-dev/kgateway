@@ -1051,11 +1051,23 @@ CLOUD_PROVIDER_KIND ?= false
 # IPv6 to be enabled on the docker daemon.
 IP_FAMILY ?= ipv4
 
+# Optional MetalLB address-pool prefixes, needed only when running two kind
+# clusters at once: both derive their pool from the shared docker network and
+# would otherwise advertise the same addresses. CLUSTER_SUBNET is a /24 prefix
+# (e.g. 172.18.101) and CLUSTER_SUBNET_V6 a /64 prefix (e.g.
+# fc00:f853:ccd:e793:f001); both must sit inside the docker network's subnet.
+CLUSTER_SUBNET ?=
+CLUSTER_SUBNET_V6 ?=
+
 .PHONY: kind-create
+# The export is unconditional on purpose: `kind create cluster` selects the new
+# cluster's context itself, but when creation is skipped nothing does, and the
+# targets that follow would run against whatever context happens to be current.
 kind-create: ## Create a KinD cluster. IP_FAMILY=ipv4|ipv6|dual selects the cluster's IP family.
 	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || \
 		printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nnetworking:\n  ipFamily: $(IP_FAMILY)\n' | \
 		$(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION) --config -
+	$(KIND) export kubeconfig --name $(CLUSTER_NAME)
 
 CONFORMANCE_CHANNEL ?= experimental
 CONFORMANCE_VERSION ?= v1.6.1
@@ -1073,7 +1085,9 @@ endif
 
 .PHONY: metallb
 metallb: ## Install the MetalLB load balancer
-	IP_FAMILY=$(IP_FAMILY) ./hack/kind/setup-metalllb-on-kind.sh
+	IP_FAMILY=$(IP_FAMILY) CLUSTER_NAME=$(CLUSTER_NAME) \
+		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
+		./hack/kind/setup-metalllb-on-kind.sh
 
 .PHONY: cloud-provider-kind
 cloud-provider-kind:
@@ -1118,7 +1132,9 @@ undeploy-kgateway-crds: ## Undeploy the CRD chart from the cluster
 #----------------------------------------------------------------------------------
 
 kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
-	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} IP_FAMILY=$(IP_FAMILY) ./hack/kind/setup-kind.sh
+	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} IP_FAMILY=$(IP_FAMILY) \
+		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
+		./hack/kind/setup-kind.sh
 
 kind-load-%:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)

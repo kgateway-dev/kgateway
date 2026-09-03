@@ -32,12 +32,17 @@ LOCALSTACK="${LOCALSTACK:-false}"
 CLOUD_PROVIDER_KIND="${CLOUD_PROVIDER_KIND:-false}"
 # The IP family of the kind cluster: ipv4, ipv6, or dual.
 IP_FAMILY="${IP_FAMILY:-ipv4}"
+# Optional per-cluster MetalLB pool prefixes, needed only when running two kind
+# clusters at once; see setup-metalllb-on-kind.sh for the accepted forms.
+CLUSTER_SUBNET="${CLUSTER_SUBNET:-}"
+CLUSTER_SUBNET_V6="${CLUSTER_SUBNET_V6:-}"
 # Registry cache references for Docker builds (optional)
 ENVOYINIT_CACHE_REF="${ENVOYINIT_CACHE_REF:-}"
 CONTROLLER_CACHE_REF="${CONTROLLER_CACHE_REF:-}"
 SDS_CACHE_REF="${SDS_CACHE_REF:-}"
 
 export VERSION CLUSTER_NAME ENVOYINIT_CACHE_REF CONTROLLER_CACHE_REF SDS_CACHE_REF IP_FAMILY
+export CLUSTER_SUBNET CLUSTER_SUBNET_V6
 
 case "$IP_FAMILY" in
   ipv4|ipv6|dual) ;;
@@ -48,11 +53,15 @@ case "$IP_FAMILY" in
 esac
 
 function create_kind_cluster_or_skip() {
-  activeClusters=$($KIND get clusters)
-
-  # if the kind cluster exists already, return
-  if [[ "$activeClusters" =~ .*"$CLUSTER_NAME".* ]]; then
-    echo "cluster exists, skipping cluster creation"
+  # Match the whole line: a substring match treats "kind" as already created
+  # when only "kind-ipv6" exists, and everything below would then configure the
+  # wrong cluster. Separate IPv4 and IPv6 clusters make that easy to hit.
+  if $KIND get clusters | grep -qx "$CLUSTER_NAME"; then
+    echo "cluster $CLUSTER_NAME exists, skipping cluster creation"
+    # `kind create cluster` selects the new cluster's context itself; on this
+    # path nothing has, so the CRD, MetalLB and image-load steps below would
+    # run against whatever context happens to be current.
+    $KIND export kubeconfig --name "$CLUSTER_NAME"
     return
   fi
 
