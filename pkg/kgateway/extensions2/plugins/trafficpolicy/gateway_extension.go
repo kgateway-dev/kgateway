@@ -34,7 +34,11 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
-	// +krtEqualsTodo decide whether extension name should affect equality
+	// Name is this extension's KRT key, but it must still be compared: policy IRs embed a
+	// *TrafficPolicyGatewayExtensionIR and delegate to this Equals (see extauth/extproc/jwt/
+	// oauth2/global_rate_limit), and the name reaches the dataplane through providerName() as
+	// the ext_proc/ext_authz filter name and per-route typed-config key. Two identically
+	// configured extensions with different names produce different Envoy config.
 	Name             string
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
@@ -52,6 +56,9 @@ func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
+	if e.Name != other.Name {
+		return false
+	}
 	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
