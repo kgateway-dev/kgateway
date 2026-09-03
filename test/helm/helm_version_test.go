@@ -500,6 +500,20 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 101",
 		},
 		{
+			name: "rejects an oversized percentage",
+			valuesYAML: `controller:
+  goMemLimitPercent: "99999999999999999999"
+`,
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 99999999999999999999",
+		},
+		{
+			name: "rejects a percentage with leading zeros",
+			valuesYAML: `controller:
+  goMemLimitPercent: "007"
+`,
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 007",
+		},
+		{
 			name: "rejects a custom GOMEMLIMIT conflict",
 			valuesYAML: `controller:
   goMemLimitPercent: 80

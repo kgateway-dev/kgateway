@@ -84,7 +84,7 @@ controller:
   securityContext: null
   # -- Configure resource requests and limits for the controller container.
   resources: null
-  # -- Keep Go-runtime-managed memory at this percentage of the controller container's live cgroup memory limit. This limit does not account for memory allocated outside the Go runtime, so leave headroom for other container memory. The cgroup limit is refreshed every 30 seconds to follow in-place container resizes. Valid values are 1-100; 0 preserves the existing startup-time default of 100% of the container memory limit. 90 is the recommended starting point. A lower value such as 80 may be appropriate when significant memory is allocated outside the Go runtime or when additional OOM headroom is needed.
+  # -- Keep Go-runtime-managed memory at this percentage of the controller container's live cgroup memory limit. Memory used by Envoy subprocesses during strict validation is not covered by GOMEMLIMIT, so that configuration may require additional headroom. The cgroup limit is refreshed every 30 seconds to follow in-place container resizes. Valid values are 1-100. A value of 0 preserves the startup-time resourceFieldRef behavior, which uses the container memory limit when set and otherwise uses node allocatable memory. With a nonzero value and no finite cgroup limit, GOMEMLIMIT remains unconstrained and a warning is logged. 90 is the recommended starting point. A lower value such as 80 may be appropriate when significant memory is allocated outside the Go runtime or when additional OOM headroom is needed.
   goMemLimitPercent: 0
   # -- Set node selector labels for controller pod scheduling.
   nodeSelector: null

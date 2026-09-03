@@ -27,7 +27,8 @@ var logger = logging.New("go-runtime")
 // ConfigureMemoryLimit configures the Go runtime memory limit from the
 // container's live cgroup memory limit when AUTOMEMLIMIT is set. The cgroup is
 // polled so in-place container memory resizes are reflected without restarting
-// the process. An explicit GOMEMLIMIT takes precedence in automemlimit.
+// the process. AUTOMEMLIMIT and GOMEMLIMIT follow memlimit.Set's environment
+// variable semantics, including precedence for an explicit GOMEMLIMIT.
 func ConfigureMemoryLimit(ctx context.Context) error {
 	return configureMemoryLimit(ctx, memlimit.FromCgroup, refreshInterval)
 }

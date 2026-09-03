@@ -27,6 +27,39 @@ func TestConfigureMemoryLimitIsOptIn(t *testing.T) {
 	require.False(t, called)
 }
 
+func TestAutomemlimitEnvironmentContract(t *testing.T) {
+	t.Run("ratio", func(t *testing.T) {
+		unsetEnv(t, goMemoryLimitEnv)
+		t.Setenv(AutoMemoryLimitEnv, "0.25")
+		restoreMemoryLimit(t)
+
+		limit, err := memlimit.Set(memlimit.WithProvider(memlimit.Limit(1_000)))
+
+		require.NoError(t, err)
+		require.Equal(t, int64(250), limit)
+		require.Equal(t, int64(250), debug.SetMemoryLimit(-1))
+	})
+
+	t.Run("off", func(t *testing.T) {
+		unsetEnv(t, goMemoryLimitEnv)
+		t.Setenv(AutoMemoryLimitEnv, "off")
+		restoreMemoryLimit(t)
+		const initialLimit = int64(1 << 30)
+		debug.SetMemoryLimit(initialLimit)
+
+		called := false
+		limit, err := memlimit.Set(memlimit.WithProvider(func() (uint64, error) {
+			called = true
+			return 1_000, nil
+		}))
+
+		require.NoError(t, err)
+		require.Equal(t, initialLimit, limit)
+		require.Equal(t, initialLimit, debug.SetMemoryLimit(-1))
+		require.False(t, called)
+	})
+}
+
 func TestConfigureMemoryLimitRefreshesFromProvider(t *testing.T) {
 	unsetEnv(t, "GOMEMLIMIT")
 	t.Setenv(AutoMemoryLimitEnv, "0.5")

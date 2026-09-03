@@ -9,13 +9,10 @@
 {{- $rawGoMemLimitPercent = 0 }}
 {{- end }}
 {{- $invalidGoMemLimitPercent := printf "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got %v" $rawGoMemLimitPercent }}
-{{- if not (regexMatch "^[0-9]+$" (printf "%v" $rawGoMemLimitPercent)) }}
+{{- if not (regexMatch "^(0|[1-9][0-9]?|100)$" (printf "%v" $rawGoMemLimitPercent)) }}
 {{- fail $invalidGoMemLimitPercent }}
 {{- end }}
 {{- $goMemLimitPercent := int $rawGoMemLimitPercent }}
-{{- if gt $goMemLimitPercent 100 }}
-{{- fail $invalidGoMemLimitPercent }}
-{{- end }}
 {{- $hasCustomGoMemLimit := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "GOMEMLIMIT") }}
 {{- $hasCustomAutoMemoryLimit := and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "AUTOMEMLIMIT") }}
 {{- if and (ne $goMemLimitPercent 0) $hasCustomGoMemLimit }}
