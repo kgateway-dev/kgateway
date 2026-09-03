@@ -879,7 +879,9 @@ func (tc TestCase) Run(
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				// In strict mode, backend validation errors are expected and should not fail the test.
+				// Errored translations (including strict-mode validation failures) are
+				// skipped rather than failing the test: snapshotPerClient omits errored
+				// clusters from CDS, so the golden output must omit them too.
 				cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
 				if err != nil {
 					continue
