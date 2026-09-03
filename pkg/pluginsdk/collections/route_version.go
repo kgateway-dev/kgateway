@@ -16,11 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
-
-var logger = logging.New("pluginsdk/collections")
 
 const (
 	// crdLookupTimeout bounds a single read of the served versions.

@@ -245,6 +245,7 @@ metadata:
     gateway.networking.k8s.io/gateway-class-name: kgateway-waypoint
     gateway.networking.k8s.io/gateway-name: waypoint
     kgateway: kube-gateway
+    kgateway.dev/watch: "true"
   name: waypoint
 ---
 apiVersion: v1

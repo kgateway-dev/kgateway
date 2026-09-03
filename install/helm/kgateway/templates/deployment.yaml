@@ -149,6 +149,16 @@ spec:
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
               value: {{ .Values.serviceEntriesExclusionLabelSelectors | toJson | quote }}
+            {{- $secretDiscoveryMode := include "kgateway.discoveryMode" (dict "value" (dig "secrets" "mode" "ALL" (.Values.discovery | default dict)) "field" "discovery.secrets.mode") }}
+            {{- if ne $secretDiscoveryMode "ALL" }}
+            - name: KGW_SECRET_DISCOVERY_MODE
+              value: {{ $secretDiscoveryMode | quote }}
+            {{- end }}
+            {{- $configMapDiscoveryMode := include "kgateway.discoveryMode" (dict "value" (dig "configMaps" "mode" "ALL" (.Values.discovery | default dict)) "field" "discovery.configMaps.mode") }}
+            {{- if ne $configMapDiscoveryMode "ALL" }}
+            - name: KGW_CONFIG_MAP_DISCOVERY_MODE
+              value: {{ $configMapDiscoveryMode | quote }}
+            {{- end }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE
