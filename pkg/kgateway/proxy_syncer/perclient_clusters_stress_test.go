@@ -64,9 +64,12 @@ func (s *stressUccSource) del(rn string) {
 }
 
 // A stable client must retain a complete CDS view while unrelated clients
-// continuously connect, disconnect, and change a capability that overlays may
-// inspect. This asserts availability during churn, not merely eventual recovery
-// after the input settles.
+// continuously connect, disconnect, and flip KnowsLocalCluster — an in-place
+// identity change that fails UniquelyConnectedClient.Equals without changing the
+// KRT key, so every flip replaces the resolved client snapshot the delta sets
+// carry. (The fixture registers no overlay; what is under test is the resolution
+// fence, not an overlay branch.) This asserts availability during churn, not
+// merely eventual recovery after the input settles.
 func TestPerClientClusters_UnrelatedTriggerChurnNeverWithholdsStableClient(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)

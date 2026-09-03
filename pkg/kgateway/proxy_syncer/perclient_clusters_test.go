@@ -180,6 +180,9 @@ func TestPerClientClusters_ReAddClientKeepsRows(t *testing.T) {
 	)
 	eventuallyClusterCount(t, clusters, b, 2)
 	uccs.DeleteObject(b.ResourceName())
+	// Observe the disconnect before reconnecting, so the delete and the re-add
+	// cannot coalesce into a no-op and skip the reconnect path under test.
+	eventuallyClusterCount(t, clusters, b, 0)
 	uccs.UpdateObject(b)
 	eventuallyClusterCount(t, clusters, b, 2)
 	eventuallyClusterCount(t, clusters, a, 2)

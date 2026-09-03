@@ -104,10 +104,6 @@ type uccClusterDelta struct {
 	Error error
 }
 
-func (d uccClusterDelta) ResourceName() string {
-	return uccClusterResourceName(d.Client, d.Name)
-}
-
 func (d uccClusterDelta) Equals(in uccClusterDelta) bool {
 	return d.Client.Equals(in.Client) &&
 		d.Name == in.Name &&
@@ -115,12 +111,13 @@ func (d uccClusterDelta) Equals(in uccClusterDelta) bool {
 		errString(d.Error) == errString(in.Error)
 }
 
-// uccClusterResourceName builds the per-client identity key for a cluster.
-// Deltas are not KRT rows — they live in a map keyed by UCC name inside
-// backendClusterDeltaSet — and the uccWithCluster rows that are (the status
-// collection) are rebuilt per event, so there is nothing to cache the key on the
-// way UccWithEndpoints does. Plain concatenation is still ~2.5x cheaper than
-// fmt.Sprintf on these key shapes and allocates once instead of three times.
+// uccClusterResourceName builds the per-client identity key for a uccWithCluster
+// row. Deltas are not KRT rows — they live in a map keyed by UCC name inside
+// backendClusterDeltaSet and need no key of their own — and the uccWithCluster
+// rows that are (the status collection) are rebuilt per event, so there is
+// nothing to cache the key on the way UccWithEndpoints does. Plain concatenation
+// is still ~2.5x cheaper than fmt.Sprintf on these key shapes and allocates once
+// instead of three times.
 func uccClusterResourceName(client ir.UniquelyConnectedClient, name string) string {
 	return client.ResourceName() + "/" + name
 }
@@ -193,7 +190,8 @@ func newClientInputSnapshotWithFingerprint(
 	ordered := slices.Clone(clients)
 	for i := range ordered {
 		// UCCs are values except for Labels. Clone that map so a plugin cannot
-		// mutate the resolution proof retained by every backend set.
+		// mutate the resolution proof retained by every backend set. Clients and
+		// byName below share these clones; both are immutable after construction.
 		ordered[i].Labels = maps.Clone(ordered[i].Labels)
 	}
 	slices.SortFunc(ordered, func(a, b ir.UniquelyConnectedClient) int {
@@ -201,9 +199,7 @@ func newClientInputSnapshotWithFingerprint(
 	})
 	byName := make(map[string]ir.UniquelyConnectedClient, len(ordered))
 	for _, client := range ordered {
-		proof := client
-		proof.Labels = maps.Clone(client.Labels)
-		byName[client.ResourceName()] = proof
+		byName[client.ResourceName()] = client
 	}
 	return clientInputSnapshot{
 		Fingerprint: fingerprint,
