@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -12,8 +13,10 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -287,7 +290,7 @@ func TestValidateRouteStrictInvalidGeneratedRegexMatcher(t *testing.T) {
 	}
 }
 
-func TestComputeVirtualHostStrictBatchesFullRouteValidation(t *testing.T) {
+func TestComputeRouteConfigurationStrictBatchesFullRouteValidation(t *testing.T) {
 	calls := 0
 	var routeCounts []int
 	v := &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
@@ -297,21 +300,22 @@ func TestComputeVirtualHostStrictBatchesFullRouteValidation(t *testing.T) {
 	}}
 	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
 
-	out := h.computeVirtualHost(context.Background(), &ir.VirtualHost{
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
 		Name:     "test-vhost",
 		Hostname: "example.com",
 		Rules: []ir.HttpRouteRuleMatchIR{
 			testRouteIR(0, "/one", "cluster-one"),
 			testRouteIR(1, "/two", "cluster-two"),
 		},
-	})
+	}})
 
-	require.Len(t, out.GetRoutes(), 2)
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	require.Len(t, cfg.GetVirtualHosts()[0].GetRoutes(), 2)
 	assert.Equal(t, 1, calls)
 	assert.Equal(t, []int{2}, routeCounts)
 }
 
-func TestComputeVirtualHostStrictIsolatesInvalidRouteAfterBatchFailure(t *testing.T) {
+func TestComputeRouteConfigurationStrictIsolatesInvalidRouteAfterBatchFailure(t *testing.T) {
 	calls := 0
 	var routeCounts []int
 	v := &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
@@ -344,21 +348,215 @@ func TestComputeVirtualHostStrictIsolatesInvalidRouteAfterBatchFailure(t *testin
 	}}
 	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
 
-	out := h.computeVirtualHost(context.Background(), &ir.VirtualHost{
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
 		Name:     "test-vhost",
 		Hostname: "example.com",
 		Rules: []ir.HttpRouteRuleMatchIR{
 			testRouteIR(0, "/one", "cluster-one"),
 			testRouteIR(1, "/two", "cluster-two"),
 		},
-	})
+	}})
 
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	out := cfg.GetVirtualHosts()[0]
 	require.Len(t, out.GetRoutes(), 2)
 	_, ok := out.GetRoutes()[0].GetAction().(*envoyroutev3.Route_Route)
 	assert.True(t, ok)
 	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
 	assert.True(t, ok)
 	assert.Equal(t, []int{2, 1, 1, 1, 2}, routeCounts)
+}
+
+type routeConfigPassFunc struct {
+	ir.UnimplementedProxyTranslationPass
+	apply func(*envoyroutev3.RouteConfiguration)
+}
+
+func (p routeConfigPassFunc) ApplyRouteConfigPlugin(_ *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+	p.apply(out)
+}
+
+func attachRouteConfigPass(h *httpRouteConfigurationTranslator, pass ir.ProxyTranslationPass) {
+	gk := schema.GroupKind{Group: "test", Kind: "RCPolicy"}
+	h.pluginPass = TranslationPassPlugins{gk: &TranslationPass{ProxyTranslationPass: pass}}
+	h.attachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+		gk: {{GroupKind: gk}},
+	}}
+}
+
+func invalidClusterValidator(t *testing.T, marker string) *routeMockValidator {
+	t.Helper()
+	return &routeMockValidator{validateFunc: func(_ context.Context, config *envoybootstrapv3.Bootstrap) error {
+		for _, r := range routesFromValidationBootstrap(t, config) {
+			if strings.Contains(r.GetRoute().GetCluster(), marker) {
+				return errors.New("invalid route action injected by route-config-scope plugin")
+			}
+		}
+		return nil
+	}}
+}
+
+// TestComputeRouteConfigurationValidatesRouteConfigScopeMutations is the regression guard for the
+// validate-at-the-sink fix: a RouteConfig-scope plugin runs after the vhosts (and their routes) are
+// computed and mutates a route. Strict validation must run after that phase and isolate the now-invalid
+// route. If validation were performed earlier (e.g. inside computeVirtualHost, before the
+// RouteConfig-scope plugin loop) the mutation would slip through unvalidated and this test would fail.
+func TestComputeRouteConfigurationValidatesRouteConfigScopeMutations(t *testing.T) {
+	const marker = "rc-scope-invalid"
+	v := invalidClusterValidator(t, marker)
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		route := out.GetVirtualHosts()[0].GetRoutes()[1]
+		route.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1)
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2)
+	_, ok := out.GetRoutes()[0].GetAction().(*envoyroutev3.Route_Route)
+	assert.True(t, ok, "untouched route should be preserved")
+	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route mutated to be invalid by a RouteConfig-scope plugin must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeRouteReplacements(t *testing.T) {
+	const marker = "rc-scope-replacement-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		vhost := out.GetVirtualHosts()[0]
+		replacement := proto.Clone(vhost.GetRoutes()[1]).(*envoyroutev3.Route)
+		replacement.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		vhost.Routes[1] = replacement
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2, "expected route replacement to preserve the route count")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route pointer replaced by a RouteConfig-scope plugin must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeAppendedRoutes(t *testing.T) {
+	const marker = "rc-scope-appended-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		vhost := out.GetVirtualHosts()[0]
+		appended := proto.Clone(vhost.GetRoutes()[1]).(*envoyroutev3.Route)
+		appended.Name = "appended-route"
+		appended.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		vhost.Routes = append(vhost.Routes, appended)
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 3, "plugin-appended routes should not be dropped during isolation")
+	_, ok := out.GetRoutes()[2].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "plugin-appended invalid route must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeVirtualHostReplacements(t *testing.T) {
+	const marker = "rc-scope-vhost-replacement-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		replacement := proto.Clone(out.GetVirtualHosts()[0]).(*envoyroutev3.VirtualHost)
+		replacement.GetRoutes()[1].GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		out.VirtualHosts[0] = replacement
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2, "expected virtual host replacement to preserve the route count")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route inside a replaced virtual host must be isolated")
+}
+
+func TestComputeRouteConfigurationValidatesRouteConfigScopeAppendedVirtualHosts(t *testing.T) {
+	const marker = "rc-scope-appended-vhost-invalid"
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		appended := proto.Clone(out.GetVirtualHosts()[0]).(*envoyroutev3.VirtualHost)
+		appended.Name = "appended-vhost"
+		appended.Domains = []string{"appended.example.com"}
+		appended.GetRoutes()[1].GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		out.VirtualHosts = append(out.VirtualHosts, appended)
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 2, "plugin-appended virtual hosts should not be dropped")
+	out := cfg.GetVirtualHosts()[1]
+	require.Len(t, out.GetRoutes(), 2, "expected appended virtual host routes to be preserved")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "route inside a plugin-appended virtual host must be isolated")
+}
+
+func TestComputeRouteConfigurationStandardValidatesRouteConfigScopeMutations(t *testing.T) {
+	v := &routeMockValidator{validateFunc: func(context.Context, *envoybootstrapv3.Bootstrap) error {
+		t.Fatal("standard validation should not invoke Envoy validation")
+		return nil
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStandard)
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(out *envoyroutev3.RouteConfiguration) {
+		out.GetVirtualHosts()[0].GetRoutes()[1].GetRoute().PrefixRewrite = "/foo//bar"
+	}})
+
+	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
+		Name:     "test-vhost",
+		Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{
+			testRouteIR(0, "/one", "cluster-one"),
+			testRouteIR(1, "/two", "cluster-two"),
+		},
+	}})
+
+	require.Len(t, cfg.GetVirtualHosts(), 1, "expected one virtual host")
+	out := cfg.GetVirtualHosts()[0]
+	require.Len(t, out.GetRoutes(), 2, "expected route replacement to preserve the route count")
+	_, ok := out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
+	assert.True(t, ok, "standard validation should isolate invalid RouteConfig-scope mutations")
 }
 
 func refFor(name string) *ir.AttachedPolicyRef {
