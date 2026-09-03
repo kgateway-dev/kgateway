@@ -437,19 +437,21 @@ func inlineRedirectOverlay(gk schema.GroupKind) map[schema.GroupKind]sdk.PolicyP
 	return map[schema.GroupKind]sdk.PolicyPlugin{
 		gk: {
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return &sdk.ClusterOverlay{
-					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}
-						out.EdsClusterConfig = nil
-						out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
-							ClusterName: out.GetName(),
-							Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
-								{LbEndpoints: []*envoyendpointv3.LbEndpoint{pipeEndpoint("redirect")}},
-							},
-						}
-					},
-				}
+				return &sdk.ClusterOverlay{Mutate: redirectToInlineCLA}
 			},
+		},
+	}
+}
+
+// redirectToInlineCLA is the mutation behind inlineRedirectOverlay, exposed so
+// tests can compose it with further CommonLbConfig edits.
+func redirectToInlineCLA(out *envoyclusterv3.Cluster) {
+	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}
+	out.EdsClusterConfig = nil
+	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
+		ClusterName: out.GetName(),
+		Endpoints: []*envoyendpointv3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoyendpointv3.LbEndpoint{pipeEndpoint("redirect")}},
 		},
 	}
 }
@@ -570,4 +572,157 @@ func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
 			},
 		},
 	}
+}
+
+// TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable pins the
+// compatibility adapter for the deprecated PerClientProcessBackend hook. A legacy
+// hook cannot report a no-op, so the framework treats it as applicable to every
+// client: it must not run during base translation, it must force a per-client
+// cluster to materialize, and it must receive a clone rather than the shared base.
+func TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable(t *testing.T) {
+	legacyGK := schema.GroupKind{Group: "test", Kind: "Legacy"}
+	calls := 0
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		legacyGK: {
+			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
+				calls++
+				out.AltStatName = "legacy-" + ucc.Role
+			},
+		},
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+	require.Equal(t, 0, calls, "a per-client hook must not run during base translation")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient, "a legacy hook cannot decline, so every client must materialize a cluster")
+	assert.Equal(t, 1, calls, "the legacy hook must run exactly once per client")
+	assert.Equal(t, "legacy-role", perClient.GetAltStatName(), "the legacy hook's mutation must land on the per-client cluster")
+	assert.NotSame(t, base.Cluster, perClient)
+	assert.Empty(t, base.Cluster.GetAltStatName(), "the legacy hook must have mutated a clone, not the shared base")
+}
+
+// TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook: a plugin that
+// registers both hooks is treated as migrated. Only PerClientClusterOverlay runs,
+// so its nil (decline) is honored instead of being overridden by the
+// always-applicable legacy adapter, and the pair keeps the sparse fast path.
+func TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook(t *testing.T) {
+	gk := schema.GroupKind{Group: "test", Kind: "Migrated"}
+	legacyCalls := 0
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		gk: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return nil
+			},
+			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
+				legacyCalls++
+			},
+		},
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	assert.Nil(t, perClient, "the migrated hook declined, so the pair must take the fast path")
+	assert.Equal(t, 0, legacyCalls, "the legacy hook must not run when the plugin also registers PerClientClusterOverlay")
+}
+
+// TestApplyPerClient_AppliesOverlaysInGroupKindOrder: ContributedPolicies is a
+// map, so the gather order is random. When more than one overlay applies to a
+// pair they must run in (Group, Kind) order, so the resulting proto — and its
+// content hash, which drives KRT equality and delta interning — is identical on
+// every recompute. Three overlays record their application order and write the
+// same field; the sorted order, and therefore the last writer, must be stable
+// across enough repetitions to observe any map-order dependence.
+func TestApplyPerClient_AppliesOverlaysInGroupKindOrder(t *testing.T) {
+	var applied []string
+	writer := func(value string) sdk.PolicyPlugin {
+		return sdk.PolicyPlugin{
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						applied = append(applied, value)
+						out.AltStatName = value
+					},
+				}
+			},
+		}
+	}
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "b.example", Kind: "Alpha"}: writer("b.example/Alpha"),
+		{Group: "a.example", Kind: "Zulu"}:  writer("a.example/Zulu"),
+		{Group: "a.example", Kind: "Beta"}:  writer("a.example/Beta"),
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	want := []string{"a.example/Beta", "a.example/Zulu", "b.example/Alpha"}
+	for i := range 50 {
+		applied = applied[:0]
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		require.Equal(t, want, applied, "iteration %d: overlays must be applied in (Group, Kind) order", i)
+		require.Equal(t, want[len(want)-1], perClient.GetAltStatName(),
+			"iteration %d: the last overlay in (Group, Kind) order must win", i)
+	}
+}
+
+// TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay: the locality undo
+// drops CommonLbConfig only when defaultLocalityConfig allocated it and nothing
+// else populated it. An overlay that inlines the CLA and also sets another
+// CommonLbConfig field (destrule's outlier detection sets HealthyPanicThreshold
+// this way) must keep that field — only the defaulted specifier is reverted.
+func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						redirectToInlineCLA(out)
+						if out.CommonLbConfig == nil {
+							out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
+						}
+						out.CommonLbConfig.IgnoreNewHostsUntilFirstHc = true
+					},
+				}
+			},
+		},
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+	require.True(t, base.DefaultedLocalityConfig, "precondition: the EDS base defaulted the locality mode")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient)
+
+	require.NotNil(t, perClient.GetCommonLbConfig(), "CommonLbConfig carries an overlay-set field and must be kept")
+	assert.Nil(t, perClient.GetCommonLbConfig().GetLocalityConfigSpecifier(),
+		"only the defaulted locality specifier is reverted")
+	assert.True(t, perClient.GetCommonLbConfig().GetIgnoreNewHostsUntilFirstHc(),
+		"the overlay's own CommonLbConfig field must survive the undo")
 }

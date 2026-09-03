@@ -59,12 +59,14 @@ func TestClusterOverlay_NilWhenNoDestinationRule(t *testing.T) {
 }
 
 // TestClusterOverlay_NilWhenNoOutlierDetection: a matching destination rule with
-// no outlier detection must still return nil. The overlay's gate mirrors the
-// mutation it would perform — outlier detection is the only cluster-level change
-// — so a DR without it contributes nothing per client.
+// no outlier detection must still return nil. Outlier detection gates every
+// cluster-level change the plugin makes (outlier detection itself, locality LB
+// config, and TCP keepalive are all applied only when it is present, matching the
+// pre-overlay processBackend), so a DR without it contributes nothing per client.
 func TestClusterOverlay_NilWhenNoOutlierDetection(t *testing.T) {
 	d := newDestrulePlugin(t, destRule("dr", &v1alpha3.TrafficPolicy{
-		// LoadBalancer/locality settings only affect endpoints, not the cluster overlay.
+		// Locality settings alone reach the cluster only alongside outlier detection;
+		// on their own they affect endpoint prioritization, not the cluster overlay.
 		LoadBalancer: &v1alpha3.LoadBalancerSettings{
 			LocalityLbSetting: &v1alpha3.LocalityLoadBalancerSetting{},
 		},

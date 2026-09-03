@@ -555,12 +555,20 @@ func TestApplyPerClient_StrictModeRejectsInvalidOverlay(t *testing.T) {
 	require.Error(t, err, "strict-mode validation must reject invalid overlay output")
 	assert.Contains(t, err.Error(), "overlay produced invalid cluster")
 	require.NotNil(t, cluster, "must return a blackhole cluster so the snapshot can mark it errored")
-	assert.Equal(t, envoyclusterv3.Cluster_STATIC, cluster.GetType(),
-		"errored per-client cluster should be the blackhole STATIC cluster")
+	// GetType() reports STATIC for an unset discovery type too, so check the
+	// fields that actually distinguish the blackhole from the rejected overlay
+	// output: the overlay's mutation must be gone and the blackhole's explicit
+	// STATIC type plus empty inline CLA must be present.
+	assert.Nil(t, cluster.GetOutlierDetection(), "the blackhole must not carry the rejected overlay mutation")
+	require.NotNil(t, cluster.GetClusterDiscoveryType(), "the blackhole sets an explicit discovery type")
+	assert.Equal(t, envoyclusterv3.Cluster_STATIC, cluster.GetType())
+	require.NotNil(t, cluster.GetLoadAssignment(), "the blackhole carries an empty inline CLA")
+	assert.Empty(t, cluster.GetLoadAssignment().GetEndpoints())
 }
 
 // TestApplyPerClient_StrictModePassesValidOverlay confirms the validator is
-// invoked on overlay output but does not reject when the result is valid.
+// invoked on the post-overlay cluster — not just invoked a second time — and
+// does not reject when the result is valid.
 func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "core",
@@ -575,7 +583,9 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 
 	overlayGK := schema.GroupKind{Group: "test", Kind: "MarkerOverlay"}
 
-	var validatorCalls int
+	// Each validation submits one cluster; record them so the test can check
+	// what was validated, not merely how often.
+	var validated []*envoyclusterv3.Cluster
 	var bt irtranslator.BackendTranslator
 	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
 		{Group: "core", Kind: "Service"}: {
@@ -598,7 +608,7 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = &mockValidator{
 		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-			validatorCalls++
+			validated = append(validated, config.GetStaticResources().GetClusters()...)
 			return nil
 		},
 	}
@@ -607,14 +617,17 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	base := bt.TranslateBackendBase(ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
-	require.Equal(t, 1, validatorCalls, "base translation must invoke the validator once")
+	require.Len(t, validated, 1, "base translation must invoke the validator once")
+	assert.Nil(t, validated[0].GetOutlierDetection(), "the base is validated before any overlay runs")
 
 	cluster, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ir.UniquelyConnectedClient{}, backend, base)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.NotNil(t, cluster.OutlierDetection, "overlay mutation must be retained on the returned cluster")
-	assert.Equal(t, 2, validatorCalls,
+	require.Len(t, validated, 2,
 		"strict mode must invoke the validator a second time on the post-overlay cluster")
+	assert.NotNil(t, validated[1].GetOutlierDetection(),
+		"the second validation must see the overlay's mutation, i.e. the complete per-client cluster")
 }
 
 // TestTranslateBackendBase_StrictModeDefersValidationForInlineCLA is a
