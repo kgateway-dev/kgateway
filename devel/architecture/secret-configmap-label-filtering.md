@@ -10,16 +10,19 @@ Two opt-in settings switch each kind to a labeled-only watch:
 
 | Setting | Env var | Helm value |
 | --- | --- | --- |
-| `SecretDiscoveryMode` | `KGW_SECRET_DISCOVERY_MODE` | `secretDiscoveryMode` |
-| `ConfigMapDiscoveryMode` | `KGW_CONFIG_MAP_DISCOVERY_MODE` | `configMapDiscoveryMode` |
+| `SecretDiscoveryMode` | `KGW_SECRET_DISCOVERY_MODE` | `discovery.secrets.mode` |
+| `ConfigMapDiscoveryMode` | `KGW_CONFIG_MAP_DISCOVERY_MODE` | `discovery.configMaps.mode` |
 
 Both accept `ALL` (default, current behavior) or `LABELED`, and are validated at startup and
 at chart render time.
 
 ```yaml
 # values.yaml
-secretDiscoveryMode: LABELED
-configMapDiscoveryMode: LABELED
+discovery:
+  secrets:
+    mode: LABELED
+  configMaps:
+    mode: LABELED
 ```
 
 In `LABELED` mode kgateway watches only objects carrying:

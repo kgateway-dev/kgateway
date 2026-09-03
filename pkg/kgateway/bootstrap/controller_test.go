@@ -54,7 +54,7 @@ func TestReconcileCreatesHMACSecretWithWatchLabel(t *testing.T) {
 		Get(t.Context(), wellknown.OAuth2HMACSecret.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	// Without this label the Secrets collection could not read back the key that kgateway
-	// just created for itself when secretDiscoveryMode is LABELED. It is applied in every
+	// just created for itself when discovery.secrets.mode is LABELED. It is applied in every
 	// mode so that switching modes needs no migration.
 	require.Equal(t, watchLabel, created.Labels)
 	require.NotEmpty(t, created.Data[wellknown.OAuth2HMACSecretKey])

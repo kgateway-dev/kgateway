@@ -131,7 +131,7 @@ func ourPolicies(commoncol *collections.CommonCollections) krt.Collection[ir.Pol
 	// namespaces, and honor the install's ConfigMap discovery mode. A plugin that opens its own
 	// watch must apply the same label selector as the rest of kgateway: informers are shared per
 	// {type, labelSelector, fieldSelector}, so an unfiltered watch here would not reuse the
-	// narrowed cache, it would add a second cluster-wide one and negate configMapDiscoveryMode
+	// narrowed cache, it would add a second cluster-wide one and negate discovery.configMaps.mode
 	// entirely. Plugins that only need to read ConfigMaps should use commoncol.ConfigMaps instead
 	// of building their own client.
 	filter := kclient.Filter{

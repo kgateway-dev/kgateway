@@ -12,7 +12,7 @@ metadata:
   labels:
     {{- include "kgateway.gateway.allLabels" . | nindent 4 }}
     # Marks this ConfigMap as one kgateway watches, so that the control plane still sees it
-    # when configMapDiscoveryMode is LABELED. Keep in sync with wellknown.WatchLabel.
+    # when discovery.configMaps.mode is LABELED. Keep in sync with wellknown.WatchLabel.
     kgateway.dev/watch: "true"
 data:
 {{- if and $gateway.xds.tls $gateway.xds.tls.enabled }}
