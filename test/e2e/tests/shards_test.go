@@ -26,6 +26,7 @@ type workflowConfig struct {
 
 var e2eTestsNotRequiredInPRShards = map[string]string{
 	"TestKgateway/AttachedRoutes": "load tests run in the dedicated nightly load-test workflow",
+	"TestKgateway/StrictChurn":    "opt-in load test mutates the controller deployment and runs manually",
 	"TestZoneAwareRouting":        "requires a multi-zone multi-worker kind cluster; check guide to run manually",
 }
 
