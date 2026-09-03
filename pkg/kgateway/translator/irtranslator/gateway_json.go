@@ -46,6 +46,14 @@ func (tr *TranslationResult) MarshalJSON() ([]byte, error) {
 		result["ExtraClusters"] = clusters
 	}
 
+	if len(tr.Secrets) > 0 {
+		secrets, err := marshalProtoMessages(tr.Secrets, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Secrets"] = secrets
+	}
+
 	// Marshal the result map to JSON
 	return json.Marshal(result)
 }
