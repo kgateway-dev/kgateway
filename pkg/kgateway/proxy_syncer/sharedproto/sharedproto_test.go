@@ -72,6 +72,13 @@ func TestCloneIsIndependent(t *testing.T) {
 	assert.Nil(t, cluster.GetOutlierDetection())
 }
 
+func TestCloneEmptyReturnsZeroValue(t *testing.T) {
+	var zero Shared[*envoyclusterv3.Cluster]
+	require.Nil(t, zero.Clone(), "cloning a zero-value wrapper must return the message zero value")
+	require.Nil(t, Wrap[*envoyclusterv3.Cluster](nil).Clone(),
+		"cloning a wrapped typed-nil must return the message zero value")
+}
+
 func TestBorrowForReadAliasesAndStaysCovered(t *testing.T) {
 	withAssertions(t, true)
 	cluster := &envoyclusterv3.Cluster{Name: "shared"}
