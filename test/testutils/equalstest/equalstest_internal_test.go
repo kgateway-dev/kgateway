@@ -109,3 +109,29 @@ func TestUncoveredFields_UnexportedIncludedWhenRequested(t *testing.T) {
 		}
 	}
 }
+
+func TestMutationChanged(t *testing.T) {
+	type withProto struct {
+		Msg  *EmbeddedBase // stands in for a pointer-typed field
+		Name string
+	}
+	cases := []struct {
+		name       string
+		orig, mut  any
+		wantChange bool
+	}{
+		{"noop scalar", internalFixture{Plain: "a"}, internalFixture{Plain: "a"}, false},
+		{"changed scalar", internalFixture{Plain: "a"}, internalFixture{Plain: "b"}, true},
+		{"noop embedded", internalFixture{EmbeddedBase: EmbeddedBase{Embedded: "x"}}, internalFixture{EmbeddedBase: EmbeddedBase{Embedded: "x"}}, false},
+		{"changed embedded", internalFixture{EmbeddedBase: EmbeddedBase{Embedded: "x"}}, internalFixture{EmbeddedBase: EmbeddedBase{Embedded: "y"}}, true},
+		{"distinct pointers, equal pointees", withProto{Msg: &EmbeddedBase{Embedded: "x"}}, withProto{Msg: &EmbeddedBase{Embedded: "x"}}, false},
+		{"nil to non-nil pointer", withProto{}, withProto{Msg: &EmbeddedBase{}}, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := mutationChanged(c.orig, c.mut); got != c.wantChange {
+				t.Errorf("mutationChanged() = %v, want %v", got, c.wantChange)
+			}
+		})
+	}
+}

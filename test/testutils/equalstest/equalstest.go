@@ -37,7 +37,10 @@ type Case[T any] struct {
 // Run builds two fresh instances via base() for each case, applies
 // Mutate to one, and asserts:
 //  1. base().Equals(base()) is true (reflexivity on identical values)
-//  2. after mutation, Equals is false in both directions (detection + symmetry)
+//  2. Mutate actually changed the value, so a broken mutator is reported as such
+//     instead of being blamed on Equals
+//  3. after mutation, Equals is false, and agrees in both directions (detection +
+//     symmetry)
 //
 // It then reflects over T's exported fields (flattening embedded structs one
 // level) and fails if any field name is neither covered by a Case nor listed
@@ -71,12 +74,29 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 			mutated := base()
 			c.Mutate(&mutated)
 
-			if equals(orig, mutated) {
-				t.Errorf("Equals returned true after mutating field %q; Equals must detect this change", c.Field)
+			// Precondition: Mutate must actually have changed something, otherwise
+			// the case below would blame Equals for a broken mutator. DeepEqual is
+			// used only to detect "nothing changed at all": over-reporting a
+			// difference (as it may for independently built protos) is harmless
+			// here, and it never reports two genuinely different values as equal.
+			if !mutationChanged(orig, mutated) {
+				t.Fatalf(
+					"Mutate for field %q left the value unchanged, so this case tests nothing; "+
+						"fix the mutator (or the base() factory, if it now returns the mutated value)",
+					c.Field,
+				)
 			}
-			// Symmetry: a.Equals(b) must equal b.Equals(a)
-			if equals(mutated, orig) {
-				t.Errorf("Equals is not symmetric: Equals(orig, mutated)=false but Equals(mutated, orig)=true for field %q", c.Field)
+
+			fwd := equals(orig, mutated)
+			rev := equals(mutated, orig)
+			if fwd != rev {
+				t.Errorf(
+					"Equals is not symmetric for field %q: Equals(orig, mutated)=%v but Equals(mutated, orig)=%v",
+					c.Field, fwd, rev,
+				)
+			}
+			if fwd {
+				t.Errorf("Equals returned true after mutating field %q; Equals must detect this change", c.Field)
 			}
 		})
 	}
@@ -107,6 +127,15 @@ func Run[T any](t *testing.T, base func() T, equals func(a, b T) bool, cases []C
 			missing,
 		)
 	}
+}
+
+// mutationChanged reports whether Mutate actually altered the value. DeepEqual is
+// used only as a "nothing changed at all" detector: for types holding
+// independently built protos it may report a difference that proto.Equal would
+// call equal, which is harmless here, and it never reports two genuinely
+// different values as identical.
+func mutationChanged(orig, mutated any) bool {
+	return !reflect.DeepEqual(orig, mutated)
 }
 
 // uncoveredFields returns the exported field names of typ that are not present
