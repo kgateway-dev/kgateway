@@ -56,6 +56,14 @@ Listeners:
             domain: api-gateway
             enableXRatelimitHeaders: DRAFT_VERSION_03
             failureModeDeny: true
+            filterEnabled:
+              defaultValue:
+                numerator: 100
+              runtimeKey: ratelimit.default.full-ratelimit.filter_enabled
+            filterEnforced:
+              defaultValue:
+                numerator: 25
+              runtimeKey: ratelimit.default.full-ratelimit.filter_enforced
             rateLimitService:
               grpcService:
                 envoyGrpc:
