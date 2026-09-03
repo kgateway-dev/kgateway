@@ -915,9 +915,9 @@ func (tc TestCase) Run(
 	return results, nil
 }
 
-// translateBackendForGolden selects the same base or per-client cluster that
-// the production sparse collection publishes. Errored translations return no
-// cluster because snapshotPerClient excludes errored rows from CDS.
+// translateBackendForGolden selects the base or per-client cluster using the
+// same translation contract as snapshot assembly. Errored translations return
+// no cluster because snapshotPerClient excludes errored rows from CDS.
 func translateBackendForGolden(
 	ctx context.Context,
 	kctx krt.HandlerContext,
