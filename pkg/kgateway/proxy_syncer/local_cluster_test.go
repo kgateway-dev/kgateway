@@ -78,6 +78,10 @@ func TestNewPerClientLocalClusterEndpointsBuildsGatewayLocalities(t *testing.T) 
 		return got
 	}).Should(gomega.HaveLen(1))
 
+	// Publish through the snapshot sink so the armed tripwire (see TestMain)
+	// re-verifies the wrap-time hash of a real local-cluster row.
+	g.Expect(func() { got[0].Endpoints.ResourceWithTTL() }).NotTo(gomega.Panic())
+
 	cla := got[0].Endpoints.Clone()
 	g.Expect(cla.GetClusterName()).To(gomega.Equal("gw.ns"))
 	g.Expect(cla.GetEndpoints()).To(gomega.HaveLen(2))
