@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -133,6 +134,33 @@ type EndpointMetadata struct {
 type EndpointWithMd struct {
 	*envoyendpointv3.LbEndpoint
 	EndpointMd EndpointMetadata
+
+	// endpointEqualityHash is the contribution hashEndpoints computed when this
+	// endpoint was added to its locality. It is derived state, not another hash
+	// input. Endpoint replacement builders reuse it for structurally shared
+	// endpoints instead of marshaling the same proto once per client.
+	//
+	// Zero means "no cached contribution". Clone clears it so a copy taken in
+	// order to be modified cannot version different content identically, and
+	// ReuseEndpoint recomputes when it sees zero.
+	endpointEqualityHash uint64
+}
+
+// Clone returns a transitively isolated copy of the endpoint that the caller
+// owns: the LbEndpoint proto and the metadata labels are both deep copied, so
+// neither the source nor any other holder of it observes later writes.
+//
+// The cached contribution hash is deliberately dropped. A clone exists to be
+// modified, and carrying the original's hash into ReuseEndpoint would publish
+// changed endpoint content under the unchanged version Envoy already has.
+func (e EndpointWithMd) Clone() EndpointWithMd {
+	out := e
+	out.endpointEqualityHash = 0
+	if e.LbEndpoint != nil {
+		out.LbEndpoint = proto.Clone(e.LbEndpoint).(*envoyendpointv3.LbEndpoint)
+	}
+	out.EndpointMd.Labels = maps.Clone(e.EndpointMd.Labels)
+	return out
 }
 
 type LocalityLbMap map[PodLocality][]EndpointWithMd
@@ -172,6 +200,14 @@ type EndpointsForBackend struct {
 	LbEpsEqualityHash uint64
 	upstreamHash      uint64
 	epsEqualityHash   uint64
+	// endpointCount is the number of endpoints across all localities. The
+	// equality hash needs the empty/non-empty distinction, and it cannot be
+	// derived from epsEqualityHash: a non-empty set can xor to zero. Maintaining
+	// it here keeps every writer — Add, ReuseEndpointsFrom, AdoptEndpointsFrom —
+	// answering that question the same way.
+	endpointCount        int
+	foldedVersionHash    uint64
+	hasFoldedVersionHash bool
 }
 
 func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
@@ -225,7 +261,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 // EmptyCopy creates a fresh EndpointsForBackend with no endpoints
 // for the same backend.
 func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
-	return EndpointsForBackend{
+	out := EndpointsForBackend{
 		BackendLabels:        e.BackendLabels,
 		AttachedPolicies:     e.AttachedPolicies,
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
@@ -233,10 +269,31 @@ func (e EndpointsForBackend) EmptyCopy() EndpointsForBackend {
 		UpstreamResourceName: e.UpstreamResourceName,
 		Port:                 e.Port,
 		Hostname:             e.Hostname,
-		LbEpsEqualityHash:    e.upstreamHash,
 		upstreamHash:         e.upstreamHash,
 		TrafficDistribution:  e.TrafficDistribution,
+		foldedVersionHash:    e.foldedVersionHash,
+		hasFoldedVersionHash: e.hasFoldedVersionHash,
 	}
+	out.refreshLbEpsEqualityHash()
+	return out
+}
+
+// FoldVersion mixes an extra input into this row's equality hash. Use it for
+// state that changes what these endpoints translate into without changing the
+// endpoints themselves — newFinalBackendEndpoints folds in the attached-policy
+// hash for exactly that reason.
+//
+// Folded versions are tracked separately from endpoint content. EmptyCopy
+// preserves them, and Add recomputes the final equality hash from both parts,
+// so endpoint edits cannot silently erase an earlier contribution.
+func (e *EndpointsForBackend) FoldVersion(extra uint64) {
+	if e.hasFoldedVersionHash {
+		e.foldedVersionHash = hash(e.foldedVersionHash, extra)
+	} else {
+		e.foldedVersionHash = extra
+		e.hasFoldedVersionHash = true
+	}
+	e.refreshLbEpsEqualityHash()
 }
 
 func hashEndpoints(l PodLocality, emd EndpointWithMd) uint64 {
@@ -260,14 +317,47 @@ func hash(a, b uint64) uint64 {
 }
 
 func (e *EndpointsForBackend) Add(l PodLocality, emd EndpointWithMd) {
+	e.addWithEndpointHash(l, emd, hashEndpoints(l, emd))
+}
+
+// ReuseEndpoint adds an immutable endpoint in the same locality from which it
+// was read, reusing the contribution hash computed by Add. Callers that change
+// either the endpoint or its locality must use Add so the contribution is
+// recomputed.
+//
+// A zero cached hash means the endpoint was never hashed by Add, or was cloned
+// in order to be modified. Rather than trust it, recompute: versioning changed
+// content under an unchanged hash is the one failure this cache must not cause.
+func (e *EndpointsForBackend) ReuseEndpoint(l PodLocality, emd EndpointWithMd) {
+	endpointHash := emd.endpointEqualityHash
+	if endpointHash == 0 {
+		endpointHash = hashEndpoints(l, emd)
+	}
+	e.addWithEndpointHash(l, emd, endpointHash)
+}
+
+func (e *EndpointsForBackend) addWithEndpointHash(l PodLocality, emd EndpointWithMd, endpointHash uint64) {
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
-	e.epsEqualityHash ^= hashEndpoints(l, emd)
-	// we can't xor the endpoint hash with the upstream hash, because upstreams with
-	// different names and similar endpoints will cancel out, so endpoint changes
-	// won't result in different equality hashes.
-	e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
+	e.epsEqualityHash ^= endpointHash
+	emd.endpointEqualityHash = endpointHash
 	e.LbEps[l] = append(e.LbEps[l], emd)
+	e.endpointCount++
+	e.refreshLbEpsEqualityHash()
+}
+
+func (e *EndpointsForBackend) refreshLbEpsEqualityHash() {
+	endpointHash := e.upstreamHash
+	if e.endpointCount > 0 {
+		// We can't xor the endpoint hash with the upstream hash, because
+		// upstreams with different names and similar endpoints will cancel out,
+		// so endpoint changes won't result in different equality hashes.
+		endpointHash = hash(e.epsEqualityHash, e.upstreamHash)
+	}
+	if e.hasFoldedVersionHash {
+		endpointHash = hash(endpointHash, e.foldedVersionHash)
+	}
+	e.LbEpsEqualityHash = endpointHash
 }
 
 // ReuseEndpointsFrom copies the endpoint entries and their precomputed
@@ -281,22 +371,28 @@ func (e *EndpointsForBackend) Add(l PodLocality, emd EndpointWithMd) {
 // present in e are dropped.
 func (e *EndpointsForBackend) ReuseEndpointsFrom(base *EndpointsForBackend) {
 	e.epsEqualityHash = base.epsEqualityHash
-	e.LbEpsEqualityHash = e.upstreamHash
-	// Mirror what Add() computes. Distinguish the empty set by endpoint count,
-	// not by hash value: a non-empty set can xor to a zero epsEqualityHash
-	// (e.g. duplicate endpoints across localities), and Add() would still
-	// produce hash(0, upstreamHash) in that case.
-	nonEmpty := false
+	e.endpointCount = base.endpointCount
 	e.LbEps = make(LocalityLbMap, len(base.LbEps))
 	for l, eps := range base.LbEps {
-		if len(eps) > 0 {
-			nonEmpty = true
-		}
 		e.LbEps[l] = slices.Clone(eps)
 	}
-	if nonEmpty {
-		e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
-	}
+	e.refreshLbEpsEqualityHash()
+}
+
+// AdoptEndpointsFrom moves src's endpoint set and its content hash onto e,
+// leaving e's own backend identity and folded version in place. Unlike
+// ReuseEndpointsFrom it takes the per-locality slices as they are: the caller
+// must own src and must not use it afterwards.
+//
+// This is what installing a replacement endpoint set is made of. Overwriting e
+// with src wholesale would also reinstate whatever identity fields src happened
+// to be seeded with, silently reverting anything written to e while the
+// replacement was being built.
+func (e *EndpointsForBackend) AdoptEndpointsFrom(src *EndpointsForBackend) {
+	e.LbEps = src.LbEps
+	e.epsEqualityHash = src.epsEqualityHash
+	e.endpointCount = src.endpointCount
+	e.refreshLbEpsEqualityHash()
 }
 
 func (c EndpointsForBackend) ResourceName() string {
@@ -304,5 +400,5 @@ func (c EndpointsForBackend) ResourceName() string {
 }
 
 func (c EndpointsForBackend) Equals(in EndpointsForBackend) bool {
-	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname && c.TrafficDistribution == in.TrafficDistribution && c.upstreamHash == in.upstreamHash && c.epsEqualityHash == in.epsEqualityHash
+	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname && c.TrafficDistribution == in.TrafficDistribution && c.upstreamHash == in.upstreamHash && c.epsEqualityHash == in.epsEqualityHash && c.endpointCount == in.endpointCount && c.foldedVersionHash == in.foldedVersionHash && c.hasFoldedVersionHash == in.hasFoldedVersionHash
 }
