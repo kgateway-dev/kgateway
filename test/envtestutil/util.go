@@ -129,16 +129,24 @@ func RunController(
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	cfg, err := testEnv.Start()
-	if err != nil {
-		t.Fatalf("failed to get assets dir: %v", err)
+	cfg := testEnv.Config
+	if cfg == nil {
+		// Environment not started yet; start it and stop it when this test ends.
+		// When the environment is shared across tests (started once in TestMain),
+		// Config is already set and we must not re-start or stop it here.
+		var startErr error
+		cfg, startErr = testEnv.Start()
+		if startErr != nil {
+			t.Fatalf("failed to start envtest environment: %v", startErr)
+		}
+		t.Cleanup(func() { testEnv.Stop() })
 	}
-	t.Cleanup(func() { testEnv.Stop() })
 
 	kubeconfig := GenerateKubeConfiguration(t, cfg)
 	t.Log("kubeconfig:", kubeconfig)
 
 	var apiClient apiclient.Client
+	var err error
 	if newAPIClientFn != nil {
 		apiClient, err = newAPIClientFn(cfg)
 		if err != nil {
