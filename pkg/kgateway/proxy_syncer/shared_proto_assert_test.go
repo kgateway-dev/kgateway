@@ -8,8 +8,16 @@ import (
 )
 
 // TestMain forces the shared-proto mutation tripwire on for every test in this
-// package. Integration tests run the real sparse cluster producer through
-// snapshot assembly, so mutation between wrapping and publication panics.
+// package. The integration tests here run the real cluster and endpoint producer
+// collections (NewPerClientEnvoyClusters, NewPerClientEnvoyEndpoints) through
+// snapshotPerClient, and the local-cluster tests publish
+// NewPerClientLocalClusterEndpoints rows through the same ResourceWithTTL sink,
+// so with the tripwire armed, any code path that mutates a shared proto between
+// creation and publication panics in CI instead of silently corrupting sibling
+// clients. TestNewPerClientEnvoyClusters_ArmedTripwireCatchesBaseMutation is the
+// negative control proving the armed tripwire fires on a real row. Test fixtures
+// that wrap protos while the flag is on are verified too; rows built from the
+// zero-value wrapper are skipped.
 func TestMain(m *testing.M) {
 	sharedproto.AssertImmutability = true
 	os.Exit(m.Run())
