@@ -13,6 +13,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -47,11 +48,11 @@ import (
 //
 // To probe the first-connect grace period specifically, set
 // KGW_XDS_FIRST_CONNECT_DELAY in the test environment: the suite forwards it
-// to the controller deployment for the duration of the run (and removes it on
-// teardown). `KGW_XDS_FIRST_CONNECT_DELAY=0` runs the raw reconnect race the
-// delay exists to narrow; large values probe the other boundary (warm clients
-// must keep serving through the delay and rolled Envoys must still beat
-// gatewayRolloutBound).
+// to the controller deployment for the duration of the run (and restores the
+// original value on teardown). `KGW_XDS_FIRST_CONNECT_DELAY=0` runs the raw
+// reconnect race the delay exists to narrow; large values probe the other
+// boundary (warm clients must keep serving through the delay and rolled Envoys
+// must still beat gatewayRolloutBound).
 //
 // The suite mutates the controller deployment (KGW_VALIDATION_MODE=STRICT,
 // plus the optional delay override) and restores it on teardown, so it must
@@ -189,11 +190,11 @@ func NewStrictChurnSuite(ctx context.Context, testInst *e2e.TestInstallation) su
 
 type StrictChurnSuite struct {
 	LoadTestingSuite
-	loadTestManager         *LoadTestManager
-	installNamespace        string
-	controllerDeployment    string
-	delayOverridden         bool
-	validatorModeOverridden bool
+	loadTestManager       *LoadTestManager
+	installNamespace      string
+	controllerDeployment  string
+	controllerContainer   string
+	originalControllerEnv map[string]*corev1.EnvVar
 }
 
 func (s *StrictChurnSuite) SetupSuite() {
@@ -225,15 +226,14 @@ func (s *StrictChurnSuite) SetupSuite() {
 	envExprs := []string{"KGW_VALIDATION_MODE=STRICT"}
 	if d := os.Getenv("KGW_XDS_FIRST_CONNECT_DELAY"); d != "" {
 		envExprs = append(envExprs, "KGW_XDS_FIRST_CONNECT_DELAY="+d)
-		s.delayOverridden = true
 	}
 	// KGW_VALIDATOR_MODE=BINARY disables the strict-validation verdict cache,
 	// restoring the #14184-era per-call validation cost on every rebuild —
 	// the field-shaped amplifier of the per-client derivation window.
 	if m := os.Getenv("KGW_VALIDATOR_MODE"); m != "" {
 		envExprs = append(envExprs, "KGW_VALIDATOR_MODE="+m)
-		s.validatorModeOverridden = true
 	}
+	s.Require().NoError(s.snapshotControllerEnv(envExprs), "should snapshot controller env before overriding it")
 	s.T().Logf("Setting controller env on deployment/%s in %s: %v", s.controllerDeployment, s.installNamespace, envExprs)
 	s.Require().NoError(s.setControllerEnv(envExprs...))
 }
@@ -246,20 +246,15 @@ func (s *StrictChurnSuite) TearDownSuite() {
 	}
 	// Restore the controller before anything else so a failed run doesn't
 	// leave the install in strict mode for whoever uses the cluster next.
-	if s.controllerDeployment != "" {
-		envExprs := []string{"KGW_VALIDATION_MODE-"}
-		if s.delayOverridden {
-			envExprs = append(envExprs, "KGW_XDS_FIRST_CONNECT_DELAY-")
-		}
-		if s.validatorModeOverridden {
-			envExprs = append(envExprs, "KGW_VALIDATOR_MODE-")
-		}
-		if err := s.setControllerEnv(envExprs...); err != nil {
+	if s.originalControllerEnv != nil {
+		if err := s.restoreControllerEnv(); err != nil {
 			s.T().Logf("WARNING: failed to restore controller env: %v", err)
 		}
 	}
 	if s.loadTestManager != nil {
-		s.loadTestManager.CleanupAll()
+		if err := s.loadTestManager.CleanupAll(); err != nil {
+			s.T().Logf("Warning: failed to cleanup load test namespaces: %v", err)
+		}
 	}
 	// The nginx-shared ReferenceGrant outlives the per-run namespaces
 	// (nginx-shared belongs to the harness), so delete it explicitly.
@@ -289,6 +284,103 @@ func (s *StrictChurnSuite) resolveControllerDeployment() (string, error) {
 	return name, nil
 }
 
+func (s *StrictChurnSuite) snapshotControllerEnv(envExprs []string) error {
+	deployment := &appsv1.Deployment{}
+	if err := s.testInstallation.ClusterContext.Client.Get(s.ctx, types.NamespacedName{
+		Namespace: s.installNamespace,
+		Name:      s.controllerDeployment,
+	}, deployment); err != nil {
+		return err
+	}
+
+	names := make(map[string]struct{}, len(envExprs))
+	for _, expr := range envExprs {
+		name, _, _ := strings.Cut(expr, "=")
+		names[name] = struct{}{}
+	}
+
+	originals := make(map[string]*corev1.EnvVar, len(names))
+	for name := range names {
+		originals[name] = nil
+	}
+	container, err := findControllerContainer(deployment, "")
+	if err != nil {
+		return err
+	}
+	s.controllerContainer = container.Name
+	for _, env := range container.Env {
+		if _, ok := names[env.Name]; ok {
+			originals[env.Name] = env.DeepCopy()
+		}
+	}
+	s.originalControllerEnv = originals
+	return nil
+}
+
+func (s *StrictChurnSuite) restoreControllerEnv() error {
+	deployment := &appsv1.Deployment{}
+	if err := s.testInstallation.ClusterContext.Client.Get(s.ctx, types.NamespacedName{
+		Namespace: s.installNamespace,
+		Name:      s.controllerDeployment,
+	}, deployment); err != nil {
+		return err
+	}
+
+	before := deployment.DeepCopy()
+	container, err := findControllerContainer(deployment, s.controllerContainer)
+	if err != nil {
+		return err
+	}
+	restoreControllerEnvVars(container, s.originalControllerEnv)
+
+	if err := s.testInstallation.ClusterContext.Client.Patch(s.ctx, deployment, client.MergeFrom(before)); err != nil {
+		return err
+	}
+	return s.testInstallation.Actions.Kubectl().DeploymentRolloutStatus(s.ctx,
+		s.controllerDeployment, "-n", s.installNamespace, "--timeout=120s")
+}
+
+func restoreControllerEnvVars(container *corev1.Container, originals map[string]*corev1.EnvVar) {
+	restored := make(map[string]struct{}, len(originals))
+	env := make([]corev1.EnvVar, 0, len(container.Env))
+	for _, current := range container.Env {
+		original, tracked := originals[current.Name]
+		if !tracked {
+			env = append(env, current)
+			continue
+		}
+		restored[current.Name] = struct{}{}
+		if original != nil {
+			env = append(env, *original.DeepCopy())
+		}
+	}
+	for name, original := range originals {
+		if original == nil {
+			continue
+		}
+		if _, ok := restored[name]; !ok {
+			env = append(env, *original.DeepCopy())
+		}
+	}
+	container.Env = env
+}
+
+func findControllerContainer(deployment *appsv1.Deployment, name string) (*corev1.Container, error) {
+	for i := range deployment.Spec.Template.Spec.Containers {
+		if deployment.Spec.Template.Spec.Containers[i].Name == name ||
+			(name == "" && deployment.Spec.Template.Spec.Containers[i].Name == "controller") {
+			return &deployment.Spec.Template.Spec.Containers[i], nil
+		}
+	}
+	if name != "" {
+		return nil, fmt.Errorf("deployment/%s has no container named %q", deployment.Name, name)
+	}
+	if len(deployment.Spec.Template.Spec.Containers) == 0 {
+		return nil, fmt.Errorf("deployment/%s has no containers", deployment.Name)
+	}
+	return &deployment.Spec.Template.Spec.Containers[0], nil
+}
+
 // setControllerEnv applies `kubectl set env` expressions (KEY=VALUE or KEY-)
 // to the controller deployment in a single call and waits for the resulting
 // rollout.
@@ -296,6 +388,7 @@ func (s *StrictChurnSuite) setControllerEnv(envExprs ...string) error {
 	args := append([]string{
 		"set", "env", "-n", s.installNamespace,
 		"deployment/" + s.controllerDeployment,
+		"--containers=" + s.controllerContainer,
 	}, envExprs...)
 	if err := s.testInstallation.Actions.Kubectl().RunCommand(s.ctx, args...); err != nil {
 		return err
