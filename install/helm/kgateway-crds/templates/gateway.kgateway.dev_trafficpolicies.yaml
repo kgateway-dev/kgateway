@@ -481,6 +481,19 @@ spec:
                       - `text/plain`
                       - `text/xml`
                     properties:
+                      contentTypes:
+                        description: |-
+                          ContentTypes restricts compression to responses whose `Content-Type` is in this list
+                          (for example `text/html` or `application/json`). When set it replaces the default set of
+                          compressible content types rather than adding to it. When unset the Envoy defaults apply.
+                        items:
+                          maxLength: 256
+                          minLength: 1
+                          type: string
+                        maxItems: 50
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: set
                       disable:
                         description: Disables compression.
                         type: object
@@ -509,6 +522,14 @@ spec:
                         x-kubernetes-validations:
                         - message: libraries must not contain duplicates
                           rule: self.all(x, self.exists_one(y, y == x))
+                      minContentLengthBytes:
+                        description: |-
+                          MinContentLengthBytes is the minimum response `Content-Length`, in bytes, required to
+                          trigger compression. Responses smaller than this are sent uncompressed. Defaults to 30
+                          when unset.
+                        format: int32
+                        minimum: 0
+                        type: integer
                     type: object
                 type: object
                 x-kubernetes-validations:

@@ -19,6 +19,8 @@ var (
 	routeBrotliManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-brotli.yaml")
 	routeZstdManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-zstd.yaml")
 	routeNegotiationManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-negotiation.yaml")
+	routeContentTypesManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-content-types.yaml")
+	routeMinLengthManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-min-length.yaml")
 	routeDecompressionManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-decompression.yaml")
 	routeReqDecompressManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-route-request-decompression.yaml")
 
@@ -44,6 +46,12 @@ var (
 		},
 		"TestResponseCompressionNegotiation": {
 			Manifests: []string{httpRoutesManifest, routeNegotiationManifest},
+		},
+		"TestContentTypeAllowlist": {
+			Manifests: []string{routeContentTypesManifest},
+		},
+		"TestMinContentLength": {
+			Manifests: []string{routeMinLengthManifest},
 		},
 		"TestNoCompressionWithoutAcceptEncoding": {
 			Manifests: []string{httpRoutesManifest, routeCompressionManifest},

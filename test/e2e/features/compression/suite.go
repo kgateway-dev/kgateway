@@ -114,7 +114,38 @@ func (s *testingSuite) TestResponseCompressionNegotiation() {
 	)
 }
 
+// Verifies compression is applied only to content types in the configured allowlist.
+func (s *testingSuite) TestContentTypeAllowlist() {
+	// application/json is in the allowlist -> compressed
+	s.assertHeadersForHost("content-types.example.com", "/json",
+		map[string]string{"Accept-Encoding": "gzip"},
+		map[string]any{"Content-Encoding": "gzip"},
+		nil,
+	)
+	// text/html is not in the allowlist -> uncompressed
+	s.assertHeadersForHost("content-types.example.com", "/html",
+		map[string]string{"Accept-Encoding": "gzip"},
+		nil,
+		[]string{"Content-Encoding"},
+	)
+}
+
+// Verifies responses below the configured minimum content length are not compressed.
+// Envoy only enforces min_content_length when the response carries a Content-Length header, so
+// this uses /json (fixed length) rather than the chunked /html endpoint.
+func (s *testingSuite) TestMinContentLength() {
+	s.assertHeadersForHost("min-length.example.com", "/json",
+		map[string]string{"Accept-Encoding": "gzip"},
+		nil,
+		[]string{"Content-Encoding"},
+	)
+}
+
 func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
+	s.assertHeadersForHost("example.com", path, reqHeaders, expectedHeaders, notExpectedHeaders)
+}
+
+func (s *testingSuite) assertHeadersForHost(host, path string, reqHeaders map[string]string, expectedHeaders map[string]any, notExpectedHeaders []string) {
 	common.BaseGateway.Send(
 		s.T(),
 		&testmatchers.HttpResponse{
@@ -124,7 +155,7 @@ func (s *testingSuite) assertHeaders(path string, reqHeaders map[string]string, 
 		},
 		curl.WithPort(80),
 		curl.WithPath(path),
-		curl.WithHostHeader("example.com"),
+		curl.WithHostHeader(host),
 		curl.WithIgnoreBody(),
 		curl.WithHeaders(reqHeaders),
 	)

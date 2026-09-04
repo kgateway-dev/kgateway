@@ -1,0 +1,85 @@
+# Two routes on the same Gateway (one filter chain) compress gzip with different settings.
+# Because Envoy has no per-route override for min_content_length/content_type, each distinct
+# configuration must become its own compressor filter so the routes do not collide.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-default
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "default.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-custom
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "custom.example.com"
+  rules:
+    - backendRefs:
+        - name: example-svc
+          port: 80
+---
+# Default gzip settings -> uses the historical filter name.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: compression-default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-default
+  compression:
+    responseCompression:
+      libraries:
+        - Gzip
+---
+# Custom gzip settings -> must get its own distinct filter, not collide with the default one.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: compression-custom
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-custom
+  compression:
+    responseCompression:
+      libraries:
+        - Gzip
+      contentTypes:
+        - application/json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

@@ -774,6 +774,24 @@ type ResponseCompression struct {
 	// +kubebuilder:default={Gzip}
 	Libraries []CompressionLibrary `json:"libraries,omitempty"`
 
+	// MinContentLengthBytes is the minimum response `Content-Length`, in bytes, required to
+	// trigger compression. Responses smaller than this are sent uncompressed. Defaults to 30
+	// when unset.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MinContentLengthBytes *int32 `json:"minContentLengthBytes,omitempty"`
+
+	// ContentTypes restricts compression to responses whose `Content-Type` is in this list
+	// (for example `text/html` or `application/json`). When set it replaces the default set of
+	// compressible content types rather than adding to it. When unset the Envoy defaults apply.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=50
+	// +kubebuilder:validation:items:MinLength=1
+	// +kubebuilder:validation:items:MaxLength=256
+	ContentTypes []string `json:"contentTypes,omitempty"`
+
 	// Disables compression.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`

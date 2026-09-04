@@ -59,6 +59,36 @@ func TestCompressionIREquals(t *testing.T) {
 			b:    &compressionIR{enable: false, libraries: []kgateway.CompressionLibrary{kgateway.CompressionBrotli}},
 			want: true,
 		},
+		{
+			name: "different min content length is not equal",
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100)},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(200)},
+			want: false,
+		},
+		{
+			name: "set vs unset min content length is not equal",
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100)},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}},
+			want: false,
+		},
+		{
+			name: "different content types is not equal",
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, contentTypes: []string{"text/html"}},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, contentTypes: []string{"application/json"}},
+			want: false,
+		},
+		{
+			name: "same content types and min length are equal",
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100), contentTypes: []string{"text/html"}},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, minContentLength: u32(100), contentTypes: []string{"text/html"}},
+			want: true,
+		},
+		{
+			name: "content types in different order are equal",
+			a:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, contentTypes: []string{"text/html", "application/json"}},
+			b:    &compressionIR{enable: true, libraries: []kgateway.CompressionLibrary{kgateway.CompressionGzip}, contentTypes: []string{"application/json", "text/html"}},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -67,6 +97,26 @@ func TestCompressionIREquals(t *testing.T) {
 		})
 	}
 }
+
+func TestSettingsHash(t *testing.T) {
+	// Content-type order must not affect the hash, so equivalent allowlists share a filter.
+	assert.Equal(t,
+		settingsHash(u32(100), []string{"text/html", "application/json"}),
+		settingsHash(u32(100), []string{"application/json", "text/html"}),
+	)
+	// Different settings must produce different hashes so routes get distinct filters.
+	assert.NotEqual(t,
+		settingsHash(u32(100), []string{"text/html"}),
+		settingsHash(u32(200), []string{"text/html"}),
+	)
+	assert.NotEqual(t,
+		settingsHash(u32(100), nil),
+		settingsHash(nil, []string{"text/html"}),
+	)
+}
+
+//nolint:modernize
+func u32(v uint32) *uint32 { return &v }
 
 func TestDecompressionIREquals(t *testing.T) {
 	tests := []struct {

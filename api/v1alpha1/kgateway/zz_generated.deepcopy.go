@@ -4914,6 +4914,16 @@ func (in *ResponseCompression) DeepCopyInto(out *ResponseCompression) {
 		*out = make([]CompressionLibrary, len(*in))
 		copy(*out, *in)
 	}
+	if in.MinContentLengthBytes != nil {
+		in, out := &in.MinContentLengthBytes, &out.MinContentLengthBytes
+		*out = new(int32)
+		**out = **in
+	}
+	if in.ContentTypes != nil {
+		in, out := &in.ContentTypes, &out.ContentTypes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Disable != nil {
 		in, out := &in.Disable, &out.Disable
 		*out = new(shared.PolicyDisable)

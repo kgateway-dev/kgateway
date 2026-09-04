@@ -271,14 +271,15 @@ type trafficPolicyPluginGwPass struct {
 	// Route names we've already applied requestMirror settings to on this pass, so the first
 	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
 	// pass, so the name is a safe key.
-	requestMirrorConfigured map[string]struct{}
-	bufferInChain           map[string]*bufferv3.Buffer
-	compressorInChain       map[string][]compressorEntry
-	decompressorInChain     map[string][]decompressorEntry
-	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
-	apiKeyAuthInChain       map[string]*envoy_api_key_auth_v3.ApiKeyAuth
-	faultInChain            map[string]*faulthttpv3.HTTPFault
-	httpACLInChain          map[string]bool
+	requestMirrorConfigured   map[string]struct{}
+	bufferInChain             map[string]*bufferv3.Buffer
+	compressorInChain         map[string][]compressorEntry
+	compressionDisabledRoutes map[*envoyroutev3.Route]bool
+	decompressorInChain       map[string][]decompressorEntry
+	basicAuthInChain          map[string]*envoy_basic_auth_v3.BasicAuth
+	apiKeyAuthInChain         map[string]*envoy_api_key_auth_v3.ApiKeyAuth
+	faultInChain              map[string]*faulthttpv3.HTTPFault
+	httpACLInChain            map[string]bool
 	// maps secret name to secret in case the same secret is referenced in multiple attachment points (e.g., vhost and route)
 	secrets map[string]*envoytlsv3.Secret
 }
@@ -376,6 +377,9 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
 	p.applyGatewayLevelPerRouteSettings(policy.spec, out)
+	for _, vh := range out.GetVirtualHosts() {
+		p.disableBroadScopeCompressionOnOptedOutRoutes(policy.spec, vh.GetRoutes())
+	}
 }
 
 func (p *trafficPolicyPluginGwPass) applyGatewayLevelPerRouteSettings(spec trafficPolicySpecIr, out *envoyroutev3.RouteConfiguration) {
@@ -418,6 +422,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 	p.applyPerRouteSettings(policy.spec, out.Routes)
 
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	p.disableBroadScopeCompressionOnOptedOutRoutes(policy.spec, out.Routes)
 }
 
 // called 0 or more times
@@ -433,6 +438,15 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	// rather than in handlePerRoutePolicies.
 	applyStatPrefix(policy.spec.statPrefix, pCtx, outputRoute)
 	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+
+	// Record routes that opt out of compression so a broader-scope policy with custom settings
+	// (a hashed compressor filter the route-level disable can't name) can also be turned off here.
+	if c := policy.spec.compression; c != nil && !c.enable {
+		if p.compressionDisabledRoutes == nil {
+			p.compressionDisabledRoutes = map[*envoyroutev3.Route]bool{}
+		}
+		p.compressionDisabledRoutes[outputRoute] = true
+	}
 
 	return nil
 }
