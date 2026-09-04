@@ -253,6 +253,23 @@ Statuses:
     BackendTLSPolicy/default/tls-policy:
       ancestors:
       - ancestorRef:
+          group: ""
+          kind: Service
+          name: backend-service
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
           group: gateway.networking.k8s.io
           kind: Gateway
           name: example-gateway

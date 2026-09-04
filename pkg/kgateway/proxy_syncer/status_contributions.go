@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -24,14 +23,13 @@ func gatewayStatusContributions(
 
 func backendPolicyStatusContributions(
 	backends krt.Collection[*ir.BackendObjectIR],
-	excludedPolicyKinds map[schema.GroupKind]struct{},
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
 	return krt.NewManyCollection(backends, func(_ krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
 		if backend == nil {
 			return nil
 		}
-		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend}, excludedPolicyKinds)
+		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend})
 		// Key on the backend's own resource name, not its ObjectSource's: one Service yields a
 		// BackendObjectIR per port, and ObjectSource.ResourceName() drops both the port and the
 		// extra key. Two ports contributing to the same policy would then emit contributions

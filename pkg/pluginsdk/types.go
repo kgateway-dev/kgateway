@@ -94,10 +94,6 @@ type PolicyPlugin struct {
 	// from the provided report collection and registers it, along with a status writer
 	// for its GVK. Plugins that do not report status may leave this unset.
 	RegisterPolicyStatus func(inputs PolicyStatusInputs)
-
-	// PolicyStatusFromGatewayReports indicates that policy status should be reported from the
-	// Gateway translation report path rather than the backend-only report path.
-	PolicyStatusFromGatewayReports bool
 }
 
 type BackendPlugin struct {

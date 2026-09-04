@@ -1,4 +1,37 @@
 Clusters:
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
+  loadAssignment:
+    clusterName: backend_default_unrouted-backend_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: issuer.example.com
+              portValue: 443
+          healthCheckConfig:
+            hostname: issuer.example.com
+          hostname: issuer.example.com
+  name: backend_default_unrouted-backend_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: issuer.example.com
+              sanType: DNS
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
+      sni: issuer.example.com
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s
@@ -7,27 +40,21 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  name: kube_default_httpbin_8080
+  name: kube_default_unrouted-service_443
   transportSocket:
-    name: envoy.transport_sockets.upstream_proxy_protocol
+    name: envoy.transport_sockets.tls
     typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport
-      config:
-        version: V2
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchTypedSubjectAltNames:
-                - matcher:
-                    exact: httpbin.example.com
-                  sanType: DNS
-              validationContextSdsSecretConfig:
-                name: SYSTEM_CA_CERT
-          sni: httpbin.example.com
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: unrouted.example.com
+              sanType: DNS
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
+      sni: unrouted.example.com
   type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
@@ -36,7 +63,7 @@ Listeners:
     socketAddress:
       address: '::'
       ipv4Compat: true
-      portValue: 8080
+      portValue: 80
   filterChains:
   - filters:
     - name: envoy.filters.network.http_connection_manager
@@ -52,26 +79,23 @@ Listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: listener~8080
+          routeConfigName: listener~80
         statPrefix: http
         useRemoteAddress: true
-    name: listener~8080
-  name: listener~8080
+    name: listener~80
+  name: listener~80
 Routes:
 - ignorePortInHostMatching: true
-  name: listener~8080
-  virtualHosts:
-  - domains:
-    - '*'
-    name: listener~8080~*
-    routes:
-    - match:
-        prefix: /
-      name: listener~8080~*-route-0-httproute-httpbin-route-default-0-0-matcher-0
-      route:
-        cluster: kube_default_httpbin_8080
-        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  name: listener~80
 Statuses:
+  backends:
+    default/unrouted-backend:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:
@@ -91,7 +115,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 1
+      - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -119,56 +143,13 @@ Statuses:
           kind: HTTPRoute
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
-  httpRoutes:
-    default/httpbin-route:
-      parents:
-      - conditions:
-        - lastTransitionTime: null
-          message: Successfully accepted Route
-          reason: Accepted
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Successfully resolved all references
-          reason: ResolvedRefs
-          status: "True"
-          type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Successfully programmed Route
-          reason: Programmed
-          status: "True"
-          type: kgateway.dev/Programmed
-        controllerName: kgateway
-        parentRef:
-          group: ""
-          kind: ""
-          name: example-gateway
   policies:
-    BackendConfigPolicy/default/httpbin-policy:
+    BackendTLSPolicy/default/unrouted-backend-tls:
       ancestors:
       - ancestorRef:
-          group: ""
-          kind: Service
-          name: httpbin
-          namespace: default
-        conditions:
-        - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
-          type: Accepted
-        - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
-          type: Attached
-        controllerName: kgateway.dev/kgateway
-    BackendTLSPolicy/default/httpbin-tls-policy:
-      ancestors:
-      - ancestorRef:
-          group: ""
-          kind: Service
-          name: httpbin
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: unrouted-backend
           namespace: default
         conditions:
         - lastTransitionTime: null
@@ -182,11 +163,14 @@ Statuses:
           status: "True"
           type: Accepted
         controllerName: kgateway.dev/kgateway
+    BackendTLSPolicy/default/unrouted-service-tls:
+      ancestors:
       - ancestorRef:
-          group: gateway.networking.k8s.io
-          kind: Gateway
-          name: example-gateway
+          group: ""
+          kind: Service
+          name: unrouted-service
           namespace: default
+          sectionName: https
         conditions:
         - lastTransitionTime: null
           message: Resolved all references

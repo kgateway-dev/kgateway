@@ -5,13 +5,13 @@ import (
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	backendconfigpolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -28,21 +28,23 @@ var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
 // GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
 // Exported for testing.
-func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds map[schema.GroupKind]struct{}) reports.ReportMap {
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
 
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
+	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
-		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
-		bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+		winningBTP := winningBackendTLSPolicy(obj.GetAttachedPolicies())
+		var conflictingBTP *ir.AttachedPolicyRef
+		if winningBTP != nil {
+			conflictingBTP = winningBTP.PolicyRef
+		}
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
 			for _, polAtt := range polAtts {
-				if _, excluded := excludedPolicyKinds[polAtt.GroupKind]; excluded {
-					continue
-				}
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
 					// since there's no real policy object, we don't need to generate status for it
@@ -65,6 +67,18 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+				if gk == btpGK {
+					// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
+					// (Accepted/ResolvedRefs/Conflicted) rather than kgateway's Valid/Attached.
+					// The target ancestor reported here is additive to the Gateway ancestors the
+					// translator reports for every route that uses the target: it is the only
+					// status an unrouted target, or a Backend used solely by a GatewayExtension,
+					// ever gets.
+					for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, winningBTP) {
+						r.SetCondition(cond)
+					}
+					continue
+				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    string(shared.PolicyConditionAccepted),
@@ -100,11 +114,11 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 	return merged
 }
 
-// winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS
-// config will apply to a backend, or nil if no BTP is attached or none of the policies
-// has a valid translation. Uses the same winner-by-creation-time-and-ref ordering used
-// inside the BTP plugin MergePolicies.
-func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicyRef {
+// winningBackendTLSPolicy returns the BackendTLSPolicy whose TLS config will apply to a
+// backend, or nil if no BTP is attached or none of the policies has a valid translation.
+// Uses the same winner-by-creation-time-and-ref ordering used inside the BTP plugin
+// MergePolicies.
+func winningBackendTLSPolicy(attached ir.AttachedPolicies) *ir.PolicyAtt {
 	btps := attached.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
 	if len(btps) == 0 {
 		return nil
@@ -119,8 +133,7 @@ func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicy
 	if len(valid) == 0 {
 		return nil
 	}
-	winner := valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
-	return winner.PolicyRef
+	return &valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
 }
 
 // GenerateBackendStatusReport builds the Accepted condition for every kgateway Backend from

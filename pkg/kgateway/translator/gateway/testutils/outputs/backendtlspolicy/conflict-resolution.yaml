@@ -159,6 +159,23 @@ Statuses:
     BackendTLSPolicy/default/conflicted-without-section-name-1:
       ancestors:
       - ancestorRef:
+          group: ""
+          kind: Service
+          name: backendtlspolicy-conflicted-without-section-name-test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
           group: gateway.networking.k8s.io
           kind: Gateway
           name: example-gateway
@@ -177,6 +194,23 @@ Statuses:
         controllerName: kgateway.dev/kgateway
     BackendTLSPolicy/default/conflicted-without-section-name-2:
       ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: backendtlspolicy-conflicted-without-section-name-test
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy conflicts with higher priority policy
+          reason: Conflicted
+          status: "False"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
       - ancestorRef:
           group: gateway.networking.k8s.io
           kind: Gateway

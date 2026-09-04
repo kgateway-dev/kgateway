@@ -295,18 +295,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		localClusterEpPerClient,
 	)
 
-	excludedPolicyKinds := make(map[schema.GroupKind]struct{})
-	for gk, plugin := range s.plugins.ContributesPolicies {
-		if plugin.PolicyStatusFromGatewayReports {
-			excludedPolicyKinds[gk] = struct{}{}
-		}
-	}
-
-	backendPolicyContributions := backendPolicyStatusContributions(
-		finalBackendsWithPolicyStatus,
-		excludedPolicyKinds,
-		krtopts,
-	)
+	backendPolicyContributions := backendPolicyStatusContributions(finalBackendsWithPolicyStatus, krtopts)
 
 	// Backend status is reduced per Backend. Indexed cluster and plugin-condition
 	// dependencies ensure one client's error only recomputes its owning Backend.

@@ -1616,6 +1616,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend TLS Policy on unrouted targets", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/unrouted.yaml"},
+			outputFile: "backendtlspolicy/unrouted.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend TLS Policy conflict resolution", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendtlspolicy/conflict-resolution.yaml"},
