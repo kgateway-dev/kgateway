@@ -38,12 +38,21 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
-		winningBTP := winningBackendTLSPolicy(obj.GetAttachedPolicies())
-		var conflictingBTP *ir.AttachedPolicyRef
-		if winningBTP != nil {
-			conflictingBTP = winningBTP.PolicyRef
-		}
+		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
+		targetRef := backendAncestorRef(obj.GetObjectSource())
+
+		// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
+		// (Accepted/ResolvedRefs/Conflicted) rather than kgateway's Valid/Attached, and
+		// resolves conflicts the way translation does. The target ancestor reported here is
+		// additive to the Gateway ancestors the translator reports for every route that uses
+		// the target: it is the only status an unrouted target, or a Backend used solely by a
+		// GatewayExtension, ever gets.
+		reportBackendTLSPolicies(reporter, targetRef, obj.GetAttachedPolicies().Policies[btpGK])
+
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
+			if gk == btpGK {
+				continue
+			}
 			for _, polAtt := range polAtts {
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
@@ -57,28 +66,11 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					Namespace: polAtt.PolicyRef.Namespace,
 					Name:      polAtt.PolicyRef.Name,
 				}
-				ancestorRef := gwv1.ParentReference{
-					Group:     new(gwv1.Group(obj.GetObjectSource().Group)),
-					Kind:      new(gwv1.Kind(obj.GetObjectSource().Kind)),
-					Namespace: new(gwv1.Namespace(obj.GetObjectSource().Namespace)),
-					Name:      gwv1.ObjectName(obj.GetObjectSource().Name),
-				}
+				ancestorRef := targetRef
 				if polAtt.PolicyRef.SectionName != "" {
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
-				if gk == btpGK {
-					// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
-					// (Accepted/ResolvedRefs/Conflicted) rather than kgateway's Valid/Attached.
-					// The target ancestor reported here is additive to the Gateway ancestors the
-					// translator reports for every route that uses the target: it is the only
-					// status an unrouted target, or a Backend used solely by a GatewayExtension,
-					// ever gets.
-					for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, winningBTP) {
-						r.SetCondition(cond)
-					}
-					continue
-				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    string(shared.PolicyConditionAccepted),
@@ -114,11 +106,53 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	return merged
 }
 
-// winningBackendTLSPolicy returns the BackendTLSPolicy whose TLS config will apply to a
-// backend, or nil if no BTP is attached or none of the policies has a valid translation.
-// Uses the same winner-by-creation-time-and-ref ordering used inside the BTP plugin
-// MergePolicies.
-func winningBackendTLSPolicy(attached ir.AttachedPolicies) *ir.PolicyAtt {
+// backendAncestorRef returns the ancestor ref for a policy attached to a backend: the
+// target object itself. Callers add a sectionName for port-specific attachments.
+func backendAncestorRef(src ir.ObjectSource) gwv1.ParentReference {
+	return gwv1.ParentReference{
+		Group:     new(gwv1.Group(src.Group)),
+		Kind:      new(gwv1.Kind(src.Kind)),
+		Namespace: new(gwv1.Namespace(src.Namespace)),
+		Name:      gwv1.ObjectName(src.Name),
+	}
+}
+
+// reportBackendTLSPolicies reports each BackendTLSPolicy in policies against the target it
+// attaches to. The effective policy is chosen by the plugin's MergePolicies on the same
+// unfiltered slice translation hands it, so the target ancestor never disagrees with the
+// Gateway ancestor or with what is actually applied: an older invalid policy still takes
+// precedence, and the newer valid one is Conflicted, not Accepted.
+func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.ParentReference, policies []ir.PolicyAtt) {
+	if len(policies) == 0 {
+		return
+	}
+	effective := backendtlspolicyplugin.MergePolicies(policies)
+	for _, polAtt := range policies {
+		if polAtt.PolicyRef == nil {
+			continue
+		}
+		key := reportssdk.PolicyKey{
+			Group:     polAtt.PolicyRef.Group,
+			Kind:      polAtt.PolicyRef.Kind,
+			Namespace: polAtt.PolicyRef.Namespace,
+			Name:      polAtt.PolicyRef.Name,
+		}
+		ancestorRef := targetRef
+		if polAtt.PolicyRef.SectionName != "" {
+			ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
+		}
+		r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+		for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, &effective) {
+			r.SetCondition(cond)
+		}
+	}
+}
+
+// winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS
+// config will apply to a backend, or nil if no BTP is attached or none of the policies
+// has a valid translation. Uses the same winner-by-creation-time-and-ref ordering used
+// inside the BTP plugin MergePolicies.
+func winningBackendTLSPolicyRef(attached ir.AttachedPolicies) *ir.AttachedPolicyRef {
 	btps := attached.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
 	if len(btps) == 0 {
 		return nil
@@ -133,7 +167,8 @@ func winningBackendTLSPolicy(attached ir.AttachedPolicies) *ir.PolicyAtt {
 	if len(valid) == 0 {
 		return nil
 	}
-	return &valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
+	winner := valid[ir.WinnerPolicyIndexByCreationTimeAndRef(valid)]
+	return winner.PolicyRef
 }
 
 // GenerateBackendStatusReport builds the Accepted condition for every kgateway Backend from

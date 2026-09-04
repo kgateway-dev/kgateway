@@ -391,3 +391,61 @@ func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
 		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
 	))
 }
+
+// Conflict resolution on the target ancestor must match translation: the plugin's
+// MergePolicies picks the oldest policy whether or not it is valid, and translation then
+// applies nothing if that winner is invalid. An older invalid policy therefore still takes
+// precedence, and the newer valid one is Conflicted rather than Accepted, exactly as the
+// Gateway ancestor reports it.
+func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t *testing.T) {
+	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
+	olderInvalid := ir.PolicyAtt{
+		GroupKind:  btpGK,
+		Generation: 2,
+		PolicyRef:  &ir.AttachedPolicyRef{Group: btpGK.Group, Kind: btpGK.Kind, Name: "older-invalid", Namespace: "default"},
+		PolicyIr:   backendTLSTestPolicyIR{ct: time.Unix(100, 0)},
+		Errors:     []error{errors.New("bad ca")},
+	}
+	newerValid := ir.PolicyAtt{
+		GroupKind:  btpGK,
+		Generation: 4,
+		PolicyRef:  &ir.AttachedPolicyRef{Group: btpGK.Group, Kind: btpGK.Kind, Name: "newer-valid", Namespace: "default"},
+		PolicyIr:   backendTLSTestPolicyIR{ct: time.Unix(200, 0)},
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "default", Name: "svc"}, 443, "https", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{btpGK: {newerValid, olderInvalid}}}
+
+	a := assert.New(t)
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend})
+	targetKey := reports.ParentRefKey{Group: "", Kind: "Service", NamespacedName: types.NamespacedName{Namespace: "default", Name: "svc"}}
+
+	older := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "older-invalid"}].Ancestors[targetKey]
+	a.NotNil(older)
+	a.Empty(cmp.Diff(
+		[]metav1.Condition{{
+			Type:               string(gwv1.PolicyConditionAccepted),
+			Status:             metav1.ConditionFalse,
+			Reason:             string(gwv1.PolicyReasonInvalid),
+			Message:            "bad ca",
+			ObservedGeneration: 2,
+		}},
+		older.Conditions,
+		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	))
+
+	newer := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "newer-valid"}].Ancestors[targetKey]
+	a.NotNil(newer)
+	accepted := findCondition(newer.Conditions, string(gwv1.PolicyConditionAccepted))
+	a.NotNil(accepted, "newer policy should carry an Accepted condition")
+	a.Equal(metav1.ConditionFalse, accepted.Status, "a valid policy that loses to an older invalid one is not applied and must not report Accepted=True")
+	a.Equal(string(gwv1.PolicyReasonConflicted), accepted.Reason)
+}
+
+func findCondition(conds []metav1.Condition, condType string) *metav1.Condition {
+	for i := range conds {
+		if conds[i].Type == condType {
+			return &conds[i]
+		}
+	}
+	return nil
+}
