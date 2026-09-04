@@ -84,7 +84,7 @@ func TestSparseClustersTrackSharedClientCapabilityWithoutGlobalWithholding(t *te
 			if len(current) != 1 || current[0].KnowsLocalCluster != knows {
 				return false
 			}
-			resolved := clusters.FetchClustersForClient(krt.TestingDummyContext{}, current[0])
+			resolved, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, current[0])
 			return len(resolved) == 1 && resolved[0].Cluster.Clone().GetAltStatName() == altStatName
 		}, 5*time.Second, 10*time.Millisecond)
 	}

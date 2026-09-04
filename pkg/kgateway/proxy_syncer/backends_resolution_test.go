@@ -97,7 +97,7 @@ func TestNewPerClientEnvoyClusters_RenamedClusterDropsOnlyThatBackend(t *testing
 
 	var got []uccWithCluster
 	require.Eventually(t, func() bool {
-		got = pcc.FetchClustersForClient(krt.TestingDummyContext{}, client)
+		got, _ = pcc.FetchClustersForClient(krt.TestingDummyContext{}, client)
 		return len(got) > 0
 	}, 2*time.Second, 20*time.Millisecond,
 		"a renamed cluster must not withhold the client's entire CDS")

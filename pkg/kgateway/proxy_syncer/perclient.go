@@ -62,9 +62,15 @@ func snapshotPerClient(
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
 	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
-		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
-		if len(clustersForUcc) == 0 {
-			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
+		clustersForUcc, deferral := clusters.FetchClustersForClient(kctx, ucc)
+		if deferral != deferralNone {
+			// Expected once per connected client per base change while the
+			// deltas collection catches up (see FetchClustersForClient), so
+			// this is Debug. The counter carries the reason; a client that
+			// stays here shows on the deferred-clients gauge.
+			recordClusterDeferral(ucc.ResourceName(), deferral)
+			logger.Debug("no perclient clusters; defer building snapshot",
+				"client", ucc.ResourceName(), "reason", deferral)
 			return nil
 		}
 		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
@@ -100,6 +106,7 @@ func snapshotPerClient(
 			resourceName:        ucc.ResourceName(),
 		}
 	}, krtopts.ToOptions("ClusterResources")...)
+	trackDeferredClients(uccCol, clusterSnapshot)
 
 	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
@@ -150,8 +157,12 @@ func snapshotPerClient(
 		// and were reverted. The first-connect delay in
 		// pkg/krtcollections/uniqueclients.go keeps a client's first watch
 		// from observing that convergence window.
+		//
+		// Debug rather than Info: a cluster-row deferral upstream deletes that
+		// client's row and lands here once per client per base change, so at
+		// fleet scale this line would otherwise drown the signal it exists for.
 		if clustersForUcc == nil || clientEndpointResources == nil {
-			logger.Info("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
+			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 

@@ -58,7 +58,7 @@ func clustersTestClient(role string) ir.UniquelyConnectedClient {
 }
 
 func clusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniquelyConnectedClient) []string {
-	fetched := c.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	fetched, _ := c.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 	names := make([]string, 0, len(fetched))
 	for _, f := range fetched {
 		names = append(names, f.Name)
@@ -160,10 +160,12 @@ func TestPerClientClusters_IndexIsolation(t *testing.T) {
 		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, a, 2)
-	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, a) {
+	rowsA, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, a)
+	for _, fc := range rowsA {
 		require.Equal(t, a.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client a")
 	}
-	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, b) {
+	rowsB, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, b)
+	for _, fc := range rowsB {
 		require.Equal(t, b.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client b")
 	}
 }

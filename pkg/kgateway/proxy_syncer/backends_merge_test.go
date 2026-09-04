@@ -53,7 +53,9 @@ func TestFetchClustersForClient_Merge(t *testing.T) {
 	pcc := newTestPerClientClustersRaw(bases, deltas, ucc)
 	waitSynced(t, pcc)
 
-	got := uccWithClusterByName(pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc))
+	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	require.Equal(t, deferralNone, deferral, "a complete generation must not report a deferral")
+	got := uccWithClusterByName(rows)
 	require.Len(t, got, 2)
 
 	// base with no delta passes through unchanged
@@ -79,7 +81,7 @@ func TestFetchClustersForClient_DeltaErrorWinsOverBaseError(t *testing.T) {
 	pcc := newTestPerClientClustersRaw(bases, deltas, ucc)
 	waitSynced(t, pcc)
 
-	got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 	require.Len(t, got, 1)
 	require.Equal(t, deltaErr, got[0].Error, "delta error should win over base error")
 }
@@ -99,12 +101,12 @@ func TestFetchClustersForClient_FiltersByClient(t *testing.T) {
 	waitSynced(t, pcc)
 
 	// uccA sees its delta override
-	gotA := pcc.FetchClustersForClient(krt.TestingDummyContext{}, uccA)
+	gotA, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, uccA)
 	require.Len(t, gotA, 1)
 	require.Equal(t, uint64(50), gotA[0].ClusterVersion)
 
 	// uccB has no delta, sees the shared base proto
-	gotB := pcc.FetchClustersForClient(krt.TestingDummyContext{}, uccB)
+	gotB, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, uccB)
 	require.Len(t, gotB, 1)
 	require.True(t, gotB[0].Cluster.Is(base), "client without a delta must alias the shared base proto")
 	require.Equal(t, uint64(1), gotB[0].ClusterVersion)
@@ -143,7 +145,7 @@ func TestFetchClustersForClient_MatchingDeltaDoesNotRequireResolutionProof(t *te
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
-	got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 	require.Len(t, got, 1)
 	require.True(t, got[0].Cluster.Is(delta), "the exact materialized delta must win without a fleet-resolution match")
 }
@@ -179,8 +181,9 @@ func TestFetchClustersForClient_WithholdsInlineCLABaseUntilDeltaArrives(t *testi
 	// No delta yet: the incomplete base must be withheld entirely.
 	pcc := newTestPerClientClustersRaw(bases, nil, ucc)
 	waitSynced(t, pcc)
-	got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	got, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 	require.Empty(t, got, "a CLA-less inline-CLA base must be withheld until its per-client delta arrives")
+	require.Equal(t, deferralMissingInlineCLA, deferral)
 
 	// Delta present: the merged per-client cluster is surfaced.
 	withCLA := clusterNamed("inline")
@@ -188,7 +191,7 @@ func TestFetchClustersForClient_WithholdsInlineCLABaseUntilDeltaArrives(t *testi
 		{Client: ucc, Name: "inline", Cluster: sharedproto.Wrap(withCLA), ClusterVersion: 7},
 	}, ucc)
 	waitSynced(t, pcc)
-	got = pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	got, _ = pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 	require.Len(t, got, 1)
 	require.True(t, got[0].Cluster.Is(withCLA), "the per-client delta must be surfaced once it arrives")
 	require.Equal(t, uint64(7), got[0].ClusterVersion)
@@ -230,8 +233,9 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
-	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc),
-		"a stale delta must make the generation pending, not override the newer base")
+	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	require.Empty(t, rows, "a stale delta must make the generation pending, not override the newer base")
+	require.Equal(t, deferralStaleDeltaSet, deferral)
 
 	// Overlay removal: a matching empty set explicitly resolves to the base.
 	deltaCol.UpdateObject(backendClusterDeltaSet{
@@ -241,7 +245,7 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 		ResolvedClients:    clientSnapshot,
 	})
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Is(newBase)
 	}, time.Second, 10*time.Millisecond)
 
@@ -262,7 +266,7 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 		},
 	})
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Is(newDelta)
 	}, time.Second, 10*time.Millisecond)
 }
@@ -288,7 +292,9 @@ func TestFetchClustersForClient_WaitsForCurrentClientSet(t *testing.T) {
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
-	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc))
+	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	require.Empty(t, rows)
+	require.Equal(t, deferralUnresolvedClient, deferral)
 	clientSnapshot := newClientInputSnapshot([]ir.UniquelyConnectedClient{ucc})
 	deltaCol.UpdateObject(backendClusterDeltaSet{
 		Name:               "c",
@@ -297,7 +303,7 @@ func TestFetchClustersForClient_WaitsForCurrentClientSet(t *testing.T) {
 		ResolvedClients:    clientSnapshot,
 	})
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Is(base)
 	}, time.Second, 10*time.Millisecond)
 }
@@ -327,11 +333,12 @@ func TestFetchClustersForClient_UnrelatedClientChurnIsNotAReadinessBarrier(t *te
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
-	stableClusters := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
+	stableClusters, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
 	require.Len(t, stableClusters, 1, "unrelated client addition must not defer the established client")
 	require.True(t, stableClusters[0].Cluster.Is(base))
-	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, late),
-		"the newly connected client must wait until this backend evaluates it")
+	lateClusters, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, late)
+	require.Empty(t, lateClusters, "the newly connected client must wait until this backend evaluates it")
+	require.Equal(t, deferralUnresolvedClient, deferral)
 }
 
 // TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability proves that
@@ -359,8 +366,11 @@ func TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability(t *testing
 	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
 	waitSynced(t, pcc)
 
-	require.Empty(t, pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc))
-	stableClusters := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
+	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc)
+	require.Empty(t, rows)
+	require.Equal(t, deferralUnresolvedClient, deferral,
+		"a client whose non-key field changed is unresolved by the old snapshot, not stale in the clients collection")
+	stableClusters, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
 	require.Len(t, stableClusters, 1, "another client's capability transition must not defer the stable client")
 	require.True(t, stableClusters[0].Cluster.Is(base))
 
@@ -372,7 +382,79 @@ func TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability(t *testing
 		ResolvedClients:    currentSnapshot,
 	})
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc)
 		return len(got) == 1 && got[0].Cluster.Is(base)
 	}, time.Second, 10*time.Millisecond)
+}
+
+// TestFetchClustersForClient_NamesTheFenceThatFailed covers the deferral reasons
+// the scenario tests above do not reach. The reason is what the deferral counter
+// is labelled by, so each fence must report its own name and nothing else.
+func TestFetchClustersForClient_NamesTheFenceThatFailed(t *testing.T) {
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	base := clusterNamed("c")
+	fingerprint := baseClusterFingerprint{ClusterVersion: 1}
+	baseRow := baseEnvoyCluster{Name: "c", Cluster: sharedproto.Wrap(base), ClusterVersion: 1, Fingerprint: fingerprint}
+	resolved := newClientInputSnapshot([]ir.UniquelyConnectedClient{ucc})
+
+	t.Run("no backends", func(t *testing.T) {
+		pcc := newTestPerClientClustersRaw(nil, nil, ucc)
+		waitSynced(t, pcc)
+		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		require.Empty(t, rows)
+		require.Equal(t, deferralNoBackends, deferral)
+	})
+
+	t.Run("client not in the clients collection", func(t *testing.T) {
+		other := ir.NewUniquelyConnectedClient("other", "ns", nil, ir.PodLocality{})
+		pcc := newTestPerClientClustersRaw([]baseEnvoyCluster{baseRow}, nil, other)
+		waitSynced(t, pcc)
+		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		require.Empty(t, rows)
+		require.Equal(t, deferralStaleClient, deferral)
+	})
+
+	t.Run("client differs from its clients-collection row", func(t *testing.T) {
+		// Same KRT key, different KnowsLocalCluster: the transform was invoked
+		// with a UCC the clients collection has since replaced.
+		stored := ucc
+		stored.KnowsLocalCluster = true
+		pcc := newTestPerClientClustersRaw([]baseEnvoyCluster{baseRow}, nil, stored)
+		waitSynced(t, pcc)
+		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		require.Empty(t, rows)
+		require.Equal(t, deferralStaleClient, deferral)
+	})
+
+	t.Run("base with no delta set", func(t *testing.T) {
+		baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{baseRow})
+		deltaCol := krt.NewStaticCollection[backendClusterDeltaSet](nil, nil)
+		clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
+		pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+		waitSynced(t, pcc)
+		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		require.Empty(t, rows)
+		require.Equal(t, deferralMissingDeltaSet, deferral)
+	})
+
+	t.Run("delta built for an older version of the client", func(t *testing.T) {
+		older := ucc
+		older.KnowsLocalCluster = true
+		baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{baseRow})
+		deltaCol := krt.NewStaticCollection(nil, []backendClusterDeltaSet{{
+			Name:               "c",
+			BaseFingerprint:    fingerprint,
+			ClientsFingerprint: resolved.Fingerprint,
+			ResolvedClients:    resolved,
+			Deltas: map[string]uccClusterDelta{
+				ucc.ResourceName(): {Client: older, Name: "c", Cluster: sharedproto.Wrap(clusterNamed("c")), ClusterVersion: 2},
+			},
+		}})
+		clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
+		pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+		waitSynced(t, pcc)
+		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		require.Empty(t, rows)
+		require.Equal(t, deferralStaleDeltaClient, deferral)
+	})
 }
