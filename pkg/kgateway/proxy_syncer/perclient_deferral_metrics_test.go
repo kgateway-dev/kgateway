@@ -134,7 +134,7 @@ func TestSnapshotPerClient_CountsClusterDeferralsByReason(t *testing.T) {
 		ClientsFingerprint: unresolved.Fingerprint,
 		ResolvedClients:    unresolved,
 	}})
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: uccs}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
 
 	snapshots := snapshotPerClient(
