@@ -82,7 +82,7 @@ func benchDrainScenario(b *testing.B, v validator.Validator) {
 	waitDrained := func(ucc ir.UniquelyConnectedClient) {
 		deadline := time.Now().Add(10 * time.Minute)
 		for time.Now().Before(deadline) {
-			if len(clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)) == benchBackends {
+			if rows, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc); len(rows) == benchBackends {
 				return
 			}
 			time.Sleep(5 * time.Millisecond)
@@ -100,7 +100,7 @@ func benchDrainScenario(b *testing.B, v validator.Validator) {
 		uccs.DeleteObject(probe.ResourceName())
 		deadline := time.Now().Add(10 * time.Minute)
 		for time.Now().Before(deadline) {
-			if len(clusters.FetchClustersForClient(krt.TestingDummyContext{}, probe)) == 0 {
+			if rows, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, probe); len(rows) == 0 {
 				break
 			}
 			time.Sleep(5 * time.Millisecond)
