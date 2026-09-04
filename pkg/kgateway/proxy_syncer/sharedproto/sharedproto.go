@@ -37,10 +37,10 @@ import (
 // exactly the cost the interning exists to avoid.
 //
 // Enabled in CI three ways: the proxy_syncer package tests force it on
-// in-process (TestMain), the e2e suites set ASSERT_SHARED_PROTO_IMMUTABILITY
-// on the deployed controller via common-recommendations.yaml, and the
-// conformance action sets it on both of its helm install branches. A trip in a
-// cluster surfaces as a controller panic/restart; the message is in the
+// in-process (TestMain), the e2e framework sets ASSERT_SHARED_PROTO_IMMUTABILITY
+// on the deployed controller via test/e2e/tests/manifests/test-assertions.yaml,
+// and the conformance action sets it on both of its helm install branches. A trip
+// in a cluster surfaces as a controller panic/restart; the message is in the
 // previous container's logs (kubectl logs --previous).
 var AssertImmutability = envutils.IsEnvTruthy("ASSERT_SHARED_PROTO_IMMUTABILITY")
 
