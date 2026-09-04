@@ -84,9 +84,9 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 
 	var gotA, gotB, gotOther []uccWithCluster
 	require.Eventually(t, func() bool {
-		gotA = pcc.FetchClustersForClient(krt.TestingDummyContext{}, matchA)
-		gotB = pcc.FetchClustersForClient(krt.TestingDummyContext{}, matchB)
-		gotOther = pcc.FetchClustersForClient(krt.TestingDummyContext{}, other)
+		gotA, _ = pcc.FetchClustersForClient(krt.TestingDummyContext{}, matchA)
+		gotB, _ = pcc.FetchClustersForClient(krt.TestingDummyContext{}, matchB)
+		gotOther, _ = pcc.FetchClustersForClient(krt.TestingDummyContext{}, other)
 		return len(gotA) == 1 && len(gotB) == 1 && len(gotOther) == 1
 	}, 2*time.Second, 20*time.Millisecond)
 
@@ -167,7 +167,7 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesDeltas(t *test
 	require.Eventually(t, pcc.HasSynced, time.Second, 10*time.Millisecond)
 
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Clone().GetOutlierDetection() == nil
 	}, 2*time.Second, 20*time.Millisecond)
 
@@ -183,7 +183,7 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesDeltas(t *test
 	finalBackends.UpdateObject(&updated)
 
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Clone().GetOutlierDetection() != nil
 	}, 2*time.Second, 20*time.Millisecond)
 
@@ -198,7 +198,7 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesDeltas(t *test
 	finalBackends.UpdateObject(&removed)
 
 	require.Eventually(t, func() bool {
-		got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1 && got[0].Cluster.Clone().GetOutlierDetection() == nil
 	}, 2*time.Second, 20*time.Millisecond)
 }
@@ -237,7 +237,7 @@ func TestNewPerClientEnvoyClusters_ArmedTripwireCatchesBaseMutation(t *testing.T
 	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
 	var got []uccWithCluster
 	require.Eventually(t, func() bool {
-		got = pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		got, _ = pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(got) == 1
 	}, 2*time.Second, 20*time.Millisecond)
 

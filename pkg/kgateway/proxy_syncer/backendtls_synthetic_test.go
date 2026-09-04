@@ -152,7 +152,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	require.Eventually(t, func() bool {
-		fetched := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		fetched, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		return len(fetched) == 1 && !fetched[0].Cluster.IsNil() && fetched[0].Cluster.Clone().GetTransportSocket() == nil
 	}, 5*time.Second, 50*time.Millisecond)
 
@@ -212,7 +212,7 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		fetched := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+		fetched, _ := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		if len(fetched) != 1 || fetched[0].Cluster.IsNil() {
 			return false
 		}

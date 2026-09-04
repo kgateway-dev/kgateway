@@ -456,16 +456,65 @@ func (iu *PerClientEnvoyClusters) HasSynced() bool {
 	return true
 }
 
+// clusterDeferral names the fence that made FetchClustersForClient return
+// nothing. The empty value means the merged view was complete. The others are
+// Prometheus label values on snapshotClusterDeferralsTotal, so renaming one
+// breaks dashboards.
+type clusterDeferral string
+
+const (
+	// deferralNone: every row passed the fences and was returned.
+	deferralNone clusterDeferral = ""
+	// deferralStaleClient: the requesting UCC is not the current row in the
+	// clients collection. It disconnected, or a field outside its KRT key
+	// (KnowsLocalCluster) changed and the transform has not re-run for the new
+	// value yet.
+	deferralStaleClient clusterDeferral = "stale_client"
+	// deferralMissingDeltaSet: a base row has no delta set yet. Expected once
+	// per new backend while the deltas collection catches up.
+	deferralMissingDeltaSet clusterDeferral = "missing_delta_set"
+	// deferralStaleDeltaSet: a delta set was evaluated against an older base.
+	// Expected once per base change; see the ordering note on
+	// FetchClustersForClient.
+	deferralStaleDeltaSet clusterDeferral = "stale_delta_set"
+	// deferralStaleDeltaClient: a materialized delta was built for a previous
+	// version of this client.
+	deferralStaleDeltaClient clusterDeferral = "stale_delta_client"
+	// deferralUnresolvedClient: a delta set has not evaluated this client, so
+	// sparse absence cannot yet be read as "no overlay applies". Expected once
+	// per backend when a client connects.
+	deferralUnresolvedClient clusterDeferral = "unresolved_client"
+	// deferralMissingInlineCLA: an inline-CLA base has no delta for this
+	// client; publishing it would send Envoy a host-less STATIC or STRICT_DNS
+	// cluster.
+	deferralMissingInlineCLA clusterDeferral = "missing_inline_cla"
+	// deferralNoBackends: there are no base clusters at all. Unreachable in a
+	// real cluster, where kubernetes.default alone is a backend; common in
+	// tests.
+	deferralNoBackends clusterDeferral = "no_backends"
+)
+
 // FetchClustersForClient returns the merged set of clusters for a UCC: a
 // per-client delta for each backend that has one, and the shared base cluster
 // otherwise. Before returning anything it verifies that every backend's atomic
 // delta set was evaluated against the current base and this exact client. A
-// mismatch returns no rows, causing snapshot assembly to retain this client's
-// last coherent xDS snapshot while the dependent KRT transforms catch up.
+// mismatch returns no rows plus the fence that failed, causing snapshot
+// assembly to retain this client's last coherent xDS snapshot while the
+// dependent KRT transforms catch up. Exactly one of the two results is
+// non-empty.
+//
+// A deferral is expected, not exceptional, once per base change. The deltas
+// collection recomputes from the same event on its own queue, so the transform
+// calling this usually observes the new base before the matching delta set
+// lands, returns nothing, and runs again when it does. That extra pass is the
+// cost of keeping base and deltas as sibling collections; a delta set that
+// carried its own base would remove it. Its rate is visible on
+// snapshotClusterDeferralsTotal by reason, and a client that stays deferred
+// shows on snapshotDeferredClients.
 //
 // The *Cluster protos in the returned slice are shared with other UCCs (base)
 // or unique to this UCC (delta); callers MUST NOT mutate them.
-func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []uccWithCluster {
+func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) ([]uccWithCluster, clusterDeferral) {
 	var bases []baseEnvoyCluster
 	if iu.base != nil {
 		bases = krt.Fetch(kctx, iu.base)
@@ -490,8 +539,12 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 		// retrigger every established client's cluster transform.
 		current := krt.FetchOne(kctx, iu.clients, krt.FilterKey(ucc.ResourceName()))
 		if current == nil || !current.Equals(ucc) {
-			return nil
+			return nil, deferralStaleClient
 		}
+	}
+
+	if len(bases) == 0 {
+		return nil, deferralNoBackends
 	}
 
 	// Validate the entire generation before exposing any row. Returning a
@@ -499,20 +552,23 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 	// CDS payload while collections converge.
 	for _, b := range bases {
 		view, ok := deltaViewByName[b.Name]
-		if !ok || view.BaseFingerprint != b.Fingerprint {
-			return nil
+		if !ok {
+			return nil, deferralMissingDeltaSet
+		}
+		if view.BaseFingerprint != b.Fingerprint {
+			return nil, deferralStaleDeltaSet
 		}
 		if view.HasDelta {
 			if !view.Delta.Client.Equals(ucc) {
-				return nil
+				return nil, deferralStaleDeltaClient
 			}
 		} else {
 			if !view.Resolved {
-				return nil
+				return nil, deferralUnresolvedClient
 			}
 			if b.NeedsInlineCLA {
 				// Inline-CLA bases must always materialize a per-client delta.
-				return nil
+				return nil, deferralMissingInlineCLA
 			}
 		}
 	}
@@ -554,7 +610,7 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 			BackendGeneration: b.BackendGeneration,
 		})
 	}
-	return out
+	return out, deferralNone
 }
 
 // StatusClusters returns the status projection built by
