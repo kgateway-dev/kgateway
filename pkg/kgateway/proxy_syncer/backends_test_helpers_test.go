@@ -9,9 +9,8 @@ import (
 // testClusterCols keeps the static collections backing a test-built
 // PerClientEnvoyClusters alive and available to tests that need direct access.
 type testClusterCols struct {
-	bases   krt.StaticCollection[baseEnvoyCluster]
-	deltas  krt.StaticCollection[backendClusterDeltaSet]
-	clients krt.StaticCollection[ir.UniquelyConnectedClient]
+	bases  krt.StaticCollection[baseEnvoyCluster]
+	deltas krt.StaticCollection[backendClusterDeltaSet]
 }
 
 // newTestPerClientClustersRaw builds a generation-consistent
@@ -46,11 +45,9 @@ func newTestPerClientClustersRaw(
 
 	baseCol := krt.NewStaticCollection[baseEnvoyCluster](nil, bases)
 	deltaCol := krt.NewStaticCollection[backendClusterDeltaSet](nil, deltaSets)
-	clientCol := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, clients)
 	return PerClientEnvoyClusters{
-		base:    baseCol,
-		deltas:  deltaCol,
-		clients: clientCol,
+		base:   baseCol,
+		deltas: deltaCol,
 	}
 }
 
@@ -102,7 +99,6 @@ func newTestPerClientClusters(initial []uccWithCluster) (PerClientEnvoyClusters,
 
 	baseCol := krt.NewStaticCollection[baseEnvoyCluster](nil, bases)
 	deltaCol := krt.NewStaticCollection[backendClusterDeltaSet](nil, deltaSets)
-	clientCol := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, clients)
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
-	return pcc, &testClusterCols{bases: baseCol, deltas: deltaCol, clients: clientCol}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
+	return pcc, &testClusterCols{bases: baseCol, deltas: deltaCol}
 }

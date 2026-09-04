@@ -426,16 +426,19 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 //     proto is shared read-only by every client that targets it.
 //   - deltas holds one row per backend recording which clients — usually none —
 //     genuinely need a different cluster, and what it is.
-//   - clients is retained so a read can verify that the requesting UCC is still
-//     connected without depending on unrelated clients.
+//
+// The requesting client is verified against the delta set itself, which retains
+// the exact UCC snapshot it was evaluated with. The UCC collection is deliberately
+// not held here: the transform that reads these is driven by that collection, so
+// KRT already hands it the current client, and fetching the parent again would
+// register a second handler on it (see FetchClustersForClient).
 //
 // Consumers never read the fields directly: FetchClustersForClient merges base and
 // delta into the view a snapshot needs, and StatusClusters projects the errors out
 // for status. Construct with [NewPerClientEnvoyClusters].
 type PerClientEnvoyClusters struct {
-	base    krt.Collection[baseEnvoyCluster]
-	deltas  krt.Collection[backendClusterDeltaSet]
-	clients krt.Collection[ir.UniquelyConnectedClient]
+	base   krt.Collection[baseEnvoyCluster]
+	deltas krt.Collection[backendClusterDeltaSet]
 	// status is built once by the constructor. Deriving it on demand instead
 	// would let a second caller stand up a duplicate collection over the same
 	// inputs, which KRT has no way to flag.
@@ -465,11 +468,6 @@ type clusterDeferral string
 const (
 	// deferralNone: every row passed the fences and was returned.
 	deferralNone clusterDeferral = ""
-	// deferralStaleClient: the requesting UCC is not the current row in the
-	// clients collection. It disconnected, or a field outside its KRT key
-	// (KnowsLocalCluster) changed and the transform has not re-run for the new
-	// value yet.
-	deferralStaleClient clusterDeferral = "stale_client"
 	// deferralMissingDeltaSet: a base row has no delta set yet. Expected once
 	// per new backend while the deltas collection catches up.
 	deferralMissingDeltaSet clusterDeferral = "missing_delta_set"
@@ -534,14 +532,14 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 		deltaViewByName[view.Name] = view
 	}
 
-	if iu.clients != nil {
-		// Narrow this dependency to the requesting UCC. Fleet churn must not
-		// retrigger every established client's cluster transform.
-		current := krt.FetchOne(kctx, iu.clients, krt.FilterKey(ucc.ResourceName()))
-		if current == nil || !current.Equals(ucc) {
-			return nil, deferralStaleClient
-		}
-	}
+	// ucc is not re-fetched from the UCC collection. The calling transform is
+	// keyed by that collection, and KRT passes it the parent's current stored
+	// object on both the primary and the secondary-dependency path, so a keyed
+	// FetchOne here could only ever disagree in the window between that lookup
+	// and this call, when the queued primary event reruns the transform anyway.
+	// It would also register a second handler on the UCC collection and
+	// recompute every changed client twice. Whether THIS client's identity is
+	// what each delta set evaluated is checked below against the set itself.
 
 	if len(bases) == 0 {
 		return nil, deferralNoBackends
@@ -846,9 +844,8 @@ func NewPerClientEnvoyClusters(
 	}, krtopts.ToOptions("PerClientEnvoyClusterDeltas")...)
 
 	return PerClientEnvoyClusters{
-		base:    base,
-		deltas:  deltas,
-		clients: uccs,
-		status:  newStatusClusters(krtopts, base, deltas),
+		base:   base,
+		deltas: deltas,
+		status: newStatusClusters(krtopts, base, deltas),
 	}
 }

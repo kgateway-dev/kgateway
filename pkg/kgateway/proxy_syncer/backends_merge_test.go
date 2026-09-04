@@ -141,8 +141,7 @@ func TestFetchClustersForClient_MatchingDeltaDoesNotRequireResolutionProof(t *te
 			},
 		},
 	}})
-	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 	waitSynced(t, pcc)
 
 	got, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
@@ -229,8 +228,7 @@ func TestFetchClustersForClient_RejectsStaleDeltaAfterBaseUpdate(t *testing.T) {
 			},
 		},
 	}})
-	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 	waitSynced(t, pcc)
 
 	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
@@ -288,8 +286,7 @@ func TestFetchClustersForClient_WaitsForCurrentClientSet(t *testing.T) {
 		ClientsFingerprint: emptySnapshot.Fingerprint,
 		ResolvedClients:    emptySnapshot,
 	}})
-	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 	waitSynced(t, pcc)
 
 	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
@@ -329,8 +326,7 @@ func TestFetchClustersForClient_UnrelatedClientChurnIsNotAReadinessBarrier(t *te
 		ClientsFingerprint: stableSnapshot.Fingerprint,
 		ResolvedClients:    stableSnapshot,
 	}})
-	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{stable, late})
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 	waitSynced(t, pcc)
 
 	stableClusters, _ := pcc.FetchClustersForClient(krt.TestingDummyContext{}, stable)
@@ -362,8 +358,7 @@ func TestFetchClustersForClient_WaitsForCurrentLocalClusterCapability(t *testing
 		ClientsFingerprint: oldSnapshot.Fingerprint,
 		ResolvedClients:    oldSnapshot,
 	}})
-	clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{currentUcc, stable})
-	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+	pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 	waitSynced(t, pcc)
 
 	rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, currentUcc)
@@ -405,32 +400,10 @@ func TestFetchClustersForClient_NamesTheFenceThatFailed(t *testing.T) {
 		require.Equal(t, deferralNoBackends, deferral)
 	})
 
-	t.Run("client not in the clients collection", func(t *testing.T) {
-		other := ir.NewUniquelyConnectedClient("other", "ns", nil, ir.PodLocality{})
-		pcc := newTestPerClientClustersRaw([]baseEnvoyCluster{baseRow}, nil, other)
-		waitSynced(t, pcc)
-		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-		require.Empty(t, rows)
-		require.Equal(t, deferralStaleClient, deferral)
-	})
-
-	t.Run("client differs from its clients-collection row", func(t *testing.T) {
-		// Same KRT key, different KnowsLocalCluster: the transform was invoked
-		// with a UCC the clients collection has since replaced.
-		stored := ucc
-		stored.KnowsLocalCluster = true
-		pcc := newTestPerClientClustersRaw([]baseEnvoyCluster{baseRow}, nil, stored)
-		waitSynced(t, pcc)
-		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-		require.Empty(t, rows)
-		require.Equal(t, deferralStaleClient, deferral)
-	})
-
 	t.Run("base with no delta set", func(t *testing.T) {
 		baseCol := krt.NewStaticCollection(nil, []baseEnvoyCluster{baseRow})
 		deltaCol := krt.NewStaticCollection[backendClusterDeltaSet](nil, nil)
-		clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
-		pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+		pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 		waitSynced(t, pcc)
 		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		require.Empty(t, rows)
@@ -450,8 +423,7 @@ func TestFetchClustersForClient_NamesTheFenceThatFailed(t *testing.T) {
 				ucc.ResourceName(): {Client: older, Name: "c", Cluster: sharedproto.Wrap(clusterNamed("c")), ClusterVersion: 2},
 			},
 		}})
-		clientCol := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc})
-		pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol, clients: clientCol}
+		pcc := PerClientEnvoyClusters{base: baseCol, deltas: deltaCol}
 		waitSynced(t, pcc)
 		rows, deferral := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
 		require.Empty(t, rows)
