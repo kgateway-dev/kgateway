@@ -3,7 +3,6 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
-	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -19,10 +18,12 @@ import (
 )
 
 // Contract and concurrency coverage for NewPerClientEnvoyClusters (the per-client
-// CDS collection). These pin the invariant that the clusters returned for a
-// connected client track (connected-client set) x (finalBackends) across any
-// sequence of client/backend add/remove, plus that a client which stays connected
-// is never left permanently without its clusters while other clients churn.
+// CDS collection). Base clusters are shared across clients, and each connected
+// client has exactly one row: its assembled CDS payload. These pin that a
+// connected client sees all backends across any sequence of client/backend
+// add/remove, that removing one client leaves the others untouched, and that a
+// client which stays connected is never left permanently without its clusters
+// while others churn.
 //
 // Added while investigating #14184 (proxies stranded with empty per-client config).
 // They document the behavior the collection must preserve and pass against the
@@ -55,14 +56,10 @@ func clustersTestClient(role string) ir.UniquelyConnectedClient {
 	return ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 }
 
+// clusterNamesForClient reads the client's stored CDS payload, so it observes what
+// KRT has propagated rather than what FetchClustersForClient would compute now.
 func clusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniquelyConnectedClient) []string {
-	fetched := c.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-	names := make([]string, 0, len(fetched))
-	for _, f := range fetched {
-		names = append(names, f.Name)
-	}
-	slices.Sort(names)
-	return names
+	return storedClusterNamesForClient(c, ucc)
 }
 
 func newClustersTestFixture(
@@ -131,8 +128,9 @@ func TestPerClientClusters_BackendAddedPropagatesToAllClients(t *testing.T) {
 	eventuallyClusterCount(t, clusters, b, 2)
 }
 
-// Removing a client clears its rows and leaves other clients untouched.
-func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T) {
+// Removing a client leaves other clients untouched and deletes the removed
+// client's row.
+func TestPerClientClusters_ClientRemovedLeavesOthersUnaffected(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	uccs, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
@@ -142,11 +140,13 @@ func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T)
 	eventuallyClusterCount(t, clusters, b, 2)
 
 	uccs.DeleteObject(b.ResourceName())
-	eventuallyClusterCount(t, clusters, b, 0)
+	// The surviving client keeps its full set...
 	eventuallyClusterCount(t, clusters, a, 2)
+	// ...while the disconnected client no longer has a resolved generation.
+	eventuallyClusterCount(t, clusters, b, 0)
 }
 
-// Each client's index entry returns only that client's clusters.
+// Each client's view names only that client.
 func TestPerClientClusters_IndexIsolation(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	_, _, clusters := newClustersTestFixture(t,
@@ -154,16 +154,19 @@ func TestPerClientClusters_IndexIsolation(t *testing.T) {
 		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, a, 2)
-	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, a) {
+	rowsA := clusters.FetchClustersForClient(krt.TestingDummyContext{}, a)
+	for _, fc := range rowsA {
 		require.Equal(t, a.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client a")
 	}
-	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, b) {
+	rowsB := clusters.FetchClustersForClient(krt.TestingDummyContext{}, b)
+	for _, fc := range rowsB {
 		require.Equal(t, b.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client b")
 	}
 }
 
-// Removing then re-adding the same client restores its full cluster set.
-func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
+// Churning a client through disconnect/reconnect keeps its full cluster set and
+// does not disturb a co-connected client.
+func TestPerClientClusters_ReAddClientKeepsRows(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	uccs, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
@@ -171,9 +174,12 @@ func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
 	)
 	eventuallyClusterCount(t, clusters, b, 2)
 	uccs.DeleteObject(b.ResourceName())
+	// Observe the disconnect before reconnecting, so the delete and the re-add
+	// cannot coalesce into a no-op and skip the reconnect path under test.
 	eventuallyClusterCount(t, clusters, b, 0)
 	uccs.UpdateObject(b)
 	eventuallyClusterCount(t, clusters, b, 2)
+	eventuallyClusterCount(t, clusters, a, 2)
 }
 
 // A client that stays connected must never be left permanently without its clusters
