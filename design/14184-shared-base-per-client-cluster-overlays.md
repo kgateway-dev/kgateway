@@ -352,7 +352,10 @@ Backend identity and any UCC-invariant error, plus one row per **errored** per-c
 carrying that client's error attributed to the same Backend. Clusters that translated cleanly
 for a client contribute nothing beyond their base row. The per-client half is a
 `NewManyCollection` over the per-client rows, so it is sparse by construction and a departed
-client's errors leave with its row. It is a collection rather than a `Fetch` helper so
+client's errors leave with its row. The per-client row compares those error records in full —
+client, cluster, message, source Backend and generation — because status filters them by
+generation: a backend whose next generation fails with the same message must still produce a
+new row, or status would report the new generation as accepted while CDS still excludes it. It is a collection rather than a `Fetch` helper so
 `backendStatusContributions` can index it by Backend: one client's cluster error then
 recomputes only its owning Backend's status.
 
@@ -505,12 +508,26 @@ that makes it sound.
 ## Open Questions
 
 **A base change reruns every client's walk.** The per-client transform depends on the whole
-base collection, so any backend change reruns `N` transforms of `O(M)` each. The no-overlay path
-is cheap, but two things on it are not free and are the next things to measure: the krt
-dependency registered by each overlay fetch (destrule's index lookup runs per pair; an overlay
-that prepares once per client would reduce it to one per client), and strict-mode validation,
-which shells out to Envoy once per materialized cluster and would benefit from a memo keyed by
-the cluster's content hash in either topology.
+base collection, so any backend change reruns `N` transforms of `O(M)` each.
+`BenchmarkPerClientBackendUpdate` and `BenchmarkPerClientDestinationRuleUpdate`
+(`perclient_update_bench_test.go`) price this on a deliberately unfavourable fleet: 12 clients,
+400 backends of which a quarter carry inline endpoints (so every client materializes a CLA for
+them) and an eighth have a rule that a quarter of the clients match. Apple M4 Max, `-benchtime=5x`:
+
+| Operation | No validation | Strict, 200 µs per validation |
+| --- | --- | --- |
+| One backend's output changes; all 12 payloads rebuilt | 8.0 ms, 11.7 MB, 51k allocs | 287 ms |
+| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 2.1 ms, 3.3 MB, 22k allocs | 72 ms |
+
+Without validation the cost is dominated by rebuilding each client's ~100 inline CLAs and ~12
+overlaid clones, not by the 300 no-overlay pairs per client. With strict validation it is
+dominated by re-validating those same ~1,300 materialized clusters, almost all of them byte-identical
+to the last run. Two follow-ups address exactly that: a validation memo keyed by the cluster's
+content hash (which helps the backend-keyed design equally, since it too validates the same
+cluster once per client), and building the client-independent inline CLA on the base (below),
+which removes the inline term from the per-client walk altogether. The krt dependency registered
+by each overlay fetch (destrule's index lookup runs per pair) is the remaining per-pair cost; an
+overlay that prepares once per client would reduce it to one per client.
 
 **Inline-CLA backends materialize for every client** even when the CLA does not depend on the
 client. With no priority info the CLA is UCC-independent (`LoadBalancingContextHash` returns 0
