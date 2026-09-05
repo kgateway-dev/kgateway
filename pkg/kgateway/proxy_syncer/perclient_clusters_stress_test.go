@@ -182,15 +182,19 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 		}(g)
 	}
 
-	// Churn a backend so per-client rows recompute during client blips.
+	// Churn a backend so per-client rows recompute during client blips. Alternate
+	// a translated field so each update is a real base change rather than one the
+	// base row's Equals absorbs.
+	var lastProtocol string
 	wg.Go(func() {
-		for {
+		for i := 0; ; i++ {
 			select {
 			case <-stop:
 				return
 			default:
 			}
-			finalBackends.UpdateObject(clustersTestBackend("b5"))
+			lastProtocol = fmt.Sprintf("v%d", i%2)
+			finalBackends.UpdateObject(clustersTestBackendWithProtocol("b5", lastProtocol))
 		}
 	})
 
@@ -198,7 +202,12 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 	close(stop)
 	wg.Wait()
 
-	// Ensure the stable client is present as the final state, then require recovery.
+	// Ensure the stable client is present as the final state, then require
+	// recovery, including the last backend update in its stored payload.
 	src.add(stable)
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
+	require.Eventually(t, func() bool {
+		c := storedClustersForClient(clusters, stable)[clustersTestBackend("b5").ClusterName()]
+		return c != nil && c.GetAltStatName() == lastProtocol
+	}, 5*time.Second, 10*time.Millisecond, "the stable client's payload must carry the last backend update")
 }

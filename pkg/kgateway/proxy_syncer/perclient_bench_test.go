@@ -79,10 +79,12 @@ func benchDrainScenario(b *testing.B, v validator.Validator) {
 	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
 	clusters := NewPerClientEnvoyClusters(ctx, krtopts, benchTranslator(v), finalBackends, uccs)
 
+	// Observe the stored per-client row, not a recomputation: connect is done
+	// when the client's payload has propagated, and drain when its row is gone.
 	waitDrained := func(ucc ir.UniquelyConnectedClient) {
 		deadline := time.Now().Add(10 * time.Minute)
 		for time.Now().Before(deadline) {
-			if rows := clusters.FetchClustersForClient(krt.TestingDummyContext{}, ucc); len(rows) == benchBackends {
+			if row := clusters.perClient.GetKey(ucc.ResourceName()); row != nil && len(row.clusters.Items) == benchBackends {
 				return
 			}
 			time.Sleep(5 * time.Millisecond)
@@ -100,7 +102,7 @@ func benchDrainScenario(b *testing.B, v validator.Validator) {
 		uccs.DeleteObject(probe.ResourceName())
 		deadline := time.Now().Add(10 * time.Minute)
 		for time.Now().Before(deadline) {
-			if rows := clusters.FetchClustersForClient(krt.TestingDummyContext{}, probe); len(rows) == 0 {
+			if clusters.perClient.GetKey(probe.ResourceName()) == nil {
 				break
 			}
 			time.Sleep(5 * time.Millisecond)

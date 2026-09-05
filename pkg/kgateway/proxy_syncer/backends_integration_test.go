@@ -2,9 +2,12 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
+	"strconv"
 	"testing"
 	"time"
 
+	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -82,33 +86,34 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 	}, time.Second, 10*time.Millisecond,
 		"the retained BaseCluster must not expose a raw alias to the shared proto")
 
-	var gotA, gotB, gotOther []uccWithCluster
+	name := backend.ClusterName()
+	var gotA, gotB, gotOther *envoyclusterv3.Cluster
 	require.Eventually(t, func() bool {
-		gotA = pcc.FetchClustersForClient(krt.TestingDummyContext{}, matchA)
-		gotB = pcc.FetchClustersForClient(krt.TestingDummyContext{}, matchB)
-		gotOther = pcc.FetchClustersForClient(krt.TestingDummyContext{}, other)
-		return len(gotA) == 1 && len(gotB) == 1 && len(gotOther) == 1
+		gotA = storedClustersForClient(pcc, matchA)[name]
+		gotB = storedClustersForClient(pcc, matchB)[name]
+		gotOther = storedClustersForClient(pcc, other)[name]
+		return gotA != nil && gotB != nil && gotOther != nil
 	}, 2*time.Second, 20*time.Millisecond)
 
-	// Declined client: shared base proto, no mutation.
-	require.NoError(t, gotOther[0].Error)
-	assert.Nil(t, gotOther[0].Cluster.Clone().GetOutlierDetection(), "declined client must see the un-overlaid base")
+	// Declined client: the shared base proto itself, no mutation, no copy.
+	assert.Nil(t, gotOther.GetOutlierDetection(), "declined client must see the un-overlaid base")
+	baseRow := pcc.base.GetKey(name)
+	require.NotNil(t, baseRow)
+	assert.True(t, baseRow.Cluster.Is(gotOther), "declined client must be served the base proto, not a copy")
 
 	// Matched client: distinct proto carrying the overlay mutation.
-	require.NoError(t, gotA[0].Error)
-	assert.NotNil(t, gotA[0].Cluster.Clone().GetOutlierDetection(), "matched client must see the overlay mutation")
-	assert.False(t, sharedproto.Same(gotOther[0].Cluster, gotA[0].Cluster), "matched client must not share the base proto")
+	assert.NotNil(t, gotA.GetOutlierDetection(), "matched client must see the overlay mutation")
+	assert.NotSame(t, gotOther, gotA, "matched client must not share the base proto")
+	assert.NotSame(t, gotA, gotB, "clones are owned by their client; interning is a separate optimization")
 
-	assert.False(t, sharedproto.Same(gotA[0].Cluster, gotB[0].Cluster),
-		"the sparse-correctness layer must not depend on delta interning")
-
-	// The delta transform lends the base proto to ApplyPerClient rather than
-	// handing it a defensive copy, so the overlay pass above ran against the
-	// very proto the declined client is served. Publishing it through the
-	// snapshot sink re-verifies its wrap-time hash (TestMain arms the tripwire),
-	// which fails if anything on that path mutated the borrowed base.
-	require.NotPanics(t, func() { gotOther[0].Cluster.ResourceWithTTL() },
-		"the shared base must survive the per-client overlay pass unmutated")
+	// The per-client transform lends the base proto to ApplyPerClient rather
+	// than handing it a defensive copy, so the overlay passes above ran against
+	// the very proto the declined client is served. That client's payload was
+	// published through the snapshot sink, which re-verifies the wrap-time hash
+	// (TestMain arms the tripwire); reaching this line means nothing on that
+	// path mutated the borrowed base.
+	require.NotPanics(t, func() { baseRow.Cluster.ResourceWithTTL() },
+		"the shared base must survive the per-client overlay passes unmutated")
 }
 
 // TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients covers
@@ -243,7 +248,7 @@ func TestNewPerClientEnvoyClusters_ArmedTripwireCatchesBaseMutation(t *testing.T
 	require.Eventually(t, func() bool {
 		return pcc.HasSynced() && len(storedClustersForClient(pcc, ucc)) == 1
 	}, 2*time.Second, 20*time.Millisecond)
-	got := pcc.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
+	got := clustersForClient(krt.TestingDummyContext{}, ctx, translator, pcc.base, ucc)
 	require.Len(t, got, 1)
 
 	shared := got[0].Cluster
@@ -263,4 +268,94 @@ func TestNewPerClientEnvoyClusters_ArmedTripwireCatchesBaseMutation(t *testing.T
 	require.True(t, ok, "the tripwire panics with a message, got %T", recovered)
 	assert.Contains(t, msg, backend.ClusterName(), "the tripwire must name the mutated cluster")
 	assert.Contains(t, msg, "mutated after creation")
+}
+
+// failingValidator rejects every overlaid cluster with the same message, standing
+// in for a strict-mode validation failure that persists across backend
+// generations. The un-overlaid base passes, so the failure is per client.
+type failingValidator struct{ err error }
+
+func (f failingValidator) Validate(_ context.Context, bootstrap *envoybootstrapv3.Bootstrap) error {
+	for _, c := range bootstrap.GetStaticResources().GetClusters() {
+		if c.GetOutlierDetection() != nil {
+			return f.err
+		}
+	}
+	return nil
+}
+
+// TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration pins that
+// a per-client error row moves with the backend's generation even when its
+// message does not. Backend status filters cluster errors by generation, so if
+// the client's row compared equal across generations KRT would retain the old
+// error row and status would report the new generation as accepted while CDS
+// still excludes the cluster.
+func TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration(t *testing.T) {
+	ctx := t.Context()
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	backendGK := schema.GroupKind{Group: "", Kind: "Service"}
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	translator := &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			backendGK: {
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					return nil
+				},
+			},
+		},
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
+			overlayGK: {
+				// Always applies, so every client materializes a cluster and
+				// strict validation runs on it.
+				PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+					}}
+				},
+			},
+		},
+		Mode:      apisettings.ValidationStrict,
+		Validator: failingValidator{err: errors.New("rejected by envoy")},
+	}
+
+	serviceAt := func(generation int64) *corev1.Service {
+		return &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns", Name: "svc", UID: "svc-uid",
+			ResourceVersion: strconv.FormatInt(generation, 10), Generation: generation,
+		}}
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	backend.Obj = serviceAt(1)
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
+	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
+
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	name := backend.ClusterName()
+	statusKey := uccClusterResourceName(ucc, name)
+
+	errorRowAtGeneration := func(generation int64) func() bool {
+		return func() bool {
+			row := pcc.StatusClusters().GetKey(statusKey)
+			return row != nil && row.PerClientError && row.BackendGeneration == generation &&
+				row.Error != nil && row.Error.Error() == "rejected by envoy"
+		}
+	}
+	require.Eventually(t, errorRowAtGeneration(1), 2*time.Second, 20*time.Millisecond,
+		"the per-client validation failure must reach status at generation 1")
+	require.Eventually(t, func() bool {
+		stored := storedClustersForClient(pcc, ucc)
+		return stored != nil && stored[name] == nil
+	}, 2*time.Second, 20*time.Millisecond, "an errored cluster must be excluded from the client's payload")
+
+	// Same client, same error, next generation of the backend.
+	updated := backend
+	updated.Obj = serviceAt(2)
+	finalBackends.UpdateObject(&updated)
+
+	require.Eventually(t, errorRowAtGeneration(2), 2*time.Second, 20*time.Millisecond,
+		"the error row must move to generation 2 even though its message is unchanged")
+	assert.Nil(t, storedClustersForClient(pcc, ucc)[name], "the cluster must stay excluded at generation 2")
 }

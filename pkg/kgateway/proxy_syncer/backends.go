@@ -1,8 +1,10 @@
 package proxy_syncer
 
 import (
+	"cmp"
 	"context"
 	"hash/fnv"
+	"slices"
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -77,10 +79,9 @@ func backendEquals(a, b *ir.BackendObjectIR) bool {
 
 // uccWithCluster is one client's view of one backend's cluster: the shared base
 // or this client's own clone, along with any translation error and the source
-// Backend identity used for status attribution. FetchClustersForClient returns
-// it, and it is also the row type of the status collection (StatusClusters),
-// where Cluster and ClusterVersion are left zero because status does not read
-// them.
+// Backend identity used for status attribution. clustersForClient returns it,
+// and it is also the row type of the status collection (StatusClusters), where
+// Cluster and ClusterVersion are left zero because status does not read them.
 type uccWithCluster struct {
 	Client ir.UniquelyConnectedClient
 	// Cluster is wrapped so snapshot assembly cannot mutate a proto shared with
@@ -139,10 +140,13 @@ func errString(err error) string {
 // a direct response rather than silently falling through to a cluster that isn't
 // there.
 //
-// The hashes are the equality keys: publishable clusters are versioned by
-// content, errored ones only by name for the payload's sake, and per-client
-// errors additionally by message so the status projection built from this row
-// observes a changed reason.
+// The hashes are the equality keys for the payload: publishable clusters are
+// versioned by content, errored ones only by name, because a cluster Envoy never
+// sees need not republish when its error message changes. Per-client errors are
+// compared as records, because the status projection built from this row reads
+// their source Backend and generation as well as their message: a backend whose
+// next generation fails with the same message must still produce a new row, or
+// status would report the new generation as accepted while CDS still excludes it.
 type clustersWithErrors struct {
 	// +noKrtEquals
 	clusters envoycache.Resources
@@ -151,12 +155,11 @@ type clustersWithErrors struct {
 	erroredClustersHash uint64
 	clustersHash        uint64
 	// perClientErrors are the rows whose Error was produced for this client
-	// alone; the status projection reads them. Base errors are attributed from
-	// the base rows instead, once rather than once per client.
-	// +noKrtEquals
-	perClientErrors     []uccWithCluster
-	perClientErrorsHash uint64
-	resourceName        string
+	// alone, sorted by cluster name; the status projection reads them. Base
+	// errors are attributed from the base rows instead, once rather than once
+	// per client.
+	perClientErrors []uccWithCluster
+	resourceName    string
 }
 
 func (c clustersWithErrors) ResourceName() string {
@@ -168,8 +171,8 @@ var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
 func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 	return c.clustersHash == k.clustersHash &&
 		c.erroredClustersHash == k.erroredClustersHash &&
-		c.perClientErrorsHash == k.perClientErrorsHash &&
-		c.resourceName == k.resourceName
+		c.resourceName == k.resourceName &&
+		slices.EqualFunc(c.perClientErrors, k.perClientErrors, uccWithCluster.Equals)
 }
 
 // baseClusterVersion returns the equality hash for a base translation result.
@@ -218,10 +221,8 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 // by client key, and StatusClusters returns the status projection. Construct
 // with [NewPerClientEnvoyClusters].
 type PerClientEnvoyClusters struct {
-	ctx        context.Context
-	translator *irtranslator.BackendTranslator
-	base       krt.Collection[baseEnvoyCluster]
-	perClient  krt.Collection[clustersWithErrors]
+	base      krt.Collection[baseEnvoyCluster]
+	perClient krt.Collection[clustersWithErrors]
 	// status is built once by the constructor. Deriving it on demand instead
 	// would let a second caller stand up a duplicate collection over the same
 	// inputs, which KRT has no way to flag.
@@ -242,26 +243,20 @@ func (iu *PerClientEnvoyClusters) HasSynced() bool {
 	return true
 }
 
-// FetchClustersForClient returns one client's view of every base cluster: the
-// shared base proto where no overlay applies, and this client's own clone where
-// one does, along with any error. It is the merge that the perClient transform
-// stores; calling it directly computes the same view on demand, which is what
-// tests do.
+// clustersForClient is the per-client walk over the base collection: one
+// client's view of every base cluster, the shared proto where no overlay applies
+// and this client's own clone where one does, along with any error. Every base
+// is either published as-is or cloned for this client by ApplyPerClient, so the
+// result is complete by construction: a client can never observe a base whose
+// overlay has not been applied, nor an inline-CLA cluster without its CLA,
+// because both are produced here, before anything is returned.
+//
+// It is called only by the perClient transform, which stores its result;
+// production consumers read that stored row. Tests that want the merge without
+// KRT call it directly with a dummy context.
 //
 // The *Cluster protos in the returned slice are shared with other UCCs (base)
 // or unique to this UCC (clone); callers MUST NOT mutate them.
-func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []uccWithCluster {
-	if iu.base == nil {
-		return nil
-	}
-	return clustersForClient(kctx, iu.ctx, iu.translator, iu.base, ucc)
-}
-
-// clustersForClient is the per-client walk over the base collection. Every
-// base is either published as-is or cloned for this client by ApplyPerClient,
-// so the result is complete by construction: a client can never observe a base
-// whose overlay has not been applied, nor an inline-CLA cluster without its CLA,
-// because both are produced here, before anything is returned.
 func clustersForClient(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -333,7 +328,6 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 	var (
 		clustersHash        uint64
 		erroredClustersHash uint64
-		perClientErrorsHash uint64
 		erroredClusters     []string
 		perClientErrors     []uccWithCluster
 	)
@@ -347,10 +341,6 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 			erroredClustersHash ^= utils.HashString(c.Name)
 			if c.PerClientError {
 				perClientErrors = append(perClientErrors, c)
-				hasher := fnv.New64a()
-				utils.HashStringField(hasher, c.Name)
-				utils.HashStringField(hasher, c.Error.Error())
-				perClientErrorsHash ^= hasher.Sum64()
 			}
 			continue
 		}
@@ -360,6 +350,8 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clustersHash ^= c.ClusterVersion
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
+	// Base rows arrive in map order; sort so Equals compares like with like.
+	slices.SortFunc(perClientErrors, func(a, b uccWithCluster) int { return cmp.Compare(a.Name, b.Name) })
 
 	return &clustersWithErrors{
 		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
@@ -367,7 +359,6 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clustersHash:        clustersHash,
 		erroredClustersHash: erroredClustersHash,
 		perClientErrors:     perClientErrors,
-		perClientErrorsHash: perClientErrorsHash,
 		resourceName:        ucc.ResourceName(),
 	}
 }
@@ -520,10 +511,8 @@ func newPerClientEnvoyClusters(
 	}, krtopts.ToOptions("ClusterResources")...)
 
 	return PerClientEnvoyClusters{
-		ctx:        ctx,
-		translator: translator,
-		base:       base,
-		perClient:  perClient,
-		status:     newStatusClusters(krtopts, base, perClient),
+		base:      base,
+		perClient: perClient,
+		status:    newStatusClusters(krtopts, base, perClient),
 	}
 }

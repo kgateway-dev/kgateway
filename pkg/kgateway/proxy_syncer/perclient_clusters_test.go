@@ -33,8 +33,10 @@ func clustersTestTranslator() *irtranslator.BackendTranslator {
 	return &irtranslator.BackendTranslator{
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
 			{Group: "", Kind: "Service"}: {
-				InitEnvoyBackend: func(_ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				InitEnvoyBackend: func(_ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					// A translated field tests can vary to force a real base change.
+					out.AltStatName = string(in.AppProtocol)
 					return nil
 				},
 			},
@@ -43,12 +45,21 @@ func clustersTestTranslator() *irtranslator.BackendTranslator {
 }
 
 func clustersTestBackend(name string) *ir.BackendObjectIR {
+	return clustersTestBackendWithProtocol(name, "")
+}
+
+// clustersTestBackendWithProtocol is clustersTestBackend with an AppProtocol,
+// which the test translator copies into the cluster's AltStatName. Alternating
+// it is how churn tests make the base row genuinely change; resubmitting an
+// identical backend is absorbed by the base row's Equals and exercises nothing.
+func clustersTestBackendWithProtocol(name, appProtocol string) *ir.BackendObjectIR {
 	b := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "",
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      name,
 	}, 443, "", "")
+	b.AppProtocol = ir.AppProtocol(appProtocol)
 	return &b
 }
 
@@ -146,21 +157,25 @@ func TestPerClientClusters_ClientRemovedLeavesOthersUnaffected(t *testing.T) {
 	eventuallyClusterCount(t, clusters, b, 0)
 }
 
-// Each client's view names only that client.
-func TestPerClientClusters_IndexIsolation(t *testing.T) {
+// Each client has its own stored row, keyed by the client, and the rows share
+// the base protos rather than copying them.
+func TestPerClientClusters_RowIsolation(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	_, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
 		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, a, 2)
-	rowsA := clusters.FetchClustersForClient(krt.TestingDummyContext{}, a)
-	for _, fc := range rowsA {
-		require.Equal(t, a.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client a")
-	}
-	rowsB := clusters.FetchClustersForClient(krt.TestingDummyContext{}, b)
-	for _, fc := range rowsB {
-		require.Equal(t, b.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client b")
+	eventuallyClusterCount(t, clusters, b, 2)
+	rowA := clusters.perClient.GetKey(a.ResourceName())
+	rowB := clusters.perClient.GetKey(b.ResourceName())
+	require.NotNil(t, rowA)
+	require.NotNil(t, rowB)
+	require.Equal(t, a.ResourceName(), rowA.ResourceName())
+	require.Equal(t, b.ResourceName(), rowB.ResourceName())
+	for name, item := range rowA.clusters.Items {
+		require.Same(t, item.Resource, rowB.clusters.Items[name].Resource,
+			"clients with no overlay must share the base proto, not copies of it")
 	}
 }
 
@@ -215,15 +230,19 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 			}
 		}(g)
 	}
-	// Churn a backend in parallel so per-client rows recompute under client churn.
+	// Churn a backend in parallel so per-client rows recompute under client
+	// churn. Alternate a translated field: an identical resubmission is absorbed
+	// by the base row's Equals and would exercise nothing.
+	var lastProtocol string
 	wg.Go(func() {
-		for {
+		for i := 0; ; i++ {
 			select {
 			case <-stop:
 				return
 			default:
 			}
-			finalBackends.UpdateObject(clustersTestBackend("b4"))
+			lastProtocol = fmt.Sprintf("v%d", i%2)
+			finalBackends.UpdateObject(clustersTestBackendWithProtocol("b4", lastProtocol))
 		}
 	})
 
@@ -231,6 +250,11 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 	close(stop)
 	wg.Wait()
 
-	// The stable client must have all its backends once churn settles.
+	// The stable client must have all its backends once churn settles, and its
+	// stored payload must reflect the last backend update.
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
+	require.Eventually(t, func() bool {
+		c := storedClustersForClient(clusters, stable)[clustersTestBackend("b4").ClusterName()]
+		return c != nil && c.GetAltStatName() == lastProtocol
+	}, 5*time.Second, 10*time.Millisecond, "the stable client's payload must carry the last backend update")
 }
