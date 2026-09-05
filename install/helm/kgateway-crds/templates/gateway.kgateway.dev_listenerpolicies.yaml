@@ -3275,8 +3275,11 @@ spec:
                           See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
                         properties:
                           enabledUpgrades:
-                            description: List of upgrade types to enable (e.g. "websocket",
-                              "CONNECT", etc.)
+                            description: |-
+                              EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+                              and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+                              upstream without termination. To terminate CONNECT and forward its payload
+                              as raw TCP data, configure httpUpgrade in a TrafficPolicy.
                             items:
                               type: string
                             minItems: 1
@@ -6611,8 +6614,11 @@ spec:
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
                               properties:
                                 enabledUpgrades:
-                                  description: List of upgrade types to enable (e.g.
-                                    "websocket", "CONNECT", etc.)
+                                  description: |-
+                                    EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+                                    and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+                                    upstream without termination. To terminate CONNECT and forward its payload
+                                    as raw TCP data, configure httpUpgrade in a TrafficPolicy.
                                   items:
                                     type: string
                                   minItems: 1
