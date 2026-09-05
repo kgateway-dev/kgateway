@@ -30,7 +30,7 @@ runs:
           --namespace kgateway-system --create-namespace \
           --wait --timeout 5m
 
-    - name: Run load tests in each validation mode
+    - name: Run load tests and strict churn convergence
       shell: bash
       env:
         KGATEWAY_RUN_LOAD_TESTS: "true"
@@ -52,3 +52,9 @@ runs:
 
           echo "::endgroup::"
         done
+
+        # StrictChurn sets strict validation itself and mutates the controller
+        # deployment, so run it once and only after the shared load suites.
+        echo "::group::KGateway strict churn convergence test"
+        make run-load-tests-strict-churn
+        echo "::endgroup::"

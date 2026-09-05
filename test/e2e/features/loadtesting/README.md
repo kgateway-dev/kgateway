@@ -200,7 +200,9 @@ Envoys still beat the rollout bound. Scale past the laptop-friendly defaults
 with `KGW_LOADTEST_BACKENDS` / `KGW_LOADTEST_ROUTES`.
 
 Because the suite mutates the controller deployment, it is registered with the
-suite runner but excluded from the CI e2e clusters; run it explicitly with
+suite runner but excluded from the shared CI e2e clusters. The nightly
+load-test action runs it once per load-test cluster, after the standard and
+strict AttachedRoutes runs. Run it locally with
 `make run-load-tests-strict-churn`.
 
 ## Framework Architecture

@@ -56,9 +56,10 @@ import (
 //
 // The suite mutates the controller deployment (KGW_VALIDATION_MODE=STRICT,
 // plus the optional delay override) and restores it on teardown, so it must
-// not share a cluster with suites that assume a steady controller. It is
-// registered with the suite runner but excluded from the CI e2e clusters; run
-// it via `make run-load-tests-strict-churn`.
+// not run before suites that assume a steady controller. It is registered with
+// the suite runner, excluded from the shared CI e2e clusters, and run once at
+// the end of each nightly load-test lane. Run it locally via
+// `make run-load-tests-strict-churn`.
 //
 // Honesty note: this suite is a regression pin for the anti-starvation
 // properties, not a reproducer of the #14184 wedge. Verified empirically
