@@ -607,3 +607,71 @@ func TestDeepMergeImage(t *testing.T) {
 		})
 	}
 }
+
+func TestDeepMergeSecurityContextWindowsOptions(t *testing.T) {
+	const gmsaSpec = `{"apiVersion":"windows.k8s.io/v1","kind":"GMSACredentialSpec"}`
+
+	tests := []struct {
+		name string
+		dst  *corev1.WindowsSecurityContextOptions
+		src  *corev1.WindowsSecurityContextOptions
+		want *corev1.WindowsSecurityContextOptions
+	}{
+		{
+			name: "src gmsaCredentialSpecName overrides dst",
+			dst: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("default-gmsa"),
+				RunAsUserName:          new("default-user"),
+			},
+			src: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("override-gmsa"),
+			},
+			want: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("override-gmsa"),
+				RunAsUserName:          new("default-user"),
+			},
+		},
+		{
+			name: "dst gmsaCredentialSpecName is kept when src does not set it",
+			dst: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("default-gmsa"),
+			},
+			src: &corev1.WindowsSecurityContextOptions{
+				RunAsUserName: new("override-user"),
+			},
+			want: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("default-gmsa"),
+				RunAsUserName:          new("override-user"),
+			},
+		},
+		{
+			name: "gmsaCredentialSpec does not leak into gmsaCredentialSpecName",
+			dst: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpec: new(gmsaSpec),
+			},
+			src: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("override-gmsa"),
+			},
+			want: &corev1.WindowsSecurityContextOptions{
+				GMSACredentialSpecName: new("override-gmsa"),
+				GMSACredentialSpec:     new(gmsaSpec),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DeepMergeSecurityContext(
+				&corev1.SecurityContext{WindowsOptions: tt.dst.DeepCopy()},
+				&corev1.SecurityContext{WindowsOptions: tt.src.DeepCopy()},
+			)
+			assert.Equal(t, tt.want, got.WindowsOptions, "container securityContext.windowsOptions")
+
+			gotPod := deepMergePodSecurityContext(
+				&corev1.PodSecurityContext{WindowsOptions: tt.dst.DeepCopy()},
+				&corev1.PodSecurityContext{WindowsOptions: tt.src.DeepCopy()},
+			)
+			assert.Equal(t, tt.want, gotPod.WindowsOptions, "pod securityContext.windowsOptions")
+		})
+	}
+}

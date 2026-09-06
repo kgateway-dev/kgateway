@@ -203,7 +203,7 @@ func deepMergeWindowsSecurityContextOptions(dst, src *corev1.WindowsSecurityCont
 		return src
 	}
 
-	dst.GMSACredentialSpecName = MergePointers(dst.GMSACredentialSpec, src.GMSACredentialSpec)
+	dst.GMSACredentialSpecName = MergePointers(dst.GMSACredentialSpecName, src.GMSACredentialSpecName)
 	dst.GMSACredentialSpec = MergePointers(dst.GMSACredentialSpec, src.GMSACredentialSpec)
 	dst.RunAsUserName = MergePointers(dst.RunAsUserName, src.RunAsUserName)
 	dst.HostProcess = MergePointers(dst.HostProcess, src.HostProcess)
