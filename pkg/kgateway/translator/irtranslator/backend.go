@@ -65,8 +65,10 @@ type BaseCluster struct {
 	// SupportsInlineCLA is true when the cluster type accepts an inline
 	// ClusterLoadAssignment (STATIC, STRICT_DNS, LOGICAL_DNS, or the DNS extension).
 	// When this is true AND EndpointInputs is non-nil AND Cluster.LoadAssignment is
-	// nil, the per-client overlay must always build a CLA — the CLA varies per UCC
-	// via PrioritizeEndpoints and so cannot live on the shared base.
+	// nil, the per-client overlay must always build a CLA: it varies per UCC via
+	// PrioritizeEndpoints and so cannot live on the shared base. When the CLA
+	// cannot vary (see inlineCLADependsOnClient) TranslateBackendBase builds it
+	// onto the base instead, and LoadAssignment is already set here.
 	SupportsInlineCLA bool
 	// DefaultedLocalityConfig records that defaultLocalityConfig — not a policy
 	// plugin — chose this cluster's locality mode. Its guard depends on the cluster
@@ -144,6 +146,17 @@ func (t *BackendTranslator) TranslateBackendBase(
 		EndpointInputs:          endpointInputs,
 		SupportsInlineCLA:       clusterSupportsInlineCLA(out),
 		DefaultedLocalityConfig: defaultedLocality,
+	}
+
+	// An inline CLA that no client can influence is built once, here, so the
+	// dominant static and DNS backend is complete on the shared base: every
+	// client then publishes the same proto and ApplyPerClient has nothing to
+	// do. Only backends whose endpoints a plugin may edit, or whose traffic
+	// distribution orders endpoints by client location, keep the per-client
+	// build. The zero client is passed because DependsOnClient has just
+	// established that PrioritizeEndpoints will not read it.
+	if result.NeedsInlineCLA() && !t.inlineCLADependsOnClient(backend, endpointInputs) {
+		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ir.UniquelyConnectedClient{}, *endpointInputs)
 	}
 
 	// Skip strict-mode validation when the CLA is built per client: the base
@@ -381,6 +394,24 @@ func (t *BackendTranslator) applyBasePolicies(
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// inlineCLADependsOnClient reports whether the inline CLA for backend can differ
+// between clients: either prioritization itself reads the client (a traffic
+// distribution or preset priority), or a contributed endpoint hook has not ruled
+// this backend out and might edit its inputs per client. Hooks that declare no
+// PerClientEndpointsMayApply are assumed to apply, so an out-of-tree plugin keeps
+// today's per-client build until it opts in.
+func (t *BackendTranslator) inlineCLADependsOnClient(backend *ir.BackendObjectIR, inputs *endpoints.EndpointsInputs) bool {
+	if endpoints.DependsOnClient(*inputs) {
+		return true
+	}
+	for _, plugin := range t.orderedEndpointPlugins() {
+		if plugin.MayApply(*backend) {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {

@@ -30,12 +30,23 @@ type EndpointPlugin struct {
 	groupKind schema.GroupKind
 	name      string
 	process   endpointPluginFunc
+	// mayApply is the plugin's PerClientEndpointsMayApply; nil means it may
+	// apply to every backend.
+	mayApply func(ir.BackendObjectIR) bool
+}
+
+// MayApply reports whether the plugin could contribute to backend for some
+// client. Plugins that did not declare PerClientEndpointsMayApply are assumed
+// to apply everywhere.
+func (p EndpointPlugin) MayApply(backend ir.BackendObjectIR) bool {
+	return p.mayApply == nil || p.mayApply(backend)
 }
 
 type endpointPluginEntry struct {
 	groupKind schema.GroupKind
 	name      string
 	plugin    endpointPluginFunc
+	mayApply  func(ir.BackendObjectIR) bool
 }
 
 func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
@@ -60,6 +71,7 @@ func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
 			groupKind: groupKind,
 			name:      policyPlugin.Name,
 			plugin:    plugin,
+			mayApply:  policyPlugin.PerClientEndpointsMayApply,
 		})
 	}
 
@@ -79,6 +91,7 @@ func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
 			groupKind: entry.groupKind,
 			name:      entry.name,
 			process:   entry.plugin,
+			mayApply:  entry.mayApply,
 		})
 	}
 	return endpointPlugins

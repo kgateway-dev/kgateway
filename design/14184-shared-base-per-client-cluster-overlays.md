@@ -126,6 +126,21 @@ publishable on its own** — Envoy rejects some CLA-less clusters outright (logi
 exactly one endpoint), so validating the base would blackhole a valid ServiceEntry for every
 client.
 
+**Most inline CLAs do not depend on the client, and those are built on the base.**
+`PrioritizeEndpoints` reads the client (labels, locality) only through a resolved
+`PriorityInfo`: one set by an endpoint hook, or one implied by a zone- or node-preferring
+traffic distribution (`endpoints.DependsOnClient` is the single source of truth for this).
+When neither applies, and no contributed endpoint hook could edit the backend's endpoints,
+`TranslateBackendBase` builds the CLA itself, so the base is complete, validated once, and
+`NeedsInlineCLA()` is false. Whether a hook *could* apply is the plugin's call:
+`sdk.PolicyPlugin.PerClientEndpointsMayApply(backend)` returns false to rule a backend out
+(`BackendConfigPolicy` uses `sdk.AttachedPolicyEndpointsMayApply`, since its hook reads only
+attached policies); a hook that declares nothing is assumed to apply everywhere, so an
+out-of-tree plugin keeps the per-client build until it opts in. `DestinationRule` declares
+nothing on purpose — which rule applies is selected by the client's namespace and labels — so
+with Istio integration on, inline-CLA backends stay per-client. The dominant plain static or
+DNS backend therefore costs the same as an EDS backend: one shared proto, no per-client work.
+
 **`ApplyPerClient(kctx, ctx, ucc, backend, base) (*Cluster, error)`** returns `nil, nil` — the
 dominant case — when the pair needs no per-client cluster. Otherwise it clones the base and
 applies, in order:
@@ -169,7 +184,10 @@ complete by construction the first time it exists. In particular:
 - a client connecting, disconnecting, or changing shape (`KnowsLocalCluster`, labels) reruns
   exactly one transform — its own — and no other client's;
 - a base change reruns every client's transform once, each an `O(M)` walk whose per-backend
-  cost on the no-overlay path is a few function calls and no allocation.
+  cost on the no-overlay path is a few function calls and no allocation. Inline-CLA backends
+  are on that path too unless their CLA genuinely depends on the client (see
+  `NeedsInlineCLA` above), so the walk allocates only for overlaid pairs and client-ordered
+  CLAs.
 
 **Backend metadata reaches clients through equality, not through a second input.** An overlay
 may branch on the backing object's labels (the waypoint redirect does), so a metadata-only
@@ -511,30 +529,35 @@ that makes it sound.
 base collection, so any backend change reruns `N` transforms of `O(M)` each.
 `BenchmarkPerClientBackendUpdate` and `BenchmarkPerClientDestinationRuleUpdate`
 (`perclient_update_bench_test.go`) price this on a deliberately unfavourable fleet: 12 clients,
-400 backends of which a quarter carry inline endpoints (so every client materializes a CLA for
-them) and an eighth have a rule that a quarter of the clients match. Apple M4 Max, `-benchtime=5x`:
+400 backends of which a quarter carry inline endpoints — half of those with a zone-preferring
+traffic distribution, so every client builds its own CLA for them, and half without, so the CLA
+lives on the base — and an eighth have a rule that a quarter of the clients match. Apple M4 Max,
+`-benchtime=5x`:
 
-| Operation | No validation | Strict, 200 µs per validation |
+| Operation | No validation | Strict, 200 µs per validation, cache bypassed |
 | --- | --- | --- |
-| One backend's output changes; all 12 payloads rebuilt | 8.0 ms, 11.7 MB, 51k allocs | 287 ms |
-| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 2.1 ms, 3.3 MB, 22k allocs | 72 ms |
+| One backend's output changes; all 12 payloads rebuilt | 5.8 ms, 10.4 MB, 47k allocs | 162 ms |
+| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 2.1 ms, 2.9 MB, 22k allocs | 41 ms |
 
-Without validation the cost is dominated by rebuilding each client's ~100 inline CLAs and ~12
-overlaid clones, not by the 300 no-overlay pairs per client. With strict validation it is
-dominated by re-validating those same ~1,300 materialized clusters, almost all of them byte-identical
-to the last run. Two follow-ups address exactly that: a validation memo keyed by the cluster's
-content hash (which helps the backend-keyed design equally, since it too validates the same
-cluster once per client), and building the client-independent inline CLA on the base (below),
-which removes the inline term from the per-client walk altogether. The krt dependency registered
-by each overlay fetch (destrule's index lookup runs per pair) is the remaining per-pair cost; an
-overlay that prepares once per client would reduce it to one per client.
+Before client-independent inline CLAs were built on the base, with all 100 inline backends
+materializing per client, the same runs measured 8.0 ms / 287 ms and 2.1 ms / 72 ms. Without
+validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered CLAs and
+~12 overlaid clones, not by the 350 shared pairs per client. With strict validation it is
+dominated by re-validating those same ~750 materialized clusters. The benchmark's validator
+deliberately bypasses the content-keyed result cache that production strict mode uses by default
+(`pkg/validator/cache.go`, `KGW_VALIDATOR_MODE=CACHE`); with it, a byte-identical cluster costs a
+bootstrap marshal and a hash rather than an Envoy exec, so the strict column overstates the
+production cost. The krt dependency registered by each overlay fetch (destrule's index lookup
+runs per pair) is the remaining per-pair cost; an overlay that prepares once per client would
+reduce it to one per client.
 
-**Inline-CLA backends materialize for every client** even when the CLA does not depend on the
-client. With no priority info the CLA is UCC-independent (`LoadBalancingContextHash` returns 0
-for exactly that case), so it could be built once on the base; `NeedsInlineCLA` would then be
-false for the dominant static and DNS backend, the base would be complete and validated once,
-and per-client work would be confined to backends with a client-specific priority. Not done in
-this change.
+**Inline-CLA backends whose CLA depends on the client still materialize for every client**, and
+those clones are not deduplicated across clients that resolve identically (two clients in the
+same zone build byte-equal CLAs). A per-client transform has nothing to intern against; a
+content-hash interner that outlives one transform run would recover it. With `DestinationRule`
+enabled every inline-CLA backend is in this set, because that plugin cannot rule a backend out
+without a client; a `PerClientEndpointsMayApply` that consulted the rule index by hostname
+would narrow it to backends that actually have a rule.
 
 **`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
 but PR 6 changes the field's type and gives its equality a real justification

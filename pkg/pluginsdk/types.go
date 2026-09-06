@@ -81,6 +81,16 @@ type PerClientProcessBackend func(
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
+// AttachedPolicyEndpointsMayApply is a PerClientEndpointsMayApply for plugins
+// whose endpoint hook reads only policies of gk attached to the backend (via
+// EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
+// to act on for any client.
+func AttachedPolicyEndpointsMayApply(gk schema.GroupKind) func(ir.BackendObjectIR) bool {
+	return func(backend ir.BackendObjectIR) bool {
+		return len(backend.AttachedPolicies.Policies[gk]) > 0
+	}
+}
+
 // StatusCollections aliases the statussync type for plugin convenience.
 type StatusCollections = statussync.StatusCollections
 
@@ -96,6 +106,20 @@ type PolicyPlugin struct {
 	PerClientEditEndpoints  EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
+	// PerClientEndpointsMayApply reports whether this plugin's endpoint hook
+	// (PerClientEditEndpoints or the legacy PerClientProcessEndpoints) could
+	// contribute to the given backend for at least one client. When every
+	// contributed endpoint hook rules a backend out, and the backend's own
+	// traffic distribution does not prioritize by client location, the
+	// framework builds that backend's inline ClusterLoadAssignment once on the
+	// shared base cluster instead of once per connected client.
+	//
+	// Returning false is a promise that the hook would return 0 for this
+	// backend for every client; the hook is then not invoked for it. Nil means
+	// "may apply to any backend", which keeps the per-client build. Plugins
+	// whose hook acts only on policies of their own GroupKind attached to the
+	// backend can use AttachedPolicyEndpointsMayApply.
+	PerClientEndpointsMayApply func(backend ir.BackendObjectIR) bool
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
