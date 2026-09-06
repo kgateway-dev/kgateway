@@ -674,7 +674,7 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		filter := filters.MustNewStagedFilter(
 			bufferFilterName,
 			entry.buffer,
-			entry.stage,
+			entry.filterStage(),
 		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)

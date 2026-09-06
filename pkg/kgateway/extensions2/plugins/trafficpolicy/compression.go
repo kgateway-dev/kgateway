@@ -382,8 +382,8 @@ const headOfStageWeight = -2
 func decompressorStage(p *trafficPolicyPluginGwPass, fcn string) filters.FilterStage[filters.WellKnownFilterStage] {
 	stage := filters.AfterStage(filters.WellKnownFilterStage(filters.CorsStage))
 	buffer := p.bufferInChain[fcn]
-	if buffer == nil || filters.FilterStageComparison(buffer.stage, stage) > 0 {
+	if buffer == nil || filters.FilterStageComparison(buffer.filterStage(), stage) > 0 {
 		return stage
 	}
-	return filters.RelativeToStage(buffer.stage.RelativeTo, headOfStageWeight)
+	return filters.RelativeToStage(buffer.filterStage().RelativeTo, headOfStageWeight)
 }

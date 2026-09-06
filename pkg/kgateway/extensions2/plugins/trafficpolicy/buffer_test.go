@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -113,7 +114,7 @@ func TestBufferFilterRunsImmediatelyBeforeRustformation(t *testing.T) {
 				buffer: &bufferv3.Buffer{
 					MaxRequestBytes: &wrapperspb.UInt32Value{Value: 1024},
 				},
-				stage: defaultBufferFilterStage,
+				stage: &defaultBufferFilterStage,
 			},
 		},
 	}
@@ -180,7 +181,8 @@ func TestConstructBufferFilterStage(t *testing.T) {
 			}, out)
 
 			require.NotNil(t, out.buffer)
-			assert.Equal(t, tt.want, out.buffer.filterStage)
+			require.NotNil(t, out.buffer.filterStage)
+			assert.Equal(t, tt.want, *out.buffer.filterStage)
 		})
 	}
 }
@@ -207,7 +209,7 @@ func TestBufferFilterStageMovesBufferAheadOfExtAuth(t *testing.T) {
 	pCtx := &ir.TypedFilterConfigMap{}
 	plugin.handleBuffer(filterChainName, pCtx, &bufferIR{
 		perRoute:    &bufferv3.BufferPerRoute{},
-		filterStage: filters.BeforeStage(filters.AuthNStage),
+		filterStage: new(filters.BeforeStage(filters.AuthNStage)),
 	})
 
 	httpFilters, err := plugin.HttpFilters(
@@ -233,8 +235,8 @@ func TestBufferFilterStageMovesBufferAheadOfExtAuth(t *testing.T) {
 func TestBufferChainStageTakesTheEarliestRequested(t *testing.T) {
 	const filterChainName = "test-filter-chain"
 
-	early := &bufferIR{perRoute: &bufferv3.BufferPerRoute{}, filterStage: filters.BeforeStage(filters.AuthNStage)}
-	late := &bufferIR{perRoute: &bufferv3.BufferPerRoute{}, filterStage: defaultBufferFilterStage}
+	early := &bufferIR{perRoute: &bufferv3.BufferPerRoute{}, filterStage: new(filters.BeforeStage(filters.AuthNStage))}
+	late := &bufferIR{perRoute: &bufferv3.BufferPerRoute{}, filterStage: &defaultBufferFilterStage}
 
 	for _, tc := range []struct {
 		name  string
@@ -249,9 +251,62 @@ func TestBufferChainStageTakesTheEarliestRequested(t *testing.T) {
 				plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, b)
 			}
 			require.NotNil(t, plugin.bufferInChain[filterChainName])
-			assert.Equal(t, filters.BeforeStage(filters.AuthNStage), plugin.bufferInChain[filterChainName].stage)
+			assert.Equal(t, filters.BeforeStage(filters.AuthNStage), plugin.bufferInChain[filterChainName].filterStage())
 		})
 	}
+}
+
+// A policy that only turns buffering off for its route says nothing about where the chain's buffer
+// filter belongs. Letting it vote the default into the earliest-wins fold would mean that disabling
+// buffering on one route moves the buffer filter for every other route on the listener - and, since
+// the default sorts ahead of anything staged at Route, moves it ahead of transformations for a
+// route that deliberately asked to buffer after them.
+func TestDisableOnlyPolicyDoesNotClaimAStage(t *testing.T) {
+	const filterChainName = "test-filter-chain"
+
+	buffersLate := &trafficPolicySpecIr{}
+	constructBuffer(kgateway.TrafficPolicySpec{Buffer: &kgateway.Buffer{
+		MaxRequestSize: new(resource.MustParse("1Ki")),
+		FilterStage: &kgateway.FilterStageSpec{
+			Stage:     kgateway.FilterStageRoute,
+			Predicate: kgateway.FilterStagePredicateBefore,
+		},
+	}}, buffersLate)
+
+	disabled := &trafficPolicySpecIr{}
+	constructBuffer(kgateway.TrafficPolicySpec{Buffer: &kgateway.Buffer{
+		Disable: &shared.PolicyDisable{},
+	}}, disabled)
+
+	require.Nil(t, disabled.buffer.filterStage, "a disable-only policy must not carry a placement")
+
+	t.Run("disable does not move a stage another policy claimed", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{}
+		plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, buffersLate.buffer)
+		plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, disabled.buffer)
+
+		assert.Equal(t, filters.BeforeStage(filters.RouteStage),
+			plugin.bufferInChain[filterChainName].filterStage())
+	})
+
+	t.Run("disable seen first does not consume the claim", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{}
+		plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, disabled.buffer)
+		plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, buffersLate.buffer)
+
+		assert.Equal(t, filters.BeforeStage(filters.RouteStage),
+			plugin.bufferInChain[filterChainName].filterStage())
+	})
+
+	t.Run("a chain with only disables still installs the filter at the default", func(t *testing.T) {
+		plugin := &trafficPolicyPluginGwPass{}
+		plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, disabled.buffer)
+
+		entry := plugin.bufferInChain[filterChainName]
+		require.NotNil(t, entry, "the chain still needs a filter for the per-route override to land on")
+		assert.Nil(t, entry.stage)
+		assert.Equal(t, defaultBufferFilterStage, entry.filterStage())
+	})
 }
 
 // Buffering the encoded bytes would measure the request against its compressed size, so the
@@ -309,7 +364,7 @@ func TestDecompressorsStayAheadOfBuffer(t *testing.T) {
 			if tt.bufferStage != nil {
 				plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, &bufferIR{
 					perRoute:    &bufferv3.BufferPerRoute{},
-					filterStage: *tt.bufferStage,
+					filterStage: tt.bufferStage,
 				})
 			}
 
@@ -367,7 +422,7 @@ func TestDecompressorsOutrankBodyReadersAtTheSameStage(t *testing.T) {
 	// staged behind that ext_proc, which is the placement that pulls the decompressors to Fault
 	plugin.handleBuffer(filterChainName, &ir.TypedFilterConfigMap{}, &bufferIR{
 		perRoute:    &bufferv3.BufferPerRoute{},
-		filterStage: filters.AfterStage(filters.FaultStage),
+		filterStage: new(filters.AfterStage(filters.FaultStage)),
 	})
 
 	httpFilters, err := plugin.HttpFilters(

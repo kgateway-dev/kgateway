@@ -424,7 +424,10 @@ spec:
                       config by filter name, and that name-based lookup is what lets a route-level policy override
                       a Gateway-level one, so the gateway installs exactly one buffer filter per filter chain. If
                       TrafficPolicies attached to the same listener ask for different stages, the earliest
-                      requested stage is used for the whole chain.
+                      requested stage is used for the whole chain. A policy that only sets `disable` takes no part
+                      in that: it keeps its per-route override and leaves the placement to the policies that
+                      actually buffer, so turning buffering off on one route never moves the buffer filter for the
+                      others.
 
                       Setting it therefore relaxes, never tightens, what the other routes on the listener do:
                       a route that asked for the default placement will have its bodies buffered before
