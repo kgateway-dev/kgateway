@@ -2667,6 +2667,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with Circuit Breakers retry budget", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/circuitbreakers-retry-budget.yaml"},
+			outputFile: "backendconfigpolicy/circuitbreakers-retry-budget.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with upstream proxy protocol V1", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/upstream-proxy-protocol-v1.yaml"},

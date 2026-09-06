@@ -122,7 +122,8 @@ type BackendConfigPolicySpec struct {
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto) for more details.
-// +kubebuilder:validation:AtLeastOneOf=maxConnections;maxPendingRequests;maxRequests;maxRetries
+// +kubebuilder:validation:AtLeastOneOf=maxConnections;maxPendingRequests;maxRequests;maxRetries;retryBudget
+// +kubebuilder:validation:AtMostOneOf=maxRetries;retryBudget
 type CircuitBreakers struct {
 	// MaxConnections is the maximum number of connections that will be made to
 	// the upstream cluster. If not specified, defaults to 1024.
@@ -144,17 +145,64 @@ type CircuitBreakers struct {
 
 	// MaxRetries is the maximum number of parallel retries that are allowed
 	// to the upstream cluster. If not specified, defaults to 3.
+	//
+	// Mutually exclusive with RetryBudget: Envoy's retry budget, when configured, silently
+	// overrides this absolute-count circuit breaker, so this API requires picking one.
+	// RetryBudget is the recommended option for most use cases, since it scales the retry
+	// limit with current load rather than fixing it at a static number.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	MaxRetries *int32 `json:"maxRetries,omitempty"`
+
+	// RetryBudget is the recommended alternative to MaxRetries for limiting concurrent retries. It
+	// limits retries as a percentage of active + pending requests rather than an absolute count.
+	// +optional
+	RetryBudget *RetryBudget `json:"retryBudget,omitempty"`
 
 	// TrackRemaining controls whether Envoy tracks the remaining resource
 	// gauges for this circuit breaker threshold group. When enabled, the
 	// remaining_cx, remaining_pending, remaining_rq, and remaining_retries
 	// statistics are populated. Enabling this has a performance cost.
 	// If not specified, defaults to false.
+	//
+	// Note that if RetryBudget is set instead of MaxRetries, the remaining_retries gauge is
+	// not tracked even when this is enabled.
 	// +optional
 	TrackRemaining *bool `json:"trackRemaining,omitempty"`
+}
+
+// RetryBudget configures a limit on concurrent retries as a percentage of active and pending
+// requests, rather than as an absolute count. This is the recommended alternative to MaxRetries.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto#envoy-v3-api-msg-config-cluster-v3-circuitbreakers-thresholds-retrybudget) for more details.
+type RetryBudget struct {
+	// BudgetPercent is the limit on concurrent retries as a percentage of the sum of active
+	// requests and active pending requests. For example, if there are 100 active requests and
+	// BudgetPercent is set to 25, up to 25 retries may be active concurrently.
+	// If not specified, defaults to 20 (20%).
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	BudgetPercent *int32 `json:"budgetPercent,omitempty"`
+
+	// BudgetInterval is the duration over which requests are considered when calculating the
+	// retry budget. This alters the way the retry budget is calculated: by default, when
+	// BudgetInterval is unset (or 0ms), only presently active and pending requests are
+	// considered. When a non-zero BudgetInterval is specified, requests are considered for the
+	// duration of BudgetInterval when calculating the retry budget, regardless of whether they
+	// have completed.
+	// If not specified, defaults to 0ms.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	BudgetInterval *metav1.Duration `json:"budgetInterval,omitempty"`
+
+	// MinRetryConcurrency is a floor on the number of concurrent retries allowed by the budget.
+	// The limit on active retries will never go below this number, regardless of BudgetPercent.
+	// If not specified, defaults to 3.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MinRetryConcurrency *int32 `json:"minRetryConcurrency,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule="!(has(self.jitter) && has(self.refreshRate)) || duration(self.jitter) <= duration(self.refreshRate)",message="jitter must be less than or equal to refreshRate"
