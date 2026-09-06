@@ -2003,6 +2003,21 @@ spec:
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                     - message: retry.perTryTimeout must be at least 1ms.
                       rule: duration(self) >= duration('1ms')
+                  retryHostPredicates:
+                    description: |-
+                      RetryHostPredicates specifies predicates envoy uses to determine whether a given host is
+                      eligible for a retry attempt (e.g. avoiding a host that already failed this request).
+                    items:
+                      description: |-
+                        RetryHostPredicate specifies a predicate that envoy uses, in addition to health checking and
+                        outlier detection, to determine whether a given host is eligible for a retry attempt.
+                      enum:
+                      - PreviousHosts
+                      - OmitCanaryHosts
+                      type: string
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-type: set
                   retryOn:
                     description: RetryOn specifies the conditions under which a retry
                       should be attempted.
