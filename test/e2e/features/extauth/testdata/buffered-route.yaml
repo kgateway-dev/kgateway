@@ -1,0 +1,44 @@
+# Buffer staged ahead of ext_authz on a route whose ext_authz check reads the request body.
+#
+# `maxRequestSize` is only enforced while the buffer filter is the one accumulating the body. With
+# ext_authz buffering the body first (withRequestBody), the limit is inert at the default placement,
+# see buffered-route-default-stage.yaml. Moving the buffer filter ahead of AuthN makes an oversized
+# body fail with 413 before the auth check ever runs.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: route-example-buffered
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "bufferedroute.com"
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-base
+  name: buffered-route-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-example-buffered
+  extAuth:
+    extensionRef:
+      name: basic-extauth2
+    withRequestBody:
+      # Larger than the buffer's limit, so ext_authz never rejects the body itself: a 413 on this
+      # route can only come from the buffer filter.
+      maxRequestBytes: 8192
+  buffer:
+    maxRequestSize: "1024"
+    filterStage:
+      stage: AuthN
+      predicate: Before
