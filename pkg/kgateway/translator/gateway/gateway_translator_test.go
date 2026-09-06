@@ -3327,6 +3327,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with Gateway-wide mTLS applies to all listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-wide-mtls.yaml"},
+			outputFile: "listener-policy/gateway-wide-mtls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with Gateway-wide mTLS does not apply to ListenerSet listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/gateway-wide-mtls-listenerset.yaml"},
+			outputFile: "listener-policy/gateway-wide-mtls-listenerset.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with per-listener mTLS override and merging", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/per-listener-mtls-merge.yaml"},

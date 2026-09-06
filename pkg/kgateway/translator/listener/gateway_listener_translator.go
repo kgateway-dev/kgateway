@@ -289,6 +289,7 @@ func (ml *MergedListeners) AppendTlsListener(
 		port:            finalPort,
 		TcpFilterChains: filterChains,
 		listener:        listener,
+		gateway:         ml.parentGw,
 		settings:        ml.settings,
 	})
 }
@@ -363,6 +364,7 @@ func (ml *MergedListener) TranslateListener(
 			reporter,
 			ml.gateway.FrontendTLSConfig,
 			ml.gateway.Namespace,
+			ml.gateway.AttachedListenerPolicies,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -376,7 +378,7 @@ func (ml *MergedListener) TranslateListener(
 	// Translate TCP listeners (if any exist)
 	var matchedTcpListeners []ir.TcpIR
 	for _, tfc := range ml.TcpFilterChains {
-		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig, ml.gateway.Namespace); tcpListener != nil {
+		if tcpListener := tfc.translateTcpFilterChain(kctx, ctx, queries, ml.name, reporter, ml.gateway.FrontendTLSConfig, ml.gateway.Namespace, ml.gateway.AttachedListenerPolicies); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)
 		}
 	}
@@ -438,6 +440,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
 	gatewayNamespace string,
+	gatewayPolicies ir.AttachedPolicies,
 ) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
@@ -525,7 +528,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			}
 		}
 
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace, gatewayPolicies)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -608,7 +611,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 			}
 		}
 
-		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace)
+		tlsConfig, err := translateTLSConfig(kctx, ctx, tc.parents.listener, tc.tls, queries, resolvedValidation, gatewayNamespace, gatewayPolicies)
 		if err != nil {
 			// An error and a non-nil tlsConfig means that the listener is partially valid,
 			// and we should continue to translate the listener after writing the error to status
@@ -847,6 +850,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
 	gatewayNamespace string,
+	gatewayPolicies ir.AttachedPolicies,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -900,6 +904,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 		queries,
 		resolvedValidation,
 		gatewayNamespace,
+		gatewayPolicies,
 	)
 	if err != nil {
 		// An error and a non-nil tlsConfig means that the listener is partially valid,
@@ -1013,6 +1018,7 @@ func translateTLSConfig(
 	queries query.GatewayQueries,
 	resolvedValidation *ir.ClientCertificateValidationIR,
 	gatewayNamespace string,
+	gatewayPolicies ir.AttachedPolicies,
 ) (*ir.TLSConfig, error) {
 	if tls == nil {
 		return nil, nil
@@ -1117,8 +1123,19 @@ func translateTLSConfig(
 		}
 	}
 
-	// Check if ListenerPolicy has clientCertificateValidation override
-	if listenerPolCertVal := getCertValidationFromAttached(listener); listenerPolCertVal != nil {
+	// Check if ListenerPolicy has clientCertificateValidation override.
+	// Always consider the listener-specific (sectionName-scoped) policies attached to this listener.
+	// Additionally consider Gateway-level policies (targeting the whole Gateway, no sectionName) ONLY for the
+	// Gateway's own listeners. CA references below are resolved relative to listener.Parent's namespace/GVK,
+	// which is only correct for Gateway-scoped policies when the listener's parent is the Gateway itself.
+	// ListenerSet listeners keep receiving their validation from ListenerSet-scoped policies via
+	// listener.AttachedPolicies; applying Gateway-scoped policies to them here would resolve the CA refs in the
+	// ListenerSet's namespace/GVK instead of the Gateway's, which is incorrect for cross-namespace ListenerSets.
+	policySets := []ir.AttachedPolicies{listener.AttachedPolicies}
+	if _, parentIsGateway := listener.Parent.(*gwv1.Gateway); parentIsGateway {
+		policySets = append(policySets, gatewayPolicies)
+	}
+	if listenerPolCertVal := getCertValidationFromAttached(policySets...); listenerPolCertVal != nil {
 		// Apply ListenerPolicy override, which takes precedence over Gateway-level config
 		listenerParentGVK := listener.Parent.GetObjectKind().GroupVersionKind()
 		if listenerParentGVK.Empty() {
@@ -1230,47 +1247,48 @@ func buildCaCertificateReference(
 }
 
 // getCertValidationFromAttached aggregates ClientCertificateValidation from all attached ListenerPolicies.
+// It accepts multiple AttachedPolicies sets so that both listener-specific (sectionName-scoped) policies and
+// Gateway-level policies (which target the entire Gateway without a sectionName and therefore apply to all
+// listeners) are considered.
 // Returns nil if no ListenerPolicy is found or if none have clientCertificateValidation configured.
-func getCertValidationFromAttached(listener ir.Listener) *ir.ClientCertificateValidationIR {
-	if listener.AttachedPolicies.Policies == nil {
-		return nil
-	}
-
-	// Extract ListenerPolicyIR from attached policies
-	polAttachments := listener.AttachedPolicies.Policies[wellknown.ListenerPolicyGVK.GroupKind()]
-	if len(polAttachments) == 0 {
-		return nil
-	}
-
+func getCertValidationFromAttached(attachedPolicies ...ir.AttachedPolicies) *ir.ClientCertificateValidationIR {
 	// Aggregate ClientCertificateValidation from all attached ListenerPolicies.
 	// Collect unique CA cert refs and mark required if any policy requires it.
 	var aggregatedCerts []gwv1.ObjectReference
 	certSet := make(map[string]bool)
 	requireClientCert := false
 
-	for _, polAtt := range polAttachments {
-		listenerPol, ok := polAtt.PolicyIr.(*listenerpolicy.ListenerPolicyIR)
-		if !ok || listenerPol == nil {
-			continue
-		}
-		certVal := listenerPol.GetClientCertificateValidation()
-		if certVal == nil {
+	for _, attached := range attachedPolicies {
+		if attached.Policies == nil {
 			continue
 		}
 
-		for _, certRef := range certVal.CACertificateRefs {
-			key, err := json.Marshal(certRef)
-			if err != nil {
+		// Extract ListenerPolicyIR from attached policies
+		polAttachments := attached.Policies[wellknown.ListenerPolicyGVK.GroupKind()]
+		for _, polAtt := range polAttachments {
+			listenerPol, ok := polAtt.PolicyIr.(*listenerpolicy.ListenerPolicyIR)
+			if !ok || listenerPol == nil {
+				continue
+			}
+			certVal := listenerPol.GetClientCertificateValidation()
+			if certVal == nil {
 				continue
 			}
 
-			if !certSet[string(key)] {
-				certSet[string(key)] = true
-				aggregatedCerts = append(aggregatedCerts, certRef)
-			}
-		}
+			for _, certRef := range certVal.CACertificateRefs {
+				key, err := json.Marshal(certRef)
+				if err != nil {
+					continue
+				}
 
-		requireClientCert = requireClientCert || certVal.RequireClientCertificate
+				if !certSet[string(key)] {
+					certSet[string(key)] = true
+					aggregatedCerts = append(aggregatedCerts, certRef)
+				}
+			}
+
+			requireClientCert = requireClientCert || certVal.RequireClientCertificate
+		}
 	}
 
 	// Return nil if no certs were found
