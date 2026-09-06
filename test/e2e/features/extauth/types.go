@@ -17,6 +17,10 @@ var (
 	securedGatewayPolicyManifest = getTestFile("secured-gateway-policy.yaml")
 	securedRouteManifest         = getTestFile("secured-route.yaml")
 	insecureRouteManifest        = getTestFile("insecure-route.yaml")
+	// ext_authz reading the body with the buffer filter staged ahead of it, and the same policy at
+	// the buffer filter's default placement
+	bufferedRouteManifest             = getTestFile("buffered-route.yaml")
+	bufferedRouteDefaultStageManifest = getTestFile("buffered-route-default-stage.yaml")
 )
 
 func getTestFile(filename string) string {
