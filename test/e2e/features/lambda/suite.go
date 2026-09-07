@@ -272,9 +272,14 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 }
 
 // TestLambdaBackendAssumeRole verifies STS role chaining: the proxy must use its
-// base credentials (env vars on the dedicated gateway's Envoy container) to call
-// sts:AssumeRole on the Backend's roleArn, then sign the Lambda invocation with
-// the temporary credentials STS returns.
+// base credentials to call sts:AssumeRole on the Backend's roleArn, then sign the
+// Lambda invocation with the temporary credentials STS returns.
+//
+// The base credentials come from a web identity token (as IRSA provides on EKS),
+// which Envoy resolves asynchronously via sts:AssumeRoleWithWebIdentity. That is
+// the path that hung on Envoy < v1.39.0 (envoyproxy/envoy#45643): the inner
+// chain signing the AssumeRole call never learned its credentials had arrived.
+// Static env-var credentials are synchronous and would mask a regression there.
 func (s *testingSuite) TestLambdaBackendAssumeRole() {
 	// BeforeTest waits on the shared gateway; this test brings its own.
 	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, assumeRoleProxyServiceMeta, assumeRoleProxyDeploymentMeta)
@@ -300,9 +305,10 @@ func (s *testingSuite) TestLambdaBackendAssumeRole() {
 
 	// A 200 alone doesn't prove role chaining: localstack doesn't enforce IAM, so
 	// a proxy that (incorrectly) signs with its base credentials also gets a 200.
-	// Envoy only creates and uses the internal STS cluster when the assume-role
-	// credential provider is actually active, so require a successful AssumeRole
-	// call to have gone through it.
+	// Envoy only creates and uses the internal STS cluster when the web identity
+	// and assume-role credential providers are active, and both talk to it: one
+	// AssumeRoleWithWebIdentity call for the base credentials, then one AssumeRole
+	// call signed with them. Require both to have succeeded.
 	s.ti.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, assumeRoleProxyDeploymentMeta.ObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
 			stats, err := adminClient.GetStats(ctx, map[string]string{
@@ -314,7 +320,7 @@ func (s *testingSuite) TestLambdaBackendAssumeRole() {
 				"its absence means Envoy never called sts:AssumeRole and signed with its base credentials instead. stats: %q", stats)
 			count, err := strconv.Atoi(matches[1])
 			s.Assert().NoError(err, "can parse STS 2xx stat value")
-			s.Assert().GreaterOrEqual(count, 1, "expected at least one successful sts:AssumeRole call")
+			s.Assert().GreaterOrEqual(count, 2, "expected a successful sts:AssumeRoleWithWebIdentity call followed by a successful sts:AssumeRole call")
 		},
 	)
 }

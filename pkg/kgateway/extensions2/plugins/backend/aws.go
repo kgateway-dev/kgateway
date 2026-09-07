@@ -188,10 +188,17 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 		}
 
 	case kgateway.AwsAuthTypeAssumeRole:
-		// handle STS role chaining. The base credentials that sign the AssumeRole request are
-		// left unset so Envoy resolves them from the default provider chain (e.g. the gateway
-		// ServiceAccount's IRSA or EKS Pod Identity credentials). The temporary credentials
-		// returned by STS are then used to sign requests to the backend.
+		// handle STS role chaining. The assume-role provider's nested credential_provider is
+		// left unset: Envoy then builds an inner *default* provider chain (environment,
+		// credentials file, container, instance profile, web identity) to sign the AssumeRole
+		// request, so the gateway's ambient identity (e.g. the ServiceAccount's IRSA or EKS Pod
+		// Identity credentials) is used. The temporary credentials returned by STS are then used
+		// to sign requests to the backend.
+		//
+		// Envoy < v1.39.0 never subscribes that inner chain to its async providers
+		// (envoyproxy/envoy#45643), so when the base credentials come from an async source such
+		// as IRSA the AssumeRole call is never issued and every request hangs. The Envoy image
+		// pinned in the Makefile must therefore be >= v1.39.0 for this auth type to work.
 		if auth.AssumeRole == nil {
 			return nil, fmt.Errorf("assumeRole is required for %q auth", kgateway.AwsAuthTypeAssumeRole)
 		}
