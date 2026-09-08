@@ -7,16 +7,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  loadAssignment:
-    clusterName: kube_gwtest_extproc_9091
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 10.244.2.14
-              portValue: 9091
-      loadBalancingWeight: 1
   name: kube_gwtest_extproc_9091
   type: EDS
   typedExtensionProtocolOptions:
@@ -42,31 +32,41 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  loadAssignment:
-    clusterName: kube_gwtest_reviews_8080
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 10.244.2.14
-              portValue: 8080
-      loadBalancingWeight: 1
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 10.244.1.11
-              portValue: 8080
-      loadBalancingWeight: 1
-      locality:
-        region: r1
-        subZone: r1z2s3
-        zone: r1z2
   name: kube_gwtest_reviews_8080
   type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
+Endpoints:
+- clusterName: kube_gwtest_extproc_9091
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.2.14
+            portValue: 9091
+    loadBalancingWeight: 1
+- clusterName: kube_gwtest_ratings_8080
+- clusterName: kube_gwtest_reviews_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.2.14
+            portValue: 8080
+    loadBalancingWeight: 1
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+    loadBalancingWeight: 1
+    locality:
+      region: r1
+      subZone: r1z2s3
+      zone: r1z2
 Listeners:
 - address:
     socketAddress:

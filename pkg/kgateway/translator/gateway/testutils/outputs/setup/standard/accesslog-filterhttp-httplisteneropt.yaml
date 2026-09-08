@@ -7,16 +7,6 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  loadAssignment:
-    clusterName: kube_gwtest_log-test_50051
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 10.244.1.11
-              portValue: 50051
-      loadBalancingWeight: 1
   name: kube_gwtest_log-test_50051
   type: EDS
   typedExtensionProtocolOptions:
@@ -32,20 +22,29 @@ Clusters:
       ads: {}
       resourceApiVersion: V3
   ignoreHealthOnHostRemoval: true
-  loadAssignment:
-    clusterName: kube_gwtest_reviews_8080
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 10.244.1.11
-              portValue: 8080
-      loadBalancingWeight: 1
   name: kube_gwtest_reviews_8080
   type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
+Endpoints:
+- clusterName: kube_gwtest_log-test_50051
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 50051
+    loadBalancingWeight: 1
+- clusterName: kube_gwtest_reviews_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+    loadBalancingWeight: 1
 Listeners:
 - address:
     socketAddress:

@@ -115,6 +115,7 @@ spec:
           - "https://notexample.com"
           allowMethods:
           - GET
+          maxAge: 5
         type: CORS
     - name: reviews-2
       port: 8080

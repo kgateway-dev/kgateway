@@ -3644,12 +3644,15 @@ func TestSetupScenarios(t *testing.T) {
 			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
 			require.NoError(t, err)
 			t.Run(strings.TrimSuffix(rel, ".yaml"), func(t *testing.T) {
-				translatortest.TestTranslation(t, ctx, []string{
+				translatortest.TestTranslationWithExtraPlugins(t, ctx, []string{
 					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
 					input,
 				}, filepath.Join(dir, "testutils/outputs", rel), types.NamespacedName{
 					Namespace: "gwtest",
 					Name:      "http-gw-for-test",
+				}, translatortest.ExtraConfig{
+					IncludeEndpoints:       true,
+					ExcludeErroredClusters: true,
 				}, g.settingOpts...)
 			})
 		}

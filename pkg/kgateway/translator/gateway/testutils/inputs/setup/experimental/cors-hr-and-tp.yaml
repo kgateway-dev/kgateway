@@ -115,6 +115,7 @@ spec:
           - "https://notexample.com"
           allowMethods:
           - POST
+          maxAge: 5
         type: CORS
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1

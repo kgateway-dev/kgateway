@@ -117,4 +117,5 @@ spec:
           - "http://*"
           allowMethods:
           - POST
+          maxAge: 5
         type: CORS
