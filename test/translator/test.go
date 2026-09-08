@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -509,16 +508,11 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	slices.SortFunc(clusters, func(a, b *envoyclusterv3.Cluster) int {
 		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
-	// Locality groups in a load assignment are built by iterating a map keyed by
-	// locality, so their order is nondeterministic. Sort for stable golden output.
-	// (Mirrors sortLocalityLbEndpoints in the pkg/kgateway/setup tests.)
-	for _, c := range clusters {
-		la := c.GetLoadAssignment()
-		if la == nil {
-			continue
-		}
-		sortLocalityLbEndpoints(la.Endpoints)
-	}
+	// Deliberately no sorting inside a load assignment. Locality order within a CLA
+	// is an invariant of the translation, not an artifact: endpoints.sortedLocalities
+	// exists so an inline CLA - part of the cluster's content hash, and therefore of
+	// the CDS version - does not get republished and re-warmed on every recompute.
+	// Re-sorting here would make that regression invisible to every golden.
 	return clusters
 }
 
@@ -531,44 +525,13 @@ func compareEndpoints(expectedFile string, actualEndpoints []*envoyendpointv3.Cl
 	return cmp.Diff(sortEndpoints(expectedOutput.Endpoints), sortEndpoints(actualEndpoints), protocmp.Transform(), cmpopts.EquateNaNs()), nil
 }
 
+// sortEndpoints orders the CLAs themselves; the locality groups inside each one are
+// left exactly as translated, for the reason given in sortClusters.
 func sortEndpoints(endpoints []*envoyendpointv3.ClusterLoadAssignment) []*envoyendpointv3.ClusterLoadAssignment {
 	slices.SortFunc(endpoints, func(a, b *envoyendpointv3.ClusterLoadAssignment) int {
 		return stdcmp.Compare(a.GetClusterName(), b.GetClusterName())
 	})
-	for _, endpoint := range endpoints {
-		sortLocalityLbEndpoints(endpoint.GetEndpoints())
-	}
 	return endpoints
-}
-
-func sortLocalityLbEndpoints(endpoints []*envoyendpointv3.LocalityLbEndpoints) {
-	slices.SortFunc(endpoints, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
-		la, lb := a.GetLocality(), b.GetLocality()
-		if la.GetRegion() != lb.GetRegion() {
-			return stdcmp.Compare(la.GetRegion(), lb.GetRegion())
-		}
-		if la.GetZone() != lb.GetZone() {
-			return stdcmp.Compare(la.GetZone(), lb.GetZone())
-		}
-		if la.GetSubZone() != lb.GetSubZone() {
-			return stdcmp.Compare(la.GetSubZone(), lb.GetSubZone())
-		}
-		if a.GetPriority() != b.GetPriority() {
-			return stdcmp.Compare(a.GetPriority(), b.GetPriority())
-		}
-		return stdcmp.Compare(lbEndpointAddrs(a), lbEndpointAddrs(b))
-	})
-}
-
-// lbEndpointAddrs returns a sorted, comma-joined string of the socket addresses
-// within a locality group, used as a sort tie-breaker.
-func lbEndpointAddrs(e *envoyendpointv3.LocalityLbEndpoints) string {
-	var addrs []string
-	for _, lb := range e.GetLbEndpoints() {
-		addrs = append(addrs, lb.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
-	}
-	slices.Sort(addrs)
-	return strings.Join(addrs, ",")
 }
 
 func ReadYamlFile(file string, out any) error {
