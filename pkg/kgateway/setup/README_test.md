@@ -28,3 +28,4 @@ go test -tags e2e -v ./pkg/kgateway/setup/
 - `testdata/istio_destination_rule`: Istio DestinationRule integration
 - `testdata/traffic_distribution`: traffic distribution with Istio integration
 - `testdata/istio_mtls`: Istio auto-mTLS integration
+- `testdata/standard`: two canaries kept back from the translator migration — `happypath` (xDS assembled and served over a real ADS stream) and `extauth-gw-and-route-disable` (HTTPRoute served as `v1beta1`, which only translates because the API server converts it). Add pure-translation scenarios to the translator package instead.
