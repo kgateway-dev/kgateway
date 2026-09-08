@@ -14,8 +14,6 @@ Clusters:
           hostname: 1.2.3.4
   name: backend_gwtest_static_0
   type: STATIC
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

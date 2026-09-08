@@ -35,9 +35,10 @@ import (
 )
 
 type translatorTestCase struct {
-	inputFiles []string
-	outputFile string
-	gwNN       types.NamespacedName
+	inputFiles  []string
+	outputFile  string
+	gwNN        types.NamespacedName
+	extraConfig translatortest.ExtraConfig
 }
 
 // pinVersion fixes the reported kgateway version for the duration of a test.
@@ -75,7 +76,7 @@ func TestBasic(t *testing.T) {
 			inputFiles = append(inputFiles, filepath.Join(dir, "testutils/inputs/", input))
 		}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
+		translatortest.TestTranslationWithExtraPlugins(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.extraConfig, settingOpts...)
 	}
 
 	t.Run("gateway with no routes should not add empty filter chain", func(t *testing.T) {
@@ -1464,6 +1465,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+			// the fixture routes to a backend of the fake plugin-contributed kind
+			extraConfig: translatortest.ExtraConfig{RegisterTestBackendPlugin: true},
 		})
 	})
 

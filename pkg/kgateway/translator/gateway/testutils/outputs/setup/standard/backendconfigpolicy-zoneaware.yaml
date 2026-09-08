@@ -19,8 +19,6 @@ Clusters:
                 value: 100
   name: kube_gwtest_reviews_8080
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Endpoints:
 - clusterName: kube_gwtest_reviews_8080
   endpoints:

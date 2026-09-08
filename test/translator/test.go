@@ -277,6 +277,10 @@ type ExtraConfig struct {
 	Schemes               runtime.SchemeBuilder
 	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
 	IncludeEndpoints      bool
+	// RegisterTestBackendPlugin registers the fake "test-backend-plugin" backend kind
+	// and one backend of that kind (default/example-svc:80). Set it only for fixtures
+	// that route to that kind; its cluster otherwise lands in every golden.
+	RegisterTestBackendPlugin bool
 }
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
@@ -886,28 +890,33 @@ func (tc TestCase) Run(
 	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
 
-	// needed for the Plugin Backend test (backend-plugin/gateway.yaml)
-	gk := schema.GroupKind{
-		Group: "",
-		Kind:  "test-backend-plugin",
-	}
-	extensions.ContributesPolicies[gk] = pluginsdk.PolicyPlugin{
-		Name: "test-backend-plugin",
-	}
-	testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
-		Kind:      "test-backend-plugin",
-		Namespace: "default",
-		Name:      "example-svc",
-	}, 80, "", "")
-	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
-		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
-			testBackend,
-		}),
-		BackendInit: ir.BackendInit{
-			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-				return nil
+	// A fake backend kind for fixtures that route to a plugin-contributed backend
+	// (inputs/backends/basic.yaml). Opt-in: the backend it contributes shows up in
+	// BackendsWithPolicy() for every gateway, so registering it unconditionally would
+	// put a cluster that belongs to the harness into every golden in every suite.
+	if extraConfig.RegisterTestBackendPlugin {
+		gk := schema.GroupKind{
+			Group: "",
+			Kind:  "test-backend-plugin",
+		}
+		extensions.ContributesPolicies[gk] = pluginsdk.PolicyPlugin{
+			Name: "test-backend-plugin",
+		}
+		testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "test-backend-plugin",
+			Namespace: "default",
+			Name:      "example-svc",
+		}, 80, "", "")
+		extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
+			Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
+				testBackend,
+			}),
+			BackendInit: ir.BackendInit{
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					return nil
+				},
 			},
-		},
+		}
 	}
 
 	commoncol.InitPlugins(ctx, extensions, *settings)

@@ -33,8 +33,6 @@ Clusters:
     interval: 2s
     maxEjectionPercent: 55
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

@@ -39,8 +39,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_foo-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

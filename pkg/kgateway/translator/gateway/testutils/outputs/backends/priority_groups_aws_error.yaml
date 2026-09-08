@@ -55,8 +55,6 @@ Clusters:
             hostname: nginx.nginx-shared.svc
           hostname: nginx.nginx-shared.svc
   name: backend_default_primary-nginx_0
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

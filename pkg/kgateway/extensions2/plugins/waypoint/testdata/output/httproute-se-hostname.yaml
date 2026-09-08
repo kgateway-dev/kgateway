@@ -25,8 +25,6 @@ Clusters:
       loadBalancingWeight: 1
   name: istio-se_infra_se-b_se-b.example.com_9000
   type: STATIC
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

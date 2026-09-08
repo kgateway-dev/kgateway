@@ -100,8 +100,6 @@ Clusters:
       keepaliveInterval: 5
       keepaliveProbes: 3
       keepaliveTime: 30
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Endpoints:
 - clusterName: kube_gwtest_httpbin_8080
   endpoints:
