@@ -41,8 +41,9 @@ func benchTranslator(v validator.Validator) *irtranslator.BackendTranslator {
 				},
 			},
 		},
-		Validator: v,
-		Mode:      apisettings.ValidationStrict,
+		Validator:      v,
+		Mode:           apisettings.ValidationStrict,
+		ValidationMemo: validator.NewMemo(0),
 	}
 }
 

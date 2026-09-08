@@ -119,6 +119,9 @@ func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validato
 		},
 		Validator: v,
 		Mode:      mode,
+		// Production wires the memo; without it every walk re-validates every
+		// overlaid clone, which is the cost the memo exists to remove.
+		ValidationMemo: validator.NewMemo(0),
 	}
 }
 

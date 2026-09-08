@@ -534,22 +534,28 @@ traffic distribution, so every client builds its own CLA for them, and half with
 lives on the base — and an eighth have a rule that a quarter of the clients match. Apple M4 Max,
 `-benchtime=5x`:
 
-| Operation | No validation | Strict, 200 µs per validation, cache bypassed |
+| Operation | No validation | Strict, 200 µs per validation, verdicts memoized |
 | --- | --- | --- |
-| One backend's output changes; all 12 payloads rebuilt | 5.8 ms, 10.4 MB, 47k allocs | 162 ms |
-| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 2.1 ms, 2.9 MB, 22k allocs | 41 ms |
+| One backend's output changes; all 12 payloads rebuilt | 5.7 ms, 10.3 MB, 46k allocs | 7.1 ms |
+| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 1.8 ms, 2.9 MB, 20k allocs | 2.2 ms |
 
 Before client-independent inline CLAs were built on the base, with all 100 inline backends
-materializing per client, the same runs measured 8.0 ms / 287 ms and 2.1 ms / 72 ms. Without
-validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered CLAs and
-~12 overlaid clones, not by the 350 shared pairs per client. With strict validation it is
-dominated by re-validating those same ~750 materialized clusters. The benchmark's validator
-deliberately bypasses the content-keyed result cache that production strict mode uses by default
-(`pkg/validator/cache.go`, `KGW_VALIDATOR_MODE=CACHE`); with it, a byte-identical cluster costs a
-bootstrap marshal and a hash rather than an Envoy exec, so the strict column overstates the
-production cost. The krt dependency registered by each overlay fetch (destrule's index lookup
-runs per pair) is the remaining per-pair cost; an overlay that prepares once per client would
-reduce it to one per client.
+materializing per client, the same runs measured 8.0 ms / 287 ms and 2.1 ms / 72 ms; with them
+on the base but every per-client cluster still re-validated, 5.8 ms / 162 ms and 2.1 ms / 41 ms.
+Without validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered
+CLAs and ~12 overlaid clones, not by the 350 shared pairs per client. Without the memo, strict
+validation was dominated by re-validating those same ~750 materialized clusters, almost all of
+them byte-identical to the last walk. Production strict mode already memoizes verdicts by bootstrap
+content (`pkg/validator/cache.go`, `KGW_VALIDATOR_MODE=CACHE`), but reaching that cache costs a
+bootstrap build plus a JSON marshal and hash, about 20 µs per cluster, which at hundreds of
+clusters per client per walk is still the dominant strict-mode cost. The translator therefore
+keeps its own memo in front of it (`BackendTranslator.ValidationMemo`, `validator.Memo`), keyed
+by a SHA-256 of the cluster proto's deterministic binary encoding: about 1 µs and no allocation,
+computed before any bootstrap exists. A cluster validated for one client is not re-validated for
+the next unless its bytes differ, so the strict column above collapses to the no-validation
+column plus one real validation for the cluster that actually changed. The krt dependency
+registered by each overlay fetch (destrule's index lookup runs per pair) is the remaining
+per-pair cost; an overlay that prepares once per client would reduce it to one per client.
 
 **Inline-CLA backends whose CLA depends on the client still materialize for every client**, and
 those clones are not deduplicated across clients that resolve identically (two clients in the
