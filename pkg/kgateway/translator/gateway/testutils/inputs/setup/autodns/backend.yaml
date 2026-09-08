@@ -36,7 +36,12 @@ metadata:
   namespace: gwtest
 spec:
   type: Static
+  # The host has to be a DNS name, not a literal IP: settings.dnsLookupFamily is
+  # only applied to clusters Envoy resolves itself (the envoy.clusters.dns cluster
+  # type), so with an IP here this scenario would translate identically under every
+  # dnsLookupFamily setting - including the Auto this whole settings group exists
+  # to cover.
   static:
     hosts:
-      - host: 1.2.3.4
+      - host: static.example.com
         port: 8080

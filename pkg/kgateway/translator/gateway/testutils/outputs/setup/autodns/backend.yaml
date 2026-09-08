@@ -1,5 +1,10 @@
 Clusters:
-- connectTimeout: 5s
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: AUTO
+  connectTimeout: 5s
   loadAssignment:
     clusterName: backend_gwtest_static_0
     endpoints:
@@ -7,13 +12,12 @@ Clusters:
       - endpoint:
           address:
             socketAddress:
-              address: 1.2.3.4
+              address: static.example.com
               portValue: 8080
           healthCheckConfig:
-            hostname: 1.2.3.4
-          hostname: 1.2.3.4
+            hostname: static.example.com
+          hostname: static.example.com
   name: backend_gwtest_static_0
-  type: STATIC
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
