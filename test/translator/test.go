@@ -351,21 +351,18 @@ func TestTranslationWithExtraPlugins(
 		os.WriteFile(outputFile, outputYaml, 0o644) //nolint:gosec // G306: Golden test file can be readable
 	}
 
-	gotProxy, err := compareProxy(outputFile, result.Proxy)
-	r.Emptyf(gotProxy, "unexpected diff in proxy output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing proxy output")
+	expected := &translationResult{}
+	err = ReadYamlFile(outputFile, expected)
+	r.NoError(err, "error reading golden output file")
 
-	gotClusters, err := compareClusters(outputFile, result.Clusters)
-	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing clusters output")
-
-	gotEndpoints, err := compareEndpoints(outputFile, result.Endpoints)
-	r.Emptyf(gotEndpoints, "unexpected diff in endpoints output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing endpoints output")
-
-	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
-	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing statuses output")
+	r.Emptyf(compareProxy(expected, result.Proxy),
+		"unexpected diff in proxy output; actual result: %s", outputYaml)
+	r.Emptyf(compareClusters(expected.Clusters, result.Clusters),
+		"unexpected diff in clusters output; actual result: %s", outputYaml)
+	r.Emptyf(compareEndpoints(expected.Endpoints, result.Endpoints),
+		"unexpected diff in endpoints output; actual result: %s", outputYaml)
+	r.Emptyf(compareStatuses(expected.Statuses, output.Statuses),
+		"unexpected diff in statuses output; actual result: %s", outputYaml)
 }
 
 type TestCase struct {
@@ -382,10 +379,12 @@ type ActualTestResult struct {
 	Endpoints     []*envoyendpointv3.ClusterLoadAssignment
 }
 
-func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
-	expectedProxy, err := ReadProxyFromFile(expectedFile)
-	if err != nil {
-		return "", err
+func compareProxy(expected *translationResult, actualProxy *irtranslator.TranslationResult) string {
+	expectedProxy := &irtranslator.TranslationResult{
+		Routes:        expected.Routes,
+		Listeners:     expected.Listeners,
+		ExtraClusters: expected.ExtraClusters,
+		Secrets:       expected.Secrets,
 	}
 
 	// Sort credentials by client name to ensure deterministic comparison
@@ -393,7 +392,7 @@ func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		return x.Client < y.Client
 	}
 
-	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs()), nil
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs())
 }
 
 func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {
@@ -490,14 +489,9 @@ func sortCredentialsInAny(config *anypb.Any) {
 	}
 }
 
-func compareClusters(expectedFile string, actualClusters []*envoyclusterv3.Cluster) (string, error) {
-	expectedOutput := &translationResult{}
-	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
-		return "", err
-	}
-
+func compareClusters(expectedClusters, actualClusters []*envoyclusterv3.Cluster) string {
 	// Sort both expected and actual clusters by name and compare
-	return cmp.Diff(sortClusters(expectedOutput.Clusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	return cmp.Diff(sortClusters(expectedClusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs())
 }
 
 func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster {
@@ -515,13 +509,8 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	return clusters
 }
 
-func compareEndpoints(expectedFile string, actualEndpoints []*envoyendpointv3.ClusterLoadAssignment) (string, error) {
-	expectedOutput := &translationResult{}
-	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
-		return "", err
-	}
-
-	return cmp.Diff(sortEndpoints(expectedOutput.Endpoints), sortEndpoints(actualEndpoints), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+func compareEndpoints(expectedEndpoints, actualEndpoints []*envoyendpointv3.ClusterLoadAssignment) string {
+	return cmp.Diff(sortEndpoints(expectedEndpoints), sortEndpoints(actualEndpoints), protocmp.Transform(), cmpopts.EquateNaNs())
 }
 
 // sortEndpoints orders the CLAs themselves; the locality groups inside each one are
