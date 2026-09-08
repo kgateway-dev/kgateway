@@ -113,6 +113,7 @@ type trafficPolicySpecIr struct {
 	faultInjection   *faultInjectionIR
 	httpACL          *httpACLIR
 	statPrefix       *statPrefixIR
+	httpUpgrade      *httpUpgradeIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -206,6 +207,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.statPrefix.Equals(d2.spec.statPrefix) {
 		return false
 	}
+	if !d.spec.httpUpgrade.Equals(d2.spec.httpUpgrade) {
+		return false
+	}
 	return true
 }
 
@@ -240,6 +244,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.httpACL.Validate)
 	validators = append(validators, p.spec.internalRedirect.Validate)
 	validators = append(validators, p.spec.statPrefix.Validate)
+	validators = append(validators, p.spec.httpUpgrade.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -833,6 +838,8 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 
 	// Apply route-level tracing overrides
 	p.handleRouteTracing(spec, out)
+
+	applyHTTPUpgrade(spec.httpUpgrade, action)
 }
 
 func applyRetryPolicy(retry *retryIR, out *envoyroutev3.Route) {

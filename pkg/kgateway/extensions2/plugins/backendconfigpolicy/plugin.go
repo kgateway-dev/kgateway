@@ -178,10 +178,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:                      "BackendConfigPolicy",
-				Policies:                  backendConfigPolicyCol,
-				ProcessBackend:            processBackend,
-				PerClientProcessEndpoints: endpointPlugin.processEndpoints,
+				Name:                   "BackendConfigPolicy",
+				Policies:               backendConfigPolicyCol,
+				ProcessBackend:         processBackend,
+				PerClientEditEndpoints: endpointPlugin.processEndpoints,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
 				},
@@ -510,36 +510,35 @@ func TranslateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.Tcp
 // zone-aware routing using the backend's already resolved policy attachments.
 type backendConfigEndpointPlugin struct{}
 
-// processEndpoints implements sdk.EndpointPlugin for zone-aware routing.
+// processEndpoints implements sdk.EndpointEditorPlugin for zone-aware routing.
 // BackendConfigPolicy takes precedence over Kubernetes Service traffic distribution.
 func (p *backendConfigEndpointPlugin) processEndpoints(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	ucc ir.UniquelyConnectedClient,
-	out *endpoints.EndpointsInputs,
+	out endpoints.EndpointInputsEditor,
 ) uint64 {
-	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies)
+	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.PoliciesFor(wellknown.BackendConfigPolicyGVK.GroupKind()))
 	if bcpIR == nil {
 		return 0
 	}
 	// BackendConfigPolicy zoneAware settings take precedence over Service trafficDistribution
 	// settings for the same backend.
-	out.EndpointsForBackend.TrafficDistribution = wellknown.TrafficDistributionAny
+	out.SetTrafficDistribution(wellknown.TrafficDistributionAny)
 
 	hasher := fnv.New64()
-	hasher.Write([]byte(ir.PolicyRefString(pol.PolicyRef)))
-	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation))
+	hasher.Write([]byte(pol.RefString()))
+	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation()))
 	return hasher.Sum64()
 }
 
-func selectZoneAwareBackendConfigPolicy(attachedPolicies ir.AttachedPolicies) (ir.PolicyAtt, *BackendConfigPolicyIR) {
-	policies := attachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+func selectZoneAwareBackendConfigPolicy(policies []endpoints.PolicyView) (endpoints.PolicyView, *BackendConfigPolicyIR) {
 	for _, pol := range policies {
-		bcpIR, ok := pol.PolicyIr.(*BackendConfigPolicyIR)
-		if !ok || len(pol.Errors) > 0 || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
+		bcpIR, ok := pol.PolicyIR().(*BackendConfigPolicyIR)
+		if !ok || pol.HasErrors() || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
 			continue
 		}
 		return pol, bcpIR
 	}
-	return ir.PolicyAtt{}, nil
+	return endpoints.PolicyView{}, nil
 }

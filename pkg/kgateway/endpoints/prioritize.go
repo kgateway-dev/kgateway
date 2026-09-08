@@ -111,12 +111,40 @@ func priorityLabelOverrides(labels []string) ([]string, map[string]string) {
 	return priorityLabels, overriddenValueByLabel
 }
 
+// sortedLocalities orders an endpoint map's localities by (region, zone, subzone).
+//
+// LbEps is a map, so ranging it directly would emit the CLA's LocalityLbEndpoints
+// in a different order on every call. Locality order carries no meaning to Envoy,
+// but an inline CLA is part of the serialized cluster. The full cluster content
+// hash is its KRT equality version and contributes to the CDS version, so random
+// locality order would republish and re-warm an unchanged inline cluster on each
+// recompute. EDS rows are versioned from the structural endpoint hash instead;
+// their KRT change detection does not depend on CLA byte order. Stable bytes also
+// make content-addressed sharing of equivalent CLAs effective.
+func sortedLocalities(lbEps ir.LocalityLbMap) []ir.PodLocality {
+	out := make([]ir.PodLocality, 0, len(lbEps))
+	for loc := range lbEps {
+		out = append(out, loc)
+	}
+	slices.SortFunc(out, func(a, b ir.PodLocality) int {
+		if c := strings.Compare(a.Region, b.Region); c != 0 {
+			return c
+		}
+		if c := strings.Compare(a.Zone, b.Zone); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Subzone, b.Subzone)
+	})
+	return out
+}
+
 func prioritizeWithLbInfo(logger *slog.Logger, ep ir.EndpointsForBackend, lbInfo LoadBalancingInfo) *envoyendpointv3.ClusterLoadAssignment {
 	cla := &envoyendpointv3.ClusterLoadAssignment{
 		ClusterName: ep.ClusterName,
 	}
 	totalEndpoints := 0
-	for loc, eps := range ep.LbEps {
+	for _, loc := range sortedLocalities(ep.LbEps) {
+		eps := ep.LbEps[loc]
 		var l *envoycorev3.Locality
 		if loc != (ir.PodLocality{}) {
 			l = &envoycorev3.Locality{

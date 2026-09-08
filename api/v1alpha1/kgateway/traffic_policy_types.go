@@ -44,7 +44,10 @@ type TrafficPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))))",message="httpUpgrade can only be used when targeting Gateway, HTTPRoute, or ListenerSet resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || self.httpUpgrade.all(x, self.httpUpgrade.exists_one(y, y.type.lowerAscii() == x.type.lowerAscii()))",message="httpUpgrade types must be unique ignoring ASCII case"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
+// +kubebuilder:validation:XValidation:rule="!has(self.buffer) || has(self.buffer.disable) || !has(self.httpUpgrade) || self.httpUpgrade.size() == 0",message="buffer cannot be used together with httpUpgrade unless buffering is disabled"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -111,6 +114,19 @@ type TrafficPolicySpec struct {
 	// Requests exceeding this size will return a 413 response.
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
+
+	// HTTPUpgrade configures HTTP protocol upgrades on the targeted routes.
+	// Route-level upgrade settings override the matching upgrade type configured
+	// on the listener. CONNECT termination is applied per route and cannot be
+	// configured on a listener. After an upgrade is established, tunneled payload
+	// is not inspected by HTTP filters. Authenticate and authorize the initial
+	// upgrade request, enable upgrades only for trusted clients, and avoid request
+	// buffering.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	// +listType=map
+	// +listMapKey=type
+	HTTPUpgrade []ProtocolUpgradeConfig `json:"httpUpgrade,omitempty"`
 
 	// Timeouts defines the timeouts for requests.
 	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
@@ -253,6 +269,36 @@ type RequestMirrorPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	HostRewriteLiteral *string `json:"hostRewriteLiteral,omitempty"`
+}
+
+// ProtocolUpgradeConfig specifies configuration for an HTTP protocol upgrade.
+// +kubebuilder:validation:XValidation:rule="!has(self.connect) || self.type.lowerAscii() == 'connect'",message="connect configuration is only allowed when type is CONNECT"
+type ProtocolUpgradeConfig struct {
+	// Type is the case-insensitive protocol upgrade token, such as "websocket",
+	// "CONNECT", or "spdy/3.1". Do not configure the same token more than once,
+	// including variants that differ only by letter case.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Type string `json:"type"`
+
+	// Connect configures CONNECT-specific behavior. It is valid only when type
+	// is "CONNECT".
+	// +optional
+	Connect *ConnectConfig `json:"connect,omitempty"`
+}
+
+// ConnectConfig specifies how CONNECT requests are forwarded upstream.
+type ConnectConfig struct {
+	// Terminate causes the gateway to terminate the CONNECT request and forward
+	// the request payload upstream as raw TCP data. When false or omitted, the
+	// CONNECT request is proxied upstream without termination.
+	//
+	// Because the payload is forwarded as raw bytes, configuring TLS for the
+	// selected backend wraps those bytes in a separate upstream TLS session. Leave
+	// backend TLS disabled when the payload must reach the upstream unchanged.
+	// +optional
+	Terminate *bool `json:"terminate,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.

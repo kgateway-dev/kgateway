@@ -90,6 +90,10 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR
 	constructBuffer(policyCR.Spec, &outSpec)
+	// Construct HTTP upgrade specific IR
+	if err := constructHTTPUpgrade(policyCR.Spec, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct fault injection specific IR
 	constructFaultInjection(policyCR.Spec, &outSpec)
 	// Construct HTTP ACL specific IR

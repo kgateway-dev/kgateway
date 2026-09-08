@@ -24,16 +24,16 @@ func TestOrderedEndpointPluginsUsesStablePolicyOrder(t *testing.T) {
 	var calls []string
 	plugins := irtranslator.OrderedEndpointPlugins(sdk.ContributesPolicies{
 		{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}: {
-			Name:                      "BackendConfigPolicy",
-			PerClientProcessEndpoints: recordingEndpointPlugin("backendconfigpolicy", &calls),
+			Name:                   "BackendConfigPolicy",
+			PerClientEditEndpoints: recordingEndpointPlugin("backendconfigpolicy", &calls),
 		},
 		{Group: "networking.istio.io", Kind: "DestinationRule"}: {
-			Name:                      "destrule",
-			PerClientProcessEndpoints: recordingEndpointPlugin("destrule", &calls),
+			Name:                   "destrule",
+			PerClientEditEndpoints: recordingEndpointPlugin("destrule", &calls),
 		},
 		{Group: "example.io", Kind: "ExamplePolicy"}: {
-			Name:                      "example",
-			PerClientProcessEndpoints: recordingEndpointPlugin("example", &calls),
+			Name:                   "example",
+			PerClientEditEndpoints: recordingEndpointPlugin("example", &calls),
 		},
 		{Group: "example.io", Kind: "NoEndpointPolicy"}: {
 			Name: "no-endpoint",
@@ -41,11 +41,35 @@ func TestOrderedEndpointPluginsUsesStablePolicyOrder(t *testing.T) {
 	})
 
 	require.Len(t, plugins, 3)
-	for _, plugin := range plugins {
-		plugin(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, &endpoints.EndpointsInputs{})
-	}
+	irtranslator.ResolveEndpointInputs(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, endpoints.EndpointsInputs{}, plugins)
 
 	assert.Equal(t, []string{"example", "backendconfigpolicy", "destrule"}, calls)
+}
+
+func TestResolveEndpointInputsCombinesPluginHashesWithStableIdentity(t *testing.T) {
+	pluginA := schema.GroupKind{Group: "a.example.io", Kind: "Policy"}
+	pluginB := schema.GroupKind{Group: "b.example.io", Kind: "Policy"}
+	const contribution uint64 = 37
+
+	onlyA := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginA: {Name: "a", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+	})
+	onlyB := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginB: {Name: "b", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+	})
+	withZero := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginA: {Name: "a", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+		pluginB: {Name: "b", PerClientEditEndpoints: endpointHashPlugin(0)},
+	})
+	both := resolveEndpointPluginHash(t, sdk.ContributesPolicies{
+		pluginA: {Name: "a", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+		pluginB: {Name: "b", PerClientEditEndpoints: endpointHashPlugin(contribution)},
+	})
+
+	assert.NotZero(t, both, "equal nonzero contributions from two plugins must not cancel")
+	assert.NotEqual(t, onlyA, onlyB, "plugin identity must participate in the combined hash")
+	assert.Equal(t, onlyA, withZero, "a zero contribution must remain a no-op")
+	assert.NotEqual(t, onlyA, both, "adding a nonzero plugin contribution must change the combined hash")
 }
 
 func TestBackendTranslatorRunsOrderedEndpointPluginsForInlineEndpoints(t *testing.T) {
@@ -72,21 +96,21 @@ func TestBackendTranslatorRunsOrderedEndpointPluginsForInlineEndpoints(t *testin
 		ContributedPolicies: sdk.ContributesPolicies{
 			kgwellknown.BackendConfigPolicyGVK.GroupKind(): {
 				Name: "BackendConfigPolicy",
-				PerClientProcessEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointsInputs) uint64 {
+				PerClientEditEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
 					calls = append(calls, "backendconfigpolicy")
-					out.PriorityInfo = &endpoints.PriorityInfo{
+					out.SetPriorityInfo(&endpoints.PriorityInfo{
 						FailoverPriority: endpoints.NewPriorities([]string{corev1.LabelTopologyZone + "=zone-a"}),
-					}
+					})
 					return 0
 				},
 			},
 			{Group: "networking.istio.io", Kind: "DestinationRule"}: {
 				Name: "destrule",
-				PerClientProcessEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out *endpoints.EndpointsInputs) uint64 {
+				PerClientEditEndpoints: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
 					calls = append(calls, "destrule")
-					out.PriorityInfo = &endpoints.PriorityInfo{
+					out.SetPriorityInfo(&endpoints.PriorityInfo{
 						FailoverPriority: endpoints.NewPriorities([]string{corev1.LabelTopologyRegion}),
-					}
+					})
 					return 0
 				},
 			},
@@ -120,16 +144,39 @@ func TestBackendTranslatorRunsOrderedEndpointPluginsForInlineEndpoints(t *testin
 	assert.Equal(t, map[string]uint32{"zone-a": 0, "zone-b": 0}, prioritiesByZone)
 }
 
-func recordingEndpointPlugin(name string, calls *[]string) sdk.EndpointPlugin {
+func recordingEndpointPlugin(name string, calls *[]string) sdk.EndpointEditorPlugin {
 	return func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniquelyConnectedClient,
-		out *endpoints.EndpointsInputs,
+		out endpoints.EndpointInputsEditor,
 	) uint64 {
 		*calls = append(*calls, name)
 		return 0
 	}
+}
+
+func endpointHashPlugin(contribution uint64) sdk.EndpointEditorPlugin {
+	return func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniquelyConnectedClient,
+		out endpoints.EndpointInputsEditor,
+	) uint64 {
+		return contribution
+	}
+}
+
+func resolveEndpointPluginHash(t *testing.T, policies sdk.ContributesPolicies) uint64 {
+	t.Helper()
+	_, combined := irtranslator.ResolveEndpointInputs(
+		krt.TestingDummyContext{},
+		context.Background(),
+		ir.UniquelyConnectedClient{},
+		endpoints.EndpointsInputs{},
+		irtranslator.OrderedEndpointPlugins(policies),
+	)
+	return combined
 }
 
 func endpointWithLabels(address string, labels map[string]string) ir.EndpointWithMd {
