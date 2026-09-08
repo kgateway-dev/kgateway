@@ -1021,10 +1021,11 @@ func (tc TestCase) Run(
 				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
-					// Optionally translate EDS assignments for Kubernetes Service clusters so
-					// selected goldens cover endpoint derivation. Preserve empty assignments:
-					// publishing them is required to clear stale endpoints from Envoy.
-					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS && backend.GetObjectSource().Kind == "Service" {
+					// Optionally translate EDS assignments so selected goldens cover endpoint
+					// derivation, for every backend kind that has endpoint IR - Services,
+					// ServiceEntries, InferencePools. Preserve empty assignments: publishing
+					// them is required to clear stale endpoints from Envoy.
+					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS {
 						// commoncol.Endpoints holds the raw, pre-policy-attachment endpoint IR
 						// contributed by backend plugins. Project it onto the policy-attached
 						// backend the same way the syncer does, or the endpoint plugins run
