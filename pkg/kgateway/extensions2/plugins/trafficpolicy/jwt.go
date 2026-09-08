@@ -299,10 +299,16 @@ func translateJwks(
 		if err != nil {
 			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}
+
+		timeout := &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs}
+		if remote.Timeout != nil {
+			timeout = durationpb.New(remote.Timeout.Duration)
+		}
+
 		jwksOut := &jwtauthnv3.JwtProvider_RemoteJwks{
 			RemoteJwks: &jwtauthnv3.RemoteJwks{
 				HttpUri: &envoycorev3.HttpUri{
-					Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
+					Timeout: timeout,
 					Uri:     remote.URL,
 					HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
 						Cluster: backend.ClusterName(),
