@@ -96,10 +96,12 @@ user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=
 			expectedInvalid: []string{},
 		},
 		{
+			// A malformed entry is reported by line number: it has no parsable username, and
+			// the line itself may carry a password hash that must not reach policy status.
 			name:            "malformed entry without colon",
 			htpasswdData:    "invalidentry",
 			expectedValid:   []string{},
-			expectedInvalid: []string{"invalidentry"},
+			expectedInvalid: []string{"line 1"},
 		},
 		{
 			name: "malformed entries mixed with valid ones",
@@ -110,7 +112,7 @@ user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=`,
 				"user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=",
 				"user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=",
 			},
-			expectedInvalid: []string{"malformedentry"},
+			expectedInvalid: []string{"line 2"},
 		},
 		{
 			name:            "username with special characters",
@@ -138,11 +140,26 @@ bob:$2y$05$r3J4d3VepzFkedkd/q1vI.pBYIpSqjfN0qOARV3ScUHysatnS0cL2`,
 			expectedInvalid: []string{"alice", "bob"},
 		},
 		{
-			name: "duplicate valid users",
+			// Two passwords for one username: only one can be authoritative, so it is reported
+			// rather than resolved silently.
+			name: "duplicate username with different hashes",
 			htpasswdData: `user:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=
 user:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=`,
 			expectedValid:   []string{"user:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs="},
 			expectedInvalid: []string{"user"},
+		},
+		{
+			// The same entry written twice, which is what concatenating an htpasswd file with a
+			// copy of itself produces. Collapsing it is a no-op, so it is not reported.
+			name: "duplicate username with the identical hash is collapsed",
+			htpasswdData: `user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=
+user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=
+user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=`,
+			expectedValid: []string{
+				"user1:{SHA}NWoZK3kTsExUV00Ywo1G5jlUKKs=",
+				"user2:{SHA}2kuSN7rMzfGcB2DKt67EqDWQELA=",
+			},
+			expectedInvalid: []string{},
 		},
 	}
 

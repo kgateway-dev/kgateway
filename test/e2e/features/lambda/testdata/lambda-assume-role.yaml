@@ -1,0 +1,90 @@
+---
+# A dedicated gateway for the AssumeRole test so the base AWS credentials
+# (env vars) and the STS host alias don't leak into the other lambda tests.
+#
+# Role chaining requires the proxy to reach https://sts.us-east-1.amazonaws.com:443,
+# which Envoy hardcodes; the hostAliases entry points that hostname at the
+# localstack-sts service (port 443 -> localstack's gateway port). The suite
+# replaces STS_SERVICE_CLUSTER_IP with the service's cluster IP before applying.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: lambda-assume-role-gateway
+  namespace: lambda-test
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+      # The base credentials Envoy's default provider chain resolves to sign the
+      # sts:AssumeRole call itself. Localstack accepts any credentials.
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: base-identity
+        - name: AWS_SECRET_ACCESS_KEY
+          value: base-secret
+    deploymentOverlay:
+      spec:
+        template:
+          spec:
+            hostAliases:
+              - ip: "STS_SERVICE_CLUSTER_IP"
+                hostnames:
+                  - sts.us-east-1.amazonaws.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: lambda-assume-role-gateway
+  namespace: lambda-test
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: lambda-assume-role-gateway
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lambda-assume-role-route
+  namespace: lambda-test
+spec:
+  parentRefs:
+    - name: lambda-assume-role-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /lambda
+      backendRefs:
+        - name: lambda-assume-role-backend
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-assume-role-backend
+  namespace: lambda-test
+spec:
+  type: AWS
+  aws:
+    auth:
+      type: AssumeRole
+      assumeRole:
+        roleArn: arn:aws:iam::000000000000:role/lambda-invoke-target
+    lambda:
+      accountId: "000000000000"
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"

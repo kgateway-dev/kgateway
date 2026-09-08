@@ -48,7 +48,7 @@ type NotFoundError struct {
 }
 
 func (n *NotFoundError) Error() string {
-	return fmt.Sprintf("%s %s/%s not found", n.NotFoundObj.Kind, n.NotFoundObj.Namespace, n.NotFoundObj.Name)
+	return n.NotFoundObj.Kind + " " + n.NotFoundObj.Namespace + "/" + n.NotFoundObj.Name + " not found"
 }
 
 type BackendPortNotAllowedError struct {
@@ -580,6 +580,13 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				continue
 			}
 
+			// allowedNs is nil if allowedListeners could not be parsed, so deny the attachment.
+			if err != nil {
+				lsIR.Err = errors.New("Unable to parse allowedListeners")
+				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
+				continue
+			}
+
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
 			if !allowedNs(kctx, ls.GetNamespace()) {
@@ -642,7 +649,7 @@ type TargetRefIndexKey struct {
 }
 
 func (k TargetRefIndexKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace, k.SectionName)
+	return k.Group + "/" + k.Kind + "/" + k.Name + "/" + k.Namespace + "/" + k.SectionName
 }
 
 // HTTPRouteSelector is used to lookup HttpRouteIR using one of the following ways:

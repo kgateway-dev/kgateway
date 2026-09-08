@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -688,7 +689,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	// TODO: we should never get here
 	case 1:
 		// Only set the cluster name if unspecified since a plugin may have set it.
-		if action.GetCluster() == "" {
+		if action.GetClusterSpecifier() == nil {
 			action.ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{
 				Cluster: clusters[0].GetName(),
 			}
@@ -697,7 +698,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 
 	default:
 		// Only set weighted clusters if unspecified since a plugin may have set it.
-		if action.GetWeightedClusters() == nil {
+		if action.GetClusterSpecifier() == nil {
 			action.ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{
 				WeightedClusters: &envoyroutev3.WeightedCluster{
 					Clusters: clusters,
@@ -729,11 +730,11 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	out := &envoyroutev3.Route{
 		Match: translateMatcher(in.Match),
 	}
-	name := in.Name
-	if name != "" {
-		out.Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, name, in.MatchIndex)
+	matchIdx := strconv.Itoa(in.MatchIndex)
+	if name := in.Name; name != "" {
+		out.Name = generatedName + "-" + name + "-matcher-" + matchIdx
 	} else {
-		out.Name = fmt.Sprintf("%s-matcher-%d", generatedName, in.MatchIndex)
+		out.Name = generatedName + "-matcher-" + matchIdx
 	}
 
 	return out
