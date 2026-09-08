@@ -956,6 +956,10 @@ func TestBasic(t *testing.T) {
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "test",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with HTTP upgrades attached to route", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/http-upgrade-route.yaml"},
