@@ -609,19 +609,24 @@ func GetHTTPRouteStatusError(
 	return nil
 }
 
-// waitForEndpointsToSettle waits for the endpoints collection to quiesce. Endpoint IRs
-// depend dynamically on pods and EndpointSlices: the collection's initial transform can
-// complete (and report synced) before a dependency-triggered recompute lands, so
-// snapshotting right after HasSynced races with that recompute and yields nondeterministic
-// endpoint output. Poll until the collection stops changing.
-func waitForEndpointsToSettle(t *testing.T, endpoints krt.Collection[ir.EndpointsForBackend]) {
+// waitForEndpointsToSettle waits for the endpoint IR the goldens are built from to
+// quiesce. Endpoint IRs depend dynamically on pods and EndpointSlices: the collection's
+// initial transform can complete (and report synced) before a dependency-triggered
+// recompute lands, so snapshotting right after HasSynced races with that recompute and
+// yields nondeterministic endpoint output. Poll until the snapshot stops changing.
+//
+// snapshot must produce the same view the test then translates - see
+// finalEndpointsSnapshot. Settling on the raw plugin-contributed collection instead
+// would miss both a backend arriving in BackendIndex and a policy attaching to one,
+// neither of which is visible in a raw endpoint row.
+func waitForEndpointsToSettle(t *testing.T, snapshot func() []ir.EndpointsForBackend) {
 	t.Helper()
-	prev := endpoints.List()
+	prev := snapshot()
 	const settlePolls = 3
 	stable := 0
 	for range 400 { // wait for pods to settle: 400 * 25ms = 10s max
 		time.Sleep(25 * time.Millisecond)
-		cur := endpoints.List()
+		cur := snapshot()
 		if endpointsEqual(prev, cur) {
 			stable++
 			if stable >= settlePolls {
@@ -633,6 +638,23 @@ func waitForEndpointsToSettle(t *testing.T, endpoints krt.Collection[ir.Endpoint
 		prev = cur
 	}
 	t.Fatal("endpoints collection did not settle within 10s")
+}
+
+// finalEndpointsSnapshot returns the endpoint IR that the endpoint goldens are
+// translated from: every policy-carrying backend's raw endpoints projected onto the
+// policy-attached backend, exactly as proxy_syncer's FinalBackendEndpoints collection
+// does it.
+func finalEndpointsSnapshot(commoncol *collections.CommonCollections) []ir.EndpointsForBackend {
+	var out []ir.EndpointsForBackend
+	for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+		for _, backend := range col.List() {
+			raw := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName()))
+			if ep := proxy_syncer.FinalBackendEndpoints(backend, raw); ep != nil {
+				out = append(out, *ep)
+			}
+		}
+	}
+	return out
 }
 
 func endpointsEqual(a, b []ir.EndpointsForBackend) bool {
@@ -937,7 +959,9 @@ func (tc TestCase) Run(
 	// over the endpoint collections contributed by all plugins, extra ones included, so
 	// quiescence measured before a plugin syncs can be quiescence of a partial join.
 	if extraConfig.IncludeEndpoints {
-		waitForEndpointsToSettle(t, commoncol.Endpoints)
+		waitForEndpointsToSettle(t, func() []ir.EndpointsForBackend {
+			return finalEndpointsSnapshot(commoncol)
+		})
 	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
