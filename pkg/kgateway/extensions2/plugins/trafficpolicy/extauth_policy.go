@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"slices"
 
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoy_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -22,6 +24,10 @@ const (
 	ExtAuthGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_ext_auth"
 	globalFilterDisableMetadataKey              = "disable"
 	extauthFilterNamePrefix                     = "ext_auth"
+
+	// extAuthFilterEnabledRuntimeKey is the runtime key backing the filter_enabled fraction
+	// configured via GatewayExtension.spec.extAuth.percentageEnabled.
+	extAuthFilterEnabledRuntimeKey = "ext_authz_enabled"
 
 	AuthPolicyMetadataNamespace = "dev.kgateway.auth_policy"
 	AuthSucceededMetadataKey    = "auth_succeeded"
@@ -170,6 +176,26 @@ func buildExtAuthPerRouteFilterConfig(
 		}
 	}
 	return nil
+}
+
+// buildExtAuthFilterEnabled translates the percentage of requests that should be authorized into
+// the ext_authz filter_enabled fraction. A nil percentage leaves the field unset, which Envoy
+// treats as authorizing every request.
+//
+// Envoy ANDs filter_enabled with filter_enabled_metadata, so this only samples requests that the
+// global disable metadata matcher has not already excluded. Requests that are not sampled are
+// allowed through unauthorized, since deny_at_disable is left at its default of false.
+func buildExtAuthFilterEnabled(percentageEnabled *int32) *envoycorev3.RuntimeFractionalPercent {
+	if percentageEnabled == nil {
+		return nil
+	}
+	return &envoycorev3.RuntimeFractionalPercent{
+		RuntimeKey: extAuthFilterEnabledRuntimeKey,
+		DefaultValue: &envoytypev3.FractionalPercent{
+			Numerator:   uint32(*percentageEnabled), //nolint:gosec // G115: kubebuilder validation bounds this to 0-100
+			Denominator: envoytypev3.FractionalPercent_HUNDRED,
+		},
+	}
 }
 
 func extAuthFilterName(name string) string {

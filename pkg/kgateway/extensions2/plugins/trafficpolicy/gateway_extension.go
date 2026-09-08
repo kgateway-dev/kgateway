@@ -196,6 +196,7 @@ func gatewayExtensionBuilder(
 			if len(gExt.ExtAuth.HeadersToForward) > 0 {
 				p.ExtAuth.AllowedHeaders = buildStringListMatcher(gExt.ExtAuth.HeadersToForward)
 			}
+			p.ExtAuth.FilterEnabled = buildExtAuthFilterEnabled(gExt.ExtAuth.PercentageEnabled)
 
 		case gExt.ExtProc != nil:
 			envoyGrpcService, err := ResolveExtGrpcService(krtctx, commoncol.BackendIndex, gExt.ObjectSource, &gExt.ExtProc.GrpcService)
