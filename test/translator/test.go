@@ -1031,7 +1031,12 @@ func (tc TestCase) Run(
 					// selected goldens cover endpoint derivation. Preserve empty assignments:
 					// publishing them is required to clear stale endpoints from Envoy.
 					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS && backend.GetObjectSource().Kind == "Service" {
-						if ep := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName())); ep != nil {
+						// commoncol.Endpoints holds the raw, pre-policy-attachment endpoint IR
+						// contributed by backend plugins. Project it onto the policy-attached
+						// backend the same way the syncer does, or the endpoint plugins run
+						// against empty AttachedPolicies and are all no-ops here.
+						raw := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName()))
+						if ep := proxy_syncer.FinalBackendEndpoints(backend, raw); ep != nil {
 							if cla, _, _ := translator.TranslateEndpoints(krt.TestingDummyContext{}, ucc, *ep); cla != nil {
 								endpointAssignments = append(endpointAssignments, cla)
 							}
