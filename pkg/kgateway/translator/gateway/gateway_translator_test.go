@@ -36,17 +36,27 @@ type translatorTestCase struct {
 	gwNN       types.NamespacedName
 }
 
+// pinVersion fixes the reported kgateway version for the duration of a test.
+// version.Version reaches translation output through the OTel access-log resource
+// attributes (see access_logging_converter.go), so without it a golden recorded from
+// a locally stamped build would not match one recorded in CI.
+//
+// It writes a package-level global, which is only safe because nothing in this package
+// calls t.Parallel().
+func pinVersion(t *testing.T) {
+	t.Helper()
+	prev := version.Version
+	version.Version = "v1.0.0-ci1"
+	t.Cleanup(func() { version.Version = prev })
+}
+
 func TestBasic(t *testing.T) {
 	test := func(t *testing.T, in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
-		prevVersion := version.Version
-		version.Version = "v1.0.0-ci1"
-		defer func() {
-			version.Version = prevVersion
-		}()
+		pinVersion(t)
 
 		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -3556,11 +3566,7 @@ func TestSetupScenarios(t *testing.T) {
 	ctx := t.Context()
 	dir := fsutils.MustGetThisDir()
 
-	prevVersion := version.Version
-	version.Version = "v1.0.0-ci1"
-	defer func() {
-		version.Version = prevVersion
-	}()
+	pinVersion(t)
 
 	groups := []struct {
 		name        string
@@ -3607,11 +3613,7 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 	ctx := t.Context()
 
 	dir := fsutils.MustGetThisDir()
-	prevVersion := version.Version
-	version.Version = "v1.0.0-ci1"
-	defer func() {
-		version.Version = prevVersion
-	}()
+	pinVersion(t)
 
 	tc := translatortest.TestCase{
 		InputFiles: []string{
