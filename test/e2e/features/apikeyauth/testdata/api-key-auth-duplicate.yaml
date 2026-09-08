@@ -1,0 +1,69 @@
+# Two Secrets holding the same api key value, selected by one policy. This is the shape a
+# Secret-namespace migration leaves behind: the original plus a co-located copy, both selected
+# once a ReferenceGrant is added. Envoy rejects an ApiKeyAuth config with a repeated key and
+# NACKs the whole RouteConfiguration, so translation has to collapse the copy before emitting.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-duplicate
+  namespace: kgateway-base
+spec:
+  hostnames:
+    - httpbin
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: kgateway-base
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: httpbin
+          port: 8000
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /status/200
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-duplicate-original
+  namespace: kgateway-base
+  labels:
+    apikey-duplicate-test: "true"
+type: Opaque
+stringData:
+  client1: k-dup-111
+---
+# The co-located copy: same client, same value. Collapsing it is a no-op.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-keys-duplicate-copy
+  namespace: kgateway-base
+  labels:
+    apikey-duplicate-test: "true"
+type: Opaque
+stringData:
+  client1: k-dup-111
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: api-key-auth-policy-duplicate
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - name: httpbin-route-duplicate
+      kind: HTTPRoute
+      group: gateway.networking.k8s.io
+  apiKeyAuth:
+    keySources:
+      - header: "api-key"
+    secretSelector:
+      matchLabels:
+        apikey-duplicate-test: "true"

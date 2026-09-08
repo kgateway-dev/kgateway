@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"errors"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -15,7 +16,7 @@ const (
 	EnvoyAdminPort gwv1.PortNumber = 19000
 )
 
-var ErrListenerPortReserved = fmt.Errorf("port is reserved")
+var ErrListenerPortReserved = errors.New("port is reserved")
 
 // staticReservedPorts are always reserved regardless of gateway configuration.
 var staticReservedPorts = sets.New(

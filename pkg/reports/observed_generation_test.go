@@ -1,7 +1,6 @@
 package reports_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -55,7 +54,7 @@ func TestBuildBackendStatusMergesAndPreservesConditions(t *testing.T) {
 		},
 	}
 
-	status := rm.BuildBackendStatus(context.Background(), backend, currentStatus)
+	status := rm.BuildBackendStatus(backend, currentStatus)
 	require.NotNil(t, status)
 
 	accepted := requireConditionExists(t, status.Conditions, string(kgateway.BackendConditionAccepted))
@@ -106,7 +105,7 @@ func TestBuildBackendStatusDropsStaleManagedCondition(t *testing.T) {
 		},
 	}
 
-	status := rm.BuildBackendStatus(context.Background(), backend, currentStatus)
+	status := rm.BuildBackendStatus(backend, currentStatus)
 	require.NotNil(t, status)
 
 	// A kgateway-managed condition absent from the fresh report must be dropped rather
@@ -167,7 +166,7 @@ func TestGatewayStatusStampsObservedGenerationFromReport(t *testing.T) {
 
 		// Simulate the syncer's cache lagging behind translation's.
 		gw.Generation = 1
-		status := rm.BuildGWStatus(context.Background(), *gw, nil)
+		status := rm.BuildGWStatus(*gw, nil)
 		require.NotNil(t, status)
 
 		requireAllObservedGenerations(t, status, 2)
@@ -185,7 +184,7 @@ func TestGatewayStatusStampsObservedGenerationFromReport(t *testing.T) {
 		statusReporter.Gateway(gw)
 
 		gw.Generation = 2
-		status := rm.BuildGWStatus(context.Background(), *gw, nil)
+		status := rm.BuildGWStatus(*gw, nil)
 		require.NotNil(t, status)
 
 		requireAllObservedGenerations(t, status, 1)
@@ -252,7 +251,7 @@ func TestRouteStatusStampsObservedGenerationFromReport(t *testing.T) {
 		statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
 
 		route.Generation = 1
-		status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+		status := rm.BuildRouteStatus(route, "kgateway.dev/kgateway")
 		requireParentObservedGeneration(t, status, 2)
 	})
 
@@ -266,7 +265,7 @@ func TestRouteStatusStampsObservedGenerationFromReport(t *testing.T) {
 		statusReporter.Route(route).ParentRef(&route.Spec.ParentRefs[0])
 
 		route.Generation = 2
-		status := rm.BuildRouteStatus(context.Background(), route, "kgateway.dev/kgateway")
+		status := rm.BuildRouteStatus(route, "kgateway.dev/kgateway")
 		requireParentObservedGeneration(t, status, 1)
 	})
 }
@@ -291,7 +290,7 @@ func TestPolicyStatusRefreshesObservedGenerationOnReporterReuse(t *testing.T) {
 	statusReporter.Policy(key, 1).AncestorRef(ancestorRef)
 	statusReporter.Policy(key, 2).AncestorRef(ancestorRef)
 
-	status := rm.BuildPolicyStatus(context.Background(), key, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
+	status := rm.BuildPolicyStatus(key, "kgateway.dev/kgateway", gwv1.PolicyStatus{})
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, 1)
 
@@ -369,7 +368,7 @@ func TestBackendStatusStampsObservedGenerationFromReport(t *testing.T) {
 		reportBackend(statusReporter, backend)
 
 		backend.Generation = 1
-		status := rm.BuildBackendStatus(context.Background(), backend, kgateway.BackendStatus{})
+		status := rm.BuildBackendStatus(backend, kgateway.BackendStatus{})
 		requireObservedGeneration(t, status, 2)
 	})
 
@@ -383,7 +382,7 @@ func TestBackendStatusStampsObservedGenerationFromReport(t *testing.T) {
 		reportBackend(statusReporter, backend)
 
 		backend.Generation = 2
-		status := rm.BuildBackendStatus(context.Background(), backend, kgateway.BackendStatus{})
+		status := rm.BuildBackendStatus(backend, kgateway.BackendStatus{})
 		requireObservedGeneration(t, status, 1)
 	})
 }
@@ -429,7 +428,7 @@ func TestListenerSetStatusStampsObservedGenerationFromReport(t *testing.T) {
 		statusReporter.ListenerSet(ls)
 
 		ls.Generation = 1
-		status := rm.BuildListenerSetStatus(context.Background(), *ls)
+		status := rm.BuildListenerSetStatus(*ls)
 		requireAllObservedGenerations(t, status, 2)
 	})
 
@@ -443,7 +442,7 @@ func TestListenerSetStatusStampsObservedGenerationFromReport(t *testing.T) {
 		statusReporter.ListenerSet(ls)
 
 		ls.Generation = 2
-		status := rm.BuildListenerSetStatus(context.Background(), *ls)
+		status := rm.BuildListenerSetStatus(*ls)
 		requireAllObservedGenerations(t, status, 1)
 	})
 }

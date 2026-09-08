@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"fmt"
 	"maps"
+	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -87,7 +88,7 @@ func snapshotPerClient(
 			clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
 			clustersHash ^= c.ClusterVersion
 		}
-		clustersVersion := fmt.Sprintf("%d", clustersHash)
+		clustersVersion := strconv.FormatUint(clustersHash, 10)
 
 		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
 
@@ -112,7 +113,7 @@ func snapshotPerClient(
 			endpointsHash ^= ep.EndpointsHash
 		}
 
-		endpointResources := envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", endpointsHash), endpointsProto)
+		endpointResources := envoycache.NewResourcesWithTTL(strconv.FormatUint(endpointsHash, 10), endpointsProto)
 		return &endpointsWithUccName{
 			endpoints:    endpointResources,
 			resourceName: ucc.ResourceName(),
@@ -164,11 +165,19 @@ func snapshotPerClient(
 			for _, item := range listenerRouteSnapshot.Clusters {
 				clustersProto[envoycache.GetResourceName(item.Resource)] = item
 			}
-			clusterResources.Version = fmt.Sprintf("%d", clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash)
+			clusterResources.Version = strconv.FormatUint(clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
 		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
 		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
+		// Backend translation errors remove the corresponding cluster from CDS above. Remove
+		// its CLA as well: after Envoy observes the CDS removal it stops naming that resource
+		// in EDS requests, and go-control-plane otherwise withholds the entire named EDS
+		// response, including updates for healthy clusters.
+		//
+		// Keep this filtering explicitly error-scoped. Some endpoint resources, such as the
+		// bootstrap-defined local cluster, intentionally have no cluster in this CDS snapshot.
+		endpointRes = filterEndpointResourcesForErroredClusters(endpointRes, clustersForUcc.erroredClusters)
 
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
@@ -295,4 +304,47 @@ func filterEndpointResourcesForStaticClusters(clusters envoycache.Resources, end
 		return endpoints
 	}
 	return envoycache.NewResourcesWithTTL(endpoints.Version, filteredEndpoints)
+}
+
+// filterEndpointResourcesForErroredClusters removes CLAs for clusters omitted from CDS
+// because backend translation failed.
+//
+// The version handling is load-bearing. Filtering must change the EDS version (the
+// "-errors-" suffix), and clearing the error must restore the original version, because
+// go-control-plane's SOTW push path responds only when the snapshot version differs from
+// the watch's last-acked version. If the version stayed the same across an error->recovery
+// flap, a recovered cluster whose endpoints never changed would get no EDS push, and the
+// request path can also stay silent (the client's returned-resources state still lists the
+// CLA if Envoy never sent a narrowed EDS request between the two CDS updates) - leaving the
+// cluster warming until some unrelated endpoint change bumps the version. The original
+// endpoint version remains part of the filtered version so endpoint changes for healthy
+// clusters keep triggering EDS updates while another cluster is errored.
+func filterEndpointResourcesForErroredClusters(endpoints envoycache.Resources, erroredClusters []string) envoycache.Resources {
+	if len(erroredClusters) == 0 {
+		return endpoints
+	}
+
+	erroredClusterNames := make(map[string]struct{}, len(erroredClusters))
+	var erroredClustersHash uint64
+	for _, name := range erroredClusters {
+		erroredClusterNames[name] = struct{}{}
+		erroredClustersHash ^= utils.HashString(name)
+	}
+
+	filteredEndpoints := make([]envoycachetypes.ResourceWithTTL, 0, len(endpoints.Items))
+	for _, item := range endpoints.Items {
+		cla, ok := item.Resource.(*envoyendpointv3.ClusterLoadAssignment)
+		if ok {
+			if _, errored := erroredClusterNames[cla.GetClusterName()]; errored {
+				continue
+			}
+		}
+		filteredEndpoints = append(filteredEndpoints, item)
+	}
+	if len(filteredEndpoints) == len(endpoints.Items) {
+		return endpoints
+	}
+
+	version := fmt.Sprintf("%s-errors-%d", endpoints.Version, erroredClustersHash)
+	return envoycache.NewResourcesWithTTL(version, filteredEndpoints)
 }

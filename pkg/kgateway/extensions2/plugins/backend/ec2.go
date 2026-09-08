@@ -84,7 +84,7 @@ func ec2SecretsEqual(a, b *ir.Secret) bool {
 
 func buildEc2Ir(in *kgateway.AwsBackend, secret *ir.Secret) (*EC2Ir, error) {
 	if in == nil || in.Ec2 == nil {
-		return nil, fmt.Errorf("ec2 config is nil")
+		return nil, errors.New("ec2 config is nil")
 	}
 
 	return &EC2Ir{
@@ -971,7 +971,7 @@ func ec2DiscoveryFailureMessage(cause string, carriedEndpoints int) string {
 	if carriedEndpoints > 0 {
 		return fmt.Sprintf("%s; serving %d endpoints from the last successful poll", cause, carriedEndpoints)
 	}
-	return fmt.Sprintf("%s; no endpoints available from a previous poll", cause)
+	return cause + "; no endpoints available from a previous poll"
 }
 
 // ec2NoMatchMessage builds an operator-facing message for a successful poll that

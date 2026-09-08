@@ -35,6 +35,8 @@ type Retry struct {
 	// It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
 	// +optional
 	//
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.perTryTimeout must be at least 1ms."
 	PerTryTimeout *metav1.Duration `json:"perTryTimeout,omitempty"`
@@ -55,6 +57,8 @@ type Retry struct {
 	// +optional
 	//
 	// +kubebuilder:default="25ms"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.backoffBaseInterval must be at least 1ms."
 	BackoffBaseInterval *metav1.Duration `json:"backoffBaseInterval,omitempty"`

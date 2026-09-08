@@ -34,6 +34,27 @@ spec:
     - "example.com"
   rules:
     - name: direct-response-rule
+      matches:
+        - path:
+            type: PathPrefix
+            value: /match1
+        - path:
+            type: PathPrefix
+            value: /match2
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          name: direct-response
+          group: gateway.kgateway.dev
+          kind: DirectResponse
+    # explicitly unnamed rule
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /match1
+        - path:
+            type: PathPrefix
+            value: /match2
       filters:
       - type: ExtensionRef
         extensionRef:

@@ -124,7 +124,7 @@ func (i *TestInstallation) String() string {
 
 func (i *TestInstallation) finalize() {
 	if err := os.RemoveAll(i.GeneratedFiles.TempDir); err != nil {
-		panic(fmt.Sprintf("Failed to remove temporary directory: %s", i.GeneratedFiles.TempDir))
+		panic("Failed to remove temporary directory: " + i.GeneratedFiles.TempDir)
 	}
 }
 

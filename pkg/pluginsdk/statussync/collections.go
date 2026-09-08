@@ -1,0 +1,286 @@
+// Derived from https://github.com/agentgateway/agentgateway controller/pkg/syncer/status/collection.go (Apache 2.0).
+
+package statussync
+
+import (
+	"context"
+	"log/slog"
+	"sync"
+
+	"istio.io/istio/pkg/config"
+	"istio.io/istio/pkg/kube/controllers"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+)
+
+var logger = logging.New("statussync")
+
+// ResourceReports is the current reduction of all status contributions for one
+// Kubernetes object. It remains present while the raw object exists, even when
+// Report is empty, so disappearance of the last contribution is observable.
+type ResourceReports struct {
+	Resource Resource
+	Report   reports.StatusReport
+}
+
+// Target is the version-independent key this reduction is stored under. It is derived from
+// Resource rather than stored, so the two can never disagree.
+func (r ResourceReports) Target() reports.StatusKey {
+	return reports.StatusKey{GroupKind: r.Resource.GroupKind(), NamespacedName: r.Resource.NamespacedName}
+}
+
+func (r ResourceReports) ResourceName() string {
+	return r.Target().String()
+}
+
+func (r ResourceReports) Equals(other ResourceReports) bool {
+	return r.Resource == other.Resource &&
+		r.Report.Equals(other.Report)
+}
+
+// RegisterKind wires one status kind end to end: it derives the report reducer for a raw
+// collection, registers that collection as a reconciliation source, and enrolls the reducer as
+// both an event source and a cache-sync dependency.
+//
+// The three belong together. Done separately, each compiles on its own and omitting one is
+// invisible: skip the raw registration and the resource is never swept on leadership, skip
+// the reducer registration and status stops following report changes. Both are silent status
+// outages rather than build or test failures.
+func RegisterKind[I controllers.Object](
+	s *StatusCollections,
+	gvk schema.GroupVersionKind,
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	return registerKind(s, objects, contributions, byTarget,
+		func(I) schema.GroupVersionKind { return gvk },
+		func() { RegisterResource(s, gvk, objects) },
+		opts...)
+}
+
+// RegisterKindByObjectGVK is RegisterKind for a normalized collection whose objects retain
+// distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
+func RegisterKindByObjectGVK[I controllers.Object](
+	s *StatusCollections,
+	fallback schema.GroupVersionKind,
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	return registerKind(s, objects, contributions, byTarget,
+		func(obj I) schema.GroupVersionKind { return objectGVKOrDefault(obj, fallback) },
+		func() { RegisterResourceByObjectGVK(s, fallback, objects) },
+		opts...)
+}
+
+func registerKind[I controllers.Object](
+	s *StatusCollections,
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	gvkFor func(I) schema.GroupVersionKind,
+	registerRaw func(),
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	col := NewResourceReports(objects, contributions, byTarget, func(obj I) Resource {
+		return Resource{GroupVersionKind: gvkFor(obj), NamespacedName: config.NamespacedName(obj)}
+	}, opts...)
+	registerRaw()
+	RegisterResourceReports(s, col)
+	return col
+}
+
+func objectGVKOrDefault(obj controllers.Object, fallback schema.GroupVersionKind) schema.GroupVersionKind {
+	if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
+		return gvk
+	}
+	return fallback
+}
+
+// NewResourceReports builds one lightweight report reduction per raw object.
+// KRT tracks the filtered contribution dependency, so only the owner of a
+// changed contribution recomputes.
+func NewResourceReports[I controllers.Object](
+	objects krt.Collection[I],
+	contributions krt.Collection[reports.StatusContribution],
+	byTarget krt.Index[reports.StatusKey, reports.StatusContribution],
+	resource func(I) Resource,
+	opts ...krt.CollectionOption,
+) krt.Collection[ResourceReports] {
+	return krt.NewCollection(objects, func(kctx krt.HandlerContext, object I) *ResourceReports {
+		res := resource(object)
+		target := reports.StatusKey{GroupKind: res.GroupVersionKind.GroupKind(), NamespacedName: res.NamespacedName}
+		fragments := krt.Fetch(kctx, contributions, krt.FilterIndex(byTarget, target))
+		return &ResourceReports{
+			Resource: res,
+			Report:   reports.ReduceStatusContributions(fragments),
+		}
+	}, opts...)
+}
+
+// ReportFor looks up the current reduction for one status owner. Writers call it from
+// their Desired func to build status just in time from the latest KRT state.
+//
+// The returned StatusReport contains pointers into KRT-owned retained state. Builders must
+// treat it as read-only, so later KRT equality checks continue to observe changes.
+func ReportFor(
+	col krt.Collection[ResourceReports],
+	gvk schema.GroupVersionKind,
+	nn types.NamespacedName,
+) (reports.StatusReport, bool) {
+	if col == nil {
+		return reports.StatusReport{}, false
+	}
+	target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn}
+	current := col.GetKey(target.String())
+	if current == nil {
+		return reports.StatusReport{}, false
+	}
+	return current.Report, true
+}
+
+// StatusRegistration attaches a source handler that feeds the given queue. It is invoked
+// when status writing becomes enabled on the leader.
+type StatusRegistration = func(statusWriter WorkerQueue) krt.HandlerRegistration
+
+// StatusCollections stores the raw-resource and report event sources that can trigger a
+// status reconciliation. Handlers are attached only on the leader, and they enqueue only
+// resource identities; desired statuses are built just-in-time by the writer.
+type StatusCollections struct {
+	mu           sync.Mutex
+	constructors []StatusRegistration
+	active       []krt.HandlerRegistration
+	queue        WorkerQueue
+	// reportSyncs are the HasSynced funcs of every registered report reducer. Tracking
+	// them here rather than at each call site is what makes RegisterResourceReports the
+	// only way to register a reducer: there is no unsafe variant to reach for.
+	reportSyncs []func() bool
+}
+
+func NewStatusCollections() *StatusCollections {
+	return &StatusCollections{}
+}
+
+func (s *StatusCollections) Register(sr StatusRegistration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.constructors = append(s.constructors, sr)
+	// If the queue is already active (registration raced leader election), attach immediately.
+	if s.queue != nil {
+		s.active = append(s.active, sr(s.queue))
+	}
+}
+
+// UnsetQueue disables status writing, detaching all handlers.
+func (s *StatusCollections) UnsetQueue() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.queue = nil
+	for _, act := range s.active {
+		act.UnregisterHandler()
+	}
+	s.active = nil
+}
+
+// SetQueue enables status writing. All registered sources attach handlers to the queue;
+// raw KRT collections replay current objects as Add events to sweep them on leadership.
+func (s *StatusCollections) SetQueue(queue WorkerQueue) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.queue = queue
+	s.active = slices.Map(s.constructors, func(reg StatusRegistration) krt.HandlerRegistration {
+		return reg(queue)
+	})
+}
+
+// RegisterResource registers an existing raw KRT collection as a reconciliation source.
+// Status-only informer updates are intentionally included: they provide the self-healing
+// event after a write conflict or after another controller updates a shared status field.
+// Deletes are ignored because there is no remaining object to update.
+func RegisterResource[I controllers.Object](
+	s *StatusCollections,
+	gvk schema.GroupVersionKind,
+	col krt.Collection[I],
+) {
+	registerResource(s, col, func(I) schema.GroupVersionKind { return gvk })
+}
+
+// RegisterResourceByObjectGVK registers a normalized collection whose objects retain
+// distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
+func RegisterResourceByObjectGVK[I controllers.Object](
+	s *StatusCollections,
+	fallback schema.GroupVersionKind,
+	col krt.Collection[I],
+) {
+	registerResource(s, col, func(obj I) schema.GroupVersionKind {
+		return objectGVKOrDefault(obj, fallback)
+	})
+}
+
+func registerResource[I controllers.Object](
+	s *StatusCollections,
+	col krt.Collection[I],
+	gvkFor func(I) schema.GroupVersionKind,
+) {
+	reg := func(statusWriter WorkerQueue) krt.HandlerRegistration {
+		return col.Register(func(o krt.Event[I]) {
+			if o.Event == controllers.EventDelete {
+				return
+			}
+			obj := o.Latest()
+			res := Resource{
+				GroupVersionKind: gvkFor(obj),
+				NamespacedName:   config.NamespacedName(obj),
+			}
+			statusWriter.Push(res)
+			// This fires for every informer event on every registered kind, including the
+			// echo of our own writes, so keep the argument evaluation behind the level check.
+			if logger.Enabled(context.Background(), slog.LevelDebug) {
+				logger.Debug("enqueued status reconciliation", "resource", res.NamespacedName.String(), "resource_version", obj.GetResourceVersion())
+			}
+		})
+	}
+	s.Register(reg)
+}
+
+// HasSynced reports whether every registered report reducer has synced. The leader's
+// startup sweep must not write status built from a reducer that has not yet observed its
+// contributions, so this is part of the status syncer's cache-sync barrier. It reads the
+// current registration set on every call, so reducers registered after the barrier was
+// installed are still covered.
+func (s *StatusCollections) HasSynced() bool {
+	s.mu.Lock()
+	syncs := slices.Clone(s.reportSyncs)
+	s.mu.Unlock()
+	for _, hasSynced := range syncs {
+		if !hasSynced() {
+			return false
+		}
+	}
+	return true
+}
+
+// RegisterResourceReports enqueues an owner whenever its reduced contribution
+// set changes, and records the reducer in the cache-sync barrier reported by HasSynced.
+// Deletes are ignored because the corresponding raw object is gone.
+func RegisterResourceReports(s *StatusCollections, col krt.Collection[ResourceReports]) {
+	s.mu.Lock()
+	s.reportSyncs = append(s.reportSyncs, col.HasSynced)
+	s.mu.Unlock()
+	s.Register(func(statusWriter WorkerQueue) krt.HandlerRegistration {
+		return col.Register(func(event krt.Event[ResourceReports]) {
+			if event.Event == controllers.EventDelete {
+				return
+			}
+			statusWriter.Push(event.Latest().Resource)
+		})
+	})
+}

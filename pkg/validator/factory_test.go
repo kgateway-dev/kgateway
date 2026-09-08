@@ -9,25 +9,29 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 )
 
-func TestNew_ZeroValueModeYieldsBinary(t *testing.T) {
-	// A zero-valued Settings struct bypasses the envconfig default tag, which
-	// selects CACHE; an empty mode falls through to plain binary.
-	v := New(apisettings.Settings{})
-	_, ok := v.(*binaryValidator)
-	assert.True(t, ok, "zero-valued settings should yield plain binaryValidator")
+func TestNew_ZeroValueModeReturnsError(t *testing.T) {
+	_, err := New(apisettings.Settings{})
+	require.EqualError(t, err, `invalid validator mode: ""`)
 }
 
-func TestNew_UnknownModeFallsBackToBinary(t *testing.T) {
-	v := New(apisettings.Settings{ValidatorMode: "nonsense"})
+func TestNew_UnknownModeReturnsError(t *testing.T) {
+	_, err := New(apisettings.Settings{ValidatorMode: "nonsense"})
+	require.EqualError(t, err, `invalid validator mode: "nonsense"`)
+}
+
+func TestNew_BinaryMode(t *testing.T) {
+	v, err := New(apisettings.Settings{ValidatorMode: apisettings.ValidatorBinary})
+	require.NoError(t, err)
 	_, ok := v.(*binaryValidator)
-	assert.True(t, ok)
+	assert.True(t, ok, "binary mode should return *binaryValidator")
 }
 
 func TestNew_CacheMode(t *testing.T) {
-	v := New(apisettings.Settings{
+	v, err := New(apisettings.Settings{
 		ValidatorMode:      apisettings.ValidatorCache,
 		ValidatorCacheSize: 16,
 	})
+	require.NoError(t, err)
 	c, ok := v.(*cachingValidator)
 	require.True(t, ok, "cache mode should return *cachingValidator")
 	_, innerOK := c.inner.(*binaryValidator)
@@ -35,7 +39,8 @@ func TestNew_CacheMode(t *testing.T) {
 }
 
 func TestNew_CacheZeroSizeFallsBackToDefault(t *testing.T) {
-	v := New(apisettings.Settings{ValidatorMode: apisettings.ValidatorCache})
+	v, err := New(apisettings.Settings{ValidatorMode: apisettings.ValidatorCache})
+	require.NoError(t, err)
 	_, ok := v.(*cachingValidator)
 	require.True(t, ok)
 }

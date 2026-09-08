@@ -13,7 +13,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/destrule"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/directresponse"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/istio"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
@@ -86,7 +85,6 @@ func Plugins(
 		kubernetes.NewPlugin(ctx, commoncol),
 		istio.NewPlugin(ctx, commoncol),
 		destrule.NewPlugin(ctx, commoncol),
-		httplistenerpolicy.NewPlugin(ctx, commoncol),
 		listenerpolicy.NewPlugin(ctx, commoncol),
 		backendtlspolicy.NewPlugin(ctx, commoncol),
 		serviceentry.NewPlugin(ctx, commoncol),

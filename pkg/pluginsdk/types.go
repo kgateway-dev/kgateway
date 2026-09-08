@@ -10,23 +10,41 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 )
 
 // ErrNotFound is returned when a requested resource is not found
 var ErrNotFound = errors.New("not found")
 
 type (
-	EndpointsInputs = endpoints.EndpointsInputs
-	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
-	EndpointPlugin  func(
+	EndpointsInputs      = endpoints.EndpointsInputs
+	EndpointInputsEditor = endpoints.EndpointInputsEditor
+	EndpointSetBuilder   = endpoints.EndpointSetBuilder
+	EndpointView         = endpoints.EndpointView
+	PolicyView           = endpoints.PolicyView
+	ProcessBackend       func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
+	// EndpointEditorPlugin edits per-client endpoint inputs through a
+	// copy-on-write API. Read-only source state is exposed through accessors;
+	// endpoint rewrites build a replacement set and clone only modified protos.
+	// The returned hash must capture effects not already represented by the
+	// replacement endpoint set's LbEpsEqualityHash.
+	EndpointEditorPlugin func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniquelyConnectedClient,
+		out EndpointInputsEditor,
+	) uint64
+	// EndpointPlugin is the legacy mutable endpoint hook.
+	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
+	// mutable nested state before invoking this hook.
+	EndpointPlugin func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniquelyConnectedClient,
@@ -46,36 +64,36 @@ type PerClientProcessBackend func(
 	out *envoyclusterv3.Cluster,
 )
 
-type (
-	// GetPolicyStatusFn is a type that plugins can implement to get the PolicyStatus for the given policy
-	GetPolicyStatusFn func(context.Context, types.NamespacedName) (gwv1.PolicyStatus, error)
-	// PatchPolicyStatusFn is a type that plugins can implement to patch the PolicyStatus for the given policy
-	PatchPolicyStatusFn func(context.Context, types.NamespacedName, gwv1.PolicyStatus) error
-	// BuildPolicyStatusFn is a type that plugins can implement to build a PolicyStatus from a report map.
-	BuildPolicyStatusFn func(context.Context, reports.ReportMap, reporter.PolicyKey, string, gwv1.PolicyStatus) *gwv1.PolicyStatus
-)
+// PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
+// registers its raw collection, keyed report reducer, and just-in-time writer.
+type PolicyStatusInputs = statussync.RegistrationInputs
+
+// StatusCollections aliases the statussync type for plugin convenience.
+type StatusCollections = statussync.StatusCollections
 
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
-	ProcessBackend            ProcessBackend
-	PerClientProcessBackend   PerClientProcessBackend
+	ProcessBackend          ProcessBackend
+	PerClientProcessBackend PerClientProcessBackend
+	PerClientEditEndpoints  EndpointEditorPlugin
+	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
 
-	Policies krt.Collection[ir.PolicyWrapper]
-	// ProcessPolicyStaleStatusMarkers add empty reports for policies to clear stale status
-	ProcessPolicyStaleStatusMarkers func(krt.HandlerContext, *reports.ReportMap)
-	GlobalPolicies                  func(krt.HandlerContext) ir.PolicyIR
+	Policies       krt.Collection[ir.PolicyWrapper]
+	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
 	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
 	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
 	PoliciesFetch func(n, ns string) ir.PolicyIR
 	MergePolicies func(pols []ir.PolicyAtt) ir.PolicyAtt
 
-	GetPolicyStatus   GetPolicyStatusFn
-	PatchPolicyStatus PatchPolicyStatusFn
-	BuildPolicyStatus BuildPolicyStatusFn
+	// RegisterPolicyStatus, when set, is called once by the proxy syncer after the report
+	// collections are built. The plugin derives its per-object desired-status collection
+	// from the provided report collection and registers it, along with a status writer
+	// for its GVK. Plugins that do not report status may leave this unset.
+	RegisterPolicyStatus func(inputs PolicyStatusInputs)
 
 	// PolicyStatusFromGatewayReports indicates that policy status should be reported from the
 	// Gateway translation report path rather than the backend-only report path.
@@ -85,8 +103,13 @@ type PolicyPlugin struct {
 type BackendPlugin struct {
 	ir.BackendInit
 	AliasKinds []schema.GroupKind
-	Backends   krt.Collection[ir.BackendObjectIR]
-	Endpoints  krt.Collection[ir.EndpointsForBackend]
+	// RawBackends is the informer-backed source for status reconciliation. It is shared
+	// with the translated Backends collection so status does not create another wrapper.
+	// Backend plugins for the Backend GVK must provide it; otherwise resource-driven Backend
+	// status reconciliation is disabled and the proxy syncer logs an error during setup.
+	RawBackends krt.Collection[*kgateway.Backend]
+	Backends    krt.Collection[ir.BackendObjectIR]
+	Endpoints   krt.Collection[ir.EndpointsForBackend]
 	// ExtraConditions, when set, contributes additional status conditions to the
 	// Backend resource beyond the Accepted condition (e.g. the EC2 EndpointsDiscovered
 	// condition produced by runtime endpoint discovery). May be nil.

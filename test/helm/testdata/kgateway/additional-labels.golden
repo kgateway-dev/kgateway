@@ -139,7 +139,6 @@ rules:
   - directresponses
   - gatewayextensions
   - gatewayparameters
-  - httplistenerpolicies
   - listenerpolicies
   - trafficpolicies
   verbs:
@@ -154,7 +153,6 @@ rules:
   - directresponses/status
   - gatewayextensions/status
   - gatewayparameters/status
-  - httplistenerpolicies/status
   - listenerpolicies/status
   - trafficpolicies/status
   verbs:
@@ -331,6 +329,8 @@ spec:
         app.kubernetes.io/name: kgateway
         app.kubernetes.io/instance: test-release
         app.kubernetes.io/component: controller
+        another-label: "true"
+        extra-label-key: extra-label-value
     spec:
       serviceAccountName: test-release-kgateway
       containers:

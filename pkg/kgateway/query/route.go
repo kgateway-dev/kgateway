@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -181,7 +182,7 @@ func (r *gatewayQueries) allowedRoutes(resource client.Object, l *gwv1.Listener)
 				allowedNs = krtcollections.AllNamespace()
 			case gwv1.NamespacesFromSelector:
 				if ar.Namespaces.Selector == nil {
-					return nil, nil, fmt.Errorf("selector must be set")
+					return nil, nil, errors.New("selector must be set")
 				}
 				selector, err := metav1.LabelSelectorAsSelector(ar.Namespaces.Selector)
 				if err != nil {
@@ -416,7 +417,7 @@ func getListeners(resource client.Object) ([]gwv1.Listener, error) {
 	case krtcollections.ListenerCollection:
 		listeners = typed.GetListeners()
 	default:
-		return nil, fmt.Errorf("unknown type")
+		return nil, errors.New("unknown type")
 	}
 	return listeners, nil
 }

@@ -164,10 +164,6 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 }
 
 func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
-	if len(gw.Listeners) == 0 {
-		// gwReporter.Err("gateway must contain at least 1 listener")
-	}
-
 	validListeners := validateSupportedRoutes(gw.Listeners, reporter)
 
 	portListeners := map[gwv1.PortNumber]*portProtocol{}

@@ -51,7 +51,6 @@ Routes:
     routes:
     - match:
         safeRegex:
-          googleRe2: {}
           regex: /.+/foo
       name: listener~80~*-route-0-grpcroute-example-grpc-route-default-0-0-matcher-0
       route:
@@ -71,7 +70,6 @@ Routes:
                   ttl: 10s
     - match:
         safeRegex:
-          googleRe2: {}
           regex: /.+/foo2
       name: listener~80~*-route-1-grpcroute-example-grpc-route-default-1-0-matcher-0
       route:
@@ -91,7 +89,6 @@ Routes:
                   ttl: 31536000s
     - match:
         safeRegex:
-          googleRe2: {}
           regex: /.+/foo3
       name: listener~80~*-route-2-grpcroute-example-grpc-route-default-2-0-matcher-0
       route:

@@ -1,7 +1,6 @@
 package settings
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -36,7 +35,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_INGRESS_USE_WAYPOINTS":                     "false",
 		"KGW_LOG_LEVEL":                                 "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":             `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
-		"KGW_ENABLE_ORDERED_ADS":                        "true",
+		"KGW_ENABLE_ORDERED_ADS":                        "false",
 		"KGW_WEIGHTED_ROUTE_PRECEDENCE":                 "true",
 		"KGW_VALIDATION_MODE":                           string(ValidationStrict),
 		"KGW_VALIDATOR_MODE":                            string(ValidatorBinary),
@@ -96,7 +95,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                   true,
 				LogLevel:                              "info",
 				DiscoveryNamespaceSelectors:           "[]",
-				EnableOrderedAds:                      false,
+				EnableOrderedAds:                      true,
 				WeightedRoutePrecedence:               false,
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
@@ -139,7 +138,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                   false,
 				LogLevel:                              "debug",
 				DiscoveryNamespaceSelectors:           `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
-				EnableOrderedAds:                      true,
+				EnableOrderedAds:                      false,
 				WeightedRoutePrecedence:               true,
 				ValidationMode:                        ValidationStrict,
 				ValidatorMode:                         ValidatorBinary,
@@ -252,6 +251,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:                   true,
 				LogLevel:                              "info",
 				DiscoveryNamespaceSelectors:           "[]",
+				EnableOrderedAds:                      true,
 				WeightedRoutePrecedence:               false,
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
@@ -372,7 +372,7 @@ func expectedEnvVars(settingsValue reflect.Value) map[string]any {
 
 		envVarName = strings.ToUpper(envVarName)
 		// Always have a prefix
-		envVarName = fmt.Sprintf("KGW_%s", envVarName)
+		envVarName = "KGW_" + envVarName
 
 		// If the field has an alt tag, use that as the env var name
 		if fieldType.Tag.Get("alt") != "" {

@@ -93,7 +93,7 @@ spec:
     app.kubernetes.io/name: otel-collector
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: access-logs
   namespace: kgateway-base
@@ -102,28 +102,30 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: gateway
-  accessLog:
-  - openTelemetry:
-      grpcService:
-        backendRef:
-          name: otel-collector
-          namespace: kgateway-base
-          port: 4317
-        logName: "test-otel-accesslog-service"
-      body: >-
-        "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'
-      attributes:
-        values:
-        - key: custom
-          value:
-            stringValue: string
-        - key: kvlist
-          value:
-            kvListValue:
-              values:
-              - key: key-1
-                value:
-                  stringValue: value-1
-              - key: key-2
-                value:
-                  stringValue: value-2
+  default:
+    httpSettings:
+      accessLog:
+      - openTelemetry:
+          grpcService:
+            backendRef:
+              name: otel-collector
+              namespace: kgateway-base
+              port: 4317
+            logName: "test-otel-accesslog-service"
+          body: >-
+            "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE% "%REQ(:AUTHORITY)%" "%UPSTREAM_CLUSTER%"\n'
+          attributes:
+            values:
+            - key: custom
+              value:
+                stringValue: string
+            - key: kvlist
+              value:
+                kvListValue:
+                  values:
+                  - key: key-1
+                    value:
+                      stringValue: value-1
+                  - key: key-2
+                    value:
+                      stringValue: value-2
