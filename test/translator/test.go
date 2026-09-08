@@ -930,11 +930,14 @@ func (tc TestCase) Run(
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
-	if extraConfig.IncludeEndpoints {
-		waitForEndpointsToSettle(t, commoncol.Endpoints)
-	}
 	for i, plug := range extraPlugs {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
+	}
+	// Settling has to come after every HasSynced above: commoncol.Endpoints is a join
+	// over the endpoint collections contributed by all plugins, extra ones included, so
+	// quiescence measured before a plugin syncs can be quiescence of a partial join.
+	if extraConfig.IncludeEndpoints {
+		waitForEndpointsToSettle(t, commoncol.Endpoints)
 	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
