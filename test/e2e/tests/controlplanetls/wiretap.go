@@ -180,7 +180,7 @@ func stopXDSCapture(ctx context.Context, t *testing.T, testInstallation e2e.Inst
 		xdsWiretapLog,
 	)
 	tcpdumpLog := execWiretap(ctx, t, testInstallation, proxyPod, stopScript)
-	capture := execWiretap(ctx, t, testInstallation, proxyPod, fmt.Sprintf("cat %s", xdsWiretapPcap))
+	capture := execWiretap(ctx, t, testInstallation, proxyPod, "cat "+xdsWiretapPcap)
 
 	return []byte(capture), tcpdumpLog
 }

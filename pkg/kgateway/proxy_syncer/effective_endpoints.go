@@ -31,15 +31,14 @@ func newFinalBackendEndpoints(
 		final.AttachedPolicies = backend.AttachedPolicies
 		final.ClusterName = backend.ClusterName()
 		final.UpstreamResourceName = backend.ResourceName()
-		for locality, endpoints := range raw.LbEps {
-			for _, endpoint := range endpoints {
-				final.Add(locality, endpoint)
-			}
-		}
+		// Reuse the endpoint protos AND their precomputed equality hash instead
+		// of re-Adding every endpoint: Add re-marshals each LbEndpoint proto
+		// (HashProtoWithHasher), which is a major allocation source at scale.
+		final.ReuseEndpointsFrom(raw)
 		// A same-named EDS cluster can still re-warm when policy changes CDS.
 		// Bump only the endpoint version so Envoy receives a fresh CLA response.
 		if policyHash := backendEndpointVersionHash(backend); policyHash != 0 {
-			final.LbEpsEqualityHash = combineEndpointHashes(final.LbEpsEqualityHash, policyHash)
+			final.FoldVersion(policyHash)
 		}
 		return &final
 	}, krtopts.ToOptions("FinalBackendEndpoints")...)
@@ -84,12 +83,5 @@ func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 		}
 	}
 
-	return hasher.Sum64()
-}
-
-func combineEndpointHashes(endpointHash, policyHash uint64) uint64 {
-	hasher := fnv.New64a()
-	utils.HashUint64(hasher, endpointHash)
-	utils.HashUint64(hasher, policyHash)
 	return hasher.Sum64()
 }

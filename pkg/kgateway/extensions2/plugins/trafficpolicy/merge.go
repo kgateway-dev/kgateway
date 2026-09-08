@@ -2,11 +2,13 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -50,6 +52,46 @@ func (o TrafficPolicyMergeOpts) Merge(other TrafficPolicyMergeOpts) TrafficPolic
 	return merged
 }
 
+// A deep-merge branch must never write through p1's sub-IR pointer.
+//
+// p1 is a fresh accumulator, but its sub-IRs are not: a shallow merge sets them to
+// p2's sub-IR verbatim (see defaultMerge), and p2's IR is KRT collection output shared
+// across every translation that references the policy. Because merging is always a
+// shallow merge within a hierarchy followed by a deep merge across hierarchies
+// (see policy.GetMergeStrategy and policy.MergePolicies), any deep-merge branch that
+// mutates p1's sub-IR in place writes the merged result into the source policy. That
+// policy then contributes its already-merged value to the next translation, so config
+// accumulates across routes and across translation cycles.
+//
+// The two helpers below make the write land on a private copy instead.
+
+// copyForMerge returns a shallow copy of in that is safe for a deep-merge branch to
+// mutate, or a new zero value if in is nil. Callers must replace whole fields rather
+// than mutating through the slices, maps and pointers the copy still shares with in.
+func copyForMerge[T any](in *T) *T {
+	if in == nil {
+		var zero T
+		return &zero
+	}
+	cp := *in
+	return &cp
+}
+
+// copyWithFilterConfig returns a copy of cfg carrying filterConfig, for the dynamic
+// module sub-IRs (transformation, httpACL) whose merged output is a rewritten
+// FilterConfig on an otherwise identical per-route config.
+func copyWithFilterConfig(
+	cfg *dynamicmodulesv3.DynamicModuleFilterPerRoute,
+	filterConfig *anypb.Any,
+) *dynamicmodulesv3.DynamicModuleFilterPerRoute {
+	out, _ := proto.Clone(cfg).(*dynamicmodulesv3.DynamicModuleFilterPerRoute)
+	if out == nil {
+		out = &dynamicmodulesv3.DynamicModuleFilterPerRoute{}
+	}
+	out.FilterConfig = filterConfig
+	return out
+}
+
 // MergeTrafficPolicies merges two TrafficPolicy IRs, returning a map that contains information
 // about the origin policy reference for each merged field.
 func MergeTrafficPolicies(
@@ -73,6 +115,7 @@ func MergeTrafficPolicies(
 		mergeCORS,
 		mergeCSRF,
 		mergeHeaderModifiers,
+		mergeRequestMirror,
 		mergeBuffer,
 		mergeAutoHostRewrite,
 		mergeTimeouts,
@@ -140,9 +183,7 @@ func mergeExtProc(
 
 	switch opts.Strategy {
 	case policy.AugmentedDeepMerge:
-		if p1.spec.extProc == nil {
-			p1.spec.extProc = &extprocIR{}
-		}
+		p1.spec.extProc = copyForMerge(p1.spec.extProc)
 		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
 		// it implies that this provider was already considered from a higher priority policy,
 		// so ignore it
@@ -162,9 +203,7 @@ func mergeExtProc(
 		}
 
 	case policy.OverridableDeepMerge:
-		if p1.spec.extProc == nil {
-			p1.spec.extProc = &extprocIR{}
-		}
+		p1.spec.extProc = copyForMerge(p1.spec.extProc)
 		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
 		// it implies that this provider was already considered from a higher priority policy,
 		// so ignore it
@@ -227,7 +266,7 @@ func mergeRustformationJsonInPlace(obj1, obj2 any) error {
 	m1, ok1 := obj1.(map[string]any)
 	m2, ok2 := obj2.(map[string]any)
 	if !ok1 || !ok2 {
-		return fmt.Errorf("both arguments must be map[string]any")
+		return errors.New("both arguments must be map[string]any")
 	}
 
 	mergeRustFormationRequestResponseJson("response", m1, m2)
@@ -315,7 +354,9 @@ func mergeRustformation(
 			return
 		}
 
-		p1.spec.rustformation.config.FilterConfig = anyMsg
+		p1.spec.rustformation = &rustformationIR{
+			config: copyWithFilterConfig(p1.spec.rustformation.config, anyMsg),
+		}
 		mergeOrigins.Append("transformation", p2Ref, p2MergeOrigins)
 
 	default:
@@ -347,9 +388,7 @@ func mergeExtAuth(
 
 	switch opts.Strategy {
 	case policy.AugmentedDeepMerge:
-		if p1.spec.extAuth == nil {
-			p1.spec.extAuth = &extAuthIR{}
-		}
+		p1.spec.extAuth = copyForMerge(p1.spec.extAuth)
 		// as p2 is not a merged policy, it will always have just 1 item in its providerNames
 		// as each extauth policy can only reference a single provider.
 		// If p1 contains the singular provider in p2 then it implies that this provider
@@ -370,9 +409,7 @@ func mergeExtAuth(
 		}
 
 	case policy.OverridableDeepMerge:
-		if p1.spec.extAuth == nil {
-			p1.spec.extAuth = &extAuthIR{}
-		}
+		p1.spec.extAuth = copyForMerge(p1.spec.extAuth)
 		// p2 will always have just 1 item in its providerNames, and if p1 contains that then
 		// it implies that this provider was already considered from a higher priority policy,
 		// so ignore it
@@ -528,6 +565,22 @@ func mergeHeaderModifiers(
 	}
 
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "headerModifiers")
+}
+
+func mergeRequestMirror(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[requestMirrorIR]{
+		Get: func(spec *trafficPolicySpecIr) *requestMirrorIR { return spec.requestMirror },
+		Set: func(spec *trafficPolicySpecIr, val *requestMirrorIR) { spec.requestMirror = val },
+	}
+
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "requestMirror")
 }
 
 func mergeBuffer(
@@ -815,7 +868,9 @@ func mergeHttpACL(
 			return
 		}
 
-		p1.spec.httpACL.config.FilterConfig = anyMsg
+		p1.spec.httpACL = &httpACLIR{
+			config: copyWithFilterConfig(p1.spec.httpACL.config, anyMsg),
+		}
 		mergeOrigins.Append("httpACL", p2Ref, p2MergeOrigins)
 
 	default:
@@ -830,7 +885,7 @@ func detectHttpACLMergeConflict(m1, m2 map[string]any) []error {
 	da1, hasDA1 := m1["defaultAction"].(string)
 	da2, hasDA2 := m2["defaultAction"].(string)
 	if !hasDA1 || !hasDA2 {
-		conflicts = append(conflicts, fmt.Errorf("defaultAction not set"))
+		conflicts = append(conflicts, errors.New("defaultAction not set"))
 	} else if da1 != da2 {
 		conflicts = append(conflicts, fmt.Errorf("defaultAction conflict: %q vs %q", da1, da2))
 	}
@@ -929,6 +984,8 @@ func defaultMerge[T any](
 		fallthrough // can override p1 if it is unset
 
 	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
+		// p1's field now aliases p2's IR, which is shared KRT output: a later deep merge
+		// into p1 must copy before writing. See the note on copyForMerge.
 		accessor.Set(&p1.spec, p2Field)
 		mergeOrigins.SetOne(fieldName, p2Ref, p2MergeOrigins)
 

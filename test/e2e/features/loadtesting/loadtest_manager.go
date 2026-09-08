@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -142,7 +143,7 @@ func (ltm *LoadTestManager) WaitForGatewayReadiness(timeout time.Duration) error
 	for {
 		select {
 		case <-timeoutCh:
-			return fmt.Errorf("timeout waiting for gateways to be ready")
+			return errors.New("timeout waiting for gateways to be ready")
 		case <-ticker.C:
 			allReady := true
 
@@ -249,7 +250,7 @@ func (ltm *LoadTestManager) buildRoute(gatewayName string, routeIdx, batchStart 
 			Labels: map[string]string{
 				"loadtest": "true",
 				"gateway":  gatewayName,
-				"batch":    fmt.Sprintf("%d", batchStart/GetOptimalBatchSize(1000)), // Use baseline batch size for labeling
+				"batch":    strconv.Itoa(batchStart / GetOptimalBatchSize(1000)), // Use baseline batch size for labeling
 			},
 		},
 		Spec: gwv1.HTTPRouteSpec{
@@ -402,7 +403,7 @@ func (ltm *LoadTestManager) fetchKGatewayMetrics() ([]byte, error) {
 		if err != nil {
 			lastErr = err
 		} else {
-			lastErr = fmt.Errorf("no ready kgateway controller pods found")
+			lastErr = errors.New("no ready kgateway controller pods found")
 			for _, pod := range pods.Items {
 				if !podReady(&pod) {
 					continue

@@ -167,9 +167,7 @@ func (d *Deployer) RenderManifest(ns, name string, vals map[string]any) ([]byte,
 	// This means that there is no i/o (i.e. no reads/writes to k8s) that would need to be cancelled.
 	// This essentially guarantees that this function terminates quickly and doesn't block the rest of the controller.
 	install.ClientOnly = true
-	installCtx := context.Background()
-
-	release, err := install.RunWithContext(installCtx, d.chart, vals)
+	release, err := install.Run(d.chart, vals)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render helm chart for %s.%s: %w", ns, name, err)
 	}
@@ -472,7 +470,7 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	for {
 		var obj unstructured.Unstructured
 		if err := decoder.Decode(&obj); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, err

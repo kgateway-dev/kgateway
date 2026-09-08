@@ -77,7 +77,7 @@ func validateRoute(
 
 func validateRoutePreEnvoy(route *envoyroutev3.Route, mode apisettings.ValidationMode) error {
 	if route == nil {
-		return fmt.Errorf("route cannot be nil for RDS validation")
+		return errors.New("route cannot be nil for RDS validation")
 	}
 	if err := validateEnvoyRoute(route); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidRoute, err)
@@ -97,7 +97,7 @@ func validateRouteWithEnvoy(
 	v validator.Validator,
 ) error {
 	if route == nil {
-		return fmt.Errorf("route cannot be nil for RDS validation")
+		return errors.New("route cannot be nil for RDS validation")
 	}
 	fullErr := validateFullRoutes(ctx, []*envoyroutev3.Route{route}, v)
 	if fullErr == nil {

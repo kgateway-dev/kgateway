@@ -111,6 +111,7 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$'
             localstack: 'false'
+            ordered-ads: 'false'
           # May 29, 2026: ~5 minutes
           - cluster-name: 'cluster-eight'
             go-test-args: '-timeout=25m'
@@ -186,13 +187,13 @@ jobs:
           CLUSTER_NAME: ${{ matrix.test.cluster-name }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         run: make cluster-load-extproc-server
-      - name: Enable ordered ADS soak
-        if: ${{ matrix.test.ordered-ads == 'true' }}
+      - name: Disable ordered ADS escape hatch
+        if: ${{ matrix.test.ordered-ads == 'false' }}
         shell: bash
         run: |
-          yq -i '.controller.extraEnv.KGW_ENABLE_ORDERED_ADS = "true"' \
+          yq -i '.controller.extraEnv.KGW_ENABLE_ORDERED_ADS = "false"' \
             test/e2e/tests/manifests/common-recommendations.yaml
-          echo "Set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=true for ${{ matrix.test.cluster-name }}"
+          echo "Set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=false for ${{ matrix.test.cluster-name }}"
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
         env:

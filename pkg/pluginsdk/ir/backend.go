@@ -3,6 +3,7 @@ package ir
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -701,7 +702,7 @@ func backendObjectEqual(a, b *BackendObjectIR) bool {
 
 func errorsEqual(a, b error) bool {
 	if a == nil || b == nil {
-		return a == b
+		return errors.Is(a, b)
 	}
 	return a.Error() == b.Error()
 }

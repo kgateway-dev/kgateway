@@ -406,12 +406,14 @@ spec:
           name: sds
           protocol: TCP
         readinessProbe:
+          exec:
+            command:
+            - /usr/local/bin/sds
+            - healthcheck
           failureThreshold: 3
           initialDelaySeconds: 3
           periodSeconds: 10
           successThreshold: 1
-          tcpSocket:
-            port: 8234
           timeoutSeconds: 1
         resources: {}
         terminationMessagePath: /dev/termination-log

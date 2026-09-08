@@ -13,7 +13,11 @@ func (s *ProxyTranslator) syncXds(
 	snap := snapWrap.snap
 	proxyKey := snapWrap.proxyKey
 
-	// TODO: handle errored clusters by fetching them from the previous snapshot and using the old cluster
+	// Errored clusters intentionally fail closed. Restoring a cluster from the previous
+	// snapshot could keep serving with stale configuration that bypasses the security
+	// policy whose validation now fails. snapshotPerClient omits both the errored cluster
+	// and its endpoint assignment so that only the affected backend fails, without
+	// blocking xDS updates for unrelated clusters.
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway

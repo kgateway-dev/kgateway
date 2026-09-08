@@ -238,7 +238,7 @@ func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraAr
 // DeleteFileSafe deletes the resources defined in a file, and returns an error if one occurred
 // This differs from DeleteFile in that we always append --ignore-not-found
 func (c *Cli) DeleteFileSafe(ctx context.Context, fileName string, extraArgs ...string) error {
-	safeArgs := append(extraArgs, "--ignore-not-found")
+	safeArgs := slices.Concat(extraArgs, []string{"--ignore-not-found"})
 	return c.DeleteFile(ctx, fileName, safeArgs...)
 }
 
@@ -288,7 +288,7 @@ func (c *Cli) DeploymentRolloutStatus(ctx context.Context, deployment string, ex
 	rolloutArgs := append([]string{
 		"rollout",
 		"status",
-		fmt.Sprintf("deployment/%s", deployment),
+		"deployment/" + deployment,
 	}, extraArgs...)
 	return c.RunCommand(ctx, rolloutArgs...)
 }
@@ -413,7 +413,7 @@ func (c *Cli) RestartDeployment(ctx context.Context, name string, extraArgs ...s
 	args := append([]string{
 		"rollout",
 		"restart",
-		fmt.Sprintf("deployment/%s", name),
+		"deployment/" + name,
 	}, extraArgs...)
 	return c.RunCommand(ctx, args...)
 }

@@ -16,7 +16,7 @@ spec:
     port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: accesslog
   namespace: infra
@@ -26,18 +26,20 @@ spec:
     kind: Gateway
     matchLabels: 
       gateway: example
-  accessLog:
-  - grpcService:
-      logName: "test-accesslog-service"
-      backendRef:
-        name: log-test
-        port: 50051
-    filter:
-      headerFilter:
-        header:
-          value: "test"
-          name: "x-my-cool-test-filter"
-          type: "Exact"
+  default:
+    httpSettings:
+      accessLog:
+      - grpcService:
+          logName: "test-accesslog-service"
+          backendRef:
+            name: log-test
+            port: 50051
+        filter:
+          headerFilter:
+            header:
+              value: "test"
+              name: "x-my-cool-test-filter"
+              type: "Exact"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

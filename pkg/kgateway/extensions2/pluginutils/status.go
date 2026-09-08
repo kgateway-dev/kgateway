@@ -17,13 +17,13 @@ func BuildCondition(resource string, errs []error) metav1.Condition {
 			Type:    string(kgateway.BackendConditionAccepted),
 			Status:  metav1.ConditionTrue,
 			Reason:  string(kgateway.BackendReasonAccepted),
-			Message: fmt.Sprintf("%s accepted", resource),
+			Message: resource + " accepted",
 		}
 	}
 	var aggErrs strings.Builder
 	var prologue string
 	if len(errs) == 1 {
-		prologue = fmt.Sprintf("%s error:", resource)
+		prologue = resource + " error:"
 	} else {
 		prologue = fmt.Sprintf("%s has %d errors:", resource, len(errs))
 	}

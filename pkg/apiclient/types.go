@@ -119,19 +119,6 @@ func registerTypes() {
 		},
 	)
 	kubeclient.Register(
-		wellknown.HTTPListenerPolicyGVR,
-		wellknown.HTTPListenerPolicyGVK,
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.(Client).Kgateway().GatewayKgateway().HTTPListenerPolicies(namespace).List(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.(Client).Kgateway().GatewayKgateway().HTTPListenerPolicies(namespace).Watch(context.Background(), o)
-		},
-		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*kgateway.HTTPListenerPolicy] {
-			return c.(Client).Kgateway().GatewayKgateway().HTTPListenerPolicies(namespace)
-		},
-	)
-	kubeclient.Register(
 		wellknown.ListenerPolicyGVR,
 		wellknown.ListenerPolicyGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {

@@ -39,7 +39,7 @@ func convertTracingConfig(
 
 	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, config.Provider.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %v", ErrUnresolvedBackendRef, err)
+		return nil, nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
 	}
 
 	return translateTracing(config, backend)

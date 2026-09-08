@@ -22,6 +22,24 @@ spec:
   - "example.com"
   rules:
   - name: to-backend
+    matches:
+    - path:
+        type: PathPrefix
+        value: /match1
+    - path:
+        type: PathPrefix
+        value: /match2
+    backendRefs:
+    - name: example-svc
+      port: 80
+  # explicitly unnamed rule
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /match1
+    - path:
+        type: PathPrefix
+        value: /match2
     backendRefs:
     - name: example-svc
       port: 80

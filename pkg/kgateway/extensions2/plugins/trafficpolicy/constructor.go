@@ -84,6 +84,8 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
+	// Construct request mirror specific IR
+	constructRequestMirror(policyCR.Spec, &outSpec)
 	// Construct auto host rewrite specific IR
 	constructAutoHostRewrite(policyCR.Spec, &outSpec)
 	// Construct buffer specific IR

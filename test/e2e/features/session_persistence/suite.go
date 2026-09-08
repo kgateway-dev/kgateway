@@ -60,7 +60,7 @@ func (s *testingSuite) TestHeaderSessionPersistence() {
 // assertSessionPersistence makes multiple requests and verifies they go to the same backend pod
 func (s *testingSuite) assertSessionPersistence(persistenceType string) {
 	gatewayService := metav1.ObjectMeta{
-		Name:      fmt.Sprintf("gw-%s", persistenceType),
+		Name:      "gw-" + persistenceType,
 		Namespace: "default",
 	}
 

@@ -6,6 +6,7 @@ package localstack
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -35,7 +36,7 @@ func EndpointURL(ctx context.Context, c client.Client) (endpoint string, found b
 		return "", false, fmt.Errorf("failed to get localstack service: %w", err)
 	}
 	if len(svc.Spec.Ports) == 0 || svc.Spec.Ports[0].NodePort == 0 {
-		return "", false, fmt.Errorf("localstack service is missing a node port")
+		return "", false, errors.New("localstack service is missing a node port")
 	}
 
 	var nodes corev1.NodeList
@@ -43,7 +44,7 @@ func EndpointURL(ctx context.Context, c client.Client) (endpoint string, found b
 		return "", false, fmt.Errorf("failed to list cluster nodes: %w", err)
 	}
 	if len(nodes.Items) == 0 {
-		return "", false, fmt.Errorf("cluster must have at least one node")
+		return "", false, errors.New("cluster must have at least one node")
 	}
 
 	var nodeIP string
@@ -59,7 +60,7 @@ func EndpointURL(ctx context.Context, c client.Client) (endpoint string, found b
 		}
 	}
 	if nodeIP == "" {
-		return "", false, fmt.Errorf("failed to determine localstack node internal IP")
+		return "", false, errors.New("failed to determine localstack node internal IP")
 	}
 
 	parsed, err := url.Parse(fmt.Sprintf("http://%s:%d", nodeIP, svc.Spec.Ports[0].NodePort))

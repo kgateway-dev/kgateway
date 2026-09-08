@@ -1,9 +1,8 @@
 package policy
 
 import (
-	"fmt"
-	"log/slog"
 	"regexp"
+	"strconv"
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -77,7 +76,7 @@ func BuildCorsPolicy(
 		corsPolicy.ExposeHeaders = strings.Join(headers, ", ")
 	}
 	if f.MaxAge != 0 {
-		corsPolicy.MaxAge = fmt.Sprintf("%d", f.MaxAge)
+		corsPolicy.MaxAge = strconv.Itoa(int(f.MaxAge))
 	}
 	corsPolicy.ForwardNotMatchingPreflights = &wrapperspb.BoolValue{Value: false}
 	return corsPolicy
@@ -156,7 +155,7 @@ func ConvertOriginToEnvoyStringMatcher(origin string) *envoymatcherv3.StringMatc
 
 	// Test the regex pattern to make sure it is a valid RE2 pattern
 	if err := regexutils.CheckRegexString(regexPattern); err != nil {
-		slog.Error("failed to convert origin to regex pattern", "origin", origin, "error", err)
+		logger.Error("failed to convert origin to regex pattern", "origin", origin, "error", err)
 		return nil
 	}
 

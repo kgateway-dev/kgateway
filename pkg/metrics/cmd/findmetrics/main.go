@@ -5,6 +5,7 @@ package main
 
 import (
 	"cmp"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -114,7 +115,7 @@ func findMetrics(target string) ([]metricInfo, error) {
 	} else if strings.HasSuffix(target, ".go") {
 		files = append(files, target)
 	} else {
-		return nil, fmt.Errorf("target must be a .go file or a directory")
+		return nil, errors.New("target must be a .go file or a directory")
 	}
 
 	var allMetrics []metricInfo
@@ -122,7 +123,7 @@ func findMetrics(target string) ([]metricInfo, error) {
 	for _, file := range files {
 		metrics, err := parseFile(file)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing %s: %v", file, err)
+			return nil, fmt.Errorf("error parsing %s: %w", file, err)
 		}
 
 		allMetrics = append(allMetrics, metrics...)
