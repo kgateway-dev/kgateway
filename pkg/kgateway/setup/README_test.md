@@ -4,7 +4,7 @@ These tests cover behavior that requires a live Kubernetes control plane, such a
 
 ## Adding a live-control-plane scenario
 
-Add a `.yaml` file to the appropriate directory under `testdata`. The scenario must define a Gateway named `http-gw-for-test`; the test renames that Gateway to isolate scenarios. Other resource names must also be unique because these tests do not run in parallel.
+Add a `.yaml` file to the appropriate directory under `testdata`. The scenario must define a Gateway named `http-gw-for-test`; the test renames that Gateway per scenario. Keep every other resource name unique across scenarios too: all scenarios in a directory share one envtest control plane, and kgateway turns every Service in the cluster into a cluster, so names that collide pollute each other's goldens. That same cross-pollution is why the scenarios cannot yet call `t.Parallel()` (see the comment in `runScenario`) — unique names are what a future parallel run will need, not something running serially makes unnecessary.
 
 The first run creates a sibling `-out.yaml` xDS golden and intentionally fails. Subsequent runs apply the resources, request an xDS snapshot, and compare it with that golden. The dynamically allocated endpoint for the built-in `kubernetes` Service is omitted because its port changes between runs.
 
