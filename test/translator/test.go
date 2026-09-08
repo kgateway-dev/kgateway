@@ -571,23 +571,45 @@ func GetHTTPRouteStatusError(
 	return nil
 }
 
+const (
+	// settlePolls is how many consecutive unchanged snapshots count as quiescence.
+	settlePolls = 3
+	// settleInterval is the gap between snapshots. Every scenario pays at least
+	// settlePolls * settleInterval, so keep it small: the point is to yield to
+	// queued krt work, not to wait out a fixed duration.
+	settleInterval = 5 * time.Millisecond
+	settleTimeout  = 10 * time.Second
+)
+
 // waitForEndpointsToSettle waits for the endpoint IR the goldens are built from to
-// quiesce. Endpoint IRs depend dynamically on pods and EndpointSlices: the collection's
-// initial transform can complete (and report synced) before a dependency-triggered
-// recompute lands, so snapshotting right after HasSynced races with that recompute and
-// yields nondeterministic endpoint output. Poll until the snapshot stops changing.
+// quiesce. Endpoint IRs depend dynamically on pods and EndpointSlices, and HasSynced on
+// every collection does not imply the queue is empty: a dependency-triggered recompute
+// can still be in flight, so snapshotting right after HasSynced races with it and yields
+// nondeterministic endpoint output.
+//
+// krt offers no drain barrier to wait on instead, and this is not only a test problem:
+// proxy_syncer gates its first snapshot on the same HasSynced signals, which is why it
+// carries both the deferral in perclient.go and the first-connect delay in
+// pkg/krtcollections/uniqueclients.go to keep a proxy's first watch out of that window.
+// Polling here mirrors that gap rather than hiding one.
 //
 // snapshot must produce the same view the test then translates - see
 // finalEndpointsSnapshot. Settling on the raw plugin-contributed collection instead
 // would miss both a backend arriving in BackendIndex and a policy attaching to one,
 // neither of which is visible in a raw endpoint row.
-func waitForEndpointsToSettle(t *testing.T, snapshot func() []ir.EndpointsForBackend) {
+func waitForEndpointsToSettle(t *testing.T, ctx context.Context, snapshot func() []ir.EndpointsForBackend) {
 	t.Helper()
 	prev := snapshot()
-	const settlePolls = 3
 	stable := 0
-	for range 400 { // wait for pods to settle: 400 * 25ms = 10s max
-		time.Sleep(25 * time.Millisecond)
+	timeout := time.After(settleTimeout)
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context ended while waiting for endpoints to settle: %v", ctx.Err())
+		case <-timeout:
+			t.Fatalf("endpoints collection did not settle within %s", settleTimeout)
+		case <-time.After(settleInterval):
+		}
 		cur := snapshot()
 		if endpointsEqual(prev, cur) {
 			stable++
@@ -599,7 +621,6 @@ func waitForEndpointsToSettle(t *testing.T, snapshot func() []ir.EndpointsForBac
 		}
 		prev = cur
 	}
-	t.Fatal("endpoints collection did not settle within 10s")
 }
 
 // finalEndpointsSnapshot returns the endpoint IR that the endpoint goldens are
@@ -921,7 +942,7 @@ func (tc TestCase) Run(
 	// over the endpoint collections contributed by all plugins, extra ones included, so
 	// quiescence measured before a plugin syncs can be quiescence of a partial join.
 	if extraConfig.IncludeEndpoints {
-		waitForEndpointsToSettle(t, func() []ir.EndpointsForBackend {
+		waitForEndpointsToSettle(t, ctx, func() []ir.EndpointsForBackend {
 			return finalEndpointsSnapshot(commoncol)
 		})
 	}
