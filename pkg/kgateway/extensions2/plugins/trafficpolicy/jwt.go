@@ -34,7 +34,16 @@ import (
 )
 
 const (
-	PayloadInMetadata                       = "payload"
+	// PayloadInMetadata is the dynamic metadata key, under the
+	// `envoy.filters.http.jwt_authn` namespace, that the JWT filter writes a verified
+	// token's payload to.
+	PayloadInMetadata = "payload"
+	// FailedStatusInMetadata is the dynamic metadata key, under the same namespace, that
+	// the filter writes the verification failure `{code, message}` to. It is set on every
+	// provider so that rejections (and, in AllowMissingOrFailed mode, would-be rejections) are visible
+	// in access logs.
+	FailedStatusInMetadata = "failed_status"
+
 	jwtFilterNamePrefix                     = "jwt"
 	jwtConfigMapKey                         = "jwks"
 	jwtGlobalDisableFilterName              = "global_disable/jwt"
@@ -211,11 +220,12 @@ func translateProvider(
 		shouldForward = true
 	}
 	jwtProvider := &jwtauthnv3.JwtProvider{
-		Issuer:            provider.Issuer,
-		Audiences:         provider.Audiences,
-		PayloadInMetadata: PayloadInMetadata,
-		ClaimToHeaders:    claimToHeaders,
-		Forward:           shouldForward,
+		Issuer:                 provider.Issuer,
+		Audiences:              provider.Audiences,
+		PayloadInMetadata:      PayloadInMetadata,
+		FailedStatusInMetadata: FailedStatusInMetadata,
+		ClaimToHeaders:         claimToHeaders,
+		Forward:                shouldForward,
 		// TODO(npolshak): Do we want to set NormalizePayload  to support https://datatracker.ietf.org/doc/html/rfc8693#name-scope-scopes-claim
 	}
 	if len(claimToHeaders) > 0 {
@@ -507,24 +517,35 @@ func buildJwtRequirementFromProviders(
 		}
 	}
 
+	var nonStrictReq *jwtauthnv3.JwtRequirement
 	if validationMode != nil {
 		switch *validationMode {
 		case kgateway.ValidationModeAllowMissing:
-			allowMissingReq := &jwtauthnv3.JwtRequirement{
+			// satisfied when no JWT is present, but a present-and-invalid JWT still fails
+			nonStrictReq = &jwtauthnv3.JwtRequirement{
 				RequiresType: &jwtauthnv3.JwtRequirement_AllowMissing{
 					AllowMissing: &empty.Empty{},
 				},
 			}
-			jwtReqs = &jwtauthnv3.JwtRequirement{
-				RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
-					RequiresAny: &jwtauthnv3.JwtRequirementOrList{
-						Requirements: []*jwtauthnv3.JwtRequirement{
-							jwtReqs,
-							allowMissingReq,
-						},
-					},
+		case kgateway.ValidationModeAllowMissingOrFailed:
+			// always satisfied, whether the JWT is missing or fails verification
+			nonStrictReq = &jwtauthnv3.JwtRequirement{
+				RequiresType: &jwtauthnv3.JwtRequirement_AllowMissingOrFailed{
+					AllowMissingOrFailed: &empty.Empty{},
 				},
 			}
+		}
+	}
+	if nonStrictReq != nil {
+		jwtReqs = &jwtauthnv3.JwtRequirement{
+			RequiresType: &jwtauthnv3.JwtRequirement_RequiresAny{
+				RequiresAny: &jwtauthnv3.JwtRequirementOrList{
+					Requirements: []*jwtauthnv3.JwtRequirement{
+						jwtReqs,
+						nonStrictReq,
+					},
+				},
+			},
 		}
 	}
 	return jwtReqs

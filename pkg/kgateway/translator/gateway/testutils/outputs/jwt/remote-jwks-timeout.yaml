@@ -63,6 +63,7 @@ Listeners:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
                             providers:
                               jwt-ext_default_timeout-provider:
+                                failedStatusInMetadata: failed_status
                                 issuer: https://dev.example.com
                                 payloadInMetadata: payload
                                 remoteJwks:

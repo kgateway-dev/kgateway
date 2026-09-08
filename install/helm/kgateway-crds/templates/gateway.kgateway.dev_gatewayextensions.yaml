@@ -1279,11 +1279,13 @@ spec:
                       ValidationMode configures how JWT validation behaves.
                       If unset or empty, Strict mode is used (JWT is required).
                       If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
-                      If using this mode, make sure to consider the security implications and
+                      If set to AllowMissingOrFailed, no request is ever rejected by the JWT filter.
+                      If using either of those modes, make sure to consider the security implications and
                       consider using an `RBAC` policy to enforce authorization.
                     enum:
                     - Strict
                     - AllowMissing
+                    - AllowMissingOrFailed
                     type: string
                 type: object
               oauth2:

@@ -79,15 +79,34 @@ func TestTranslateKey(t *testing.T) {
 	}
 }
 
+// nonStrictArm reports which non-strict JwtRequirement arm, if any, is OR-ed onto a
+// requirement: "allowMissing", "allowMissingOrFailed", or "" when the requirement is strict.
+func nonStrictArm(req *jwtauthnv3.JwtRequirement) string {
+	if req.GetAllowMissing() != nil {
+		return "allowMissing"
+	}
+	if req.GetAllowMissingOrFailed() != nil {
+		return "allowMissingOrFailed"
+	}
+	for _, r := range req.GetRequiresAny().GetRequirements() {
+		if arm := nonStrictArm(r); arm != "" {
+			return arm
+		}
+	}
+	return ""
+}
+
 func TestBuildJwtRequirementFromProviders(t *testing.T) {
 	tests := []struct {
-		name            string
-		routeName       string
-		providers       map[string]*jwtauthnv3.JwtProvider
-		validationMode  *kgateway.ValidationMode
-		expectedType    string
-		expectedCount   int
-		hasAllowMissing bool
+		name           string
+		routeName      string
+		providers      map[string]*jwtauthnv3.JwtProvider
+		validationMode *kgateway.ValidationMode
+		expectedType   string
+		expectedCount  int
+		// expectedNonStrict is the JwtRequirement arm OR-ed onto the provider requirements
+		// for non-strict modes: "" (strict), "allowMissing", or "allowMissingOrFailed".
+		expectedNonStrict string
 	}{
 		{
 			name:      "single provider strict mode",
@@ -95,10 +114,10 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer"},
 			},
-			validationMode:  nil,
-			expectedType:    "provider_name",
-			expectedCount:   1,
-			hasAllowMissing: false,
+			validationMode:    nil,
+			expectedType:      "provider_name",
+			expectedCount:     1,
+			expectedNonStrict: "",
 		},
 		{
 			name:      "multiple providers strict mode",
@@ -107,10 +126,10 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 				"provider1": {Issuer: "test-issuer-1"},
 				"provider2": {Issuer: "test-issuer-2"},
 			},
-			validationMode:  nil,
-			expectedType:    "requires_any",
-			expectedCount:   2,
-			hasAllowMissing: false,
+			validationMode:    nil,
+			expectedType:      "requires_any",
+			expectedCount:     2,
+			expectedNonStrict: "",
 		},
 		{
 			name:      "single provider allow missing mode",
@@ -118,10 +137,10 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 			providers: map[string]*jwtauthnv3.JwtProvider{
 				"provider1": {Issuer: "test-issuer"},
 			},
-			validationMode:  new(kgateway.ValidationModeAllowMissing),
-			expectedType:    "requires_any",
-			expectedCount:   2, // provider requirement + allow missing
-			hasAllowMissing: true,
+			validationMode:    new(kgateway.ValidationModeAllowMissing),
+			expectedType:      "requires_any",
+			expectedCount:     2, // provider requirement + allow missing
+			expectedNonStrict: "allowMissing",
 		},
 		{
 			name:      "multiple providers allow missing mode",
@@ -130,30 +149,44 @@ func TestBuildJwtRequirementFromProviders(t *testing.T) {
 				"provider1": {Issuer: "test-issuer-1"},
 				"provider2": {Issuer: "test-issuer-2"},
 			},
-			validationMode:  new(kgateway.ValidationModeAllowMissing),
-			expectedType:    "requires_any",
-			expectedCount:   2, // requires_any with providers + allow missing
-			hasAllowMissing: true,
+			validationMode:    new(kgateway.ValidationModeAllowMissing),
+			expectedType:      "requires_any",
+			expectedCount:     2, // requires_any with providers + allow missing
+			expectedNonStrict: "allowMissing",
+		},
+		{
+			name:      "single provider allow missing or failed mode",
+			routeName: "test-route",
+			providers: map[string]*jwtauthnv3.JwtProvider{
+				"provider1": {Issuer: "test-issuer"},
+			},
+			validationMode:    new(kgateway.ValidationModeAllowMissingOrFailed),
+			expectedType:      "requires_any",
+			expectedCount:     2, // provider requirement + allow missing or failed
+			expectedNonStrict: "allowMissingOrFailed",
+		},
+		{
+			name:      "multiple providers allow missing or failed mode",
+			routeName: "test-route",
+			providers: map[string]*jwtauthnv3.JwtProvider{
+				"provider1": {Issuer: "test-issuer-1"},
+				"provider2": {Issuer: "test-issuer-2"},
+			},
+			validationMode:    new(kgateway.ValidationModeAllowMissingOrFailed),
+			expectedType:      "requires_any",
+			expectedCount:     2, // requires_any with providers + allow missing or failed
+			expectedNonStrict: "allowMissingOrFailed",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := buildJwtRequirementFromProviders(tt.providers, tt.validationMode)
-			if tt.hasAllowMissing {
-				// When allow missing is enabled, the top level should be RequiresAny
+			if tt.expectedNonStrict != "" {
+				// In a non-strict mode the top level should be RequiresAny
 				assert.NotNil(t, req.GetRequiresAny())
 				assert.Equal(t, tt.expectedCount, len(req.GetRequiresAny().Requirements))
-
-				// Check that one of the requirements is AllowMissing
-				hasAllowMissing := false
-				for _, r := range req.GetRequiresAny().Requirements {
-					if r.GetAllowMissing() != nil {
-						hasAllowMissing = true
-						break
-					}
-				}
-				assert.True(t, hasAllowMissing, "expected AllowMissing requirement")
+				assert.Equal(t, tt.expectedNonStrict, nonStrictArm(req), "unexpected non-strict requirement")
 			} else if tt.expectedType == "provider_name" {
 				assert.NotNil(t, req.GetProviderName())
 				assert.Equal(t, "provider1", req.GetProviderName())
@@ -546,9 +579,11 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 
 func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 	tests := []struct {
-		name                    string
-		jwt                     *kgateway.JWT
-		expectedHasAllowMissing bool
+		name string
+		jwt  *kgateway.JWT
+		// expectedNonStrict is the JwtRequirement arm OR-ed onto the provider requirements:
+		// "" (strict), "allowMissing", or "allowMissingOrFailed".
+		expectedNonStrict string
 	}{
 		{
 			name: "strict mode (nil validation mode)",
@@ -568,7 +603,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 					},
 				},
 			},
-			expectedHasAllowMissing: false,
+			expectedNonStrict: "",
 		},
 		{
 			name: "allow missing mode",
@@ -588,7 +623,7 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 					},
 				},
 			},
-			expectedHasAllowMissing: true,
+			expectedNonStrict: "allowMissing",
 		},
 		{
 			name: "allow missing mode with multiple providers",
@@ -619,7 +654,27 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 					},
 				},
 			},
-			expectedHasAllowMissing: true,
+			expectedNonStrict: "allowMissing",
+		},
+		{
+			name: "allow missing or failed mode",
+			jwt: &kgateway.JWT{
+				ValidationMode: new(kgateway.ValidationModeAllowMissingOrFailed),
+				Providers: []kgateway.NamedJWTProvider{
+					{
+						Name: "test-provider",
+						JWTProvider: kgateway.JWTProvider{
+							Issuer: "test-issuer",
+							JWKS: kgateway.JWKS{
+								LocalJWKS: &kgateway.LocalJWKS{
+									Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedNonStrict: "allowMissingOrFailed",
 		},
 	}
 
@@ -634,26 +689,11 @@ func TestResolveJwtProvidersWithValidationMode(t *testing.T) {
 			req, ok := config.RequirementMap[requirementsName]
 			require.True(t, ok, "requirements not found in map")
 
-			if tt.expectedHasAllowMissing {
-				// Should have RequiresAny at top level with AllowMissing
+			if tt.expectedNonStrict != "" {
+				// Non-strict modes OR an extra arm onto the provider requirements
 				assert.NotNil(t, req.GetRequiresAny())
-				hasAllowMissing := false
-				for _, r := range req.GetRequiresAny().Requirements {
-					if r.GetAllowMissing() != nil {
-						hasAllowMissing = true
-						break
-					}
-				}
-				assert.True(t, hasAllowMissing, "expected AllowMissing requirement")
-			} else {
-				// Strict mode: should have provider name directly (single provider) or RequiresAny (multiple providers)
-				// but no AllowMissing
-				if req.GetRequiresAny() != nil {
-					for _, r := range req.GetRequiresAny().Requirements {
-						assert.Nil(t, r.GetAllowMissing(), "should not have AllowMissing in strict mode")
-					}
-				}
 			}
+			assert.Equal(t, tt.expectedNonStrict, nonStrictArm(req), "unexpected non-strict requirement")
 		})
 	}
 }
