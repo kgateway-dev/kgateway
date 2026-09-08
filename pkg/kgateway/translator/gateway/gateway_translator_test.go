@@ -3596,8 +3596,7 @@ func TestSetupScenarios(t *testing.T) {
 					Namespace: "gwtest",
 					Name:      "http-gw-for-test",
 				}, translatortest.ExtraConfig{
-					IncludeEndpoints:       true,
-					ExcludeErroredClusters: true,
+					IncludeEndpoints: true,
 				}, g.settingOpts...)
 			})
 		}

@@ -272,12 +272,11 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 type ExtraConfig struct {
-	NewClientFn            func(*testing.T, ...client.Object) apiclient.Client
-	PluginsFn              ExtraPluginsFn
-	Schemes                runtime.SchemeBuilder
-	GVKToStructuralSchema  map[schema.GroupVersionKind]*apiserverschema.Structural
-	IncludeEndpoints       bool
-	ExcludeErroredClusters bool
+	NewClientFn           func(*testing.T, ...client.Object) apiclient.Client
+	PluginsFn             ExtraPluginsFn
+	Schemes               runtime.SchemeBuilder
+	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
+	IncludeEndpoints      bool
 }
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
@@ -1011,8 +1010,13 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
-				if err != nil && extraConfig.ExcludeErroredClusters {
-					// Production excludes errored clusters from the per-client xDS snapshot.
+				if err != nil {
+					// TranslateBackend returns a blackhole cluster alongside the error, and
+					// the error is what production acts on: snapshotPerClient drops errored
+					// clusters from the per-client CDS snapshot (and their CLAs with them),
+					// so Envoy never sees the blackhole. Recording it here would pin output
+					// that is not published. Errors still reach the goldens as policy and
+					// backend statuses.
 					continue
 				}
 				if cluster != nil {
