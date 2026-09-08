@@ -180,8 +180,8 @@ Statuses:
           type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
-          group: ""
-          kind: ""
+          group: gateway.networking.k8s.io
+          kind: Gateway
           name: http-gw-for-test
     gwtest/my-route2:
       parents:
@@ -203,8 +203,8 @@ Statuses:
           type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
-          group: ""
-          kind: ""
+          group: gateway.networking.k8s.io
+          kind: Gateway
           name: http-gw-for-test
   policies:
     TrafficPolicy/gwtest/my-route-policy:

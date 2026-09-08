@@ -165,8 +165,8 @@ Statuses:
           type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
-          group: ""
-          kind: ""
+          group: gateway.networking.k8s.io
+          kind: Gateway
           name: http-gw-for-test
           namespace: gwtest
   policies:

@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,9 +15,11 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -27,6 +30,7 @@ import (
 	backendplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
@@ -3558,6 +3562,27 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+// setupStructuralSchemas returns the structural schemas for kgateway's CRDs plus the
+// Gateway API's, so fixtures get the same CRD defaulting, pruning and validation an API
+// server would apply. TestCase.Run defaults to kgateway's CRDs alone, which leaves
+// Gateway API defaults (HTTPCORSFilter.maxAge, for one) unapplied - fine for fixtures
+// written against this harness, wrong for the setup fixtures, whose goldens were
+// recorded through a real API server.
+func setupStructuralSchemas(t *testing.T) map[schema.GroupVersionKind]*apiserverschema.Structural {
+	t.Helper()
+
+	schemas, err := testutils.GetStructuralSchemasForAllCharts()
+	require.NoError(t, err, "failed to load kgateway CRD schemas")
+
+	gwAPIDir, err := testutils.GetGatewayAPICRDDir()
+	require.NoError(t, err, "failed to locate Gateway API CRDs")
+	gwAPISchemas, err := testutils.GetStructuralSchemas(gwAPIDir)
+	require.NoError(t, err, "failed to load Gateway API CRD schemas")
+
+	maps.Copy(schemas, gwAPISchemas)
+	return schemas
+}
+
 // TestSetupScenarios covers the fixtures migrated from the envtest-based scenario tests in
 // pkg/kgateway/setup. Each fixture YAML under testutils/inputs/setup/<group>/ defines a gateway
 // named http-gw-for-test in namespace gwtest; testutils/inputs/setup/common.yaml provides the
@@ -3567,6 +3592,7 @@ func TestSetupScenarios(t *testing.T) {
 	dir := fsutils.MustGetThisDir()
 
 	pinVersion(t)
+	structuralSchemas := setupStructuralSchemas(t)
 
 	groups := []struct {
 		name        string
@@ -3602,7 +3628,8 @@ func TestSetupScenarios(t *testing.T) {
 					Namespace: "gwtest",
 					Name:      "http-gw-for-test",
 				}, translatortest.ExtraConfig{
-					IncludeEndpoints: true,
+					IncludeEndpoints:      true,
+					GVKToStructuralSchema: structuralSchemas,
 				}, g.settingOpts...)
 			})
 		}
