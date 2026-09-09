@@ -8,7 +8,6 @@ import (
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
-	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -262,7 +261,7 @@ type trafficPolicyPluginGwPass struct {
 	corsInChain              map[string]*corsv3.Cors
 	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
 	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
-	bufferInChain            map[string]*bufferv3.Buffer
+	bufferInChain            map[string]*bufferChainEntry
 	compressorInChain        map[string][]compressorEntry
 	decompressorInChain      map[string][]decompressorEntry
 	basicAuthInChain         map[string]*envoy_basic_auth_v3.BasicAuth
@@ -678,10 +677,16 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Add Buffer filter to enable buffer for the listener.
-	// Requires the buffer policy to be set as typed_per_filter_config.
-	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
-		filter := filters.MustNewStagedFilter(bufferFilterName, f, filters.DuringStage(filters.RouteStage))
+	// Register the chain's single Buffer filter. It defaults to sitting immediately before
+	// Rustformation so its per-route request limit is established before a body-parsing
+	// transformation buffers data, and `buffer.filterStage` moves it earlier for chains that need
+	// the limit to enforce ahead of another body-reading filter.
+	if entry := p.bufferInChain[fcc.FilterChainName]; entry != nil {
+		filter := filters.MustNewStagedFilter(
+			bufferFilterName,
+			entry.buffer,
+			entry.filterStage(),
+		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
 	}
