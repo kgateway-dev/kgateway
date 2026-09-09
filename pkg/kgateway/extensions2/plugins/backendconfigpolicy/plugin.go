@@ -20,21 +20,21 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
@@ -151,19 +151,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
-	policyStatusMarker, backendConfigPolicyCol := krt.NewStatusCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) (*krtcollections.StatusMarker, *ir.PolicyWrapper) {
+	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) *ir.PolicyWrapper {
 		policyIR, errs := translate(commoncol, krtctx, b)
 		if err := validateXDS(ctx, policyIR, v, commoncol.Settings.ValidationMode); err != nil {
 			errs = append(errs, err)
-		}
-
-		// Create status marker if existing status has kgateway controller
-		var statusMarker *krtcollections.StatusMarker
-		for _, ancestor := range b.Status.Ancestors {
-			if string(ancestor.ControllerName) == commoncol.ControllerName {
-				statusMarker = &krtcollections.StatusMarker{}
-				break
-			}
 		}
 
 		pol := &ir.PolicyWrapper{
@@ -179,44 +170,31 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			Errors:     errs,
 		}
 
-		return statusMarker, pol
+		return pol
 	})
-
-	// processMarkers for policies that have existing status but no current report
-	processMarkers := func(kctx krt.HandlerContext, reportMap *reports.ReportMap) {
-		objStatus := krt.Fetch(kctx, policyStatusMarker)
-		for _, status := range objStatus {
-			policyKey := reporter.PolicyKey{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: status.Obj.GetNamespace(),
-				Name:      status.Obj.GetName(),
-			}
-
-			// Add empty status to clear stale status for policies with no valid targets
-			if reportMap.Policies[policyKey] == nil {
-				rp := reports.NewReporter(reportMap)
-				// create empty policy report entry with no ancestor refs
-				rp.Policy(policyKey, 0)
-			}
-		}
-	}
 
 	endpointPlugin := &backendConfigEndpointPlugin{}
 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:                            "BackendConfigPolicy",
-				Policies:                        backendConfigPolicyCol,
-				ProcessPolicyStaleStatusMarkers: processMarkers,
-				ProcessBackend:                  processBackend,
-				PerClientProcessEndpoints:       endpointPlugin.processEndpoints,
+				Name:                   "BackendConfigPolicy",
+				Policies:               backendConfigPolicyCol,
+				ProcessBackend:         processBackend,
+				PerClientEditEndpoints: endpointPlugin.processEndpoints,
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
 				},
-				GetPolicyStatus:   getPolicyStatusFn(cli),
-				PatchPolicyStatus: patchPolicyStatusFn(cli),
+				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
+					wellknown.BackendConfigPolicyGVK,
+					col,
+					cli,
+					commoncol.ControllerName,
+					func(o *kgateway.BackendConfigPolicy) gwv1.PolicyStatus { return o.Status },
+					func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *kgateway.BackendConfigPolicy {
+						return &kgateway.BackendConfigPolicy{ObjectMeta: om, Status: st}
+					},
+				),
 			},
 		},
 	}
@@ -532,36 +510,35 @@ func TranslateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.Tcp
 // zone-aware routing using the backend's already resolved policy attachments.
 type backendConfigEndpointPlugin struct{}
 
-// processEndpoints implements sdk.EndpointPlugin for zone-aware routing.
+// processEndpoints implements sdk.EndpointEditorPlugin for zone-aware routing.
 // BackendConfigPolicy takes precedence over Kubernetes Service traffic distribution.
 func (p *backendConfigEndpointPlugin) processEndpoints(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	ucc ir.UniquelyConnectedClient,
-	out *endpoints.EndpointsInputs,
+	out endpoints.EndpointInputsEditor,
 ) uint64 {
-	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies)
+	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.PoliciesFor(wellknown.BackendConfigPolicyGVK.GroupKind()))
 	if bcpIR == nil {
 		return 0
 	}
 	// BackendConfigPolicy zoneAware settings take precedence over Service trafficDistribution
 	// settings for the same backend.
-	out.EndpointsForBackend.TrafficDistribution = wellknown.TrafficDistributionAny
+	out.SetTrafficDistribution(wellknown.TrafficDistributionAny)
 
 	hasher := fnv.New64()
-	hasher.Write([]byte(ir.PolicyRefString(pol.PolicyRef)))
-	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation))
+	hasher.Write([]byte(pol.RefString()))
+	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation()))
 	return hasher.Sum64()
 }
 
-func selectZoneAwareBackendConfigPolicy(attachedPolicies ir.AttachedPolicies) (ir.PolicyAtt, *BackendConfigPolicyIR) {
-	policies := attachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+func selectZoneAwareBackendConfigPolicy(policies []endpoints.PolicyView) (endpoints.PolicyView, *BackendConfigPolicyIR) {
 	for _, pol := range policies {
-		bcpIR, ok := pol.PolicyIr.(*BackendConfigPolicyIR)
-		if !ok || len(pol.Errors) > 0 || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
+		bcpIR, ok := pol.PolicyIR().(*BackendConfigPolicyIR)
+		if !ok || pol.HasErrors() || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
 			continue
 		}
 		return pol, bcpIR
 	}
-	return ir.PolicyAtt{}, nil
+	return endpoints.PolicyView{}, nil
 }

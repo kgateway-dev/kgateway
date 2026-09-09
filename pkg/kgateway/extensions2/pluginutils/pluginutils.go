@@ -1,6 +1,7 @@
 package pluginutils
 
 import (
+	"errors"
 	"fmt"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -87,7 +88,7 @@ func EnvoyBodyFormat(format *shared.BodyFormat) (result *envoycorev3.Substitutio
 		}
 	}
 	if result == nil {
-		return nil, fmt.Errorf("body format must specify either text or json")
+		return nil, errors.New("body format must specify either text or json")
 	}
 	result.ContentType = ptr.Deref(format.ContentType, "")
 

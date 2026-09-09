@@ -127,7 +127,7 @@ func (p *Provider) EventuallyPodContainerContainsEnvVar(
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
+		Should(gomega.Succeed(), "Failed to match pod in namespace "+podNamespace)
 }
 
 // EventuallyPodContainerDoesNotContainEnvVar asserts that eventually no pods matching the given pod namespace and selector
@@ -162,5 +162,5 @@ func (p *Provider) EventuallyPodContainerDoesNotContainEnvVar(
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
+		Should(gomega.Succeed(), "Failed to match pod in namespace "+podNamespace)
 }

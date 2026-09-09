@@ -134,7 +134,7 @@ func constructJwt(
 
 	if spec.ExtensionRef == nil {
 		// shouldn't happen due to CRD validation
-		return fmt.Errorf("jwt: extensionRef is required if disable is not set")
+		return errors.New("jwt: extensionRef is required if disable is not set")
 	}
 	provider, err := fetchGatewayExtension(krtctx, *spec.ExtensionRef, in.GetNamespace())
 	if err != nil {
@@ -285,7 +285,7 @@ func translateJwks(
 		case jwkConfig.LocalJWKS.ConfigMapRef != nil:
 			cm, err := GetConfigMap(krtctx, configMaps, jwkConfig.LocalJWKS.ConfigMapRef.Name, gwExtObj.Namespace)
 			if err != nil {
-				return fmt.Errorf("failed to find configmap %s: %v", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
+				return fmt.Errorf("failed to find configmap %s: %w", jwkConfig.LocalJWKS.ConfigMapRef.Name, err)
 			}
 			jwkSource, err := translateJwksConfigMap(cm)
 			if err != nil {
@@ -299,10 +299,16 @@ func translateJwks(
 		if err != nil {
 			return fmt.Errorf("remote jwks: unresolved backend ref: %w", err)
 		}
+
+		timeout := &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs}
+		if remote.Timeout != nil {
+			timeout = durationpb.New(remote.Timeout.Duration)
+		}
+
 		jwksOut := &jwtauthnv3.JwtProvider_RemoteJwks{
 			RemoteJwks: &jwtauthnv3.RemoteJwks{
 				HttpUri: &envoycorev3.HttpUri{
-					Timeout: &durationpb.Duration{Seconds: remoteJWKSTimeoutSecs},
+					Timeout: timeout,
 					Uri:     remote.URL,
 					HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
 						Cluster: backend.ClusterName(),
@@ -361,12 +367,12 @@ func translateJwksConfigMap(cm *corev1.ConfigMap) (*jwtauthnv3.JwtProvider_Local
 func translateJwksInline(inlineKey string) (*jwtauthnv3.JwtProvider_LocalJwks, error) {
 	keyset, err := TranslateKey(inlineKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse inline jwks: %v", err)
+		return nil, fmt.Errorf("failed to parse inline jwks: %w", err)
 	}
 
 	keysetJson, err := json.Marshal(keyset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize inline jwks: %v", err)
+		return nil, fmt.Errorf("failed to serialize inline jwks: %w", err)
 	}
 
 	return &jwtauthnv3.JwtProvider_LocalJwks{
@@ -386,7 +392,7 @@ func TranslateKey(key string) (*jose.JSONWebKeySet, error) {
 	if err == nil {
 		return ks, nil
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("PEM %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("PEM %w", err))
 
 	ks, err = parseKeySet(key)
 	if err == nil {
@@ -395,15 +401,15 @@ func TranslateKey(key string) (*jose.JSONWebKeySet, error) {
 		}
 		err = errors.New("no keys in set")
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("JWKS %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("JWKS %w", err))
 
 	ks, err = parseKey(key)
 	if err == nil {
 		return ks, nil
 	}
-	multierr = errors.Join(multierr, fmt.Errorf("JWK %v", err))
+	multierr = errors.Join(multierr, fmt.Errorf("JWK %w", err))
 
-	return nil, fmt.Errorf("cannot parse local jwks: %v", multierr)
+	return nil, fmt.Errorf("cannot parse local jwks: %w", multierr)
 }
 
 func parseKeySet(key string) (*jose.JSONWebKeySet, error) {

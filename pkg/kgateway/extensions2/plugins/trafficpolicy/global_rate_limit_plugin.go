@@ -126,7 +126,7 @@ func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envo
 			switch entry.Type {
 			case kgateway.RateLimitDescriptorEntryTypeGeneric:
 				if entry.Generic == nil {
-					return nil, fmt.Errorf("generic entry requires Generic field to be set")
+					return nil, errors.New("generic entry requires Generic field to be set")
 				}
 				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_GenericKey_{
 					GenericKey: &envoyroutev3.RateLimit_Action_GenericKey{
@@ -136,7 +136,7 @@ func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envo
 				}
 			case kgateway.RateLimitDescriptorEntryTypeHeader:
 				if entry.Header == nil {
-					return nil, fmt.Errorf("header entry requires Header field to be set")
+					return nil, errors.New("header entry requires Header field to be set")
 				}
 				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RequestHeaders_{
 					RequestHeaders: &envoyroutev3.RateLimit_Action_RequestHeaders{

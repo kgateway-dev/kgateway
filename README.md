@@ -79,16 +79,6 @@ Thanks to all contributors who are helping to make kgateway better!
   <img src="https://contrib.rocks/image?repo=kgateway-dev/kgateway" />
 </a>
 
-## Star History
-
-<a href="https://www.star-history.com/#kgateway-dev/kgateway&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date" />
-   <img alt="Star history of kgateway-dev/kgateway over time" src="https://api.star-history.com/svg?repos=kgateway-dev/kgateway&type=Date" />
- </picture>
-</a>
-
 ---
 
 <div align="center">

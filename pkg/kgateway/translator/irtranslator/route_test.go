@@ -170,6 +170,83 @@ func TestSetEnvoyPathMatcher_PathPrefix(t *testing.T) {
 	}
 }
 
+func TestTranslateConnectMatcher(t *testing.T) {
+	connectMethod := gwv1.HTTPMethodConnect
+	pathPrefix := gwv1.PathMatchPathPrefix
+	pathExact := gwv1.PathMatchExact
+
+	tests := []struct {
+		name               string
+		path               *gwv1.HTTPPathMatch
+		wantConnectMatcher bool
+		wantPath           string
+		wantExactPath      bool
+		wantMethodHeader   bool
+	}{
+		{
+			name:               "omitted path uses connect matcher",
+			wantConnectMatcher: true,
+		},
+		{
+			name: "default root prefix uses connect matcher",
+			path: &gwv1.HTTPPathMatch{
+				Type:  &pathPrefix,
+				Value: new("/"),
+			},
+			wantConnectMatcher: true,
+		},
+		{
+			name: "specific prefix preserves path matcher",
+			path: &gwv1.HTTPPathMatch{
+				Type:  &pathPrefix,
+				Value: new("/tunnel"),
+			},
+			wantPath:         "/tunnel",
+			wantMethodHeader: true,
+		},
+		{
+			name: "exact root preserves path matcher",
+			path: &gwv1.HTTPPathMatch{
+				Type:  &pathExact,
+				Value: new("/"),
+			},
+			wantPath:         "/",
+			wantExactPath:    true,
+			wantMethodHeader: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			match := translateMatcher(gwv1.HTTPRouteMatch{
+				Path:   tt.path,
+				Method: &connectMethod,
+			})
+
+			if tt.wantConnectMatcher {
+				assert.NotNil(t, match.GetConnectMatcher())
+				assert.Empty(t, match.GetPath())
+				assert.Empty(t, match.GetPrefix())
+			} else {
+				assert.Nil(t, match.GetConnectMatcher())
+				if tt.wantExactPath {
+					assert.Equal(t, tt.wantPath, match.GetPath())
+				} else {
+					assert.Equal(t, tt.wantPath, match.GetPathSeparatedPrefix())
+				}
+			}
+
+			if tt.wantMethodHeader {
+				require.Len(t, match.GetHeaders(), 1)
+				assert.Equal(t, ":method", match.GetHeaders()[0].GetName())
+				assert.Equal(t, "CONNECT", match.GetHeaders()[0].GetStringMatch().GetExact())
+			} else {
+				assert.Empty(t, match.GetHeaders())
+			}
+		})
+	}
+}
+
 func TestValidateRouteStrictSkipsMatcherOnlyEnvoyValidationForCommonMatchers(t *testing.T) {
 	pathPrefix := gwv1.PathMatchPathPrefix
 	pathExact := gwv1.PathMatchExact
@@ -526,7 +603,10 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 		{
 			name: "full metadata",
 			in: ir.HttpRouteRuleMatchIR{
-				Name: "test-rule",
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				RuleName:   "test-rule",
 				Parent: &ir.HttpRouteIR{
 					ObjectSource: ir.ObjectSource{
 						Kind:      "HTTPRoute",
@@ -542,6 +622,31 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 				"name":      "test-route",
 				"namespace": "default",
 				"rule":      "test-rule",
+				"match":     "_match-2",
+			},
+		},
+		{
+			name: "missing original rule name",
+			in: ir.HttpRouteRuleMatchIR{
+				RuleIndex:  1,
+				MatchIndex: 2,
+				Name:       "unique-test-rule",
+				Parent: &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{
+						Kind:      "HTTPRoute",
+						Group:     "gateway.networking.k8s.io",
+						Name:      "test-route",
+						Namespace: "default",
+					},
+				},
+			},
+			expected: map[string]string{
+				"kind":      "HTTPRoute",
+				"group":     "gateway.networking.k8s.io",
+				"name":      "test-route",
+				"namespace": "default",
+				"rule":      "_rule-1",
+				"match":     "_match-2",
 			},
 		},
 		{
@@ -692,7 +797,8 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 			assert.Equal(t, "gateway.networking.k8s.io", fields["group"].GetStringValue())
 			assert.Equal(t, "my-route", fields["name"].GetStringValue())
 			assert.Equal(t, "default", fields["namespace"].GetStringValue())
-			assert.Equal(t, "my-rule", fields["rule"].GetStringValue())
+			assert.Equal(t, "_rule-0", fields["rule"].GetStringValue())
+			assert.Equal(t, "_match-0", fields["match"].GetStringValue())
 		})
 	}
 }

@@ -15,6 +15,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -40,7 +46,5 @@ func main() {
 	}
 	cmd.Flags().BoolVarP(&kgatewayVersion, "version", "v", false, "Print the version of kgateway")
 
-	if err := cmd.ExecuteContext(ctx); err != nil {
-		log.Fatal(err)
-	}
+	return cmd.ExecuteContext(ctx)
 }

@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/http"
 	"slices"
@@ -18,8 +17,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/controller"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
+
+var logger = logging.New("admin")
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
 	// serverHandlers defines the custom handlers that the Admin Server will support
@@ -95,13 +97,13 @@ func startHandlers(ctx context.Context, bindAddress string, addHandlers ...func(
 		Handler:           mux,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
-	slog.Info("admin server starting", "address", server.Addr)
+	logger.Info("admin server starting", "address", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
 		if err == http.ErrServerClosed {
-			slog.Info("admin server closed")
+			logger.Info("admin server closed")
 		} else {
-			slog.Warn("admin server closed with unexpected error", "error", err)
+			logger.Warn("admin server closed with unexpected error", "error", err)
 		}
 	}()
 	go func() {
@@ -109,7 +111,7 @@ func startHandlers(ctx context.Context, bindAddress string, addHandlers ...func(
 		if server != nil {
 			err := server.Close()
 			if err != nil {
-				slog.Warn("admin server shutdown returned error", "error", err)
+				logger.Warn("admin server shutdown returned error", "error", err)
 			}
 		}
 	}()

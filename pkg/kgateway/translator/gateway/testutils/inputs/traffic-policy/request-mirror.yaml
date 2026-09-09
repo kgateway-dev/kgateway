@@ -1,0 +1,267 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    hostname: example.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: override-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /override
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rewrite-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /rewrite
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: multi-rule-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /multi/two-mirrors
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-two
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /multi/one-mirror
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /multi/no-mirror
+    backendRefs:
+    - name: primary
+      port: 80
+---
+# No route-level policy: this route inherits the gateway-level setting.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: inherit-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /inherit
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: grpc-mirror-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - matches:
+    - method:
+        type: Exact
+        service: example.Service
+        method: Mirror
+    filters:
+    - type: RequestMirror
+      requestMirror:
+        backendRef:
+          name: mirror-one
+          port: 80
+    backendRefs:
+    - name: primary
+      port: 80
+---
+# Gateway-scoped: sets the default for every mirror under this gateway.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: gateway-request-mirror
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  requestMirror:
+    disableShadowHostSuffixAppend: true
+---
+# Route-scoped false: overrides the gateway-level true on this route.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: override-route-request-mirror
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: override-route
+  requestMirror:
+    disableShadowHostSuffixAppend: false
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: multi-rule-request-mirror
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: multi-rule-route
+  requestMirror:
+    disableShadowHostSuffixAppend: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: rewrite-route-request-mirror
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: rewrite-route
+  requestMirror:
+    hostRewriteLiteral: shadow.example:8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: grpc-mirror-request-mirror
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: GRPCRoute
+    name: grpc-mirror-route
+  requestMirror:
+    disableShadowHostSuffixAppend: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: primary
+  namespace: default
+spec:
+  selector:
+    app: primary
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirror-one
+  namespace: default
+spec:
+  selector:
+    app: mirror-one
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirror-two
+  namespace: default
+spec:
+  selector:
+    app: mirror-two
+  ports:
+  - port: 80
+    targetPort: 8080

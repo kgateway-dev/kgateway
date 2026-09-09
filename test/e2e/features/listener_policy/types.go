@@ -42,9 +42,9 @@ var (
 	localReplyHttpRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "local-reply-httproute.yaml")
 
 	// RequestID test manifests for testing the new RequestID configuration feature
-	listenerPolicyRequestIdManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")
-	requestIdEchoManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo.yaml")
-	httpListenerPolicyRequestIdManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httplistener-policy-request-id.yaml")
+	listenerPolicyRequestIdManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id.yaml")
+	requestIdEchoManifest                          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "request-id-echo.yaml")
+	listenerPolicyRequestIdPackTraceReasonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "listener-policy-request-id-pack-trace-reason.yaml")
 
 	// forwardClientCertDetails test manifests. The three Secret YAMLs are
 	// applied at suite setup time so the gw mtls-https listener and the

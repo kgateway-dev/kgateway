@@ -530,7 +530,7 @@ func parseRedirectStatusCode(
 		return nil, fmt.Errorf("invalid redirect status code: %s; %s", val, httpRedirectStatusCodesAllowedMsg)
 	}
 
-	return new(code), nil
+	return &code, nil
 }
 
 // MIRROR IR

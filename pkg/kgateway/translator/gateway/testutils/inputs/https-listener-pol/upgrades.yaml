@@ -36,7 +36,7 @@ spec:
       port: 80
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: upgrades
 spec:
@@ -44,6 +44,8 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  upgradeConfig:
-    enabledUpgrades:
-    - "websocket"
+  default:
+    httpSettings:
+      upgradeConfig:
+        enabledUpgrades:
+        - "websocket"

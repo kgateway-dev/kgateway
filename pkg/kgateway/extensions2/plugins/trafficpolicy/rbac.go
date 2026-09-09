@@ -1,6 +1,7 @@
 package trafficpolicy
 
 import (
+	"errors"
 	"fmt"
 
 	"cel.dev/expr"
@@ -137,7 +138,7 @@ func translateRBAC(rbac *sharedv1alpha1.Authorization) (*envoyauthz.RBACPerRoute
 
 func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1alpha1.AuthorizationPolicyAction) (*cncfmatcherv3.Matcher_MatcherList_FieldMatcher, error) {
 	if len(celExprs) == 0 {
-		return nil, fmt.Errorf("no CEL expressions provided")
+		return nil, errors.New("no CEL expressions provided")
 	}
 
 	// Create CEL match input
@@ -302,7 +303,7 @@ func createDefaultAction(action envoyrbacv3.RBAC_Action) *cncfmatcherv3.Matcher_
 // for use in Envoy matchers. It handles the conversion between different protobuf types.
 func parseCELExpression(env *cel.Env, celExpr sharedv1alpha1.CELExpression) (*expr.ParsedExpr, error) {
 	if env == nil {
-		return nil, fmt.Errorf("CEL environment is nil")
+		return nil, errors.New("CEL environment is nil")
 	}
 
 	ast, iss := env.Parse(string(celExpr))

@@ -47,7 +47,6 @@ Routes:
     routes:
     - match:
         safeRegex:
-          googleRe2: {}
           regex: '[invalid-regex'
       name: listener~8080~www_example_com-route-0-httproute-invalid-regex-path-route-gwtest-0-0-matcher-0
       route:
@@ -55,7 +54,6 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         safeRegex:
-          googleRe2: {}
           regex: /api/v[0-9]+/.*
       name: listener~8080~www_example_com-route-1-httproute-valid-regex-path-route-gwtest-0-0-matcher-0
       route:

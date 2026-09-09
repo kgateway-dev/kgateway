@@ -1,7 +1,6 @@
 package translator
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"time"
@@ -9,14 +8,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -36,10 +34,7 @@ func buildStatusesFromReports(
 	reportsMap reports.ReportMap,
 	gateways map[types.NamespacedName]*gwv1.Gateway,
 	listenerSets map[types.NamespacedName]*gwv1.ListenerSet,
-	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 ) *Statuses {
-	ctx := context.Background()
-
 	// Fixed values for deterministic golden file tests. Use the zero time
 	// for consistency and to avoid confusion about the significance of a
 	// specific date.
@@ -71,7 +66,7 @@ func buildStatusesFromReports(
 				},
 			}
 		}
-		if status := reportsMap.BuildGWStatus(ctx, gw, nil); status != nil {
+		if status := reportsMap.BuildGWStatus(gw, nil); status != nil {
 			normalizeStatus(status, fixedTime)
 			statuses.Gateways[gwNN.String()] = status
 		}
@@ -96,7 +91,7 @@ func buildStatusesFromReports(
 			if listenerSet.GroupVersionKind().Empty() {
 				listenerSet.SetGroupVersionKind(gvk)
 			}
-			if status := reportsMap.BuildListenerSetStatus(ctx, listenerSet); status != nil {
+			if status := reportsMap.BuildListenerSetStatus(listenerSet); status != nil {
 				normalizeListenerSetStatus(status, fixedTime)
 				statuses.ListenerSets[listenerSetNN.String()] = status
 			}
@@ -111,7 +106,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.HTTPRoutes[routeNN.String()] = status
 		}
@@ -125,7 +120,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.TCPRoutes[routeNN.String()] = status
 		}
@@ -139,7 +134,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.TLSRoutes[routeNN.String()] = status
 		}
@@ -153,7 +148,7 @@ func buildStatusesFromReports(
 				Namespace: routeNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildRouteStatus(ctx, &route, wellknown.DefaultGatewayClassName); status != nil {
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.GRPCRoutes[routeNN.String()] = status
 		}
@@ -162,7 +157,7 @@ func buildStatusesFromReports(
 	// Build Policy statuses
 	for policyKey := range reportsMap.Policies {
 		policyKeyStr := fmt.Sprintf("%s/%s/%s", policyKey.Kind, policyKey.Namespace, policyKey.Name)
-		if status := buildPolicyStatus(reportsMap, policyPlugins, policyKey, gwv1.PolicyStatus{}); status != nil {
+		if status := buildPolicyStatus(reportsMap, policyKey, gwv1.PolicyStatus{}); status != nil {
 			normalizePolicyStatus(status, fixedTime)
 			statuses.Policies[policyKeyStr] = status
 		}
@@ -176,7 +171,7 @@ func buildStatusesFromReports(
 				Namespace: backendNN.Namespace,
 			},
 		}
-		if status := reportsMap.BuildBackendStatus(ctx, &backend, kgateway.BackendStatus{}); status != nil {
+		if status := reportsMap.BuildBackendStatus(&backend, kgateway.BackendStatus{}); status != nil {
 			normalizeBackendStatus(status, fixedTime)
 			statuses.Backends[backendNN.String()] = status
 		}
@@ -187,15 +182,23 @@ func buildStatusesFromReports(
 
 func buildPolicyStatus(
 	reportsMap reports.ReportMap,
-	policyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin,
 	policyKey pluginreporter.PolicyKey,
 	currentStatus gwv1.PolicyStatus,
 ) *gwv1.PolicyStatus {
-	if plugin, ok := policyPlugins[schema.GroupKind{Group: policyKey.Group, Kind: policyKey.Kind}]; ok && plugin.BuildPolicyStatus != nil {
-		return plugin.BuildPolicyStatus(context.Background(), reportsMap, policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
+	// BackendTLSPolicy uses a custom desired-status builder (registered via the plugin's
+	// RegisterPolicyStatus hook at runtime); mirror it here for golden outputs.
+	if policyKey.Group == gwv1.GroupName && policyKey.Kind == wellknown.BackendTLSPolicyKind {
+		pol := &gwv1.BackendTLSPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      policyKey.Name,
+				Namespace: policyKey.Namespace,
+			},
+			Status: currentStatus,
+		}
+		return backendtlspolicy.BuildDesiredPolicyStatus(reportsMap.PolicyReport(policyKey), pol, wellknown.DefaultGatewayControllerName)
 	}
 
-	return reportsMap.BuildPolicyStatus(context.Background(), policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
+	return reportsMap.BuildPolicyStatus(policyKey, wellknown.DefaultGatewayControllerName, currentStatus)
 }
 
 // normalizeStatus sets all fields (e.g. LastTransitionTime) to fixed values for deterministic testing

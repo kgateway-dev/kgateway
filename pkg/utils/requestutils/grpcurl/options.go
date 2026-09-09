@@ -2,6 +2,7 @@ package grpcurl
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -49,7 +50,7 @@ func (c *Command) ToArgs() []string {
 		args = append(args, "-v")
 	}
 	if c.ConnectTimeout > 0 {
-		args = append(args, "-connect-timeout", fmt.Sprintf("%d", c.ConnectTimeout))
+		args = append(args, "-connect-timeout", strconv.Itoa(c.ConnectTimeout))
 	}
 
 	if c.Authority != "" {

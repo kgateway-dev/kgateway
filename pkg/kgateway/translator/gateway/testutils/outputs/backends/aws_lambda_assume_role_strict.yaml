@@ -39,6 +39,7 @@ Clusters:
           credentialProvider:
             assumeRoleCredentialProvider:
               roleArn: arn:aws:iam::311275790335:role/project-invoke-role
+            customCredentialProviderChain: true
           region: us-east-1
           serviceName: lambda
       - name: envoy.filters.http.upstream_codec

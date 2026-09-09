@@ -540,12 +540,12 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 			if tt.policy == nil {
 				err = errors.New("extensionRef is required")
 			} else if tt.gatewayExtension == nil {
-				err = fmt.Errorf("failed to get referenced GatewayExtension")
+				err = errors.New("failed to get referenced GatewayExtension")
 			} else {
 				// Get the extension's spec
 				extension := tt.gatewayExtension.RateLimit
 				if extension == nil {
-					err = fmt.Errorf("RateLimit configuration is missing in GatewayExtension")
+					err = errors.New("RateLimit configuration is missing in GatewayExtension")
 				} else {
 					// Create a timeout based on the timeout from extension
 					timeout := durationpb.New(extension.Timeout.Duration)

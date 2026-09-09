@@ -38,7 +38,7 @@ func (e *InvalidCACertificateRefError) Error() string {
 		return ""
 	}
 	if e.Cause == nil {
-		return fmt.Sprintf("invalid CA certificate ref %s", e.Ref)
+		return "invalid CA certificate ref " + e.Ref
 	}
 	return fmt.Sprintf("invalid CA certificate ref %s: %v", e.Ref, e.Cause)
 }

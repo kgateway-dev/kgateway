@@ -1,16 +1,22 @@
 package proxy_syncer
 
 import (
-	"context"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 )
 
 type statusSyncerConfig struct {
-	CustomStatusSync func(ctx context.Context, rm reports.ReportMap)
+	statusRegistrations []StatusRegistration
 }
 
 type StatusSyncerOption func(*statusSyncerConfig)
+
+// StatusRegistrationInputs exposes the keyed status pipeline to downstream resource
+// types. Registrations construct per-resource report reductions and writers during
+// controller setup; their event handlers are attached only while this replica is leader.
+type StatusRegistrationInputs = statussync.RegistrationInputs
+
+// StatusRegistration adds one resource-scoped status pipeline extension.
+type StatusRegistration func(StatusRegistrationInputs)
 
 func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig {
 	cfg := &statusSyncerConfig{}
@@ -20,10 +26,13 @@ func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig 
 	return cfg
 }
 
-func WithCustomStatusSync(customSync func(ctx context.Context, rm reports.ReportMap)) StatusSyncerOption {
+// WithStatusRegistration registers a downstream resource type with the keyed status
+// pipeline. The registration runs on every replica during controller construction; actual
+// reconciliation handlers and writes remain leader-gated by StatusCollections.
+func WithStatusRegistration(registration StatusRegistration) StatusSyncerOption {
 	return func(cfg *statusSyncerConfig) {
-		if customSync != nil {
-			cfg.CustomStatusSync = customSync
+		if registration != nil {
+			cfg.statusRegistrations = append(cfg.statusRegistrations, registration)
 		}
 	}
 }

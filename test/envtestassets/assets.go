@@ -1,6 +1,7 @@
 package envtestassets
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -20,7 +21,7 @@ func GetEnvTestAssetsDir() (string, error) {
 		assetsDir = strings.TrimSpace(string(out))
 	}
 	if assetsDir == "" {
-		return "", fmt.Errorf("envtest assets directory is empty")
+		return "", errors.New("envtest assets directory is empty")
 	}
 
 	info, err := os.Stat(assetsDir)

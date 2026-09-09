@@ -14,18 +14,21 @@ A concise explanation of the change. You may include:
 # Change Type
 
 <!--
-Select one or more of the following by including the corresponding slash-command:
+Select one or more of the following by including the corresponding slash-command.
+
+If you pick more than one, the release note is filed under whichever appears first here (manual reordering does not have any effect):
 ```
 /kind breaking_change
-/kind bump
-/kind cleanup
-/kind design
-/kind deprecation
-/kind documentation
 /kind feature
 /kind fix
-/kind flake
+/kind deprecation
+/kind documentation
+/kind cleanup
 /kind install
+/kind bump
+(the following kinds are not included in release notes)
+/kind design
+/kind flake
 /kind test
 ```
 -->
@@ -33,10 +36,10 @@ Select one or more of the following by including the corresponding slash-command
 # Changelog
 
 <!--
-Provide the exact line to appear in release notes for the chosen changelog type.
+Provide the exact line to appear in the release notes for this PR.
 
-If no, just write "NONE" in the release-note block below.
-If yes, a release note is required:
+A PR gets one release note, filed under the highest-precedence /kind above.
+If this change needs no release note, write "NONE" in the block below.
 -->
 
 ```release-note

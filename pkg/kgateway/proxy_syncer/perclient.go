@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"fmt"
 	"maps"
+	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -87,7 +88,7 @@ func snapshotPerClient(
 			clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
 			clustersHash ^= c.ClusterVersion
 		}
-		clustersVersion := fmt.Sprintf("%d", clustersHash)
+		clustersVersion := strconv.FormatUint(clustersHash, 10)
 
 		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
 
@@ -112,7 +113,7 @@ func snapshotPerClient(
 			endpointsHash ^= ep.EndpointsHash
 		}
 
-		endpointResources := envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", endpointsHash), endpointsProto)
+		endpointResources := envoycache.NewResourcesWithTTL(strconv.FormatUint(endpointsHash, 10), endpointsProto)
 		return &endpointsWithUccName{
 			endpoints:    endpointResources,
 			resourceName: ucc.ResourceName(),
@@ -164,7 +165,7 @@ func snapshotPerClient(
 			for _, item := range listenerRouteSnapshot.Clusters {
 				clustersProto[envoycache.GetResourceName(item.Resource)] = item
 			}
-			clusterResources.Version = fmt.Sprintf("%d", clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash)
+			clusterResources.Version = strconv.FormatUint(clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
 		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
