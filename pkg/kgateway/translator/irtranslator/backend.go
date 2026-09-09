@@ -71,9 +71,10 @@ type BaseCluster struct {
 	// DefaultedLocalityConfig records that defaultLocalityConfig — not a policy
 	// plugin — chose this cluster's locality mode. Its guard depends on the cluster
 	// still being a kgateway-managed EDS cluster, which a per-client overlay can
-	// invalidate after the fact, so ApplyPerClient re-evaluates the guard and undoes
-	// the default when it no longer holds. Nothing else may be inferred from it: a
-	// false value means either "a policy chose the mode" or "no mode applies".
+	// invalidate after the fact. ApplyPerClient removes this base-owned default
+	// before overlays run, then re-evaluates the guard against the final cluster.
+	// Nothing else may be inferred from it: a false value means either "a policy
+	// chose the mode" or "no mode applies".
 	DefaultedLocalityConfig bool
 	Error                   error
 }
@@ -233,16 +234,18 @@ func (t *BackendTranslator) ApplyPerClient(
 		return nil, errors.New("failed to clone base cluster")
 	}
 
+	// Restore the pre-split ordering: per-client hooks ran before the locality
+	// default was selected. Removing the known base-owned value before overlays
+	// run lets an overlay deliberately select the same oneof type without that
+	// explicit choice later being mistaken for the inherited default.
+	if base.DefaultedLocalityConfig {
+		removeDefaultedLocalityConfig(out)
+	}
+
 	for _, entry := range overlays {
 		if entry.ov.Mutate != nil {
 			entry.ov.Mutate(out)
 		}
-	}
-
-	// Overlays can change the cluster shape out from under decisions the base made
-	// on the shape it saw, so re-evaluate those before the CLA and validation below.
-	if base.DefaultedLocalityConfig {
-		undoDefaultedLocalityConfig(out)
 	}
 
 	needsInlineCLA := base.EndpointInputs != nil &&
@@ -256,6 +259,13 @@ func (t *BackendTranslator) ApplyPerClient(
 		// defensive deep copy of the entire nested input graph.
 		epIn, _ := ResolveEndpointInputs(kctx, ctx, ucc, *base.EndpointInputs, t.orderedEndpointPlugins())
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ucc, epIn)
+	}
+
+	// Reapply the default only if the fully overlaid cluster is still eligible.
+	// An overlay-provided locality mode—weighted or otherwise—wins because
+	// defaultLocalityConfig leaves an existing specifier untouched.
+	if base.DefaultedLocalityConfig {
+		defaultLocalityConfig(out)
 	}
 
 	// Gateway-scoped client identity is authoritative over every policy-produced
@@ -292,9 +302,9 @@ func (t *BackendTranslator) ApplyPerClient(
 // zones Envoy's implicit zone-aware defaults (routing_enabled 100%,
 // min_cluster_size 6) would otherwise engage with no policy configured.
 //
-// Reports whether it set the specifier, so ApplyPerClient can undo it if a
-// per-client overlay later invalidates the EDS guard below. See
-// undoDefaultedLocalityConfig.
+// Reports whether it set the specifier, so ApplyPerClient can remove that
+// base-owned value before overlays run and re-evaluate the guard against the
+// final cluster. See removeDefaultedLocalityConfig.
 func defaultLocalityConfig(c *envoyclusterv3.Cluster) bool {
 	if c.GetLoadBalancingPolicy() != nil {
 		// Typed load balancing policies carry their own locality_lb_config and
@@ -321,33 +331,25 @@ func defaultLocalityConfig(c *envoyclusterv3.Cluster) bool {
 	return true
 }
 
-// undoDefaultedLocalityConfig removes the locality mode defaultLocalityConfig applied
-// to the base when a per-client overlay has since replaced the EDS cluster with a
-// plugin-provided inline one — the waypoint ingress redirect (STATIC cluster with an
-// inlined CLA) does exactly this.
+// removeDefaultedLocalityConfig removes the locality mode that
+// defaultLocalityConfig applied to the base before per-client overlays run.
+// ApplyPerClient calls defaultLocalityConfig again after the overlays, reproducing
+// the pre-split order and allowing an overlay to choose any locality mode,
+// including a distinct LocalityWeightedLbConfig.
 //
 // Before base/overlay translation was split, per-client hooks ran ahead of
 // defaultLocalityConfig, so its EDS guard saw the final cluster shape and skipped
-// these. Now the guard runs on the base, where the cluster is still EDS, and the
-// overlay invalidates it afterwards. Left in place, the cluster asks for locality
-// weighting while carrying a CLA whose LocalityLbEndpoints have no
-// load_balancing_weight — which Envoy rejects, and which strict-mode validation
-// turns into a blackholed cluster for every affected client.
-func undoDefaultedLocalityConfig(c *envoyclusterv3.Cluster) {
-	if c.GetEdsClusterConfig() != nil {
-		// Still an EDS cluster; the guard that admitted the default still holds.
-		return
-	}
-	if _, ok := c.GetCommonLbConfig().GetLocalityConfigSpecifier().(*envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_); !ok {
-		// An overlay replaced the specifier with its own choice. That is the
-		// overlay's call to make, so leave it alone.
+// a plugin-provided inline cluster. Leaving the base default visible during
+// overlays makes ownership ambiguous when an overlay explicitly chooses the same
+// protobuf oneof type.
+func removeDefaultedLocalityConfig(c *envoyclusterv3.Cluster) {
+	if c.GetCommonLbConfig() == nil {
 		return
 	}
 	c.CommonLbConfig.LocalityConfigSpecifier = nil
 	if proto.Equal(c.GetCommonLbConfig(), &envoyclusterv3.Cluster_CommonLbConfig{}) {
-		// defaultLocalityConfig allocated CommonLbConfig itself and nothing else
-		// ever populated it. Drop it so the emitted cluster is byte-identical to
-		// what the pre-split ordering produced.
+		// Drop the container when the inherited default was its only content.
+		// Overlays can allocate or populate a new CommonLbConfig afterward.
 		c.CommonLbConfig = nil
 	}
 }
