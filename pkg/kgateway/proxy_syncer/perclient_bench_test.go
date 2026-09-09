@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -23,6 +24,17 @@ const (
 	benchClients           = 8
 	benchValidationLatency = 2 * time.Millisecond
 )
+
+// disarmTripwire turns the shared-proto mutation tripwire off for one benchmark.
+// TestMain arms it for the package's tests, and armed it re-hashes every
+// published proto on every publish, which production never does; left on, it
+// roughly doubles every number measured here.
+func disarmTripwire(b *testing.B) {
+	b.Helper()
+	prev := sharedproto.AssertImmutability
+	sharedproto.AssertImmutability = false
+	b.Cleanup(func() { sharedproto.AssertImmutability = prev })
+}
 
 type benchLatencyValidator struct{ latency time.Duration }
 
@@ -64,6 +76,7 @@ func benchClient(role, pod string) ir.UniquelyConnectedClient {
 
 func benchDrainScenario(b *testing.B, v validator.Validator) {
 	b.Helper()
+	disarmTripwire(b)
 	ctx, cancel := context.WithCancel(context.Background())
 	b.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)

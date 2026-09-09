@@ -135,6 +135,7 @@ type updateBenchFixture struct {
 
 func newUpdateBenchFixture(b *testing.B, v validator.Validator) *updateBenchFixture {
 	b.Helper()
+	disarmTripwire(b)
 	ctx, cancel := context.WithCancel(context.Background())
 	b.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)

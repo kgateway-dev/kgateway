@@ -525,6 +525,22 @@ that makes it sound.
 
 ## Open Questions
 
+**A Service write that changes nothing must not reach the clients.** The base row compares its
+backend IR so that overlays reading backend metadata see a label change, but `BackendObjectIR.Equals`
+falls back to `resourceVersion` for kinds without `metadata.generation`, and every Service write
+bumps that: status updates, and annotation touches from Helm, Argo, external-dns or a cloud
+load-balancer controller. Compared that way, each such write re-ran every client's walk to
+rebuild a byte-identical payload — 71 MB and 314k allocations at 48 clients x 2000 backends, where
+main's dense collection re-translated 48 pairs and stopped. The base row now compares the backend
+with `EqualsIgnoringResourceVersion` (UID, generation, labels, annotations and every IR field; the
+proto hash already says whether the translation moved), so a `resourceVersion`-only write ends at
+the base: 5 KB and 40 allocations. A write that changes an annotation no overlay reads still reruns
+every walk (69 MB at 48 x 2000), because the row cannot know which annotations overlays read; each
+client then finds its payload hash unchanged and KRT keeps its old row. Memoizing the assembled
+`envoycache.Resources` per client was measured and rejected: it recovers only the map build, about
+6% of that walk, and the row slice and base fetch are the rest. An overlay-declared set of metadata
+keys would let the base row ignore unrelated annotations altogether.
+
 **A base change reruns every client's walk.** The per-client transform depends on the whole
 base collection, so any backend change reruns `N` transforms of `O(M)` each.
 `BenchmarkPerClientBackendUpdate` and `BenchmarkPerClientDestinationRuleUpdate`
@@ -532,16 +548,20 @@ base collection, so any backend change reruns `N` transforms of `O(M)` each.
 400 backends of which a quarter carry inline endpoints — half of those with a zone-preferring
 traffic distribution, so every client builds its own CLA for them, and half without, so the CLA
 lives on the base — and an eighth have a rule that a quarter of the clients match. Apple M4 Max,
-`-benchtime=5x`:
+`-benchtime=5x`, with the `sharedproto` mutation tripwire disarmed as in production (the package's
+`TestMain` arms it, and armed it re-hashes every published proto, which roughly doubled every
+number measured before this was noticed):
 
 | Operation | No validation | Strict, 200 µs per validation, verdicts memoized |
 | --- | --- | --- |
-| One backend's output changes; all 12 payloads rebuilt | 5.7 ms, 10.3 MB, 46k allocs | 7.1 ms |
-| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 1.8 ms, 2.9 MB, 20k allocs | 2.2 ms |
+| One backend's output changes; all 12 payloads rebuilt | 3.0 ms, 5.4 MB, 36k allocs | 4.4 ms |
+| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 1.1 ms, 1.7 MB, 18k allocs | 1.6 ms |
+| One Service write that changes only `resourceVersion` | 5 KB, 38 allocs, no client reruns | same |
 
-Before client-independent inline CLAs were built on the base, with all 100 inline backends
-materializing per client, the same runs measured 8.0 ms / 287 ms and 2.1 ms / 72 ms; with them
-on the base but every per-client cluster still re-validated, 5.8 ms / 162 ms and 2.1 ms / 41 ms.
+Earlier runs of the same benchmark had the tripwire armed and so read about twice these. In those
+units: before client-independent inline CLAs were built on the base, with all 100 inline backends
+materializing per client, 8.0 ms / 287 ms and 2.1 ms / 72 ms; with them on the base but every
+per-client cluster still re-validated, 5.8 ms / 162 ms and 2.1 ms / 41 ms.
 Without validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered
 CLAs and ~12 overlaid clones, not by the 350 shared pairs per client. Without the memo, strict
 validation was dominated by re-validating those same ~750 materialized clusters, almost all of
