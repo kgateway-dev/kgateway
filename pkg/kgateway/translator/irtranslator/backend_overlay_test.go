@@ -12,6 +12,7 @@ import (
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -560,6 +561,49 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 
 	assert.NotNil(t, perClient.GetCommonLbConfig().GetZoneAwareLbConfig(),
 		"an overlay's own locality choice must not be undone")
+}
+
+// TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode covers the case
+// where an overlay deliberately replaces the inherited locality-weighted
+// default with its own locality-weighted configuration. The oneof type alone
+// cannot distinguish those values, so ownership must be established before
+// overlays run rather than inferred from the final proto shape.
+func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	explicitWeightedConfig := &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{}
+	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						redirectToInlineCLA(out)
+						out.LoadAssignment.Endpoints[0].LoadBalancingWeight = wrapperspb.UInt32(1)
+						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
+							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+								LocalityWeightedLbConfig: explicitWeightedConfig,
+							},
+						}
+					},
+				}
+			},
+		},
+	})
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.True(t, base.DefaultedLocalityConfig)
+	require.NotSame(t, explicitWeightedConfig, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+		"precondition: the explicit overlay config must differ from the inherited default")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient)
+
+	assert.Same(t, explicitWeightedConfig, perClient.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+		"an overlay's explicit locality-weighted config must not be mistaken for the inherited default")
 }
 
 func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
