@@ -44,10 +44,14 @@ type baseEnvoyCluster struct {
 	// BackendGeneration is the observed generation of the source Backend.
 	BackendGeneration int64
 	// Backend is the IR this cluster was translated from. Per-client processing
-	// and the overlays it runs read it, so it is compared through its own Equals:
-	// a metadata-only change to the backing object (a Service label an overlay
+	// and the overlays it runs read it, so it is compared by content: a
+	// metadata change to the backing object (a Service label an overlay
 	// branches on) then reaches every client even when the shared proto is
-	// byte-identical, without a second collection keyed on the raw backend.
+	// byte-identical, without a second collection keyed on the raw backend. Its
+	// resourceVersion is deliberately not compared: every Service write bumps
+	// it, including status and controller annotation touches, and the proto
+	// hash above already says whether the translation moved. Comparing it
+	// would rerun every client's walk for a write that changed nothing.
 	Backend *ir.BackendObjectIR
 	// Base is the non-proto portion of the base-translation result retained for
 	// per-client processing. Base.Cluster is always nil: the only retained copy
@@ -74,7 +78,7 @@ func backendEquals(a, b *ir.BackendObjectIR) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Equals(*b)
+	return a.EqualsIgnoringResourceVersion(*b)
 }
 
 // uccWithCluster is one client's view of one backend's cluster: the shared base

@@ -250,3 +250,48 @@ func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testi
 	assert.NotContains(t, string(marshaled), "gateway-cert")
 	assert.NotContains(t, string(marshaled), "gateway-key")
 }
+
+// serviceBackedIR is a Service-backed IR: generation-less, so Equals falls back
+// to comparing resourceVersion.
+func serviceBackedIR(rv string, labels map[string]string, generation int64) BackendObjectIR {
+	b := NewBackendObjectIR(ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv, Labels: labels, Generation: generation,
+	}}
+	return b
+}
+
+func TestBackendObjectIREqualsIgnoringResourceVersion(t *testing.T) {
+	base := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
+
+	t.Run("resourceVersion-only write", func(t *testing.T) {
+		other := serviceBackedIR("2", map[string]string{"a": "1"}, 0)
+		assert.False(t, base.Equals(other), "Equals must see the version move")
+		assert.True(t, base.EqualsIgnoringResourceVersion(other), "content is unchanged")
+	})
+	t.Run("label change", func(t *testing.T) {
+		other := serviceBackedIR("2", map[string]string{"a": "2"}, 0)
+		assert.False(t, base.Equals(other))
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "labels are content overlays read")
+	})
+	t.Run("generation change", func(t *testing.T) {
+		other := serviceBackedIR("1", map[string]string{"a": "1"}, 1)
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a spec generation is content")
+	})
+	t.Run("different object identity", func(t *testing.T) {
+		other := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
+		other.Obj.(*corev1.Service).UID = "other-uid"
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a recreated object is a different object")
+	})
+	t.Run("IR field change", func(t *testing.T) {
+		other := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
+		other.AppProtocol = AppProtocol("grpc")
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "every non-object field still counts")
+	})
+	t.Run("absent objects", func(t *testing.T) {
+		a := NewBackendObjectIR(ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+		b := NewBackendObjectIR(ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+		assert.True(t, a.EqualsIgnoringResourceVersion(b), "two IRs without a backing object are equal")
+		assert.False(t, a.EqualsIgnoringResourceVersion(base), "an absent object never equals a present one")
+	})
+}

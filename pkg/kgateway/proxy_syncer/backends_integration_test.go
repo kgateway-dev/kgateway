@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -429,4 +430,82 @@ func TestNewPerClientEnvoyClusters_ClientIndependentInlineCLASharesBase(t *testi
 	for _, b := range bases {
 		require.Nil(t, b.Base.Cluster, "the retained BaseCluster must not expose a raw alias to the shared proto")
 	}
+}
+
+// TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient: a
+// Service write that changes only resourceVersion (a status update, a controller
+// touching an annotation it then reverts, a no-op apply) re-translates the base,
+// finds the proto unchanged, and stops there. Before the base row compared its
+// backend by content, versionEquals reported a change for every generation-less
+// write and every client's walk reran; with backend churn dominating production
+// events, that was the design's one regression against main. A label change,
+// which an overlay may read, must still reach every client.
+func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *testing.T) {
+	ctx := t.Context()
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	var baseRuns, overlayRuns atomic.Int64
+	translator := &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			{Group: "", Kind: "Service"}: {
+				InitEnvoyBackend: func(_ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					baseRuns.Add(1)
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					return nil
+				},
+			},
+		},
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+					overlayRuns.Add(1)
+					if in.Obj.GetLabels()["overlay"] != "true" {
+						return nil
+					}
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+					}}
+				},
+			},
+		},
+	}
+
+	serviceBackend := func(rv string, labels map[string]string) *ir.BackendObjectIR {
+		b := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+		b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv, Labels: labels,
+		}}
+		return &b
+	}
+	backend := serviceBackend("1", nil)
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{backend}, krtopts.ToOptions("FinalBackends")...)
+	clients := []ir.UniquelyConnectedClient{
+		ir.NewUniquelyConnectedClient("a", "ns", nil, ir.PodLocality{}),
+		ir.NewUniquelyConnectedClient("b", "ns", nil, ir.PodLocality{}),
+		ir.NewUniquelyConnectedClient("c", "ns", nil, ir.PodLocality{}),
+	}
+	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UCCs")...)
+
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	for _, ucc := range clients {
+		require.Eventually(t, func() bool { return len(storedClustersForClient(pcc, ucc)) == 1 }, 2*time.Second, 10*time.Millisecond)
+	}
+	require.EqualValues(t, 1, baseRuns.Load())
+	require.EqualValues(t, len(clients), overlayRuns.Load(), "each client evaluated the backend once")
+
+	// A write that moves only resourceVersion: the base re-translates, nothing else runs.
+	finalBackends.UpdateObject(serviceBackend("2", nil))
+	require.Eventually(t, func() bool { return baseRuns.Load() == 2 }, 2*time.Second, 10*time.Millisecond, "the base must re-translate")
+	time.Sleep(50 * time.Millisecond) // let any fan-out that would happen, happen
+	assert.EqualValues(t, len(clients), overlayRuns.Load(), "a resourceVersion-only write must not rerun any client's walk")
+
+	// A label change is content an overlay reads: every client re-evaluates and the overlay lands.
+	finalBackends.UpdateObject(serviceBackend("3", map[string]string{"overlay": "true"}))
+	for _, ucc := range clients {
+		require.Eventually(t, func() bool {
+			c := storedClustersForClient(pcc, ucc)[backend.ClusterName()]
+			return c != nil && c.GetOutlierDetection() != nil
+		}, 2*time.Second, 10*time.Millisecond, "client %s must see the overlay", ucc.ResourceName())
+	}
+	assert.EqualValues(t, 2*len(clients), overlayRuns.Load(), "the label change reran each client once")
 }
