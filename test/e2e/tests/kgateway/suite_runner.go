@@ -95,6 +95,13 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
+	// StrictChurn mutates the controller deployment (strict validation, a
+	// mid-test restart), so it is hard-gated behind KGW_ENABLE_STRICT_CHURN
+	// in its SetupSuite and skips otherwise — broad -run regexes (e.g. the
+	// nightly e2e lane's unanchored ^TestKgateway) cannot run it implicitly.
+	// The nightly load-test lane invokes `make run-load-tests-strict-churn`
+	// explicitly after its shared suites.
+	kubeGatewaySuiteRunner.Register("StrictChurn", loadtesting.NewStrictChurnSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)

@@ -44,7 +44,10 @@ type TrafficPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))))",message="httpUpgrade can only be used when targeting Gateway, HTTPRoute, or ListenerSet resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || self.httpUpgrade.all(x, self.httpUpgrade.exists_one(y, y.type.lowerAscii() == x.type.lowerAscii()))",message="httpUpgrade types must be unique ignoring ASCII case"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
+// +kubebuilder:validation:XValidation:rule="!has(self.buffer) || has(self.buffer.disable) || !has(self.httpUpgrade) || self.httpUpgrade.size() == 0",message="buffer cannot be used together with httpUpgrade unless buffering is disabled"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -111,6 +114,19 @@ type TrafficPolicySpec struct {
 	// Requests exceeding this size will return a 413 response.
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
+
+	// HTTPUpgrade configures HTTP protocol upgrades on the targeted routes.
+	// Route-level upgrade settings override the matching upgrade type configured
+	// on the listener. CONNECT termination is applied per route and cannot be
+	// configured on a listener. After an upgrade is established, tunneled payload
+	// is not inspected by HTTP filters. Authenticate and authorize the initial
+	// upgrade request, enable upgrades only for trusted clients, and avoid request
+	// buffering.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	// +listType=map
+	// +listMapKey=type
+	HTTPUpgrade []ProtocolUpgradeConfig `json:"httpUpgrade,omitempty"`
 
 	// Timeouts defines the timeouts for requests.
 	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
@@ -253,6 +269,36 @@ type RequestMirrorPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	HostRewriteLiteral *string `json:"hostRewriteLiteral,omitempty"`
+}
+
+// ProtocolUpgradeConfig specifies configuration for an HTTP protocol upgrade.
+// +kubebuilder:validation:XValidation:rule="!has(self.connect) || self.type.lowerAscii() == 'connect'",message="connect configuration is only allowed when type is CONNECT"
+type ProtocolUpgradeConfig struct {
+	// Type is the case-insensitive protocol upgrade token, such as "websocket",
+	// "CONNECT", or "spdy/3.1". Do not configure the same token more than once,
+	// including variants that differ only by letter case.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Type string `json:"type"`
+
+	// Connect configures CONNECT-specific behavior. It is valid only when type
+	// is "CONNECT".
+	// +optional
+	Connect *ConnectConfig `json:"connect,omitempty"`
+}
+
+// ConnectConfig specifies how CONNECT requests are forwarded upstream.
+type ConnectConfig struct {
+	// Terminate causes the gateway to terminate the CONNECT request and forward
+	// the request payload upstream as raw TCP data. When false or omitted, the
+	// CONNECT request is proxied upstream without termination.
+	//
+	// Because the payload is forwarded as raw bytes, configuring TLS for the
+	// selected backend wraps those bytes in a separate upstream TLS session. Leave
+	// backend TLS disabled when the payload must reach the upstream unchanged.
+	// +optional
+	Terminate *bool `json:"terminate,omitempty"`
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
@@ -706,6 +752,8 @@ type LabelSelector struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
+// +kubebuilder:validation:XValidation:message="filterStage cannot be set when disable is set",rule="!(has(self.disable) && has(self.filterStage))"
+// +kubebuilder:validation:XValidation:message="filterStage.weight has no effect for buffer and must be 0: a filter chain carries at most one buffer filter, so there is nothing to break ties against",rule="!has(self.filterStage) || self.filterStage.weight == 0"
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
@@ -718,6 +766,48 @@ type Buffer struct {
 	// Can be used to disable buffer policies applied at a higher level in the config hierarchy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+
+	// FilterStage specifies where in the HTTP filter chain the buffer filter is placed.
+	// By default the buffer filter runs late in the chain, after authentication, authorization
+	// and rate limiting, so that a request that is going to be rejected outright is rejected
+	// before its body is buffered.
+	//
+	// `maxRequestSize` is only enforced while the buffer filter is the filter accumulating the
+	// request body. A filter placed ahead of it that reads or holds the body first - for example
+	// an ext_proc that waits on its server, or a body transformation - consumes the body before
+	// the buffer filter ever sees it, and the limit is then inert. Move the buffer filter ahead
+	// of such a filter to make the limit enforce, at the cost of buffering bodies that a later
+	// authentication or authorization filter may go on to reject.
+	//
+	// The placement is a property of the whole filter chain rather than of a single route, and
+	// setting it here affects every route on the listener. Envoy resolves the per-route buffer
+	// config by filter name, and that name-based lookup is what lets a route-level policy override
+	// a Gateway-level one, so the gateway installs exactly one buffer filter per filter chain. If
+	// TrafficPolicies attached to the same listener ask for different stages, the earliest
+	// requested stage is used for the whole chain. A policy that only sets `disable` takes no part
+	// in that: it keeps its per-route override and leaves the placement to the policies that
+	// actually buffer, so turning buffering off on one route never moves the buffer filter for the
+	// others.
+	//
+	// Setting it therefore relaxes, never tightens, what the other routes on the listener do:
+	// a route that asked for the default placement will have its bodies buffered before
+	// authentication and authorization run, spending memory on requests those filters would go on
+	// to reject. Keep buffer policies on a listener consistent, or split the listener, if that
+	// matters for a route. The per-route `maxRequestSize` is unaffected and continues to apply
+	// per route.
+	//
+	// When request decompression is configured on the same filter chain, the decompressor filters
+	// stay ahead of the buffer filter, so that `maxRequestSize` is measured against the
+	// decompressed body rather than the encoded bytes - otherwise a small compressed body would
+	// satisfy the limit and expand past it upstream. Their default placement is already ahead of
+	// every stage except `Fault`, so this only moves them when the buffer filter is staged at
+	// `Fault`, and then it moves them for every route on the listener: request decompression on
+	// those routes runs ahead of fault injection, CORS, and any ext_proc staged at `Fault`.
+	//
+	// `filterStage.weight` must be 0: it breaks ties between several filters of the same type at
+	// one stage, and a filter chain carries at most one buffer filter.
+	// +optional
+	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 // Compression configures HTTP response compression and request decompression behavior.
