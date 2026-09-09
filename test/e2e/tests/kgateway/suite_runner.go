@@ -102,6 +102,11 @@ func SuiteRunner() e2e.SuiteRunner {
 	// The nightly load-test lane invokes `make run-load-tests-strict-churn`
 	// explicitly after its shared suites.
 	kubeGatewaySuiteRunner.Register("StrictChurn", loadtesting.NewStrictChurnSuite)
+	// XdsCost is StrictChurn's measurement sibling: it prices what each kind of
+	// change costs the controller (CPU, allocations, xDS fan-out) rather than
+	// asserting liveness. It mutates the controller deployment too, so it is
+	// hard-gated behind KGW_ENABLE_XDS_COST and run via `make run-xds-cost-bench`.
+	kubeGatewaySuiteRunner.Register("XdsCost", loadtesting.NewXdsCostSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)

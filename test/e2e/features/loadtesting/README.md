@@ -205,6 +205,67 @@ load-test action runs it once per load-test cluster, after the standard and
 strict AttachedRoutes runs. Run it locally with
 `make run-load-tests-strict-churn`.
 
+### XdsCost Benchmark (per-client xDS control-plane cost)
+
+`xdscost_suite.go` is StrictChurn's measurement sibling. StrictChurn asks "did
+the fleet stay served under churn"; XdsCost asks "what did each kind of change
+cost the controller", which is the question that separates competing per-client
+CDS topologies. It is a benchmark, not an assertion suite: it has no pass/fail
+thresholds, and it is meant to be run twice against two builds and diffed.
+
+It measures the controller from the outside, scraping the controller's own
+`/metrics` (port 9092) before and after each change. `pkg/metrics` registers the
+Go and process collectors, so `process_cpu_seconds_total`,
+`go_memstats_alloc_bytes_total`, `go_memstats_heap_inuse_bytes` and
+`process_resident_memory_bytes` are measurements of the real running binary.
+
+Three phases, one per event the topologies price differently:
+
+- **EdsChurn** rewrites one simulated Service's EndpointSlice. Those are EDS
+  clusters, so the endpoints flow through the separate per-client EDS pipeline
+  and never reach the cluster base. This is the control phase: it should cost
+  about the same on any CDS topology, and it shows how much of an
+  endpoint-churn bill is actually CDS.
+- **BaseChurn** edits one static `Backend`'s host. A static Backend becomes a
+  STATIC cluster with an inline `ClusterLoadAssignment`, so its endpoints are
+  folded into the cluster's base version: the edit is a base change and every
+  connected client's CDS payload is rebuilt. This is the frequent event wherever
+  endpoints live in the backend object rather than in EndpointSlices
+  (ServiceEntry with inline endpoints, DNS and static Backends).
+- **Reconnect** deletes one gateway's Envoy pod, so the replacement arrives as a
+  new xDS client.
+
+Client fan-out is the number of **Gateways**, not Envoy replicas: a
+`UniquelyConnectedClient` is keyed by role, namespace, labels and locality, so on
+a single-node cluster every replica of one Gateway collapses into one client.
+
+Each phase reports, per change: controller CPU milliseconds, megabytes
+allocated, xDS syncs and snapshot transforms, and convergence latency measured
+to the last xDS sync for that change. Each phase emits an `xds_cost_result` JSON
+line and the run emits `xds_cost_summary`, so two builds are compared by
+diffing output. On a build that carries them, the sparse-CDS deferral metrics
+(`kgateway_xds_snapshot_cluster_deferrals_total`) are picked up automatically and
+reported per change; on a build without them they read zero.
+
+```bash
+# Requires an existing cluster with kgateway installed.
+KGW_BENCH_LABEL=my-build make run-xds-cost-bench
+
+# Scale the fleet and pick the validation mode.
+KGW_BENCH_LABEL=my-build \
+KGW_BENCH_GATEWAYS=8 \
+KGW_BENCH_STATIC_BACKENDS=300 \
+KGW_BENCH_EDS_ROUTES=200 \
+KGW_BENCH_ITERATIONS=15 \
+KGW_BENCH_VALIDATION=STRICT \
+KGW_BENCH_OUT=/tmp/xdscost.jsonl \
+  make run-xds-cost-bench
+```
+
+Like StrictChurn it mutates the controller deployment (it pins
+`KGW_VALIDATION_MODE` for the run and restores it on teardown), so it is
+hard-gated behind `KGW_ENABLE_XDS_COST=true`, which the make target sets.
+
 ## Framework Architecture
 
 ### Components
