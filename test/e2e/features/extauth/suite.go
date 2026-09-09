@@ -5,6 +5,7 @@ package extauth
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
@@ -37,6 +38,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		},
 		"TestRouteTargetedExtAuthPolicy": {
 			Manifests: []string{securedRouteManifest, insecureRouteManifest},
+		},
+		// The buffer filter's placement is a property of the whole filter chain, so the staged and
+		// default-staged routes cannot share a listener: they run as separate test cases.
+		"TestBufferFilterStageEnforcesAheadOfExtAuth": {
+			Manifests: []string{bufferedRouteManifest},
+		},
+		"TestDefaultBufferStageDoesNotEnforceBehindExtAuth": {
+			Manifests: []string{bufferedRouteDefaultStageManifest},
 		},
 	}
 	return &testingSuite{
@@ -169,4 +178,96 @@ func (s *testingSuite) TestRouteTargetedExtAuthPolicy() {
 				opts...)
 		})
 	}
+}
+
+// bufferedRequest is a request against one of the buffered routes: `maxRequestSize` is 1024 on
+// both, and ext_authz reads the body with an 8192-byte limit of its own, so the only filter that
+// can reject a body between those sizes is the buffer filter.
+type bufferedRequest struct {
+	name           string
+	hostname       string
+	headers        map[string]string
+	bodySize       int
+	expectedStatus int
+}
+
+func (s *testingSuite) sendBufferedRequests(testCases []bufferedRequest) {
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			opts := []curl.Option{
+				curl.WithHostHeader(tc.hostname),
+				curl.WithPort(80),
+				curl.WithBody(strings.Repeat("x", tc.bodySize)),
+			}
+			for k, v := range tc.headers {
+				opts = append(opts, curl.WithHeader(k, v))
+			}
+
+			common.BaseGateway.Send(
+				s.T(),
+				&testmatchers.HttpResponse{
+					StatusCode: tc.expectedStatus,
+				},
+				opts...)
+		})
+	}
+}
+
+// TestBufferFilterStageEnforcesAheadOfExtAuth checks that `buffer.filterStage` makes
+// `maxRequestSize` enforce ahead of an ext_authz check that reads the request body: an oversized
+// body gets a 413 whether or not the auth service would have allowed it, which is what proves the
+// buffer filter runs first.
+func (s *testingSuite) TestBufferFilterStageEnforcesAheadOfExtAuth() {
+	s.sendBufferedRequests([]bufferedRequest{
+		{
+			name:           "small body with allow header reaches the backend",
+			hostname:       "bufferedroute.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       512,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "small body without allow header is denied by auth",
+			hostname:       "bufferedroute.com",
+			bodySize:       512,
+			expectedStatus: http.StatusForbidden,
+		},
+		{
+			name:           "oversized body with allow header is rejected by the buffer filter",
+			hostname:       "bufferedroute.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       1500,
+			expectedStatus: http.StatusRequestEntityTooLarge,
+		},
+		{
+			// A 403 here would mean ext_authz ran first.
+			name:           "oversized body is rejected before auth gets to deny it",
+			hostname:       "bufferedroute.com",
+			bodySize:       1500,
+			expectedStatus: http.StatusRequestEntityTooLarge,
+		},
+	})
+}
+
+// TestDefaultBufferStageDoesNotEnforceBehindExtAuth pins the behavior `buffer.filterStage` exists
+// to work around: with ext_authz reading the body ahead of the buffer filter's default placement,
+// `maxRequestSize` is inert and an oversized body reaches the backend. See
+// buffered-route-default-stage.yaml.
+func (s *testingSuite) TestDefaultBufferStageDoesNotEnforceBehindExtAuth() {
+	s.sendBufferedRequests([]bufferedRequest{
+		{
+			name:           "oversized body with allow header reaches the backend",
+			hostname:       "bufferedroute-default.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       1500,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			// Auth runs first at the default placement, so the oversized body is denied, not 413'd.
+			name:           "oversized body without allow header is denied by auth",
+			hostname:       "bufferedroute-default.com",
+			bodySize:       1500,
+			expectedStatus: http.StatusForbidden,
+		},
+	})
 }
