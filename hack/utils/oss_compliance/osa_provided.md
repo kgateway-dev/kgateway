@@ -42,10 +42,10 @@ Name|Version|License
 [go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.28.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260218203240-3dfff04db8fa|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.22.0|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.23.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260526163538-3dc84a4a5aaa|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.83.1|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.83.2|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.12-0.20260120151049-f2248ac996af|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.21.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271|Apache License 2.0
