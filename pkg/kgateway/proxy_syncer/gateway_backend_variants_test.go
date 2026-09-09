@@ -187,7 +187,7 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 		},
 	}
 
-	base := translator.TranslateBackendBase(context.Background(), variantBackend)
+	base := translator.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), variantBackend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	cluster := base.Cluster

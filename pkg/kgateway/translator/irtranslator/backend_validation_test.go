@@ -56,7 +56,7 @@ func validationTestBackend(name string) *ir.BackendObjectIR {
 
 func translateValidationTestBase(t *testing.T, tr *BackendTranslator, backend *ir.BackendObjectIR) (*envoyclusterv3.Cluster, error) {
 	t.Helper()
-	base := tr.TranslateBackendBase(t.Context(), backend)
+	base := tr.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	return base.Cluster, base.Error
 }
@@ -135,7 +135,7 @@ func TestStrictValidationMemoCollapsesIdenticalPerClientClusters(t *testing.T) {
 	tr := memoTestTranslator(counting, validator.NewMemo(0))
 	backend := validationTestBackend("b1")
 
-	base := tr.TranslateBackendBase(t.Context(), backend)
+	base := tr.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.EqualValues(t, 1, counting.calls.Load(), "the base is validated once")
@@ -165,7 +165,7 @@ func TestStrictValidationWithoutMemoValidatesEveryPair(t *testing.T) {
 	tr := memoTestTranslator(counting, nil)
 	backend := validationTestBackend("b1")
 
-	base := tr.TranslateBackendBase(t.Context(), backend)
+	base := tr.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	for _, name := range []string{"a", "b", "c"} {
@@ -183,7 +183,7 @@ func TestStrictValidationMemoKeepsInvalidVerdictIdentity(t *testing.T) {
 	backend := validationTestBackend("b1")
 	// Let the base pass so the per-client path is what fails.
 	counting.err = nil
-	base := tr.TranslateBackendBase(t.Context(), backend)
+	base := tr.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	counting.err = fmt.Errorf("%w: bad overlaid cluster", validator.ErrInvalidXDS)

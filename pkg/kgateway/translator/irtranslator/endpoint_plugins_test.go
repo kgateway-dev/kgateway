@@ -132,7 +132,7 @@ func TestBackendTranslatorRunsOrderedEndpointPluginsForInlineEndpoints(t *testin
 	}
 
 	ctx := context.Background()
-	base := translator.TranslateBackendBase(ctx, backendPtr)
+	base := translator.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backendPtr)
 	require.NotNil(t, base)
 	cluster, err := translator.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backendPtr, base)
 	require.NoError(t, err)

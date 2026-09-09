@@ -85,8 +85,8 @@ type PolicyStatusInputs = statussync.RegistrationInputs
 // whose endpoint hook reads only policies of gk attached to the backend (via
 // EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
 // to act on for any client.
-func AttachedPolicyEndpointsMayApply(gk schema.GroupKind) func(ir.BackendObjectIR) bool {
-	return func(backend ir.BackendObjectIR) bool {
+func AttachedPolicyEndpointsMayApply(gk schema.GroupKind) func(krt.HandlerContext, ir.BackendObjectIR) bool {
+	return func(_ krt.HandlerContext, backend ir.BackendObjectIR) bool {
 		return len(backend.AttachedPolicies.Policies[gk]) > 0
 	}
 }
@@ -119,7 +119,11 @@ type PolicyPlugin struct {
 	// "may apply to any backend", which keeps the per-client build. Plugins
 	// whose hook acts only on policies of their own GroupKind attached to the
 	// backend can use AttachedPolicyEndpointsMayApply.
-	PerClientEndpointsMayApply func(backend ir.BackendObjectIR) bool
+	//
+	// The HandlerContext is the base translation's: a predicate that consults a
+	// collection (a rule index by hostname, say) fetches through it, so the
+	// backend's base is re-translated when the answer changes.
+	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR

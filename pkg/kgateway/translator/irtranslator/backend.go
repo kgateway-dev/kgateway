@@ -107,7 +107,12 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 // Returns nil when the backend GK has no contributed translator, or its
 // contributed translator has no InitEnvoyBackend hook — configuration errors
 // that prevent producing even a blackhole cluster.
+//
+// kctx is the KRT context of the transform producing the base; endpoint
+// plugins' PerClientEndpointsMayApply predicates fetch through it, so the base
+// is re-translated when what they consulted changes.
 func (t *BackendTranslator) TranslateBackendBase(
+	kctx krt.HandlerContext,
 	ctx context.Context,
 	backend *ir.BackendObjectIR,
 ) *BaseCluster {
@@ -162,7 +167,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 	// distribution orders endpoints by client location, keep the per-client
 	// build. The zero client is passed because DependsOnClient has just
 	// established that PrioritizeEndpoints will not read it.
-	if result.NeedsInlineCLA() && !t.inlineCLADependsOnClient(backend, endpointInputs) {
+	if result.NeedsInlineCLA() && !t.inlineCLADependsOnClient(kctx, backend, endpointInputs) {
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ir.UniquelyConnectedClient{}, *endpointInputs)
 	}
 
@@ -409,12 +414,12 @@ func (t *BackendTranslator) applyBasePolicies(
 // this backend out and might edit its inputs per client. Hooks that declare no
 // PerClientEndpointsMayApply are assumed to apply, so an out-of-tree plugin keeps
 // today's per-client build until it opts in.
-func (t *BackendTranslator) inlineCLADependsOnClient(backend *ir.BackendObjectIR, inputs *endpoints.EndpointsInputs) bool {
+func (t *BackendTranslator) inlineCLADependsOnClient(kctx krt.HandlerContext, backend *ir.BackendObjectIR, inputs *endpoints.EndpointsInputs) bool {
 	if endpoints.DependsOnClient(*inputs) {
 		return true
 	}
 	for _, plugin := range t.orderedEndpointPlugins() {
-		if plugin.MayApply(*backend) {
+		if plugin.MayApply(kctx, *backend) {
 			return true
 		}
 	}

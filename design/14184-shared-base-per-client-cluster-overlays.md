@@ -133,13 +133,12 @@ traffic distribution (`endpoints.DependsOnClient` is the single source of truth 
 When neither applies, and no contributed endpoint hook could edit the backend's endpoints,
 `TranslateBackendBase` builds the CLA itself, so the base is complete, validated once, and
 `NeedsInlineCLA()` is false. Whether a hook *could* apply is the plugin's call:
-`sdk.PolicyPlugin.PerClientEndpointsMayApply(backend)` returns false to rule a backend out
+`sdk.PolicyPlugin.PerClientEndpointsMayApply(kctx, backend)` returns false to rule a backend out
 (`BackendConfigPolicy` uses `sdk.AttachedPolicyEndpointsMayApply`, since its hook reads only
-attached policies); a hook that declares nothing is assumed to apply everywhere, so an
-out-of-tree plugin keeps the per-client build until it opts in. `DestinationRule` declares
-nothing on purpose — which rule applies is selected by the client's namespace and labels — so
-with Istio integration on, inline-CLA backends stay per-client. The dominant plain static or
-DNS backend therefore costs the same as an EDS backend: one shared proto, no per-client work.
+attached policies; `DestinationRule` asks its rule index whether any rule names the backend's
+host, fetching through the base translation's `HandlerContext` so the base re-translates when
+that answer changes); a hook that declares nothing is assumed to apply everywhere, so an
+out-of-tree plugin keeps the per-client build until it opts in.
 
 **`ApplyPerClient(kctx, ctx, ucc, backend, base) (*Cluster, error)`** returns `nil, nil` — the
 dominant case — when the pair needs no per-client cluster. Otherwise it clones the base and
@@ -577,13 +576,22 @@ column plus one real validation for the cluster that actually changed. The krt d
 registered by each overlay fetch (destrule's index lookup runs per pair) is the remaining
 per-pair cost; an overlay that prepares once per client would reduce it to one per client.
 
-**Inline-CLA backends whose CLA depends on the client still materialize for every client**, and
-those clones are not deduplicated across clients that resolve identically (two clients in the
-same zone build byte-equal CLAs). A per-client transform has nothing to intern against; a
-content-hash interner that outlives one transform run would recover it. With `DestinationRule`
-enabled every inline-CLA backend is in this set, because that plugin cannot rule a backend out
-without a client; a `PerClientEndpointsMayApply` that consulted the rule index by hostname
-would narrow it to backends that actually have a rule.
+**Per-client clones are not deduplicated across clients.** Clients that resolve identically (the
+same rule, the same zone) build byte-equal clones and each keeps its own. A per-backend
+`sharedproto.Interner` scoped by base version and shared across client transforms was
+implemented and measured at 48 clients x 2000 backends: retained heap 36 MB to 30 MB, but one
+backend update 33 ms to 46 ms wall and 66 to 77 cpu-ms, because every clone on every walk pays a
+content compare under one lock and the walk reruns on every base change. Declined for now; the
+implementation is in this branch's history if the balance shifts.
+
+**DestinationRule rules a backend out by hostname.** Which rule applies to a client is decided by
+the client's namespace and labels, but whether *any* rule names a backend's host is not. The
+plugin's `PerClientEndpointsMayApply` asks the rule index that question through a hostname-only
+index (hosts matched exactly, as `FetchDestRulesFor` matches them), so on an Istio-integration
+install only backends that actually have a rule keep the per-client inline CLA; the rest are built
+once on the base. The predicate fetches through the base translation's `HandlerContext`, which is
+why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first rule to appear for
+a host re-translates that backend's base and moves it back to the per-client path.
 
 **`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
 but PR 6 changes the field's type and gives its equality a real justification
