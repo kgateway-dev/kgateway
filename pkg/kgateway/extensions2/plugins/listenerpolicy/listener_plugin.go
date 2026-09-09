@@ -445,6 +445,12 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	if policy.generateRequestId != nil {
 		out.GenerateRequestId = wrapperspb.Bool(*policy.generateRequestId)
 	}
+	if policy.normalizePath != nil {
+		out.NormalizePath = wrapperspb.Bool(*policy.normalizePath)
+	}
+	if policy.mergeSlashes != nil {
+		out.MergeSlashes = *policy.mergeSlashes
+	}
 
 	// translate xffNumTrustedHops
 	if policy.xffNumTrustedHops != nil {
