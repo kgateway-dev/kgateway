@@ -7,7 +7,7 @@ godebug x509negativeserial=1
 require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
-	github.com/envoyproxy/go-control-plane v0.14.0
+	github.com/envoyproxy/go-control-plane v0.14.1-0.20260702184136-1cd1226616f5
 	github.com/envoyproxy/go-control-plane/contrib v1.36.1-0.20260529185539-1175069dbb2c
 	github.com/envoyproxy/go-control-plane/envoy v1.37.1-0.20260529185539-1175069dbb2c
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f

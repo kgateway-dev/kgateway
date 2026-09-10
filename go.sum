@@ -298,8 +298,8 @@ github.com/emirpasic/gods v1.9.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3y
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
-github.com/envoyproxy/go-control-plane v0.14.0 h1:hbG2kr4RuFj222B6+7T83thSPqLjwBIfQawTkC++2HA=
-github.com/envoyproxy/go-control-plane v0.14.0/go.mod h1:NcS5X47pLl/hfqxU70yPwL9ZMkUlwlKxtAohpi2wBEU=
+github.com/envoyproxy/go-control-plane v0.14.1-0.20260702184136-1cd1226616f5 h1:TdPAax9doXlBbpFHx9OBB9uwe+wOvwpwBn5EJc3ACHw=
+github.com/envoyproxy/go-control-plane v0.14.1-0.20260702184136-1cd1226616f5/go.mod h1:H3lDamtuGa0Y80VmchcmbutXMYNPDr0j+JrLlsgyEyo=
 github.com/envoyproxy/go-control-plane/contrib v1.36.1-0.20260529185539-1175069dbb2c h1:V2dPDXkYlYWc6pxcXZgWuvIVH5YXzHce5bzD7q4aWSM=
 github.com/envoyproxy/go-control-plane/contrib v1.36.1-0.20260529185539-1175069dbb2c/go.mod h1:v21y1Uq30hmHbNsT2JOGMJG9cF+Ls7zTfIVOBLAU1TE=
 github.com/envoyproxy/go-control-plane/envoy v1.37.1-0.20260529185539-1175069dbb2c h1:/YT8pzaezoxioJleRAWkxgs6GfDymDK1tIKROvouo+U=
