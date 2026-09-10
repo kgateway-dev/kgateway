@@ -182,6 +182,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Policies:               backendConfigPolicyCol,
 				ProcessBackend:         processBackend,
 				PerClientEditEndpoints: endpointPlugin.processEndpoints,
+				// processEndpoints reads only the BackendConfigPolicies attached
+				// to the backend, so a backend with none attached can have its
+				// inline CLA built once on the shared base.
+				PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
 				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
 					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
 				},

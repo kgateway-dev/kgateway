@@ -804,3 +804,71 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 	assert.True(t, perClient.GetCommonLbConfig().GetIgnoreNewHostsUntilFirstHc(),
 		"the overlay's own CommonLbConfig field must survive the undo")
 }
+
+// TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA: an endpoint
+// hook decides, per backend, whether it could ever contribute. When it rules the
+// backend out the inline CLA is built once on the base and the hook is never
+// invoked for it; when it may apply, or when it declines to say, the CLA stays
+// per client so the hook can run with each client in hand.
+func TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA(t *testing.T) {
+	policyGK := schema.GroupKind{Group: "test", Kind: "EndpointPolicy"}
+	newTranslator := func(mayApply func(ir.BackendObjectIR) bool, calls *int) *irtranslator.BackendTranslator {
+		return inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			policyGK: {
+				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+					*calls++
+					return 0
+				},
+				PerClientEndpointsMayApply: mayApply,
+			},
+		}, nil)
+	}
+	withPolicy := func() *ir.BackendObjectIR {
+		backend := overlayBackend()
+		backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			policyGK: {{GroupKind: policyGK}},
+		}}
+		return backend
+	}
+
+	t.Run("hook rules the backend out: CLA on the base, hook never runs", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(sdk.AttachedPolicyEndpointsMayApply(policyGK), &calls)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.NotNil(t, base.Cluster.GetLoadAssignment(), "the CLA must be built onto the base")
+		assert.False(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{Role: "r"}, backend, base)
+		require.NoError(t, err)
+		assert.Nil(t, perClient, "the shared base is complete; nothing to materialize")
+		assert.Zero(t, calls, "a hook that ruled the backend out must not be invoked for it")
+	})
+
+	t.Run("hook may apply because a policy is attached: CLA per client", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(sdk.AttachedPolicyEndpointsMayApply(policyGK), &calls)
+		backend := withPolicy()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.Nil(t, base.Cluster.GetLoadAssignment(), "the base must not carry a CLA a hook may still edit")
+		assert.True(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{Role: "r"}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.NotNil(t, perClient.GetLoadAssignment())
+		assert.Equal(t, 1, calls, "the hook runs once per client for a backend it may apply to")
+	})
+
+	t.Run("hook declares nothing: CLA per client", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(nil, &calls)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.Nil(t, base.Cluster.GetLoadAssignment(), "an undeclared hook is assumed to apply everywhere")
+		assert.True(t, base.NeedsInlineCLA())
+	})
+}
