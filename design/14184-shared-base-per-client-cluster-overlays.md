@@ -218,12 +218,13 @@ and nothing in tree renames it.
 
 #### Interning and immutability
 
-Two levels of sharing sit on top of the sparse representation:
+The sparse representation exposes two levels at which a proto could be shared, and only one
+of them is:
 
-- **Per-client cluster clones** are owned by the client's row. Clients whose overlays produce
-  byte-identical clones do not share them; with `K << M` the duplication is small, and the
-  place to remove it, if measurement says otherwise, is a per-backend interner scoped by base
-  version rather than a second collection.
+- **Per-client cluster clones** are owned by the client's row and are deliberately not shared.
+  Clients whose overlays produce byte-identical clones each keep their own; with `K << M` the
+  duplication is small, and the place to remove it, if measurement says otherwise, is a
+  per-backend interner scoped by base version rather than a second collection.
 - **CLAs** are interned across clients in `NewPerClientEnvoyEndpoints`, keyed by
   `combineEndpointHash(resolvedEndpointHash, pluginHash, loadBalancingHash)`.
 
@@ -607,7 +608,7 @@ why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first 
 a host re-translates that backend's base and moves it back to the per-client path.
 
 **`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
-but PR 6 changes the field's type and gives its equality a real justification
+but PR 5 (#14604) changes the field's type and gives its equality a real justification
 (`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
 that reason rather than remaining on the legacy-gap list.
 
