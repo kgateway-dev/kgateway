@@ -44,6 +44,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 				Name:                    "destrule",
 				PerClientClusterOverlay: d.clusterOverlay,
 				PerClientEditEndpoints:  d.processEndpoints,
+				// No PerClientEndpointsMayApply: which DestinationRule applies is
+				// selected by the client's namespace and labels, so nothing can be
+				// ruled out per backend without a client. Inline-CLA backends
+				// therefore keep the per-client build whenever this plugin is on.
 			},
 		},
 	}
