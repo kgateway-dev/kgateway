@@ -245,12 +245,11 @@ func TestHarnessGatewayEquals(t *testing.T) {
 			},
 		},
 		{
-			// Obj: mutate ResourceVersion so versionEquals (backend.go:523) detects the change.
-			// versionEquals uses ResourceVersion when Generation == 0.
+			// A real metadata change must invalidate the source, even at generation zero.
 			Field: "Obj",
 			Mutate: func(g *Gateway) {
 				obj := baseGatewayObj()
-				obj.ResourceVersion = "999"
+				obj.Labels = map[string]string{"changed": "true"}
 				g.Obj = obj
 			},
 		},
@@ -320,14 +319,13 @@ func TestHarnessListenerSetEquals(t *testing.T) {
 			},
 		},
 		{
-			// Obj: mutate ResourceVersion so versionEquals detects the change.
-			// versionEquals uses ResourceVersion when Generation == 0.
+			// A real metadata change must invalidate the source.
 			Field: "Obj",
 			Mutate: func(ls *ListenerSet) {
 				ls.Obj = &corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
-						ResourceVersion: "999",
-						UID:             "ls-uid-1",
+						Labels: map[string]string{"changed": "true"},
+						UID:    "ls-uid-1",
 					},
 				}
 			},
@@ -539,16 +537,14 @@ func TestHarnessListenerEquals(t *testing.T) {
 			},
 		},
 		{
-			// Bump the parent's ResourceVersion → versionEquals detects a change
-			// (the base parent has Generation 0, so versionEquals falls back to
-			// ResourceVersion + UID).
+			// Change parent labels; API-server revisions alone must remain equal.
 			Field: "Parent",
 			Mutate: func(l *Listener) {
 				l.Parent = &gwv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:            "my-gateway",
-						Namespace:       "default",
-						ResourceVersion: "2",
+						Name:      "my-gateway",
+						Namespace: "default",
+						Labels:    map[string]string{"changed": "true"},
 					},
 				}
 			},

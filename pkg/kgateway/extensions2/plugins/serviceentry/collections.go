@@ -52,13 +52,10 @@ func (s seSelector) GetLabelSelector() map[string]string {
 }
 
 func (s seSelector) Equals(in seSelector) bool {
-	// compare basics including ResourceVersion _first_, attempting to short-circuit
-	// and avoid calling the more expensive maps.Equal or proto.Equal.
-	// We need the more thorough checks because in some environments (like tests)
-	// the ResourceVersion won't be updated properly.
+	// API-server revisions do not change selector or endpoint semantics.
 	metaEqual := s.ServiceEntry.Name == in.ServiceEntry.Name &&
 		s.ServiceEntry.Namespace == in.ServiceEntry.Namespace &&
-		s.ServiceEntry.ResourceVersion == in.ServiceEntry.ResourceVersion &&
+		s.ServiceEntry.UID == in.ServiceEntry.UID &&
 		maps.Equal(s.ServiceEntry.GetLabels(), in.ServiceEntry.GetLabels()) &&
 		maps.Equal(s.ServiceEntry.GetAnnotations(), in.ServiceEntry.GetAnnotations())
 
