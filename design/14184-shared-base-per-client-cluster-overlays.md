@@ -507,6 +507,17 @@ that makes it sound.
 
 ## Open Questions
 
+**Spec fields read by overlays must participate in backend equality.** The base row uses
+`BackendObjectIR.EqualsIgnoringResourceVersion`, so a spec change on a generation-less kind
+reaches clients only if it reaches a compared IR field, `ObjIr`, or the base proto hash.
+Base translation of a Service emits EDS and never reads `spec.clusterIPs`, but the waypoint
+overlay inlines them into a STATIC cluster, so converting a Service single-stack -> dual-stack
+would have left those clients on the stale address. The kubernetes plugin now projects the
+resolved addresses into `ObjIr`, mirroring what the serviceentry plugin already does for the
+VIPs that land in ServiceEntry status (#14391), and `PerClientClusterOverlay` documents the
+rule: read only what the framework can detect a change in, and project anything else through
+`ObjIr`. That rule is enforced by review rather than by the compiler.
+
 **A base change reruns every client's walk.** The per-client transform depends on the whole
 base collection, so any backend change reruns `N` transforms of `O(M)` each.
 `BenchmarkPerClientBackendUpdate` and `BenchmarkPerClientDestinationRuleUpdate`
