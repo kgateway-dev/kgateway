@@ -11,7 +11,7 @@ Name|Version|License
 [service/sts](https://github.com/aws/aws-sdk-go-v2)|v1.42.1|Apache License 2.0
 [aws/smithy-go](https://github.com/aws/smithy-go)|v1.25.1|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20260202195803-dba9d589def2|Apache License 2.0
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.1-0.20260702184136-1cd1226616f5|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20260529185539-1175069dbb2c|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.37.1-0.20260529185539-1175069dbb2c|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
