@@ -26,7 +26,7 @@ func TestRedactSecrets(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "secret data isredacted",
+			name: "secret data is redacted",
 			in: &cache.Snapshot{
 				// Index by the named response-type constants: their numeric
 				// values shift whenever go-control-plane adds a type.
