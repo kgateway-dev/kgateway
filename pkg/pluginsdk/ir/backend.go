@@ -242,8 +242,11 @@ func (c BackendObjectIR) ResourceName() string {
 // instead of fanning out to every client.
 //
 // A spec change on a generation-less kind is not visible here unless it reaches
-// a compared IR field, ObjIr, or the consumer's output hash; per-client overlays
-// read labels, annotations and IR fields, all of which are compared.
+// a compared IR field, ObjIr, or the consumer's output hash. A consumer that
+// holds the IR and re-reads it later — a per-client cluster overlay is the one
+// in tree — therefore sees such a field go stale, and the plugin owning the
+// kind must project it into ObjIr; see sdk.PerClientClusterOverlay for the
+// contract and kubernetes.serviceBackendIR for the case that motivated it.
 func (c BackendObjectIR) EqualsIgnoringResourceVersion(in BackendObjectIR) bool {
 	if !objectContentEquals(c.Obj, in.Obj) {
 		return false
