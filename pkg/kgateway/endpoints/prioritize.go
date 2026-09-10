@@ -31,17 +31,33 @@ func PrioritizeEndpoints(
 	inputs EndpointsInputs,
 ) *envoyendpointv3.ClusterLoadAssignment {
 	lbInfo := LoadBalancingInfo{
-		PodLabels:   ucc.Labels,
-		PodLocality: ucc.Locality,
+		PodLabels:    ucc.Labels,
+		PodLocality:  ucc.Locality,
+		PriorityInfo: ResolvedPriorityInfo(inputs),
 	}
-
-	if inputs.PriorityInfo == nil {
-		lbInfo.PriorityInfo = priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
-	} else {
-		lbInfo.PriorityInfo = inputs.PriorityInfo
-	}
-
 	return prioritizeWithLbInfo(logger, inputs.EndpointsForBackend, lbInfo)
+}
+
+// ResolvedPriorityInfo returns the priority configuration PrioritizeEndpoints
+// will apply to inputs: an explicit PriorityInfo set by an endpoint plugin, or
+// else the one implied by the backend's traffic distribution. Nil means the
+// endpoints are emitted without any client-relative ordering.
+func ResolvedPriorityInfo(inputs EndpointsInputs) *PriorityInfo {
+	if inputs.PriorityInfo != nil {
+		return inputs.PriorityInfo
+	}
+	return priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
+}
+
+// DependsOnClient reports whether PrioritizeEndpoints would read anything from
+// the client for inputs. The client's labels and locality are consulted only
+// through PriorityInfo (see prioritizeWithLbInfo and getEndpoints), so with no
+// resolved priority the same ClusterLoadAssignment is produced for every
+// client and can be built once. Any new client-dependent input added to
+// prioritization must be reflected here, or a shared CLA would silently serve
+// clients it was not built for.
+func DependsOnClient(inputs EndpointsInputs) bool {
+	return ResolvedPriorityInfo(inputs) != nil
 }
 
 type LoadBalancingInfo struct {

@@ -60,6 +60,10 @@ func (d *destrulePlugin) policyPlugin() sdk.PolicyPlugin {
 		PerClientClusterOverlay: d.clusterOverlay,
 		OverlayInputsHash:       d.overlayInputsHash,
 		PerClientEditEndpoints:  d.processEndpoints,
+		// No PerClientEndpointsMayApply: which DestinationRule applies is
+		// selected by the client's namespace and labels, so nothing can be
+		// ruled out per backend without a client. Inline-CLA backends
+		// therefore keep the per-client build whenever this plugin is on.
 	}
 }
 
