@@ -11,7 +11,7 @@ import (
 
 const (
 	IstioVersionEnv     = "ISTIO_VERSION"
-	DefaultIstioVersion = "1.30.1"
+	DefaultIstioVersion = "1.31.0"
 )
 
 // ShouldSkipIstioVersion reports whether the current Istio version (from ISTIO_VERSION env)

@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.3
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.1
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -1245,6 +1245,11 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 	@echo "Running KGateway production load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
 	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+
+.PHONY: run-load-tests-strict-churn
+run-load-tests-strict-churn: ## Run strict-validation churn convergence test (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_STRICT_CHURN=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -timeout 30m ./test/e2e/tests -run "^TestKgateway$$/^StrictChurn$$"
 
 #----------------------------------------------------------------------------------
 # MARK: Conformance

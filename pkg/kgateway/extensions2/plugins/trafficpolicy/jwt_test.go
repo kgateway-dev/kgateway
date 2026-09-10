@@ -660,6 +660,8 @@ func TestTranslateJwksRemote(t *testing.T) {
 		assert.Equal(t, backend.ClusterName(), remote.RemoteJwks.GetHttpUri().GetCluster())
 		require.NotNil(t, remote.RemoteJwks.GetCacheDuration())
 		assert.Equal(t, time.Minute, remote.RemoteJwks.GetCacheDuration().AsDuration())
+		require.NotNil(t, remote.RemoteJwks.GetHttpUri().GetTimeout())
+		assert.Equal(t, int64(5), remote.RemoteJwks.GetHttpUri().GetTimeout().GetSeconds())
 	})
 
 	t.Run("async fetch and retry policy", func(t *testing.T) {
@@ -713,6 +715,41 @@ func TestTranslateJwksRemote(t *testing.T) {
 		require.NotNil(t, retryPolicy.GetRetryBackOff(), "expected retry backoff to be set")
 		assert.Equal(t, time.Second, retryPolicy.GetRetryBackOff().GetBaseInterval().AsDuration())
 		assert.Equal(t, 30*time.Second, retryPolicy.GetRetryBackOff().GetMaxInterval().AsDuration())
+	})
+
+	t.Run("custom timeout", func(t *testing.T) {
+		t.Parallel()
+		backendVal := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "Service",
+			Namespace: "backend-ns",
+			Name:      "backend",
+		}, 8443, "", "svc")
+		backend := &backendVal
+		resolver := &fakeBackendResolver{backend: backend}
+		out := &jwtauthnv3.JwtProvider{}
+
+		err := translateJwks(
+			nil,
+			kgateway.JWKS{
+				RemoteJWKS: &kgateway.RemoteJWKS{
+					URL:        "https://example.com/jwks",
+					BackendRef: makeBackendRef("backend", "backend-ns", 8443),
+					Timeout:    &metav1.Duration{Duration: 10 * time.Second}, // Custom 10s timeout
+				},
+			},
+			out,
+			nil,
+			resolver,
+			ir.ObjectSource{Namespace: "ext-ns"},
+		)
+		require.NoError(t, err)
+
+		remote, ok := out.JwksSourceSpecifier.(*jwtauthnv3.JwtProvider_RemoteJwks)
+		require.True(t, ok, "expected remote jwks config to be set")
+
+		// Verify the timeout was overridden to 10 seconds
+		require.NotNil(t, remote.RemoteJwks.GetHttpUri().GetTimeout())
+		assert.Equal(t, int64(10), remote.RemoteJwks.GetHttpUri().GetTimeout().GetSeconds())
 	})
 
 	t.Run("missing backend ref errors", func(t *testing.T) {
