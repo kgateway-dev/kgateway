@@ -81,6 +81,7 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 		CommonCols:          s.commonCols,
 		Validator:           s.validator,
 		Mode:                s.commonCols.Settings.ValidationMode,
+		ValidationMemo:      validator.NewMemo(s.commonCols.Settings.ValidatorCacheSize),
 	}
 	for k, up := range s.extensions.ContributesBackends {
 		s.backendTranslator.ContributedBackends[k] = up.BackendInit

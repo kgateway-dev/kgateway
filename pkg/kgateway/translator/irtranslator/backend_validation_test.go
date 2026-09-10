@@ -101,3 +101,51 @@ func TestStrictValidationDoesNotCacheTransientErrors(t *testing.T) {
 	require.NotNil(t, c)
 	require.EqualValues(t, 2, counting.calls.Load(), "a transient failure must not be served from cache")
 }
+
+func TestStrictValidationMemoCachedByClusterContent(t *testing.T) {
+	counting := &recordingValidator{}
+	tr := validationTestTranslator(counting)
+	tr.ValidationMemo = validator.NewMemo(0)
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+
+	for range 5 {
+		c, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+		require.NoError(t, err)
+		require.NotNil(t, c)
+	}
+	require.EqualValues(t, 1, counting.calls.Load(), "identical cluster content must be validated once")
+
+	_, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b2"))
+	require.NoError(t, err)
+	require.EqualValues(t, 2, counting.calls.Load(), "distinct cluster content must be validated separately")
+}
+
+func TestStrictValidationMemoCachesInvalidVerdicts(t *testing.T) {
+	counting := &recordingValidator{err: fmt.Errorf("%w: bad cluster", validator.ErrInvalidXDS)}
+	tr := validationTestTranslator(counting)
+	tr.ValidationMemo = validator.NewMemo(0)
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+
+	for range 3 {
+		c, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+		require.ErrorIs(t, err, validator.ErrInvalidXDS)
+		require.NotNil(t, c, "errored translation returns the blackhole cluster")
+	}
+	require.EqualValues(t, 1, counting.calls.Load(), "an invalid verdict must be cached by content")
+}
+
+func TestStrictValidationMemoDoesNotCacheTransientErrors(t *testing.T) {
+	counting := &recordingValidator{err: errors.New("exec: envoy binary not found")}
+	tr := validationTestTranslator(counting)
+	tr.ValidationMemo = validator.NewMemo(0)
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+
+	_, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+	require.Error(t, err)
+
+	counting.err = nil
+	c, err := tr.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ucc, validationTestBackend("b1"))
+	require.NoError(t, err)
+	require.NotNil(t, c)
+	require.EqualValues(t, 2, counting.calls.Load(), "a transient failure must not be served from cache")
+}
