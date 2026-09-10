@@ -544,6 +544,18 @@ client then finds its payload hash unchanged and KRT keeps its old row. Memoizin
 6% of that walk, and the row slice and base fetch are the rest. An overlay-declared set of metadata
 keys would let the base row ignore unrelated annotations altogether.
 
+**Spec fields an overlay reads are the same problem, and are not self-enforcing.** Leaving
+`resourceVersion` out means a spec change on a generation-less kind reaches clients only if it
+reaches a compared IR field, `ObjIr`, or the base proto hash. Base translation of a Service
+emits EDS and never reads `spec.clusterIPs`, but the waypoint overlay inlines them into a STATIC
+cluster, so converting a Service single-stack -> dual-stack would have left those clients on the
+stale address. The kubernetes plugin now projects the resolved addresses into `ObjIr`, mirroring
+what the serviceentry plugin already does for the VIPs that land in ServiceEntry status (#14391),
+and `PerClientClusterOverlay` documents the rule: read only what the framework can detect a
+change in, and project anything else through `ObjIr`. That rule is carried by review, not by the
+compiler — the same overlay-declared key set floated above would make it mechanical for spec as
+well as metadata.
+
 **A base change reruns every client's walk.** The per-client transform depends on the whole
 base collection, so any backend change reruns `N` transforms of `O(M)` each.
 `BenchmarkPerClientBackendUpdate` and `BenchmarkPerClientDestinationRuleUpdate`
