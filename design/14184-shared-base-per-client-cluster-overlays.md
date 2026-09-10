@@ -191,9 +191,12 @@ complete by construction the first time it exists. In particular:
 **Backend metadata reaches clients through equality, not through a second input.** An overlay
 may branch on the backing object's labels (the waypoint redirect does), so a metadata-only
 Service change must rebuild every client's payload even when the shared proto is byte-identical.
-`baseEnvoyCluster.Equals` therefore compares its `Backend` through `BackendObjectIR.Equals`,
-which already sees the object's version, labels, and annotations. `versionEquals` is nil-safe so
-rows built without a backing object (test fixtures) compare by their remaining fields.
+`baseEnvoyCluster.Equals` therefore compares its `Backend` through
+`BackendObjectIR.EqualsIgnoringResourceVersion`, which sees the object's UID, generation, labels
+and annotations — everything an overlay can branch on — but deliberately not its
+`resourceVersion`; see [Open Questions](#open-questions) for why the version is left out.
+`backendEquals` and `objectContentEquals` are nil-safe, so rows built without a backing object
+(test fixtures) compare by their remaining fields.
 
 `baseClusterVersion` folds the inline endpoints hash **and** the attached-policy hash into the
 base proto hash when `SupportsInlineCLA` is true. The per-client CLA is built from
@@ -210,12 +213,13 @@ and nothing in tree renames it.
 
 #### Interning and immutability
 
-Two levels of sharing sit on top of the sparse representation:
+The sparse representation exposes two levels at which a proto could be shared, and only one
+of them is:
 
-- **Per-client cluster clones** are owned by the client's row. Clients whose overlays produce
-  byte-identical clones do not share them; with `K << M` the duplication is small, and the
-  place to remove it, if measurement says otherwise, is a per-backend interner scoped by base
-  version rather than a second collection.
+- **Per-client cluster clones** are owned by the client's row and are deliberately not shared.
+  Clients whose overlays produce byte-identical clones each keep their own; with `K << M` the
+  duplication is small, and the place to remove it, if measurement says otherwise, is a
+  per-backend interner scoped by base version rather than a second collection.
 - **CLAs** are interned across clients in `NewPerClientEnvoyEndpoints`, keyed by
   `combineEndpointHash(resolvedEndpointHash, pluginHash, loadBalancingHash)`.
 
@@ -594,7 +598,7 @@ why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first 
 a host re-translates that backend's base and moves it back to the per-client path.
 
 **`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
-but PR 6 changes the field's type and gives its equality a real justification
+but PR 5 (#14604) changes the field's type and gives its equality a real justification
 (`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
 that reason rather than remaining on the legacy-gap list.
 
