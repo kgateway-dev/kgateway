@@ -856,6 +856,55 @@ spec:
 			wantErrors: []string{"maxRequestSize must be greater than 0 and less than 4Gi"},
 		},
 		{
+			name: "TrafficPolicy Buffer with filterStage",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 1Ki
+    filterStage:
+      stage: AuthN
+      predicate: Before
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer filterStage with disable",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    disable: {}
+    filterStage:
+      stage: AuthN
+      predicate: Before
+`,
+			wantErrors: []string{"filterStage cannot be set when disable is set"},
+		},
+		{
+			// weight defaults to 0, so the rule has to compare it rather than test for presence
+			name: "TrafficPolicy Buffer filterStage with a weight",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 1Ki
+    filterStage:
+      stage: AuthN
+      predicate: Before
+      weight: 1
+`,
+			wantErrors: []string{"filterStage.weight has no effect for buffer and must be 0"},
+		},
+		{
 			name: "ProxyDeployment: Strategy is fully fleshed out",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

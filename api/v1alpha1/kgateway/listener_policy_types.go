@@ -215,6 +215,23 @@ type HTTPSettings struct {
 	// See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
 	// +optional
 	GenerateRequestId *bool `json:"generateRequestId,omitempty"`
+
+	// NormalizePath determines whether the connection manager normalizes the path per RFC 3986 before
+	// routing, e.g. collapsing `.` and `..` segments and decoding percent-encoded characters. This
+	// defaults to true. Disable this if a backend (e.g. an S3-compatible object store) needs to see
+	// the original, unnormalized request path.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-normalize-path
+	// +optional
+	NormalizePath *bool `json:"normalizePath,omitempty"`
+
+	// MergeSlashes determines whether the connection manager merges adjacent slashes in the request
+	// path before routing. This defaults to true. Disable this if a backend (e.g. an S3-compatible
+	// object store) relies on repeated slashes in the path having meaning, such as object keys that
+	// contain "//".
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-merge-slashes
+	// +optional
+	MergeSlashes *bool `json:"mergeSlashes,omitempty"`
+
 	// Proxy100Continue determines whether Envoy forwards requests with an
 	// Expect: 100-continue header upstream and proxies upstream 100 Continue
 	// responses downstream. When unset or false, Envoy handles the response locally.
@@ -1073,7 +1090,10 @@ const (
 
 // UpgradeConfig represents configuration for HTTP upgrades.
 type UpgradeConfig struct {
-	// List of upgrade types to enable (e.g. "websocket", "CONNECT", etc.)
+	// EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+	// and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+	// upstream without termination. To terminate CONNECT and forward its payload
+	// as raw TCP data, configure httpUpgrade in a TrafficPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +optional
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`

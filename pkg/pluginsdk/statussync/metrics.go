@@ -80,6 +80,25 @@ func RecordStatusSync(labels SyncMetricLabels, took time.Duration, err error) {
 	statusSyncsTotal.Inc(append(l, metrics.Label{Name: resultLabel, Value: result})...)
 }
 
+// RecordStatusSyncOutcome reports one status write to both status-sync metrics. Every
+// Writer.OnSync ends in exactly this pair, and the pair is easy to get subtly wrong: the two
+// take different errors on purpose (see EndResourceStatusSyncOnWriteSuccess), so passing the
+// condition-derived error to both leaves a resource's sync open forever over a status that
+// was in fact persisted.
+//
+// writeErr is the error ApplyStatus reported. statusErr is that error joined with whatever
+// the caller derives from the conditions it published, or writeErr itself for a writer that
+// grades no conditions.
+func RecordStatusSyncOutcome(
+	labels SyncMetricLabels,
+	details kmetrics.ResourceSyncDetails,
+	took time.Duration,
+	writeErr, statusErr error,
+) {
+	RecordStatusSync(labels, took, statusErr)
+	EndResourceStatusSyncOnWriteSuccess(writeErr, details)
+}
+
 // ConditionError returns err joined with message when any condition whose type is in
 // watchedTypes carries a reason outside acceptedReasons. Gateways, ListenerSets and
 // policies all derive their status-sync error result this way, differing only in which

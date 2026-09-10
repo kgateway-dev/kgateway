@@ -17,7 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
 // Status message constants
@@ -475,30 +474,11 @@ func (r *ReportMap) BuildRouteStatus(
 	return BuildRouteStatus(r.route(obj), obj, controller)
 }
 
-func (r *ReportMap) BuildRouteStatusWithParentRefDefaulting(
-	obj client.Object,
-	controller string,
-	defaultParentRef bool,
-) *gwv1.RouteStatus {
-	return BuildRouteStatusWithParentRefDefaulting(r.route(obj), obj, controller, defaultParentRef)
-}
-
 // BuildRouteStatus builds a Route status directly from its typed report fragment.
 func BuildRouteStatus(
 	routeReport *RouteReport,
 	obj client.Object,
 	controller string,
-) *gwv1.RouteStatus {
-	return BuildRouteStatusWithParentRefDefaulting(routeReport, obj, controller, false)
-}
-
-// BuildRouteStatusWithParentRefDefaulting builds a Route status directly from its typed
-// report fragment and optionally defaults parent reference fields.
-func BuildRouteStatusWithParentRefDefaulting(
-	routeReport *RouteReport,
-	obj client.Object,
-	controller string,
-	defaultParentRef bool,
 ) *gwv1.RouteStatus {
 	if routeReport == nil {
 		logger.Info("missing route report", "type", obj.GetObjectKind().GroupVersionKind().Kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
@@ -550,10 +530,6 @@ func BuildRouteStatusWithParentRefDefaulting(
 	if len(parentRefs) == 0 {
 		parentRefs = append(parentRefs, routeReport.parentRefs()...)
 	}
-	if defaultParentRef {
-		parentRefs = ensureParentRefNamespaces(parentRefs, obj.GetNamespace())
-	}
-
 	newStatus := gwv1.RouteStatus{}
 	// Process the parent references to build the RouteParentStatus
 	for _, parentRef := range parentRefs {
@@ -621,22 +597,6 @@ func BuildRouteStatusWithParentRefDefaulting(
 	}
 
 	return &newStatus
-}
-
-func ensureParentRefNamespaces(parentRefs []gwv1.ParentReference, routeNamespace string) []gwv1.ParentReference {
-	return slices.Map(parentRefs, func(e gwv1.ParentReference) gwv1.ParentReference {
-		if e.Namespace == nil {
-			routeNs := gwv1.Namespace(routeNamespace)
-			e.Namespace = &routeNs
-		}
-		if e.Group == nil {
-			e.Group = new(gwv1.Group(wellknown.GatewayGVK.Group))
-		}
-		if e.Kind == nil {
-			e.Kind = new(gwv1.Kind(wellknown.GatewayGVK.Kind))
-		}
-		return e
-	})
 }
 
 // match istio/istio logic, see:
