@@ -446,7 +446,7 @@ func NewPerClientEnvoyClusters(
 	// ProcessBackend hooks, gateway client certificate injection, and strict-mode
 	// validation.
 	base := krt.NewCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) *baseEnvoyCluster {
-		baseRes := translator.TranslateBackendBase(ctx, backendObj)
+		baseRes := translator.TranslateBackendBase(kctx, ctx, backendObj)
 		if baseRes == nil {
 			// TranslateBackendBase returns a named blackhole base on every failure
 			// path, so this is unreachable by contract. Returning nil here would

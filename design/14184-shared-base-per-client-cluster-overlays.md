@@ -133,13 +133,12 @@ traffic distribution (`endpoints.DependsOnClient` is the single source of truth 
 When neither applies, and no contributed endpoint hook could edit the backend's endpoints,
 `TranslateBackendBase` builds the CLA itself, so the base is complete, validated once, and
 `NeedsInlineCLA()` is false. Whether a hook *could* apply is the plugin's call:
-`sdk.PolicyPlugin.PerClientEndpointsMayApply(backend)` returns false to rule a backend out
+`sdk.PolicyPlugin.PerClientEndpointsMayApply(kctx, backend)` returns false to rule a backend out
 (`BackendConfigPolicy` uses `sdk.AttachedPolicyEndpointsMayApply`, since its hook reads only
-attached policies); a hook that declares nothing is assumed to apply everywhere, so an
-out-of-tree plugin keeps the per-client build until it opts in. `DestinationRule` declares
-nothing on purpose — which rule applies is selected by the client's namespace and labels — so
-with Istio integration on, inline-CLA backends stay per-client. The dominant plain static or
-DNS backend therefore costs the same as an EDS backend: one shared proto, no per-client work.
+attached policies; `DestinationRule` asks its rule index whether any rule names the backend's
+host, fetching through the base translation's `HandlerContext` so the base re-translates when
+that answer changes); a hook that declares nothing is assumed to apply everywhere, so an
+out-of-tree plugin keeps the per-client build until it opts in.
 
 **`ApplyPerClient(kctx, ctx, ucc, backend, base) (*Cluster, error)`** returns `nil, nil` — the
 dominant case — when the pair needs no per-client cluster. Otherwise it clones the base and
@@ -543,32 +542,51 @@ base collection, so any backend change reruns `N` transforms of `O(M)` each.
 400 backends of which a quarter carry inline endpoints — half of those with a zone-preferring
 traffic distribution, so every client builds its own CLA for them, and half without, so the CLA
 lives on the base — and an eighth have a rule that a quarter of the clients match. Apple M4 Max,
-`-benchtime=5x`:
+`-benchtime=5x`, with the `sharedproto` mutation tripwire disarmed as in production (the package's
+`TestMain` arms it, and armed it re-hashes every published proto, which roughly doubled every
+number measured before this was noticed):
 
-| Operation | No validation | Strict, 200 µs per validation, cache bypassed |
+| Operation | No validation | Strict, 200 µs per validation, verdicts memoized |
 | --- | --- | --- |
-| One backend's output changes; all 12 payloads rebuilt | 5.8 ms, 10.4 MB, 47k allocs | 162 ms |
-| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 2.1 ms, 2.9 MB, 22k allocs | 41 ms |
+| One backend's output changes; all 12 payloads rebuilt | 3.0 ms, 5.4 MB, 36k allocs | 4.4 ms |
+| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 1.1 ms, 1.7 MB, 18k allocs | 1.6 ms |
+| One Service write that changes only `resourceVersion` | 5 KB, 38 allocs, no client reruns | same |
 
-Before client-independent inline CLAs were built on the base, with all 100 inline backends
-materializing per client, the same runs measured 8.0 ms / 287 ms and 2.1 ms / 72 ms. Without
-validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered CLAs and
-~12 overlaid clones, not by the 350 shared pairs per client. With strict validation it is
-dominated by re-validating those same ~750 materialized clusters. The benchmark's validator
-deliberately bypasses the content-keyed result cache that production strict mode uses by default
-(`pkg/validator/cache.go`, `KGW_VALIDATOR_MODE=CACHE`); with it, a byte-identical cluster costs a
-bootstrap marshal and a hash rather than an Envoy exec, so the strict column overstates the
-production cost. The krt dependency registered by each overlay fetch (destrule's index lookup
-runs per pair) is the remaining per-pair cost; an overlay that prepares once per client would
-reduce it to one per client.
+Earlier runs of the same benchmark had the tripwire armed and so read about twice these. In those
+units: before client-independent inline CLAs were built on the base, with all 100 inline backends
+materializing per client, 8.0 ms / 287 ms and 2.1 ms / 72 ms; with them on the base but every
+per-client cluster still re-validated, 5.8 ms / 162 ms and 2.1 ms / 41 ms.
+Without validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered
+CLAs and ~12 overlaid clones, not by the 350 shared pairs per client. Without the memo, strict
+validation was dominated by re-validating those same ~750 materialized clusters, almost all of
+them byte-identical to the last walk. Production strict mode already memoizes verdicts by bootstrap
+content (`pkg/validator/cache.go`, `KGW_VALIDATOR_MODE=CACHE`), but reaching that cache costs a
+bootstrap build plus a JSON marshal and hash, about 20 µs per cluster, which at hundreds of
+clusters per client per walk is still the dominant strict-mode cost. The translator therefore
+keeps its own memo in front of it (`BackendTranslator.ValidationMemo`, `validator.Memo`), keyed
+by a SHA-256 of the cluster proto's deterministic binary encoding: about 1 µs and no allocation,
+computed before any bootstrap exists. A cluster validated for one client is not re-validated for
+the next unless its bytes differ, so the strict column above collapses to the no-validation
+column plus one real validation for the cluster that actually changed. The krt dependency
+registered by each overlay fetch (destrule's index lookup runs per pair) is the remaining
+per-pair cost; an overlay that prepares once per client would reduce it to one per client.
 
-**Inline-CLA backends whose CLA depends on the client still materialize for every client**, and
-those clones are not deduplicated across clients that resolve identically (two clients in the
-same zone build byte-equal CLAs). A per-client transform has nothing to intern against; a
-content-hash interner that outlives one transform run would recover it. With `DestinationRule`
-enabled every inline-CLA backend is in this set, because that plugin cannot rule a backend out
-without a client; a `PerClientEndpointsMayApply` that consulted the rule index by hostname
-would narrow it to backends that actually have a rule.
+**Per-client clones are not deduplicated across clients.** Clients that resolve identically (the
+same rule, the same zone) build byte-equal clones and each keeps its own. A per-backend
+`sharedproto.Interner` scoped by base version and shared across client transforms was
+implemented and measured at 48 clients x 2000 backends: retained heap 36 MB to 30 MB, but one
+backend update 33 ms to 46 ms wall and 66 to 77 cpu-ms, because every clone on every walk pays a
+content compare under one lock and the walk reruns on every base change. Declined for now; the
+implementation is in this branch's history if the balance shifts.
+
+**DestinationRule rules a backend out by hostname.** Which rule applies to a client is decided by
+the client's namespace and labels, but whether *any* rule names a backend's host is not. The
+plugin's `PerClientEndpointsMayApply` asks the rule index that question through a hostname-only
+index (hosts matched exactly, as `FetchDestRulesFor` matches them), so on an Istio-integration
+install only backends that actually have a rule keep the per-client inline CLA; the rest are built
+once on the base. The predicate fetches through the base translation's `HandlerContext`, which is
+why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first rule to appear for
+a host re-translates that backend's base and moves it back to the per-client path.
 
 **`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
 but PR 6 changes the field's type and gives its equality a real justification
@@ -582,9 +600,12 @@ allocation.
 
 ## Review split: measurement scope
 
-The measurements above were recorded on the original development branch. This
-review step includes the backend content-equality fix and disables the mutation
-assertion in benchmarks. Validation memoization is a separately landable change
-and is not included here. Re-run the benchmarks on the exact revision being
-evaluated rather than treating the historical numbers as measurements of this
-split commit.
+This document records the combined development branch, including validation
+memoization. The review stack rooted at #14600 contains the shared-proto helper,
+client collection rewrite, inline-CLA sharing, and DestinationRule applicability.
+Validation memoization is on the independent
+`chandler/my-split-out-14668-for-easy-review` branch and can land before this stack.
+The strict-mode benchmarks on this stack deliberately retain their uncached
+validator until that change is integrated; the memoized strict-mode numbers above
+are historical measurements of the combined branch, not this split revision.
+All measurements should be reproduced on the exact revision being evaluated.
