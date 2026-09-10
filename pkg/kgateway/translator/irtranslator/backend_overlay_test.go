@@ -56,7 +56,7 @@ func TestApplyPerClient_FastPathSharesBase(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 
@@ -88,7 +88,7 @@ func TestApplyPerClient_DoesNotMutateBase(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.Nil(t, base.Cluster.GetOutlierDetection(), "base must start without the overlay mutation")
@@ -169,7 +169,7 @@ func TestApplyPerClient_InlineCLAMaterializesAndIsolatesBaseEndpoints(t *testing
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.True(t, base.SupportsInlineCLA, "STRICT_DNS cluster must support an inline CLA")
@@ -215,7 +215,7 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 			},
 		}, nil)
 		backend := overlayBackend()
-		base := bt.TranslateBackendBase(t.Context(), backend)
+		base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 		require.True(t, base.NeedsInlineCLA(), "precondition: the STRICT_DNS base needs a per-client CLA")
 
 		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
@@ -238,7 +238,7 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 			},
 		}, original)
 		backend := overlayBackend()
-		base := bt.TranslateBackendBase(t.Context(), backend)
+		base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 		require.False(t, base.NeedsInlineCLA(), "precondition: the base already has an inline CLA")
 
 		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
@@ -266,7 +266,7 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 			},
 		}, nil)
 		backend := overlayBackend()
-		base := bt.TranslateBackendBase(t.Context(), backend)
+		base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 		require.True(t, base.NeedsInlineCLA())
 
 		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
@@ -295,7 +295,7 @@ func TestApplyPerClient_ReappliesGatewayBackendClientCertificateAfterOverlay(t *
 			PrivateKey: []byte("gateway-key"),
 		},
 	}
-	base := bt.TranslateBackendBase(t.Context(), backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 
@@ -378,7 +378,7 @@ func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T)
 		},
 	}
 	backend := overlayBackend()
-	base := bt.TranslateBackendBase(context.Background(), backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), backend)
 	require.NotNil(t, base)
 	require.NotNil(t, base.EndpointInputs)
 
@@ -404,7 +404,7 @@ func TestTranslateBackendBase_NilForUnsupportedGroupKind(t *testing.T) {
 	}
 	backend := overlayBackend()
 
-	base := bt.TranslateBackendBase(context.Background(), backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), backend)
 	assert.Nil(t, base, "unsupported GroupKind must yield a nil base")
 }
 
@@ -470,7 +470,7 @@ func TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.True(t, base.DefaultedLocalityConfig, "an EDS base with no LB policy must get the locality default")
@@ -512,7 +512,7 @@ func TestApplyPerClient_KeepsDefaultedLocalityWhenStillEDS(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.True(t, base.DefaultedLocalityConfig)
 
@@ -550,7 +550,7 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.True(t, base.DefaultedLocalityConfig)
 
@@ -591,7 +591,7 @@ func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.True(t, base.DefaultedLocalityConfig)
 	require.NotSame(t, explicitWeightedConfig, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
@@ -637,7 +637,7 @@ func TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable(t *testi
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.Equal(t, 0, calls, "a per-client hook must not run during base translation")
@@ -672,7 +672,7 @@ func TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook(t *testing.T
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 
@@ -712,7 +712,7 @@ func TestApplyPerClient_AppliesOverlaysInGroupKindOrder(t *testing.T) {
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 
@@ -754,7 +754,7 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 	backend := overlayBackend()
 	ctx := context.Background()
 
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.True(t, base.DefaultedLocalityConfig, "precondition: the EDS base defaulted the locality mode")
@@ -769,4 +769,72 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 		"only the defaulted locality specifier is reverted")
 	assert.True(t, perClient.GetCommonLbConfig().GetIgnoreNewHostsUntilFirstHc(),
 		"the overlay's own CommonLbConfig field must survive the undo")
+}
+
+// TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA: an endpoint
+// hook decides, per backend, whether it could ever contribute. When it rules the
+// backend out the inline CLA is built once on the base and the hook is never
+// invoked for it; when it may apply, or when it declines to say, the CLA stays
+// per client so the hook can run with each client in hand.
+func TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA(t *testing.T) {
+	policyGK := schema.GroupKind{Group: "test", Kind: "EndpointPolicy"}
+	newTranslator := func(mayApply func(krt.HandlerContext, ir.BackendObjectIR) bool, calls *int) *irtranslator.BackendTranslator {
+		return inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			policyGK: {
+				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+					*calls++
+					return 0
+				},
+				PerClientEndpointsMayApply: mayApply,
+			},
+		}, nil)
+	}
+	withPolicy := func() *ir.BackendObjectIR {
+		backend := overlayBackend()
+		backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			policyGK: {{GroupKind: policyGK}},
+		}}
+		return backend
+	}
+
+	t.Run("hook rules the backend out: CLA on the base, hook never runs", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(sdk.AttachedPolicyEndpointsMayApply(policyGK), &calls)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.NotNil(t, base.Cluster.GetLoadAssignment(), "the CLA must be built onto the base")
+		assert.False(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{Role: "r"}, backend, base)
+		require.NoError(t, err)
+		assert.Nil(t, perClient, "the shared base is complete; nothing to materialize")
+		assert.Zero(t, calls, "a hook that ruled the backend out must not be invoked for it")
+	})
+
+	t.Run("hook may apply because a policy is attached: CLA per client", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(sdk.AttachedPolicyEndpointsMayApply(policyGK), &calls)
+		backend := withPolicy()
+		base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.Nil(t, base.Cluster.GetLoadAssignment(), "the base must not carry a CLA a hook may still edit")
+		assert.True(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{Role: "r"}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.NotNil(t, perClient.GetLoadAssignment())
+		assert.Equal(t, 1, calls, "the hook runs once per client for a backend it may apply to")
+	})
+
+	t.Run("hook declares nothing: CLA per client", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(nil, &calls)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.Nil(t, base.Cluster.GetLoadAssignment(), "an undeclared hook is assumed to apply everywhere")
+		assert.True(t, base.NeedsInlineCLA())
+	})
 }

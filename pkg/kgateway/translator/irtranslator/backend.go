@@ -46,6 +46,13 @@ type BackendTranslator struct {
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
 	Mode                apisettings.ValidationMode
+	// ValidationMemo memoizes strict-mode verdicts by cluster content. Per-client
+	// translation validates each overlaid cluster once per connected client on
+	// every walk over the backends, and nearly all of those clusters are
+	// byte-identical to the last walk; the memo answers those from a content
+	// hash of the cluster alone, without building a bootstrap or reaching the
+	// validator's own cache. Optional: nil validates every time.
+	ValidationMemo *validator.Memo
 }
 
 // BaseCluster is the UCC-invariant result of translating a backend into an Envoy
@@ -65,8 +72,10 @@ type BaseCluster struct {
 	// SupportsInlineCLA is true when the cluster type accepts an inline
 	// ClusterLoadAssignment (STATIC, STRICT_DNS, LOGICAL_DNS, or the DNS extension).
 	// When this is true AND EndpointInputs is non-nil AND Cluster.LoadAssignment is
-	// nil, the per-client overlay must always build a CLA — the CLA varies per UCC
-	// via PrioritizeEndpoints and so cannot live on the shared base.
+	// nil, the per-client overlay must always build a CLA: it varies per UCC via
+	// PrioritizeEndpoints and so cannot live on the shared base. When the CLA
+	// cannot vary (see inlineCLADependsOnClient) TranslateBackendBase builds it
+	// onto the base instead, and LoadAssignment is already set here.
 	SupportsInlineCLA bool
 	// DefaultedLocalityConfig records that defaultLocalityConfig — not a policy
 	// plugin — chose this cluster's locality mode. Its guard depends on the cluster
@@ -98,7 +107,12 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 // Returns nil when the backend GK has no contributed translator, or its
 // contributed translator has no InitEnvoyBackend hook — configuration errors
 // that prevent producing even a blackhole cluster.
+//
+// kctx is the KRT context of the transform producing the base; endpoint
+// plugins' PerClientEndpointsMayApply predicates fetch through it, so the base
+// is re-translated when what they consulted changes.
 func (t *BackendTranslator) TranslateBackendBase(
+	kctx krt.HandlerContext,
 	ctx context.Context,
 	backend *ir.BackendObjectIR,
 ) *BaseCluster {
@@ -144,6 +158,17 @@ func (t *BackendTranslator) TranslateBackendBase(
 		EndpointInputs:          endpointInputs,
 		SupportsInlineCLA:       clusterSupportsInlineCLA(out),
 		DefaultedLocalityConfig: defaultedLocality,
+	}
+
+	// An inline CLA that no client can influence is built once, here, so the
+	// dominant static and DNS backend is complete on the shared base: every
+	// client then publishes the same proto and ApplyPerClient has nothing to
+	// do. Only backends whose endpoints a plugin may edit, or whose traffic
+	// distribution orders endpoints by client location, keep the per-client
+	// build. The zero client is passed because DependsOnClient has just
+	// established that PrioritizeEndpoints will not read it.
+	if result.NeedsInlineCLA() && !t.inlineCLADependsOnClient(kctx, backend, endpointInputs) {
+		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ir.UniquelyConnectedClient{}, *endpointInputs)
 	}
 
 	// Skip strict-mode validation when the CLA is built per client: the base
@@ -383,6 +408,24 @@ func (t *BackendTranslator) applyBasePolicies(
 	return errors.Join(errs...)
 }
 
+// inlineCLADependsOnClient reports whether the inline CLA for backend can differ
+// between clients: either prioritization itself reads the client (a traffic
+// distribution or preset priority), or a contributed endpoint hook has not ruled
+// this backend out and might edit its inputs per client. Hooks that declare no
+// PerClientEndpointsMayApply are assumed to apply, so an out-of-tree plugin keeps
+// today's per-client build until it opts in.
+func (t *BackendTranslator) inlineCLADependsOnClient(kctx krt.HandlerContext, backend *ir.BackendObjectIR, inputs *endpoints.EndpointsInputs) bool {
+	if endpoints.DependsOnClient(*inputs) {
+		return true
+	}
+	for _, plugin := range t.orderedEndpointPlugins() {
+		if plugin.MayApply(kctx, *backend) {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {
 	if t.EndpointPlugins != nil {
 		return t.EndpointPlugins
@@ -393,17 +436,31 @@ func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {
 // validateClusterConfig validates an individual cluster configuration using Envoy's
 // validation. This catches configuration errors that would cause Envoy data plane NACKs,
 // such as invalid cipher suites, invalid TLS parameters, etc.
+//
+// The verdict is memoized by the cluster's content (see ValidationMemo), so a
+// cluster validated for one client is not re-validated for the next unless its
+// bytes differ. The bootstrap is only built on a memo miss.
 func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *envoyclusterv3.Cluster) error {
-	builder := bootstrap.New()
-	builder.AddCluster(cluster)
-	bootstrap, err := builder.Build()
+	ctx = validator.WithValidationCaller(ctx, validator.CallerBackend)
+	run := func(ctx context.Context) error {
+		builder := bootstrap.New()
+		builder.AddCluster(cluster)
+		bootstrap, err := builder.Build()
+		if err != nil {
+			return err
+		}
+		return t.Validator.Validate(ctx, bootstrap)
+	}
+	if t.ValidationMemo == nil {
+		return run(ctx)
+	}
+	key, err := validator.ContentKeyOf(cluster)
 	if err != nil {
-		return err
+		// A cluster that cannot be marshalled cannot be keyed; validate it
+		// directly and let the validator report whatever is wrong with it.
+		return run(ctx)
 	}
-	if err := t.Validator.Validate(validator.WithValidationCaller(ctx, validator.CallerBackend), bootstrap); err != nil {
-		return err
-	}
-	return nil
+	return t.ValidationMemo.Validate(ctx, key, run)
 }
 
 var inlineCLAClusterTypes = sets.New(

@@ -59,6 +59,25 @@ type ClusterOverlay struct {
 	Mutate func(out *envoyclusterv3.Cluster)
 }
 
+// PerClientClusterOverlay decides whether a client/backend pair needs a
+// mutation on top of the shared base cluster, and returns it if so.
+//
+// Read only inputs the framework can detect a change in, or the overlay will
+// go stale:
+//
+//   - anything reached through kctx, which registers a KRT dependency;
+//   - ucc;
+//   - fields of in that BackendObjectIR.EqualsIgnoringResourceVersion compares
+//     — the IR fields, ObjIr, and the backing object's UID, generation, labels
+//     and annotations.
+//
+// Notably absent is spec on a kind that leaves metadata.generation at 0, such
+// as a core Service: the base row holds the backend it was built from, and KRT
+// keeps that row when equality says nothing moved, so a spec field no compared
+// input reflects stays stale until something else changes. An overlay that
+// needs such a field must have its plugin project the field into ObjIr, the
+// way the kubernetes and serviceentry plugins carry resolved addresses for the
+// waypoint overlay.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -81,6 +100,16 @@ type PerClientProcessBackend func(
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
+// AttachedPolicyEndpointsMayApply is a PerClientEndpointsMayApply for plugins
+// whose endpoint hook reads only policies of gk attached to the backend (via
+// EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
+// to act on for any client.
+func AttachedPolicyEndpointsMayApply(gk schema.GroupKind) func(krt.HandlerContext, ir.BackendObjectIR) bool {
+	return func(_ krt.HandlerContext, backend ir.BackendObjectIR) bool {
+		return len(backend.AttachedPolicies.Policies[gk]) > 0
+	}
+}
+
 // StatusCollections aliases the statussync type for plugin convenience.
 type StatusCollections = statussync.StatusCollections
 
@@ -96,6 +125,24 @@ type PolicyPlugin struct {
 	PerClientEditEndpoints  EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
+	// PerClientEndpointsMayApply reports whether this plugin's endpoint hook
+	// (PerClientEditEndpoints or the legacy PerClientProcessEndpoints) could
+	// contribute to the given backend for at least one client. When every
+	// contributed endpoint hook rules a backend out, and the backend's own
+	// traffic distribution does not prioritize by client location, the
+	// framework builds that backend's inline ClusterLoadAssignment once on the
+	// shared base cluster instead of once per connected client.
+	//
+	// Returning false is a promise that the hook would return 0 for this
+	// backend for every client; the hook is then not invoked for it. Nil means
+	// "may apply to any backend", which keeps the per-client build. Plugins
+	// whose hook acts only on policies of their own GroupKind attached to the
+	// backend can use AttachedPolicyEndpointsMayApply.
+	//
+	// The HandlerContext is the base translation's: a predicate that consults a
+	// collection (a rule index by hostname, say) fetches through it, so the
+	// backend's base is re-translated when the answer changes.
+	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR

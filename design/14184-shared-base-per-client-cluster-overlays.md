@@ -67,11 +67,12 @@ ready".
 
 - Translate each backend's client-invariant cluster **once**, and share the resulting proto
   read-only across every client that targets it.
-- Store per-client clusters **sparsely**: a row materializes only for the `(client, backend)`
-  pairs whose cluster genuinely differs, so retained state is `O(M) + O(N*K)` with
+- Store per-client cluster state **sparsely**: a client allocates a cluster proto only for the
+  backends whose cluster genuinely differs for it, so retained state is `O(M) + O(N*K)` with
   `K << M` in typical workloads.
-- Keep the merge of shared base and sparse overlay **coherent** across independently updated
-  KRT collections, without turning one client's unresolved state into a fleet-wide barrier.
+- Keep one client's CDS **independent** of every other client: a connect, disconnect, or
+  shape change reruns that client's work and nobody else's, and there is no cross-collection
+  state to reconcile before publishing.
 - Make the new aliasing **enforceable**: a mutation of a shared proto must fail loudly in CI
   rather than silently corrupt sibling clients' snapshots.
 - Give endpoint plugins a mutation surface that cannot reach KRT-owned or cross-client state.
@@ -81,9 +82,6 @@ ready".
 
 - Reducing the *set* of backends discovered. Scoping CDS/EDS to route-referenced Services is
   the separate backends axis tracked in #13586.
-- Reducing the recompute fan-out on client churn. A UCC event still re-runs the delta
-  transform for every backend; only the per-pair cost and the retained state shrink. See
-  [Open Questions](#open-questions).
 - Reintroducing per-client readiness gates. The first-connect grace period from #14380 remains
   the mechanism that hides the convergence window from a client's first watch.
 - Changing UCC bucketing, `DISABLE_POD_LOCALITY_XDS`, or the local-cluster EDS resource.
@@ -95,16 +93,12 @@ ready".
 ```mermaid
 flowchart LR
     FB["finalBackends<br/>(krt.Collection[*BackendObjectIR])"]
-    FB --> B["BaseEnvoyClusters<br/>one row per backend<br/>TranslateBackendBase()"]
-    FB --> D["PerClientEnvoyClusterDeltas<br/>one row per backend<br/>sparse map[ucc]delta<br/>ApplyPerClient()"]
-    UCC["UniquelyConnectedClients"] --> D
-    B -->|"FetchOne by cluster name"| D
-    B --> M["FetchClustersForClient(ucc)<br/>fence, then delta-wins"]
-    D -->|"krt.PartialFetch(forClient)"| M
-    UCC --> M
-    M --> S["snapshotPerClient<br/>CDS payload"]
-    B --> ST["StatusClusters()<br/>base rows + errored deltas"]
-    D --> ST
+    FB --> B["BaseEnvoyClusters<br/>one row per backend<br/>TranslateBackendBase()<br/>carries its Backend"]
+    UCC["UniquelyConnectedClients"] --> C["ClusterResources<br/>one row per client<br/>Fetch(base) + ApplyPerClient()<br/>assembled CDS payload"]
+    B --> C
+    C --> S["snapshotPerClient<br/>FetchOne by client"]
+    B --> ST["StatusClusters()<br/>base rows ∪ per-client error rows"]
+    C --> ST
     ST --> BS["Backend status"]
 ```
 
@@ -132,6 +126,20 @@ publishable on its own** — Envoy rejects some CLA-less clusters outright (logi
 exactly one endpoint), so validating the base would blackhole a valid ServiceEntry for every
 client.
 
+**Most inline CLAs do not depend on the client, and those are built on the base.**
+`PrioritizeEndpoints` reads the client (labels, locality) only through a resolved
+`PriorityInfo`: one set by an endpoint hook, or one implied by a zone- or node-preferring
+traffic distribution (`endpoints.DependsOnClient` is the single source of truth for this).
+When neither applies, and no contributed endpoint hook could edit the backend's endpoints,
+`TranslateBackendBase` builds the CLA itself, so the base is complete, validated once, and
+`NeedsInlineCLA()` is false. Whether a hook *could* apply is the plugin's call:
+`sdk.PolicyPlugin.PerClientEndpointsMayApply(kctx, backend)` returns false to rule a backend out
+(`BackendConfigPolicy` uses `sdk.AttachedPolicyEndpointsMayApply`, since its hook reads only
+attached policies; `DestinationRule` asks its rule index whether any rule names the backend's
+host, fetching through the base translation's `HandlerContext` so the base re-translates when
+that answer changes); a hook that declares nothing is assumed to apply everywhere, so an
+out-of-tree plugin keeps the per-client build until it opts in.
+
 **`ApplyPerClient(kctx, ctx, ucc, backend, base) (*Cluster, error)`** returns `nil, nil` — the
 dominant case — when the pair needs no per-client cluster. Otherwise it clones the base and
 applies, in order:
@@ -149,37 +157,46 @@ applies, in order:
 On validation failure it returns `(blackhole, err)`, so a per-client failure has the same
 shape as a base failure and the snapshot consumer's errored-cluster tracking is unchanged.
 
-### Sparse CDS storage
+### Per-client CDS storage
 
-`PerClientEnvoyClusters` (`pkg/kgateway/proxy_syncer/backends.go`) becomes three collections
+`PerClientEnvoyClusters` (`pkg/kgateway/proxy_syncer/backends.go`) becomes two collections
 instead of one flat per-pair collection:
 
 - **`base`** — `krt.Collection[baseEnvoyCluster]`, keyed by cluster name, one row per backend.
-- **`deltas`** — `krt.Collection[backendClusterDeltaSet]`, also one row per backend, holding
-  `map[uccResourceName]uccClusterDelta` with entries only for clients that differ. The row
-  exists even when the map is empty; that is what records "evaluated, no overlay applies".
-- **`clients`** — the UCC collection, so a read can confirm the requesting client is still
-  connected without depending on the rest of the fleet.
+  The row carries the shared proto behind a `sharedproto.Shared`, its content version, and the
+  `BackendObjectIR` it was translated from.
+- **`perClient`** — `krt.Collection[clustersWithErrors]`, keyed by client, one row per connected
+  client: that client's assembled CDS payload. The transform fetches every base row and calls
+  `ApplyPerClient` for each; where it returns `nil` (the dominant case) the shared proto is
+  published as-is, and where it returns a cluster the client owns that clone. Errored bases and
+  per-client failures are excluded from the payload and tracked by name.
 
-`deltas` is driven off `finalBackends` (not off `uccs`) and fetches the already-computed base
-by key. Driving it off backends is what makes a backend *metadata-only* change — a Service
-label an overlay reads, with an unchanged base proto — still recompute deltas.
+The per-client transform is the **only writer of per-client cluster state, and it reads only
+immutable base rows plus whatever the client's overlays fetch**. That is the whole design:
+there is no second collection holding per-client results, so there is no cross-collection
+generation to fence, no ambiguity between "no overlay applies" and "not evaluated yet", and no
+way for one client's transform to observe another client's state at all. A client's row is
+complete by construction the first time it exists. In particular:
 
-#### Cross-collection coherence
+- a newly connected client can never see an un-overlaid base or a CLA-less inline cluster,
+  because its own transform runs the overlays and builds the inline CLA before returning;
+- a client connecting, disconnecting, or changing shape (`KnowsLocalCluster`, labels) reruns
+  exactly one transform — its own — and no other client's;
+- a base change reruns every client's transform once, each an `O(M)` walk whose per-backend
+  cost on the no-overlay path is a few function calls and no allocation. Inline-CLA backends
+  are on that path too unless their CLA genuinely depends on the client (see
+  `NeedsInlineCLA` above), so the walk allocates only for overlaid pairs and client-ordered
+  CLAs.
 
-Base and deltas are separate collections with no shared transaction, so a reader can observe
-one ahead of the other. Four fences make the merge safe; `FetchClustersForClient` validates the
-whole generation before exposing any row, because a partial base/delta mix would let
-`snapshotPerClient` publish an incoherent CDS payload.
-
-| Fence | Mechanism | What it prevents |
-| --- | --- | --- |
-| Base generation | `baseClusterFingerprint{ClusterVersion}` stored on the delta set and compared against the live base | publishing deltas cloned from a superseded base |
-| Sparse absence | `clientInputSnapshot.ContainsCurrent(ucc)` — the exact immutable UCC snapshot the deltas were computed against | reading "no delta" as "no overlay applies" when the client was never evaluated |
-| Inline CLA | `baseEnvoyCluster.NeedsInlineCLA` forces a materialized delta | publishing a host-less STRICT_DNS/STATIC cluster to a newly connected client |
-| Client identity | `krt.FetchOne(clients, FilterKey(ucc))` plus `Equals` | serving a client whose `KnowsLocalCluster` or labels have moved |
-
-Two of those deserve emphasis.
+**Backend metadata reaches clients through equality, not through a second input.** An overlay
+may branch on the backing object's labels (the waypoint redirect does), so a metadata-only
+Service change must rebuild every client's payload even when the shared proto is byte-identical.
+`baseEnvoyCluster.Equals` therefore compares its `Backend` through
+`BackendObjectIR.EqualsIgnoringResourceVersion`, which sees the object's UID, generation, labels
+and annotations — everything an overlay can branch on — but deliberately not its
+`resourceVersion`; see [Open Questions](#open-questions) for why the version is left out.
+`backendEquals` and `objectContentEquals` are nil-safe, so rows built without a backing object
+(test fixtures) compare by their remaining fields.
 
 `baseClusterVersion` folds the inline endpoints hash **and** the attached-policy hash into the
 base proto hash when `SupportsInlineCLA` is true. The per-client CLA is built from
@@ -189,21 +206,20 @@ leave clients pinned to a stale `LoadAssignment` forever. It mirrors what
 `newFinalBackendEndpoints` already does for the EDS path. It is gated on `SupportsInlineCLA`
 so EDS clusters — whose endpoints flow through the separate EDS pipeline — do not churn.
 
-Readiness is scoped **per requesting client**, not fleet-wide. `FetchClustersForClient` uses
-`krt.PartialFetch` with a projection to `clientBackendDeltaView`, so another client's delta
-changing does not retrigger this client's CDS assembly; and it consults the resolution
-snapshot only when interpreting an *absent* sparse entry. A materialized delta carries the
-exact UCC it was computed for, which is proof enough on its own. This is the property that
-prevents the sparse design from reintroducing the fleet-wide barrier of #13868/#14352:
-unrelated client churn can never withhold an established client's CDS.
+The base transform checks that translation named the cluster after
+`BackendObjectIR.ClusterName()` and drops the backend loudly otherwise. Every consumer assumes
+that name — routes reference it, status is keyed on it, the EDS pipeline names its CLA after it —
+and nothing in tree renames it.
 
 #### Interning and immutability
 
-Two levels of sharing sit on top of the sparse representation:
+The sparse representation exposes two levels at which a proto could be shared, and only one
+of them is:
 
-- **Per-client cluster deltas** are interned within each backend transform by their
-  already-computed content version. Inline-CLA backends materialize a delta for *every*
-  client, but clients that share the relevant inputs produce byte-identical clusters.
+- **Per-client cluster clones** are owned by the client's row and are deliberately not shared.
+  Clients whose overlays produce byte-identical clones each keep their own; with `K << M` the
+  duplication is small, and the place to remove it, if measurement says otherwise, is a
+  per-backend interner scoped by base version rather than a second collection.
 - **CLAs** are interned across clients in `NewPerClientEnvoyEndpoints`, keyed by
   `combineEndpointHash(resolvedEndpointHash, pluginHash, loadBalancingHash)`.
 
@@ -211,8 +227,9 @@ Sharing a proto across snapshots means a post-creation mutation corrupts every s
 *and* the copy KRT stores — and is invisible to KRT equality, because version hashes are
 computed at store time. The new `sharedproto` package makes that unrepresentable rather than
 merely forbidden: `Shared[M]` holds the proto in an unexported field, so the only exits are
-`Clone()` (the one legitimate mutation path) and `ResourceWithTTL()` (the one legitimate sink,
-the envoycache snapshot). When `ASSERT_SHARED_PROTO_IMMUTABILITY` is set, `Wrap` captures the
+`Clone()` (the one legitimate mutation path), `ResourceWithTTL()` (the one legitimate sink,
+the envoycache snapshot), and `BorrowForRead()`, which lends the pointer to `ApplyPerClient`
+so the no-overlay path allocates nothing. When `ASSERT_SHARED_PROTO_IMMUTABILITY` is set, `Wrap` captures the
 content hash and `ResourceWithTTL` re-hashes and panics on drift, naming the resource. It is
 off by default because the re-hash is exactly the marshal cost the interning exists to avoid.
 
@@ -231,7 +248,7 @@ type ClusterOverlay struct{ Mutate func(out *envoyclusterv3.Cluster) }
 ```
 
 Returning `nil` means "this pair needs no per-client cluster changes". Self-gating is what
-keeps the delta collection sparse, so the plugin — not the framework — owns the cheap
+keeps per-client state sparse, so the plugin — not the framework — owns the cheap
 applicability check. `Mutate` is invoked exactly once with a fresh clone and must not retain
 its argument. `PerClientProcessBackend` is retained as deprecated and adapted as an
 always-applicable overlay, since a legacy hook cannot report a no-op cheaply.
@@ -349,17 +366,19 @@ sorted has to be deliberate.
 ### Reporting
 
 Backend status previously read the flat per-pair collection, so one Backend's status depended
-on rows for every connected client. `StatusClusters(krtopts)` now projects exactly what
-`GenerateBackendStatusReport` consumes: one row per base cluster carrying the source Backend
-identity and any UCC-invariant error, plus one row per **errored** per-client delta. Non-errored
-deltas contribute nothing. It is a collection rather than a `Fetch` helper so
+on rows for every connected client. `StatusClusters()` — built once by the constructor, so a
+second caller cannot stand up a duplicate collection — now joins two projections into exactly
+what `GenerateBackendStatusReport` consumes: one row per base cluster carrying the source
+Backend identity and any UCC-invariant error, plus one row per **errored** per-client cluster
+carrying that client's error attributed to the same Backend. Clusters that translated cleanly
+for a client contribute nothing beyond their base row. The per-client half is a
+`NewManyCollection` over the per-client rows, so it is sparse by construction and a departed
+client's errors leave with its row. The per-client row compares those error records in full —
+client, cluster, message, source Backend and generation — because status filters them by
+generation: a backend whose next generation fails with the same message must still produce a
+new row, or status would report the new generation as accepted while CDS still excludes it. It is a collection rather than a `Fetch` helper so
 `backendStatusContributions` can index it by Backend: one client's cluster error then
 recomputes only its owning Backend's status.
-
-Status uses the same base-generation fence but, unlike CDS, **skips** a stale delta set instead
-of treating it as a barrier. Status has no cross-backend coherence requirement, and withholding
-every row mid-propagation would clear `Accepted` conditions that are still true. At worst a
-departed client's error lingers for one propagation.
 
 One observable output change follows from carrying base and per-client errors separately:
 errored clusters are omitted from emitted CDS, so seven gateway translation fixtures no longer
@@ -385,9 +404,15 @@ No CRD or user-facing API change. One new environment variable:
 - `ASSERT_SHARED_PROTO_IMMUTABILITY` — arms the shared-proto mutation tripwire. Off by
   default in production; a trip surfaces as a controller panic, so the message is in the
   previous container's logs (`kubectl logs --previous`). Set in CI three ways: the
-  `proxy_syncer` package tests force it on in-process via `TestMain`, the e2e suites set it on
-  the deployed controller through `common-recommendations.yaml`, and the conformance action
-  sets it on both of its helm install branches.
+  `proxy_syncer` package tests force it on in-process via `TestMain`, the e2e framework appends
+  `test/e2e/tests/manifests/test-assertions.yaml` to the values of every install and upgrade it
+  performs, and the conformance action sets it on both of its helm install branches. That
+  values file is deliberately separate from `common-recommendations.yaml`, which documents the
+  install we recommend to users: an assertion that trades production performance for a loud CI
+  failure is not a recommendation. The conformance action takes an
+  `assert-shared-proto-immutability` input, defaulting to on, because the re-hash is a
+  deterministic marshal per resource per snapshot rebuild: a timing-sensitive flake has to be
+  rulable out by re-running the leg without it.
 
 ### Measured results
 
@@ -418,10 +443,9 @@ independently.
 | --- | --- | --- | --- |
 | 1 | #14599 | endpoint mutation boundary (`EndpointInputsEditor`), deterministic CLA construction | no |
 | 2 | #14600 | `TranslateBackendBase` / `ApplyPerClient` / `ClusterOverlay`, dense storage retained, gateway fixtures for the errored-cluster output change | no |
-| 3 | #14602 | sparse CDS storage, fencing, `sharedproto` | **yes** |
-| 4 | #14603 | intern equivalent per-client cluster deltas | no |
+| 3 | (replaces #14602) | shared bases, client-keyed per-client assembly, `sharedproto`, tripwire CI wiring | **yes** |
+| 4 | #14603 | intern equivalent per-client cluster clones (to be rebased onto the client-keyed rows) | no |
 | 5 | #14604 | intern equivalent per-client CLAs, `LoadBalancingContextHash` | no |
-| 6 | #14605 | arm the immutability tripwire in e2e and conformance CI | no |
 
 PRs 1-2 are shippable before the topology change. PR 2 deliberately keeps dense storage and
 an independently owned proto per row so reviewers can validate the translation contract
@@ -434,11 +458,9 @@ every point in the stack.
 **Unit.**
 - `backends_test.go` — `baseClusterVersion`: reflects inline-CLA endpoint and policy changes,
   stays stable for EDS endpoint changes, zero for errored bases.
-- `backends_merge_test.go` — every fence, individually: delta-wins, delta error over base
-  error, client filtering, matching delta needs no resolution proof, inline-CLA base withheld
-  until its delta arrives, stale delta rejected after a base update, waits for the current
-  client set, waits for the current local-cluster capability, and unrelated client churn is
-  *not* a readiness barrier.
+- `backends_test.go` — `baseEnvoyCluster.Equals` sees a metadata-only change on the backing
+  object and treats fixture rows without a backend consistently.
+- `backends_resolution_test.go` — a renamed cluster drops only its own backend.
 - `backend_overlay_test.go`, `backend_validation_test.go` — overlay gathering, deterministic
   ordering, locality-default undo, strict-mode validation of overlay output.
 - `prioritize_test.go` — the CLA is byte-stable across repeated calls in all three priority
@@ -454,8 +476,8 @@ built — canonical locality ordering makes normalization unnecessary — so it 
 ordering regresses; its failure message names both causes and points at the byte-stability test
 first.
 
-**KRT integration.** `backends_integration_test.go` (sparse overlay wiring; backend
-metadata-only update recomputes deltas), `cla_intern_test.go` (equivalent clients share a CLA;
+**KRT integration.** `backends_integration_test.go` (overlay wiring; backend metadata-only
+update rebuilds every client's payload), `cla_intern_test.go` (equivalent clients share a CLA;
 distinct clients must not alias), `backends_disabled_pod_locality_test.go`
 (`DISABLE_POD_LOCALITY_XDS` shared-capability buckets without global withholding),
 `perclient_clusters_stress_test.go` (sustained trigger-driven churn never strands a stable
@@ -478,21 +500,26 @@ and it captures most of the CPU win with none of the synchronization risk. It wa
 an endpoint because it retains `O(N*M)` rows and `O(N*M)` cluster protos — the memory half of
 the problem — and leaves one flat collection whose invalidation is fleet-wide.
 
+**Backend-keyed sparse deltas** (the design of #14602 as originally proposed): keep the
+per-client results in a second collection keyed by backend, one row per backend holding a sparse
+map of clients whose cluster differs, and merge base and delta rows in the per-client snapshot
+transform. It stores the same protos, but because writer and reader are different collections
+the reader has to prove the writer caught up: a base fingerprint on every delta set, an
+immutable client snapshot retained per set to tell "no overlay applies" from "not evaluated
+yet", a generation counter to make that snapshot's identity collision-proof, a projected view
+for `krt.PartialFetch` so other clients' churn does not retrigger a client, six deferral reasons
+with a counter and a stuck-client gauge, and a status projection with the opposite coherence
+rule. It also keeps the dense design's event shape: one client connecting reruns every
+backend's transform. The client-keyed design was chosen because it needs none of that, and
+because a client's connect is then `O(M)` work for that client alone. The cost it accepts is
+that a base change reruns every client's `O(M)` walk instead of one backend's `O(N)` loop; on
+the no-overlay path that walk is a few function calls per backend, measured at roughly 150 ns
+per pair with destrule registered.
+
 **Defer the whole publish until every delta is computed.** Simple and obviously coherent, but
 it is the #13868 design: a barrier that can stay unsatisfied indefinitely, stranding warm
 clients on stale endpoints and starving new pods (#14184, #14352). Rejected in favor of
-per-client fences plus the #14380 first-connect grace period.
-
-**A per-UCC "computed" marker instead of a retained client snapshot.** Would close the
-remaining waypoint propagation beat (below) exactly rather than by proof-of-membership. It
-needs a second write path per client per backend, and the retained snapshot is shared by
-reference across all backends, so the snapshot approach is cheaper. Worth revisiting if the
-beat proves user-visible.
-
-**A KRT collection between UCC events and delta recomputation** (rather than the
-`clientInputSnapshotInterner`). Cleaner dependency graph, but it adds a propagation hop
-between a client connecting and its deltas existing — which is precisely the window the
-inline-CLA withholding rule has to cover.
+per-client independence plus the #14380 first-connect grace period.
 
 **Hash-free equality (`proto.Equal` on stored clusters).** Correct by construction, but
 `Equals` runs on every recompute for every row; a content hash computed once at store time is
@@ -501,66 +528,89 @@ that makes it sound.
 
 ## Open Questions
 
-**The base clone is unconditional.** `NewPerClientEnvoyClusters` does
-`perClientBase.Cluster = b.Cluster.Clone()` once per backend per recompute, before knowing
-whether any client will materialize a delta — and `ApplyPerClient` clones again from that copy
-when it does materialize. For 200 light backends the wasted clone measures 126 us / 202 KB /
-2000 allocs, against 80 us / 214 KB / 2201 allocs for the entire new translation path: it
-roughly doubles the cost and allocation count of the dominant no-overlay case, and it is not
-modelled by `BenchmarkPerClientClusters`. `ApplyPerClient` decides applicability before it
-touches `base.Cluster`, so passing a `func() *Cluster` (or the `Shared` wrapper) instead of a
-materialized clone would make it lazy and remove the double clone.
+**A Service write that changes nothing must not reach the clients.** The base row compares its
+backend IR so that overlays reading backend metadata see a label change, but `BackendObjectIR.Equals`
+falls back to `resourceVersion` for kinds without `metadata.generation`, and every Service write
+bumps that: status updates, and annotation touches from Helm, Argo, external-dns or a cloud
+load-balancer controller. Compared that way, each such write re-ran every client's walk to
+rebuild a byte-identical payload — 71 MB and 314k allocations at 48 clients x 2000 backends, where
+main's dense collection re-translated 48 pairs and stopped. The base row now compares the backend
+with `EqualsIgnoringResourceVersion` (UID, generation, labels, annotations and every IR field; the
+proto hash already says whether the translation moved), so a `resourceVersion`-only write ends at
+the base: 5 KB and 40 allocations. A write that changes an annotation no overlay reads still reruns
+every walk (69 MB at 48 x 2000), because the row cannot know which annotations overlays read; each
+client then finds its payload hash unchanged and KRT keeps its old row. Memoizing the assembled
+`envoycache.Resources` per client was measured and rejected: it recovers only the map build, about
+6% of that walk, and the row slice and base fetch are the rest. An overlay-declared set of metadata
+keys would let the base row ignore unrelated annotations altogether.
 
-**`EndpointsForBackend.EmptyCopy()` drops the folded policy hash.** It resets
-`LbEpsEqualityHash` to `upstreamHash`, discarding the contribution
-`newFinalBackendEndpoints` folded in. Any endpoint plugin that uses the new
-`NewEndpointSet()` / `ReplaceEndpoints()` path therefore returns a resolved hash that no
-longer distinguishes policy states, weakening both the CLA interning key and
-`UccWithEndpoints.Equals`. No in-tree plugin takes that path yet, so this is a latent trap in
-a newly public API rather than an active bug; either `EmptyCopy` should carry the folded hash
-or the editor should document the requirement.
+**Spec fields an overlay reads are the same problem, and are not self-enforcing.** Leaving
+`resourceVersion` out means a spec change on a generation-less kind reaches clients only if it
+reaches a compared IR field, `ObjIr`, or the base proto hash. Base translation of a Service
+emits EDS and never reads `spec.clusterIPs`, but the waypoint overlay inlines them into a STATIC
+cluster, so converting a Service single-stack -> dual-stack would have left those clients on the
+stale address. The kubernetes plugin now projects the resolved addresses into `ObjIr`, mirroring
+what the serviceentry plugin already does for the VIPs that land in ServiceEntry status (#14391),
+and `PerClientClusterOverlay` documents the rule: read only what the framework can detect a
+change in, and project anything else through `ObjIr`. That rule is carried by review, not by the
+compiler — the same overlay-declared key set floated above would make it mechanical for spec as
+well as metadata.
 
-**A `fingerprintClients` collision withholds a client permanently.** `ClientsFingerprint`
-participates in `backendClusterDeltaSet.Equals`, so if two different client sets hashed equal,
-KRT would keep the old row, its `ResolvedClients` would not contain the current client, and
-`FetchClustersForClient` would withhold that client's CDS with no event able to recover it.
-The fingerprint covers every field `UniquelyConnectedClient.Equals` compares, so this needs a
-64-bit FNV collision — but the failure mode is permanent rather than transient. Worth deciding
-whether the delta set should fall back to a membership comparison when the fingerprint matches
-but `matches()` does not.
+**A base change reruns every client's walk.** The per-client transform depends on the whole
+base collection, so any backend change reruns `N` transforms of `O(M)` each.
+`BenchmarkPerClientBackendUpdate` and `BenchmarkPerClientDestinationRuleUpdate`
+(`perclient_update_bench_test.go`) price this on a deliberately unfavourable fleet: 12 clients,
+400 backends of which a quarter carry inline endpoints — half of those with a zone-preferring
+traffic distribution, so every client builds its own CLA for them, and half without, so the CLA
+lives on the base — and an eighth have a rule that a quarter of the clients match. Apple M4 Max,
+`-benchtime=5x`, with the `sharedproto` mutation tripwire disarmed as in production (the package's
+`TestMain` arms it, and armed it re-hashes every published proto, which roughly doubled every
+number measured before this was noticed):
 
-**The base name is an undocumented hard invariant.** The delta transform locates its base with
-`FetchOne(base, FilterKey(backendObj.ClusterName()))`. Every current path names the cluster
-from `BackendObjectIR.ClusterName()` (`initializeCluster` and `buildBlackholeCluster` both do,
-and no plugin reassigns `Cluster.Name`), but if a future `InitEnvoyBackend` or `ProcessBackend`
-renamed it, the base row would exist with no delta row and `FetchClustersForClient` would
-withhold that client's entire CDS forever. Cheap to make loud with a log or a defensive
-fallback.
+| Operation | No validation | Strict, 200 µs per validation, verdicts memoized |
+| --- | --- | --- |
+| One backend's output changes; all 12 payloads rebuilt | 3.0 ms, 5.4 MB, 36k allocs | 4.4 ms |
+| One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 1.1 ms, 1.7 MB, 18k allocs | 1.6 ms |
+| One Service write that changes only `resourceVersion` | 5 KB, 38 allocs, no client reruns | same |
 
-**A newly connected ambient client can see the un-overlaid base for one KRT propagation
-beat** before its waypoint delta is computed: in a sparse design, absence of a delta is
-indistinguishable from not-yet-computed. The deterministic half — 503s from CLA-less inline
-clusters — is closed by the `NeedsInlineCLA` withholding rule. Closing the waypoint beat needs
-a per-UCC computed marker, and naive whole-publish deferral is riskier than the beat. Needs a
-follow-up issue.
+Earlier runs of the same benchmark had the tripwire armed and so read about twice these. In those
+units: before client-independent inline CLAs were built on the base, with all 100 inline backends
+materializing per client, 8.0 ms / 287 ms and 2.1 ms / 72 ms; with them on the base but every
+per-client cluster still re-validated, 5.8 ms / 162 ms and 2.1 ms / 41 ms.
+Without validation the remaining cost is dominated by rebuilding each client's 50 zone-ordered
+CLAs and ~12 overlaid clones, not by the 350 shared pairs per client. Without the memo, strict
+validation was dominated by re-validating those same ~750 materialized clusters, almost all of
+them byte-identical to the last walk. Production strict mode already memoizes verdicts by bootstrap
+content (`pkg/validator/cache.go`, `KGW_VALIDATOR_MODE=CACHE`), but reaching that cache costs a
+bootstrap build plus a JSON marshal and hash, about 20 µs per cluster, which at hundreds of
+clusters per client per walk is still the dominant strict-mode cost. The translator therefore
+keeps its own memo in front of it (`BackendTranslator.ValidationMemo`, `validator.Memo`), keyed
+by a SHA-256 of the cluster proto's deterministic binary encoding: about 1 µs and no allocation,
+computed before any bootstrap exists. A cluster validated for one client is not re-validated for
+the next unless its bytes differ, so the strict column above collapses to the no-validation
+column plus one real validation for the cluster that actually changed. The krt dependency
+registered by each overlay fetch (destrule's index lookup runs per pair) is the remaining
+per-pair cost; an overlay that prepares once per client would reduce it to one per client.
 
-**The recompute fan-out on client churn is unchanged.** The delta transform `Fetch`es the whole
-UCC collection, so any connect or disconnect re-runs it for every backend, and each run loops
-over every client calling `ApplyPerClient` and re-hashes the client set. Per-pair cost is now
-small and retained state is sparse, but the `O(N*M)` event fan-out remains — the same as
-before this EP. Narrowing it is a separate change.
+**Per-client clones are not deduplicated across clients.** Clients that resolve identically (the
+same rule, the same zone) build byte-equal clones and each keeps its own. A per-backend
+`sharedproto.Interner` scoped by base version and shared across client transforms was
+implemented and measured at 48 clients x 2000 backends: retained heap 36 MB to 30 MB, but one
+backend update 33 ms to 46 ms wall and 66 to 77 cpu-ms, because every clone on every walk pays a
+content compare under one lock and the walk reruns on every base change. Declined for now; the
+implementation is in this branch's history if the balance shifts.
 
-**`ASSERT_SHARED_PROTO_IMMUTABILITY` is unconditional in conformance CI.** The tripwire adds a
-full deterministic marshal per resource per snapshot rebuild in every conformance and e2e run.
-The suites are green today, but unlike `ordered-ads` there is no action input to turn it off,
-which makes bisecting a timing-sensitive flake awkward.
-
-**`StatusClusters` constructs a KRT collection per call.** It is called once, but a second call
-would silently build a duplicate collection. Constructing it inside
-`NewPerClientEnvoyClusters` and returning it as a field would remove the hazard.
+**DestinationRule rules a backend out by hostname.** Which rule applies to a client is decided by
+the client's namespace and labels, but whether *any* rule names a backend's host is not. The
+plugin's `PerClientEndpointsMayApply` asks the rule index that question through a hostname-only
+index (hosts matched exactly, as `FetchDestRulesFor` matches them), so on an Istio-integration
+install only backends that actually have a rule keep the per-client inline CLA; the rest are built
+once on the base. The predicate fetches through the base translation's `HandlerContext`, which is
+why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first rule to appear for
+a host re-translates that backend's base and moves it back to the per-client path.
 
 **`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
-but PR 6 changes the field's type and gives its equality a real justification
+but PR 5 (#14604) changes the field's type and gives its equality a real justification
 (`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
 that reason rather than remaining on the legacy-gap list.
 
