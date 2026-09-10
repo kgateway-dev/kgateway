@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -229,6 +230,42 @@ func BackendResourceName(objSource ObjectSource, port int32, extraKey string) st
 // This method is required to implement the krt.Named interface.
 func (c BackendObjectIR) ResourceName() string {
 	return c.resourceName
+}
+
+// EqualsIgnoringResourceVersion is Equals with the backing object compared by
+// the content translation can read (UID, generation, labels, annotations)
+// rather than by its version. For kinds without metadata.generation, such as
+// core Services, Equals falls back to resourceVersion, which every write bumps:
+// status updates, and annotation touches from Helm, Argo, external-dns or a
+// cloud load-balancer controller all look like changes. A consumer that already
+// hashes the translated output uses this so such a write stops at that hash
+// instead of fanning out to every client.
+//
+// A spec change on a generation-less kind is not visible here unless it reaches
+// a compared IR field, ObjIr, or the consumer's output hash; per-client overlays
+// read labels, annotations and IR fields, all of which are compared.
+func (c BackendObjectIR) EqualsIgnoringResourceVersion(in BackendObjectIR) bool {
+	if !objectContentEquals(c.Obj, in.Obj) {
+		return false
+	}
+	// Every other field is compared by Equals. c and in are copies, so taking
+	// the objects out of them costs nothing and leaves Equals with two absent
+	// objects, which it treats as equal.
+	c.Obj, in.Obj = nil, nil
+	return c.Equals(in)
+}
+
+// objectContentEquals compares two backing objects by identity, spec generation
+// and metadata content, leaving resourceVersion out. Nil handling matches
+// versionEquals: two absent objects are equal, an absent and a present one never.
+func objectContentEquals(a, b metav1.Object) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.GetUID() == b.GetUID() &&
+		a.GetGeneration() == b.GetGeneration() &&
+		maps.Equal(a.GetLabels(), b.GetLabels()) &&
+		maps.Equal(a.GetAnnotations(), b.GetAnnotations())
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
