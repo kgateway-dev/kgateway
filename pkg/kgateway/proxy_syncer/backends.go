@@ -460,7 +460,7 @@ func NewPerClientEnvoyClusters(
 	// ProcessBackend hooks, gateway client certificate injection, and strict-mode
 	// validation.
 	base := krt.NewCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) *baseEnvoyCluster {
-		baseRes := translator.TranslateBackendBase(ctx, backendObj)
+		baseRes := translator.TranslateBackendBase(kctx, ctx, backendObj)
 		name := baseRes.Cluster.GetName()
 		if name != backendObj.ClusterName() {
 			// Every consumer assumes the cluster is named after the backend's

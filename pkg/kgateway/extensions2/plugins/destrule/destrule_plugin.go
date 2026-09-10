@@ -56,14 +56,11 @@ type destrulePlugin struct {
 // overlay against the inputs hash registered beside it, so both come from here.
 func (d *destrulePlugin) policyPlugin() sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
-		Name:                    "destrule",
-		PerClientClusterOverlay: d.clusterOverlay,
-		OverlayInputsHash:       d.overlayInputsHash,
-		PerClientEditEndpoints:  d.processEndpoints,
-		// No PerClientEndpointsMayApply: which DestinationRule applies is
-		// selected by the client's namespace and labels, so nothing can be
-		// ruled out per backend without a client. Inline-CLA backends
-		// therefore keep the per-client build whenever this plugin is on.
+		Name:                       "destrule",
+		PerClientClusterOverlay:    d.clusterOverlay,
+		OverlayInputsHash:          d.overlayInputsHash,
+		PerClientEditEndpoints:     d.processEndpoints,
+		PerClientEndpointsMayApply: d.endpointsMayApply,
 	}
 }
 
@@ -76,6 +73,16 @@ func (d *destrulePlugin) overlayInputsHash(in ir.BackendObjectIR) uint64 {
 	utils.HashStringField(hasher, in.CanonicalHostname)
 	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
 	return hasher.Sum64()
+}
+
+// endpointsMayApply rules a backend out of the per-client endpoint path when no
+// DestinationRule names its hostname at all. Which rule applies to a given client
+// is decided by the client's namespace and labels, so a backend with a rule for
+// its host keeps the per-client build; one with none has its inline CLA built
+// once on the shared base. The fetch registers the base's dependency on rules
+// for this host, so the first rule to appear moves the backend back.
+func (d *destrulePlugin) endpointsMayApply(kctx krt.HandlerContext, in ir.BackendObjectIR) bool {
+	return d.destinationRulesIndex.HasRulesForHost(kctx, in.CanonicalHostname)
 }
 
 // processEndpoints tries to find a destination rule

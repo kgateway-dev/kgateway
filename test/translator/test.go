@@ -927,7 +927,7 @@ func translateBackendForGolden(
 	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
 ) (*envoyclusterv3.Cluster, error) {
-	base := backendTranslator.TranslateBackendBase(ctx, backend)
+	base := backendTranslator.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	if base.Error != nil {
 		return nil, base.Error
 	}
