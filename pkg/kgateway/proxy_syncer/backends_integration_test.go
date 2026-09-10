@@ -122,8 +122,10 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 // the waypoint ingress-use-waypoint failure mode: a metadata-only Service label
 // update changes whether a per-client overlay applies, even though the shared
 // base cluster is byte-identical. The base row compares its Backend through
-// BackendObjectIR.Equals, which sees the object's version, so the row changes
-// and every client's payload is rebuilt from the updated backend.
+// BackendObjectIR.EqualsIgnoringResourceVersion, which sees the object's labels,
+// so the row changes and every client's payload is rebuilt from the updated
+// backend. The resourceVersion bumps below are incidental: that field is exactly
+// what the comparison ignores, so the labels are what drive each recompute.
 func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
