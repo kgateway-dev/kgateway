@@ -221,6 +221,11 @@ func translateProvider(
 	if len(claimToHeaders) > 0 {
 		jwtProvider.ClearRouteCache = true
 	}
+	if provider.ClockSkew != nil {
+		// Envoy only accepts whole seconds here; the CRD validation rejects sub-second
+		// durations and anything above 87600h, so this conversion cannot overflow or truncate.
+		jwtProvider.ClockSkewSeconds = uint32(provider.ClockSkew.Duration.Seconds()) //nolint:gosec // G115: bounded by kubebuilder validation
+	}
 	translateTokenSource(provider, jwtProvider)
 	err := translateJwks(krtctx, provider.JWKS, jwtProvider, configMaps, resolver, gwExtObj)
 	if err != nil {

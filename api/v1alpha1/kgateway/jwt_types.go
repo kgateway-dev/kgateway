@@ -60,6 +60,19 @@ type JWTProvider struct {
 	// If false or not set, the header containing the token will be removed.
 	// +optional
 	ForwardToken *bool `json:"forwardToken,omitempty"`
+
+	// ClockSkew is the tolerance applied when verifying the time constraints of the JWT,
+	// i.e. the 'exp' and 'nbf' claims.
+	// Only whole seconds are supported, so the duration must not have a millisecond component.
+	// If unspecified, the Envoy default of 60s is used. A zero value is not accepted because
+	// Envoy interprets it as unset and falls back to that default.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s)){1,3}$')",message="invalid duration value: only whole seconds are supported, e.g. 1h, 30s"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="clockSkew must be at least 1s."
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('87600h')",message="clockSkew must not exceed 87600h."
+	ClockSkew *metav1.Duration `json:"clockSkew,omitempty"`
 }
 
 // HeaderSource configures how to retrieve a JWT from a header

@@ -406,6 +406,60 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "provider with clock skew",
+			providers: []kgateway.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: kgateway.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
+						},
+						ClockSkew: &metav1.Duration{Duration: time.Hour},
+					},
+				},
+			},
+			expectedError: false,
+			expectedConfig: &jwtauthnv3.JwtAuthentication{
+				Providers: map[string]*jwtauthnv3.JwtProvider{
+					"test-ext_test-ns_test-provider": {
+						Issuer:            "test-issuer",
+						PayloadInMetadata: PayloadInMetadata,
+						ClockSkewSeconds:  3600,
+					},
+				},
+			},
+		},
+		{
+			name: "provider with sub-minute clock skew",
+			providers: []kgateway.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: kgateway.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
+						},
+						ClockSkew: &metav1.Duration{Duration: 90 * time.Second},
+					},
+				},
+			},
+			expectedError: false,
+			expectedConfig: &jwtauthnv3.JwtAuthentication{
+				Providers: map[string]*jwtauthnv3.JwtProvider{
+					"test-ext_test-ns_test-provider": {
+						Issuer:            "test-issuer",
+						PayloadInMetadata: PayloadInMetadata,
+						ClockSkewSeconds:  90,
+					},
+				},
+			},
+		},
+		{
 			name: "provider with remove token",
 			providers: []kgateway.NamedJWTProvider{
 				{
@@ -455,6 +509,7 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 				assert.Equal(t, expectedProvider.Audiences, actualProvider.Audiences)
 				assert.Equal(t, expectedProvider.PayloadInMetadata, actualProvider.PayloadInMetadata)
 				assert.Equal(t, expectedProvider.Forward, actualProvider.Forward)
+				assert.Equal(t, expectedProvider.ClockSkewSeconds, actualProvider.ClockSkewSeconds)
 
 				// Check claim to headers
 				assert.Equal(t, len(expectedProvider.ClaimToHeaders), len(actualProvider.ClaimToHeaders))

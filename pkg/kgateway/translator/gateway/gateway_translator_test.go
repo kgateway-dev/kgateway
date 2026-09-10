@@ -3525,6 +3525,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("JWT Policy with clock skew", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/clock-skew.yaml"},
+			outputFile: "jwt/clock-skew.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy with validation mode AllowMissing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"jwt/gateway-validation-mode.yaml"},
