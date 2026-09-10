@@ -79,6 +79,23 @@ type ClusterOverlay struct {
 // it. Waypoint owns the discovery-type transition and clears any inherited
 // locality mode when replacing backend endpoints with a service VIP; that
 // redirect cannot use the backend endpoints' locality weights.
+//
+// Read only inputs the framework can detect a change in, or the overlay will
+// go stale:
+//
+//   - anything reached through kctx, which registers a KRT dependency;
+//   - ucc;
+//   - fields of in that BackendObjectIR.EqualsIgnoringResourceVersion compares
+//     — the IR fields, ObjIr, and the backing object's UID, generation, labels
+//     and annotations.
+//
+// Notably absent is spec on a kind that leaves metadata.generation at 0, such
+// as a core Service: the base row holds the backend it was built from, and KRT
+// keeps that row when equality says nothing moved, so a spec field no compared
+// input reflects stays stale until something else changes. An overlay that
+// needs such a field must have its plugin project the field into ObjIr, the
+// way the kubernetes and serviceentry plugins carry resolved addresses for the
+// waypoint overlay.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
