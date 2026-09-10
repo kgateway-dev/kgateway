@@ -120,45 +120,10 @@ func createRateLimitActions(descriptors []kgateway.RateLimitDescriptor) ([]*envo
 		var actions []*envoyroutev3.RateLimit_Action
 
 		for _, entry := range descriptor.Entries {
-			action := &envoyroutev3.RateLimit_Action{}
-
-			// Set the action specifier based on entry type
-			switch entry.Type {
-			case kgateway.RateLimitDescriptorEntryTypeGeneric:
-				if entry.Generic == nil {
-					return nil, fmt.Errorf("generic entry requires Generic field to be set")
-				}
-				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_GenericKey_{
-					GenericKey: &envoyroutev3.RateLimit_Action_GenericKey{
-						DescriptorKey:   entry.Generic.Key,
-						DescriptorValue: entry.Generic.Value,
-					},
-				}
-			case kgateway.RateLimitDescriptorEntryTypeHeader:
-				if entry.Header == nil {
-					return nil, fmt.Errorf("header entry requires Header field to be set")
-				}
-				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RequestHeaders_{
-					RequestHeaders: &envoyroutev3.RateLimit_Action_RequestHeaders{
-						HeaderName:    *entry.Header,
-						DescriptorKey: *entry.Header, // Use header name as key
-					},
-				}
-			case kgateway.RateLimitDescriptorEntryTypeRemoteAddress:
-				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RemoteAddress_{
-					RemoteAddress: &envoyroutev3.RateLimit_Action_RemoteAddress{},
-				}
-			case kgateway.RateLimitDescriptorEntryTypePath:
-				action.ActionSpecifier = &envoyroutev3.RateLimit_Action_RequestHeaders_{
-					RequestHeaders: &envoyroutev3.RateLimit_Action_RequestHeaders{
-						HeaderName:    ":path",
-						DescriptorKey: "path",
-					},
-				}
-			default:
-				return nil, fmt.Errorf("unsupported entry type: %s", entry.Type)
+			action, _, err := translateRateLimitDescriptorEntry(entry)
+			if err != nil {
+				return nil, err
 			}
-
 			actions = append(actions, action)
 		}
 

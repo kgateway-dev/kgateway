@@ -1749,7 +1749,7 @@ spec:
                                 When translated to Envoy, these entries combine to form a single descriptor.
                               items:
                                 description: |-
-                                  RateLimitDescriptorEntry defines a single entry in a rate limit descriptor.
+                                  RateLimitDescriptorEntry defines a single entry used to generate a rate limit descriptor.
                                   Only one entry type may be specified.
                                 properties:
                                   generic:
@@ -1832,6 +1832,132 @@ spec:
                   local:
                     description: Local defines a local rate limiting policy.
                     properties:
+                      alwaysConsumeDefaultTokenBucket:
+                        description: |-
+                          AlwaysConsumeDefaultTokenBucket determines whether the default TokenBucket is also
+                          consumed when a descriptor matches. It defaults to true. When false, the default
+                          TokenBucket is only consumed when no descriptor matches.
+                        type: boolean
+                      descriptors:
+                        description: |-
+                          Descriptors define additional rate limit buckets selected from request attributes.
+                          A request descriptor must match all entries in the configured order to use the
+                          descriptor's token bucket. If no descriptor matches, the default TokenBucket is used.
+
+                          Header, RemoteAddress, and Path entries create a separate dynamic token bucket for
+                          each distinct value observed at runtime. Generic entries use their configured static
+                          key and value.
+                        items:
+                          description: |-
+                            LocalRateLimitDescriptor defines a request descriptor and the local token bucket
+                            to use when all descriptor entries match.
+                          properties:
+                            entries:
+                              description: |-
+                                Entries are the individual components that make up this descriptor.
+                                Entries are matched in the configured order.
+                              items:
+                                description: |-
+                                  RateLimitDescriptorEntry defines a single entry used to generate a rate limit descriptor.
+                                  Only one entry type may be specified.
+                                properties:
+                                  generic:
+                                    description: |-
+                                      Generic contains the configuration for a generic key-value descriptor entry.
+                                      This field must be specified when Type is Generic.
+                                    properties:
+                                      key:
+                                        description: Key is the name of this descriptor
+                                          entry.
+                                        minLength: 1
+                                        type: string
+                                      value:
+                                        description: Value is the static value for
+                                          this descriptor entry.
+                                        minLength: 1
+                                        type: string
+                                    required:
+                                    - key
+                                    - value
+                                    type: object
+                                  header:
+                                    description: |-
+                                      Header specifies a request header to extract the descriptor value from.
+                                      This field must be specified when Type is Header.
+                                    minLength: 1
+                                    type: string
+                                  type:
+                                    description: Type specifies what kind of rate
+                                      limit descriptor entry this is.
+                                    enum:
+                                    - Generic
+                                    - Header
+                                    - RemoteAddress
+                                    - Path
+                                    type: string
+                                required:
+                                - type
+                                type: object
+                                x-kubernetes-validations:
+                                - message: exactly one entry type must be specified
+                                  rule: (has(self.type) && (self.type == 'Generic'
+                                    && has(self.generic) && !has(self.header)) ||
+                                    (self.type == 'Header' && has(self.header) &&
+                                    !has(self.generic)) || (self.type == 'RemoteAddress'
+                                    && !has(self.generic) && !has(self.header)) ||
+                                    (self.type == 'Path' && !has(self.generic) &&
+                                    !has(self.header)))
+                              minItems: 1
+                              type: array
+                            tokenBucket:
+                              description: TokenBucket is the rate limit applied to
+                                requests matching this descriptor.
+                              properties:
+                                fillInterval:
+                                  description: |-
+                                    FillInterval defines the time duration between consecutive token fills.
+                                    This value must be a valid duration string (e.g., "1s", "500ms").
+                                    It determines the frequency of token replenishment.
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                  - message: must be at least 50ms
+                                    rule: duration(self) >= duration('50ms')
+                                maxTokens:
+                                  description: |-
+                                    MaxTokens specifies the maximum number of tokens that the bucket can hold.
+                                    This value must be greater than or equal to 1.
+                                    It determines the burst capacity of the rate limiter.
+                                  format: int32
+                                  minimum: 1
+                                  type: integer
+                                tokensPerFill:
+                                  default: 1
+                                  description: |-
+                                    TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
+                                    If not specified, it defaults to 1.
+                                    This controls the steady-state rate of token generation.
+                                  format: int32
+                                  minimum: 1
+                                  type: integer
+                              required:
+                              - fillInterval
+                              - maxTokens
+                              type: object
+                          required:
+                          - entries
+                          - tokenBucket
+                          type: object
+                        minItems: 1
+                        type: array
+                      maxDynamicDescriptors:
+                        description: |-
+                          MaxDynamicDescriptors is the maximum number of dynamic token buckets kept in the
+                          least-recently-used cache for each wildcard descriptor. It defaults to 20.
+                        format: int32
+                        minimum: 1
+                        type: integer
                       percentEnabled:
                         description: PercentEnabled specifies the percentage of requests
                           for which the rate limiter is enabled.
@@ -1884,6 +2010,9 @@ spec:
                         - maxTokens
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: descriptors require tokenBucket to be set
+                      rule: '!has(self.descriptors) || has(self.tokenBucket)'
                 type: object
               rbac:
                 description: |-

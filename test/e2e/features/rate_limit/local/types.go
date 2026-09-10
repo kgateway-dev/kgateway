@@ -11,6 +11,7 @@ import (
 var (
 	// local rate limit traffic policies
 	routeLocalRateLimitManifest         = getTestFile("route-local-rate-limit.yaml")
+	routeLocalRateLimitDescriptors      = getTestFile("route-local-rate-limit-descriptors.yaml")
 	gwLocalRateLimitManifest            = getTestFile("gw-local-rate-limit.yaml")
 	disabledRouteLocalRateLimitManifest = getTestFile("route-local-rate-limit-disabled.yaml")
 	httpRoutesManifest                  = getTestFile("httproutes.yaml")
