@@ -302,7 +302,6 @@ type ConnectConfig struct {
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
-// This allows more flexible and advanced path rewriting based on regex patterns.
 // +kubebuilder:validation:AtLeastOneOf=pathRegex
 type URLRewrite struct {
 	// Path specifies the path rewrite configuration.
@@ -475,11 +474,9 @@ type RateLimit struct {
 	Global *RateLimitPolicy `json:"global,omitempty"`
 }
 
-// LocalRateLimitPolicy represents a policy for local rate limiting.
-// It defines the configuration for rate limiting using a token bucket mechanism.
+// LocalRateLimitPolicy configures local rate limiting using a token bucket.
 type LocalRateLimitPolicy struct {
-	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
-	// It defines the parameters for controlling the rate at which requests are allowed.
+	// TokenBucket configures the local rate limiter's token bucket.
 	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
 
@@ -496,8 +493,7 @@ type LocalRateLimitPolicy struct {
 	PercentEnforced *int32 `json:"percentEnforced,omitempty"`
 }
 
-// TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
-// It controls the rate at which tokens are generated and consumed for a specific operation.
+// TokenBucket configures the burst capacity and refill rate of a token bucket.
 type TokenBucket struct {
 	// MaxTokens specifies the maximum number of tokens that the bucket can hold.
 	// This value must be greater than or equal to 1.
@@ -508,7 +504,6 @@ type TokenBucket struct {
 
 	// TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
 	// If not specified, it defaults to 1.
-	// This controls the steady-state rate of token generation.
 	// +optional
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
@@ -516,7 +511,6 @@ type TokenBucket struct {
 
 	// FillInterval defines the time duration between consecutive token fills.
 	// This value must be a valid duration string (e.g., "1s", "500ms").
-	// It determines the frequency of token replenishment.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
@@ -767,45 +761,24 @@ type Buffer struct {
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
 
-	// FilterStage specifies where in the HTTP filter chain the buffer filter is placed.
-	// By default the buffer filter runs late in the chain, after authentication, authorization
-	// and rate limiting, so that a request that is going to be rejected outright is rejected
-	// before its body is buffered.
+	// FilterStage sets the buffer filter's position in the HTTP filter chain.
+	// By default, it runs after authentication, authorization, and rate limiting.
+	// Place it before filters that read or hold the body, such as ext_proc or body
+	// transformations, to enforce maxRequestSize before those filters consume it.
+	// Earlier buffering uses memory even for requests that later filters reject.
 	//
-	// `maxRequestSize` is only enforced while the buffer filter is the filter accumulating the
-	// request body. A filter placed ahead of it that reads or holds the body first - for example
-	// an ext_proc that waits on its server, or a body transformation - consumes the body before
-	// the buffer filter ever sees it, and the limit is then inert. Move the buffer filter ahead
-	// of such a filter to make the limit enforce, at the cost of buffering bodies that a later
-	// authentication or authorization filter may go on to reject.
+	// Placement affects every route on the listener. If policies request different
+	// stages, the earliest wins. Policies that only set disable do not affect
+	// placement. Per-route maxRequestSize and disable overrides still apply.
+	// Keep stages consistent or use separate listeners to avoid moving buffering
+	// earlier for other routes.
 	//
-	// The placement is a property of the whole filter chain rather than of a single route, and
-	// setting it here affects every route on the listener. Envoy resolves the per-route buffer
-	// config by filter name, and that name-based lookup is what lets a route-level policy override
-	// a Gateway-level one, so the gateway installs exactly one buffer filter per filter chain. If
-	// TrafficPolicies attached to the same listener ask for different stages, the earliest
-	// requested stage is used for the whole chain. A policy that only sets `disable` takes no part
-	// in that: it keeps its per-route override and leaves the placement to the policies that
-	// actually buffer, so turning buffering off on one route never moves the buffer filter for the
-	// others.
+	// Request decompressors stay ahead of the buffer so maxRequestSize applies to
+	// the decompressed body. Placing the buffer at Fault also moves decompression
+	// ahead of fault injection, CORS, and ext_proc filters staged at Fault for all
+	// routes on the listener.
 	//
-	// Setting it therefore relaxes, never tightens, what the other routes on the listener do:
-	// a route that asked for the default placement will have its bodies buffered before
-	// authentication and authorization run, spending memory on requests those filters would go on
-	// to reject. Keep buffer policies on a listener consistent, or split the listener, if that
-	// matters for a route. The per-route `maxRequestSize` is unaffected and continues to apply
-	// per route.
-	//
-	// When request decompression is configured on the same filter chain, the decompressor filters
-	// stay ahead of the buffer filter, so that `maxRequestSize` is measured against the
-	// decompressed body rather than the encoded bytes - otherwise a small compressed body would
-	// satisfy the limit and expand past it upstream. Their default placement is already ahead of
-	// every stage except `Fault`, so this only moves them when the buffer filter is staged at
-	// `Fault`, and then it moves them for every route on the listener: request decompression on
-	// those routes runs ahead of fault injection, CORS, and any ext_proc staged at `Fault`.
-	//
-	// `filterStage.weight` must be 0: it breaks ties between several filters of the same type at
-	// one stage, and a filter chain carries at most one buffer filter.
+	// filterStage.weight must be 0.
 	// +optional
 	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
