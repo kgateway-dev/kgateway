@@ -11,6 +11,7 @@ import (
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -460,6 +461,96 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "provider with cache",
+			providers: []kgateway.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: kgateway.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
+						},
+						Cache: &kgateway.JWTCache{
+							Size:         new(uint32(1024)),
+							MaxTokenSize: new(uint32(8192)),
+						},
+					},
+				},
+			},
+			expectedError: false,
+			expectedConfig: &jwtauthnv3.JwtAuthentication{
+				Providers: map[string]*jwtauthnv3.JwtProvider{
+					"test-ext_test-ns_test-provider": {
+						Issuer:            "test-issuer",
+						PayloadInMetadata: PayloadInMetadata,
+						JwtCacheConfig: &jwtauthnv3.JwtCacheConfig{
+							JwtCacheSize:    1024,
+							JwtMaxTokenSize: 8192,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "provider with empty cache still enables the cache",
+			providers: []kgateway.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: kgateway.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
+						},
+						Cache: &kgateway.JWTCache{},
+					},
+				},
+			},
+			expectedError: false,
+			expectedConfig: &jwtauthnv3.JwtAuthentication{
+				Providers: map[string]*jwtauthnv3.JwtProvider{
+					"test-ext_test-ns_test-provider": {
+						Issuer:            "test-issuer",
+						PayloadInMetadata: PayloadInMetadata,
+						// Envoy fills in its own defaults of 100 tokens and 4096 bytes.
+						JwtCacheConfig: &jwtauthnv3.JwtCacheConfig{},
+					},
+				},
+			},
+		},
+		{
+			name: "provider with only cache size",
+			providers: []kgateway.NamedJWTProvider{
+				{
+					Name: "test-provider",
+					JWTProvider: kgateway.JWTProvider{
+						Issuer: "test-issuer",
+						JWKS: kgateway.JWKS{
+							LocalJWKS: &kgateway.LocalJWKS{
+								Inline: new(`{"keys":[{"kty":"RSA","kid":"test-key","use":"sig","alg":"RS256","n":"test-n","e":"AQAB"}]}`),
+							},
+						},
+						Cache: &kgateway.JWTCache{Size: new(uint32(1))},
+					},
+				},
+			},
+			expectedError: false,
+			expectedConfig: &jwtauthnv3.JwtAuthentication{
+				Providers: map[string]*jwtauthnv3.JwtProvider{
+					"test-ext_test-ns_test-provider": {
+						Issuer:            "test-issuer",
+						PayloadInMetadata: PayloadInMetadata,
+						JwtCacheConfig: &jwtauthnv3.JwtCacheConfig{
+							JwtCacheSize: 1,
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "provider with remove token",
 			providers: []kgateway.NamedJWTProvider{
 				{
@@ -510,6 +601,8 @@ func TestConvertJwtValidationConfig(t *testing.T) {
 				assert.Equal(t, expectedProvider.PayloadInMetadata, actualProvider.PayloadInMetadata)
 				assert.Equal(t, expectedProvider.Forward, actualProvider.Forward)
 				assert.Equal(t, expectedProvider.ClockSkewSeconds, actualProvider.ClockSkewSeconds)
+				assert.True(t, proto.Equal(expectedProvider.GetJwtCacheConfig(), actualProvider.GetJwtCacheConfig()),
+					"jwt cache config mismatch: want %v, got %v", expectedProvider.GetJwtCacheConfig(), actualProvider.GetJwtCacheConfig())
 
 				// Check claim to headers
 				assert.Equal(t, len(expectedProvider.ClaimToHeaders), len(actualProvider.ClaimToHeaders))
