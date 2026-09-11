@@ -579,11 +579,23 @@ func (s *XdsCostSuite) startMetricsForward() {
 
 // scrape reads the controller's metrics once and sums the families we track.
 func (s *XdsCostSuite) scrape() controllerSample {
-	resp, err := http.Get(s.metricsURL)
+	sample, err := readControllerSample(s.metricsURL)
 	s.Require().NoError(err, "should scrape %s", s.metricsURL)
+	return sample
+}
+
+// readControllerSample scrapes one sample from a controller metrics endpoint.
+// Shared with the fleet-scale suite in xdsfleet_suite.go.
+func readControllerSample(metricsURL string) (controllerSample, error) {
+	resp, err := http.Get(metricsURL)
+	if err != nil {
+		return controllerSample{}, err
+	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-	s.Require().NoError(err, "should read metrics body")
+	if err != nil {
+		return controllerSample{}, err
+	}
 
 	sums := sumFamilies(string(body), []string{
 		"process_cpu_seconds_total",
@@ -607,8 +619,24 @@ func (s *XdsCostSuite) scrape() controllerSample {
 		Transforms: sums["kgateway_xds_snapshot_transforms_total"],
 		Deferrals:  sums["kgateway_xds_snapshot_cluster_deferrals_total"],
 		Resources:  sums["kgateway_xds_snapshot_resources"],
-	}
+	}, nil
 }
+
+// mustJSON marshals a value for one emitted result line.
+func mustJSON(v any) string {
+	blob, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf(`{"marshal_error":%q}`, err.Error())
+	}
+	return string(blob)
+}
+
+// sortFloats sorts in place; the fleet suite uses it before percentile.
+func sortFloats(v []float64) { sort.Float64s(v) }
+
+// hasPrefixIn reports whether name contains sub, used for controller pod and
+// container name matching where the release name is not known exactly.
+func hasPrefixIn(name, sub string) bool { return strings.Contains(name, sub) }
 
 // sumFamilies sums every series of each requested metric name in a Prometheus
 // text exposition. A name with no series sums to zero, which is what we want
