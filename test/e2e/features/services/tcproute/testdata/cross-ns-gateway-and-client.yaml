@@ -22,7 +22,7 @@ spec:
   terminationGracePeriodSeconds: 0
   containers:
     - name: curl
-      image: curlimages/curl:8.20.0
+      image: ghcr.io/kgateway-dev/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"

@@ -20,7 +20,7 @@ spec:
   serviceAccountName: curl
   containers:
     - name: curl
-      image: curlimages/curl:8.20.0
+      image: ghcr.io/kgateway-dev/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
@@ -56,7 +56,7 @@ spec:
   serviceAccountName: notcurl
   containers:
     - name: notcurl
-      image: curlimages/curl:8.20.0
+      image: ghcr.io/kgateway-dev/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
