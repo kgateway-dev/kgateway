@@ -3,6 +3,7 @@ package curl
 import (
 	"context"
 	"encoding/base64"
+	"net"
 	"net/http"
 	"slices"
 	"strconv"
@@ -119,16 +120,17 @@ func WithHost(host string) Option {
 	}
 }
 
-// WithHostPort returns the Option to set the host and port for the curl request
-// The provided string is assumed to have the format [HOST]:[PORT]
+// WithHostPort returns the Option to set the host and port for the curl request.
+// The provided string is assumed to have the format [HOST]:[PORT], where an IPv6
+// host is bracketed as in a URL ("[::1]:8080"). The brackets are stripped, so the
+// stored host is always the bare address.
 func WithHostPort(hostPort string) Option {
 	return func(config *requestConfig) {
-		parts := strings.Split(hostPort, ":")
 		host := "unset"
 		port := 0
-		if len(parts) == 2 {
-			host = parts[0]
-			port, _ = strconv.Atoi(parts[1])
+		if h, p, err := net.SplitHostPort(hostPort); err == nil {
+			host = h
+			port, _ = strconv.Atoi(p)
 		}
 
 		WithHost(host)(config)

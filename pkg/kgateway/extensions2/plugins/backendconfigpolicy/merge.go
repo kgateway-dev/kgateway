@@ -38,6 +38,7 @@ func mergeBackendConfigPolicies(
 		mergeDnsRefreshRate,
 		mergeDnsJitter,
 		mergeRespectDnsTtl,
+		mergeDnsLookupFamily,
 		mergeUpstreamProxyProtocol,
 	}
 
@@ -156,6 +157,14 @@ func mergeRespectDnsTtl(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyR
 	}
 	p1.respectDnsTtl = p2.respectDnsTtl
 	mergeOrigins.SetOne("dns.respectTTL", p2Ref, p2MergeOrigins)
+}
+
+func mergeDnsLookupFamily(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.dnsLookupFamily, p2.dnsLookupFamily, opts) {
+		return
+	}
+	p1.dnsLookupFamily = p2.dnsLookupFamily
+	mergeOrigins.SetOne("dns.lookupFamily", p2Ref, p2MergeOrigins)
 }
 
 func mergeUpstreamProxyProtocol(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {

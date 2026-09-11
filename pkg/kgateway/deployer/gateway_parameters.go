@@ -354,6 +354,10 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			},
 		},
 	}
+	// The proxy's own listeners (readiness, stats) must bind the same address
+	// family as the translated data-plane listeners; otherwise the kubelet probe
+	// and the metrics scrape reach the pod on an address Envoy is not listening on.
+	gtw.BindIpv6 = new(k.inputs.CommonCollections.Settings.ListenerBindIpv6)
 	if i := gw.Spec.Infrastructure; i != nil {
 		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
 		gtw.GatewayLabels = translateInfraMeta(i.Labels)
