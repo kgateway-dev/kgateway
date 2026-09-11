@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
@@ -68,6 +70,7 @@ type translationResult struct {
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Endpoints     []*envoyendpointv3.ClusterLoadAssignment
 	Secrets       []*envoytlsv3.Secret
 	Statuses      *Statuses
 }
@@ -111,6 +114,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	if len(tr.Endpoints) > 0 {
+		endpoints, err := marshalProtoMessages(tr.Endpoints, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Endpoints"] = endpoints
 	}
 
 	if len(tr.Secrets) > 0 {
@@ -202,6 +213,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	if endpointsData, ok := result["Endpoints"]; ok {
+		var endpoints []json.RawMessage
+		if err := json.Unmarshal(endpointsData, &endpoints); err != nil {
+			return err
+		}
+		tr.Endpoints = make([]*envoyendpointv3.ClusterLoadAssignment, len(endpoints))
+		for i, endpointData := range endpoints {
+			endpoint := &envoyendpointv3.ClusterLoadAssignment{}
+			if err := m.Unmarshal(endpointData, endpoint); err != nil {
+				return err
+			}
+			tr.Endpoints[i] = endpoint
+		}
+	}
+
 	if secretsData, ok := result["Secrets"]; ok {
 		var secrets []json.RawMessage
 		if err := json.Unmarshal(secretsData, &secrets); err != nil {
@@ -247,10 +273,12 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
 type ExtraConfig struct {
-	NewClientFn           func(*testing.T, ...client.Object) apiclient.Client
-	PluginsFn             ExtraPluginsFn
-	Schemes               runtime.SchemeBuilder
-	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
+	NewClientFn            func(*testing.T, ...client.Object) apiclient.Client
+	PluginsFn              ExtraPluginsFn
+	Schemes                runtime.SchemeBuilder
+	GVKToStructuralSchema  map[schema.GroupVersionKind]*apiserverschema.Structural
+	IncludeEndpoints       bool
+	ExcludeErroredClusters bool
 }
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
@@ -302,11 +330,13 @@ func TestTranslationWithExtraPlugins(
 	// sort the output and print it
 	result.Proxy = sortProxy(result.Proxy)
 	result.Clusters = sortClusters(result.Clusters)
+	result.Endpoints = sortEndpoints(result.Endpoints)
 	output := &translationResult{
 		Routes:        result.Proxy.Routes,
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Endpoints:     result.Endpoints,
 		Secrets:       result.Proxy.Secrets,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
@@ -331,6 +361,10 @@ func TestTranslationWithExtraPlugins(
 	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing clusters output")
 
+	gotEndpoints, err := compareEndpoints(outputFile, result.Endpoints)
+	r.Emptyf(gotEndpoints, "unexpected diff in endpoints output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing endpoints output")
+
 	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
 	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing statuses output")
@@ -347,6 +381,7 @@ type ActualTestResult struct {
 	ListenerSets  map[types.NamespacedName]*gwv1.ListenerSet
 	PolicyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin
 	Clusters      []*envoyclusterv3.Cluster
+	Endpoints     []*envoyendpointv3.ClusterLoadAssignment
 }
 
 func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
@@ -474,7 +509,66 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	slices.SortFunc(clusters, func(a, b *envoyclusterv3.Cluster) int {
 		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
+	// Locality groups in a load assignment are built by iterating a map keyed by
+	// locality, so their order is nondeterministic. Sort for stable golden output.
+	// (Mirrors sortLocalityLbEndpoints in the pkg/kgateway/setup tests.)
+	for _, c := range clusters {
+		la := c.GetLoadAssignment()
+		if la == nil {
+			continue
+		}
+		sortLocalityLbEndpoints(la.Endpoints)
+	}
 	return clusters
+}
+
+func compareEndpoints(expectedFile string, actualEndpoints []*envoyendpointv3.ClusterLoadAssignment) (string, error) {
+	expectedOutput := &translationResult{}
+	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
+		return "", err
+	}
+
+	return cmp.Diff(sortEndpoints(expectedOutput.Endpoints), sortEndpoints(actualEndpoints), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func sortEndpoints(endpoints []*envoyendpointv3.ClusterLoadAssignment) []*envoyendpointv3.ClusterLoadAssignment {
+	slices.SortFunc(endpoints, func(a, b *envoyendpointv3.ClusterLoadAssignment) int {
+		return stdcmp.Compare(a.GetClusterName(), b.GetClusterName())
+	})
+	for _, endpoint := range endpoints {
+		sortLocalityLbEndpoints(endpoint.GetEndpoints())
+	}
+	return endpoints
+}
+
+func sortLocalityLbEndpoints(endpoints []*envoyendpointv3.LocalityLbEndpoints) {
+	slices.SortFunc(endpoints, func(a, b *envoyendpointv3.LocalityLbEndpoints) int {
+		la, lb := a.GetLocality(), b.GetLocality()
+		if la.GetRegion() != lb.GetRegion() {
+			return stdcmp.Compare(la.GetRegion(), lb.GetRegion())
+		}
+		if la.GetZone() != lb.GetZone() {
+			return stdcmp.Compare(la.GetZone(), lb.GetZone())
+		}
+		if la.GetSubZone() != lb.GetSubZone() {
+			return stdcmp.Compare(la.GetSubZone(), lb.GetSubZone())
+		}
+		if a.GetPriority() != b.GetPriority() {
+			return stdcmp.Compare(a.GetPriority(), b.GetPriority())
+		}
+		return stdcmp.Compare(lbEndpointAddrs(a), lbEndpointAddrs(b))
+	})
+}
+
+// lbEndpointAddrs returns a sorted, comma-joined string of the socket addresses
+// within a locality group, used as a sort tie-breaker.
+func lbEndpointAddrs(e *envoyendpointv3.LocalityLbEndpoints) string {
+	var addrs []string
+	for _, lb := range e.GetLbEndpoints() {
+		addrs = append(addrs, lb.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+	}
+	slices.Sort(addrs)
+	return strings.Join(addrs, ",")
 }
 
 func ReadYamlFile(file string, out any) error {
@@ -513,6 +607,49 @@ func GetHTTPRouteStatusError(
 		}
 	}
 	return nil
+}
+
+// waitForEndpointsToSettle waits for the endpoints collection to quiesce. Endpoint IRs
+// depend dynamically on pods and EndpointSlices: the collection's initial transform can
+// complete (and report synced) before a dependency-triggered recompute lands, so
+// snapshotting right after HasSynced races with that recompute and yields nondeterministic
+// endpoint output. Poll until the collection stops changing.
+func waitForEndpointsToSettle(t *testing.T, endpoints krt.Collection[ir.EndpointsForBackend]) {
+	t.Helper()
+	prev := endpoints.List()
+	const settlePolls = 3
+	stable := 0
+	for range 400 { // wait for pods to settle: 400 * 25ms = 10s max
+		time.Sleep(25 * time.Millisecond)
+		cur := endpoints.List()
+		if endpointsEqual(prev, cur) {
+			stable++
+			if stable >= settlePolls {
+				return
+			}
+		} else {
+			stable = 0
+		}
+		prev = cur
+	}
+	t.Fatal("endpoints collection did not settle within 10s")
+}
+
+func endpointsEqual(a, b []ir.EndpointsForBackend) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	byName := make(map[string]ir.EndpointsForBackend, len(a))
+	for _, e := range a {
+		byName[e.ResourceName()] = e
+	}
+	for _, e := range b {
+		o, ok := byName[e.ResourceName()]
+		if !ok || !o.Equals(e) {
+			return false
+		}
+	}
+	return true
 }
 
 func GetPolicyStatusError(
@@ -793,6 +930,9 @@ func (tc TestCase) Run(
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
+	if extraConfig.IncludeEndpoints {
+		waitForEndpointsToSettle(t, commoncol.Endpoints)
+	}
 	for i, plug := range extraPlugs {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
 	}
@@ -876,13 +1016,27 @@ func (tc TestCase) Run(
 		t := translator.GetBackendTranslator()
 		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
+		var endpointAssignments []*envoyendpointv3.ClusterLoadAssignment
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				// In strict mode, backend validation errors are expected and should not fail the test.
-				cluster, _ := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
+				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
+				if err != nil && extraConfig.ExcludeErroredClusters {
+					// Production excludes errored clusters from the per-client xDS snapshot.
+					continue
+				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
+					// Optionally translate EDS assignments for Kubernetes Service clusters so
+					// selected goldens cover endpoint derivation. Preserve empty assignments:
+					// publishing them is required to clear stale endpoints from Envoy.
+					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS && backend.GetObjectSource().Kind == "Service" {
+						if ep := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName())); ep != nil {
+							if cla, _, _ := translator.TranslateEndpoints(krt.TestingDummyContext{}, ucc, *ep); cla != nil {
+								endpointAssignments = append(endpointAssignments, cla)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -906,6 +1060,7 @@ func (tc TestCase) Run(
 		}
 		r := results[gwNN]
 		r.Clusters = clusters
+		r.Endpoints = endpointAssignments
 		results[gwNN] = r
 	}
 
