@@ -90,11 +90,42 @@ func (i *Interner[M]) intern(msg M, bucketHash uint64, wrap func(M) Shared[M]) S
 		}
 	}
 	shared := wrap(msg)
+	i.record(bucketHash, shared)
+	return shared
+}
+
+// Adopt records an already-shared proto as an interning candidate, so an
+// interner can be primed with what an earlier generation handed out instead of
+// starting empty.
+//
+// This is what lets interning survive a recomputation. An interner that starts
+// empty every time only shares among the values built in that one pass, which
+// is worth nothing when the values that need to agree were built in *different*
+// passes — and that is the normal case for anything keyed off a collection that
+// grows an entry at a time, because the store keeps the older object whenever
+// equality says nothing changed.
+//
+// Adopt does not re-verify: the caller is asserting this proto is already a
+// legitimate shared value for this bucket. Intern still proves equality before
+// handing an adopted proto to anyone, so a wrong bucket costs a miss, not a
+// wrong result. Adopting the same instance twice is a no-op.
+func (i *Interner[M]) Adopt(shared Shared[M], bucketHash uint64) {
+	if shared.IsNil() {
+		return
+	}
+	for _, existing := range i.byHash[bucketHash] {
+		if any(existing.msg) == any(shared.msg) {
+			return
+		}
+	}
+	i.record(bucketHash, shared)
+}
+
+func (i *Interner[M]) record(bucketHash uint64, shared Shared[M]) {
 	if i.byHash == nil {
 		i.byHash = make(map[uint64][]Shared[M])
 	}
 	i.byHash[bucketHash] = append(i.byHash[bucketHash], shared)
-	return shared
 }
 
 // Wrap takes ownership of msg as a shared, read-only proto. The caller must
