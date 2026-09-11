@@ -136,7 +136,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 					// kgateway Valid/Pending vocabulary the standard grading expects.
 					pluginutils.NoConditionErrorMetric,
 				),
-				PolicyStatusFromGatewayReports: true,
 			},
 		},
 	}

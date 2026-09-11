@@ -91,6 +91,25 @@ Statuses:
     BackendTLSPolicy/default/tlsroute-backend-tls-invalid:
       ancestors:
       - ancestorRef:
+          group: ""
+          kind: Service
+          name: example-tls-svc
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: 'invalid CA certificate ref ConfigMap/missing-ca: ConfigMap not
+            found: default/missing-ca'
+          reason: InvalidCACertificateRef
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'invalid CA certificate ref ConfigMap/missing-ca: ConfigMap not
+            found: default/missing-ca'
+          reason: NoValidCACertificate
+          status: "False"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+      - ancestorRef:
           group: gateway.networking.k8s.io
           kind: Gateway
           name: example-gateway

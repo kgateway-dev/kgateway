@@ -5,13 +5,13 @@ import (
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	backendconfigpolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -28,21 +28,32 @@ var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
 // GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
 // Exported for testing.
-func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds map[schema.GroupKind]struct{}) reports.ReportMap {
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
 
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
+	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
 		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
-		bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+		targetRef := backendAncestorRef(obj.GetObjectSource())
+
+		// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
+		// (Accepted/ResolvedRefs/Conflicted) rather than kgateway's Valid/Attached, and
+		// resolves conflicts the way translation does. The target ancestor reported here is
+		// additive to the Gateway ancestors the translator reports for every route that uses
+		// the target: it is the only status an unrouted target, or a Backend used solely by a
+		// GatewayExtension, ever gets.
+		reportBackendTLSPolicies(reporter, targetRef, obj.GetAttachedPolicies().Policies[btpGK])
+
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
+			if gk == btpGK {
+				continue
+			}
 			for _, polAtt := range polAtts {
-				if _, excluded := excludedPolicyKinds[polAtt.GroupKind]; excluded {
-					continue
-				}
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
 					// since there's no real policy object, we don't need to generate status for it
@@ -55,12 +66,7 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 					Namespace: polAtt.PolicyRef.Namespace,
 					Name:      polAtt.PolicyRef.Name,
 				}
-				ancestorRef := gwv1.ParentReference{
-					Group:     new(gwv1.Group(obj.GetObjectSource().Group)),
-					Kind:      new(gwv1.Kind(obj.GetObjectSource().Kind)),
-					Namespace: new(gwv1.Namespace(obj.GetObjectSource().Namespace)),
-					Name:      gwv1.ObjectName(obj.GetObjectSource().Name),
-				}
+				ancestorRef := targetRef
 				if polAtt.PolicyRef.SectionName != "" {
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
@@ -98,6 +104,48 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 	}
 
 	return merged
+}
+
+// backendAncestorRef returns the ancestor ref for a policy attached to a backend: the
+// target object itself. Callers add a sectionName for port-specific attachments.
+func backendAncestorRef(src ir.ObjectSource) gwv1.ParentReference {
+	return gwv1.ParentReference{
+		Group:     new(gwv1.Group(src.Group)),
+		Kind:      new(gwv1.Kind(src.Kind)),
+		Namespace: new(gwv1.Namespace(src.Namespace)),
+		Name:      gwv1.ObjectName(src.Name),
+	}
+}
+
+// reportBackendTLSPolicies reports each BackendTLSPolicy in policies against the target it
+// attaches to. The effective policy is chosen by the plugin's MergePolicies on the same
+// unfiltered slice translation hands it, so the target ancestor never disagrees with the
+// Gateway ancestor or with what is actually applied: an older invalid policy still takes
+// precedence, and the newer valid one is Conflicted, not Accepted.
+func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.ParentReference, policies []ir.PolicyAtt) {
+	if len(policies) == 0 {
+		return
+	}
+	effective := backendtlspolicyplugin.MergePolicies(policies)
+	for _, polAtt := range policies {
+		if polAtt.PolicyRef == nil {
+			continue
+		}
+		key := reportssdk.PolicyKey{
+			Group:     polAtt.PolicyRef.Group,
+			Kind:      polAtt.PolicyRef.Kind,
+			Namespace: polAtt.PolicyRef.Namespace,
+			Name:      polAtt.PolicyRef.Name,
+		}
+		ancestorRef := targetRef
+		if polAtt.PolicyRef.SectionName != "" {
+			ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
+		}
+		r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+		for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, &effective) {
+			r.SetCondition(cond)
+		}
+	}
 }
 
 // winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS
