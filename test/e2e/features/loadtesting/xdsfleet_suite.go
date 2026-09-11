@@ -77,8 +77,8 @@ type XdsFleetSuite struct {
 
 	metricsPF  portforward.PortForwarder
 	metricsURL string
-	xdsPF      portforward.PortForwarder
-	xdsAddr    string
+	xdsPFs     []portforward.PortForwarder
+	xdsAddrs   []string
 
 	clients []*syntheticClient
 	conns   []*grpc.ClientConn
@@ -93,6 +93,30 @@ var (
 	fleetServices       = benchEnvInt("KGW_FLEET_SERVICES", 6000)
 	fleetGateways       = benchEnvInt("KGW_FLEET_GATEWAYS", 800)
 	fleetInlineBackends = benchEnvInt("KGW_FLEET_INLINE_BACKENDS", 20)
+	// fleetEndpointsPerService fixes how many endpoints every Service gets.
+	// Zero keeps the default shape, which alternates one and two for an average
+	// of 1.5 - the shape a fleet of mostly-small Services has. Set it to model a
+	// fleet whose Services are uniformly larger.
+	fleetEndpointsPerService = benchEnvInt("KGW_FLEET_ENDPOINTS_PER_SERVICE", 0)
+	// fleetFatServices gives the first N Services fleetFatServiceEndpoints
+	// endpoints each, on top of whatever the rest get. A fleet's cost is not
+	// only its Service count: one Service with hundreds of endpoints produces a
+	// single large assignment that every client subscribing to it must be sent,
+	// and that is a different kind of load from the same endpoints spread thin.
+	fleetFatServices         = benchEnvInt("KGW_FLEET_FAT_SERVICES", 0)
+	fleetFatServiceEndpoints = benchEnvInt("KGW_FLEET_FAT_SERVICE_ENDPOINTS", 0)
+	// fleetEndpointPods backs every endpoint with a real Pod bound to a fake
+	// node, and points the EndpointSlice entry at it.
+	//
+	// This is what gives an endpoint a locality. The control plane resolves an
+	// endpoint's zone by following the slice's targetRef to a Pod and reading
+	// its node's topology labels; an endpoint with no targetRef gets the empty
+	// locality, so every assignment collapses to a single locality no matter how
+	// many zones the fleet has. That makes per-client endpoint prioritisation
+	// trivial, which is precisely the work per-client EDS exists to do - so
+	// without this the benchmark cannot see the cost it is meant to measure.
+	// Costs one Pod per endpoint.
+	fleetEndpointPods = benchEnvString("KGW_FLEET_ENDPOINT_PODS", "false") == "true"
 	// fleetStreamsPerGateway reproduces replica count. It multiplies streams,
 	// not unique clients.
 	fleetStreamsPerGateway = benchEnvInt("KGW_FLEET_STREAMS_PER_GATEWAY", 2)
@@ -104,12 +128,35 @@ var (
 	// "error reading server preface: EOF" somewhere past sixty, so a fleet of
 	// sixteen hundred streams must not ask for sixty-four connections.
 	fleetStreamsPerConn = benchEnvInt("KGW_FLEET_STREAMS_PER_CONN", 100)
-	fleetIterations     = benchEnvInt("KGW_FLEET_ITERATIONS", 5)
-	fleetCreateWorkers  = benchEnvInt("KGW_FLEET_CREATE_WORKERS", 24)
-	fleetSettleMillis   = benchEnvInt("KGW_FLEET_SETTLE_MS", 3000)
-	fleetWaveTimeout    = time.Duration(benchEnvInt("KGW_FLEET_WAVE_TIMEOUT_SECONDS", 900)) * time.Second
-	fleetIterTimeout    = time.Duration(benchEnvInt("KGW_FLEET_ITERATION_TIMEOUT_SECONDS", 600)) * time.Second
-	fleetXdsPort        = benchEnvInt("KGW_FLEET_XDS_PORT", 9977)
+	// fleetXdsForwards spreads the connections over several port-forward
+	// tunnels instead of one. One tunnel is a single process relaying every
+	// byte of every stream, and it becomes the limit before the control plane
+	// does: past roughly a thousand streams it starts refusing new connections,
+	// which reads as a ceiling that belongs to the harness rather than to the
+	// thing being measured. Raise it for ladders that go into the thousands.
+	fleetXdsForwards = benchEnvInt("KGW_FLEET_XDS_FORWARDS", 1)
+	// fleetTrickleMs pauses between individual stream opens, so each client
+	// arrives in its own control-plane recomputation instead of in a burst.
+	//
+	// This is a different workload, not a slower one. Opening streams as fast as
+	// the harness can means many clients land in one batch, and anything that
+	// shares work or memory across the clients present in a single pass looks
+	// good under that arrival pattern whether or not it would help a real fleet.
+	// Real proxies connect one at a time - a rolling restart trickles them in over
+	// minutes - so a sharing optimization that only works within a batch is worth
+	// nothing in production while measuring well here. Set this to tell those two
+	// cases apart; a value above the control plane's event-coalescing window is
+	// enough, and 250ms is comfortably above it.
+	//
+	// Costs wall-clock proportional to the client count, so trade it against the
+	// fleet size rather than running the full ladder with it.
+	fleetTrickleMs     = benchEnvInt("KGW_FLEET_TRICKLE_MS", 0)
+	fleetIterations    = benchEnvInt("KGW_FLEET_ITERATIONS", 5)
+	fleetCreateWorkers = benchEnvInt("KGW_FLEET_CREATE_WORKERS", 24)
+	fleetSettleMillis  = benchEnvInt("KGW_FLEET_SETTLE_MS", 3000)
+	fleetWaveTimeout   = time.Duration(benchEnvInt("KGW_FLEET_WAVE_TIMEOUT_SECONDS", 900)) * time.Second
+	fleetIterTimeout   = time.Duration(benchEnvInt("KGW_FLEET_ITERATION_TIMEOUT_SECONDS", 600)) * time.Second
+	fleetXdsPort       = benchEnvInt("KGW_FLEET_XDS_PORT", 9977)
 	// fleetMemoryLimit caps the controller. Without a limit a build that does
 	// not fit consumes the whole machine and takes the cluster with it; with
 	// one, not fitting is a clean container restart that this suite detects,
@@ -227,8 +274,8 @@ func (s *XdsFleetSuite) SetupSuite() {
 	envs = append(envs, extraEnv...)
 	s.Require().NoError(s.setEnv(envs...))
 
-	s.T().Logf("XdsFleet: build=%q validation=%s services=%d gateways=%d inline=%d streams/gw=%d waves=%d extraEnv=%v",
-		benchLabel, benchValidation, fleetServices, fleetGateways, fleetInlineBackends, fleetStreamsPerGateway, fleetWaves, extraEnv)
+	s.T().Logf("XdsFleet: build=%q validation=%s services=%d gateways=%d inline=%d streams/gw=%d waves=%d trickleMs=%d extraEnv=%v",
+		benchLabel, benchValidation, fleetServices, fleetGateways, fleetInlineBackends, fleetStreamsPerGateway, fleetWaves, fleetTrickleMs, extraEnv)
 
 	if fleetMemoryLimit != "" {
 		s.T().Logf("capping controller memory at %s for the run", fleetMemoryLimit)
@@ -241,6 +288,9 @@ func (s *XdsFleetSuite) SetupSuite() {
 	if fleetPodLocality {
 		s.createFakeNodes()
 		s.createFakePods()
+	}
+	if fleetEndpointPods {
+		s.createEndpointPods()
 	}
 	s.createServicesAndEndpoints()
 	s.createInlineBackends()
@@ -257,9 +307,9 @@ func (s *XdsFleetSuite) TearDownSuite() {
 	for _, c := range s.conns {
 		_ = c.Close()
 	}
-	if s.xdsPF != nil {
-		s.xdsPF.Close()
-		s.xdsPF.WaitForStop()
+	for _, pf := range s.xdsPFs {
+		pf.Close()
+		pf.WaitForStop()
 	}
 	if s.metricsPF != nil {
 		s.metricsPF.Close()
@@ -342,6 +392,11 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 			"clients":             connected * s.clientsPerGateway(),
 			"streams":             connected * fleetStreamsPerGateway,
 			"services":            fleetServices,
+			"endpoints":           totalFleetEndpoints(),
+			"fat_services":        fleetFatServices,
+			"fat_service_eps":     fleetFatServiceEndpoints,
+			"endpoint_pods":       fleetEndpointPods,
+			"trickle_ms":          fleetTrickleMs,
 			"inline_backends":     fleetInlineBackends,
 			"settled":             settled,
 			"wave_seconds":        time.Since(start).Seconds(),
@@ -356,13 +411,16 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 			"stream_acks":         s.totalAcks(),
 			"stream_errors":       s.totalRecvErrors(),
 		})
-		s.T().Logf("wave %d: clients=%d settled=%v heap=%.0fMB rss=%.0fMB cpu=%.1fs resources=%.0f restarts=%d",
-			wave, connected, settled, sample.HeapInuse/1e6, sample.RSS/1e6, sample.CPUSeconds, sample.Resources, restarts)
+		s.T().Logf("wave %d: gateways=%d clients=%d settled=%v heap=%.0fMB rss=%.0fMB cpu=%.1fs resources=%.0f restarts=%d",
+			wave, connected, connected*s.clientsPerGateway(), settled, sample.HeapInuse/1e6, sample.RSS/1e6, sample.CPUSeconds, sample.Resources, restarts)
 		if restarts > 0 {
-			s.T().Logf("controller restarted during wave %d; the build did not survive %d clients at this shape", wave, connected)
+			died := connected * s.clientsPerGateway()
+			survived := (connected - perWave) * s.clientsPerGateway()
+			s.T().Logf("controller restarted during wave %d; the build did not survive %d clients at this shape", wave, died)
 			s.emit("xds_fleet_verdict", map[string]any{
-				"build": benchLabel, "survived_clients": connected - perWave,
-				"died_at_clients": connected, "reason": "controller restarted (out of memory or crash)",
+				"build": benchLabel, "survived_clients": survived,
+				"died_at_clients": died, "reason": "controller restarted (out of memory or crash)",
+				"survived_gateways": connected - perWave, "died_at_gateways": connected,
 			})
 			return
 		}
@@ -384,7 +442,7 @@ func (s *XdsFleetSuite) clientsPerGateway() int {
 }
 
 func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
-	s.T().Logf("=== fleet phase %s at %d clients", name, fleetGateways)
+	s.T().Logf("=== fleet phase %s at %d clients", name, fleetGateways*s.clientsPerGateway())
 	s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout)
 	before := s.scrape()
 	startRestarts := s.controllerRestarts()
@@ -409,6 +467,7 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 	s.emit("xds_fleet_result", map[string]any{
 		"build": benchLabel, "validation": benchValidation, "phase": name,
 		"clients": fleetGateways, "services": fleetServices, "inline_backends": fleetInlineBackends,
+		"trickle_ms":            fleetTrickleMs,
 		"iterations":            len(latencies),
 		"wall_seconds":          wall.Seconds(),
 		"cpu_ms_per_change":     (after.CPUSeconds - before.CPUSeconds) * 1000 / n,
@@ -491,6 +550,96 @@ func (s *XdsFleetSuite) createGateways() {
 // createServicesAndEndpoints builds the Kubernetes Service fleet: EDS clusters
 // with a couple of endpoints each, which is what a real cluster is mostly made
 // of. Endpoint counts alternate so the average is 1.5.
+// endpointsForService returns how many endpoints Service i gets: the fat
+// Services first, then whatever the rest of the fleet is configured for.
+func endpointsForService(i int) int {
+	if i < fleetFatServices && fleetFatServiceEndpoints > 0 {
+		return fleetFatServiceEndpoints
+	}
+	if fleetEndpointsPerService > 0 {
+		return fleetEndpointsPerService
+	}
+	// Default shape: alternate one and two, averaging 1.5.
+	if i%2 == 0 {
+		return 2
+	}
+	return 1
+}
+
+// fleetEndpointStride is the address block reserved per Service. Addresses have
+// to be distinct fleet-wide, because two endpoints sharing one is two Services
+// sharing a backend as far as translation is concerned, which would quietly
+// change what is being measured. Reserving a fixed block per Service keeps the
+// address a pure function of (service, endpoint) so nothing has to be counted.
+func fleetEndpointStride() int {
+	return max(fleetFatServiceEndpoints, fleetEndpointsPerService, 2)
+}
+
+// endpointAddress maps (service, endpoint) to a unique 10.0.0.0/8 address.
+func endpointAddress(service, endpoint int) string {
+	id := service*fleetEndpointStride() + endpoint
+	return fmt.Sprintf("10.%d.%d.%d", 100+id/62500, (id/250)%250, id%250+1)
+}
+
+// totalFleetEndpoints is what the fleet's Services add up to, reported so a run
+// can be compared against another by endpoint count and not only Service count.
+func totalFleetEndpoints() int {
+	total := 0
+	for i := range fleetServices {
+		total += endpointsForService(i)
+	}
+	return total
+}
+
+func endpointPodName(service, endpoint int) string {
+	return fmt.Sprintf("fleet-ep-%d-%d", service, endpoint)
+}
+
+// createEndpointPods gives every endpoint a Pod on a fake node, which is the
+// only way the control plane can assign it a zone. Pods are spread over the
+// fake nodes so one Service's endpoints land in several zones, the way a
+// spread-scheduled Deployment's would - that is what makes an assignment
+// multi-locality and gives per-client prioritisation something to do.
+func (s *XdsFleetSuite) createEndpointPods() {
+	nodes := fleetZones * 2
+	start := time.Now()
+	type ref struct{ svc, ep, seq int }
+	var refs []ref
+	seq := 0
+	for i := range fleetServices {
+		for e := range endpointsForService(i) {
+			refs = append(refs, ref{i, e, seq})
+			seq++
+		}
+	}
+	s.parallelDo(len(refs), func(n int) error {
+		r := refs[n]
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      endpointPodName(r.svc, r.ep),
+				Namespace: s.testNamespace,
+				Labels:    map[string]string{"loadtest": "true", "app": fmt.Sprintf("fleet-svc-%d", r.svc)},
+			},
+			Spec: corev1.PodSpec{
+				// Offset by the endpoint index so one Service's endpoints land
+				// on different nodes rather than all on the same one.
+				NodeName:   s.nodeName((r.svc + r.ep) % nodes),
+				Containers: []corev1.Container{{Name: "app", Image: "registry.k8s.io/pause:3.10"}},
+			},
+		}
+		if err := s.createIgnoreExists(pod); err != nil {
+			return err
+		}
+		pod.Status = corev1.PodStatus{
+			Phase:      corev1.PodRunning,
+			PodIP:      endpointAddress(r.svc, r.ep),
+			Conditions: []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}},
+		}
+		return s.testInstallation.ClusterContext.Client.Status().Update(s.ctx, pod)
+	})
+	s.T().Logf("created %d endpoint pods across %d nodes in %s", len(refs), nodes, time.Since(start).Round(time.Second))
+}
+
 func (s *XdsFleetSuite) createServicesAndEndpoints() {
 	start := time.Now()
 	s.parallelDo(fleetServices, func(i int) error {
@@ -512,18 +661,20 @@ func (s *XdsFleetSuite) createServicesAndEndpoints() {
 		if err := s.createIgnoreExists(svc); err != nil {
 			return err
 		}
-		// 1.5 endpoints on average.
-		count := 1
-		if i%2 == 0 {
-			count = 2
-		}
+		count := endpointsForService(i)
 		endpoints := make([]discoverykv1.Endpoint, 0, count)
 		ready := true
 		for e := range count {
-			endpoints = append(endpoints, discoverykv1.Endpoint{
-				Addresses:  []string{fmt.Sprintf("10.%d.%d.%d", 100+(i/60000), (i/250)%250, (i*2+e)%250+1)},
+			ep := discoverykv1.Endpoint{
+				Addresses:  []string{endpointAddress(i, e)},
 				Conditions: discoverykv1.EndpointConditions{Ready: &ready},
-			})
+			}
+			if fleetEndpointPods {
+				ep.TargetRef = &corev1.ObjectReference{
+					Kind: "Pod", Name: endpointPodName(i, e), Namespace: s.testNamespace,
+				}
+			}
+			endpoints = append(endpoints, ep)
 		}
 		port := int32(8080)
 		proto := corev1.ProtocolTCP
@@ -726,22 +877,30 @@ func (s *XdsFleetSuite) startForwards() {
 	s.metricsPF = mpf
 	s.metricsURL = "http://" + mpf.Address() + "/metrics"
 
-	xpf, err := s.testInstallation.Actions.Kubectl().StartPortForward(s.ctx,
-		portforward.WithDeployment(s.controllerDeployment, s.installNamespace),
-		portforward.WithRemotePort(fleetXdsPort))
-	s.Require().NoError(err, "should port-forward controller xDS")
-	s.xdsPF = xpf
-	s.xdsAddr = xpf.Address()
+	for range max(fleetXdsForwards, 1) {
+		xpf, err := s.testInstallation.Actions.Kubectl().StartPortForward(s.ctx,
+			portforward.WithDeployment(s.controllerDeployment, s.installNamespace),
+			portforward.WithRemotePort(fleetXdsPort))
+		s.Require().NoError(err, "should port-forward controller xDS")
+		s.xdsPFs = append(s.xdsPFs, xpf)
+		s.xdsAddrs = append(s.xdsAddrs, xpf.Address())
+	}
+	s.T().Logf("opened %d xDS port-forward tunnels", len(s.xdsAddrs))
 
 	sample := s.scrape()
 	s.Require().Positive(sample.CPUSeconds, "controller metrics should be reachable at %s", s.metricsURL)
 }
 
-// connectGateways opens streams for gateways [from, to).
+// connectGateways opens streams for gateways [from, to), pausing between them
+// when fleetTrickleMs is set. See that knob for why the pause changes what is
+// being measured rather than just how long it takes.
 func (s *XdsFleetSuite) connectGateways(from, to int) {
 	for i := from; i < to; i++ {
 		role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, s.testNamespace, s.gateways[i])
 		for r := range fleetStreamsPerGateway {
+			if fleetTrickleMs > 0 && !(i == from && r == 0) {
+				time.Sleep(time.Duration(fleetTrickleMs) * time.Millisecond)
+			}
 			c, err := s.openStreamRetrying(role, fmt.Sprintf("%s.%s", s.podName(i, r), s.testNamespace))
 			s.Require().NoError(err, "should open xDS stream for %s", role)
 			s.clients = append(s.clients, c)
@@ -775,7 +934,10 @@ func (s *XdsFleetSuite) openStreamRetrying(role, nodeID string) (*syntheticClien
 func (s *XdsFleetSuite) openStream(role, nodeID string) (*syntheticClient, error) {
 	streamsPerConn := max(fleetStreamsPerConn, 1)
 	if len(s.conns) == 0 || len(s.clients)%streamsPerConn == 0 {
-		conn, err := grpc.NewClient(s.xdsAddr,
+		// Spread connections over the tunnels so no single relay carries the
+		// whole fleet.
+		addr := s.xdsAddrs[len(s.conns)%len(s.xdsAddrs)]
+		conn, err := grpc.NewClient(addr,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(256*1024*1024)))
 		if err != nil {
