@@ -10,6 +10,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+// From identifies the resource that holds a cross-namespace reference, for the
+// purpose of evaluating ReferenceGrants against it. GroupKind is the identity a
+// ReferenceGrant has to name in from.group and from.kind to permit the reference.
 type From struct {
 	schema.GroupKind
 	Namespace string
@@ -63,7 +66,7 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	}
 
 	if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
-		return nil, fmt.Errorf("cannot reference secret %s : %w", to.NamespacedName(), ErrMissingReferenceGrant)
+		return nil, &MissingReferenceGrantError{From: from, To: to}
 	}
 	secret := krt.FetchOne(kctx, col, krt.FilterKey(to.ResourceName()))
 	if secret == nil {
@@ -148,10 +151,14 @@ func (s *SecretIndex) GetSecretsBySelector(
 	}
 
 	// Only return an error if no allowed secrets were found and there were missing grants.
-	// We don't want to list all the secrets that were skipped. We only want to hint
-	// the user that it might be a configuration issue.
+	// The error names no matched secret: which secrets carry the labels is not observable
+	// without a grant, so reporting one would disclose whether a resource exists in a
+	// namespace the referrer has no access to.
 	if len(allowedSecrets) == 0 && hasMissingGrants {
-		return allowedSecrets, ErrMissingReferenceGrant
+		return allowedSecrets, &MissingReferenceGrantError{
+			From: from,
+			To:   ir.ObjectSource{Group: secretGK.Group, Kind: secretGK.Kind},
+		}
 	}
 
 	return allowedSecrets, nil

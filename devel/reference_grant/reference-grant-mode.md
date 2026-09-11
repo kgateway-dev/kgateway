@@ -118,6 +118,39 @@ spec:
       kind: GatewayExtension
 ```
 
+## Source identity
+
+A ReferenceGrant's `from.group`/`from.kind` name the kind that holds the reference,
+and translation decides which kind that is. Every cross-namespace reference in
+`TrafficPolicySpec` resolves under `gateway.kgateway.dev/TrafficPolicy` by default:
+`basicAuth.secretRef`, `apiKeyAuth.secretRef`, `apiKeyAuth.secretSelector`,
+secret-backed `headerModifiers` values, and `extensionRef` in Strict mode. References
+held by another resource are unaffected - a `GatewayExtension` backend ref is granted
+from `GatewayExtension` no matter what pointed at it.
+
+When a kind other than `TrafficPolicy` carries the spec being translated, that kind is
+what a user creates and what a namespace owner is deciding to trust, so it is the
+identity a grant has to name. `WithSourceGroupKind` sets it:
+
+```go
+constructor := trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol,
+    trafficpolicy.WithSourceGroupKind(schema.GroupKind{
+        Group: "example.io", Kind: "ExamplePolicy",
+    }))
+```
+
+The identity replaces the default rather than adding to it. A grant permits one
+referencing kind, and the kinds involved here are usually creatable by different sets
+of users, so treating them as interchangeable would let a grant hand out access its
+author did not intend.
+
+When no grant permits the reference, `MissingReferenceGrantError` names the namespace
+the grant belongs in and the identity it has to allow, so the grant to write is
+readable off the policy status. For a reference by label selector the message names
+neither the matched resource nor its namespace: the match set is not observable
+without a grant, and disclosing it would let a referrer probe for resources it has no
+access to.
+
 ## Code flow
 
 ### Off mode — all checks bypassed
@@ -161,10 +194,11 @@ mode is `Strict` and the target namespace differs from the source namespace:
 FetchGatewayExtension()                pkg/.../trafficpolicy/constructor.go
   if mode == Strict:
     RefGrants.ReferenceAllowed(
-      from: TrafficPolicy GK, fromNs,
+      from: TrafficPolicy GK (or the kind set via
+            WithSourceGroupKind), fromNs,
       to:   GatewayExtension GK, targetNs, name
     )
-    -> ErrMissingReferenceGrant if denied
+    -> MissingReferenceGrantError if denied
   krt.FetchOne(gatewayExtensions, ...)
 ```
 
@@ -179,10 +213,10 @@ invalidation is needed.
 | File | Role |
 |---|---|
 | `api/settings/settings.go` | `ReferenceGrantMode` type and `Settings.ReferenceGrantMode` field |
-| `pkg/krtcollections/policy.go` | `RefGrantIndex`, `NewRefGrantIndex`, `ReferenceAllowed` |
+| `pkg/krtcollections/policy.go` | `RefGrantIndex`, `NewRefGrantIndex`, `ReferenceAllowed`, `MissingReferenceGrantError` |
 | `pkg/pluginsdk/collections/collections.go` | Wires mode from settings into `NewRefGrantIndex` |
-| `pkg/kgateway/extensions2/plugins/trafficpolicy/constructor.go` | `FetchGatewayExtension` — Strict-mode ExtensionRef check |
-| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed` |
+| `pkg/kgateway/extensions2/plugins/trafficpolicy/constructor.go` | `FetchGatewayExtension` — Strict-mode ExtensionRef check; `WithSourceGroupKind` |
+| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed`; `From` |
 
 ## Tests
 

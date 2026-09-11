@@ -107,7 +107,9 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/jwt-policy:
-            jwt: missing reference grant'
+            jwt: missing reference grant: create a ReferenceGrant in namespace "other-ns"
+            allowing GatewayExtension "jwt-ext" to be referenced from group "gateway.kgateway.dev"
+            kind "TrafficPolicy" in namespace "default"'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -136,7 +138,9 @@ Statuses:
           namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'jwt: missing reference grant'
+          message: 'jwt: missing reference grant: create a ReferenceGrant in namespace
+            "other-ns" allowing GatewayExtension "jwt-ext" to be referenced from group
+            "gateway.kgateway.dev" kind "TrafficPolicy" in namespace "default"'
           reason: Invalid
           status: "False"
           type: Accepted
