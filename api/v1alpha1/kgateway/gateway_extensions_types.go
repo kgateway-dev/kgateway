@@ -152,10 +152,8 @@ type ExtHttpService struct {
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
-	// PathPrefix specifies a prefix to the value of the authorization request's path header.
-	// This allows customizing the path at which the authorization server expects to receive requests.
-	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
-	// If not specified, the original request path is used.
+	// PathPrefix is prepended to the authorization request path.
+	// If omitted, the original request path is used.
 	// +optional
 	PathPrefix string `json:"pathPrefix,omitempty"`
 
