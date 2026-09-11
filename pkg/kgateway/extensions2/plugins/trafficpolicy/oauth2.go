@@ -21,6 +21,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -125,6 +126,45 @@ func constructOAuth2(
 	return nil
 }
 
+// upstreamTLSValidationForBackend returns the trust material the control plane should use
+// when it talks to backend itself, from the BackendTLSPolicy in effect on that backend.
+//
+// It resolves the *effective* policy with the very MergePolicies the backend translator uses
+// (see irtranslator's applyPolicies), rather than re-deriving the winner here, so that
+// discovery cannot end up trusting something the proxy does not: several policies may target
+// one backend, in which case only the merge winner applies, and a policy carrying errors
+// contributes nothing at all. An erroring winner is reported rather than skipped, because
+// skipping it would silently fall back to the system trust store while the proxy gets no TLS
+// config at all from the same policy.
+//
+// Only BackendTLSPolicy is consulted. BackendConfigPolicy's TLS is suppressed on the Envoy
+// side whenever a BackendTLSPolicy is attached, and honoring it here would need its
+// field-wise merge, which is not reachable from this transform; see the issue tracker.
+//
+// A nil result means the effective policy configures nothing a Go client can act on, leaving
+// the caller on its default of the system trust store.
+func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamTLSValidation, error) {
+	if backend == nil {
+		return nil, nil
+	}
+	attached := backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
+	if len(attached) == 0 {
+		return nil, nil
+	}
+
+	effective := backendtlspolicy.MergePolicies(attached)
+	if len(effective.Errors) > 0 {
+		return nil, fmt.Errorf("BackendTLSPolicy in effect on the issuer backend is invalid: %w",
+			errors.Join(effective.Errors...))
+	}
+
+	provider, ok := effective.PolicyIr.(ir.UpstreamTLSValidationProvider)
+	if !ok {
+		return nil, nil
+	}
+	return provider.UpstreamTLSValidation(), nil
+}
+
 func buildOAuth2ProviderConfig(
 	ctx context.Context,
 	krtctx krt.HandlerContext,
@@ -143,6 +183,22 @@ func buildOAuth2ProviderConfig(
 		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
 	}
 
+	// Resolve the backend before discovering, so that discovery can validate the issuer with
+	// the CA the user configured for the data path to it. Envoy talks to the issuer through
+	// this backend's cluster; the control plane dials the issuer URL directly, but it must
+	// trust the same CA or a provider behind a private CA fails discovery even though the
+	// proxy can reach it.
+	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
+	if err != nil || backend == nil {
+		// Giving up before get() leaves this extension reading no discovery entry, and the
+		// refresh loop has to be told so: the extension is still live, so on its own it would
+		// keep polling whatever the previous translation bound, under a CA or for an issuer
+		// that nothing reads any more. The backend is a tracked krt input, so its appearance
+		// re-runs this transform and binds afresh.
+		discoverer.unbind(ext.ResourceName())
+		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
+	}
+
 	// Only discover if we need to, i.e. when the issuer is set and at least one endpoint is
 	// left for the well-known document to supply.
 	if oidcDiscoveryRequired(in) {
@@ -152,7 +208,13 @@ func buildOAuth2ProviderConfig(
 		// provider that was down at startup would keep this extension (and every
 		// TrafficPolicy referencing it) rejected until the control plane restarted.
 		discoverer.markDependant(krtctx)
-		openidCfg, err := discoverer.get(ctx, *in.IssuerURI)
+		tlsValidation, err := upstreamTLSValidationForBackend(backend)
+		if err != nil {
+			// Same as above: the policy is a tracked input, so fixing it rebinds.
+			discoverer.unbind(ext.ResourceName())
+			return nil, err
+		}
+		openidCfg, err := discoverer.get(ctx, ext.ResourceName(), *in.IssuerURI, tlsValidation)
 		if err != nil {
 			return nil, err
 		}
@@ -175,11 +237,6 @@ func buildOAuth2ProviderConfig(
 	}
 	if authorizationEndpoint == "" {
 		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
-	}
-
-	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
-	if err != nil || backend == nil {
-		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
 
 	// Use a dedicated backend to fetch JWKS if specified, otherwise fall back to the primary backend.
