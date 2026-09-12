@@ -93,7 +93,8 @@ ready".
 ```mermaid
 flowchart LR
     FB["finalBackends<br/>(krt.Collection[*BackendObjectIR])"]
-    FB --> B["BaseEnvoyClusters<br/>one row per backend<br/>TranslateBackendBase()<br/>carries its Backend"]
+    FB --> B["BaseEnvoyClusters<br/>one row per backend<br/>TranslateBackendBase(kctx, ctx, backend)<br/>carries its Backend"]
+    DR["DestinationRules<br/>(rule index by host)"] -.->|"PerClientEndpointsMayApply<br/>fetches through kctx"| B
     UCC["UniquelyConnectedClients"] --> C["ClusterResources<br/>one row per client<br/>Fetch(base) + ApplyPerClient()<br/>assembled CDS payload"]
     B --> C
     C --> S["snapshotPerClient<br/>FetchOne by client"]
@@ -107,8 +108,11 @@ flowchart LR
 `BackendTranslator.TranslateBackend` is replaced by two functions with an explicit ownership
 contract (`pkg/kgateway/translator/irtranslator/backend.go`).
 
-**`TranslateBackendBase(ctx, backend) *BaseCluster`** performs every UCC-invariant step and
-returns a proto that is shared read-only across all clients. `BaseCluster` also carries the
+**`TranslateBackendBase(kctx, ctx, backend) *BaseCluster`** performs every UCC-invariant step and
+returns a proto that is shared read-only across all clients. `kctx` is the base transform's
+`HandlerContext`: endpoint plugins' `PerClientEndpointsMayApply` predicates fetch through it, so
+whatever they consult (the DestinationRule index by host, for one) becomes a KRT dependency of
+the base and the base is re-translated when the answer changes. `BaseCluster` also carries the
 non-proto state the per-client phase needs:
 
 | Field | Purpose |
