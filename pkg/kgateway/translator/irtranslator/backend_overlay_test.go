@@ -395,17 +395,52 @@ func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T)
 	require.Equal(t, "10.0.0.1", pristine.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
 }
 
-// TestTranslateBackendBase_NilForUnsupportedGroupKind: a backend whose GroupKind
-// has no contributed translator cannot produce even a blackhole base cluster.
-func TestTranslateBackendBase_NilForUnsupportedGroupKind(t *testing.T) {
+// TestTranslateBackendBase_ErroredBlackholeForUnsupportedBackendKinds pins the
+// contract that TranslateBackendBase never returns nil: a backend whose
+// GroupKind has no contributed translator, or whose translator has no
+// InitEnvoyBackend, yields the named blackhole base with Error set, exactly
+// like every other translation failure. The consumer then records it as
+// errored, which excludes the cluster from CDS, filters its CLA from EDS, and
+// reports status. A nil base used to drop the backend from all three at once
+// (research finding RF-024).
+func TestTranslateBackendBase_ErroredBlackholeForUnsupportedBackendKinds(t *testing.T) {
+	noInitGK := schema.GroupKind{Group: "example.test", Kind: "NoInitBackend"}
 	bt := &irtranslator.BackendTranslator{
-		ContributedBackends: map[schema.GroupKind]ir.BackendInit{},
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			// Registered, but without a cluster initializer.
+			noInitGK: {},
+		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{},
 	}
-	backend := overlayBackend()
 
-	base := bt.TranslateBackendBase(context.Background(), backend)
-	assert.Nil(t, base, "unsupported GroupKind must yield a nil base")
+	cases := []struct {
+		name    string
+		backend *ir.BackendObjectIR
+		wantErr string
+	}{
+		{name: "no contributed translator", backend: overlayBackend(), wantErr: "no backend translator found for kind.group"},
+		{
+			name:    "contributed translator without initializer",
+			backend: newTestBackend(ir.ObjectSource{Group: noInitGK.Group, Kind: noInitGK.Kind, Name: "no-init", Namespace: "ns"}, 443),
+			wantErr: "no backend plugin found for NoInitBackend.example.test",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			base := bt.TranslateBackendBase(context.Background(), tc.backend)
+			require.NotNil(t, base, "an unsupported backend must yield an errored base, not nil (RF-024)")
+			require.EqualError(t, base.Error, tc.wantErr)
+			require.NotNil(t, base.Cluster)
+			assert.Equal(t, tc.backend.ClusterName(), base.Cluster.GetName(), "the blackhole carries the name consumers key on")
+			assert.Equal(t, envoyclusterv3.Cluster_STATIC, base.Cluster.GetType())
+			assert.Empty(t, base.Cluster.GetLoadAssignment().GetEndpoints(), "a blackhole cluster has no endpoints")
+			assert.False(t, base.NeedsInlineCLA(), "an errored base is complete as it is")
+
+			perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Role: "r"}, tc.backend, base)
+			require.NoError(t, err)
+			assert.Nil(t, perClient, "an errored base is shared by every client as-is")
+		})
+	}
 }
 
 // edsWithConfigBackendTranslator mirrors what a real EDS backend plugin (e.g.

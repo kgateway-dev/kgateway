@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"sync"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -46,6 +47,46 @@ type BackendTranslator struct {
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
 	Mode                apisettings.ValidationMode
+
+	// overlayPlugins is the (Group, Kind)-ordered subset of ContributedPolicies
+	// that contributes a per-client cluster hook, computed once on first use.
+	// ApplyPerClient runs once per (client, backend) pair on every walk, so
+	// iterating and sorting the policy map there would be paid per pair.
+	overlayOnce    sync.Once
+	overlayPlugins []overlayPlugin
+}
+
+// overlayPlugin is one policy plugin's per-client cluster hook: either the
+// self-gating overlay or, for plugins not yet migrated, the legacy eager
+// mutator, which is treated as applicable to every client.
+type overlayPlugin struct {
+	gk      schema.GroupKind
+	overlay sdk.PerClientClusterOverlay
+	legacy  sdk.PerClientProcessBackend
+}
+
+// orderedOverlayPlugins returns the plugins with a per-client cluster hook in
+// (Group, Kind) order. A plugin registering both hooks is treated as migrated:
+// only PerClientClusterOverlay is kept, so its nil (decline) is honored rather
+// than overridden by the always-applicable legacy adapter.
+func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
+	t.overlayOnce.Do(func() {
+		for gk, policyPlugin := range t.ContributedPolicies {
+			switch {
+			case policyPlugin.PerClientClusterOverlay != nil:
+				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay})
+			case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
+				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend}) //nolint:staticcheck // wrapped as an always-applicable overlay
+			}
+		}
+		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
+			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
+				return c
+			}
+			return cmp.Compare(a.gk.Kind, b.gk.Kind)
+		})
+	})
+	return t.overlayPlugins
 }
 
 // BaseCluster is the UCC-invariant result of translating a backend into an Envoy
@@ -95,17 +136,34 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 // TranslateBackendBase performs the UCC-invariant phase of cluster translation. The
 // returned BaseCluster can be shared across all UCCs targeting this backend.
 //
-// Returns nil when the backend GK has no contributed translator, or its
-// contributed translator has no InitEnvoyBackend hook — configuration errors
-// that prevent producing even a blackhole cluster.
+// Every failure, including a backend whose group/kind has no contributed
+// translator or whose translator has no InitEnvoyBackend hook, returns the
+// named blackhole cluster with Error set; the result is never nil. The
+// consumer records such a base as errored, which excludes the cluster from
+// CDS, filters its ClusterLoadAssignment out of EDS, and reports the error on
+// the Backend. Returning nil here used to drop the backend from every one of
+// those paths at once: no cluster, no errored record, no status, and a CLA
+// left in EDS with no cluster to claim it (formal research finding RF-024,
+// devel/formal/research-findings.md on the chandler/kxdsformalmethods branch).
 func (t *BackendTranslator) TranslateBackendBase(
 	ctx context.Context,
 	backend *ir.BackendObjectIR,
 ) *BaseCluster {
 	gk := backend.GetGroupKind()
 	process, ok := t.ContributedBackends[gk]
-	if !ok || process.InitEnvoyBackend == nil {
-		return nil
+	if !ok {
+		logger.Error("backend has no contributed translator", "backend", backend.GetName(), "groupKind", gk.String())
+		return &BaseCluster{
+			Cluster: buildBlackholeCluster(backend),
+			Error:   errors.New("no backend translator found for " + gk.String()),
+		}
+	}
+	if process.InitEnvoyBackend == nil {
+		logger.Error("backend plugin has no cluster initializer", "backend", backend.GetName(), "groupKind", gk.String())
+		return &BaseCluster{
+			Cluster: buildBlackholeCluster(backend),
+			Error:   errors.New("no backend plugin found for " + gk.String()),
+		}
 	}
 
 	if backend.Errors != nil {
@@ -185,37 +243,25 @@ func (t *BackendTranslator) ApplyPerClient(
 
 	// Gather overlays. Each plugin must self-determine applicability and return
 	// nil in the common case; this keeps the per-client cluster collection sparse.
-	type overlayEntry struct {
-		gk schema.GroupKind
-		ov *sdk.ClusterOverlay
-	}
-	var overlays []overlayEntry
-	for gk, policyPlugin := range t.ContributedPolicies {
+	// The candidate plugins are walked in (Group, Kind) order, so the overlays
+	// that apply are already ordered and the mutated proto (and therefore its
+	// version hash, which drives KRT equality and interning) is byte-stable
+	// across recomputes without a sort per pair.
+	var overlays []*sdk.ClusterOverlay
+	for _, plugin := range t.orderedOverlayPlugins() {
 		switch {
-		case policyPlugin.PerClientClusterOverlay != nil:
-			if ov := policyPlugin.PerClientClusterOverlay(kctx, ctx, ucc, *backend); ov != nil {
-				overlays = append(overlays, overlayEntry{gk: gk, ov: ov})
+		case plugin.overlay != nil:
+			if ov := plugin.overlay(kctx, ctx, ucc, *backend); ov != nil {
+				overlays = append(overlays, ov)
 			}
-		case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-			legacy := policyPlugin.PerClientProcessBackend //nolint:staticcheck // wrapped as an always-applicable overlay
-			overlays = append(overlays, overlayEntry{gk: gk, ov: &sdk.ClusterOverlay{
+		case plugin.legacy != nil:
+			legacy := plugin.legacy
+			overlays = append(overlays, &sdk.ClusterOverlay{
 				Mutate: func(out *envoyclusterv3.Cluster) {
 					legacy(kctx, ctx, ucc, *backend, out)
 				},
-			}})
+			})
 		}
-	}
-	// ContributedPolicies is a map, so gathering order is nondeterministic. When
-	// more than one overlay applies, apply in GroupKind order so the mutated proto
-	// (and therefore its version hash, which drives KRT equality and interning) is
-	// byte-stable across recomputes.
-	if len(overlays) > 1 {
-		slices.SortFunc(overlays, func(a, b overlayEntry) int {
-			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
-				return c
-			}
-			return cmp.Compare(a.gk.Kind, b.gk.Kind)
-		})
 	}
 
 	// Determine whether the unmodified base needs an inline CLA. This is only a
@@ -242,9 +288,9 @@ func (t *BackendTranslator) ApplyPerClient(
 		removeDefaultedLocalityConfig(out)
 	}
 
-	for _, entry := range overlays {
-		if entry.ov.Mutate != nil {
-			entry.ov.Mutate(out)
+	for _, ov := range overlays {
+		if ov.Mutate != nil {
+			ov.Mutate(out)
 		}
 	}
 
@@ -534,6 +580,14 @@ func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 		CommonLbConfig:                createCommonLbConfig(b),
 	}
 	return out
+}
+
+// BlackholeCluster is the named, endpoint-less STATIC cluster that stands in
+// for a backend whose translation failed. It is the Cluster of every errored
+// BaseCluster, and consumers that must record a failure of their own under the
+// backend's cluster name build theirs here so the shape stays the same.
+func BlackholeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
+	return buildBlackholeCluster(b)
 }
 
 func buildBlackholeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
