@@ -21,13 +21,17 @@ import (
 // one interned proto across clients.
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
-	// Endpoints holds the interned, read-only CLA. EndpointsHash combines endpoint
-	// content, plugin contributions, and load-balancing context into a 64-bit hash.
-	// KRT equality and EDS versioning assume no collisions; a collision across row
-	// revisions can leave stale endpoints. Interning separately confirms content equality.
-	// +noKrtEquals EndpointsHash is a 64-bit content hash standing in for the proto; collision-freedom is assumed, see above
-	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
+	// Endpoints holds the interned, read-only CLA, compared through ContentHash.
+	// KRT equality and EDS versioning assume no hash collisions; a collision across
+	// row revisions can leave stale endpoints. Interning separately confirms content equality.
+	// +noKrtEquals compared through ContentHash; collision-freedom is assumed, see above
+	Endpoints sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
+	// EndpointsHash tracks translation inputs, including changes that leave the
+	// built assignment unchanged.
 	EndpointsHash uint64
+	// ContentHash digests the built assignment for EDS versioning. Both hashes
+	// participate in row equality; only published content drives EDS updates.
+	ContentHash   uint64
 	endpointsName string
 	// resourceName caches the key used by KRT, avoiding an allocation
 	// per lookup for each client/backend pair.
@@ -51,6 +55,7 @@ func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName s
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 	return c.Client.Equals(in.Client) &&
 		c.EndpointsHash == in.EndpointsHash &&
+		c.ContentHash == in.ContentHash &&
 		c.endpointsName == in.endpointsName
 }
 
@@ -192,6 +197,7 @@ func NewPerClientEnvoyEndpoints(
 				Client:        ucc,
 				Endpoints:     cla,
 				EndpointsHash: endpointsHash,
+				ContentHash:   contentHashOf(candidate),
 				endpointsName: epName,
 				resourceName:  uccEndpointsResourceName(ucc, epName),
 			}
@@ -227,4 +233,12 @@ func combineEndpointHash(parts ...uint64) uint64 {
 		utils.HashUint64(hasher, part)
 	}
 	return hasher.Sum64()
+}
+
+// contentHashOf digests a built assignment; nil has a stable zero digest.
+func contentHashOf(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
+	if cla == nil {
+		return 0
+	}
+	return utils.HashProto(cla)
 }
