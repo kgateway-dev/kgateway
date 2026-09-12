@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: warming-startup
+  namespace: kgateway-base
+spec:
+  selector:
+    app.kubernetes.io/name: warming-startup
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xds-warming-startup
+  namespace: kgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "xds-warming-startup.example.com"
+  rules:
+    - backendRefs:
+        - name: warming-startup
+          port: 8080
