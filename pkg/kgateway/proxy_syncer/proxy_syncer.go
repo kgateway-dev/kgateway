@@ -3,9 +3,11 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -81,6 +83,9 @@ type GatewayXdsResources struct {
 	// Listeners are items in the LDS response payload.
 	Listeners envoycache.Resources
 
+	// ReferencedClusters contains dataplane targets scanned from Routes and Listeners.
+	ReferencedClusters map[string]struct{}
+
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
 }
@@ -94,7 +99,7 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
-		r.Secrets.Version == in.Secrets.Version
+		r.Secrets.Version == in.Secrets.Version && maps.Equal(r.ReferencedClusters, in.ReferencedClusters)
 }
 
 // GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
@@ -148,18 +153,21 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 
 func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *gatewayTranslationOutput {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
+	routes := sliceToResources(xdsSnap.Routes)
+	listeners := sliceToResources(xdsSnap.Listeners)
 	nn := types.NamespacedName{
 		Namespace: gw.Obj.GetNamespace(),
 		Name:      gw.Obj.GetName(),
 	}
 	return &gatewayTranslationOutput{
 		Xds: GatewayXdsResources{
-			NamespacedName: nn,
-			ClustersHash:   ch,
-			Clusters:       c,
-			Routes:         sliceToResources(xdsSnap.Routes),
-			Listeners:      sliceToResources(xdsSnap.Listeners),
-			Secrets:        sliceToResources(xdsSnap.Secrets),
+			NamespacedName:     nn,
+			ClustersHash:       ch,
+			Clusters:           c,
+			Routes:             routes,
+			Listeners:          listeners,
+			Secrets:            sliceToResources(xdsSnap.Secrets),
+			ReferencedClusters: collectReferencedClusters(routes, listeners),
 		},
 		Status: GatewayStatusSnapshot{
 			NamespacedName: nn,
@@ -182,25 +190,44 @@ func NewProxySyncer(
 	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 	validator validator.Validator,
+	xdsClientState priorXDSVersionReader,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:  controllerName,
 		commonCols:      commonCols,
 		apiClient:       client,
-		proxyTranslator: NewProxyTranslator(xdsCache),
+		proxyTranslator: NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck),
 		uniqueClients:   uniqueClients,
 		translator:      translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:         mergedPlugins,
 	}
 }
 
-type ProxyTranslator struct {
-	xdsCache envoycache.SnapshotCache
+// priorXDSVersionReader reports whether a client's initial request on its
+// current stream carried a prior accepted xDS version — i.e. the Envoy may
+// already be serving config from a previous stream even though this
+// controller has no local snapshot for it (reconnect, controller restart).
+// Satisfied by krtcollections.XDSClientState.
+type priorXDSVersionReader interface {
+	HasPriorXDSVersion(resourceName string) bool
 }
 
-func NewProxyTranslator(xdsCache envoycache.SnapshotCache) ProxyTranslator {
+type ProxyTranslator struct {
+	xdsCache       envoycache.SnapshotCache
+	xdsClientState priorXDSVersionReader
+	// gate bounds how long publication may be withheld from a client while
+	// its referenced clusters are unready — the first publish for a
+	// never-published client and the release of a held route flip (see
+	// publish_gate.go). Pointer so the state is shared across ProxyTranslator
+	// copies.
+	gate *publishGate
+}
+
+func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState priorXDSVersionReader, publishBudget time.Duration, checkSnapshotConsistency bool) ProxyTranslator {
 	return ProxyTranslator{
-		xdsCache: xdsCache,
+		xdsCache:       xdsCache,
+		xdsClientState: xdsClientState,
+		gate:           newPublishGate(publishBudget, checkSnapshotConsistency),
 	}
 }
 
@@ -369,25 +396,25 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		for _, e := range o {
 			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
 
-			// Deletes are an intentional no-op. When snapshotPerClient returns
-			// nil (its per-client inputs weren't derived yet, so it deferred
-			// publishing), KRT surfaces a Delete for this UCC. Clearing the xDS
-			// cache here would withdraw Envoy's last coherent Snapshot for the
-			// duration of the defer, causing 500/NC on valid routes. Leaving the
-			// cache alone means Envoy keeps serving its previously-published
-			// config until a new snapshot overwrites it — "retain last good".
-			//
-			// Known leak: a Delete also arrives when a UCC truly goes away (Envoy
-			// pod replaced on rollout, scaled down, etc.), and we cannot
-			// distinguish that from the "defer" case here. The SnapshotCache entry
-			// for that UCC is therefore never cleared and accumulates over the
-			// controller's lifetime. Pre-existing behavior (the prior ClearSnapshot
-			// call was already commented out); reclaiming these entries requires a
-			// separate signal — e.g. cross-referencing uccCol membership — and is
-			// left to a follow-up.
 			if e.Event != controllers.EventDelete {
 				snapWrap := e.Latest()
 				s.proxyTranslator.syncXds(ctx, snapWrap)
+			} else {
+				// The xDS cache is intentionally left alone: clearing it here
+				// would withdraw Envoy's last coherent Snapshot and cause
+				// 500/NC on valid routes ("retain last good"). Since
+				// readiness deferral no longer removes rows (deferred
+				// wrappers stay present, annotated), a Delete now means the
+				// client departed or a transform-level input briefly
+				// vanished; cancel any pending bounded first publish or flip
+				// release so a timer cannot fire for a client that is gone (a
+				// live client re-arms it with its next deferred wrapper).
+				//
+				// Known leak: the SnapshotCache entry for a departed UCC is
+				// never cleared and accumulates over the controller's
+				// lifetime. Pre-existing behavior; reclaiming these entries
+				// is a separate follow-up (#14307).
+				s.proxyTranslator.gate.clientDeparted(e.Latest().ResourceName())
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
