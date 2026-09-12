@@ -477,6 +477,7 @@ type RateLimit struct {
 
 // LocalRateLimitPolicy represents a policy for local rate limiting.
 // It defines the configuration for rate limiting using a token bucket mechanism.
+// +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"
 type LocalRateLimitPolicy struct {
 	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
 	// It defines the parameters for controlling the rate at which requests are allowed.
@@ -494,6 +495,18 @@ type LocalRateLimitPolicy struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentEnforced *int32 `json:"percentEnforced,omitempty"`
+
+	// ShareAcrossGateway applies the token bucket to the Gateway as a whole rather than to each
+	// proxy replica individually. Each replica is given an even share of the bucket based on the
+	// current number of replicas of the Gateway, so the configured rate is the total rate admitted
+	// by all replicas combined. For example, with tokensPerFill=100 and fillInterval=1s, a Gateway
+	// with 4 replicas admits 25 requests per second per gateway. Because the allocation is divided,
+	// maxTokens must be greater than or equal to the number of replicas, otherwise no requests are
+	// admitted.
+	//
+	// Defaults to false.
+	// +optional
+	ShareAcrossGateway *bool `json:"shareAcrossGateway,omitempty"`
 }
 
 // TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
