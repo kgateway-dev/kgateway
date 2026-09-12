@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -546,6 +547,183 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 				assert.Equal(t, expected.SanType, result[i].SanType)
 				assert.Equal(t, expected.Matcher.GetExact(), result[i].Matcher.GetExact())
 			}
+		})
+	}
+}
+
+func TestTranslateTLSConfigSDS(t *testing.T) {
+	const clusterName = "spire_agent"
+
+	expectedSdsConfig := func() *envoycorev3.ConfigSource {
+		return &envoycorev3.ConfigSource{
+			ResourceApiVersion: envoycorev3.ApiVersion_V3,
+			ConfigSourceSpecifier: &envoycorev3.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &envoycorev3.ApiConfigSource{
+					ApiType:                   envoycorev3.ApiConfigSource_GRPC,
+					TransportApiVersion:       envoycorev3.ApiVersion_V3,
+					SetNodeOnFirstMessageOnly: true,
+					GrpcServices: []*envoycorev3.GrpcService{
+						{
+							TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+								EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{ClusterName: clusterName},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		tls      *kgateway.TLS
+		expected *envoytlsv3.UpstreamTlsContext
+	}{
+		{
+			name: "certificate only",
+			tls: &kgateway.TLS{
+				SDS: &kgateway.SDS{
+					ClusterName:           clusterName,
+					CertificateSecretName: new("spiffe://example.org/ns/default/sa/backend"),
+				},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsCertificateSdsSecretConfigs: []*envoytlsv3.SdsSecretConfig{
+						{
+							Name:      "spiffe://example.org/ns/default/sa/backend",
+							SdsConfig: expectedSdsConfig(),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "validation context only",
+			tls: &kgateway.TLS{
+				SDS: &kgateway.SDS{
+					ClusterName:           clusterName,
+					ValidationContextName: new("spiffe://example.org"),
+				},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+							Name:      "spiffe://example.org",
+							SdsConfig: expectedSdsConfig(),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mTLS with both certificate and validation context",
+			tls: &kgateway.TLS{
+				SDS: &kgateway.SDS{
+					ClusterName:           clusterName,
+					CertificateSecretName: new("spiffe://example.org/ns/default/sa/backend"),
+					ValidationContextName: new("spiffe://example.org"),
+				},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					TlsCertificateSdsSecretConfigs: []*envoytlsv3.SdsSecretConfig{
+						{
+							Name:      "spiffe://example.org/ns/default/sa/backend",
+							SdsConfig: expectedSdsConfig(),
+						},
+					},
+					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+							Name:      "spiffe://example.org",
+							SdsConfig: expectedSdsConfig(),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "simpleTLS drops the client certificate",
+			tls: &kgateway.TLS{
+				SimpleTLS: new(true),
+				SDS: &kgateway.SDS{
+					ClusterName:           clusterName,
+					CertificateSecretName: new("spiffe://example.org/ns/default/sa/backend"),
+					ValidationContextName: new("spiffe://example.org"),
+				},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+							Name:      "spiffe://example.org",
+							SdsConfig: expectedSdsConfig(),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "SAN matchers are combined with the SDS validation context",
+			tls: &kgateway.TLS{
+				VerifySubjectAltNames: []string{"backend.example.com"},
+				SDS: &kgateway.SDS{
+					ClusterName:           clusterName,
+					ValidationContextName: new("spiffe://example.org"),
+				},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					ValidationContextType: &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+						CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+							DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
+								MatchTypedSubjectAltNames: []*envoytlsv3.SubjectAltNameMatcher{
+									{
+										SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+										Matcher: &envoymatcher.StringMatcher{
+											MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "backend.example.com"},
+										},
+									},
+								},
+							},
+							ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+								Name:      "spiffe://example.org",
+								SdsConfig: expectedSdsConfig(),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "SNI is preserved alongside SDS",
+			tls: &kgateway.TLS{
+				Sni: new("backend.example.com"),
+				SDS: &kgateway.SDS{
+					ClusterName:           clusterName,
+					ValidationContextName: new("spiffe://example.org"),
+				},
+			},
+			expected: &envoytlsv3.UpstreamTlsContext{
+				Sni: "backend.example.com",
+				CommonTlsContext: &envoytlsv3.CommonTlsContext{
+					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: &envoytlsv3.SdsSecretConfig{
+							Name:      "spiffe://example.org",
+							SdsConfig: expectedSdsConfig(),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := translateTLSConfig(NewMockSecretGetter(), tt.tls, "default")
+			require.NoError(t, err)
+			assert.Empty(t, cmp.Diff(tt.expected, result, protocmp.Transform()))
 		})
 	}
 }

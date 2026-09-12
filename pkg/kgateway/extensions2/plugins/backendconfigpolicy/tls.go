@@ -195,6 +195,76 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	return nil
 }
 
+// sdsConfigSource builds the ConfigSource that points Envoy at the SDS server
+// exposed by the named cluster. The cluster is expected to already exist in the
+// proxy bootstrap; kgateway does not create it here.
+func sdsConfigSource(clusterName string) *envoycorev3.ConfigSource {
+	return &envoycorev3.ConfigSource{
+		ResourceApiVersion: envoycorev3.ApiVersion_V3,
+		ConfigSourceSpecifier: &envoycorev3.ConfigSource_ApiConfigSource{
+			ApiConfigSource: &envoycorev3.ApiConfigSource{
+				ApiType:             envoycorev3.ApiConfigSource_GRPC,
+				TransportApiVersion: envoycorev3.ApiVersion_V3,
+				// Skip the node identifier on subsequent discovery requests, matching
+				// the Istio integration in pkg/kgateway/extensions2/plugins/istio.
+				SetNodeOnFirstMessageOnly: true,
+				GrpcServices: []*envoycorev3.GrpcService{
+					{
+						TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{ClusterName: clusterName},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// buildSDSContext wires the client certificate and/or the validation context to
+// SDS. At least one of the two names is guaranteed to be set by the AtLeastOneOf
+// marker on the SDS type, so this cannot produce an empty TLS context.
+func buildSDSContext(tlsConfig *kgateway.TLS, tlsContext *envoytlsv3.CommonTlsContext) {
+	sds := tlsConfig.SDS
+
+	// Client certificate, used for mTLS to the backend. Skipped for one-way TLS.
+	if sds.CertificateSecretName != nil && !ptr.Deref(tlsConfig.SimpleTLS, false) {
+		tlsContext.TlsCertificateSdsSecretConfigs = []*envoytlsv3.SdsSecretConfig{
+			{
+				Name:      *sds.CertificateSecretName,
+				SdsConfig: sdsConfigSource(sds.ClusterName),
+			},
+		}
+	}
+
+	if sds.ValidationContextName == nil {
+		return
+	}
+
+	// The trust bundle comes from SDS. SAN matchers, when present, must be
+	// attached to a default validation context combined with the SDS config,
+	// mirroring the wellKnownCACertificates path in buildValidationContext.
+	validationSdsConfig := &envoytlsv3.SdsSecretConfig{
+		Name:      *sds.ValidationContextName,
+		SdsConfig: sdsConfigSource(sds.ClusterName),
+	}
+
+	if sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames); len(sanMatchers) > 0 {
+		tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_CombinedValidationContext{
+			CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
+				DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
+					MatchTypedSubjectAltNames: sanMatchers,
+				},
+				ValidationContextSdsSecretConfig: validationSdsConfig,
+			},
+		}
+		return
+	}
+
+	tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
+		ValidationContextSdsSecretConfig: validationSdsConfig,
+	}
+}
+
 func translateTLSConfig(
 	secretGetter SecretGetter,
 	tlsConfig *kgateway.TLS,
@@ -214,9 +284,15 @@ func translateTLSConfig(
 		tlsContext.AlpnProtocols = tlsConfig.AlpnProtocols
 	}
 
-	if tlsConfig.InsecureSkipVerify != nil && *tlsConfig.InsecureSkipVerify {
+	switch {
+	case tlsConfig.InsecureSkipVerify != nil && *tlsConfig.InsecureSkipVerify:
 		tlsContext.ValidationContextType = &envoytlsv3.CommonTlsContext_ValidationContext{}
-	} else {
+	case tlsConfig.SDS != nil:
+		// SDS supplies the certificate and/or the trust bundle over a gRPC stream
+		// rather than as inline or file-backed DataSources, so it bypasses the
+		// DataSource construction in buildTLSContext entirely.
+		buildSDSContext(tlsConfig, tlsContext)
+	default:
 		if err := buildTLSContext(tlsConfig, secretGetter, namespace, tlsContext); err != nil {
 			return nil, err
 		}
