@@ -649,8 +649,8 @@ or a translator with no `InitEnvoyBackend`, and the base transform records a clu
 translation renamed as an errored base under the name consumers expect. An earlier revision
 returned `nil` in both cases and dropped the row, which left the backend out of CDS *and* out of
 the errored set: its CLA stayed in EDS unfiltered, so go-control-plane's superset check could
-withhold the client's whole EDS response, and no Backend status was written. The research ledger
-tracks this as RF-024. Reachability is unchanged for in-tree plugins, all of which set
+withhold the client's whole EDS response, and no Backend status was written. Reachability is
+unchanged for in-tree plugins, all of which set
 `InitEnvoyBackend`; an out-of-tree plugin registering a backend kind without one now surfaces as
 a status condition instead of a silent hole.
 
