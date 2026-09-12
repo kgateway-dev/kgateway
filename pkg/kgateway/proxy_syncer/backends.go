@@ -449,9 +449,9 @@ func NewPerClientEnvoyClusters(
 			// TranslateBackendBase returns a named blackhole base on every failure
 			// path, so this is unreachable by contract. Returning nil here would
 			// drop the backend from CDS with no errored row: its CLA would stay in
-			// EDS unfiltered and no status would be written (research finding
-			// RF-024). Log loudly so a future nil path is noticed rather than
-			// stranding every client on a cluster that does not exist.
+			// EDS unfiltered and no status would be written. Log loudly so a
+			// future nil path is noticed rather than stranding every client on a
+			// cluster that does not exist.
 			logger.Error("backend translation returned no base; backend dropped from CDS without an errored record",
 				"backend", backendObj.ResourceName())
 			return nil
@@ -466,7 +466,7 @@ func NewPerClientEnvoyClusters(
 			// If that changes, record this one backend as errored under the name
 			// consumers expect: the cluster is excluded from CDS, its CLA is
 			// filtered from EDS, and status reports why, instead of the backend
-			// silently vanishing from all three (research finding RF-024).
+			// silently vanishing from all three.
 			err := errors.New("backend translation renamed the cluster from " + backendObj.ClusterName() + " to " + name)
 			logger.Error("backend translation renamed the cluster; recording the backend as errored",
 				"backend", backendObj.ResourceName(),
