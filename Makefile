@@ -1251,6 +1251,26 @@ run-load-tests-strict-churn: ## Run strict-validation churn convergence test (mu
 	SKIP_INSTALL=true KGW_ENABLE_STRICT_CHURN=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
 	go test -tags=e2e -v -timeout 30m ./test/e2e/tests -run "^TestKgateway$$/^StrictChurn$$"
 
+# XdsCost prices what each kind of change costs the controller, by scraping the
+# controller's own metrics. Override the fleet shape and mode with
+# KGW_BENCH_GATEWAYS / KGW_BENCH_STATIC_BACKENDS / KGW_BENCH_EDS_ROUTES /
+# KGW_BENCH_ITERATIONS / KGW_BENCH_VALIDATION (STANDARD|STRICT), and name the
+# build under test with KGW_BENCH_LABEL. -count=1 is required: go test caches a
+# successful run and will otherwise replay it under new env vars.
+.PHONY: run-xds-cost-bench
+run-xds-cost-bench: ## Run the per-client xDS control-plane cost benchmark (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_XDS_COST=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -count=1 -timeout 60m ./test/e2e/tests -run "^TestKgateway$$/^XdsCost$$"
+
+# XdsFleet is XdsCost at production fan-out: thousands of Services and hundreds
+# of Gateways, driven by synthetic xDS streams instead of real Envoy pods, which
+# no single machine can host. Knobs: KGW_FLEET_SERVICES / KGW_FLEET_GATEWAYS /
+# KGW_FLEET_INLINE_BACKENDS / KGW_FLEET_STREAMS_PER_GATEWAY / KGW_FLEET_WAVES.
+.PHONY: run-xds-fleet-bench
+run-xds-fleet-bench: ## Run the fleet-scale per-client xDS cost benchmark (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_XDS_FLEET=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -count=1 -timeout 180m ./test/e2e/tests -run "^TestKgateway$$/^XdsFleet$$"
+
 #----------------------------------------------------------------------------------
 # MARK: Conformance
 # Targets for running Kubernetes Gateway API conformance tests

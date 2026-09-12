@@ -27,6 +27,8 @@ type workflowConfig struct {
 var e2eTestsNotRequiredInPRShards = map[string]string{
 	"TestKgateway/AttachedRoutes": "load tests run in the dedicated nightly load-test workflow",
 	"TestKgateway/StrictChurn":    "opt-in load test runs in the dedicated nightly load-test workflow",
+	"TestKgateway/XdsCost":        "opt-in control-plane cost benchmark, run on demand via make run-xds-cost-bench",
+	"TestKgateway/XdsFleet":       "opt-in fleet-scale cost benchmark, run on demand via make run-xds-fleet-bench",
 	"TestZoneAwareRouting":        "requires a multi-zone multi-worker kind cluster; check guide to run manually",
 }
 
