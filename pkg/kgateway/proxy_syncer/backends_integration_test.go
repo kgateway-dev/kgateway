@@ -20,6 +20,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -359,6 +360,76 @@ func TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration(t *test
 	require.Eventually(t, errorRowAtGeneration(2), 2*time.Second, 20*time.Millisecond,
 		"the error row must move to generation 2 even though its message is unchanged")
 	assert.Nil(t, storedClustersForClient(pcc, ucc)[name], "the cluster must stay excluded at generation 2")
+}
+
+// TestNewPerClientEnvoyClusters_ClientIndependentInlineCLASharesBase pins the
+// inline-CLA split through the real wiring. A STRICT_DNS backend whose CLA no
+// client can influence is published to every client as the one shared base
+// proto, CLA included; a sibling with a zone-preferring traffic distribution
+// still gets an independently built cluster per client.
+func TestNewPerClientEnvoyClusters_ClientIndependentInlineCLASharesBase(t *testing.T) {
+	ctx := t.Context()
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	backendGK := schema.GroupKind{Group: "group", Kind: "kind"}
+	translator := &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			backendGK: {
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
+					eps := ir.NewEndpointsForBackend(in)
+					if in.GetName() == "zonal" {
+						eps.TrafficDistribution = wellknown.TrafficDistributionPreferSameZone
+					}
+					eps.Add(ir.PodLocality{Region: "r1", Zone: "z1"}, ir.EndpointWithMd{
+						LbEndpoint: lbEndpointPipe("z1"),
+						EndpointMd: ir.EndpointMetadata{Labels: map[string]string{corev1.LabelTopologyZone: "z1", corev1.LabelZoneRegion: "r1"}},
+					})
+					eps.Add(ir.PodLocality{Region: "r1", Zone: "z2"}, ir.EndpointWithMd{
+						LbEndpoint: lbEndpointPipe("z2"),
+						EndpointMd: ir.EndpointMetadata{Labels: map[string]string{corev1.LabelTopologyZone: "z2", corev1.LabelZoneRegion: "r1"}},
+					})
+					return eps
+				},
+			},
+		},
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{},
+	}
+
+	shared := ir.NewBackendObjectIR(ir.ObjectSource{Group: "group", Kind: "kind", Namespace: "ns", Name: "shared"}, 80, "", "")
+	shared.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{}}
+	zonal := ir.NewBackendObjectIR(ir.ObjectSource{Group: "group", Kind: "kind", Namespace: "ns", Name: "zonal"}, 80, "", "")
+	zonal.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{}}
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&shared, &zonal}, krtopts.ToOptions("FinalBackends")...)
+
+	z1 := ir.NewUniquelyConnectedClient("a", "ns", map[string]string{corev1.LabelTopologyZone: "z1", corev1.LabelZoneRegion: "r1"}, ir.PodLocality{Region: "r1", Zone: "z1"})
+	z2 := ir.NewUniquelyConnectedClient("b", "ns", map[string]string{corev1.LabelTopologyZone: "z2", corev1.LabelZoneRegion: "r1"}, ir.PodLocality{Region: "r1", Zone: "z2"})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{z1, z2}, krtopts.ToOptions("UCCs")...)
+
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	var gotZ1, gotZ2 map[string]*envoyclusterv3.Cluster
+	require.Eventually(t, func() bool {
+		gotZ1, gotZ2 = storedClustersForClient(pcc, z1), storedClustersForClient(pcc, z2)
+		return len(gotZ1) == 2 && len(gotZ2) == 2
+	}, time.Second, 10*time.Millisecond)
+
+	sharedName, zonalName := shared.ClusterName(), zonal.ClusterName()
+	require.NotNil(t, gotZ1[sharedName].GetLoadAssignment(), "the shared inline cluster must carry its CLA")
+	assert.Same(t, gotZ1[sharedName], gotZ2[sharedName],
+		"a client-independent inline cluster is one proto shared by every client")
+
+	require.NotNil(t, gotZ1[zonalName].GetLoadAssignment())
+	require.NotNil(t, gotZ2[zonalName].GetLoadAssignment())
+	assert.NotSame(t, gotZ1[zonalName], gotZ2[zonalName],
+		"a zone-preferring inline cluster is built per client")
+	assert.NotEqual(t, gotZ1[zonalName].GetLoadAssignment().GetEndpoints(), gotZ2[zonalName].GetLoadAssignment().GetEndpoints(),
+		"clients in different zones must see different endpoint priorities")
+
+	bases := krt.Fetch(krt.TestingDummyContext{}, pcc.base)
+	require.Len(t, bases, 2)
+	for _, b := range bases {
+		require.Nil(t, b.Base.Cluster, "the retained BaseCluster must not expose a raw alias to the shared proto")
+	}
 }
 
 // TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient: a

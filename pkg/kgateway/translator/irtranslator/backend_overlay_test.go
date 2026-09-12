@@ -226,6 +226,78 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		assert.Zero(t, endpointCalls, "endpoint hooks must stay lazy when the final cluster does not consume an inline CLA")
 	})
 
+	t.Run("overlay changes a base-built inline cluster to EDS", func(t *testing.T) {
+		// No endpoint hook and no traffic distribution: the CLA is built once on
+		// the shared base. An overlay that then changes the discovery type to
+		// EDS without touching LoadAssignment must not carry the framework's
+		// assignment onto a cluster that no longer reads it.
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					}}
+				},
+			},
+		}, nil)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.NotNil(t, base.Cluster.GetLoadAssignment(), "precondition: the CLA lives on the base")
+		require.True(t, base.GeneratedInlineCLA, "precondition: the framework built it")
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.Equal(t, envoyclusterv3.Cluster_EDS, perClient.GetType())
+		assert.Nil(t, perClient.GetLoadAssignment(), "the base-built CLA must not survive onto an EDS cluster")
+		assert.NotNil(t, base.Cluster.GetLoadAssignment(), "the shared base itself is untouched")
+	})
+
+	t.Run("overlay changes a base-built inline cluster to EDS and supplies its own assignment", func(t *testing.T) {
+		overlayCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "overlay"}
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+						out.LoadAssignment = overlayCLA
+					}}
+				},
+			},
+		}, nil)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.True(t, base.GeneratedInlineCLA)
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		assert.Same(t, overlayCLA, perClient.GetLoadAssignment(), "an assignment the overlay set is its own choice and is kept")
+	})
+
+	t.Run("overlay changes a plugin-provided inline cluster to EDS", func(t *testing.T) {
+		// A LoadAssignment set by the backend plugin is not framework-generated,
+		// so the clearing rule does not apply to it.
+		pluginCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "plugin"}
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					}}
+				},
+			},
+		}, pluginCLA)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.False(t, base.GeneratedInlineCLA, "precondition: the plugin, not the framework, set the assignment")
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		assert.Equal(t, pluginCLA.GetClusterName(), perClient.GetLoadAssignment().GetClusterName(),
+			"a plugin-provided assignment is left for the plugin and overlay to reconcile")
+	})
+
 	t.Run("overlay removes an existing inline load assignment", func(t *testing.T) {
 		original := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "original"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
@@ -803,4 +875,72 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 		"only the defaulted locality specifier is reverted")
 	assert.True(t, perClient.GetCommonLbConfig().GetIgnoreNewHostsUntilFirstHc(),
 		"the overlay's own CommonLbConfig field must survive the undo")
+}
+
+// TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA: an endpoint
+// hook decides, per backend, whether it could ever contribute. When it rules the
+// backend out the inline CLA is built once on the base and the hook is never
+// invoked for it; when it may apply, or when it declines to say, the CLA stays
+// per client so the hook can run with each client in hand.
+func TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA(t *testing.T) {
+	policyGK := schema.GroupKind{Group: "test", Kind: "EndpointPolicy"}
+	newTranslator := func(mayApply func(ir.BackendObjectIR) bool, calls *int) *irtranslator.BackendTranslator {
+		return inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			policyGK: {
+				PerClientEditEndpoints: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, sdk.EndpointInputsEditor) uint64 {
+					*calls++
+					return 0
+				},
+				PerClientEndpointsMayApply: mayApply,
+			},
+		}, nil)
+	}
+	withPolicy := func() *ir.BackendObjectIR {
+		backend := overlayBackend()
+		backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			policyGK: {{GroupKind: policyGK}},
+		}}
+		return backend
+	}
+
+	t.Run("hook rules the backend out: CLA on the base, hook never runs", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(sdk.AttachedPolicyEndpointsMayApply(policyGK), &calls)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.NotNil(t, base.Cluster.GetLoadAssignment(), "the CLA must be built onto the base")
+		assert.False(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{Role: "r"}, backend, base)
+		require.NoError(t, err)
+		assert.Nil(t, perClient, "the shared base is complete; nothing to materialize")
+		assert.Zero(t, calls, "a hook that ruled the backend out must not be invoked for it")
+	})
+
+	t.Run("hook may apply because a policy is attached: CLA per client", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(sdk.AttachedPolicyEndpointsMayApply(policyGK), &calls)
+		backend := withPolicy()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.Nil(t, base.Cluster.GetLoadAssignment(), "the base must not carry a CLA a hook may still edit")
+		assert.True(t, base.NeedsInlineCLA())
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{Role: "r"}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.NotNil(t, perClient.GetLoadAssignment())
+		assert.Equal(t, 1, calls, "the hook runs once per client for a backend it may apply to")
+	})
+
+	t.Run("hook declares nothing: CLA per client", func(t *testing.T) {
+		calls := 0
+		bt := newTranslator(nil, &calls)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.Nil(t, base.Cluster.GetLoadAssignment(), "an undeclared hook is assumed to apply everywhere")
+		assert.True(t, base.NeedsInlineCLA())
+	})
 }

@@ -15,6 +15,7 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -34,12 +35,15 @@ import (
 //     clients whose overlay applies must change; the rest must not rerun at all.
 //
 // The fleet shape is deliberately unfavourable to the design: a quarter of the
-// backends carry inline endpoints (so every client materializes a CLA for them),
-// an eighth have a rule, and a quarter of the clients match rules.
+// backends carry inline endpoints, half of those with a zone-preferring traffic
+// distribution (so every client materializes its own CLA for them) and half
+// without (so the CLA is built once on the base and shared), an eighth have a
+// rule, and a quarter of the clients match rules.
 const (
 	updateBenchBackends          = 400
 	updateBenchClients           = 12
 	updateBenchInlineEvery       = 4
+	updateBenchZonalInlineEvery  = 8
 	updateBenchRuleEvery         = 8
 	updateBenchOverlayClientEver = 4
 	updateBenchValidationLatency = 200 * time.Microsecond
@@ -77,9 +81,13 @@ func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validato
 						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
 						return nil
 					}
-					// Inline endpoints: every client builds a CLA for this cluster.
+					// Inline endpoints. With a zone-preferring distribution every
+					// client builds its own CLA; without one the base carries it.
 					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
 					eps := ir.NewEndpointsForBackend(in)
+					if updateBenchBackendIndex(in)%updateBenchZonalInlineEvery == 0 {
+						eps.TrafficDistribution = wellknown.TrafficDistributionPreferSameZone
+					}
 					for i := range 3 {
 						eps.Add(ir.PodLocality{Region: "r1"}, ir.EndpointWithMd{
 							LbEndpoint: lbEndpointPipe(fmt.Sprintf("%s-%d", in.GetName(), i)),
@@ -215,7 +223,8 @@ func benchValidators() []struct {
 
 // BenchmarkPerClientBackendUpdate changes one backend's translated output and
 // waits for every client's stored payload to reflect it. The changed backend is
-// an inline-endpoint one, so the update also rebuilds one CLA per client.
+// a zone-preferring inline-endpoint one, so the update also rebuilds one CLA
+// per client.
 func BenchmarkPerClientBackendUpdate(b *testing.B) {
 	for _, tc := range benchValidators() {
 		b.Run(tc.name, func(b *testing.B) {
