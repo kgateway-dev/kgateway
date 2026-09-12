@@ -226,6 +226,78 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		assert.Zero(t, endpointCalls, "endpoint hooks must stay lazy when the final cluster does not consume an inline CLA")
 	})
 
+	t.Run("overlay changes a base-built inline cluster to EDS", func(t *testing.T) {
+		// No endpoint hook and no traffic distribution: the CLA is built once on
+		// the shared base. An overlay that then changes the discovery type to
+		// EDS without touching LoadAssignment must not carry the framework's
+		// assignment onto a cluster that no longer reads it.
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					}}
+				},
+			},
+		}, nil)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.NoError(t, base.Error)
+		require.NotNil(t, base.Cluster.GetLoadAssignment(), "precondition: the CLA lives on the base")
+		require.True(t, base.GeneratedInlineCLA, "precondition: the framework built it")
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		require.NotNil(t, perClient)
+		assert.Equal(t, envoyclusterv3.Cluster_EDS, perClient.GetType())
+		assert.Nil(t, perClient.GetLoadAssignment(), "the base-built CLA must not survive onto an EDS cluster")
+		assert.NotNil(t, base.Cluster.GetLoadAssignment(), "the shared base itself is untouched")
+	})
+
+	t.Run("overlay changes a base-built inline cluster to EDS and supplies its own assignment", func(t *testing.T) {
+		overlayCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "overlay"}
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+						out.LoadAssignment = overlayCLA
+					}}
+				},
+			},
+		}, nil)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.True(t, base.GeneratedInlineCLA)
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		assert.Same(t, overlayCLA, perClient.GetLoadAssignment(), "an assignment the overlay set is its own choice and is kept")
+	})
+
+	t.Run("overlay changes a plugin-provided inline cluster to EDS", func(t *testing.T) {
+		// A LoadAssignment set by the backend plugin is not framework-generated,
+		// so the clearing rule does not apply to it.
+		pluginCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "plugin"}
+		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					}}
+				},
+			},
+		}, pluginCLA)
+		backend := overlayBackend()
+		base := bt.TranslateBackendBase(t.Context(), backend)
+		require.False(t, base.GeneratedInlineCLA, "precondition: the plugin, not the framework, set the assignment")
+
+		perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+		require.NoError(t, err)
+		assert.Equal(t, pluginCLA.GetClusterName(), perClient.GetLoadAssignment().GetClusterName(),
+			"a plugin-provided assignment is left for the plugin and overlay to reconcile")
+	})
+
 	t.Run("overlay removes an existing inline load assignment", func(t *testing.T) {
 		original := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "original"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
