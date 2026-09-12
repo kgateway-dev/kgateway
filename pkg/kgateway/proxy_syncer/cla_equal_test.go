@@ -43,26 +43,26 @@ func TestClusterLoadAssignmentsEqualAgreesWithProtoEqual(t *testing.T) {
 	}
 
 	// Production-shaped CLAs: built per client, sharing LbEndpoint pointers.
-	var clas []*envoyendpointv3.ClusterLoadAssignment
+	var assignments []*envoyendpointv3.ClusterLoadAssignment
 	for _, inputs := range []endpoints.EndpointsInputs{
 		{EndpointsForBackend: *eps},
 		{EndpointsForBackend: zonal},
 		{EndpointsForBackend: *eps, PriorityInfo: &endpoints.PriorityInfo{}},
 	} {
 		for _, ucc := range clients {
-			clas = append(clas, endpoints.PrioritizeEndpoints(nil, ucc, inputs))
+			assignments = append(assignments, endpoints.PrioritizeEndpoints(nil, ucc, inputs))
 		}
 	}
 
 	// Variants of the first CLA that differ in exactly one place each, including
 	// places the fast path does not model directly and must fall back on.
-	base := clas[0]
+	base := assignments[0]
 	variant := func(mutate func(c *envoyendpointv3.ClusterLoadAssignment)) *envoyendpointv3.ClusterLoadAssignment {
 		c := proto.Clone(base).(*envoyendpointv3.ClusterLoadAssignment)
 		mutate(c)
 		return c
 	}
-	clas = append(clas,
+	assignments = append(assignments,
 		proto.Clone(base).(*envoyendpointv3.ClusterLoadAssignment), // equal content, no shared pointers
 		variant(func(c *envoyendpointv3.ClusterLoadAssignment) { c.ClusterName = "other" }),
 		variant(func(c *envoyendpointv3.ClusterLoadAssignment) { c.Endpoints[0].Priority = 7 }),
@@ -107,8 +107,8 @@ func TestClusterLoadAssignmentsEqualAgreesWithProtoEqual(t *testing.T) {
 	)
 
 	agreed := 0
-	for i, x := range clas {
-		for j, y := range clas {
+	for i, x := range assignments {
+		for j, y := range assignments {
 			want := proto.Equal(x, y)
 			got := clusterLoadAssignmentsEqual(x, y)
 			require.Equal(t, want, got, "pair (%d, %d): fast path %v, proto.Equal %v", i, j, got, want)
@@ -119,5 +119,5 @@ func TestClusterLoadAssignmentsEqualAgreesWithProtoEqual(t *testing.T) {
 	}
 	// Vacuity guard: the equal pairs must include more than the diagonal, so
 	// the "true" direction was exercised across distinct instances too.
-	require.Greater(t, agreed, len(clas), "expected equal pairs beyond each CLA with itself")
+	require.Greater(t, agreed, len(assignments), "expected equal pairs beyond each CLA with itself")
 }
