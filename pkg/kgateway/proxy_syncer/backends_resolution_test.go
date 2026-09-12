@@ -20,9 +20,12 @@ import (
 // Every consumer assumes the cluster is named after the backend's memoized
 // ClusterName: routes reference it, status is keyed on it, the EDS pipeline
 // names its CLA after it. Nothing in tree renames it, so this pins the
-// containment: a backend whose translation renamed the cluster is dropped
-// alone, and the clients keep every other backend.
-func TestNewPerClientEnvoyClusters_RenamedClusterDropsOnlyThatBackend(t *testing.T) {
+// containment: a backend whose translation renamed the cluster is recorded as
+// errored under the expected name, alone, and the clients keep every other
+// backend. It must not simply vanish (research finding RF-024): an absent row
+// means no errored record, so its CLA would stay in EDS unfiltered and no
+// status would be written.
+func TestNewPerClientEnvoyClusters_RenamedClusterIsErroredNotDropped(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 	backendGK := schema.GroupKind{Group: "group", Kind: "kind"}
@@ -59,6 +62,20 @@ func TestNewPerClientEnvoyClusters_RenamedClusterDropsOnlyThatBackend(t *testing
 	}, 2*time.Second, 20*time.Millisecond,
 		"a renamed cluster must not withhold the client's CDS")
 
-	require.Len(t, got, 1, "only the renamed backend should be dropped")
+	require.Len(t, got, 1, "only the renamed backend should be excluded from the payload")
 	assert.Equal(t, good.ClusterName(), got[0])
+
+	// The renamed backend is not gone: it is an errored base row under the name
+	// every consumer expects, so its CLA is filtered and status can report it.
+	baseRow := pcc.base.GetKey(renamed.ClusterName())
+	require.NotNil(t, baseRow, "the renamed backend must keep a base row under its expected cluster name")
+	require.Error(t, baseRow.Error, "the base row must carry the rename as its translation error")
+	assert.Contains(t, baseRow.Error.Error(), "something-else")
+	statusRow := pcc.StatusClusters().GetKey("/" + renamed.ClusterName())
+	require.NotNil(t, statusRow, "status must see the renamed backend's error")
+	assert.Equal(t, renamed.GetObjectSource(), statusRow.BackendSource)
+	perClientRow := pcc.perClient.GetKey(client.ResourceName())
+	require.NotNil(t, perClientRow)
+	assert.Contains(t, perClientRow.erroredClusters, renamed.ClusterName(),
+		"the client's payload must track the renamed backend as errored so its CLA is filtered")
 }
