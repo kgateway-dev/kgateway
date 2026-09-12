@@ -33,6 +33,7 @@ var AllCRDs = []schema.GroupVersionResource{
 	gvr.GRPCRoute,
 	gvr.TCPRoute,
 	wellknown.TCPRouteV1GVR,
+	wellknown.UDPRouteGVR,
 	gvr.TLSRoute,
 	wellknown.TLSRouteV1Alpha3GVR,
 	gvr.ReferenceGrant,
