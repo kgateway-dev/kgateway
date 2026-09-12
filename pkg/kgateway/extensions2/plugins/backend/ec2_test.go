@@ -754,7 +754,7 @@ func TestAwsEc2InstanceListerClientForBuildsDifferentKeysConcurrently(t *testing
 	}
 }
 
-func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.T) {
+func TestAwsEc2InstanceListerClientForPrunesSupersededCredentials(t *testing.T) {
 	lister := &awsEc2InstanceLister{
 		clients: map[ec2ClientIdentity]ec2CachedClient{},
 		newClient: func(_ context.Context, source ec2CredentialSource) (*awsec2.Client, error) {
@@ -770,6 +770,8 @@ func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.
 		region: "us-east-1",
 		secret: newTestAWSSecret("aws-creds", "default", "2"),
 	}
+
+	sourceV2.secret.Data["secretKey"] = []byte("rotated")
 
 	if _, err := lister.clientFor(context.Background(), sourceV1); err != nil {
 		t.Fatalf("clientFor(v1) error = %v", err)
@@ -788,8 +790,75 @@ func TestAwsEc2InstanceListerClientForPrunesSupersededSecretVersions(t *testing.
 	if !ok {
 		t.Fatal("client cache did not retain an entry for the secret identity")
 	}
-	if cached.secretResourceVersion != "2" {
-		t.Fatalf("client cache retained secret version %q, want the latest version %q", cached.secretResourceVersion, "2")
+	if cached.secretContentHash != ec2SecretContentHash(sourceV2.secret) {
+		t.Fatal("client cache did not retain the rotated credentials")
+	}
+}
+
+func TestEc2CredentialChangesIgnoreResourceVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*ir.Secret)
+		equal  bool
+	}{
+		{"revision", func(s *ir.Secret) { s.Obj.SetResourceVersion("2") }, true},
+		{"rotation without revision", func(s *ir.Secret) { s.Data["secretKey"] = []byte("rotated") }, false},
+		{"replacement", func(s *ir.Secret) { s.Obj.SetUID("replacement") }, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := newTestAWSSecret("creds", "default", "1")
+			b := newTestAWSSecret("creds", "default", "1")
+			tc.mutate(b)
+			if (&EC2Ir{secret: a}).Equals(&EC2Ir{secret: b}) != tc.equal {
+				t.Fatal("unexpected EC2 IR equality")
+			}
+			ca := (ec2BackendConfig{secret: a}).stateKey()
+			cb := (ec2BackendConfig{secret: b}).stateKey()
+			if ca.Equals(cb) != tc.equal {
+				t.Fatal("unexpected discovery key equality")
+			}
+			if (ec2ResolvedBackend{config: ca}).Equals(ec2ResolvedBackend{config: cb}) != tc.equal {
+				t.Fatal("unexpected resolved-state equality")
+			}
+			builds := 0
+			lister := &awsEc2InstanceLister{
+				clients: map[ec2ClientIdentity]ec2CachedClient{},
+				newClient: func(_ context.Context, _ ec2CredentialSource) (*awsec2.Client, error) {
+					builds++
+					return awsec2.NewFromConfig(awssdk.Config{Region: "us-east-1"}), nil
+				},
+			}
+			first, err := lister.clientFor(context.Background(), ec2CredentialSource{secret: a})
+			if err != nil {
+				t.Fatal(err)
+			}
+			second, err := lister.clientFor(context.Background(), ec2CredentialSource{secret: b})
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantBuilds := 2
+			if tc.equal {
+				wantBuilds = 1
+			}
+			if builds != wantBuilds || (first == second) != tc.equal {
+				t.Fatalf("built %d clients, want %d", builds, wantBuilds)
+			}
+		})
+	}
+}
+
+func TestEc2SecretContentHashIsStableAndUnambiguous(t *testing.T) {
+	a := &ir.Secret{Data: map[string][]byte{"a": []byte("b"), "c": []byte("d")}}
+	b := &ir.Secret{Data: map[string][]byte{"c": []byte("d"), "a": []byte("b")}}
+	for range 20 {
+		if ec2SecretContentHash(a) != ec2SecretContentHash(b) {
+			t.Fatal("hash depends on map iteration order")
+		}
+	}
+	// Secret bytes may contain zeroes, so delimiter-only field encoding is unsafe.
+	b.Data = map[string][]byte{"a": []byte("b\x00c\x00d")}
+	if ec2SecretContentHash(a) == ec2SecretContentHash(b) {
+		t.Fatal("ambiguous field encoding")
 	}
 }
 
