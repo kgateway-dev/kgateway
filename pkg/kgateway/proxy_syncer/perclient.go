@@ -99,7 +99,11 @@ func snapshotPerClient(
 		//
 		// Debug rather than Info: this fires for every client on startup until
 		// its inputs land, and at fleet scale an Info line per client would
-		// drown the signal it exists for.
+		// drown the signal it exists for. The durable signal is the
+		// xds_snapshot_deferred_clients gauge (snapshotDeferralTracker below),
+		// which counts the clients currently in this state per gateway and,
+		// unlike this log line, also covers a client that has never had a
+		// snapshot published at all.
 		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
@@ -222,6 +226,13 @@ func snapshotPerClient(
 				}.toMetricsLabels()...)
 		}
 	})
+
+	// Publish how many connected clients currently have no snapshot row. This
+	// is the observable form of the deferral above: the log line is Debug, and
+	// a client that never received a first snapshot never emits an event, so
+	// only a gauge derived from both collections can show a client being
+	// starved of config rather than briefly converging.
+	newSnapshotDeferralTracker().register(uccCol, xdsSnapshotsForUcc)
 
 	return xdsSnapshotsForUcc
 }

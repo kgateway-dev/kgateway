@@ -47,6 +47,22 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
+	// snapshotDeferredClients counts connected clients that currently have no
+	// published xDS snapshot: snapshotPerClient saw the client but its per-client
+	// clusters or endpoints had not landed, so it kept whatever Envoy already had.
+	// A nonzero value that does not return to zero is a client being starved of
+	// config (see the deferral comment in snapshotPerClient); a value that rises
+	// and falls with connects is the normal convergence window. The gauge is
+	// derived from collection state, so a client that never received a first
+	// snapshot is counted too, which a counter of deferral events cannot show.
+	snapshotDeferredClients = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "deferred_clients",
+			Help:      "Connected xDS clients whose snapshot is currently withheld because per-client inputs are not ready",
+		},
+		[]string{gatewayLabel, namespaceLabel},
+	)
 )
 
 // snapshotResourcesMetricLabels defines the labels for XDS snapshot resources metrics.
@@ -134,4 +150,5 @@ func ResetMetrics() {
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
+	snapshotDeferredClients.Reset()
 }
