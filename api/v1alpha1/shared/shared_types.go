@@ -181,6 +181,12 @@ type HeaderModifiers struct {
 	// Response modifies response headers.
 	// +optional
 	Response *HTTPHeaderFilter `json:"response,omitempty"`
+
+	// FilterStage specifies where in the HTTP filter chain the header
+	// mutation should be placed. If not specified, defaults to During Route
+	// (the current, fixed behavior).
+	// +optional
+	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 // HTTPHeaderFilter defines a filter that modifies the headers of an HTTP request or response.
