@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"hash/fnv"
 	"maps"
 	"slices"
 	"strconv"
@@ -25,8 +26,10 @@ import (
 )
 
 type endpointsWithUccName struct {
-	endpoints    envoycache.Resources
-	resourceName string
+	endpoints envoycache.Resources
+	// +noKrtEquals folded into endpoints.Version
+	contentHashes map[string]uint64
+	resourceName  string
 }
 
 func (c endpointsWithUccName) ResourceName() string {
@@ -56,18 +59,19 @@ func snapshotPerClient(
 			endpointsForUcc = append(endpointsForUcc, extraEndpoints.FetchEndpointsForClient(kctx, ucc)...)
 		}
 		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
-		var endpointsHash uint64
+		contentHashes := make(map[string]uint64, len(endpointsForUcc))
 		for _, ep := range endpointsForUcc {
 			// ResourceWithTTL is the only exit for the interned CLA; it runs
 			// the mutation tripwire when armed. See package sharedproto.
 			endpointsProto = append(endpointsProto, ep.Endpoints.ResourceWithTTL())
-			endpointsHash ^= ep.EndpointsHash
+			contentHashes[ep.Endpoints.BorrowForRead().GetClusterName()] = ep.ContentHash
 		}
 
-		endpointResources := envoycache.NewResourcesWithTTL(strconv.FormatUint(endpointsHash, 10), endpointsProto)
+		endpointResources := envoycache.NewResourcesWithTTL(endpointSetVersion(contentHashes, nil, nil), endpointsProto)
 		return &endpointsWithUccName{
-			endpoints:    endpointResources,
-			resourceName: ucc.ResourceName(),
+			endpoints:     endpointResources,
+			contentHashes: contentHashes,
+			resourceName:  ucc.ResourceName(),
 		}
 	}, krtopts.ToOptions("EndpointResources")...)
 
@@ -118,6 +122,8 @@ func snapshotPerClient(
 			bootstrapEndpoint, _, _ = ucc.LocalClusterInfo()
 		}
 		endpointRes, synthesizedEndpoints := filterEndpointResourcesForClusters(clusterResources, clientEndpointResources.endpoints, bootstrapEndpoint)
+		endpointRes = versionEndpointResources(endpointRes, clientEndpointResources.contentHashes,
+			endpointClusterDigests(clusterResources, clustersForUcc.clusterVersions))
 		// Post-synthesis every EDS cluster has a CLA; the synthesized set
 		// identifies exactly the referenced clusters whose CLA was not
 		// derived (a derived-but-empty CLA is truth, not a gap).
@@ -498,7 +504,6 @@ func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints
 	}
 	covered := make(map[string]struct{}, len(requiredEndpointNames))
 	filteredEndpoints := make([]envoycachetypes.ResourceWithTTL, 0, len(endpoints.Items))
-	var resourcesHash uint64
 	for _, item := range endpoints.Items {
 		cla, ok := item.Resource.(*envoyendpointv3.ClusterLoadAssignment)
 		if !ok {
@@ -509,7 +514,6 @@ func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints
 		}
 		filteredEndpoints = append(filteredEndpoints, item)
 		covered[cla.GetClusterName()] = struct{}{}
-		resourcesHash ^= utils.HashProto(cla)
 	}
 	// Synthesize empty assignments for EDS clusters that have no derived CLA
 	// so the published snapshot stays EDS-consistent.
@@ -520,11 +524,85 @@ func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints
 		}
 		empty := &envoyendpointv3.ClusterLoadAssignment{ClusterName: name}
 		filteredEndpoints = append(filteredEndpoints, envoycachetypes.ResourceWithTTL{Resource: empty})
-		resourcesHash ^= utils.HashProto(empty)
 		synthesized[name] = struct{}{}
 	}
 	if len(synthesized) == 0 && len(filteredEndpoints) == len(endpoints.Items) {
 		return endpoints, nil
 	}
-	return envoycache.NewResourcesWithTTL(strconv.FormatUint(resourcesHash, 10), filteredEndpoints), synthesized
+	return envoycache.NewResourcesWithTTL(endpointSetVersion(nil, filteredEndpoints, nil), filteredEndpoints), synthesized
+}
+
+// endpointSetVersion folds an endpoint resource set into its version string:
+// for each assignment, its name, its content digest, and the version digest of
+// its cluster (zero when the cluster is not in clusterDigests, as for the
+// bootstrap-defined local cluster). With items nil the fold covers every entry
+// of contentHashes; otherwise only the items' names, so a filtered subset is
+// versioned by what it holds. Names are folded in sorted order, so the result
+// is independent of iteration order and two assignments with equal digests do
+// not cancel each other as an XOR fold would. An item whose digest is missing
+// from contentHashes (a row built without one) is digested from its proto.
+func endpointSetVersion(contentHashes map[string]uint64, items []envoycachetypes.ResourceWithTTL, clusterDigests map[string]uint64) string {
+	digests := contentHashes
+	if items != nil {
+		digests = make(map[string]uint64, len(items))
+		for _, item := range items {
+			name := envoycache.GetResourceName(item.Resource)
+			digest, ok := contentHashes[name]
+			if !ok {
+				digest = utils.HashProto(item.Resource)
+			}
+			digests[name] = digest
+		}
+	}
+	names := make([]string, 0, len(digests))
+	for name := range digests {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	hasher := fnv.New64a()
+	for _, name := range names {
+		utils.HashStringField(hasher, name)
+		utils.HashUint64(hasher, digests[name])
+		utils.HashUint64(hasher, clusterDigests[name])
+	}
+	return strconv.FormatUint(hasher.Sum64(), 10)
+}
+
+// versionEndpointResources returns res with its version recomputed from the
+// assignments it holds and the clusters they belong to.
+func versionEndpointResources(res envoycache.Resources, contentHashes, clusterDigests map[string]uint64) envoycache.Resources {
+	items := make([]envoycachetypes.ResourceWithTTL, 0, len(res.Items))
+	for _, item := range res.Items {
+		items = append(items, item)
+	}
+	return envoycache.NewResourcesWithTTL(endpointSetVersion(contentHashes, items, clusterDigests), items)
+}
+
+// endpointClusterDigests maps CDS versions to EDS resource names, including
+// service_name aliases. Multiple clusters using one assignment all contribute;
+// bootstrap assignments without a dynamic CDS entry retain a zero digest.
+func endpointClusterDigests(clusters envoycache.Resources, versions map[string]uint64) map[string]uint64 {
+	names := make([]string, 0, len(clusters.Items))
+	for name := range clusters.Items {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	digests := make(map[string]uint64)
+	for _, name := range names {
+		item := clusters.Items[name]
+		endpointName, required := endpointResourceNameForCluster(item)
+		if !required {
+			continue
+		}
+		digest, ok := versions[name]
+		if !ok {
+			digest = utils.HashProto(item.Resource)
+		}
+		hasher := fnv.New64a()
+		utils.HashUint64(hasher, digests[endpointName])
+		utils.HashStringField(hasher, name)
+		utils.HashUint64(hasher, digest)
+		digests[endpointName] = hasher.Sum64()
+	}
+	return digests
 }
