@@ -69,6 +69,14 @@ func NewDestRuleIndex(istioClient apiclient.Client, krtopts *krtutil.KrtOptions)
 	destrules := krt.NewCollection(rawDestrules, func(kctx krt.HandlerContext, dr *networkingclient.DestinationRule) *DestinationRuleWrapper {
 		return &DestinationRuleWrapper{dr}
 	})
+	return NewDestRuleIndexFromCollection(destrules)
+}
+
+// NewDestRuleIndexFromCollection builds the index over an existing rule
+// collection. Production uses NewDestRuleIndex, which wraps the informer;
+// tests that drive rules through a static collection use this so they exercise
+// the same indexes and KRT dependency registration as production.
+func NewDestRuleIndexFromCollection(destrules krt.Collection[DestinationRuleWrapper]) DestinationRuleIndex {
 	return DestinationRuleIndex{
 		Destrules:  destrules,
 		ByHostname: newDestruleIndex(destrules),
