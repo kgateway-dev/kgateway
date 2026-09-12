@@ -304,7 +304,7 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks, s.globalSettings.XdsAuth)
+	uniqueClientCallbacks, uccBuilder, xdsClientState := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks, s.globalSettings.XdsAuth)
 
 	authenticators := []security.Authenticator{
 		NewKubeJWTAuthenticator(s.apiClient.Kube()),
@@ -372,7 +372,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	err = s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, uccBuilder)
+	err = s.buildKgatewayWithConfig(ctx, mgr, setupOpts, commoncol, uccBuilder, xdsClientState)
 	if err != nil {
 		return err
 	}
@@ -395,6 +395,7 @@ func (s *setup) buildKgatewayWithConfig(
 	setupOpts *controller.SetupOpts,
 	commonCollections *collections.CommonCollections,
 	uccBuilder krtcollections.UniquelyConnectedClientsBuilder,
+	xdsClientState krtcollections.XDSClientState,
 ) error {
 	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
@@ -430,6 +431,7 @@ func (s *setup) buildKgatewayWithConfig(
 		Client:                      s.apiClient,
 		AugmentedPods:               augmentedPods,
 		UniqueClients:               ucc,
+		XDSClientState:              xdsClientState,
 		Dev:                         logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
 		KrtOptions:                  krtOpts,
 		CommonCollections:           commonCollections,
