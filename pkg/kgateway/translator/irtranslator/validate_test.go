@@ -85,6 +85,63 @@ func TestValidateRoute_StrictRouteActionFailure(t *testing.T) {
 	assert.Equal(t, int32(2), v.calls.Load(), "route-action failure pays the disambiguation call")
 }
 
+func TestValidateRedirectPath(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{name: "empty path", path: "", wantErr: false},
+		{name: "simple path", path: "/test", wantErr: false},
+		{name: "path with query params", path: "/test?foo=bar", wantErr: false},
+		{name: "path with multiple query params", path: "/test?foo=bar&baz=qux", wantErr: false},
+		{name: "path with encoded chars", path: "/test?redirect=%2Ffoo", wantErr: false},
+		{name: "path with fragment only no query", path: "/test", wantErr: false},
+		{name: "invalid path sequence", path: "//test", wantErr: true},
+		{name: "invalid path with query", path: "/test/../foo?bar=baz", wantErr: true},
+		{name: "path with hash after query", path: "/test?ref=val#section", wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var errs []error
+			validateRedirectPath(tt.path, &errs)
+			if tt.wantErr {
+				require.NotEmpty(t, errs, "expected error for path %q", tt.path)
+			} else {
+				require.Empty(t, errs, "unexpected error for path %q: %v", tt.path, errs)
+			}
+		})
+	}
+}
+
+func newRouteWithRedirectPath(redirectPath string) *envoyroutev3.Route {
+	return &envoyroutev3.Route{
+		Name: "r",
+		Match: &envoyroutev3.RouteMatch{
+			PathSpecifier: &envoyroutev3.RouteMatch_Path{Path: "/original"},
+		},
+		Action: &envoyroutev3.Route_Redirect{
+			Redirect: &envoyroutev3.RedirectAction{
+				PathRewriteSpecifier: &envoyroutev3.RedirectAction_PathRedirect{
+					PathRedirect: redirectPath,
+				},
+			},
+		},
+	}
+}
+
+func TestValidateRoute_RedirectPathWithQueryParams(t *testing.T) {
+	v := &countingValidator{}
+	err := validateRoute(context.Background(), newRouteWithRedirectPath("/redirect?foo=bar"), v, apisettings.ValidationStandard)
+	require.NoError(t, err, "redirect path with query params should be valid")
+}
+
+func TestValidateRoute_RedirectPathWithInvalidPath(t *testing.T) {
+	v := &countingValidator{}
+	err := validateRoute(context.Background(), newRouteWithRedirectPath("//invalid-path"), v, apisettings.ValidationStandard)
+	require.Error(t, err, "redirect path with double slash should be invalid")
+}
+
 func TestValidateRoute_StrictMatcherFailure(t *testing.T) {
 	v := &countingValidator{
 		failureFunc: func(call int) error {
