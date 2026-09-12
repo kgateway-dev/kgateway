@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: udp-single
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-client
+  namespace: udp-single
+  labels:
+    app: dns-client
+spec:
+  containers:
+    - name: dns-client
+      image: nicolaka/netshoot:v0.14@sha256:7f08c4aff13ff61a35d30e30c5c1ea8396eac6ab4ce19fd02d5a4b3b5d0d09a2
+      command: ["sleep", "infinity"]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-a
+  namespace: udp-single
+data:
+  Corefile: |
+    .:53 {
+        hosts {
+            10.1.1.1 foo.bar.com
+            fallthrough
+        }
+        errors
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns-a
+  namespace: udp-single
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coredns-a
+  template:
+    metadata:
+      labels:
+        app: coredns-a
+    spec:
+      containers:
+        - name: coredns
+          image: coredns/coredns:1.11.1
+          args: ["-conf", "/etc/coredns/Corefile"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/coredns
+      volumes:
+        - name: config
+          configMap:
+            name: coredns-a
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns-a
+  namespace: udp-single
+spec:
+  selector:
+    app: coredns-a
+  ports:
+    - name: dns-udp
+      protocol: UDP
+      port: 53
+      targetPort: 53
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: udp-single-gw
+  namespace: udp-single
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: udp
+      protocol: UDP
+      port: 5300
+      allowedRoutes:
+        kinds:
+          - kind: UDPRoute
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: UDPRoute
+metadata:
+  name: udp-single-route
+  namespace: udp-single
+spec:
+  parentRefs:
+    - name: udp-single-gw
+  rules:
+    - backendRefs:
+        - name: coredns-a
+          port: 53

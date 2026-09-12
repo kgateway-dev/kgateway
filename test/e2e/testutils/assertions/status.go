@@ -381,6 +381,26 @@ func (p *Provider) getTLSRouteStatus(ctx context.Context, name string, namespace
 	return legacyRoute.Status.RouteStatus, nil
 }
 
+// EventuallyUDPRouteCondition asserts a UDPRoute parent condition eventually reaches the
+// expected status. UDPRoute is v1-native in kgateway, so there is no legacy-version fallback.
+func (p *Provider) EventuallyUDPRouteCondition(
+	ctx context.Context,
+	routeName string,
+	routeNamespace string,
+	cond gwv1.RouteConditionType,
+	expect metav1.ConditionStatus,
+	timeout ...time.Duration,
+) {
+	ginkgo.GinkgoHelper()
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		route := &gwv1.UDPRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get UDPRoute %s/%s", routeNamespace, routeName))
+		g.Expect(extractParentConditions(route.Status.Parents)).To(matchers.HaveAnyParentCondition(string(cond), expect))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
 func (p *Provider) getTCPRouteStatus(ctx context.Context, name string, namespace string) (gwv1.RouteStatus, error) {
 	route := &gwv1.TCPRoute{}
 	if err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, route); err == nil {
