@@ -31,6 +31,8 @@ bitflags! {
         /// pre-parsed map with lowercase keys stored under `STATE_LOOKUP_KEY_COOKIES_I`.
         /// May be combined with `USES_GET_COOKIE` in the same transform.
         const USES_GET_COOKIE_I = 0b10;
+        /// A template references the Envoy connection attribute namespace.
+        const USES_CONNECTION = 0b100;
     }
 }
 use base64::{
@@ -176,7 +178,73 @@ pub fn compute_transform_flags(transform: &LocalTransform) -> TransformFlags {
     if all_templates().any(|s| s.contains("get_cookie_i(")) {
         flags |= TransformFlags::USES_GET_COOKIE_I;
     }
+    if references_connection(transform) {
+        flags |= TransformFlags::USES_CONNECTION;
+    }
     flags
+}
+
+fn references_connection(transform: &LocalTransform) -> bool {
+    let contains_connection = |s: &str| s.contains("connection");
+
+    transform
+        .add
+        .iter()
+        .chain(transform.set.iter())
+        .any(|pair| contains_connection(&pair.name) || contains_connection(&pair.value))
+        || transform
+            .body
+            .as_ref()
+            .is_some_and(|body| contains_connection(&body.value))
+        || transform.dynamic_metadata.iter().any(|metadata| {
+            contains_connection(&metadata.namespace)
+                || contains_connection(&metadata.key)
+                || metadata
+                    .value
+                    .string_value
+                    .as_deref()
+                    .is_some_and(contains_connection)
+        })
+}
+
+fn parse_mtls_value(value: &str) -> bool {
+    matches!(
+        value.trim().to_ascii_lowercase().as_str(),
+        "1" | "true" | "yes" | "on"
+    )
+}
+
+fn get_connection_value<T: TransformationOps>(ops: &mut T) -> Option<minijinja::Value> {
+    let attributes = [
+        "connection.id",
+        "connection.mtls",
+        "connection.requested_server_name",
+        "connection.tls_version",
+        "connection.subject_local_certificate",
+        "connection.subject_peer_certificate",
+        "connection.dns_san_local_certificate",
+        "connection.dns_san_peer_certificate",
+        "connection.uri_san_local_certificate",
+        "connection.uri_san_peer_certificate",
+        "connection.sha256_peer_certificate_digest",
+        "connection.transport_failure_reason",
+        "connection.termination_details",
+    ];
+
+    let mut connection = HashMap::new();
+    for attribute in attributes {
+        if let Some(value) = ops.get_connection_attribute(attribute) {
+            let key = attribute.strip_prefix("connection.").unwrap_or(attribute);
+            let value = if attribute == "connection.mtls" {
+                minijinja::Value::from(parse_mtls_value(&value))
+            } else {
+                minijinja::Value::from(value)
+            };
+            connection.insert(key.to_string(), value);
+        }
+    }
+
+    (!connection.is_empty()).then(|| minijinja::Value::from(connection))
 }
 
 fn trim_outer_quotes(s: &str) -> &str {
@@ -564,6 +632,11 @@ pub fn transform_request<T: TransformationOps>(
             minijinja::Value::from_serialize(&cookies_i),
         );
     }
+    if transform_flags.contains(TransformFlags::USES_CONNECTION) {
+        if let Some(connection) = get_connection_value(&mut ops) {
+            m.insert("connection".to_string(), connection);
+        }
+    }
 
     let mut parsed_body_as_json = false;
     if flags.contains(ProcessFlags::BODY) {
@@ -706,6 +779,11 @@ pub fn transform_response<T: TransformationOps>(
             STATE_LOOKUP_KEY_COOKIES_I.to_string(),
             minijinja::Value::from_serialize(&cookies_i),
         );
+    }
+    if transform_flags.contains(TransformFlags::USES_CONNECTION) {
+        if let Some(connection) = get_connection_value(&mut ops) {
+            m.insert("connection".to_string(), connection);
+        }
     }
 
     let mut parsed_body_as_json = false;

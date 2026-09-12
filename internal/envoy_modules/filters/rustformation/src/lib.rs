@@ -220,6 +220,69 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
         self.envoy_filter
             .set_dynamic_metadata_string(namespace, key, value);
     }
+
+    fn get_connection_attribute(&mut self, attribute_name: &str) -> Option<String> {
+        let attribute_id = match attribute_name {
+            "connection.id" => abi::envoy_dynamic_module_type_attribute_id::ConnectionId,
+            "connection.mtls" => abi::envoy_dynamic_module_type_attribute_id::ConnectionMtls,
+            "connection.requested_server_name" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionRequestedServerName
+            }
+            "connection.tls_version" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionTlsVersion
+            }
+            "connection.subject_local_certificate" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionSubjectLocalCertificate
+            }
+            "connection.subject_peer_certificate" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionSubjectPeerCertificate
+            }
+            "connection.dns_san_local_certificate" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionDnsSanLocalCertificate
+            }
+            "connection.dns_san_peer_certificate" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionDnsSanPeerCertificate
+            }
+            "connection.uri_san_local_certificate" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionUriSanLocalCertificate
+            }
+            "connection.uri_san_peer_certificate" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionUriSanPeerCertificate
+            }
+            "connection.sha256_peer_certificate_digest" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionSha256PeerCertificateDigest
+            }
+            "connection.transport_failure_reason" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionTransportFailureReason
+            }
+            "connection.termination_details" => {
+                abi::envoy_dynamic_module_type_attribute_id::ConnectionTerminationDetails
+            }
+            _ => return None,
+        };
+
+        let value = self.envoy_filter.get_attribute_string(attribute_id)?;
+        if attribute_id == abi::envoy_dynamic_module_type_attribute_id::ConnectionMtls {
+            return Some(match value.as_slice() {
+                [] => "false".to_string(),
+                [1, ..] => "true".to_string(),
+                bytes => std::str::from_utf8(bytes)
+                    .ok()
+                    .map(|value| {
+                        matches!(
+                            value.trim().to_ascii_lowercase().as_str(),
+                            "1" | "true" | "yes" | "on"
+                        )
+                        .to_string()
+                    })
+                    .unwrap_or_else(|| "false".to_string()),
+            });
+        }
+
+        std::str::from_utf8(value.as_slice())
+            .ok()
+            .map(ToString::to_string)
+    }
 }
 
 impl FilterConfig {
