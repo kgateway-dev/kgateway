@@ -99,6 +99,14 @@ func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 // is bounded and never wrong bytes: the stored rows keep one instance, the
 // next pass hands out another, and the split heals on the next content change.
 //
+// The mirror image is an entry that outlives its backend. The transform and
+// the delete handler run on different goroutines, so a pass can store its
+// entry after the backend was deleted again and after the delete handler
+// already ran and found nothing to forget. Nothing would ever drop that
+// entry, since a gone backend produces no more events. keepIfPresent closes
+// that window by re-checking presence after the store: whichever of the two
+// looks last sees the backend gone and drops the entry.
+//
 // Lifetime is bounded by construction rather than by policy. What is retained is
 // replaced after every pass with exactly the set the returned rows reference, so
 // it can never hold more than the live distinct results for that backend, and a
@@ -159,6 +167,18 @@ func (r *claRetainer) keep(backend string, rows []UccWithEndpoints) {
 		return
 	}
 	r.byBackend[backend] = retained
+}
+
+// keepIfPresent is keep followed by a presence re-check. present must read the
+// source collection's current state, not the event that started this pass: by
+// the time the pass stores its entry the backend can already be deleted again,
+// with the delete handler having run while the entry was not yet there. Checking
+// after the store means one of the two observers always sees the deletion.
+func (r *claRetainer) keepIfPresent(backend string, rows []UccWithEndpoints, present func() bool) {
+	r.keep(backend, rows)
+	if !present() {
+		r.forget(backend)
+	}
 }
 
 // forget drops a deleted backend's retained CLAs. The transform is not run for
@@ -252,7 +272,7 @@ func NewPerClientEnvoyEndpoints(
 			}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}
-		retainer.keep(epName, uccWithEndpointsRet)
+		retainer.keepIfPresent(epName, uccWithEndpointsRet, func() bool { return kgatewayEndpoints.GetKey(epName) != nil })
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
 	// A deleted backend never runs the transform again, so its retained CLAs have
