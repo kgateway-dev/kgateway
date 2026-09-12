@@ -275,6 +275,15 @@ func TestBackendObjectIREqualsIgnoringResourceVersion(t *testing.T) {
 		assert.False(t, base.Equals(other))
 		assert.False(t, base.EqualsIgnoringResourceVersion(other), "labels are content overlays read")
 	})
+	t.Run("annotation-only write", func(t *testing.T) {
+		// Cloud load-balancer controllers, external-dns, Argo and kubectl apply
+		// all write annotations no per-client overlay reads. Such a write must
+		// stop at the base, not rerun every client's walk over every backend.
+		other := serviceBackedIR("2", map[string]string{"a": "1"}, 0)
+		other.Obj.(*corev1.Service).Annotations = map[string]string{"external-dns.alpha.kubernetes.io/hostname": "svc.example.com"}
+		assert.False(t, base.Equals(other), "Equals still sees the version move")
+		assert.True(t, base.EqualsIgnoringResourceVersion(other), "an annotation-only write is not content any client can observe")
+	})
 	t.Run("generation change", func(t *testing.T) {
 		other := serviceBackedIR("1", map[string]string{"a": "1"}, 1)
 		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a spec generation is content")

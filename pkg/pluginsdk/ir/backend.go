@@ -233,13 +233,14 @@ func (c BackendObjectIR) ResourceName() string {
 }
 
 // EqualsIgnoringResourceVersion is Equals with the backing object compared by
-// the content translation can read (UID, generation, labels, annotations)
+// the content per-client translation can read (UID, generation, labels)
 // rather than by its version. For kinds without metadata.generation, such as
 // core Services, Equals falls back to resourceVersion, which every write bumps:
 // status updates, and annotation touches from Helm, Argo, external-dns or a
 // cloud load-balancer controller all look like changes. A consumer that already
 // hashes the translated output uses this so such a write stops at that hash
-// instead of fanning out to every client.
+// instead of fanning out to every client. Annotations are left out for the
+// same reason; see objectContentEquals.
 //
 // A spec change on a generation-less kind is not visible here unless it reaches
 // a compared IR field, ObjIr, or the consumer's output hash. A consumer that
@@ -259,16 +260,24 @@ func (c BackendObjectIR) EqualsIgnoringResourceVersion(in BackendObjectIR) bool 
 }
 
 // objectContentEquals compares two backing objects by identity, spec generation
-// and metadata content, leaving resourceVersion out. Nil handling matches
+// and labels, leaving resourceVersion and annotations out. Nil handling matches
 // versionEquals: two absent objects are equal, an absent and a present one never.
+//
+// Annotations are deliberately not compared. Nothing on the per-client path
+// reads them: ParseObjectAnnotations runs when the IR is built and lands in IR
+// fields that Equals already compares, and no in-tree or known downstream
+// overlay reads in.Obj.GetAnnotations(). Comparing them would make every
+// annotation write by external-dns, a cloud load-balancer controller, Argo, or
+// kubectl apply rerun every client's walk over every backend for a change no
+// client can observe. Labels are compared because overlays branch on them
+// (ingress-use-waypoint, the downstream remote-waypoint label).
 func objectContentEquals(a, b metav1.Object) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
 	return a.GetUID() == b.GetUID() &&
 		a.GetGeneration() == b.GetGeneration() &&
-		maps.Equal(a.GetLabels(), b.GetLabels()) &&
-		maps.Equal(a.GetAnnotations(), b.GetAnnotations())
+		maps.Equal(a.GetLabels(), b.GetLabels())
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
