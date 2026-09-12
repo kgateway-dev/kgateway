@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/serviceentry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/backendaddress"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -106,7 +106,7 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	ir.ParseObjectAnnotations(&backend, svc)
 
 	// Carry the resolved VIPs so a clusterIPs change re-emits the backend.
-	backend.ObjIr = &serviceBackendIR{addresses: serviceentry.ServiceAddresses(svc)}
+	backend.ObjIr = &serviceBackendIR{addresses: backendaddress.ServiceAddresses(svc)}
 
 	return backend
 }
