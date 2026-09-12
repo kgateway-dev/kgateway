@@ -293,6 +293,15 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if !versionEquals(c.Obj, in.Obj) {
 		return false
 	}
+	// ObjIr is compared symmetrically: an IR that carries plugin state is never
+	// equal to one that does not, whichever side it is on. Guarding only on
+	// c.ObjIr made Equals(a, b) and Equals(b, a) disagree when exactly one side
+	// had ObjIr, which KRT change detection cannot tolerate: which object ends up
+	// as the receiver depends on event order, so the same pair of rows could be
+	// stored on one path and dropped as unchanged on another.
+	if (c.ObjIr == nil) != (in.ObjIr == nil) {
+		return false
+	}
 	if c.ObjIr != nil && !c.ObjIr.Equals(in.ObjIr) {
 		return false
 	}
