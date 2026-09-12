@@ -64,6 +64,14 @@ type Shared[M proto.Message] struct {
 // returns a newly wrapped value; when an equal value was already interned, msg
 // is discarded and the existing wrapper is returned.
 type Interner[M proto.Message] struct {
+	// Equal decides content equality within a bucket. Nil means proto.Equal,
+	// which walks every nested field even when two candidates share the same
+	// nested pointers (the pinned protobuf-go short-circuits on identity only
+	// at the root). A caller whose values alias their sub-messages, as the CLA
+	// interner's do through the endpoint IR, can supply an identity-aware
+	// comparison; it MUST agree with proto.Equal on every pair it is given,
+	// because a false positive here aliases distinct xDS resources.
+	Equal  func(a, b M) bool
 	byHash map[uint64][]Shared[M]
 }
 
@@ -84,8 +92,12 @@ func (i *Interner[M]) InternPrehashed(msg M, contentHash uint64) Shared[M] {
 }
 
 func (i *Interner[M]) intern(msg M, bucketHash uint64, wrap func(M) Shared[M]) Shared[M] {
+	equal := i.Equal
+	if equal == nil {
+		equal = func(a, b M) bool { return proto.Equal(a, b) }
+	}
 	for _, existing := range i.byHash[bucketHash] {
-		if proto.Equal(existing.msg, msg) {
+		if equal(existing.msg, msg) {
 			return existing
 		}
 	}

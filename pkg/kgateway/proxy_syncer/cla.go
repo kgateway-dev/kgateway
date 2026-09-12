@@ -26,9 +26,17 @@ type UccWithEndpoints struct {
 	// Endpoints is wrapped so consumers cannot mutate the CLA interned across
 	// every UCC whose built result is equal; see package sharedproto. EndpointsHash
 	// combines the resolved endpoint content, endpoint-plugin contributions, and
-	// load-balancing context into a compact version fingerprint. Interning uses it
-	// only as a bucket key and separately verifies protobuf equality.
-	// +noKrtEquals EndpointsHash is a content hash over the same inputs
+	// load-balancing context into a compact version fingerprint.
+	//
+	// Equals stands in for comparing this proto with EndpointsHash, a 64-bit
+	// FNV-1a fold of its inputs. That is an assumption, not a proof of equality:
+	// a collision between two successive revisions of one row would leave that
+	// client on stale endpoints until any other change moved the hash. Interning
+	// does not inherit the assumption because it uses the hash only to pick a
+	// bucket and confirms content equality itself
+	// (TestNewPerClientEnvoyEndpointsDoesNotAliasHashCollisions); KRT equality
+	// and the client's EDS version, which XORs these hashes, do rely on it.
+	// +noKrtEquals EndpointsHash is a 64-bit content hash standing in for the proto; collision-freedom is assumed, see above
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
 	endpointsName string
@@ -81,6 +89,15 @@ func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 // source: the rebuilt candidate finds the proto the stored rows already point
 // at, so every client converges on one instance and KRT's "nothing changed"
 // becomes true in the strong sense.
+//
+// Convergence holds as long as the retained entry is never dropped while rows
+// still reference it. Two things could drop it: a pass whose rows reference a
+// different instance (only after a content change, when KRT replaces the rows
+// too), and the delete handler, which therefore forgets an entry only when the
+// backend is absent from the source collection at the time the delete is
+// handled; see forgetIfAbsent. Should the entry ever be lost anyway, the cost
+// is bounded and never wrong bytes: the stored rows keep one instance, the
+// next pass hands out another, and the split heals on the next content change.
 //
 // Lifetime is bounded by construction rather than by policy. What is retained is
 // replaced after every pass with exactly the set the returned rows reference, so
@@ -153,6 +170,20 @@ func (r *claRetainer) forget(backend string) {
 	delete(r.byBackend, backend)
 }
 
+// forgetIfAbsent is forget guarded by whether the backend is still in the source
+// collection at the time the delete event is handled. Delete handlers run on
+// their own goroutine, so a backend deleted and re-added in quick succession can
+// have its re-add pass seed from and replace the entry before the delete is
+// observed here; dropping the entry then would split the fleet between the
+// stored rows' proto and the next pass's fresh one until the next endpoint
+// change. When the backend is present again, its own transform owns the entry.
+func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
+	if !absent {
+		return
+	}
+	r.forget(backend)
+}
+
 // PerClientEnvoyEndpoints is the endpoint half of per-client xDS: [UccWithEndpoints]
 // rows indexed by client, so assembling one client's EDS payload does not scan the
 // other clients' rows. Both [NewPerClientEnvoyEndpoints] (backend endpoints) and
@@ -201,7 +232,11 @@ func NewPerClientEnvoyEndpoints(
 		// Seeded with what the previous pass handed out, so a client that connects
 		// later converges on the proto the already-stored rows point at rather than
 		// starting a generation of its own. See [claRetainer].
-		var claInterner sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]
+		// Candidates in one bucket alias their LbEndpoint protos through the
+		// endpoint IR, and the pinned protobuf-go's proto.Equal walks every
+		// nested field regardless, so equality uses an identity-aware
+		// comparison that agrees with proto.Equal (see clusterLoadAssignmentsEqual).
+		claInterner := sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]{Equal: clusterLoadAssignmentsEqual}
 		retainer.seed(epName, &claInterner)
 		for _, ucc := range uccs {
 			resolved := resolveEndpoints(kctx, ucc, ep)
@@ -222,10 +257,20 @@ func NewPerClientEnvoyEndpoints(
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
 	// A deleted backend never runs the transform again, so its retained CLAs have
 	// to be dropped here or they outlive every row that referenced them.
+	//
+	// This handler runs on its own goroutine, not on the transform's queue, so
+	// a delete followed quickly by a re-add can be observed here after the
+	// re-add's pass has already seeded from and replaced the entry. Forgetting
+	// in that order would discard the live generation: the next pass would
+	// build a fresh proto, KRT would keep the already-stored rows (equal hash),
+	// and the fleet would sit on two instances until the next endpoint change.
+	// So the entry is dropped only when the backend is really gone. If it has
+	// been re-added, its own transform owns the entry and keeps it current.
 	kgatewayEndpoints.RegisterBatch(func(events []krt.Event[ir.EndpointsForBackend]) {
 		for _, e := range events {
 			if e.Event == controllers.EventDelete && e.Old != nil {
-				retainer.forget(e.Old.ResourceName())
+				name := e.Old.ResourceName()
+				retainer.forgetIfAbsent(name, kgatewayEndpoints.GetKey(name) == nil)
 			}
 		}
 	}, false)

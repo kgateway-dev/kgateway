@@ -136,3 +136,32 @@ func TestInternerUsesContentEqualityWithinHashBuckets(t *testing.T) {
 		"a non-content bucket hash must not be reused as the mutation-tripwire hash")
 	require.NotPanics(t, func() { sharedFirst.ResourceWithTTL() })
 }
+
+// A caller-supplied Equal replaces proto.Equal for the bucket scan and nothing
+// else: it decides which existing wrapper is handed back, and a nil hook keeps
+// the default.
+func TestInternerUsesSuppliedEquality(t *testing.T) {
+	withAssertions(t, false)
+	calls := 0
+	interner := Interner[*envoyclusterv3.Cluster]{
+		Equal: func(a, b *envoyclusterv3.Cluster) bool {
+			calls++
+			// Deliberately coarser than proto.Equal: compare names only, so the
+			// test can tell the hook was consulted rather than proto.Equal.
+			return a.GetName() == b.GetName()
+		},
+	}
+	first := interner.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "one"}, 1)
+	second := interner.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "two"}, 1)
+	require.True(t, Same(first, second), "the supplied Equal decided the two candidates were equal")
+	require.Equal(t, 1, calls, "the hook ran once, against the one existing candidate")
+
+	other := interner.Intern(&envoyclusterv3.Cluster{Name: "d"}, 1)
+	require.False(t, Same(first, other), "the supplied Equal decided this candidate differs")
+	require.Len(t, interner.byHash[1], 2)
+
+	var defaulted Interner[*envoyclusterv3.Cluster]
+	a := defaulted.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "one"}, 1)
+	b := defaulted.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "two"}, 1)
+	require.False(t, Same(a, b), "without a hook proto.Equal decides, and these differ")
+}
