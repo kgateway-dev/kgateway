@@ -1,6 +1,7 @@
 package listenerpolicy
 
 import (
+	"errors"
 	"fmt"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -13,6 +14,7 @@ import (
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -37,7 +39,18 @@ func convertTracingConfig(
 		return nil, nil, nil
 	}
 
-	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, config.Provider.OpenTelemetry.GrpcService.BackendRef.BackendObjectReference)
+	otelConfig := config.Provider.OpenTelemetry
+	var backendRef gwv1.BackendObjectReference
+	switch {
+	case otelConfig.GrpcService != nil:
+		backendRef = otelConfig.GrpcService.BackendRef.BackendObjectReference
+	case otelConfig.HttpService != nil:
+		backendRef = otelConfig.HttpService.BackendRef.BackendObjectReference
+	default:
+		return nil, nil, errors.New("either grpcService or httpService must be configured for OpenTelemetry tracing")
+	}
+
+	backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, backendRef)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %w", ErrUnresolvedBackendRef, err)
 	}
@@ -102,14 +115,24 @@ func convertOTelTracingConfig(
 		return nil, nil
 	}
 
-	envoyGrpcService, err := ToEnvoyGrpc(config.GrpcService, backend)
-	if err != nil {
-		return nil, err
+	tracingCfg := &envoytracev3.OpenTelemetryConfig{}
+	switch {
+	case config.GrpcService != nil:
+		envoyGrpcService, err := ToEnvoyGrpc(*config.GrpcService, backend)
+		if err != nil {
+			return nil, err
+		}
+		tracingCfg.GrpcService = envoyGrpcService
+	case config.HttpService != nil:
+		envoyHttpService, err := ToEnvoyHttp(*config.HttpService, backend)
+		if err != nil {
+			return nil, err
+		}
+		tracingCfg.HttpService = envoyHttpService
+	default:
+		return nil, errors.New("either grpcService or httpService must be configured for OpenTelemetry tracing")
 	}
 
-	tracingCfg := &envoytracev3.OpenTelemetryConfig{
-		GrpcService: envoyGrpcService,
-	}
 	if config.ServiceName != nil {
 		tracingCfg.ServiceName = *config.ServiceName
 	}

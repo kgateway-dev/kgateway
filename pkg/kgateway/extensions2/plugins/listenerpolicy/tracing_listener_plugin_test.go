@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -46,7 +47,7 @@ func TestTracingConverter(t *testing.T) {
 				config: &kgateway.Tracing{
 					Provider: kgateway.TracingProvider{
 						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
-							GrpcService: kgateway.CommonGrpcService{
+							GrpcService: &kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -79,11 +80,60 @@ func TestTracingConverter(t *testing.T) {
 				},
 			},
 			{
+				name: "OTel Tracing HTTP service",
+				config: &kgateway.Tracing{
+					Provider: kgateway.TracingProvider{
+						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
+							HttpService: &kgateway.CommonHttpService{
+								BackendRef: gwv1.BackendRef{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name: "test-service",
+									},
+								},
+								RequestHeadersToAdd: []kgateway.HeaderValue{{
+									Key:   "x-api-key",
+									Value: new("secret"),
+								}},
+							},
+						},
+					},
+				},
+				expected: &envoy_hcm.HttpConnectionManager_Tracing{
+					Provider: &envoytracev3.Tracing_Http{
+						Name: "envoy.tracers.opentelemetry",
+						ConfigType: &envoytracev3.Tracing_Http_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
+								HttpService: &envoycorev3.HttpService{
+									HttpUri: &envoycorev3.HttpUri{
+										Uri: "backend_default_test-service_0",
+										HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+											Cluster: "backend_default_test-service_0",
+										},
+										Timeout: &durationpb.Duration{Seconds: 2},
+									},
+									RequestHeadersToAdd: []*envoycorev3.HeaderValueOption{{
+										Header: &envoycorev3.HeaderValue{
+											Key:   "x-api-key",
+											Value: "secret",
+										},
+									}},
+								},
+								ServiceName: "gw.default",
+								ResourceDetectors: []*envoycorev3.TypedExtensionConfig{{
+									Name:        "envoy.tracers.opentelemetry.resource_detectors.environment",
+									TypedConfig: mustMessageToAny(t, &resource_detectorsv3.EnvironmentResourceDetectorConfig{}),
+								}},
+							}),
+						},
+					},
+				},
+			},
+			{
 				name: "OTel Tracing disabled env detector",
 				config: &kgateway.Tracing{
 					Provider: kgateway.TracingProvider{
 						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
-							GrpcService: kgateway.CommonGrpcService{
+							GrpcService: &kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -119,7 +169,7 @@ func TestTracingConverter(t *testing.T) {
 				config: &kgateway.Tracing{
 					Provider: kgateway.TracingProvider{
 						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
-							GrpcService: kgateway.CommonGrpcService{
+							GrpcService: &kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -157,7 +207,7 @@ func TestTracingConverter(t *testing.T) {
 				config: &kgateway.Tracing{
 					Provider: kgateway.TracingProvider{
 						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
-							GrpcService: kgateway.CommonGrpcService{
+							GrpcService: &kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",
@@ -196,7 +246,7 @@ func TestTracingConverter(t *testing.T) {
 				config: &kgateway.Tracing{
 					Provider: kgateway.TracingProvider{
 						OpenTelemetry: &kgateway.OpenTelemetryTracingConfig{
-							GrpcService: kgateway.CommonGrpcService{
+							GrpcService: &kgateway.CommonGrpcService{
 								BackendRef: gwv1.BackendRef{
 									BackendObjectReference: gwv1.BackendObjectReference{
 										Name: "test-service",

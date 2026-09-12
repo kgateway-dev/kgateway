@@ -1,0 +1,179 @@
+Clusters:
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_default_opentelemetry-collector_4317
+  type: EDS
+- connectTimeout: 5s
+  name: test-backend-plugin_default_example-svc_80
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        accessLog:
+        - name: envoy.access_loggers.open_telemetry
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+            body:
+              stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%"'
+            httpService:
+              httpUri:
+                cluster: kube_default_opentelemetry-collector_4317
+                timeout: 2s
+                uri: kube_default_opentelemetry-collector_4317
+            logName: otel-accesslog-service
+            resourceAttributes:
+              values:
+              - key: service.name
+                value:
+                  stringValue: example-gateway.default
+              - key: service.namespace
+                value:
+                  stringValue: default
+              - key: service.version
+                value:
+                  stringValue: v1.0.0-ci1
+              - key: k8s.namespace.name
+                value:
+                  stringValue: default
+              - key: k8s.container.name
+                value:
+                  stringValue: kgateway-proxy
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: listener~8080
+        statPrefix: http
+        tracing:
+          provider:
+            name: envoy.tracers.opentelemetry
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+              httpService:
+                httpUri:
+                  cluster: kube_default_opentelemetry-collector_4317
+                  timeout: 2s
+                  uri: kube_default_opentelemetry-collector_4317
+              resourceDetectors:
+              - name: envoy.tracers.opentelemetry.resource_detectors.environment
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
+              serviceName: example-gateway.default
+        useRemoteAddress: true
+    name: listener~8080
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+        default.httpSettings.tracing:
+        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+  name: listener~8080
+Routes:
+- ignorePortInHostMatching: true
+  metadata:
+    filterMetadata:
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.accessLog:
+        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+        default.httpSettings.accessLogConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+        default.httpSettings.tracing:
+        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+  name: listener~8080
+Statuses:
+  gateways:
+    default/example-gateway:
+      conditions:
+      - lastTransitionTime: null
+        message: Successfully accepted Gateway
+        observedGeneration: 3
+        reason: Accepted
+        status: "True"
+        type: Accepted
+      - lastTransitionTime: null
+        message: Successfully programmed Gateway
+        observedGeneration: 3
+        reason: Programmed
+        status: "True"
+        type: Programmed
+      - lastTransitionTime: null
+        message: Successfully resolved all Gateway references
+        observedGeneration: 3
+        reason: ResolvedRefs
+        status: "True"
+        type: ResolvedRefs
+      listeners:
+      - attachedRoutes: 0
+        conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Listener
+          observedGeneration: 3
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully verified that Listener has no conflicts
+          observedGeneration: 3
+          reason: NoConflicts
+          status: "False"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          observedGeneration: 3
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          observedGeneration: 3
+          reason: Programmed
+          status: "True"
+          type: Programmed
+        name: http
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+        - group: gateway.networking.k8s.io
+          kind: GRPCRoute
+  policies:
+    ListenerPolicy/default/access-log-otel-http-identity:
+      ancestors:
+      - ancestorRef:
+          group: gateway.networking.k8s.io
+          kind: Gateway
+          name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Valid
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
+          type: Attached
+        controllerName: kgateway.dev/kgateway
