@@ -35,9 +35,18 @@ const (
 	multiListener  = "udp"
 	multiAnswerA   = "10.1.1.1"
 	multiAnswerB   = "10.2.2.2"
+
+	// Invalid-backend case: one valid backend (weight 20) and one nonexistent backend (weight 80);
+	// the 80% share must be dropped, not redistributed to the valid backend.
+	dropNs          = "udp-drop"
+	dropGwName      = "udp-drop-gw"
+	dropRouteName   = "udp-drop-route"
+	dropListener    = "udp"
+	dropValidAnswer = "10.1.1.1"
 )
 
 var (
-	singleBackendManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "single-backend.yaml")
-	multiBackendManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "multi-backend.yaml")
+	singleBackendManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "single-backend.yaml")
+	multiBackendManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "multi-backend.yaml")
+	invalidBackendManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-backend.yaml")
 )

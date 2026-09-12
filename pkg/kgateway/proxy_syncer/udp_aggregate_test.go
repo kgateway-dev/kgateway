@@ -59,7 +59,7 @@ func TestMergeUdpAggregateLoadAssignment_WeightsRespectReplicaCount(t *testing.T
 		)}},
 	}
 
-	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members)
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 	require.Equal(t, "udpagg_test", cla.GetClusterName())
 	require.Len(t, cla.GetEndpoints(), 1, "all endpoints share the default locality")
 
@@ -86,7 +86,7 @@ func TestMergeUdpAggregateLoadAssignment_SkipsEmptyAndZeroWeight(t *testing.T) {
 		{weight: 100, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
 		{weight: 50, efbs: nil}, // invalid/no endpoints: contributes nothing
 	}
-	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members)
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 	require.Len(t, cla.GetEndpoints(), 1)
 	require.Len(t, cla.GetEndpoints()[0].GetLbEndpoints(), 1)
 	w, ok := endpointWeight(cla, "10.0.0.1")
@@ -104,7 +104,7 @@ func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
 			},
 		}}},
 	}
-	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members)
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 	require.Len(t, cla.GetEndpoints(), 2)
 	// 10*1000/2 = 5000 per endpoint; each locality has one endpoint so locality weight = 5000.
 	for _, lle := range cla.GetEndpoints() {
@@ -112,4 +112,35 @@ func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
 		assert.Equal(t, uint32(5000), lle.GetLbEndpoints()[0].GetLoadBalancingWeight().GetValue())
 		assert.Equal(t, uint32(5000), lle.GetLoadBalancingWeight().GetValue())
 	}
+}
+
+func TestMergeUdpAggregateLoadAssignment_DropWeightBlackhole(t *testing.T) {
+	// Valid backend weight 20 (1 endpoint) + an invalid backend weight 80 (dropWeight). The invalid
+	// share must go to a blackhole endpoint, not be redistributed: valid gets 20%, blackhole 80%.
+	members := []udpMemberEndpoints{
+		{weight: 20, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 80)
+
+	wValid, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok, "valid endpoint present")
+	wDrop, ok := endpointWeight(cla, udpBlackholeAddr)
+	require.True(t, ok, "blackhole endpoint present for the invalid backend's weight")
+
+	// valid = 20*1000 = 20000; blackhole = 80*1000 = 80000 -> 20% valid, 80% dropped.
+	assert.Equal(t, uint32(20000), wValid)
+	assert.Equal(t, uint32(80000), wDrop)
+
+	// The blackhole targets the loopback discard port.
+	var found bool
+	for _, lle := range cla.GetEndpoints() {
+		for _, ep := range lle.GetLbEndpoints() {
+			sa := ep.GetEndpoint().GetAddress().GetSocketAddress()
+			if sa.GetAddress() == udpBlackholeAddr {
+				assert.Equal(t, uint32(udpBlackholePort), sa.GetPortValue())
+				found = true
+			}
+		}
+	}
+	assert.True(t, found)
 }

@@ -45,8 +45,9 @@ func (s *testingSuite) SetupSuite() {
 }
 
 var testCases = map[string]*base.TestCase{
-	"TestSingleBackendUDPRoute":    {},
-	"TestWeightedBackendsUDPRoute": {},
+	"TestSingleBackendUDPRoute":      {},
+	"TestWeightedBackendsUDPRoute":   {},
+	"TestInvalidBackendDropUDPRoute": {},
 }
 
 // TestSingleBackendUDPRoute routes a UDPRoute to a single CoreDNS backend and asserts a DNS query
@@ -106,6 +107,40 @@ func (s *testingSuite) TestWeightedBackendsUDPRoute() {
 	s.Assert().Greater(counts[multiAnswerA], counts[multiAnswerB],
 		"backend A (weight 80) should receive more traffic than backend B (weight 20); got A=%d B=%d",
 		counts[multiAnswerA], counts[multiAnswerB])
+}
+
+// TestInvalidBackendDropUDPRoute routes a UDPRoute to one valid backend (weight 20) and one
+// nonexistent backend (weight 80), and asserts the invalid backend's share is dropped rather than
+// redistributed: the valid backend answers a minority of queries and most queries are dropped.
+func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
+	testutils.Cleanup(s.T(), func() {
+		s.deleteManifests(invalidBackendManifest)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: dropNs}})
+	})
+
+	s.applyManifests(dropNs, invalidBackendManifest)
+
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, dropGwName, dropNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyUDPRouteCondition(s.Ctx, dropRouteName, dropNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+
+	// Wait until the valid backend is reachable through the gateway.
+	s.assertEventualDigAnswer(dropNs, dropGwName, dropValidAnswer)
+
+	// The invalid backend has weight 80, so ~80% of queries should be dropped (time out) rather
+	// than routed to the valid backend. Loose assertion (valid answers exist, drops are the
+	// majority) to stay non-flaky.
+	const queries = 40
+	valid, dropped := 0, 0
+	for range queries {
+		if strings.Contains(strings.TrimSpace(s.dig(dropNs, dropGwName)), dropValidAnswer) {
+			valid++
+		} else {
+			dropped++
+		}
+	}
+	s.Assert().Positive(valid, "valid backend (weight 20) should still answer some queries")
+	s.Assert().Greater(dropped, valid,
+		"the invalid backend's weight-80 share should be dropped (majority); got valid=%d dropped=%d", valid, dropped)
 }
 
 // dig runs a single `dig +short` A-record query for queryName through the gateway's UDP listener
