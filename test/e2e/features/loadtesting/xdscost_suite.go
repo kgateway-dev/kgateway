@@ -180,6 +180,12 @@ type controllerSample struct {
 	// Resources is kgateway_xds_snapshot_resources summed over gateways and
 	// resource kinds: a sanity check that the fleet is the size we think.
 	Resources float64 `json:"xds_resources"`
+	// DeferredClients is kgateway_xds_snapshot_deferred_clients summed: the
+	// connected clients whose snapshot is currently withheld because their
+	// per-client inputs are not ready. It names the condition that otherwise
+	// only shows up as a wave whose acknowledgements did not advance. Absent on
+	// builds without the gauge, which reads as zero.
+	DeferredClients float64 `json:"xds_deferred_clients"`
 }
 
 // phaseResult is one phase's measurement, emitted as JSON.
@@ -607,18 +613,20 @@ func readControllerSample(metricsURL string) (controllerSample, error) {
 		"kgateway_xds_snapshot_transforms_total",
 		"kgateway_xds_snapshot_cluster_deferrals_total",
 		"kgateway_xds_snapshot_resources",
+		"kgateway_xds_snapshot_deferred_clients",
 	})
 	return controllerSample{
-		At:         time.Now(),
-		CPUSeconds: sums["process_cpu_seconds_total"],
-		AllocBytes: sums["go_memstats_alloc_bytes_total"],
-		HeapInuse:  sums["go_memstats_heap_inuse_bytes"],
-		RSS:        sums["process_resident_memory_bytes"],
-		Goroutines: sums["go_goroutines"],
-		Syncs:      sums["kgateway_xds_snapshot_syncs_total"],
-		Transforms: sums["kgateway_xds_snapshot_transforms_total"],
-		Deferrals:  sums["kgateway_xds_snapshot_cluster_deferrals_total"],
-		Resources:  sums["kgateway_xds_snapshot_resources"],
+		At:              time.Now(),
+		CPUSeconds:      sums["process_cpu_seconds_total"],
+		AllocBytes:      sums["go_memstats_alloc_bytes_total"],
+		HeapInuse:       sums["go_memstats_heap_inuse_bytes"],
+		RSS:             sums["process_resident_memory_bytes"],
+		Goroutines:      sums["go_goroutines"],
+		Syncs:           sums["kgateway_xds_snapshot_syncs_total"],
+		Transforms:      sums["kgateway_xds_snapshot_transforms_total"],
+		Deferrals:       sums["kgateway_xds_snapshot_cluster_deferrals_total"],
+		Resources:       sums["kgateway_xds_snapshot_resources"],
+		DeferredClients: sums["kgateway_xds_snapshot_deferred_clients"],
 	}, nil
 }
 

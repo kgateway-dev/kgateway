@@ -364,6 +364,7 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		perWave = fleetGateways
 	}
 	connected := 0
+	var lastAcks int64
 	for wave := 1; connected < fleetGateways; wave++ {
 		target := min(connected+perWave, fleetGateways)
 		start := time.Now()
@@ -383,6 +384,19 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		}
 		sample := s.scrape()
 		restarts := s.controllerRestarts()
+		// A wave that connects clients and produces no new responses is not a
+		// measurement. Those clients are attached and receiving nothing, so the
+		// control plane is not building their snapshots, and every figure below
+		// describes a fleet that is not being served. Record the delta and say
+		// so loudly: read as a heap number, an unserved wave looks like a win.
+		acks := s.totalAcks()
+		ackDelta := acks - lastAcks
+		lastAcks = acks
+		if ackDelta == 0 {
+			s.T().Logf("WARNING wave %d: %d clients connected but stream acks did not advance (%d); "+
+				"this wave describes an unserved fleet and must not be compared",
+				wave, connected*s.clientsPerGateway(), acks)
+		}
 		s.emit("xds_fleet_wave", map[string]any{
 			"build": benchLabel, "validation": benchValidation,
 			"wave": wave, "gateways": connected,
@@ -407,8 +421,11 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 			"goroutines":          sample.Goroutines,
 			"xds_resources":       sample.Resources,
 			"xds_transforms":      sample.Transforms,
+			"deferred_clients":    sample.DeferredClients,
 			"controller_restarts": restarts,
-			"stream_acks":         s.totalAcks(),
+			"stream_acks":         acks,
+			"stream_acks_delta":   ackDelta,
+			"served":              ackDelta > 0,
 			"stream_errors":       s.totalRecvErrors(),
 		})
 		s.T().Logf("wave %d: gateways=%d clients=%d settled=%v heap=%.0fMB rss=%.0fMB cpu=%.1fs resources=%.0f restarts=%d",
