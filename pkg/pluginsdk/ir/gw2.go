@@ -65,6 +65,7 @@ type ListenerIR struct {
 
 	HttpFilterChain []HttpFilterChainIR
 	TcpFilterChain  []TcpIR
+	UdpFilterChain  []UdpIR
 
 	PolicyAncestorRef gwv1.ParentReference
 
@@ -148,6 +149,16 @@ type HttpFilterChainIR struct {
 type TcpIR struct {
 	FilterChainCommon
 	BackendRefs []BackendRefIR
+}
+
+// UdpIR is the intermediate representation of a UDPRoute-backed listener.
+// Unlike TCP/HTTP, Envoy models UDP with a udp_proxy listener filter rather
+// than a network filter chain, so there is no SNI/TLS/matcher to carry here.
+type UdpIR struct {
+	// FilterChainName is a logical name for the UDP proxy config, used for
+	// status and metrics. UDP listeners have no Envoy filter chain.
+	FilterChainName string
+	BackendRefs     []BackendRefIR
 }
 
 // this is 1:1 with envoy deployments

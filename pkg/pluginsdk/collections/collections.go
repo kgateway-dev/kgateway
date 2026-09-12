@@ -62,6 +62,7 @@ type CommonCollections struct {
 	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
 	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
 	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+	RawUDPRoutes    krt.Collection[*gwv1.UDPRoute]
 
 	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
 	// writes may go through, most preferred first, resolved from CRD discovery at startup.
