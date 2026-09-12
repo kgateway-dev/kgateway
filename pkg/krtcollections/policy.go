@@ -419,8 +419,12 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			return nil
 		}
 		ports := sets.New[int32]()
+		udpPorts := sets.New[int32]()
 		for _, l := range gw.Spec.Listeners {
 			ports.Insert(l.Port)
+			if l.Protocol == gwv1.UDPProtocolType {
+				udpPorts.Insert(l.Port)
+			}
 		}
 
 		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
@@ -438,6 +442,9 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 					continue
 				}
 				ports.Insert(port)
+				if l.Protocol == gwv1.UDPProtocolType {
+					udpPorts.Insert(port)
+				}
 			}
 		}
 		ir := &ir.GatewayForDeployer{
@@ -449,6 +456,7 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			},
 			ControllerName: string(gwClass.Spec.ControllerName),
 			Ports:          smallset.New(ports.UnsortedList()...),
+			UDPPorts:       smallset.New(udpPorts.UnsortedList()...),
 		}
 		return ir
 	}

@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestComponentLogLevelsToString(t *testing.T) {
@@ -290,4 +292,24 @@ func TestGetServiceValues(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestGetPortsValuesUDPProtocol(t *testing.T) {
+	gw := &ir.GatewayForDeployer{
+		Ports:    smallset.New[int32](8080, 5300),
+		UDPPorts: smallset.New[int32](5300),
+	}
+
+	ports := GetPortsValues(gw, nil)
+	assert.Len(t, ports, 2)
+
+	byPort := map[int32]string{}
+	for _, p := range ports {
+		assert.NotNil(t, p.Port)
+		assert.NotNil(t, p.Protocol)
+		byPort[*p.Port] = *p.Protocol
+	}
+
+	assert.Equal(t, "TCP", byPort[8080], "non-UDP listener port must render as TCP")
+	assert.Equal(t, "UDP", byPort[5300], "UDP listener port must render as UDP")
 }
