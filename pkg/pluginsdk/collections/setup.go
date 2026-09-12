@@ -236,6 +236,7 @@ func (c *CommonCollections) InitCollections(
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 
 	routes := krtcollections.NewRoutesIndex(c.KrtOpts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, udproutes, policies, backendIndex, c.RefGrants, globalSettings)
+	c.ResolvedUDPRoutes = routes.UDPRoutes()
 	return gateways, routes, backendIndex, endpointIRs
 }
 

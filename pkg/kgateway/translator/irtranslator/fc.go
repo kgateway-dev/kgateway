@@ -489,7 +489,14 @@ func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3
 		return nil
 	}
 
-	routeAny, _ := utils.MessageToAny(&udpproxyv3.Route{Cluster: l.BackendRefs[0].ClusterName})
+	// Multi-backend routes target a single synthetic cluster whose endpoints are the weighted
+	// union of all backends (udp_proxy has no weighted-cluster support); single-backend routes
+	// target the backend's own cluster directly.
+	target := l.BackendRefs[0].ClusterName
+	if l.AggregateClusterName != "" {
+		target = l.AggregateClusterName
+	}
+	routeAny, _ := utils.MessageToAny(&udpproxyv3.Route{Cluster: target})
 	cfg := &udpproxyv3.UdpProxyConfig{
 		StatPrefix: l.FilterChainName,
 		RouteSpecifier: &udpproxyv3.UdpProxyConfig_Matcher{

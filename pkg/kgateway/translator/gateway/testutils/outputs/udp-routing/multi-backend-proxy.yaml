@@ -21,14 +21,44 @@ Clusters:
   type: EDS
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
+ExtraClusters:
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: udpagg_default_example-udp-route
+  type: EDS
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+      protocol: UDP
+  listenerFilters:
+  - name: envoy.filters.udp_listener.udp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
+      matcher:
+        onNoMatch:
+          action:
+            name: route
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.Route
+              cluster: udpagg_default_example-udp-route
+      statPrefix: listener~8080-default.example-udp-route-rule-0
+  name: listener~8080
 Statuses:
   gateways:
     default/example-gateway:
       conditions:
       - lastTransitionTime: null
-        message: 'Some listeners are not programmed: udp: UDP listener has no valid
-          backends or routes'
-        reason: ListenersNotValid
+        message: Successfully accepted Gateway
+        reason: Accepted
         status: "True"
         type: Accepted
       - lastTransitionTime: null
@@ -45,11 +75,6 @@ Statuses:
       - attachedRoutes: 1
         conditions:
         - lastTransitionTime: null
-          message: UDP listener has no valid backends or routes
-          reason: Invalid
-          status: "False"
-          type: Programmed
-        - lastTransitionTime: null
           message: Successfully accepted Listener
           reason: Accepted
           status: "True"
@@ -64,6 +89,11 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Listener
+          reason: Programmed
+          status: "True"
+          type: Programmed
         name: udp
         supportedKinds:
         - group: gateway.networking.k8s.io
@@ -73,9 +103,9 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: UDPRoute with multiple backendRefs is not supported
-          reason: UnsupportedValue
-          status: "False"
+          message: ""
+          reason: Accepted
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
           message: Successfully resolved all references

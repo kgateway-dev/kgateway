@@ -159,6 +159,20 @@ type UdpIR struct {
 	// status and metrics. UDP listeners have no Envoy filter chain.
 	FilterChainName string
 	BackendRefs     []BackendRefIR
+	// AggregateClusterName, when set, is the route-scoped synthetic cluster the
+	// udp_proxy filter routes to. udp_proxy cannot weight across clusters, so a
+	// UDPRoute with more than one backend routes to a single cluster whose
+	// endpoints are the weighted union of all backends. Empty for single-backend
+	// routes, which target BackendRefs[0].ClusterName directly.
+	AggregateClusterName string
+}
+
+// UdpAggregateClusterName is the deterministic, route-scoped name of the synthetic
+// cluster used to weight traffic across a multi-backend UDPRoute. The "udpagg" prefix
+// and absence of a port segment keep it from colliding with real backend cluster names
+// (which are "<gvPrefix>_<ns>_<name>[_<extraKey>]_<port>").
+func UdpAggregateClusterName(namespace, name string) string {
+	return "udpagg_" + namespace + "_" + name
 }
 
 // this is 1:1 with envoy deployments

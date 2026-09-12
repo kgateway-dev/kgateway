@@ -1098,6 +1098,7 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 type RoutesIndex struct {
 	routes                               krt.Collection[RouteWrapper]
 	httpRoutes                           krt.Collection[ir.HttpRouteIR]
+	udpRoutes                            krt.Collection[ir.UdpRouteIR]
 	httpBySelector                       krt.Index[HTTPRouteSelector, ir.HttpRouteIR]
 	byParentRef                          krt.Index[TargetRefIndexKey, RouteWrapper]
 	weightedRoutePrecedence              bool
@@ -1116,12 +1117,18 @@ func (h *RoutesIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
+	return h.httpRoutes.HasSynced() && h.udpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.backends.HasSynced() && h.refgrants.HasSynced()
 }
 
 // HTTPRoutes returns the raw krt collection that contains only the HTTPRouteIR.
 func (r *RoutesIndex) HTTPRoutes() krt.Collection[ir.HttpRouteIR] {
 	return r.httpRoutes
+}
+
+// UDPRoutes returns the raw krt collection that contains only the UdpRouteIR, with backends
+// already resolved. Used to build the weighted synthetic clusters for multi-backend UDPRoutes.
+func (r *RoutesIndex) UDPRoutes() krt.Collection[ir.UdpRouteIR] {
+	return r.udpRoutes
 }
 
 func NewRoutesIndex(
@@ -1167,8 +1174,12 @@ func NewRoutesIndex(
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
 	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
 
-	udpRoutesCollection = krt.NewCollection(udproutes, func(kctx krt.HandlerContext, i *gwv1.UDPRoute) *RouteWrapper {
-		return &RouteWrapper{Route: h.transformUdpRoute(kctx, i)}
+	h.udpRoutes = krt.NewCollection(udproutes, func(kctx krt.HandlerContext, i *gwv1.UDPRoute) *ir.UdpRouteIR {
+		return h.transformUdpRoute(kctx, i)
+	}, krtopts.ToOptions("udp-routes-with-policy")...)
+
+	udpRoutesCollection = krt.NewCollection(h.udpRoutes, func(kctx krt.HandlerContext, i ir.UdpRouteIR) *RouteWrapper {
+		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-udp-routes-with-policy")...)
 
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection, udpRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)

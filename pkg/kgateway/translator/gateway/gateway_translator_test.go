@@ -1299,7 +1299,7 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("udproute with multiple backends is rejected", func(t *testing.T) {
+	t.Run("udp gateway with weighted multiple backends", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"udp-routing/multi-backend.yaml"},
 			outputFile: "udp-routing/multi-backend-proxy.yaml",

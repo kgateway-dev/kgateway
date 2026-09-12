@@ -49,6 +49,9 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
+	// Synthetic clusters that a multi-backend UDPRoute's udp_proxy routes to; deduped by name
+	// since a route could attach to more than one listener.
+	udpAggregateClusters := map[string]struct{}{}
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners. UDP
@@ -61,6 +64,16 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
+		for _, ufc := range l.UdpFilterChain {
+			if ufc.AggregateClusterName == "" {
+				continue
+			}
+			if _, seen := udpAggregateClusters[ufc.AggregateClusterName]; seen {
+				continue
+			}
+			udpAggregateClusters[ufc.AggregateClusterName] = struct{}{}
+			res.ExtraClusters = append(res.ExtraClusters, buildUdpAggregateCluster(ufc.AggregateClusterName))
+		}
 	}
 
 	for _, c := range pass {

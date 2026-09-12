@@ -781,24 +781,18 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 		backends = append(backends, backend)
 	}
 
-	// UDPRoute supports a single rule with a single backendRef. Envoy's udp_proxy routes to one
-	// cluster with no weighted-cluster support, and UDP backend weighting is only Extended
-	// support in the Gateway API, so rather than silently ignore weights we reject multi-backend
-	// (and multi-rule) UDPRoutes instead of mis-distributing traffic.
+	// A UDPRoute maps to a single udp_proxy, which cannot express more than one rule, so a
+	// multi-rule UDPRoute is rejected. Multiple backendRefs within the single rule are
+	// supported and weighted (see AggregateClusterName below).
 	condition := reports.RouteCondition{
 		Type:   gwv1.RouteConditionAccepted,
 		Status: metav1.ConditionTrue,
 		Reason: gwv1.RouteReasonAccepted,
 	}
-	switch {
-	case len(uRoute.SourceObject.Spec.Rules) != 1:
+	if len(uRoute.SourceObject.Spec.Rules) != 1 {
 		condition.Status = metav1.ConditionFalse
 		condition.Reason = gwv1.RouteReasonUnsupportedValue
 		condition.Message = "UDPRoute with multiple rules is not supported"
-	case len(backends) > 1:
-		condition.Status = metav1.ConditionFalse
-		condition.Reason = gwv1.RouteReasonUnsupportedValue
-		condition.Message = "UDPRoute with multiple backendRefs is not supported"
 	}
 	for _, parentRefReporter := range parentRefReporters {
 		parentRefReporter.SetCondition(condition)
@@ -812,9 +806,18 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 		return nil
 	}
 
+	// udp_proxy routes to a single cluster. With more than one backend, route to a route-scoped
+	// synthetic cluster whose endpoints are the weighted union of all backends; a single backend
+	// targets its own cluster directly.
+	var aggregateClusterName string
+	if len(backends) > 1 {
+		aggregateClusterName = ir.UdpAggregateClusterName(uRoute.Namespace, uRoute.Name)
+	}
+
 	return &ir.UdpIR{
-		FilterChainName: udpHostName,
-		BackendRefs:     backends,
+		FilterChainName:      udpHostName,
+		BackendRefs:          backends,
+		AggregateClusterName: aggregateClusterName,
 	}
 }
 
