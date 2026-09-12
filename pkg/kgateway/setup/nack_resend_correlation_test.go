@@ -28,7 +28,7 @@ func TestNackSharedKeyKeepsStreamVersionsSeparate(t *testing.T) {
 		t.Run(strconv.FormatBool(ordered), func(t *testing.T) {
 			ctx := t.Context()
 			hasher := xds.NewNodeRoleHasher()
-			policy := newNackResendSuppressor(envoycache.NewSnapshotCache(true, hasher, nil), hasher)
+			policy := newWatchPolicy(envoycache.NewSnapshotCache(true, hasher, nil), hasher, true, true)
 			var opts []serverconfig.XDSOption
 			if ordered {
 				opts = append(opts, sotwv3.WithOrderedADS())
@@ -93,7 +93,7 @@ func nackRequest(node *envoycorev3.Node, nonce string) *discoveryv3.DiscoveryReq
 func TestNackCorrelationRejectsUnrelatedRequests(t *testing.T) {
 	for _, scenario := range []string{"matching", "stale nonce", "missing nonce", "different type", "different node", "ACK", "unassociated clone"} {
 		t.Run(scenario, func(t *testing.T) {
-			policy := newNackResendSuppressor(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{})
+			policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, true)
 			node := &envoycorev3.Node{Id: "node"}
 			initial := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
 			require.NoError(t, policy.onStreamRequest(1, initial))
@@ -130,7 +130,7 @@ func TestNackCorrelationRejectsUnrelatedRequests(t *testing.T) {
 }
 
 func TestNackRequestAssociationsAreBoundedAndReleased(t *testing.T) {
-	policy := newNackResendSuppressor(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{})
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, true)
 	node := &envoycorev3.Node{Id: "shared"}
 	for _, id := range []int64{1, 2} {
 		initial := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
@@ -174,7 +174,7 @@ func (c *nackObservingCache) CreateWatch(req *envoycache.Request, _ envoycache.S
 
 func TestNackCacheReceivesCopyAndConsumesAssociation(t *testing.T) {
 	inner := &nackObservingCache{SnapshotCache: envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)}
-	policy := newNackResendSuppressor(inner, envoycache.IDHash{})
+	policy := newWatchPolicy(inner, envoycache.IDHash{}, true, true)
 	node := &envoycorev3.Node{Id: "node"}
 	require.NoError(t, inner.SetSnapshot(t.Context(), node.Id, nackSnapshot("rejected")))
 	initial := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
