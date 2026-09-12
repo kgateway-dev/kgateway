@@ -192,9 +192,14 @@ complete by construction the first time it exists. In particular:
 may branch on the backing object's labels (the waypoint redirect does), so a metadata-only
 Service change must rebuild every client's payload even when the shared proto is byte-identical.
 `baseEnvoyCluster.Equals` therefore compares its `Backend` through
-`BackendObjectIR.EqualsIgnoringResourceVersion`, which sees the object's UID, generation, labels
-and annotations — everything an overlay can branch on — but deliberately not its
-`resourceVersion`; see [Open Questions](#open-questions) for why the version is left out.
+`BackendObjectIR.EqualsIgnoringResourceVersion`, which sees the object's UID, generation and
+labels — everything an overlay branches on — but deliberately not its `resourceVersion` or its
+annotations. Every controller that touches a Service writes annotations (external-dns, cloud
+load-balancer controllers, Argo, `kubectl apply`), no in-tree or known downstream overlay reads
+them, and `ParseObjectAnnotations` already lands what translation needs in compared IR fields, so
+comparing them would rerun every client's walk for a change no client can observe. An overlay that
+needs an annotation must have its plugin project it into `ObjIr`, like a spec field; see
+[Open Questions](#open-questions) for why the version is left out.
 `backendEquals` and `objectContentEquals` are nil-safe, so rows built without a backing object
 (test fixtures) compare by their remaining fields.
 
