@@ -24,23 +24,9 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
         - disabled: true
-          name: envoy.filters.http.compressor
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-            chooseFirst: true
-            compressorLibrary:
-              name: envoy.compression.gzip.compressor
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-            requestDirectionConfig:
-              commonConfig:
-                enabled:
-                  defaultValue: false
-        - disabled: true
           name: envoy.filters.http.compressor.brotli
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-            chooseFirst: true
             compressorLibrary:
               name: envoy.compression.brotli.compressor
               typedConfig:
@@ -50,10 +36,21 @@ Listeners:
                 enabled:
                   defaultValue: false
         - disabled: true
+          name: envoy.filters.http.compressor
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+            compressorLibrary:
+              name: envoy.compression.gzip.compressor
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+            requestDirectionConfig:
+              commonConfig:
+                enabled:
+                  defaultValue: false
+        - disabled: true
           name: envoy.filters.http.compressor.zstd
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-            chooseFirst: true
             compressorLibrary:
               name: envoy.compression.zstd.compressor
               typedConfig:
