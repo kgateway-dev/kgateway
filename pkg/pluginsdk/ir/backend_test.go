@@ -2,6 +2,7 @@ package ir
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -249,4 +250,94 @@ func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testi
 	assert.JSONEq(t, `{"certificate":"[REDACTED]"}`, string(marshaled))
 	assert.NotContains(t, string(marshaled), "gateway-cert")
 	assert.NotContains(t, string(marshaled), "gateway-key")
+}
+
+// serviceBackedIR is a Service-backed IR: generation-less, so Equals falls back
+// to comparing resourceVersion.
+func serviceBackedIR(rv string, labels map[string]string, generation int64) BackendObjectIR {
+	b := NewBackendObjectIR(ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv, Labels: labels, Generation: generation,
+	}}
+	return b
+}
+
+func TestBackendObjectIREqualsIgnoringResourceVersion(t *testing.T) {
+	base := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
+
+	t.Run("resourceVersion-only write", func(t *testing.T) {
+		other := serviceBackedIR("2", map[string]string{"a": "1"}, 0)
+		assert.False(t, base.Equals(other), "Equals must see the version move")
+		assert.True(t, base.EqualsIgnoringResourceVersion(other), "content is unchanged")
+	})
+	t.Run("label change", func(t *testing.T) {
+		other := serviceBackedIR("2", map[string]string{"a": "2"}, 0)
+		assert.False(t, base.Equals(other))
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "labels are content overlays read")
+	})
+	t.Run("annotation-only write", func(t *testing.T) {
+		// Cloud load-balancer controllers, external-dns, Argo and kubectl apply
+		// all write annotations no per-client overlay reads. Such a write must
+		// stop at the base, not rerun every client's walk over every backend.
+		other := serviceBackedIR("2", map[string]string{"a": "1"}, 0)
+		other.Obj.(*corev1.Service).Annotations = map[string]string{"external-dns.alpha.kubernetes.io/hostname": "svc.example.com"}
+		assert.False(t, base.Equals(other), "Equals still sees the version move")
+		assert.True(t, base.EqualsIgnoringResourceVersion(other), "an annotation-only write is not content any client can observe")
+	})
+	t.Run("generation change", func(t *testing.T) {
+		other := serviceBackedIR("1", map[string]string{"a": "1"}, 1)
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a spec generation is content")
+	})
+	t.Run("different object identity", func(t *testing.T) {
+		other := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
+		other.Obj.(*corev1.Service).UID = "other-uid"
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a recreated object is a different object")
+	})
+	t.Run("IR field change", func(t *testing.T) {
+		other := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
+		other.AppProtocol = AppProtocol("grpc")
+		assert.False(t, base.EqualsIgnoringResourceVersion(other), "every non-object field still counts")
+	})
+	t.Run("absent objects", func(t *testing.T) {
+		a := NewBackendObjectIR(ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+		b := NewBackendObjectIR(ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+		assert.True(t, a.EqualsIgnoringResourceVersion(b), "two IRs without a backing object are equal")
+		assert.False(t, a.EqualsIgnoringResourceVersion(base), "an absent object never equals a present one")
+	})
+}
+
+// addressesIR is a minimal plugin-owned ObjIr, standing in for the projections
+// the kubernetes and serviceentry plugins attach.
+type addressesIR struct{ addrs []string }
+
+func (a *addressesIR) Equals(in any) bool {
+	other, ok := in.(*addressesIR)
+	return ok && slices.Equal(a.addrs, other.addrs)
+}
+
+// TestBackendObjectIREqualsIsSymmetricOnObjIr pins that Equals gives the same
+// answer whichever side carries plugin state. Guarding only on the receiver's
+// ObjIr made Equals(withIR, withoutIR) false but Equals(withoutIR, withIR)
+// true. KRT compares the stored row against the new one, so which side is the
+// receiver depends on event order, and an asymmetric Equals lets the same
+// change be stored on one path and dropped as "unchanged" on another.
+func TestBackendObjectIREqualsIsSymmetricOnObjIr(t *testing.T) {
+	without := serviceBackedIR("1", nil, 0)
+	with := serviceBackedIR("1", nil, 0)
+	with.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
+
+	assert.False(t, with.Equals(without), "an IR with plugin state is not equal to one without")
+	assert.False(t, without.Equals(with), "and the answer must not depend on which side is the receiver")
+	assert.False(t, without.EqualsIgnoringResourceVersion(with))
+	assert.False(t, with.EqualsIgnoringResourceVersion(without))
+
+	same := serviceBackedIR("1", nil, 0)
+	same.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
+	assert.True(t, with.Equals(same), "equal plugin state on both sides compares equal")
+	assert.True(t, same.Equals(with))
+
+	moved := serviceBackedIR("1", nil, 0)
+	moved.ObjIr = &addressesIR{addrs: []string{"10.0.0.1", "2001:2::1"}}
+	assert.False(t, with.Equals(moved), "a change inside the plugin state is a change")
+	assert.False(t, moved.Equals(with))
 }

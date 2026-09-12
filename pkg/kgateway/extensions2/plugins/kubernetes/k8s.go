@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/backendaddress"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -103,7 +105,32 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	// Parse common annotations
 	ir.ParseObjectAnnotations(&backend, svc)
 
+	// Carry the resolved VIPs so a clusterIPs change re-emits the backend.
+	backend.ObjIr = &serviceBackendIR{addresses: backendaddress.ServiceAddresses(svc)}
+
 	return backend
+}
+
+// serviceBackendIR makes a Service's resolved addresses participate in backend
+// equality. Base translation of a Service never reads them — it emits an EDS
+// cluster — but the waypoint overlay inlines them into a STATIC cluster, and
+// core Services leave metadata.generation at 0, so BackendObjectIR's
+// EqualsIgnoringResourceVersion cannot otherwise see the spec move. Without
+// this, converting a Service single-stack -> dual-stack adds a clusterIP that
+// never reaches the waypoint clusters already served to clients.
+//
+// This mirrors serviceEntryBackendIR, which covers the same gap for the
+// ServiceEntry addresses that land in Status (#14391).
+type serviceBackendIR struct {
+	addresses []string
+}
+
+func (s *serviceBackendIR) Equals(in any) bool {
+	other, ok := in.(*serviceBackendIR)
+	if !ok {
+		return false
+	}
+	return slices.Equal(s.addresses, other.addresses)
 }
 
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {

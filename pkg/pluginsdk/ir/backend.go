@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -231,6 +232,54 @@ func (c BackendObjectIR) ResourceName() string {
 	return c.resourceName
 }
 
+// EqualsIgnoringResourceVersion is Equals with the backing object compared by
+// the content per-client translation can read (UID, generation, labels)
+// rather than by its version. For kinds without metadata.generation, such as
+// core Services, Equals falls back to resourceVersion, which every write bumps:
+// status updates, and annotation touches from Helm, Argo, external-dns or a
+// cloud load-balancer controller all look like changes. A consumer that already
+// hashes the translated output uses this so such a write stops at that hash
+// instead of fanning out to every client. Annotations are left out for the
+// same reason; see objectContentEquals.
+//
+// A spec change on a generation-less kind is not visible here unless it reaches
+// a compared IR field, ObjIr, or the consumer's output hash. A consumer that
+// holds the IR and re-reads it later — a per-client cluster overlay is the one
+// in tree — therefore sees such a field go stale, and the plugin owning the
+// kind must project it into ObjIr; see sdk.PerClientClusterOverlay for the
+// contract and kubernetes.serviceBackendIR for the case that motivated it.
+func (c BackendObjectIR) EqualsIgnoringResourceVersion(in BackendObjectIR) bool {
+	if !objectContentEquals(c.Obj, in.Obj) {
+		return false
+	}
+	// Every other field is compared by Equals. c and in are copies, so taking
+	// the objects out of them costs nothing and leaves Equals with two absent
+	// objects, which it treats as equal.
+	c.Obj, in.Obj = nil, nil
+	return c.Equals(in)
+}
+
+// objectContentEquals compares two backing objects by identity, spec generation
+// and labels, leaving resourceVersion and annotations out. Nil handling matches
+// versionEquals: two absent objects are equal, an absent and a present one never.
+//
+// Annotations are deliberately not compared. Nothing on the per-client path
+// reads them: ParseObjectAnnotations runs when the IR is built and lands in IR
+// fields that Equals already compares, and no in-tree or known downstream
+// overlay reads in.Obj.GetAnnotations(). Comparing them would make every
+// annotation write by external-dns, a cloud load-balancer controller, Argo, or
+// kubectl apply rerun every client's walk over every backend for a change no
+// client can observe. Labels are compared because overlays branch on them
+// (ingress-use-waypoint, the downstream remote-waypoint label).
+func objectContentEquals(a, b metav1.Object) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.GetUID() == b.GetUID() &&
+		a.GetGeneration() == b.GetGeneration() &&
+		maps.Equal(a.GetLabels(), b.GetLabels())
+}
+
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	if !c.objectSource.Equals(in.objectSource) {
 		return false
@@ -251,6 +300,15 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		return false
 	}
 	if !versionEquals(c.Obj, in.Obj) {
+		return false
+	}
+	// ObjIr is compared symmetrically: an IR that carries plugin state is never
+	// equal to one that does not, whichever side it is on. Guarding only on
+	// c.ObjIr made Equals(a, b) and Equals(b, a) disagree when exactly one side
+	// had ObjIr, which KRT change detection cannot tolerate: which object ends up
+	// as the receiver depends on event order, so the same pair of rows could be
+	// stored on one path and dropped as unchanged on another.
+	if (c.ObjIr == nil) != (in.ObjIr == nil) {
 		return false
 	}
 	if c.ObjIr != nil && !c.ObjIr.Equals(in.ObjIr) {
