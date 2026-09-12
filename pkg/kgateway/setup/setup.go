@@ -326,7 +326,7 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds, s.globalSettings.XdsSuppressNackResend)
+	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds, s.globalSettings.XdsSuppressNackResend, s.globalSettings.XdsRespondOnReconnect)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
