@@ -368,11 +368,26 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 	for wave := 1; connected < fleetGateways; wave++ {
 		target := min(connected+perWave, fleetGateways)
 		start := time.Now()
+		newClients := (target - connected) * s.clientsPerGateway()
 		s.connectGateways(connected, target)
 		connected = target
-		// A wave is settled when the controller stops emitting new snapshot
-		// transforms. If it never settles the build is not keeping up, which is
-		// itself the measurement.
+		// Wait for the clients this wave added to actually be served before
+		// measuring anything.
+		//
+		// Settling on the transform counter alone is not enough, and the
+		// difference is not a detail: a controller that has fallen behind is
+		// quiet in exactly the same way as one that has finished. Measured in
+		// that state it reports a fleet it is not serving, and its heap is the
+		// heap of a backlog rather than of N steady-state clients. Runs that
+		// drifted into that state produced heap figures 2.5x apart from runs of
+		// the same binary that did not, which made builds look different when
+		// only their luck differed.
+		//
+		// So the gate is the clients' own acknowledgements: every new client
+		// should receive at least one response. Failing to reach that inside the
+		// wave timeout is not a measurement to record and move past - it is the
+		// point where this build stopped keeping up, so the ladder ends there.
+		servedAll := s.waitServed(lastAcks+int64(newClients), fleetWaveTimeout)
 		settled := s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout)
 		// A stream that never received a response is not a connected client, and
 		// a fleet of those measures nothing at all. Stop rather than report a
@@ -392,10 +407,10 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		acks := s.totalAcks()
 		ackDelta := acks - lastAcks
 		lastAcks = acks
-		if ackDelta == 0 {
-			s.T().Logf("WARNING wave %d: %d clients connected but stream acks did not advance (%d); "+
-				"this wave describes an unserved fleet and must not be compared",
-				wave, connected*s.clientsPerGateway(), acks)
+		if !servedAll {
+			s.T().Logf("wave %d: only %d of the %d clients added this wave were served within %s; "+
+				"the build stopped keeping up here, so the ladder ends at %d clients",
+				wave, ackDelta, newClients, fleetWaveTimeout, connected*s.clientsPerGateway())
 		}
 		s.emit("xds_fleet_wave", map[string]any{
 			"build": benchLabel, "validation": benchValidation,
@@ -425,11 +440,21 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 			"controller_restarts": restarts,
 			"stream_acks":         acks,
 			"stream_acks_delta":   ackDelta,
-			"served":              ackDelta > 0,
+			"served":              servedAll,
+			"new_clients":         newClients,
 			"stream_errors":       s.totalRecvErrors(),
 		})
 		s.T().Logf("wave %d: gateways=%d clients=%d settled=%v heap=%.0fMB rss=%.0fMB cpu=%.1fs resources=%.0f restarts=%d",
 			wave, connected, connected*s.clientsPerGateway(), settled, sample.HeapInuse/1e6, sample.RSS/1e6, sample.CPUSeconds, sample.Resources, restarts)
+		if !servedAll {
+			s.emit("xds_fleet_verdict", map[string]any{
+				"build": benchLabel, "survived_clients": (connected - perWave) * s.clientsPerGateway(),
+				"died_at_clients":   connected * s.clientsPerGateway(),
+				"reason":            "could not serve the clients added in this wave within the wave timeout",
+				"survived_gateways": connected - perWave, "died_at_gateways": connected,
+			})
+			return
+		}
 		if restarts > 0 {
 			died := connected * s.clientsPerGateway()
 			survived := (connected - perWave) * s.clientsPerGateway()
@@ -1155,6 +1180,20 @@ func (s *XdsFleetSuite) waitConverged(before float64) (time.Time, bool) {
 		return last, true
 	}
 	return time.Time{}, false
+}
+
+// waitServed blocks until the clients' cumulative acknowledgements reach want,
+// which is one response per newly connected client. It returns false on timeout,
+// meaning the control plane did not serve everything this wave attached.
+func (s *XdsFleetSuite) waitServed(want int64, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if s.totalAcks() >= want {
+			return true
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return s.totalAcks() >= want
 }
 
 func (s *XdsFleetSuite) waitQuiet(quiet, timeout time.Duration) bool {
