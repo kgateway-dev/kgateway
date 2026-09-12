@@ -32,6 +32,9 @@ func (n NsWithHostname) String() string {
 type DestinationRuleIndex struct {
 	Destrules  krt.Collection[DestinationRuleWrapper]
 	ByHostname krt.Index[NsWithHostname, DestinationRuleWrapper]
+	// ByHost indexes every rule by its host alone, regardless of namespace or
+	// exportTo. It answers the client-free question HasRulesForHost asks.
+	ByHost krt.Index[string, DestinationRuleWrapper]
 }
 type DestinationRuleWrapper struct {
 	*networkingclient.DestinationRule
@@ -66,10 +69,38 @@ func NewDestRuleIndex(istioClient apiclient.Client, krtopts *krtutil.KrtOptions)
 	destrules := krt.NewCollection(rawDestrules, func(kctx krt.HandlerContext, dr *networkingclient.DestinationRule) *DestinationRuleWrapper {
 		return &DestinationRuleWrapper{dr}
 	})
+	return NewDestRuleIndexFromCollection(destrules)
+}
+
+// NewDestRuleIndexFromCollection builds the index over an existing rule
+// collection. Production uses NewDestRuleIndex, which wraps the informer;
+// tests that drive rules through a static collection use this so they exercise
+// the same indexes and KRT dependency registration as production.
+func NewDestRuleIndexFromCollection(destrules krt.Collection[DestinationRuleWrapper]) DestinationRuleIndex {
 	return DestinationRuleIndex{
 		Destrules:  destrules,
 		ByHostname: newDestruleIndex(destrules),
+		ByHost:     newDestruleHostIndex(destrules),
 	}
+}
+
+func newDestruleHostIndex(destRuleCollection krt.Collection[DestinationRuleWrapper]) krt.Index[string, DestinationRuleWrapper] {
+	return krtpkg.UnnamedIndex(destRuleCollection, func(d DestinationRuleWrapper) []string {
+		return []string{d.Spec.GetHost()}
+	})
+}
+
+// HasRulesForHost reports whether any DestinationRule names hostname, in any
+// namespace and with any exportTo. It is the client-free half of
+// FetchDestRulesFor: that lookup also narrows by the client's namespace and
+// labels, so a backend with a rule for its host may or may not match a given
+// client, but a backend with none matches no client. Hosts are matched exactly,
+// as FetchDestRulesFor matches them.
+func (d *DestinationRuleIndex) HasRulesForHost(kctx krt.HandlerContext, hostname string) bool {
+	if hostname == "" {
+		return false
+	}
+	return len(krt.Fetch(kctx, d.Destrules, krt.FilterIndex(d.ByHost, hostname))) > 0
 }
 
 const exportAllNs = "*"

@@ -177,7 +177,7 @@ func benchmarkPerClientClusters(b *testing.B, istioOn, heavy bool) {
 		for range b.N {
 			bases := make([]*BaseCluster, len(backends))
 			for j, backend := range backends {
-				bases[j] = t.TranslateBackendBase(ctx, backend)
+				bases[j] = t.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 			}
 			for j, backend := range backends {
 				for _, ucc := range uccs {

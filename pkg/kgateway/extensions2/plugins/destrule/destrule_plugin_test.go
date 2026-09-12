@@ -25,6 +25,7 @@ func newDestrulePlugin(t *testing.T, drs ...DestinationRuleWrapper) *destrulePlu
 		destinationRulesIndex: DestinationRuleIndex{
 			Destrules:  col,
 			ByHostname: newDestruleIndex(col),
+			ByHost:     newDestruleHostIndex(col),
 		},
 	}
 }
@@ -97,4 +98,36 @@ func TestClusterOverlay_AppliesOutlierDetection(t *testing.T) {
 	got.Mutate(out)
 	assert.NotNil(t, out.GetOutlierDetection(), "overlay must apply outlier detection to the cluster")
 	assert.Equal(t, uint32(5), out.GetOutlierDetection().GetConsecutive_5Xx().GetValue())
+}
+
+// TestEndpointsMayApply_ByHostname: the predicate rules a backend out of the
+// per-client endpoint path only when no rule names its host at all. Namespace
+// and exportTo are the client-dependent half and must not narrow it.
+func TestEndpointsMayApply_ByHostname(t *testing.T) {
+	t.Run("no rules", func(t *testing.T) {
+		d := newDestrulePlugin(t)
+		assert.False(t, d.endpointsMayApply(krt.TestingDummyContext{}, drBackend()), "no rule for any host rules the backend out")
+	})
+	t.Run("rule for the host", func(t *testing.T) {
+		d := newDestrulePlugin(t, destRule("r", &v1alpha3.TrafficPolicy{}))
+		assert.True(t, d.endpointsMayApply(krt.TestingDummyContext{}, drBackend()), "a rule naming the host keeps the per-client path")
+	})
+	t.Run("rule for another host", func(t *testing.T) {
+		other := destRule("r", &v1alpha3.TrafficPolicy{})
+		other.Spec.Host = "ratings.default.svc.cluster.local"
+		d := newDestrulePlugin(t, other)
+		assert.False(t, d.endpointsMayApply(krt.TestingDummyContext{}, drBackend()), "rules for other hosts do not count")
+	})
+	t.Run("rule exported to one namespace still counts", func(t *testing.T) {
+		scoped := destRule("r", &v1alpha3.TrafficPolicy{})
+		scoped.Spec.ExportTo = []string{"elsewhere"}
+		d := newDestrulePlugin(t, scoped)
+		assert.True(t, d.endpointsMayApply(krt.TestingDummyContext{}, drBackend()), "which clients a rule reaches is decided per client, not here")
+	})
+	t.Run("backend without a hostname", func(t *testing.T) {
+		d := newDestrulePlugin(t, destRule("r", &v1alpha3.TrafficPolicy{}))
+		b := drBackend()
+		b.CanonicalHostname = ""
+		assert.False(t, d.endpointsMayApply(krt.TestingDummyContext{}, b), "FetchDestRulesFor never matches an empty host either")
+	})
 }

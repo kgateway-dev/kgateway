@@ -32,21 +32,22 @@ type EndpointPlugin struct {
 	process   endpointPluginFunc
 	// mayApply is the plugin's PerClientEndpointsMayApply; nil means it may
 	// apply to every backend.
-	mayApply func(ir.BackendObjectIR) bool
+	mayApply func(krt.HandlerContext, ir.BackendObjectIR) bool
 }
 
 // MayApply reports whether the plugin could contribute to backend for some
 // client. Plugins that did not declare PerClientEndpointsMayApply are assumed
-// to apply everywhere.
-func (p EndpointPlugin) MayApply(backend ir.BackendObjectIR) bool {
-	return p.mayApply == nil || p.mayApply(backend)
+// to apply everywhere. kctx is the base translation's context, so a predicate
+// that fetches registers the base's dependency on what it read.
+func (p EndpointPlugin) MayApply(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool {
+	return p.mayApply == nil || p.mayApply(kctx, backend)
 }
 
 type endpointPluginEntry struct {
 	groupKind schema.GroupKind
 	name      string
 	plugin    endpointPluginFunc
-	mayApply  func(ir.BackendObjectIR) bool
+	mayApply  func(krt.HandlerContext, ir.BackendObjectIR) bool
 }
 
 func OrderedEndpointPlugins(policies sdk.ContributesPolicies) []EndpointPlugin {
