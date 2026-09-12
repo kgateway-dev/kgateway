@@ -511,6 +511,18 @@ func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {
 // The verdict is memoized by the cluster's content (see ValidationMemo), so a
 // cluster validated for one client is not re-validated for the next unless its
 // bytes differ. The bootstrap is only built on a memo miss.
+//
+// The memo key is the cluster's bytes alone, so it is sound only while the
+// bootstrap built here is a pure function of the cluster: bootstrap.New() takes
+// no settings and Build reads nothing but what was added. If that ever changes,
+// whatever else the bootstrap reads must be folded into the key, or equal
+// clusters under different bootstraps would share a verdict.
+// TestValidationMemoKeyCoversEverythingTheBootstrapReads pins the current shape.
+//
+// Runs inline in the caller's KRT transform. For the per-client walk that is
+// the collection's single queue, so a memo miss that reaches a slow or hung
+// validator stalls CDS assembly for every client, not just the one being
+// validated. The memo makes that rare; the validator's own timeout bounds it.
 func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *envoyclusterv3.Cluster) error {
 	ctx = validator.WithValidationCaller(ctx, validator.CallerBackend)
 	run := func(ctx context.Context) error {
