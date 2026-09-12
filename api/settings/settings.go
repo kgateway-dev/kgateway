@@ -282,17 +282,27 @@ type Settings struct {
 	// - "STRICT": Builds on STANDARD by running targeted validation
 	ValidationMode ValidationMode `split_words:"true" default:"STANDARD"`
 
-	// ValidatorMode selects the strict-validation execution strategy. Has no effect
-	// when ValidationMode is "STANDARD". Supported values:
-	// - "BINARY": fork envoy --mode validate per call (the pre-cache behavior).
+	// ValidatorMode selects how the strict validator executes a bootstrap it has
+	// not seen before. Has no effect when ValidationMode is "STANDARD". Supported
+	// values:
+	// - "BINARY": fork envoy --mode validate per bootstrap handed to the validator.
 	// - "CACHE": wrap BINARY with an LRU result cache keyed on bootstrap content
 	//   hash (default). A validation verdict is a pure function of the config
 	//   bytes, so memoization cannot change outcomes, only skip redundant envoy
 	//   invocations; transient failures are never cached.
+	//
+	// Independently of the mode, backend translation memoizes cluster verdicts by
+	// the cluster's own content before any bootstrap is built, so a cluster that is
+	// byte-identical to one already validated is not handed to the validator
+	// again in either mode. That memo is what keeps per-client strict validation
+	// affordable: every connected client's overlaid cluster is validated on every
+	// walk over the backends, and nearly all of them repeat. BINARY therefore
+	// means "fork envoy for every distinct cluster", not "for every call".
 	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
 
-	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
-	// Ignored when ValidatorMode is BINARY. A value <= 0 (the default) selects the
+	// ValidatorCacheSize is the LRU capacity of both the CACHE mode's bootstrap
+	// cache and the translator's per-cluster verdict memo, which is sized from it
+	// in every ValidatorMode. A value <= 0 (the default) selects the
 	// implementation default, validator.DefaultCacheSize.
 	ValidatorCacheSize int `split_words:"true"`
 
