@@ -256,6 +256,87 @@ func TestHelmChartRBACToggle(t *testing.T) {
 	})
 }
 
+func TestHelmValuesSchemaValidation(t *testing.T) {
+	testCases := []struct {
+		name       string
+		valuesYAML string
+		wantErr    string
+	}{
+		{
+			name: "resources allow numeric quantities",
+			valuesYAML: `resources:
+  requests:
+    cpu: 1
+    memory: 128Mi
+  limits:
+    cpu: 2
+`,
+		},
+		{
+			name: "validation level is trimmed and case insensitive",
+			valuesYAML: `validation:
+  level: " sTrIcT "
+`,
+		},
+		{
+			name: "replicas allow null",
+			valuesYAML: `controller:
+  replicaCount: null
+`,
+		},
+		{
+			name: "goMemLimitPercent allows 0-100",
+			valuesYAML: `controller:
+  goMemLimitPercent: 90
+  resources:
+    limits:
+      memory: 512Mi
+`,
+		},
+		{
+			name: "replicas reject negative values",
+			valuesYAML: `controller:
+  replicaCount: -1
+`,
+			wantErr: "replicaCount",
+		},
+		{
+			name: "traffic distribution rejects unknown values",
+			valuesYAML: `controller:
+  service:
+    trafficDistribution: SomewhereElse
+`,
+			wantErr: "trafficDistribution",
+		},
+		{
+			name: "goMemLimitPercent rejects values over 100",
+			valuesYAML: `controller:
+  goMemLimitPercent: 150
+`,
+			wantErr: "goMemLimitPercent",
+		},
+		{
+			name: "unknown top-level key is rejected",
+			valuesYAML: `notARealField: true
+`,
+			wantErr: "notARealField",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", tc.valuesYAML, nil)
+			if tc.wantErr == "" {
+				require.NoError(t, err, "helm template failed: %s", stderr)
+				return
+			}
+
+			require.Error(t, err, "helm template should fail")
+			require.Contains(t, stderr, tc.wantErr)
+		})
+	}
+}
+
 // extractImageLines extracts lines containing "image:" from the output for debugging
 func extractImageLines(output string) string {
 	var lines []string
