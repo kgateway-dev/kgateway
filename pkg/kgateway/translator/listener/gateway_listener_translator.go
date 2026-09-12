@@ -35,6 +35,7 @@ var logger = logging.New("translator/listener")
 
 const (
 	TcpTlsListenerNoBackendsMessage = "TCP/TLS listener has no valid backends or routes"
+	UdpListenerNoBackendsMessage    = "UDP listener has no valid backends or routes"
 	ResourceNotFoundMessageTemplate = "%s %s/%s not found."
 )
 
@@ -116,6 +117,8 @@ func (ml *MergedListeners) AppendListener(
 		ml.AppendTcpListener(listener, routes, reporter)
 	case gwv1.TLSProtocolType:
 		ml.AppendTlsListener(listener, routes, reporter)
+	case gwv1.UDPProtocolType:
+		ml.AppendUdpListener(listener, routes, reporter)
 	default:
 		return fmt.Errorf("unsupported protocol: %v", listener.Protocol)
 	}
@@ -293,6 +296,41 @@ func (ml *MergedListeners) AppendTlsListener(
 	})
 }
 
+func (ml *MergedListeners) AppendUdpListener(
+	listener ir.Listener,
+	routeInfos []*query.RouteInfo,
+	reporter reports.ListenerReporter,
+) {
+	parent := udpFilterChainParent{
+		gatewayListenerName: query.GenerateRouteKey(listener.Parent, string(listener.Name)),
+		listener:            listener,
+		listenerReporter:    reporter,
+		routesWithHosts:     routeInfos,
+	}
+	fc := udpFilterChain{
+		parents:          parent,
+		listenerReporter: reporter,
+	}
+
+	finalPort := getListenerPortNumber(listener)
+	for _, lis := range ml.Listeners {
+		if lis.port == finalPort {
+			lis.UdpFilterChains = append(lis.UdpFilterChains, fc)
+			return
+		}
+	}
+
+	// create a new filter chain for the listener
+	ml.Listeners = append(ml.Listeners, &MergedListener{
+		name:            GenerateListenerName(listener),
+		port:            finalPort,
+		UdpFilterChains: []udpFilterChain{fc},
+		listener:        listener,
+		gateway:         ml.parentGw,
+		settings:        ml.settings,
+	})
+}
+
 func listenerSNIDomains(listener ir.Listener) []string {
 	if listener.Hostname == nil {
 		return nil
@@ -332,6 +370,7 @@ type MergedListener struct {
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
 	TcpFilterChains   []tcpFilterChain
+	UdpFilterChains   []udpFilterChain
 	listener          ir.Listener
 	gateway           ir.Gateway
 	settings          ListenerTranslatorConfig
@@ -396,6 +435,27 @@ func (ml *MergedListener) TranslateListener(
 		}
 	}
 
+	// Translate UDP listeners (if any exist)
+	var matchedUdpListeners []ir.UdpIR
+	for _, ufc := range ml.UdpFilterChains {
+		if udpListener := ufc.translateUdpFilterChain(ml.name, reporter); udpListener != nil {
+			matchedUdpListeners = append(matchedUdpListeners, *udpListener)
+		}
+	}
+
+	// Only report errors if ALL UDP filter chains failed (port is not programmed)
+	if len(ml.UdpFilterChains) > 0 && len(matchedUdpListeners) == 0 {
+		listenerCondition := reports.ListenerCondition{
+			Type:    gwv1.ListenerConditionProgrammed,
+			Status:  metav1.ConditionFalse,
+			Reason:  gwv1.ListenerReasonInvalid,
+			Message: UdpListenerNoBackendsMessage,
+		}
+		for _, ufc := range ml.UdpFilterChains {
+			ufc.listenerReporter.SetCondition(listenerCondition)
+		}
+	}
+
 	// Get bind address based on ListenerBindIpv6 setting
 	bindAddress := "0.0.0.0"
 	if ml.settings.ListenerBindIpv6 {
@@ -410,6 +470,7 @@ func (ml *MergedListener) TranslateListener(
 		AttachedPolicies:  ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possible due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:   httpFilterChains,
 		TcpFilterChain:    matchedTcpListeners,
+		UdpFilterChain:    matchedUdpListeners,
 		PolicyAncestorRef: ml.listener.PolicyAncestorRef,
 	}
 }
@@ -651,6 +712,109 @@ func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
 	case *ir.TlsRouteIR:
 		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
+	case *ir.UdpRouteIR:
+		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
+	}
+}
+
+// udpFilterChain represents a UDPRoute-backed Gateway listener merged into a single kgateway
+// Listener. Envoy models UDP with a udp_proxy listener filter rather than a network filter
+// chain, so there is no SNI/TLS/matcher here unlike tcpFilterChain.
+type udpFilterChain struct {
+	parents          udpFilterChainParent
+	listenerReporter reports.ListenerReporter
+}
+
+type udpFilterChainParent struct {
+	gatewayListenerName string
+	listener            ir.Listener
+	listenerReporter    reports.ListenerReporter
+	routesWithHosts     []*query.RouteInfo
+}
+
+func (uc *udpFilterChain) translateUdpFilterChain(
+	parentName string,
+	reporter reports.Reporter,
+) *ir.UdpIR {
+	parent := uc.parents
+	if len(parent.routesWithHosts) == 0 {
+		return nil
+	}
+
+	// A UDP listener cannot distinguish between multiple attached routes (there is no SNI to
+	// match on), so only one route can be honored. The oldest route by CreationTimestamp wins,
+	// any others are rejected as conflicting.
+	r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
+		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
+	})
+	if len(parent.routesWithHosts) > 1 {
+		for _, other := range parent.routesWithHosts {
+			if other == r {
+				continue
+			}
+			rejectConflictingRoute(other, reporter)
+		}
+	}
+
+	uRoute, ok := r.Object.(*ir.UdpRouteIR)
+	if !ok {
+		return nil
+	}
+
+	parentRefReporters := make([]reports.ParentRefReporter, 0, len(uRoute.ParentRefs))
+	for _, parentRef := range uRoute.ParentRefs {
+		parentRefReporters = append(parentRefReporters, reporter.Route(uRoute.SourceObject).ParentRef(&parentRef))
+	}
+
+	udpHostName := fmt.Sprintf("%s-%s.%s-rule-%d", parentName, uRoute.Namespace, uRoute.Name, 0)
+	var backends []ir.BackendRefIR
+	for _, backend := range uRoute.Backends {
+		if backend.Err != nil || backend.BackendObject == nil {
+			err := backend.Err
+			if err == nil {
+				err = errors.New("not found")
+			}
+			for _, parentRefReporter := range parentRefReporters {
+				query.ProcessBackendError(err, parentRefReporter)
+			}
+		}
+		backends = append(backends, backend)
+	}
+
+	// UDPRoute supports a single rule with a single backendRef. Envoy's udp_proxy routes to one
+	// cluster with no weighted-cluster support, and UDP backend weighting is only Extended
+	// support in the Gateway API, so rather than silently ignore weights we reject multi-backend
+	// (and multi-rule) UDPRoutes instead of mis-distributing traffic.
+	condition := reports.RouteCondition{
+		Type:   gwv1.RouteConditionAccepted,
+		Status: metav1.ConditionTrue,
+		Reason: gwv1.RouteReasonAccepted,
+	}
+	switch {
+	case len(uRoute.SourceObject.Spec.Rules) != 1:
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = gwv1.RouteReasonUnsupportedValue
+		condition.Message = "UDPRoute with multiple rules is not supported"
+	case len(backends) > 1:
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = gwv1.RouteReasonUnsupportedValue
+		condition.Message = "UDPRoute with multiple backendRefs is not supported"
+	}
+	for _, parentRefReporter := range parentRefReporters {
+		parentRefReporter.SetCondition(condition)
+	}
+	if condition.Status != metav1.ConditionTrue {
+		return nil
+	}
+
+	// Avoid creating a UDP listener if there are no backends.
+	if len(backends) == 0 {
+		return nil
+	}
+
+	return &ir.UdpIR{
+		FilterChainName: udpHostName,
+		BackendRefs:     backends,
 	}
 }
 

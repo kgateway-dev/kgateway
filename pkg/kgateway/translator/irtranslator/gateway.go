@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -50,8 +51,10 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
-		// Envoy rejects listeners with no filter chains; skip adding such listeners.
-		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+		// Envoy rejects listeners with no filter chains; skip adding such listeners. UDP
+		// listeners are the exception: they carry a udp_proxy listener filter instead of a
+		// filter chain, so keep a listener that has a UDP filter chain in the IR.
+		if outListener == nil || (len(outListener.GetFilterChains()) == 0 && len(l.UdpFilterChain) == 0) {
 			originalListenerName := findOriginalListenerName(gw, l)
 			logger.Warn("invalid listener due to no filter chains generated", "listener", originalListenerName)
 			continue
@@ -101,7 +104,13 @@ func (t *Translator) ComputeListener(
 	reporter sdkreporter.Reporter,
 ) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-	listenerAddress, err := computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter)
+	// A listener carries either TCP/HTTP filter chains or UDP filter chains, never both, since
+	// Gateway API listeners are single-protocol. UDP requires a UDP socket address.
+	socketProtocol := envoycorev3.SocketAddress_TCP
+	if len(lis.UdpFilterChain) > 0 {
+		socketProtocol = envoycorev3.SocketAddress_UDP
+	}
+	listenerAddress, err := computeListenerAddress(lis.BindAddress, lis.BindPort, socketProtocol, gwreporter)
 	if err != nil {
 		// Error already reported via SetCondition; skip listener creation.
 		return nil, nil
@@ -192,6 +201,14 @@ func (t *Translator) ComputeListener(
 			hasTls = true
 		}
 	}
+
+	// UDP listeners carry a udp_proxy listener filter instead of network filter chains, the UDP
+	// socket address is what makes it a UDP listener, so no udp_listener_config is needed. A
+	// single UDPRoute is honored per listener, so there is at most one chain.
+	for _, ufc := range lis.UdpFilterChain {
+		ret.ListenerFilters = append(ret.GetListenerFilters(), fct.computeUdpFilters(ufc)...)
+	}
+
 	// sort filter chains for idempotency
 	slices.SortFunc(ret.GetFilterChains(), func(a, b *envoylistenerv3.FilterChain) int {
 		return cmp.Compare(a.GetName(), b.GetName())
