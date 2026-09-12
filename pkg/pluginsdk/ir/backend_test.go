@@ -2,6 +2,7 @@ package ir
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -294,4 +295,40 @@ func TestBackendObjectIREqualsIgnoringResourceVersion(t *testing.T) {
 		assert.True(t, a.EqualsIgnoringResourceVersion(b), "two IRs without a backing object are equal")
 		assert.False(t, a.EqualsIgnoringResourceVersion(base), "an absent object never equals a present one")
 	})
+}
+
+// addressesIR is a minimal plugin-owned ObjIr, standing in for the projections
+// the kubernetes and serviceentry plugins attach.
+type addressesIR struct{ addrs []string }
+
+func (a *addressesIR) Equals(in any) bool {
+	other, ok := in.(*addressesIR)
+	return ok && slices.Equal(a.addrs, other.addrs)
+}
+
+// TestBackendObjectIREqualsIsSymmetricOnObjIr pins that Equals gives the same
+// answer whichever side carries plugin state. Guarding only on the receiver's
+// ObjIr made Equals(withIR, withoutIR) false but Equals(withoutIR, withIR)
+// true. KRT compares the stored row against the new one, so which side is the
+// receiver depends on event order, and an asymmetric Equals lets the same
+// change be stored on one path and dropped as "unchanged" on another.
+func TestBackendObjectIREqualsIsSymmetricOnObjIr(t *testing.T) {
+	without := serviceBackedIR("1", nil, 0)
+	with := serviceBackedIR("1", nil, 0)
+	with.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
+
+	assert.False(t, with.Equals(without), "an IR with plugin state is not equal to one without")
+	assert.False(t, without.Equals(with), "and the answer must not depend on which side is the receiver")
+	assert.False(t, without.EqualsIgnoringResourceVersion(with))
+	assert.False(t, with.EqualsIgnoringResourceVersion(without))
+
+	same := serviceBackedIR("1", nil, 0)
+	same.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
+	assert.True(t, with.Equals(same), "equal plugin state on both sides compares equal")
+	assert.True(t, same.Equals(with))
+
+	moved := serviceBackedIR("1", nil, 0)
+	moved.ObjIr = &addressesIR{addrs: []string{"10.0.0.1", "2001:2::1"}}
+	assert.False(t, with.Equals(moved), "a change inside the plugin state is a change")
+	assert.False(t, moved.Equals(with))
 }
