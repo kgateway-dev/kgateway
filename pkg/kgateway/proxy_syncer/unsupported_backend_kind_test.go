@@ -20,10 +20,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-// TestUnsupportedBackendTranslationIsRecordedAsErrored covers formal research
-// finding RF-024 (devel/formal/research-findings.md on the
-// chandler/kxdsformalmethods branch) through the real base and per-client
-// collections. A backend whose group/kind has no contributed translator, or
+// TestUnsupportedBackendTranslationIsRecordedAsErrored goes through the real
+// base and per-client collections. A backend whose group/kind has no contributed translator, or
 // whose contributed BackendInit has no InitEnvoyBackend, used to yield no base
 // row at all: TranslateBackendBase returned nil and the base transform dropped
 // it. The backend then appeared in neither the CDS payload nor the errored set,
@@ -66,7 +64,7 @@ func TestUnsupportedBackendTranslationIsRecordedAsErrored(t *testing.T) {
 	unregistered := makeBackend(schema.GroupKind{Group: "example.test", Kind: "Unregistered"}, "unregistered")
 	all := []*ir.BackendObjectIR{healthy, invalid, noInit, unregistered}
 
-	ucc := ir.NewUniquelyConnectedClient("role-rf024", "", nil, ir.PodLocality{})
+	ucc := ir.NewUniquelyConnectedClient("role-unsupported", "", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UniqueClients")...)
 	finalBackends := krt.NewStaticCollection(nil, all, krtopts.ToOptions("FinalBackends")...)
 	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
@@ -87,7 +85,7 @@ func TestUnsupportedBackendTranslationIsRecordedAsErrored(t *testing.T) {
 
 	for _, unsupported := range []*ir.BackendObjectIR{noInit, unregistered} {
 		base := pcc.base.GetKey(unsupported.ClusterName())
-		require.NotNil(t, base, "RF-024: %s must have a base row instead of being dropped", unsupported.ClusterName())
+		require.NotNil(t, base, "%s must have a base row instead of being dropped", unsupported.ClusterName())
 		require.Error(t, base.Error, "the unsupported backend's row must carry its translation error")
 		require.Equal(t, unsupported.GetObjectSource(), base.BackendSource, "status attribution needs the source Backend")
 		require.Equal(t, envoyclusterv3.Cluster_STATIC, base.Cluster.Clone().GetType(), "errored rows carry the blackhole cluster")
