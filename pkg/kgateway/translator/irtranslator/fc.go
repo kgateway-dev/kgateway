@@ -74,7 +74,7 @@ func tlsInspectorFilter() *envoylistenerv3.ListenerFilter {
 	configEnvoy := &envoy_tls_inspector.TlsInspector{}
 	msg, _ := utils.MessageToAny(configEnvoy)
 	return &envoylistenerv3.ListenerFilter{
-		Name: wellknown.TlsInspector,
+		Name: wellknown.TLSInspector,
 		ConfigType: &envoylistenerv3.ListenerFilter_TypedConfig{
 			TypedConfig: msg,
 		},

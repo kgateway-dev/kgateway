@@ -13,12 +13,20 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
+// gatewayStatusContributions unpacks the status half of each Gateway translation.
+//
+// It reads gatewayTranslationOutput directly rather than an intermediate collection of
+// GatewayStatusSnapshot. That collection was a pure projection, so its only effect was to run
+// GatewayStatusSnapshot.Equals -- a deep walk of every contribution of every route on the
+// Gateway -- a second time per translation, on top of the one gatewayTranslationOutput.Equals
+// already does. Contributions are still compared individually downstream, so status-only and
+// xDS-only changes stay as isolated from each other as before.
 func gatewayStatusContributions(
-	snapshots krt.Collection[GatewayStatusSnapshot],
+	outputs krt.Collection[gatewayTranslationOutput],
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
-	return krt.NewManyCollection(snapshots, func(_ krt.HandlerContext, snapshot GatewayStatusSnapshot) []reports.StatusContribution {
-		return snapshot.Contributions
+	return krt.NewManyCollection(outputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) []reports.StatusContribution {
+		return output.Status.Contributions
 	}, krtopts.ToOptions("GatewayStatusContributions")...)
 }
 

@@ -215,6 +215,23 @@ type HTTPSettings struct {
 	// See here for more information https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-generate-request-id
 	// +optional
 	GenerateRequestId *bool `json:"generateRequestId,omitempty"`
+
+	// NormalizePath determines whether the connection manager normalizes the path per RFC 3986 before
+	// routing, e.g. collapsing `.` and `..` segments and decoding percent-encoded characters. This
+	// defaults to true. Disable this if a backend (e.g. an S3-compatible object store) needs to see
+	// the original, unnormalized request path.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-normalize-path
+	// +optional
+	NormalizePath *bool `json:"normalizePath,omitempty"`
+
+	// MergeSlashes determines whether the connection manager merges adjacent slashes in the request
+	// path before routing. This defaults to true. Disable this if a backend (e.g. an S3-compatible
+	// object store) relies on repeated slashes in the path having meaning, such as object keys that
+	// contain "//".
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-merge-slashes
+	// +optional
+	MergeSlashes *bool `json:"mergeSlashes,omitempty"`
+
 	// Proxy100Continue determines whether Envoy forwards requests with an
 	// Expect: 100-continue header upstream and proxies upstream 100 Continue
 	// responses downstream. When unset or false, Envoy handles the response locally.
@@ -269,6 +286,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
+	// MaxConnectionDuration is the maximum duration of a connection, measured from
+	// when the connection was established. When this duration is reached, Envoy starts
+	// the drain sequence. If unset, there is no maximum connection duration.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
+
 	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
 	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
 	// clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
@@ -296,6 +323,11 @@ type HTTPSettings struct {
 	// HealthCheck configures [Envoy health checks](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/health_check/v3/health_check.proto)
 	// +optional
 	HealthCheck *EnvoyHealthCheck `json:"healthCheck,omitempty"`
+
+	// GrpcStats configures Envoy's gRPC statistics filter for per-service/method
+	// gRPC metrics (including grpc-status) on this listener.
+	// +optional
+	GrpcStats *GrpcStats `json:"grpcStats,omitempty"`
 
 	// PreserveHttp1HeaderCase determines whether to preserve the case of HTTP1 request headers.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
@@ -1058,7 +1090,10 @@ const (
 
 // UpgradeConfig represents configuration for HTTP upgrades.
 type UpgradeConfig struct {
-	// List of upgrade types to enable (e.g. "websocket", "CONNECT", etc.)
+	// EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+	// and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+	// upstream without termination. To terminate CONNECT and forward its payload
+	// as raw TCP data, configure httpUpgrade in a TrafficPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +optional
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`
@@ -1096,6 +1131,31 @@ type EnvoyHealthCheck struct {
 	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
 	// +required
 	Path string `json:"path"`
+}
+
+// GrpcStats configures Envoy's gRPC statistics HTTP filter
+// (envoy.filters.http.grpc_stats), emitting per-service/method gRPC metrics
+// that upstream_rq_xx cannot express (gRPC is HTTP 200 regardless of grpc-status).
+//
+// Exactly one of statsForAllMethods or methodAllowlist must be set.
+//
+// +kubebuilder:validation:XValidation:message="exactly one of statsForAllMethods or methodAllowlist must be set",rule="has(self.statsForAllMethods) != has(self.methodAllowlist)"
+type GrpcStats struct {
+	// StatsForAllMethods enables emitting stats for every gRPC method seen on the
+	// listener. Mutually exclusive with methodAllowlist.
+	// +optional
+	StatsForAllMethods *bool `json:"statsForAllMethods,omitempty"`
+
+	// MethodAllowlist entries are fully-qualified gRPC methods, e.g. "/pkg.Service/Method".
+	// Only methods in this list get per-method stats. Mutually exclusive with statsForAllMethods.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=128
+	MethodAllowlist []string `json:"methodAllowlist,omitempty"`
+
+	// EnableUpstreamStats emits a histogram for the upstream (wire) latency of each request.
+	// +optional
+	EnableUpstreamStats *bool `json:"enableUpstreamStats,omitempty"`
 }
 
 // UuidRequestIdConfig configures the UUID request ID extension.

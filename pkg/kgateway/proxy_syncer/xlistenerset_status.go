@@ -23,45 +23,34 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
-// xListenerSetStatusSyncer is the status writer registered for the legacy experimental
-// XListenerSet GVK. Reads are identical to the promoted ListenerSet writer -- same
-// normalized collection, same report reducer, same builder -- and only the write differs:
-// the legacy CRD is served under its own GVR and its schema still requires a per-listener
-// port that gwv1.ListenerSetStatus no longer carries, so it goes out as a dynamic merge
-// patch rather than a typed UpdateStatus.
+// xListenerSetWriter is the status writer registered for the legacy experimental XListenerSet
+// GVK. Reads are identical to the promoted ListenerSet writer -- same normalized collection,
+// same report reducer, same builder -- and only the write differs: the legacy CRD is served
+// under its own GVR and its schema still requires a per-listener port that
+// gwv1.ListenerSetStatus no longer carries, so it goes out as a dynamic merge patch rather
+// than a typed UpdateStatus.
 //
-// It exists only to hold the context: the writer it delegates to is a plain
-// statussync.Writer, but Writer.UpdateStatus is handed an ObjectMeta and a status and
-// carries no context of its own, and the dynamic client needs one. Building the writer per
-// call is a handful of closures on a path that only runs for legacy objects.
-type xListenerSetStatusSyncer struct {
-	col     krt.Collection[*gwv1.ListenerSet]
-	client  apiclient.Client
-	reports krt.Collection[statussync.ResourceReports]
-}
-
-var _ statussync.ResourceStatusSyncer = &xListenerSetStatusSyncer{}
-
-func (s *xListenerSetStatusSyncer) ApplyStatus(ctx context.Context, res statussync.Resource) {
-	s.writer(ctx).ApplyStatus(ctx, res)
-}
-
-// writer is the legacy writer as the standard status pipeline sees it. Exposed as a method
-// so tests can assert the shared invariants on it -- CheckWriterIdempotent above all -- with
-// the same writer ApplyStatus runs.
-func (s *xListenerSetStatusSyncer) writer(ctx context.Context) statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus] {
+// That is the whole of the difference, so this is a plain statussync.Writer like every other
+// kind rather than a bespoke ResourceStatusSyncer.
+func xListenerSetWriter(
+	cl apiclient.Client,
+	listenerSets krt.Collection[*gwv1.ListenerSet],
+	reportCol krt.Collection[statussync.ResourceReports],
+) statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus] {
+	source := statussync.CollectionSource(listenerSets)
 	return statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]{
 		Name:         "xListenerSet",
-		Current:      statussync.CollectionSource(s.col),
-		Desired:      listenerSetDesired(wellknown.XListenerSetGVK, s.reports),
-		UpdateStatus: s.patchStatus(ctx),
+		Current:      source,
+		Desired:      listenerSetDesired(reportCol),
+		UpdateStatus: patchXListenerSetStatus(cl, source),
 		GetStatus:    func(o *gwv1.ListenerSet) gwv1.ListenerSetStatus { return o.Status },
-		OnSync:       listenerSetStatusMetricsHook(),
+		OnSync:       listenerSetStatusOnSync,
 	}
 }
 
-// patchStatus merge-patches the status subresource of a legacy XListenerSet through the
-// dynamic client, injecting the per-listener port required by the legacy CRD schema.
+// patchXListenerSetStatus merge-patches the status subresource of a legacy XListenerSet
+// through the dynamic client, injecting the per-listener port required by the legacy CRD
+// schema.
 //
 // The patch body carries metadata.resourceVersion so the API server rejects the write when
 // the object has moved on, matching the optimistic concurrency the promoted path gets from
@@ -69,23 +58,31 @@ func (s *xListenerSetStatusSyncer) writer(ctx context.Context) statussync.Writer
 // stale read silently overwrites a newer one and nothing re-enqueues to correct it.
 //
 // The spec listeners the ports come from are re-read here rather than threaded through the
-// status, because there is no field of gwv1.ListenerSetStatus to thread them through. It is
-// the same collection Writer.Current reads, so the only way the read comes back empty is
-// that the object was deleted mid-write; the patch would then be rejected anyway, and
-// stamping every listener with the fallback port is a worse guess than not writing.
-func (s *xListenerSetStatusSyncer) patchStatus(ctx context.Context) func(metav1.ObjectMeta, gwv1.ListenerSetStatus) error {
-	return func(om metav1.ObjectMeta, desired gwv1.ListenerSetStatus) error {
-		current := s.col.GetKey(om.Namespace + "/" + om.Name)
-		if current == nil || *current == nil {
+// status, because there is no field of gwv1.ListenerSetStatus to thread them through. current
+// is the writer's own Writer.Current, so this cannot read a different collection than the
+// writer that drives it; the only way the read comes back empty is that the object was
+// deleted mid-write. The patch would then be rejected anyway, and stamping every listener
+// with the fallback port is a worse guess than not writing.
+func patchXListenerSetStatus(
+	cl apiclient.Client,
+	current func(statussync.Resource) *gwv1.ListenerSet,
+) func(context.Context, metav1.ObjectMeta, gwv1.ListenerSetStatus) error {
+	return func(ctx context.Context, om metav1.ObjectMeta, desired gwv1.ListenerSetStatus) error {
+		res := statussync.Resource{
+			GroupVersionKind: wellknown.XListenerSetGVK,
+			NamespacedName:   types.NamespacedName{Namespace: om.Namespace, Name: om.Name},
+		}
+		live := current(res)
+		if live == nil {
 			logger.Debug("legacy listener set no longer present, skipping status update",
-				"resource", om.Namespace+"/"+om.Name)
+				"namespace", om.Namespace, "name", om.Name)
 			return nil
 		}
 		statusMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&desired)
 		if err != nil {
 			return err
 		}
-		injectListenerPorts(statusMap, (*current).Spec.Listeners)
+		injectListenerPorts(statusMap, live.Spec.Listeners)
 		data, err := json.Marshal(map[string]any{
 			"metadata": map[string]any{"resourceVersion": om.ResourceVersion},
 			"status":   statusMap,
@@ -96,7 +93,7 @@ func (s *xListenerSetStatusSyncer) patchStatus(ctx context.Context) func(metav1.
 		// Conflicts and NotFound are not handled here: Writer.ApplyStatus recognizes both and
 		// skips the write, since the raw collection re-enqueues once the informer delivers the
 		// newer object.
-		_, err = s.client.Dynamic().Resource(wellknown.XListenerSetGVR).Namespace(om.Namespace).
+		_, err = cl.Dynamic().Resource(wellknown.XListenerSetGVR).Namespace(om.Namespace).
 			Patch(ctx, om.Name, types.MergePatchType, data, metav1.PatchOptions{}, "status")
 		return err
 	}

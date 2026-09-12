@@ -74,6 +74,13 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)' -s -w
 export GCFLAGS ?=
 
+# Tag used for built image artifacts (per-arch images and multi-arch manifests). Distinct from
+# VERSION, which is compiled into the binary via LDFLAGS. Defaults to VERSION so local dev, PR
+# snapshots, and rolling-main builds are unchanged; the release workflow overrides it with a
+# non-semver staging tag (e.g. stage-<gitsha>-<version>) so consumption automation (Kargo, semver-only)
+# does not adopt the artifacts before they are validated and published.
+export ARTIFACT_TAG ?= $(VERSION)
+
 UNAME_M := $(shell uname -m)
 # if `GOARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
 # if the machines architecture is set to arm64 then we want to set the appropriate values, else we only support amd64
@@ -95,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.3
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.1
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -587,21 +594,21 @@ container-structure-test: container-structure-test-kgateway container-structure-
 .PHONY: container-structure-test-kgateway
 container-structure-test-kgateway: ## Run container structure tests for kgateway image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/kgateway.yaml
 
 .PHONY: container-structure-test-sds
 container-structure-test-sds: ## Run container structure tests for sds image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/sds.yaml
 
 .PHONY: container-structure-test-envoy-wrapper
 container-structure-test-envoy-wrapper: ## Run container structure tests for envoy-wrapper image
 	$(CONTAINER_STRUCTURE_TEST) test \
-		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
+		--image $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(ARTIFACT_TAG)-$(CONTAINER_STRUCTURE_TEST_ARCH) \
 		$(CONTAINER_STRUCTURE_TEST_PLATFORM_FLAG) \
 		--config $(CONTAINER_STRUCTURE_TEST_DIR)/envoy-wrapper.yaml
 
@@ -1028,7 +1035,7 @@ release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) go tool -modfile=tools/go.mod goreleaser release $(GORELEASER_ARGS) --timeout $(GORELEASER_TIMEOUT)
 .PHONY: release-notes
 release-notes: ## Generate release notes (PREVIOUS_TAG required, CURRENT_TAG optional)
-	./hack/generate-release-notes.sh -p $(PREVIOUS_TAG) -c $(or $(CURRENT_TAG),HEAD)
+	./hack/generate-release-notes.sh -p "$${PREVIOUS_TAG:-}" -c "$${CURRENT_TAG:-HEAD}"
 
 #----------------------------------------------------------------------------------
 # MARK: Development
@@ -1238,6 +1245,11 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 	@echo "Running KGateway production load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
 	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+
+.PHONY: run-load-tests-strict-churn
+run-load-tests-strict-churn: ## Run strict-validation churn convergence test (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_STRICT_CHURN=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -timeout 30m ./test/e2e/tests -run "^TestKgateway$$/^StrictChurn$$"
 
 #----------------------------------------------------------------------------------
 # MARK: Conformance

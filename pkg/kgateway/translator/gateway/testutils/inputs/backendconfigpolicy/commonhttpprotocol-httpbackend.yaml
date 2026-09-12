@@ -38,5 +38,6 @@ spec:
       kind: Service
   commonHttpProtocolOptions:
     idleTimeout: 10s
+    maxConnectionDuration: 10m
     maxHeadersCount: 15
     maxStreamDuration: 30s

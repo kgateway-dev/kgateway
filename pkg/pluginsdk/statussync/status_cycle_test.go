@@ -56,7 +56,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	reports.NewReporter(&routeReport).
 		Route(&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}).
 		ParentRef(&gwv1.ParentReference{Name: "gw"})
-	buildDesired := func(current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+	buildDesired := func(_ Resource, current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 		status := reports.BuildRouteStatus(
 			routeReport.HTTPRoutes[types.NamespacedName{Namespace: "default", Name: "route"}],
 			current,
@@ -129,7 +129,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	// the same check CheckWriterIdempotent exports for writers outside this package.
 	written := routesClient.Get("route", "default")
 	require.NotNil(t, written)
-	require.NoError(t, CheckWriterIdempotent(writer, written,
+	require.NoError(t, CheckWriterIdempotent(writer, testRoute, written,
 		func(current *gwv1.HTTPRoute, status gwv1.RouteStatus) *gwv1.HTTPRoute {
 			next := current.DeepCopy()
 			next.Status.RouteStatus = *status.DeepCopy()

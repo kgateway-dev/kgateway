@@ -27,9 +27,9 @@ inputs:
     description: "Add a summary of the report to the GitHub step summary"
     required: false
   ordered-ads:
-    description: "Enable ordered ADS delivery for this conformance leg"
+    description: "Whether ordered ADS delivery should be enabled for this conformance leg"
     required: false
-    default: "false"
+    default: "true"
 
 runs:
   using: "composite"
@@ -86,8 +86,8 @@ runs:
         echo "EXPERIMENTAL_FLAG: $EXPERIMENTAL_FLAG"
 
         ORDERED_ADS_FLAG=""
-        if [[ "${{ inputs.ordered-ads }}" == "true" ]]; then
-          ORDERED_ADS_FLAG="--set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=true"
+        if [[ "${{ inputs.ordered-ads }}" == "false" ]]; then
+          ORDERED_ADS_FLAG="--set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=false"
         fi
 
         echo "ORDERED_ADS_FLAG: $ORDERED_ADS_FLAG"

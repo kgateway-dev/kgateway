@@ -36,8 +36,7 @@ PRs and/or issues that need to land before this release is cut. List the headlin
 The [Release workflow](https://github.com/kgateway-dev/kgateway/actions/workflows/release.yaml) generates the release notes, creates the git tag, builds the artifacts, and publishes the GitHub release. No local steps are needed to cut the release.
 
 - [ ] Open the [Release workflow](https://github.com/kgateway-dev/kgateway/actions/workflows/release.yaml)
-- [ ] Run with branch `v<MAJOR>.<MINOR>.x` and version `v<MAJOR>.<MINOR>.<PATCH>`
-- [ ] Enable "validate release" (runs the conformance suite against the released artifacts)
+- [ ] Run with branch `v<MAJOR>.<MINOR>.x` and version `v<MAJOR>.<MINOR>.<PATCH>` (conformance runs automatically as a gate against the staged artifacts before anything is published)
 - [ ] Watch the workflow to completion
 - [ ] Review the generated release notes on the GitHub release; edit the description if anything was miscategorized
 
