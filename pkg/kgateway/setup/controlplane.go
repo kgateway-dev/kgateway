@@ -102,6 +102,7 @@ func NewControlPlane(
 	certWatcher *certwatcher.CertWatcher,
 	orderedADS bool,
 	suppressNackResend bool,
+	respondOnReconnect bool,
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
 	lnc := newLogNackCallback()
@@ -114,12 +115,13 @@ func NewControlPlane(
 
 	hasher := xds.NewNodeRoleHasher()
 	var snapshotCache envoycache.SnapshotCache = envoycache.NewSnapshotCache(true, hasher, envoyLoggerAdapter)
-	if suppressNackResend {
-		// See nackResendSuppressor: a NACK of the current snapshot version parks
-		// the watch instead of re-sending the rejected response.
-		suppressor := newNackResendSuppressor(snapshotCache, hasher)
-		allCallbacks = chainCallbacks(allCallbacks, suppressor.callbacks())
-		snapshotCache = suppressor
+	if suppressNackResend || respondOnReconnect {
+		// See watchPolicy: a NACK of the current snapshot version parks the watch
+		// instead of re-sending the rejected response, and a reconnecting proxy's
+		// first endpoint request is answered regardless of the version it holds.
+		policy := newWatchPolicy(snapshotCache, hasher, suppressNackResend, respondOnReconnect)
+		allCallbacks = chainCallbacks(allCallbacks, policy.callbacks())
+		snapshotCache = policy
 	}
 
 	var xdsOpts []serverconfig.XDSOption
