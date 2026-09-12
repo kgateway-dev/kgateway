@@ -13,7 +13,6 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoyresourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -875,7 +874,6 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 	}
 	eds := snap.Resources[envoycachetypes.Endpoint]
 	var items map[string]envoycachetypes.ResourceWithTTL
-	var settledHash uint64
 	for _, name := range synthesized {
 		if _, ok := eds.Items[name]; !ok {
 			continue
@@ -897,20 +895,17 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 		}
 		if republish {
 			items[name] = prev
-			settledHash ^= utils.HashString("republished:"+name) ^ utils.HashProto(prev.Resource)
 		} else {
 			delete(items, name)
-			settledHash ^= utils.HashString("left out:" + name)
 		}
 	}
 	if items == nil {
 		return snap
 	}
 	settled := *snap
-	settled.Resources[envoycachetypes.Endpoint] = envoycache.Resources{
-		Version: fmt.Sprintf("%s-settled-%d", eds.Version, settledHash),
-		Items:   items,
-	}
+	settled.Resources[envoycachetypes.Endpoint] = versionEndpointResources(
+		envoycache.Resources{Items: items}, nil,
+		endpointClusterDigests(settled.Resources[envoycachetypes.Cluster], nil))
 	return &settled
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"maps"
 	"slices"
 	"strconv"
 
@@ -163,7 +164,9 @@ type clustersWithErrors struct {
 	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
-	clustersHash        uint64
+	// clusterVersions retains each published cluster digest for EDS versioning.
+	clusterVersions map[string]uint64
+	clustersHash    uint64
 	// perClientErrors are the rows whose Error was produced for this client
 	// alone, sorted by cluster name; the status projection reads them. Base
 	// errors are attributed from the base rows instead, once rather than once
@@ -180,6 +183,7 @@ var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
 
 func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 	return c.clustersHash == k.clustersHash &&
+		maps.Equal(c.clusterVersions, k.clusterVersions) &&
 		c.erroredClustersHash == k.erroredClustersHash &&
 		c.resourceName == k.resourceName &&
 		slices.EqualFunc(c.perClientErrors, k.perClientErrors, uccWithCluster.Equals)
@@ -335,6 +339,7 @@ func clustersForClient(
 // the status projection.
 func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithCluster) *clustersWithErrors {
 	clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(rows))
+	clusterVersions := make(map[string]uint64, len(rows))
 	var (
 		clustersHash        uint64
 		erroredClustersHash uint64
@@ -358,6 +363,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		// mutation tripwire when armed. See package sharedproto.
 		clustersProto = append(clustersProto, c.Cluster.ResourceWithTTL())
 		clustersHash ^= c.ClusterVersion
+		clusterVersions[c.Name] = c.ClusterVersion
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
 	// Base rows arrive in map order; sort so Equals compares like with like.
@@ -367,6 +373,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
+		clusterVersions:     clusterVersions,
 		erroredClustersHash: erroredClustersHash,
 		perClientErrors:     perClientErrors,
 		resourceName:        ucc.ResourceName(),
