@@ -119,7 +119,16 @@ type BaseCluster struct {
 	// Nothing else may be inferred from it: a false value means either "a policy
 	// chose the mode" or "no mode applies".
 	DefaultedLocalityConfig bool
-	Error                   error
+	// GeneratedInlineCLA records that TranslateBackendBase built the base's
+	// LoadAssignment itself from EndpointInputs, because no client could
+	// influence it. That assignment belongs to the inline discovery type the
+	// base had at the time. An overlay that changes the type to one that does
+	// not take an inline CLA (EDS, say) without replacing the field would
+	// otherwise carry the framework's assignment into the per-client cluster;
+	// ApplyPerClient clears it in that case. A LoadAssignment set by a backend
+	// plugin or an overlay is theirs and is left alone.
+	GeneratedInlineCLA bool
+	Error              error
 }
 
 // NeedsInlineCLA reports whether this base cluster is incomplete without a
@@ -214,6 +223,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 	// established that PrioritizeEndpoints will not read it.
 	if result.NeedsInlineCLA() && !t.inlineCLADependsOnClient(backend, endpointInputs) {
 		out.LoadAssignment = endpoints.PrioritizeEndpoints(logger, ir.UniquelyConnectedClient{}, *endpointInputs)
+		result.GeneratedInlineCLA = true
 	}
 
 	// Skip strict-mode validation when the CLA is built per client: the base
@@ -300,10 +310,26 @@ func (t *BackendTranslator) ApplyPerClient(
 		removeDefaultedLocalityConfig(out)
 	}
 
+	// The assignment the base built for itself is tied to the base's inline
+	// discovery type. Remember which instance it is (the clone's copy) so that
+	// an overlay replacing it is distinguishable from one leaving it in place.
+	var generatedCLA *envoyendpointv3.ClusterLoadAssignment
+	if base.GeneratedInlineCLA {
+		generatedCLA = out.LoadAssignment
+	}
+
 	for _, ov := range overlays {
 		if ov.Mutate != nil {
 			ov.Mutate(out)
 		}
+	}
+
+	// An overlay that moved the cluster off an inline discovery type without
+	// touching LoadAssignment would otherwise ship the framework-generated
+	// endpoints on a cluster that no longer reads them. Clear only that
+	// instance; an assignment an overlay set is its own choice.
+	if generatedCLA != nil && out.LoadAssignment == generatedCLA && !clusterSupportsInlineCLA(out) {
+		out.LoadAssignment = nil
 	}
 
 	needsInlineCLA := base.EndpointInputs != nil &&
