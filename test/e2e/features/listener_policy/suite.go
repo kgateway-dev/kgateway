@@ -183,6 +183,13 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 }
 
 func (s *testingSuite) TestAccessLogEmittedToStdout() {
+	// The access log policy rolls the gateway Deployment. Let it finish before sending any
+	// requests, so the pod that serves them is the one whose logs are read below.
+	s.TestInstallation.AssertionsT(s.T()).EventuallyDeploymentsRolledOut(
+		s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+		wellknown.GatewayNameLabel+"="+proxyObjectMeta.GetName(),
+	)
+
 	// First: trigger a 404 that SHOULD be logged (filter is GE 400)
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
@@ -196,16 +203,19 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	)
 
 	// Fetch gateway pod logs and verify the 404 access log JSON fields are present
+	ns := proxyDeployment.ObjectMeta.GetNamespace()
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+		s.Ctx, ns,
 		testdefaults.WellKnownAppLabel+"="+proxyDeployment.ObjectMeta.GetName(),
 	)
 	s.Require().NoError(err)
 	s.Require().Len(pods, 1)
 
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
-		s.Require().NoError(err)
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, ns, pods[0])
+		if !assert.NoError(c, err) {
+			return
+		}
 		// Check a few key fields configured in http-listener-policy-access-log.yaml jsonFormat
 		assert.Contains(c, logs, "\"method\":\"GET\"")
 		assert.Contains(c, logs, "\"protocol\":\"HTTP/1.1\"")
@@ -228,7 +238,7 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// Confirm 200 logs do not appear over a stability window as it isn't being immediately emitted
 	g := gomega.NewWithT(s.T())
 	g.Consistently(func() string {
-		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
+		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, ns, pods[0])
 		s.Require().NoError(err)
 		return out
 	}, 10*time.Second, 200*time.Millisecond).ShouldNot(gomega.ContainSubstring("\"response_code\":200"))
