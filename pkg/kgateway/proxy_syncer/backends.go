@@ -71,7 +71,7 @@ func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
 		b.ClusterVersion == in.ClusterVersion &&
 		b.BackendSource == in.BackendSource &&
 		b.BackendGeneration == in.BackendGeneration &&
-		errString(b.Error) == errString(in.Error) &&
+		errorsEqual(b.Error, in.Error) &&
 		backendEquals(b.Backend, in.Backend)
 }
 
@@ -127,16 +127,18 @@ func (c uccWithCluster) Equals(in uccWithCluster) bool {
 		c.PerClientError == in.PerClientError &&
 		c.BackendSource == in.BackendSource &&
 		c.BackendGeneration == in.BackendGeneration &&
-		errString(c.Error) == errString(in.Error)
+		errorsEqual(c.Error, in.Error)
 }
 
-// errString renders an error for comparison inside an Equals method, where a nil
-// error and an empty message must compare equal.
-func errString(err error) string {
-	if err == nil {
-		return ""
+// errorsEqual compares two translation errors for an Equals method: nil only
+// equals nil, and two non-nil errors are equal when their messages are. Nilness
+// is compared first so that an error with an empty message is never mistaken
+// for no error; consumers branch on Error != nil, not on the message.
+func errorsEqual(a, b error) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
 	}
-	return err.Error()
+	return a.Error() == b.Error()
 }
 
 // clustersWithErrors is one client's assembled CDS payload plus the clusters that
