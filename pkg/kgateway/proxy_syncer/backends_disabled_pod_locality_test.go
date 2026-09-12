@@ -29,7 +29,7 @@ func TestPerClientClustersTrackSharedClientCapability(t *testing.T) {
 	t.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
-	callbacks, buildClients := krtcollections.NewUniquelyConnectedClients(false)
+	callbacks, buildClients, _ := krtcollections.NewUniquelyConnectedClients(false)
 	var pods krt.Collection[krtcollections.LocalityPod]
 	clients := buildClients(ctx, krtopts, pods)
 	clients.WaitUntilSynced(ctx.Done())
