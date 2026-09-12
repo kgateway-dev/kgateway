@@ -22,9 +22,8 @@ import (
 // names its CLA after it. Nothing in tree renames it, so this pins the
 // containment: a backend whose translation renamed the cluster is recorded as
 // errored under the expected name, alone, and the clients keep every other
-// backend. It must not simply vanish (research finding RF-024): an absent row
-// means no errored record, so its CLA would stay in EDS unfiltered and no
-// status would be written.
+// backend. It must not simply vanish: an absent row means no errored record,
+// so its CLA would stay in EDS unfiltered and no status would be written.
 func TestNewPerClientEnvoyClusters_RenamedClusterIsErroredNotDropped(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)

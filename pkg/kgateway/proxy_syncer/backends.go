@@ -455,7 +455,7 @@ func NewPerClientEnvoyClusters(
 			// If that changes, record this one backend as errored under the name
 			// consumers expect: the cluster is excluded from CDS, its CLA is
 			// filtered from EDS, and status reports why, instead of the backend
-			// silently vanishing from all three (research finding RF-024).
+			// silently vanishing from all three.
 			err := errors.New("backend translation renamed the cluster from " + backendObj.ClusterName() + " to " + name)
 			logger.Error("backend translation renamed the cluster; recording the backend as errored",
 				"backend", backendObj.ResourceName(),
