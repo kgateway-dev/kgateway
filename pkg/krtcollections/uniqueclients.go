@@ -487,6 +487,12 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
+	// A request carrying ErrorDetail is a NACK: the client rejected the
+	// previous response for this type URL and keeps serving its
+	// last-accepted config. This is the only point where a rejection is
+	// visible to the control plane, so record it before any gating below.
+	recordNackIfAny(roleFromRequest(r), r)
+
 	c := x.collection.Load()
 	if c == nil {
 		return errors.New("kgateway not initialized")
