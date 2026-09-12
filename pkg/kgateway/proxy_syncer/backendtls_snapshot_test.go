@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -113,6 +114,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		gateway,
 		httpRoute,
 		newActualBackendTLSTestService(),
+		newActualBackendTLSTestEndpointSlice(),
 		newActualBackendTLSTestConfigMap(),
 		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 	)
@@ -351,6 +353,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		gateway,
 		httpRoute,
 		service,
+		newActualBackendTLSTestEndpointSlice(),
 		newActualBackendTLSTestConfigMap(),
 		serviceWidePolicy,
 		sectionSpecificPolicy,
@@ -492,6 +495,36 @@ func snapshotEndpointVersion(snapshots krt.Collection[XdsSnapWrapper], snapshotK
 		return ""
 	}
 	return snap.snap.Resources[envoycachetypes.Endpoint].Version
+}
+
+func newActualBackendTLSTestEndpointSlice() *discoveryv1.EndpointSlice {
+	endpointPort := int32(8443)
+	ready := true
+	return &discoveryv1.EndpointSlice{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: discoveryv1.SchemeGroupVersion.String(),
+			Kind:       "EndpointSlice",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "backend-service-abcde",
+			Namespace: "default",
+			Labels: map[string]string{
+				discoveryv1.LabelServiceName: "backend-service",
+			},
+		},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"10.0.0.1"},
+				Conditions: discoveryv1.EndpointConditions{
+					Ready: &ready,
+				},
+			},
+		},
+		Ports: []discoveryv1.EndpointPort{
+			{Port: &endpointPort},
+		},
+	}
 }
 
 //go:fix inline

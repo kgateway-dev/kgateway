@@ -350,6 +350,42 @@ type Settings struct {
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
 
+	// PerClientPublishBudget bounds how long per-client xDS publication may
+	// be withheld while referenced clusters are not yet ready. It governs:
+	//
+	//   - first publish: a client that has NEVER been published a snapshot
+	//     receives the latest deferred snapshot at expiry (it is always
+	//     internally consistent), so a freshly scheduled gateway pod binds
+	//     its listeners and becomes Ready instead of crash-looping; routes
+	//     to still-unready clusters return 503 until they cohere. Clients
+	//     that reported a prior accepted xDS version on connect are warm:
+	//     they stay withheld while referenced clusters are missing from CDS,
+	//     but publish at expiry when the only gaps are clusters whose
+	//     endpoints were never derived (by then that is translation backlog
+	//     or a plugin gap with no convergence guarantee, and withholding
+	//     longer would freeze the client's config indefinitely).
+	//   - flip release: a route flip held because it targets a
+	//     newly-referenced cluster with no derived endpoints is published at
+	//     expiry, so a reference that never becomes ready cannot pin the
+	//     client's route/listener/secret updates indefinitely.
+	//
+	// Keep the budget well below the gateway proxy's startup probe window
+	// (60s by default): a first publish bounded above the probe window
+	// recreates the crash loop the bound exists to prevent. A value of 0
+	// disables all bounds: clients wait for coherence with no deadline.
+	PerClientPublishBudget time.Duration `split_words:"true" default:"15s"`
+
+	// XdsSnapshotConsistencyCheck runs go-control-plane's Snapshot.Consistent()
+	// on every per-client xDS snapshot immediately before it is published,
+	// recording violations in the
+	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total counter and
+	// the error log. The snapshot is still published either way: the check is
+	// an invariant monitor for test and CI environments (any increment is a
+	// kgateway bug worth reporting), never a gate — withholding on
+	// inconsistency would reintroduce the unbounded withholds the publication
+	// engine removed. Off by default; enabled in e2e and conformance runs.
+	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
+
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:
 	// - "OFF": No ReferenceGrant validation. All cross-namespace references are permitted.
