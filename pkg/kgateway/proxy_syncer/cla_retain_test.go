@@ -211,6 +211,53 @@ func TestCLARetainerForgetsDeletedBackend(t *testing.T) {
 	require.Empty(t, r.byBackend, "a deleted backend must not keep its CLAs alive")
 }
 
+// The delete handler runs on its own goroutine, so it can observe a backend's
+// delete after that backend was re-added and its new pass already seeded from
+// and replaced the retained entry. Forgetting then would split the fleet
+// between the stored rows' proto and the next pass's fresh one. The guard keys
+// on whether the backend is present in the source collection when the delete
+// is handled, not on the event alone.
+func TestCLARetainerForgetIfAbsentKeepsReAddedBackend(t *testing.T) {
+	r := newCLARetainer()
+	live := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "live"})
+	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 1, Endpoints: live}})
+
+	r.forgetIfAbsent("backend", false)
+	require.Len(t, r.byBackend, 1, "a backend that is present again must keep the entry its own pass maintains")
+
+	r.forgetIfAbsent("backend", true)
+	require.Empty(t, r.byBackend, "a backend that is really gone must be forgotten")
+}
+
+// Through the real collection: a backend deleted and re-added in quick
+// succession must not leave already-connected clients and later connectors
+// on different proto instances. Whether the delete handler or the re-add's
+// pass runs first is up to scheduling, so this is repeated; both orders must
+// converge.
+func TestNewPerClientEnvoyEndpointsSharesClaAcrossBackendDeleteAndReAdd(t *testing.T) {
+	f := newSequentialClaFixture(t)
+	a := f.connect("a")
+	b := f.connect("b")
+	require.True(t, sharedproto.Same(f.row(a).Endpoints, f.row(b).Endpoints), "precondition: clients start out sharing")
+
+	for i := range 5 {
+		// Delete and re-add without waiting in between, so the delete event is
+		// still in flight when the re-add's transform can run.
+		f.endpoints.DeleteObject(f.backendRef.ResourceName())
+		f.endpoints.UpdateObject(*f.endpointsWith("original"))
+		require.Eventually(t, func() bool {
+			return len(f.perClient.FetchEndpointsForClient(krt.TestingDummyContext{}, a)) == 1 &&
+				len(f.perClient.FetchEndpointsForClient(krt.TestingDummyContext{}, b)) == 1
+		}, 2*time.Second, 10*time.Millisecond, "iteration %d: rows must come back after the re-add", i)
+
+		c := f.connect(fmt.Sprintf("late-%d", i))
+		rowA, rowB, rowC := f.row(a), f.row(b), f.row(c)
+		require.True(t, sharedproto.Same(rowA.Endpoints, rowB.Endpoints), "iteration %d: connected clients must still share", i)
+		require.True(t, sharedproto.Same(rowA.Endpoints, rowC.Endpoints),
+			"iteration %d: a client connecting after a delete/re-add must join the instance the stored rows hold", i)
+	}
+}
+
 // Seeding is what carries interning across recomputations: a candidate built in
 // a later pass must be answered with the instance the earlier pass handed out.
 func TestCLARetainerSeedsInternerWithLiveGeneration(t *testing.T) {
