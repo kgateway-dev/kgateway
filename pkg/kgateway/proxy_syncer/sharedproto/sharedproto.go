@@ -55,6 +55,91 @@ type Shared[M proto.Message] struct {
 	hash uint64
 }
 
+// Interner shares immutable protos with equal content. The caller supplies a
+// hash used to select candidates; equal hashes are only a bucket lookup, never
+// proof of equality. This keeps 64-bit hash collisions from making distinct
+// xDS resources alias the same proto.
+//
+// The zero value is ready to use. Intern takes ownership of msg only when it
+// returns a newly wrapped value; when an equal value was already interned, msg
+// is discarded and the existing wrapper is returned.
+type Interner[M proto.Message] struct {
+	// Equal decides content equality within a bucket. Nil means proto.Equal,
+	// which walks every nested field even when two candidates share the same
+	// nested pointers (the pinned protobuf-go short-circuits on identity only
+	// at the root). A caller whose values alias their sub-messages, as the CLA
+	// interner's do through the endpoint IR, can supply an identity-aware
+	// comparison; it MUST agree with proto.Equal on every pair it is given,
+	// because a false positive here aliases distinct xDS resources.
+	Equal  func(a, b M) bool
+	byHash map[uint64][]Shared[M]
+}
+
+// Intern returns the existing shared proto whose content equals msg, or wraps
+// and records msg when its bucket contains no equal proto. bucketHash need not
+// be the proto's content hash; Wrap captures the correct tripwire hash when
+// immutability assertions are enabled.
+func (i *Interner[M]) Intern(msg M, bucketHash uint64) Shared[M] {
+	return i.intern(msg, bucketHash, Wrap[M])
+}
+
+// InternPrehashed is Intern for callers whose bucket hash is utils.HashProto(msg).
+// It reuses that hash when arming the immutability tripwire.
+func (i *Interner[M]) InternPrehashed(msg M, contentHash uint64) Shared[M] {
+	return i.intern(msg, contentHash, func(msg M) Shared[M] {
+		return WrapPrehashed(msg, contentHash)
+	})
+}
+
+func (i *Interner[M]) intern(msg M, bucketHash uint64, wrap func(M) Shared[M]) Shared[M] {
+	equal := i.Equal
+	if equal == nil {
+		equal = func(a, b M) bool { return proto.Equal(a, b) }
+	}
+	for _, existing := range i.byHash[bucketHash] {
+		if equal(existing.msg, msg) {
+			return existing
+		}
+	}
+	shared := wrap(msg)
+	i.record(bucketHash, shared)
+	return shared
+}
+
+// Adopt records an already-shared proto as an interning candidate, so an
+// interner can be primed with what an earlier generation handed out instead of
+// starting empty.
+//
+// This is what lets interning survive a recomputation. An interner that starts
+// empty every time only shares among the values built in that one pass, which
+// is worth nothing when the values that need to agree were built in *different*
+// passes — and that is the normal case for anything keyed off a collection that
+// grows an entry at a time, because the store keeps the older object whenever
+// equality says nothing changed.
+//
+// Adopt does not re-verify: the caller is asserting this proto is already a
+// legitimate shared value for this bucket. Intern still proves equality before
+// handing an adopted proto to anyone, so a wrong bucket costs a miss, not a
+// wrong result. Adopting the same instance twice is a no-op.
+func (i *Interner[M]) Adopt(shared Shared[M], bucketHash uint64) {
+	if shared.IsNil() {
+		return
+	}
+	for _, existing := range i.byHash[bucketHash] {
+		if any(existing.msg) == any(shared.msg) {
+			return
+		}
+	}
+	i.record(bucketHash, shared)
+}
+
+func (i *Interner[M]) record(bucketHash uint64, shared Shared[M]) {
+	if i.byHash == nil {
+		i.byHash = make(map[uint64][]Shared[M])
+	}
+	i.byHash[bucketHash] = append(i.byHash[bucketHash], shared)
+}
+
 // Wrap takes ownership of msg as a shared, read-only proto. The caller must
 // not retain or mutate msg after wrapping; hand out copies via Clone.
 func Wrap[M proto.Message](msg M) Shared[M] {

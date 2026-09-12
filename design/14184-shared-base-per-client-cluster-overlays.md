@@ -1,7 +1,7 @@
 # EP-14184: Shared Base Clusters with Per-Client Overlays
 
 - Issue: [#14184](https://github.com/kgateway-dev/kgateway/issues/14184)
-- Originating PR: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (superseded by the 7-PR stack in [Delivery](#delivery))
+- Originating PR: [#14343](https://github.com/kgateway-dev/kgateway/pull/14343) (superseded by the stack in [Delivery](#delivery))
 - Predecessors: [#14104](https://github.com/kgateway-dev/kgateway/pull/14104), [#14317](https://github.com/kgateway-dev/kgateway/pull/14317)
 - Related: [#13586](https://github.com/kgateway-dev/kgateway/issues/13586) (the *backends* axis of the same scaling problem)
 
@@ -216,9 +216,12 @@ leave clients pinned to a stale `LoadAssignment` forever. It mirrors what
 so EDS clusters — whose endpoints flow through the separate EDS pipeline — do not churn.
 
 The base transform checks that translation named the cluster after
-`BackendObjectIR.ClusterName()` and drops the backend loudly otherwise. Every consumer assumes
-that name — routes reference it, status is keyed on it, the EDS pipeline names its CLA after it —
-and nothing in tree renames it.
+`BackendObjectIR.ClusterName()` and otherwise records the backend as an errored base under that
+expected name, so it is excluded from CDS, its CLA is filtered from EDS, and status reports the
+rename. Every consumer assumes that name — routes reference it, status is keyed on it, the EDS
+pipeline names its CLA after it — and nothing in tree renames it. The same shape covers a
+group/kind with no contributed translator: `TranslateBackendBase` never returns `nil`; see
+[Open Questions](#open-questions) for why dropping the row instead was a hole.
 
 #### Interning and immutability
 
@@ -276,7 +279,7 @@ type EndpointInputsEditor interface {
     BackendLabels() map[string]string
     Hostname() string
     Port() uint32
-    PoliciesFor(schema.GroupKind) []ir.PolicyAtt
+    PoliciesFor(schema.GroupKind) []PolicyView
 
     SetPriorityInfo(*PriorityInfo)
     SetTrafficDistribution(wellknown.TrafficDistribution)
@@ -293,6 +296,12 @@ subsequently observed. `EndpointView` is read-only with an explicit `Clone`; unt
 endpoints are structurally shared through `AddUnchanged`. The deprecated hook is preserved
 behind `LegacyMutableInputs()`, which deep-copies the whole input graph at most once per
 client no matter how many legacy plugins run.
+
+Isolation here is a matter of what the API can reach, not of copying. `PolicyView` exposes the
+four things endpoint plugins actually ask of an attachment — its IR, whether it failed IR
+construction, its ref string, and its generation — and keeps `PolicyRef`, `Errors`, and
+`MergeOrigins` out of reach, so `PoliciesFor` needs no defensive deep copy on a path that runs
+per client per backend.
 
 `EndpointsForBackend.Add` retains each endpoint's already-computed hash contribution as
 unexported derived state. `AddUnchanged` reuses that contribution when the endpoint stays in
@@ -439,22 +448,31 @@ Apple M4 Max, `-benchtime=20x`:
 | istio=true heavy=true | 1,689,979 | 703,883 | 52,800 | 10,201 | 5.06 MB | 911 KB |
 
 Roughly 10x on the no-overlay path and 2x with a sparsely-matching destination rule, with
-allocation counts down 5-13x. The benchmark measures the translator only; see
-[Open Questions](#open-questions) for a collection-level cost it does not model.
+allocation counts down 5-13x. The benchmark measures the translator in isolation; the
+per-client collection wrapped around it adds no per-backend copy of its own, which is what
+[`BorrowForRead`](#interning-and-immutability) is for.
 
 ### Delivery
 
-The work landed as a 6-PR stack rather than as #14343, so that the translator contract, the
-KRT topology change, and the allocation optimizations can be reviewed and reverted
-independently.
+The work lands as a stack rather than as #14343, so that the translator contract, the KRT
+topology change, and the allocation optimizations can be reviewed and reverted independently.
 
 | # | PR | Scope | Topology change |
 | --- | --- | --- | --- |
 | 1 | #14599 | endpoint mutation boundary (`EndpointInputsEditor`), deterministic CLA construction | no |
 | 2 | #14600 | `TranslateBackendBase` / `ApplyPerClient` / `ClusterOverlay`, dense storage retained, gateway fixtures for the errored-cluster output change | no |
-| 3 | (replaces #14602) | shared bases, client-keyed per-client assembly, `sharedproto`, tripwire CI wiring | **yes** |
-| 4 | #14603 | intern equivalent per-client cluster clones (to be rebased onto the client-keyed rows) | no |
-| 5 | #14604 | intern equivalent per-client CLAs, `LoadBalancingContextHash` | no |
+| 3 | #14691 | `sharedproto`: explicit ownership of protos shared across client snapshots, mutation tripwire | no |
+| 4 | #14692 | shared bases, client-keyed per-client assembly, Service address projection into `ObjIr`, tripwire CI wiring | **yes** |
+| 5 | #14693 | client-independent inline CLAs built once on the base | no |
+| 6 | #14694 | `PerClientEndpointsMayApply`; DestinationRule rules a backend out by host | no |
+| 7 | #14695 | strict-validation memo keyed by cluster content | no |
+| 8 | #14604 | intern equivalent per-client CLAs, `LoadBalancingContextHash`, cross-pass retainer | no |
+
+Two earlier PRs are no longer part of the stack. The backend-keyed sparse-delta storage
+originally proposed for the topology change was replaced by the client-keyed design in #14692;
+see [Alternatives](#alternatives) for why. Interning of per-client cluster
+clones was implemented and measured on top of the client-keyed rows and declined; see
+[Open Questions](#open-questions).
 
 PRs 1-2 are shippable before the topology change. PR 2 deliberately keeps dense storage and
 an independently owned proto per row so reviewers can validate the translation contract
@@ -474,9 +492,15 @@ every point in the stack.
   ordering, locality-default undo, strict-mode validation of overlay output.
 - `prioritize_test.go` — the CLA is byte-stable across repeated calls in all three priority
   modes, and localities are emitted in `(region, zone, subzone)` order.
-- `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations.
+- `editor_test.go` — structural sharing, legacy isolation, plugin ordering, allocations;
+  `PolicyView` answers every question the plugins ask, including for a failed attachment;
+  a policy-only change survives the `ReplaceEndpoints` path.
+- `backends_resolution_test.go` — a delta set whose resolved snapshot moved must not compare
+  equal even under a forced `ClientsFingerprint` collision; a renamed cluster drops only its
+  own backend instead of withholding the client's whole CDS.
 - `sharedproto_test.go` — tripwire fires on mutation, skips uncaptured protos, respects the
-  flag; `Clone` independence; identity helpers.
+  flag; `Clone` independence; `BorrowForRead` aliases and stays tripwire-covered; identity
+  helpers.
 
 **Property.** `TestLoadBalancingContextHashSoundness` asserts `equal hash => proto.Equal(CLA)`
 over a diverse client set across three priority configurations, with a vacuity guard requiring
@@ -509,7 +533,7 @@ and it captures most of the CPU win with none of the synchronization risk. It wa
 an endpoint because it retains `O(N*M)` rows and `O(N*M)` cluster protos — the memory half of
 the problem — and leaves one flat collection whose invalidation is fleet-wide.
 
-**Backend-keyed sparse deltas** (the design of #14602 as originally proposed): keep the
+**Backend-keyed sparse deltas** (the design originally proposed for the topology change): keep the
 per-client results in a second collection keyed by backend, one row per backend holding a sparse
 map of clients whose cluster differs, and merge base and delta rows in the per-client snapshot
 transform. It stores the same protos, but because writer and reader are different collections
@@ -584,6 +608,18 @@ column plus one real validation for the cluster that actually changed. The krt d
 registered by each overlay fetch (destrule's index lookup runs per pair) is the remaining
 per-pair cost; an overlay that prepares once per client would reduce it to one per client.
 
+Two things narrow how often the walk runs and what each pair costs. `objectContentEquals` no
+longer compares annotations, so a controller writing one on a Service (external-dns, a cloud
+load-balancer controller, Argo, `kubectl apply`) stops at the base row instead of rerunning every
+client; and the (Group, Kind)-ordered list of plugins with a per-client cluster hook is computed
+once per translator rather than gathered and sorted per pair. On this revision the backend-update
+benchmark reads 2.9 ms, 5.4 MB, 37.5k allocs at 12 x 400. What is still open is the number at
+the fleet size the xDS cost work targets, roughly 200 clients x 2000 backends: a linear
+extrapolation is a quarter of a second and hundreds of megabytes of garbage per base event, and
+the benchmark should be run at that size on the revision under review before it is quoted. If
+that number is not acceptable, the follow-up is an incremental per-client payload update for the
+single-base-change case rather than a full walk.
+
 **Per-client clones are not deduplicated across clients.** Clients that resolve identically (the
 same rule, the same zone) build byte-equal clones and each keeps its own. A per-backend
 `sharedproto.Interner` scoped by base version and shared across client transforms was
@@ -601,24 +637,36 @@ once on the base. The predicate fetches through the base translation's `HandlerC
 why `PerClientEndpointsMayApply` and `TranslateBackendBase` take one: the first rule to appear for
 a host re-translates that backend's base and moves it back to the per-client path.
 
-**`UccWithEndpoints.Endpoints` still carries `+krtEqualsTodo`.** The marker predates this EP,
-but PR 5 (#14604) changes the field's type and gives its equality a real justification
-(`EndpointsHash` is a content hash over the same CLA). It should become `+noKrtEquals` with
-that reason rather than remaining on the legacy-gap list.
+**Deep-cloning in `PoliciesFor`** (resolved). The editor used to deep-copy attachment metadata
+(`PolicyRef`, `Errors`, `MergeOrigins`) on every call. `PoliciesFor` now returns `PolicyView`,
+which exposes only what endpoint plugins read (the IR, whether IR construction failed, the ref
+string, the generation) and keeps the rest out of reach, so no defensive copy is needed; see
+[Endpoints](#endpoints).
 
-**Deep-cloning in `PoliciesFor`.** The editor deep-copies attachment metadata (`PolicyRef`,
-`Errors`, `MergeOrigins`) on every call, on a path that runs per client per backend, for
-consumers that only read. A documented read-only contract, or a view type, would avoid the
-allocation.
+**Unsupported and renamed backends are errored, never dropped.** `TranslateBackendBase`
+returns the named blackhole base with `Error` set for a group/kind with no contributed translator
+or a translator with no `InitEnvoyBackend`, and the base transform records a cluster that
+translation renamed as an errored base under the name consumers expect. An earlier revision
+returned `nil` in both cases and dropped the row, which left the backend out of CDS *and* out of
+the errored set: its CLA stayed in EDS unfiltered, so go-control-plane's superset check could
+withhold the client's whole EDS response, and no Backend status was written. Reachability is
+unchanged for in-tree plugins, all of which set
+`InitEnvoyBackend`; an out-of-tree plugin registering a backend kind without one now surfaces as
+a status condition instead of a silent hole.
 
-## Review split: measurement scope
+**Withheld snapshots are observable.** `snapshotPerClient` returns `nil` while a client's
+per-client clusters or endpoints have not landed, keeping Envoy's last snapshot; the log line for
+that is Debug because it fires once per client on every startup. The
+`kgateway_xds_snapshot_deferred_clients{gateway,namespace}` gauge counts the clients currently in
+that state, derived from collection state so a client that never received a first snapshot is
+counted too. A value that rises and falls with connects is the convergence window the
+first-connect delay hides; one that stays nonzero is a client being starved of config.
 
-This document records the combined development branch, including validation
-memoization. The review stack rooted at #14600 contains the shared-proto helper,
-client collection rewrite, inline-CLA sharing, and DestinationRule applicability.
-Validation memoization is on the independent
-`chandler/my-split-out-14668-for-easy-review` branch and can land before this stack.
-The strict-mode benchmarks on this stack deliberately retain their uncached
-validator until that change is integrated; the memoized strict-mode numbers above
-are historical measurements of the combined branch, not this split revision.
-All measurements should be reproduced on the exact revision being evaluated.
+## Measurement scope
+
+The measurements in this document were taken on the combined development branch, which is what
+the stack rooted at #14600 now contains end to end, including the strict-validation memo
+(#14695). Numbers quoted here are for the revision they were measured on; the strict-mode
+column in particular depends on the memo being present. Any number used to argue for or against
+a change should be reproduced on the exact revision being evaluated, with the `sharedproto`
+tripwire disarmed as it is in production.
