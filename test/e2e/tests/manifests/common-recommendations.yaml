@@ -21,6 +21,12 @@ controller:
   extraEnv:
     KGW_WEIGHTED_ROUTE_PRECEDENCE: "true" # enable weighted route precedence by default in tests
     KGW_ENABLE_AUTH_METADATA: "true" # enable the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
+    # Test-only: Verify go-control-plane's Snapshot.Consistent() invariant on every per-client
+    # xDS publish. Violations are recorded in
+    # kgateway_xds_snapshot_perclient_inconsistent_snapshots_total (the snapshot is
+    # still published). The publication paths maintain the invariant by
+    # construction, so any increment during a test run is a kgateway bug.
+    KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK: "true"
     # TODO enable other values
   # deployment:
   #   livenessProbeEnabled: true
