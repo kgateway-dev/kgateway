@@ -47,6 +47,13 @@ type BackendTranslator struct {
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
 	Mode                apisettings.ValidationMode
+	// ValidationMemo memoizes strict-mode verdicts by cluster content. Per-client
+	// translation validates each overlaid cluster once per connected client on
+	// every walk over the backends, and nearly all of those clusters are
+	// byte-identical to the last walk; the memo answers those from a content
+	// hash of the cluster alone, without building a bootstrap or reaching the
+	// validator's own cache. Optional: nil validates every time.
+	ValidationMemo *validator.Memo
 
 	// overlayPlugins is the (Group, Kind)-ordered subset of ContributedPolicies
 	// that contributes a per-client cluster hook, computed once on first use.
@@ -500,17 +507,43 @@ func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {
 // validateClusterConfig validates an individual cluster configuration using Envoy's
 // validation. This catches configuration errors that would cause Envoy data plane NACKs,
 // such as invalid cipher suites, invalid TLS parameters, etc.
+//
+// The verdict is memoized by the cluster's content (see ValidationMemo), so a
+// cluster validated for one client is not re-validated for the next unless its
+// bytes differ. The bootstrap is only built on a memo miss.
+//
+// The memo key is the cluster's bytes alone, so it is sound only while the
+// bootstrap built here is a pure function of the cluster: bootstrap.New() takes
+// no settings and Build reads nothing but what was added. If that ever changes,
+// whatever else the bootstrap reads must be folded into the key, or equal
+// clusters under different bootstraps would share a verdict.
+// TestValidationMemoKeyCoversEverythingTheBootstrapReads pins the current shape.
+//
+// Runs inline in the caller's KRT transform. For the per-client walk that is
+// the collection's single queue, so a memo miss that reaches a slow or hung
+// validator stalls CDS assembly for every client, not just the one being
+// validated. The memo makes that rare; the validator's own timeout bounds it.
 func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *envoyclusterv3.Cluster) error {
-	builder := bootstrap.New()
-	builder.AddCluster(cluster)
-	bootstrap, err := builder.Build()
+	ctx = validator.WithValidationCaller(ctx, validator.CallerBackend)
+	run := func(ctx context.Context) error {
+		builder := bootstrap.New()
+		builder.AddCluster(cluster)
+		bootstrap, err := builder.Build()
+		if err != nil {
+			return err
+		}
+		return t.Validator.Validate(ctx, bootstrap)
+	}
+	if t.ValidationMemo == nil {
+		return run(ctx)
+	}
+	key, err := validator.ContentKeyOf(cluster)
 	if err != nil {
-		return err
+		// A cluster that cannot be marshalled cannot be keyed; validate it
+		// directly and let the validator report whatever is wrong with it.
+		return run(ctx)
 	}
-	if err := t.Validator.Validate(validator.WithValidationCaller(ctx, validator.CallerBackend), bootstrap); err != nil {
-		return err
-	}
-	return nil
+	return t.ValidationMemo.Validate(ctx, key, run)
 }
 
 var inlineCLAClusterTypes = sets.New(

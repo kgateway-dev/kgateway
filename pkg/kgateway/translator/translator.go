@@ -81,6 +81,13 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 		CommonCols:          s.commonCols,
 		Validator:           s.validator,
 		Mode:                s.commonCols.Settings.ValidationMode,
+		// The memo sits in front of the validator in every ValidatorMode. The
+		// mode selects how a bootstrap the validator has not seen is executed;
+		// the memo decides, by cluster content, whether a bootstrap is built at
+		// all. Per-client strict validation validates every client's overlaid
+		// cluster on every walk, so without it BINARY would fork envoy once per
+		// client per backend per walk. See Settings.ValidatorMode.
+		ValidationMemo: validator.NewMemo(s.commonCols.Settings.ValidatorCacheSize),
 	}
 	for k, up := range s.extensions.ContributesBackends {
 		s.backendTranslator.ContributedBackends[k] = up.BackendInit
