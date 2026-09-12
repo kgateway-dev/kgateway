@@ -143,8 +143,7 @@ func (b *BaseCluster) NeedsInlineCLA() bool {
 // CDS, filters its ClusterLoadAssignment out of EDS, and reports the error on
 // the Backend. Returning nil here used to drop the backend from every one of
 // those paths at once: no cluster, no errored record, no status, and a CLA
-// left in EDS with no cluster to claim it (formal research finding RF-024,
-// devel/formal/research-findings.md on the chandler/kxdsformalmethods branch).
+// left in EDS with no cluster to claim it.
 func (t *BackendTranslator) TranslateBackendBase(
 	ctx context.Context,
 	backend *ir.BackendObjectIR,

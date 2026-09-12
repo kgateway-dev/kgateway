@@ -401,8 +401,7 @@ func TestApplyPerClient_LegacyEndpointPluginDeepCopiesNestedInputs(t *testing.T)
 // InitEnvoyBackend, yields the named blackhole base with Error set, exactly
 // like every other translation failure. The consumer then records it as
 // errored, which excludes the cluster from CDS, filters its CLA from EDS, and
-// reports status. A nil base used to drop the backend from all three at once
-// (research finding RF-024).
+// reports status. A nil base used to drop the backend from all three at once.
 func TestTranslateBackendBase_ErroredBlackholeForUnsupportedBackendKinds(t *testing.T) {
 	noInitGK := schema.GroupKind{Group: "example.test", Kind: "NoInitBackend"}
 	bt := &irtranslator.BackendTranslator{
@@ -428,7 +427,7 @@ func TestTranslateBackendBase_ErroredBlackholeForUnsupportedBackendKinds(t *test
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			base := bt.TranslateBackendBase(context.Background(), tc.backend)
-			require.NotNil(t, base, "an unsupported backend must yield an errored base, not nil (RF-024)")
+			require.NotNil(t, base, "an unsupported backend must yield an errored base, not nil")
 			require.EqualError(t, base.Error, tc.wantErr)
 			require.NotNil(t, base.Cluster)
 			assert.Equal(t, tc.backend.ClusterName(), base.Cluster.GetName(), "the blackhole carries the name consumers key on")
