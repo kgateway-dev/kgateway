@@ -1002,6 +1002,11 @@ func (in *CommonHttpProtocolOptions) DeepCopyInto(out *CommonHttpProtocolOptions
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.MaxConnectionDuration != nil {
+		in, out := &in.MaxConnectionDuration, &out.MaxConnectionDuration
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.MaxHeadersCount != nil {
 		in, out := &in.MaxHeadersCount, &out.MaxHeadersCount
 		*out = new(int32)
@@ -2614,6 +2619,11 @@ func (in *HTTPSettings) DeepCopyInto(out *HTTPSettings) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.MaxConnectionDuration != nil {
+		in, out := &in.MaxConnectionDuration, &out.MaxConnectionDuration
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.MaxRequestsPerConnection != nil {
 		in, out := &in.MaxRequestsPerConnection, &out.MaxRequestsPerConnection
 		*out = new(int32)
@@ -3316,6 +3326,11 @@ func (in *JWTProvider) DeepCopyInto(out *JWTProvider) {
 	if in.ForwardToken != nil {
 		in, out := &in.ForwardToken, &out.ForwardToken
 		*out = new(bool)
+		**out = **in
+	}
+	if in.ClockSkew != nil {
+		in, out := &in.ClockSkew, &out.ClockSkew
+		*out = new(v1.Duration)
 		**out = **in
 	}
 }

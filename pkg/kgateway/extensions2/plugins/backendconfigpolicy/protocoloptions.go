@@ -22,6 +22,9 @@ func translateCommonHttpProtocolOptions(commonHttpProtocolOptions *kgateway.Comm
 	if commonHttpProtocolOptions.IdleTimeout != nil {
 		out.IdleTimeout = durationpb.New(commonHttpProtocolOptions.IdleTimeout.Duration)
 	}
+	if commonHttpProtocolOptions.MaxConnectionDuration != nil {
+		out.MaxConnectionDuration = durationpb.New(commonHttpProtocolOptions.MaxConnectionDuration.Duration)
+	}
 
 	if commonHttpProtocolOptions.MaxHeadersCount != nil {
 		out.MaxHeadersCount = &wrapperspb.UInt32Value{Value: uint32(*commonHttpProtocolOptions.MaxHeadersCount)} //nolint:gosec // G115: kubebuilder validation ensures 0 <= value <= 4294967295, safe for uint32

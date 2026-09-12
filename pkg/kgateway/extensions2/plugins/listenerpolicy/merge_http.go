@@ -38,6 +38,7 @@ func MergeHttpPolicies(
 		mergeServerNameTransformation,
 		mergeStreamIdleTimeout,
 		mergeIdleTimeout,
+		mergeMaxConnectionDuration,
 		mergeHttp2ProtocolOptions,
 		mergeHealthCheckPolicy,
 		mergeGrpcStats,
@@ -385,6 +386,22 @@ func mergeIdleTimeout(
 
 	p1.idleTimeout = p2.idleTimeout
 	mergeOrigins.SetOne(origin+"mergeIdleTimeout", p2Ref, p2MergeOrigins)
+}
+
+func mergeMaxConnectionDuration(
+	origin string,
+	p1, p2 *HttpListenerPolicyIr,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.maxConnectionDuration, p2.maxConnectionDuration, opts) {
+		return
+	}
+
+	p1.maxConnectionDuration = p2.maxConnectionDuration
+	mergeOrigins.SetOne(origin+"maxConnectionDuration", p2Ref, p2MergeOrigins)
 }
 
 func mergeHttp2ProtocolOptions(

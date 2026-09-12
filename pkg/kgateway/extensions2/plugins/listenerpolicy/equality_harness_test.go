@@ -40,6 +40,7 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		serverHeaderTransformation: new(envoy_hcm.HttpConnectionManager_OVERWRITE),
 		streamIdleTimeout:          new(5 * time.Second),
 		idleTimeout:                new(30 * time.Second),
+		maxConnectionDuration:      new(10 * time.Minute),
 		http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
 			MaxConcurrentStreams: wrapperspb.UInt32(100),
 		},
@@ -117,6 +118,12 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "idleTimeout",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).idleTimeout = new(60 * time.Second) },
+		},
+		{
+			Field: "maxConnectionDuration",
+			Mutate: func(d **HttpListenerPolicyIr) {
+				(*d).maxConnectionDuration = new(20 * time.Minute)
+			},
 		},
 		{
 			Field: "http2ProtocolOptions",

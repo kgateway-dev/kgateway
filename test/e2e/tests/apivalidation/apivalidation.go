@@ -905,6 +905,123 @@ spec:
 			wantErrors: []string{"filterStage.weight has no effect for buffer and must be 0"},
 		},
 		{
+			name: "GatewayExtension: jwt provider accepts a whole-second clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-valid
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 1h30m
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+		},
+		{
+			name: "GatewayExtension: jwt provider rejects a sub-second clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-subsecond
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 500ms
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+			wantErrors: []string{
+				"only whole seconds are supported",
+			},
+		},
+		{
+			name: "GatewayExtension: jwt provider rejects a zero clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-zero
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 0s
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+			wantErrors: []string{
+				"clockSkew must be at least 1s",
+			},
+		},
+		{
+			name: "GatewayExtension: jwt provider rejects an out-of-range clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-too-large
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 87601h
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+			wantErrors: []string{
+				"clockSkew must not exceed 87600h",
+			},
+		},
+		{
 			name: "ProxyDeployment: Strategy is fully fleshed out",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
