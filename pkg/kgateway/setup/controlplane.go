@@ -313,6 +313,7 @@ func NewControlPlane(
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
 	orderedADS bool,
+	suppressNackResend bool,
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
 	lnc := newLogNackCallback(xdsAuth)
@@ -325,7 +326,15 @@ func NewControlPlane(
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher) //nolint:contextcheck
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 
-	snapshotCache := newSnapshotCache(xds.NewNodeRoleHasher(), envoyLoggerAdapter)
+	hasher := xds.NewNodeRoleHasher()
+	var snapshotCache envoycache.SnapshotCache = newSnapshotCache(hasher, envoyLoggerAdapter)
+	if suppressNackResend {
+		// See nackResendSuppressor: a NACK of the current snapshot version parks
+		// the watch instead of re-sending the rejected response.
+		suppressor := newNackResendSuppressor(snapshotCache, hasher)
+		allCallbacks = chainCallbacks(allCallbacks, suppressor.callbacks())
+		snapshotCache = suppressor
+	}
 
 	var xdsOpts []serverconfig.XDSOption
 	if orderedADS {
