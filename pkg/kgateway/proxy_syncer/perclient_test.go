@@ -1152,6 +1152,12 @@ func TestSnapshotPerClientEndpointOnlyUpdateOnlyChangesEDSVersion(t *testing.T) 
 	initialListenerVersion := initialSnap.Resources[envoycachetypes.Listener].Version
 
 	endpointCol.UpdateObject(endpointsForClient(ucc, "cluster-a", 99))
+	g.Consistently(func() string {
+		return eventuallyCurrentSnapshot(snapshots).Resources[envoycachetypes.Endpoint].Version
+	}, 200*time.Millisecond, 10*time.Millisecond).Should(gomega.Equal(initialEndpointVersion),
+		"input-only changes must not move the published EDS version")
+	changed := emptyEndpointsForClient(ucc, "cluster-a", 100)
+	endpointCol.UpdateObject(changed)
 
 	var updatedSnap *envoycache.Snapshot
 	g.Eventually(func() bool {
@@ -1888,17 +1894,18 @@ func endpointsForClient(ucc ir.UniquelyConnectedClient, name string, hash uint64
 		Client:        ucc,
 		Endpoints:     sharedproto.Wrap(cla),
 		EndpointsHash: hash,
+		ContentHash:   contentHashOf(cla),
 		endpointsName: name,
 	}
 }
 
 func emptyEndpointsForClient(ucc ir.UniquelyConnectedClient, name string, hash uint64) UccWithEndpoints {
+	cla := &envoyendpointv3.ClusterLoadAssignment{ClusterName: name}
 	return UccWithEndpoints{
-		Client: ucc,
-		Endpoints: sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{
-			ClusterName: name,
-		}),
+		Client:        ucc,
+		Endpoints:     sharedproto.Wrap(cla),
 		EndpointsHash: hash,
+		ContentHash:   contentHashOf(cla),
 		endpointsName: name,
 	}
 }
@@ -2053,4 +2060,62 @@ func assertSnapshotCoherent(t *testing.T, snap *envoycache.Snapshot) {
 			t.Fatalf("route/listener references cluster %q absent from CDS", name)
 		}
 	}
+}
+
+// TestEndpointSetVersionFollowsContentNotInputs pins the property the EDS
+// version is built for: two rows whose inputs differ (different EndpointsHash,
+// as after a backend policy generation bump or an upgrade that changes the
+// input hash function) but whose assignments are byte-identical publish under
+// the same version, so nothing is pushed; a content change moves it; and the
+// fold does not depend on order.
+func TestEndpointSetVersionFollowsContentNotInputs(t *testing.T) {
+	g := gomega.NewWithT(t)
+	a := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "a", Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{}}}
+	b := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "b"}
+
+	same := map[string]uint64{"a": contentHashOf(a), "b": contentHashOf(b)}
+	g.Expect(endpointSetVersion(same, nil, nil)).To(gomega.Equal(endpointSetVersion(map[string]uint64{"b": contentHashOf(b), "a": contentHashOf(a)}, nil, nil)),
+		"the fold must not depend on map order")
+
+	changed := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "a", Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{}, {}}}
+	g.Expect(endpointSetVersion(map[string]uint64{"a": contentHashOf(changed), "b": contentHashOf(b)}, nil, nil)).ToNot(gomega.Equal(endpointSetVersion(same, nil, nil)),
+		"a content change must move the version")
+
+	// Equal per-assignment digests under different names must not cancel.
+	g.Expect(endpointSetVersion(map[string]uint64{"x": 7, "y": 7}, nil, nil)).ToNot(gomega.Equal(endpointSetVersion(map[string]uint64{}, nil, nil)),
+		"two equal digests must not fold to the empty set's version")
+
+	// Rows with different input hashes and equal content compare equal on
+	// content and version, and different on inputs; KRT sees the input change
+	// (the row is recomputed) but the published version does not move.
+	row1 := UccWithEndpoints{Endpoints: sharedproto.Wrap(a), EndpointsHash: 1, ContentHash: contentHashOf(a), endpointsName: "a"}
+	row2 := UccWithEndpoints{Endpoints: sharedproto.Wrap(a), EndpointsHash: 2, ContentHash: contentHashOf(a), endpointsName: "a"}
+	g.Expect(row1.Equals(row2)).To(gomega.BeFalse(), "an input change is still a row change")
+	g.Expect(endpointSetVersion(map[string]uint64{"a": row1.ContentHash}, nil, nil)).To(gomega.Equal(endpointSetVersion(map[string]uint64{"a": row2.ContentHash}, nil, nil)),
+		"the published EDS version must not move when only inputs changed")
+
+	// The reverse: equal inputs (a colliding or stale input hash) with
+	// different content is a row change, because ContentHash is compared too.
+	row3 := UccWithEndpoints{Endpoints: sharedproto.Wrap(changed), EndpointsHash: 1, ContentHash: contentHashOf(changed), endpointsName: "a"}
+	g.Expect(row1.Equals(row3)).To(gomega.BeFalse(), "a content change behind an equal input hash must be a row change")
+}
+
+// TestEndpointSetVersionFollowsClusterVersion pins the other half of the EDS
+// version: a change to the cluster an assignment belongs to moves the EDS
+// version even when the assignment is byte-identical, because Envoy rebuilds
+// the cluster and asks for its endpoints again at the version it last
+// accepted, and the cache answers only a different version. A cluster that
+// has no assignment in the set does not affect it.
+func TestEndpointSetVersionFollowsClusterVersion(t *testing.T) {
+	g := gomega.NewWithT(t)
+	a := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "a"}
+	content := map[string]uint64{"a": contentHashOf(a)}
+
+	before := endpointSetVersion(content, nil, map[string]uint64{"a": 1, "unrelated": 5})
+	g.Expect(endpointSetVersion(content, nil, map[string]uint64{"a": 1, "unrelated": 6})).To(gomega.Equal(before),
+		"a cluster without an assignment in the set must not move the EDS version")
+	g.Expect(endpointSetVersion(content, nil, map[string]uint64{"a": 2, "unrelated": 5})).ToNot(gomega.Equal(before),
+		"a change to the assignment's own cluster must move the EDS version so the rebuilt cluster is answered")
+	g.Expect(endpointSetVersion(content, nil, nil)).ToNot(gomega.Equal(before),
+		"absent cluster digests are a distinct state from digest 1")
 }

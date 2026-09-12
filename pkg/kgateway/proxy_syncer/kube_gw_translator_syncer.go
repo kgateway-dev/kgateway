@@ -233,9 +233,11 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			Items:   clusterItems,
 		}
 		composed.Resources[envoycachetypes.Endpoint] = envoycache.Resources{
-			Version: fmt.Sprintf("%s-carry-%d", newEndpoints.Version, carryHash),
-			Items:   endpointItems,
+			Items: endpointItems,
 		}
+		composed.Resources[envoycachetypes.Endpoint] = versionEndpointResources(
+			composed.Resources[envoycachetypes.Endpoint], nil,
+			endpointClusterDigests(composed.Resources[envoycachetypes.Cluster], nil))
 		logger.Info("carried forward previously-published clusters",
 			"proxy_key", snapWrap.proxyKey,
 			"carried", carried,
