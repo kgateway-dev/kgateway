@@ -941,6 +941,35 @@ spec:
                           maxItems: 32
                           minItems: 1
                           type: array
+                        cache:
+                          description: |-
+                            Cache enables an in-memory cache of successfully verified tokens, so that a token
+                            presented more than once does not pay for a repeated parse, JWKS lookup, and
+                            signature verification.
+                            Setting this field, even to an empty object, turns the cache on; leaving it unset
+                            leaves it off.
+                            Caching does not extend a token's validity: only verified tokens are cached, and
+                            every cache hit is re-checked against the token's time constraints and evicted if
+                            it has expired.
+                            The cache is per Envoy worker thread, so the effective number of cached tokens for
+                            the whole proxy is Size multiplied by the worker thread count.
+                          properties:
+                            maxTokenSize:
+                              description: |-
+                                MaxTokenSize is the maximum size, in bytes, of a single cached token. Tokens larger
+                                than this are verified as usual but are not cached.
+                                If unspecified, the Envoy default of 4096 is used.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                            size:
+                              description: |-
+                                Size is the number of verified tokens to cache, per Envoy worker thread.
+                                If unspecified, the Envoy default of 100 is used.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                          type: object
                         claimsToHeaders:
                           description: |-
                             ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
