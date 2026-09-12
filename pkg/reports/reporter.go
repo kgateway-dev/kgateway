@@ -27,6 +27,7 @@ type ReportMap struct {
 	GRPCRoutes   map[types.NamespacedName]*RouteReport
 	TCPRoutes    map[types.NamespacedName]*RouteReport
 	TLSRoutes    map[types.NamespacedName]*RouteReport
+	UDPRoutes    map[types.NamespacedName]*RouteReport
 	Policies     map[reporter.PolicyKey]*PolicyReport
 	Backends     map[types.NamespacedName]*BackendReport
 }
@@ -85,6 +86,7 @@ func NewReportMap() ReportMap {
 		GRPCRoutes:   make(map[types.NamespacedName]*RouteReport),
 		TCPRoutes:    make(map[types.NamespacedName]*RouteReport),
 		TLSRoutes:    make(map[types.NamespacedName]*RouteReport),
+		UDPRoutes:    make(map[types.NamespacedName]*RouteReport),
 		Policies:     make(map[reporter.PolicyKey]*PolicyReport),
 		Backends:     make(map[types.NamespacedName]*BackendReport),
 	}
@@ -202,6 +204,8 @@ func (r *ReportMap) route(obj metav1.Object) *RouteReport {
 		return r.TLSRoutes[key]
 	case *gwv1a2.TLSRoute:
 		return r.TLSRoutes[key]
+	case *gwv1.UDPRoute:
+		return r.UDPRoutes[key]
 	case *gwv1.GRPCRoute:
 		return r.GRPCRoutes[key]
 	default:
@@ -228,6 +232,8 @@ func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 		r.TLSRoutes[key] = rr
 	case *gwv1a2.TLSRoute:
 		r.TLSRoutes[key] = rr
+	case *gwv1.UDPRoute:
+		r.UDPRoutes[key] = rr
 	case *gwv1.GRPCRoute:
 		r.GRPCRoutes[key] = rr
 	default:
