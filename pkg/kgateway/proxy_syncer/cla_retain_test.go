@@ -283,3 +283,31 @@ func TestCLARetainerSeedsInternerWithLiveGeneration(t *testing.T) {
 	fresh := empty.Intern(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "shared"}, 7)
 	require.False(t, sharedproto.Same(original, fresh))
 }
+
+// The other order of the same race: the backend is deleted again while its
+// re-add pass is still running, and the delete handler runs before that pass
+// stores its entry. forgetIfAbsent then finds nothing to forget, and a plain
+// keep would leave an entry behind for a backend that will never produce
+// another event. keepIfPresent re-checks after storing, so the entry is
+// dropped whichever side looks last.
+func TestCLARetainerKeepIfPresentDropsEntryStoredAfterDelete(t *testing.T) {
+	r := newCLARetainer()
+	cla := sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "late"})
+	rows := []UccWithEndpoints{{EndpointsHash: 1, Endpoints: cla}}
+
+	// Delete handled first: nothing retained yet, nothing to forget.
+	r.forgetIfAbsent("backend", true)
+	require.Empty(t, r.byBackend)
+
+	// The pass finishes afterwards. Without the re-check this entry would leak.
+	r.keep("backend", rows)
+	require.Len(t, r.byBackend, 1, "plain keep cannot know the backend is gone")
+	r.forget("backend")
+
+	r.keepIfPresent("backend", rows, func() bool { return false })
+	require.Empty(t, r.byBackend, "an entry stored after its backend's delete was handled must not outlive the backend")
+
+	// The common case is unchanged: a present backend keeps its entry.
+	r.keepIfPresent("backend", rows, func() bool { return true })
+	require.Len(t, r.byBackend, 1)
+}
