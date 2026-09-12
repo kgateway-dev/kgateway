@@ -55,3 +55,15 @@ func TestGetSupportedFeaturesForStandardGatewayIncludesStandardTLSRouteWhenExper
 		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRouteModeMixed)
 	}
 }
+
+func TestGetSupportedFeaturesForStandardGatewayIncludesUDPRoute(t *testing.T) {
+	t.Helper()
+
+	// UDPRoute is standard channel as of Gateway API v1.6, so it is advertised on both channels.
+	for _, experimental := range []bool{false, true} {
+		supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(experimental))
+		if _, ok := supportedNames[gwv1.FeatureName(features.SupportUDPRoute)]; !ok {
+			t.Fatalf("expected %q to be supported (experimental=%v)", features.SupportUDPRoute, experimental)
+		}
+	}
+}

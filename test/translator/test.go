@@ -583,6 +583,27 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
+	for nns := range reportsMap.UDPRoutes {
+		r := gwv1.UDPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      nns.Name,
+				Namespace: nns.Namespace,
+			},
+		}
+		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
+
+		for ref, parentRefReport := range status.Parents {
+			for _, c := range parentRefReport.Conditions {
+				// most route conditions true is good, except RouteConditionPartiallyInvalid
+				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
+					return fmt.Errorf("condition error for udproute: %v ref: %v condition: %v", nns, ref, c)
+				} else if c.Status != metav1.ConditionTrue {
+					return fmt.Errorf("condition error for udproute: %v ref: %v condition: %v", nns, ref, c)
+				}
+			}
+		}
+	}
+
 	for nns := range reportsMap.GRPCRoutes {
 		r := gwv1.GRPCRoute{
 			ObjectMeta: metav1.ObjectMeta{

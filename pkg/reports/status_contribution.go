@@ -95,7 +95,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 	contributions := make([]StatusContribution, 0,
 		len(reportMap.Gateways)+listenerSetCount+
 			len(reportMap.HTTPRoutes)+len(reportMap.GRPCRoutes)+
-			len(reportMap.TCPRoutes)+len(reportMap.TLSRoutes)+
+			len(reportMap.TCPRoutes)+len(reportMap.TLSRoutes)+len(reportMap.UDPRoutes)+
 			len(reportMap.Policies)+len(reportMap.Backends),
 	)
 
@@ -134,6 +134,7 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 	appendRoutes(wellknown.GRPCRouteGVK, reportMap.GRPCRoutes)
 	appendRoutes(wellknown.TCPRouteGVK, reportMap.TCPRoutes)
 	appendRoutes(wellknown.TLSRouteGVK, reportMap.TLSRoutes)
+	appendRoutes(wellknown.UDPRouteGVK, reportMap.UDPRoutes)
 
 	for key, report := range reportMap.Policies {
 		if report != nil {

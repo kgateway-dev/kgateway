@@ -54,6 +54,19 @@ func registerTypes() {
 		},
 	)
 	kubeclient.Register(
+		wellknown.UDPRouteGVR,
+		wellknown.UDPRouteGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1().UDPRoutes(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1().UDPRoutes(namespace).Watch(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string) kubetypes.WriteAPI[*gwv1.UDPRoute] {
+			return c.GatewayAPI().GatewayV1().UDPRoutes(namespace)
+		},
+	)
+	kubeclient.Register(
 		wellknown.TLSRouteGVR,
 		wellknown.TLSRouteGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {

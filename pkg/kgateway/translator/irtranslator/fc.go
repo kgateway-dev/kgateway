@@ -3,6 +3,8 @@ package irtranslator
 import (
 	"fmt"
 
+	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
+	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
@@ -10,6 +12,7 @@ import (
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	udpproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -28,6 +31,10 @@ import (
 const (
 	DefaultHttpStatPrefix   = "http"
 	UpstreamCodecFilterName = "envoy.filters.http.upstream_codec"
+	// UDPProxyFilterName is the Envoy registered name for the udp_proxy listener filter.
+	// The go-control-plane wellknown package has no constant for it (unlike TCPProxy), and
+	// the registered name differs from the proto type URL's "udp" path segment.
+	UDPProxyFilterName = "envoy.filters.udp_listener.udp_proxy"
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
@@ -41,7 +48,7 @@ type filterChainTranslator struct {
 	pluginPass TranslationPassPlugins
 }
 
-func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporter.GatewayReporter) (*envoycorev3.Address, error) {
+func computeListenerAddress(bindAddress string, port uint32, protocol envoycorev3.SocketAddress_Protocol, reporter sdkreporter.GatewayReporter) (*envoycorev3.Address, error) {
 	_, isIpv4Address, err := utils.IsIpv4Address(bindAddress)
 	if err != nil {
 		reporter.SetCondition(sdkreporter.GatewayCondition{
@@ -56,7 +63,7 @@ func computeListenerAddress(bindAddress string, port uint32, reporter sdkreporte
 	return &envoycorev3.Address{
 		Address: &envoycorev3.Address_SocketAddress{
 			SocketAddress: &envoycorev3.SocketAddress{
-				Protocol: envoycorev3.SocketAddress_TCP,
+				Protocol: protocol,
 				Address:  bindAddress,
 				PortSpecifier: &envoycorev3.SocketAddress_PortValue{
 					PortValue: port,
@@ -464,6 +471,55 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 	tcpFilter, _ := NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 
 	return append(networkFilters, tcpFilter)
+}
+
+// computeUdpFilters builds the udp_proxy listener filter for a UDPRoute-backed listener.
+// Unlike TCP, Envoy's udp_proxy is a listener filter (not a network filter in a filter chain)
+// and routes to a single cluster. The plain `cluster` route specifier is deprecated, so the
+// non-deprecated `matcher` form is used with a match-all action targeting the backend cluster.
+// udp_proxy has no weighted-cluster equivalent, so multi-backend UDPRoutes are rejected during
+// listener translation and only a single backend reaches here.
+func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3.ListenerFilter {
+	if h.reporter != nil {
+		for _, backend := range l.BackendRefs {
+			reportBackendObjectPolicyStatus(h.reporter, h.listener.PolicyAncestorRef, h.pluginPass, backend.BackendObject)
+		}
+	}
+	if len(l.BackendRefs) == 0 {
+		return nil
+	}
+
+	// Multi-backend routes target a single synthetic cluster whose endpoints are the weighted
+	// union of all backends (udp_proxy has no weighted-cluster support); single-backend routes
+	// target the backend's own cluster directly.
+	target := l.BackendRefs[0].ClusterName
+	if l.AggregateClusterName != "" {
+		target = l.AggregateClusterName
+	}
+	routeAny, _ := utils.MessageToAny(&udpproxyv3.Route{Cluster: target})
+	cfg := &udpproxyv3.UdpProxyConfig{
+		StatPrefix: l.FilterChainName,
+		RouteSpecifier: &udpproxyv3.UdpProxyConfig_Matcher{
+			Matcher: &xdsmatcherv3.Matcher{
+				OnNoMatch: &xdsmatcherv3.Matcher_OnMatch{
+					OnMatch: &xdsmatcherv3.Matcher_OnMatch_Action{
+						Action: &xdscorev3.TypedExtensionConfig{
+							Name:        "route",
+							TypedConfig: routeAny,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	msg, _ := utils.MessageToAny(cfg)
+	return []*envoylistenerv3.ListenerFilter{{
+		Name: UDPProxyFilterName,
+		ConfigType: &envoylistenerv3.ListenerFilter_TypedConfig{
+			TypedConfig: msg,
+		},
+	}}
 }
 
 func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistenerv3.Filter, error) {

@@ -516,6 +516,8 @@ func BuildRouteStatus(
 		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
 	case *gwv1a3.TLSRoute:
 		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
+	case *gwv1.UDPRoute:
+		existingStatus, specParentRefs = route.Status.RouteStatus, route.Spec.ParentRefs
 	default:
 		logger.Error("unsupported route type for status reporting", "route_type", fmt.Sprintf("%T", obj))
 		return nil
