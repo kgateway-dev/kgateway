@@ -47,9 +47,9 @@ func endpointWeight(cla *envoyendpointv3.ClusterLoadAssignment, addr string) (ui
 }
 
 func TestMergeUdpAggregateLoadAssignment_WeightsRespectReplicaCount(t *testing.T) {
-	// Member A: weight 90 across 2 endpoints. Member B: weight 10 across 1 endpoint.
+	// Member A has weight 90 across 2 endpoints, member B weight 10 across 1 endpoint.
 	// Each member's TOTAL weight must stay proportional to its backendRef weight (90:10),
-	// independent of how many endpoints it has.
+	// independent of the member's endpoint count.
 	members := []udpMemberEndpoints{
 		{weight: 90, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(
 			udpTestEndpoint("10.0.0.1"), udpTestEndpoint("10.0.0.2"),
@@ -68,7 +68,9 @@ func TestMergeUdpAggregateLoadAssignment_WeightsRespectReplicaCount(t *testing.T
 	wA2, _ := endpointWeight(cla, "10.0.0.2")
 	wB, _ := endpointWeight(cla, "10.0.1.1")
 
-	// Per-endpoint: A = 90*1000/2 = 45000; B = 10*1000/1 = 10000.
+	// Per-endpoint weights.
+	// A = 90*1000/2 = 45000
+	// B = 10*1000/1 = 10000
 	assert.Equal(t, uint32(45000), wA1)
 	assert.Equal(t, uint32(45000), wA2)
 	assert.Equal(t, uint32(10000), wB)
@@ -95,7 +97,7 @@ func TestMergeUdpAggregateLoadAssignment_SkipsEmptyAndZeroWeight(t *testing.T) {
 }
 
 func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
-	// One member, one endpoint per locality; each locality's weight is that endpoint's weight.
+	// One member, one endpoint per locality, so each locality's weight is that endpoint's weight.
 	members := []udpMemberEndpoints{
 		{weight: 10, efbs: []ir.EndpointsForBackend{{
 			LbEps: ir.LocalityLbMap{
@@ -106,7 +108,7 @@ func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
 	}
 	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 	require.Len(t, cla.GetEndpoints(), 2)
-	// 10*1000/2 = 5000 per endpoint; each locality has one endpoint so locality weight = 5000.
+	// 10*1000/2 = 5000 per endpoint. Each locality has one endpoint, so locality weight = 5000.
 	for _, lle := range cla.GetEndpoints() {
 		require.Len(t, lle.GetLbEndpoints(), 1)
 		assert.Equal(t, uint32(5000), lle.GetLbEndpoints()[0].GetLoadBalancingWeight().GetValue())
@@ -115,8 +117,8 @@ func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
 }
 
 func TestMergeUdpAggregateLoadAssignment_DropWeightBlackhole(t *testing.T) {
-	// Valid backend weight 20 (1 endpoint) + an invalid backend weight 80 (dropWeight). The invalid
-	// share must go to a blackhole endpoint, not be redistributed: valid gets 20%, blackhole 80%.
+	// Valid backend weight 20 (1 endpoint) and an invalid backend weight 80 (dropWeight). The invalid
+	// share must go to a blackhole endpoint, not be redistributed.
 	members := []udpMemberEndpoints{
 		{weight: 20, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
 	}
@@ -127,7 +129,8 @@ func TestMergeUdpAggregateLoadAssignment_DropWeightBlackhole(t *testing.T) {
 	wDrop, ok := endpointWeight(cla, udpBlackholeAddr)
 	require.True(t, ok, "blackhole endpoint present for the invalid backend's weight")
 
-	// valid = 20*1000 = 20000; blackhole = 80*1000 = 80000 -> 20% valid, 80% dropped.
+	// valid = 20*1000 = 20000
+	// blackhole = 80*1000 = 80000
 	assert.Equal(t, uint32(20000), wValid)
 	assert.Equal(t, uint32(80000), wDrop)
 

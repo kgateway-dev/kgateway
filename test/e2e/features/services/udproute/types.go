@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	// ctxTimeout bounds the whole suite; timeout bounds individual assertions.
+	// ctxTimeout bounds the whole suite, timeout bounds individual assertions.
 	ctxTimeout = 5 * time.Minute
 	timeout    = 60 * time.Second
 
@@ -28,7 +28,7 @@ const (
 	singleListener  = "udp"
 	singleAnswerIP  = "10.1.1.1"
 
-	// Weighted multi-backend case: backend A has weight 80, backend B weight 20.
+	// Weighted multi-backend case. Backend A has weight 80, backend B weight 20.
 	multiNs        = "udp-multi"
 	multiGwName    = "udp-multi-gw"
 	multiRouteName = "udp-multi-route"
@@ -36,8 +36,8 @@ const (
 	multiAnswerA   = "10.1.1.1"
 	multiAnswerB   = "10.2.2.2"
 
-	// Invalid-backend case: one valid backend (weight 20) and one nonexistent backend (weight 80);
-	// the 80% share must be dropped, not redistributed to the valid backend.
+	// Invalid-backend case. One valid backend (weight 20) and one nonexistent backend (weight 80).
+	// The 80% share must be dropped, not redistributed to the valid backend.
 	dropNs          = "udp-drop"
 	dropGwName      = "udp-drop-gw"
 	dropRouteName   = "udp-drop-route"

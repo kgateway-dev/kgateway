@@ -19,14 +19,12 @@ import (
 )
 
 // udpWeightScale scales backendRef weights into per-endpoint load-balancing weights. Envoy only
-// needs proportionality, so a fixed scale (with a floor of 1) avoids overflow and gives ~0.1%
-// granularity, which is far finer than any realistic weight split.
+// needs proportionality, so a fixed scale is enough.
 const udpWeightScale uint64 = 1000
 
-// The weight share of invalid backends is sent to a blackhole endpoint on the loopback discard
-// port (nothing listens there, so those datagrams are dropped locally). This implements the
-// Gateway API clause that an invalid backend's weight must drop packets rather than be
-// redistributed to the healthy backends.
+// Invalid weight goes to a blackhole endpoint on the loopback discard port.
+// The Gateway API requires that weight to drop rather than redistribute
+// to the healthy backends.
 const (
 	udpBlackholeAddr = "127.0.0.1"
 	udpBlackholePort = 9
@@ -38,15 +36,13 @@ type udpAggregateMember struct {
 	weight              uint32
 }
 
-// udpAggregate describes the synthetic cluster a multi-backend UDPRoute routes to: a set of
-// weighted member backends whose endpoints are unioned into one weighted endpoint set, plus the
-// combined weight of any invalid backends, which is routed to a blackhole (dropped).
+// udpAggregate describes the synthetic cluster a multi-backend UDPRoute routes to. The struct holds
+// the weighted member backends whose endpoints are unioned, plus the combined weight of any invalid
+// backends.
 type udpAggregate struct {
 	clusterName string
 	members     []udpAggregateMember
-	// dropWeight is the summed weight of backendRefs that did not resolve to a backend. Per the
-	// Gateway API, that share of packets must be dropped rather than redistributed.
-	dropWeight uint32
+	dropWeight  uint32
 }
 
 func (u udpAggregate) ResourceName() string { return u.clusterName }
@@ -58,18 +54,17 @@ func (u udpAggregate) Equals(o udpAggregate) bool {
 }
 
 // newUdpAggregateCollection derives one aggregate descriptor per multi-backend UDPRoute. Invalid
-// backends (no resolved object) contribute no endpoints; their weight is accumulated into
-// dropWeight so it can be sent to a blackhole (dropped), honoring the Extended-support clause that
-// an invalid backend's weight share must drop packets rather than shift to the healthy backends.
+// backends contribute no endpoints, only their weight into dropWeight.
 func newUdpAggregateCollection(
 	krtopts krtutil.KrtOptions,
 	udpRoutes krt.Collection[ir.UdpRouteIR],
 ) krt.Collection[udpAggregate] {
 	return krt.NewCollection(udpRoutes, func(_ krt.HandlerContext, r ir.UdpRouteIR) *udpAggregate {
-		// Must mirror translateUdpFilterChain's decision (>1 backendRef => synthetic cluster): the
-		// listener emits the CDS cluster for exactly these routes, and every CDS cluster needs a
-		// CLA or the client's whole EDS response is withheld (issue #14471). Members may be empty
-		// (all invalid/zero-weight) -> a valid, empty CLA that simply drops traffic.
+		// Must mirror translateUdpFilterChain's rule that more than one backendRef means a
+		// synthetic cluster. The listener emits the CDS cluster for exactly the multi-backend
+		// routes, and every CDS cluster needs a CLA or Envoy withholds the client's whole EDS
+		// response (issue #14471). Members may be empty when all backends are invalid or
+		// zero-weight, a valid empty CLA that drops.
 		if len(r.Backends) <= 1 {
 			return nil
 		}
@@ -97,9 +92,9 @@ func newUdpAggregateCollection(
 }
 
 // NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. The
-// endpoint set is client-independent (the weighted union of the member backends' endpoints), so it
-// is built once per aggregate and emitted for every client that could reference the cluster; this
-// keeps the CLA present whenever the synthetic CDS cluster is (see issue #14471).
+// endpoint set is client-independent, so kgateway builds the CLA once and emits it to every client,
+// keeping the CLA present whenever the synthetic CDS cluster is and avoiding the withheld EDS in
+// issue #14471.
 func NewPerClientUdpAggregateEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -158,12 +153,9 @@ func buildUdpAggregateLoadAssignment(
 }
 
 // mergeUdpAggregateLoadAssignment unions the members' endpoints into one weighted CLA. Each
-// endpoint's load-balancing weight is its member's backendRef weight scaled by udpWeightScale and
-// divided by that member's live endpoint count, so a member's total weight stays proportional to
-// its backendRef weight regardless of replica count. Per-locality weight is the sum of its
-// endpoints' weights, which under the cluster's LocalityWeightedLbConfig telescopes to the intended
-// per-endpoint probability. dropWeight (the combined weight of invalid backends) is added as a
-// single blackhole endpoint so that share of traffic is dropped, not redistributed.
+// endpoint's weight is its member's backendRef weight scaled by udpWeightScale and divided by the
+// member's live endpoint count, so a member's total weight stays proportional to its backendRef
+// weight regardless of replica count. dropWeight is added as a single blackhole endpoint.
 func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndpoints, dropWeight uint32) *envoyendpointv3.ClusterLoadAssignment {
 	byLocality := map[ir.PodLocality][]*envoyendpointv3.LbEndpoint{}
 	var localityOrder []ir.PodLocality
@@ -208,10 +200,6 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		}
 	}
 
-	// Invalid backends resolve to no endpoints; send their combined weight to a blackhole so that
-	// share of traffic is dropped rather than redistributed to the healthy backends. A single
-	// synthetic endpoint carries the whole drop weight, matching how a valid backend's total weight
-	// is (weight * scale).
 	if dropWeight > 0 {
 		bhWeight := uint64(dropWeight) * udpWeightScale
 		if bhWeight == 0 {
@@ -254,8 +242,7 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 	return cla
 }
 
-// blackholeLbEndpoint is a weighted endpoint pointing at the loopback discard port. udp_proxy
-// forwards its share of datagrams there, where nothing listens, so they are dropped.
+// blackholeLbEndpoint returns a weighted endpoint targeting the loopback discard port.
 func blackholeLbEndpoint(weight uint32) *envoyendpointv3.LbEndpoint {
 	return &envoyendpointv3.LbEndpoint{
 		LoadBalancingWeight: wrapperspb.UInt32(weight),

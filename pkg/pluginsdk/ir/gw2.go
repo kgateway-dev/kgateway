@@ -169,7 +169,7 @@ type UdpIR struct {
 
 // UdpAggregateClusterName is the deterministic, route-scoped name of the synthetic
 // cluster used to weight traffic across a multi-backend UDPRoute. The "udpagg" prefix
-// and absence of a port segment keep it from colliding with real backend cluster names
+// and absence of a port segment keep the name from colliding with real backend cluster names
 // (which are "<gvPrefix>_<ns>_<name>[_<extraKey>]_<port>").
 func UdpAggregateClusterName(namespace, name string) string {
 	return "udpagg_" + namespace + "_" + name

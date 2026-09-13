@@ -59,7 +59,7 @@ func TestGetSupportedFeaturesForStandardGatewayIncludesStandardTLSRouteWhenExper
 func TestGetSupportedFeaturesForStandardGatewayIncludesUDPRoute(t *testing.T) {
 	t.Helper()
 
-	// UDPRoute is standard channel as of Gateway API v1.6, so it is advertised on both channels.
+	// UDPRoute is standard channel as of Gateway API v1.6.0, so kgateway advertises UDPRoute on both channels.
 	for _, experimental := range []bool{false, true} {
 		supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(experimental))
 		if _, ok := supportedNames[gwv1.FeatureName(features.SupportUDPRoute)]; !ok {

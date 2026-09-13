@@ -32,8 +32,8 @@ const (
 	DefaultHttpStatPrefix   = "http"
 	UpstreamCodecFilterName = "envoy.filters.http.upstream_codec"
 	// UDPProxyFilterName is the Envoy registered name for the udp_proxy listener filter.
-	// The go-control-plane wellknown package has no constant for it (unlike TCPProxy), and
-	// the registered name differs from the proto type URL's "udp" path segment.
+	// The go-control-plane wellknown package has no constant for this filter (unlike TCPProxy),
+	// and the registered name differs from the proto type URL's "udp" path segment.
 	UDPProxyFilterName = "envoy.filters.udp_listener.udp_proxy"
 )
 
@@ -490,8 +490,8 @@ func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3
 	}
 
 	// Multi-backend routes target a single synthetic cluster whose endpoints are the weighted
-	// union of all backends (udp_proxy has no weighted-cluster support); single-backend routes
-	// target the backend's own cluster directly.
+	// union of all backends, since udp_proxy has no weighted-cluster support. Single-backend
+	// routes target the backend's own cluster directly.
 	target := l.BackendRefs[0].ClusterName
 	if l.AggregateClusterName != "" {
 		target = l.AggregateClusterName

@@ -281,7 +281,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	)
 
 	// Weighted multi-backend UDPRoutes route to a synthetic cluster whose CLA is the weighted
-	// union of their backends' endpoints; build it as an extra per-client endpoint collection.
+	// union of their backends' endpoints, built as an extra per-client endpoint collection.
 	extraEndpoints := []PerClientEnvoyEndpoints{localClusterEpPerClient}
 	if s.commonCols.ResolvedUDPRoutes != nil {
 		udpAggregates := newUdpAggregateCollection(krtopts, s.commonCols.ResolvedUDPRoutes)

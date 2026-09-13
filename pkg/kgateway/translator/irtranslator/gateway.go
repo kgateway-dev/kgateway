@@ -49,14 +49,14 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
-	// Synthetic clusters that a multi-backend UDPRoute's udp_proxy routes to; deduped by name
+	// Synthetic clusters that a multi-backend UDPRoute's udp_proxy routes to, deduped by name
 	// since a route could attach to more than one listener.
 	udpAggregateClusters := map[string]struct{}{}
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
-		// Envoy rejects listeners with no filter chains; skip adding such listeners. UDP
-		// listeners are the exception: they carry a udp_proxy listener filter instead of a
-		// filter chain, so keep a listener that has a UDP filter chain in the IR.
+		// Envoy rejects listeners with no filter chains, so the translator skips those. A UDP
+		// listener is the exception, carrying a udp_proxy listener filter instead of a filter
+		// chain, so a UDP filter chain is enough to keep the listener in the IR.
 		if outListener == nil || (len(outListener.GetFilterChains()) == 0 && len(l.UdpFilterChain) == 0) {
 			originalListenerName := findOriginalListenerName(gw, l)
 			logger.Warn("invalid listener due to no filter chains generated", "listener", originalListenerName)
@@ -215,9 +215,9 @@ func (t *Translator) ComputeListener(
 		}
 	}
 
-	// UDP listeners carry a udp_proxy listener filter instead of network filter chains, the UDP
-	// socket address is what makes it a UDP listener, so no udp_listener_config is needed. A
-	// single UDPRoute is honored per listener, so there is at most one chain.
+	// A UDP listener carries a udp_proxy listener filter instead of network filter chains. The UDP
+	// socket address marks the listener as UDP, so no udp_listener_config is needed. kgateway
+	// honors a single UDPRoute per listener, so a UDP listener has at most one chain.
 	for _, ufc := range lis.UdpFilterChain {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), fct.computeUdpFilters(ufc)...)
 	}

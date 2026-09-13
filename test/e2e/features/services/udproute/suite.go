@@ -19,8 +19,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// testingSuite exercises UDPRoute end to end: a Gateway UDP listener routing to CoreDNS
-// backends, verified by exec-ing dig from an in-cluster dnsutils pod against the gateway.
+// testingSuite exercises UDPRoute end to end. A Gateway UDP listener routes to CoreDNS
+// backends, verified by exec-ing dig from an in-cluster client pod against the gateway.
 type testingSuite struct {
 	*base.BaseTestingSuite
 	cancel context.CancelFunc
@@ -36,7 +36,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// SetupSuite registers the context cancel before delegating, mirroring the TCPRoute suite: the
+// SetupSuite registers the context cancel before delegating, mirroring the TCPRoute suite. The
 // base SetupSuite may skip the whole suite on an older Gateway API, and testify only defers
 // TearDownSuite after SetupSuite returns, so a skip would otherwise leak the timeout context.
 func (s *testingSuite) SetupSuite() {
@@ -111,7 +111,7 @@ func (s *testingSuite) TestWeightedBackendsUDPRoute() {
 
 // TestInvalidBackendDropUDPRoute routes a UDPRoute to one valid backend (weight 20) and one
 // nonexistent backend (weight 80), and asserts the invalid backend's share is dropped rather than
-// redistributed: the valid backend answers a minority of queries and most queries are dropped.
+// redistributed. The valid backend answers a minority of queries and most queries are dropped.
 func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
 	testutils.Cleanup(s.T(), func() {
 		s.deleteManifests(invalidBackendManifest)
@@ -144,7 +144,7 @@ func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
 }
 
 // dig runs a single `dig +short` A-record query for queryName through the gateway's UDP listener
-// and returns stdout (the answer IPs, one per line; empty on failure).
+// and returns stdout, the answer IPs one per line, or empty on failure.
 func (s *testingSuite) dig(ns, gwName string) string {
 	gwAddr := kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: gwName, Namespace: ns})
 	stdout, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx,
