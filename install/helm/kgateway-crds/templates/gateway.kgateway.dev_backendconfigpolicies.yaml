@@ -83,9 +83,52 @@ spec:
                     description: |-
                       MaxRetries is the maximum number of parallel retries that are allowed
                       to the upstream cluster. If not specified, defaults to 3.
+
+                      Mutually exclusive with RetryBudget: Envoy's retry budget, when configured, silently
+                      overrides this absolute-count circuit breaker, so this API requires picking one.
+                      RetryBudget is the recommended option for most use cases, since it scales the retry
+                      limit with current load rather than fixing it at a static number.
                     format: int32
                     minimum: 0
                     type: integer
+                  retryBudget:
+                    description: |-
+                      RetryBudget is the recommended alternative to MaxRetries for limiting concurrent retries. It
+                      limits retries as a percentage of active + pending requests rather than an absolute count.
+                    properties:
+                      budgetInterval:
+                        description: |-
+                          BudgetInterval is the duration over which requests are considered when calculating the
+                          retry budget. This alters the way the retry budget is calculated: by default, when
+                          BudgetInterval is unset (or 0ms), only presently active and pending requests are
+                          considered. When a non-zero BudgetInterval is specified, requests are considered for the
+                          duration of BudgetInterval when calculating the retry budget, regardless of whether they
+                          have completed.
+                          If not specified, defaults to 0ms.
+                        maxLength: 32
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                      budgetPercent:
+                        description: |-
+                          BudgetPercent is the limit on concurrent retries as a percentage of the sum of active
+                          requests and active pending requests. For example, if there are 100 active requests and
+                          BudgetPercent is set to 25, up to 25 retries may be active concurrently.
+                          If not specified, defaults to 20 (20%).
+                        format: int32
+                        maximum: 100
+                        minimum: 0
+                        type: integer
+                      minRetryConcurrency:
+                        description: |-
+                          MinRetryConcurrency is a floor on the number of concurrent retries allowed by the budget.
+                          The limit on active retries will never go below this number, regardless of BudgetPercent.
+                          If not specified, defaults to 3.
+                        format: int32
+                        minimum: 0
+                        type: integer
+                    type: object
                   trackRemaining:
                     description: |-
                       TrackRemaining controls whether Envoy tracks the remaining resource
@@ -93,12 +136,19 @@ spec:
                       remaining_cx, remaining_pending, remaining_rq, and remaining_retries
                       statistics are populated. Enabling this has a performance cost.
                       If not specified, defaults to false.
+
+                      Note that if RetryBudget is set instead of MaxRetries, the remaining_retries gauge is
+                      not tracked even when this is enabled.
                     type: boolean
                 type: object
                 x-kubernetes-validations:
+                - message: at most one of the fields in [maxRetries retryBudget] may
+                    be set
+                  rule: '[has(self.maxRetries),has(self.retryBudget)].filter(x,x==true).size()
+                    <= 1'
                 - message: at least one of the fields in [maxConnections maxPendingRequests
-                    maxRequests maxRetries] must be set
-                  rule: '[has(self.maxConnections),has(self.maxPendingRequests),has(self.maxRequests),has(self.maxRetries)].filter(x,x==true).size()
+                    maxRequests maxRetries retryBudget] must be set
+                  rule: '[has(self.maxConnections),has(self.maxPendingRequests),has(self.maxRequests),has(self.maxRetries),has(self.retryBudget)].filter(x,x==true).size()
                     >= 1'
               commonHttpProtocolOptions:
                 description: |-
