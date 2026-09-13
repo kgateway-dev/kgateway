@@ -80,6 +80,7 @@ func benchTranslator(istioOn, heavy bool) *BackendTranslator {
 		// (a "destination rule" is present) and self-gates by returning nil for everyone else, so
 		// the translator can skip the per-client clone entirely for non-matching pairs.
 		t.ContributedPolicies[benchGK] = sdk.PolicyPlugin{
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
 				if ucc.Labels["bench-mutate"] != "yes" {
 					return nil

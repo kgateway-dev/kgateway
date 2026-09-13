@@ -5,16 +5,21 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -66,7 +71,16 @@ func updateBenchBackendIndex(in ir.BackendObjectIR) int {
 	return i
 }
 
-func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validator) *irtranslator.BackendTranslator {
+// benchCounters observe the two stages a backend write can reach: the base
+// re-translation, which every write reaches, and the per-client overlay
+// evaluation, which only a write to a declared input or the translated proto
+// may reach.
+type benchCounters struct {
+	baseRuns     atomic.Int64
+	overlayCalls atomic.Int64
+}
+
+func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validator, counters *benchCounters) *irtranslator.BackendTranslator {
 	mode := apisettings.ValidationMode("")
 	if v != nil {
 		mode = apisettings.ValidationStrict
@@ -75,6 +89,7 @@ func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validato
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
 			{Group: "", Kind: "Service"}: {
 				InitEnvoyBackend: func(_ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					counters.baseRuns.Add(1)
 					// The translated field the backend-update benchmark alternates.
 					out.AltStatName = string(in.AppProtocol)
 					if updateBenchBackendIndex(in)%updateBenchInlineEvery != 0 {
@@ -99,7 +114,11 @@ func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validato
 		},
 		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "bench", Kind: "Rule"}: {
+				// The rule is fetched by the backend's name and nothing else of
+				// the backend is read.
+				OverlayInputsHash: func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.GetName()) },
 				PerClientClusterOverlay: func(kctx krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+					counters.overlayCalls.Add(1)
 					// Cheap client gate first, as the real overlays do.
 					if ucc.Labels["tier"] != "overlay" {
 						return nil
@@ -126,6 +145,7 @@ func updateBenchTranslator(rules krt.Collection[benchRule], v validator.Validato
 }
 
 type updateBenchFixture struct {
+	counters      benchCounters
 	clients       []ir.UniquelyConnectedClient
 	overlayClient []ir.UniquelyConnectedClient
 	finalBackends krt.StaticCollection[*ir.BackendObjectIR]
@@ -164,7 +184,7 @@ func newUpdateBenchFixture(b *testing.B, v validator.Validator) *updateBenchFixt
 	}
 	f.finalBackends = krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
 	f.rules = krt.NewStaticCollection(nil, rules, krtopts.ToOptions("Rules")...)
-	f.clusters = NewPerClientEnvoyClusters(ctx, krtopts, updateBenchTranslator(f.rules, v), f.finalBackends, uccs)
+	f.clusters = NewPerClientEnvoyClusters(ctx, krtopts, updateBenchTranslator(f.rules, v, &f.counters), f.finalBackends, uccs)
 
 	f.waitFor(b, f.clients, func(row *clustersWithErrors) bool {
 		return row != nil && len(row.clusters.Items) == updateBenchBackends
@@ -201,6 +221,19 @@ func (f *updateBenchFixture) waitFor(b *testing.B, clients []ir.UniquelyConnecte
 		time.Sleep(200 * time.Microsecond)
 	}
 	b.Fatal("per-client rows did not converge in time")
+}
+
+// waitBaseRuns polls until the base transform has run at least n times.
+func (f *updateBenchFixture) waitBaseRuns(b *testing.B, n int64) {
+	b.Helper()
+	deadline := time.Now().Add(time.Minute)
+	for time.Now().Before(deadline) {
+		if f.counters.baseRuns.Load() >= n {
+			return
+		}
+		time.Sleep(50 * time.Microsecond)
+	}
+	b.Fatal("the base did not re-translate in time")
 }
 
 // waitChanged polls until every listed client's payload version differs from before.
@@ -240,6 +273,46 @@ func BenchmarkPerClientBackendUpdate(b *testing.B) {
 				before := f.hashes(f.clients)
 				f.finalBackends.UpdateObject(clustersTestBackendWithProtocol(target, fmt.Sprintf("v%d", i)))
 				f.waitChanged(b, f.clients, before)
+			}
+		})
+	}
+}
+
+// annotatedBenchBackend is a bench backend carrying a backing Service whose
+// only content is an annotation no overlay declared, at the given version.
+func annotatedBenchBackend(name string, version int) *ir.BackendObjectIR {
+	b := clustersTestBackendWithProtocol(name, "v0")
+	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "default", Name: name, UID: types.UID("uid-" + name),
+		ResourceVersion: strconv.Itoa(version),
+		Annotations:     map[string]string{"meta.helm.sh/release-name": strconv.Itoa(version)},
+	}}
+	return b
+}
+
+// BenchmarkPerClientBackendAnnotationUpdate writes an annotation no overlay
+// declared to one backend and waits for the base to re-translate it. That is
+// where the write must stop: the translated proto and every declared overlay
+// input are unchanged, so the base row compares equal and no client's walk
+// reruns. The overlay call count is checked after the loop to prove it.
+func BenchmarkPerClientBackendAnnotationUpdate(b *testing.B) {
+	for _, tc := range benchValidators() {
+		b.Run(tc.name, func(b *testing.B) {
+			f := newUpdateBenchFixture(b, tc.v)
+			const target = "b0"
+			walks := f.counters.overlayCalls.Load()
+			b.ResetTimer()
+			i := 0
+			for b.Loop() {
+				i++
+				before := f.counters.baseRuns.Load()
+				f.finalBackends.UpdateObject(annotatedBenchBackend(target, i))
+				f.waitBaseRuns(b, before+1)
+			}
+			b.StopTimer()
+			time.Sleep(50 * time.Millisecond) // let any fan-out that would happen, happen
+			if got := f.counters.overlayCalls.Load(); got != walks {
+				b.Fatalf("an annotation no overlay declared reran client walks: %d overlay calls before, %d after", walks, got)
 			}
 		})
 	}

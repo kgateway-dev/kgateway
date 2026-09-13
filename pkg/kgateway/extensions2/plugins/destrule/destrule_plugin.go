@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -40,18 +41,36 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	}
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
-			gk: {
-				Name:                       "destrule",
-				PerClientClusterOverlay:    d.clusterOverlay,
-				PerClientEditEndpoints:     d.processEndpoints,
-				PerClientEndpointsMayApply: d.endpointsMayApply,
-			},
+			gk: d.policyPlugin(),
 		},
 	}
 }
 
 type destrulePlugin struct {
 	destinationRulesIndex DestinationRuleIndex
+}
+
+// policyPlugin is the registration NewPlugin contributes. Tests check the
+// overlay against the inputs hash registered beside it, so both come from here.
+func (d *destrulePlugin) policyPlugin() sdk.PolicyPlugin {
+	return sdk.PolicyPlugin{
+		Name:                       "destrule",
+		PerClientClusterOverlay:    d.clusterOverlay,
+		OverlayInputsHash:          d.overlayInputsHash,
+		PerClientEditEndpoints:     d.processEndpoints,
+		PerClientEndpointsMayApply: d.endpointsMayApply,
+	}
+}
+
+// overlayInputsHash declares what clusterOverlay reads from the backend: the
+// canonical hostname, which selects the rules, and the port, which selects the
+// port-level traffic policy within the chosen rule. The rules themselves are
+// fetched, so KRT reruns the client when one changes.
+func (d *destrulePlugin) overlayInputsHash(in ir.BackendObjectIR) uint64 {
+	hasher := fnv.New64a()
+	utils.HashStringField(hasher, in.CanonicalHostname)
+	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
+	return hasher.Sum64()
 }
 
 // endpointsMayApply rules a backend out of the per-client endpoint path when no

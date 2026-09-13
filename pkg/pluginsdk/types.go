@@ -62,22 +62,21 @@ type ClusterOverlay struct {
 // PerClientClusterOverlay decides whether a client/backend pair needs a
 // mutation on top of the shared base cluster, and returns it if so.
 //
-// Read only inputs the framework can detect a change in, or the overlay will
-// go stale:
+// The overlay runs inside the client's per-client transform, and its output
+// is recomputed when any of three things change. Each has its own detection:
 //
-//   - anything reached through kctx, which registers a KRT dependency;
-//   - ucc;
-//   - fields of in that BackendObjectIR.EqualsIgnoringResourceVersion compares
-//     — the IR fields, ObjIr, and the backing object's UID, generation, labels
-//     and annotations.
+//   - ucc: the client's payload is rebuilt whenever the client changes;
+//   - anything reached through kctx: the fetch registers a KRT dependency, so
+//     the payload is rebuilt when the fetched value changes;
+//   - fields of in: the framework cannot see which ones an overlay reads, so
+//     the plugin declares them through OverlayInputsHash, and the payload is
+//     rebuilt when that hash changes.
 //
-// Notably absent is spec on a kind that leaves metadata.generation at 0, such
-// as a core Service: the base row holds the backend it was built from, and KRT
-// keeps that row when equality says nothing moved, so a spec field no compared
-// input reflects stays stale until something else changes. An overlay that
-// needs such a field must have its plugin project the field into ObjIr, the
-// way the kubernetes and serviceentry plugins carry resolved addresses for the
-// waypoint overlay.
+// A field of in read here but left out of OverlayInputsHash goes stale: the
+// base row that carries in is kept as long as its hashes compare equal, so the
+// overlay keeps being handed the backend it last saw. The rule is therefore
+// simple: every field of in this function or its Mutate reads appears in the
+// plugin's OverlayInputsHash. pluginsdk/overlaytest checks that mechanically.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -85,16 +84,21 @@ type PerClientClusterOverlay func(
 	in ir.BackendObjectIR,
 ) *ClusterOverlay
 
-// PerClientProcessBackend is the legacy eager cluster mutation hook.
-// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
-// applicable to every client because they cannot report a no-op cheaply.
-type PerClientProcessBackend func(
-	kctx krt.HandlerContext,
-	ctx context.Context,
-	ucc ir.UniquelyConnectedClient,
-	in ir.BackendObjectIR,
-	out *envoyclusterv3.Cluster,
-)
+// OverlayInputsHash declares which fields of a backend the plugin's
+// PerClientClusterOverlay reads, as a hash over their values. The framework
+// folds it into the shared base row's identity: when the translated cluster and
+// every plugin's declared inputs are unchanged, a write to the backend stops at
+// the base re-translation and no client's payload is rebuilt. When a declared
+// input moves, every client re-evaluates the overlay for that backend.
+//
+// Cover every field of the backend the overlay reads, in the overlay itself and
+// in its Mutate: IR fields, and anything read off Obj or ObjIr, spec included.
+// Do not cover inputs fetched through kctx (KRT tracks those) or the client
+// (the payload is per client). Over-declaring costs a walk; under-declaring
+// serves stale configuration, which is why the declaration is required: an
+// overlay registered without one is logged at startup and treated as reading
+// the whole backing object, so every write to it reruns every client.
+type OverlayInputsHash func(backend ir.BackendObjectIR) uint64
 
 // PolicyStatusInputs is provided to a PolicyPlugin's RegisterPolicyStatus hook. The plugin
 // registers its raw collection, keyed report reducer, and just-in-time writer.
@@ -120,9 +124,10 @@ type PolicyPlugin struct {
 	// Backend processing for envoy proxy
 	ProcessBackend          ProcessBackend
 	PerClientClusterOverlay PerClientClusterOverlay
-	// Deprecated: use PerClientClusterOverlay.
-	PerClientProcessBackend PerClientProcessBackend
-	PerClientEditEndpoints  EndpointEditorPlugin
+	// OverlayInputsHash is required alongside PerClientClusterOverlay; see its
+	// type for the contract.
+	OverlayInputsHash      OverlayInputsHash
+	PerClientEditEndpoints EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
 	// PerClientEndpointsMayApply reports whether this plugin's endpoint hook

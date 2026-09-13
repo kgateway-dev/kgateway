@@ -526,6 +526,7 @@ func TestApplyPerClient_StrictModeRejectsInvalidOverlay(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
@@ -597,6 +598,7 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {

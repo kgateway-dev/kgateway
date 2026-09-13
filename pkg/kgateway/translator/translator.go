@@ -37,6 +37,7 @@ type CombinedTranslator struct {
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
 	endpointPlugins   []irtranslator.EndpointPlugin
+	clusterOverlays   []irtranslator.ClusterOverlayPlugin
 
 	logger *slog.Logger
 }
@@ -51,6 +52,7 @@ func NewCombinedTranslator(
 		commonCols:      commonCols,
 		extensions:      extensions,
 		endpointPlugins: irtranslator.OrderedEndpointPlugins(extensions.ContributesPolicies),
+		clusterOverlays: irtranslator.OrderedClusterOverlays(extensions.ContributesPolicies),
 		logger:          logger,
 		validator:       validator,
 		waitForSync:     []cache.InformerSynced{extensions.HasSynced},
@@ -78,6 +80,7 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: s.extensions.ContributesPolicies,
 		EndpointPlugins:     s.endpointPlugins,
+		ClusterOverlays:     s.clusterOverlays,
 		CommonCols:          s.commonCols,
 		Validator:           s.validator,
 		Mode:                s.commonCols.Settings.ValidationMode,

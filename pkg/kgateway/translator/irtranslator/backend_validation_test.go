@@ -103,6 +103,10 @@ func TestStrictValidationDoesNotCacheTransientErrors(t *testing.T) {
 	require.EqualValues(t, 2, counting.calls.Load(), "a transient failure must not be served from cache")
 }
 
+// readsNothing is the OverlayInputsHash of a test overlay that reads no field
+// of the backend.
+func readsNothing(ir.BackendObjectIR) uint64 { return 0 }
+
 // memoTestTranslator is validationTestTranslator plus an overlay that mutates the
 // cluster for every client, identically unless the client carries a "variant"
 // label, so per-client validation runs for every (client, backend) pair and
@@ -112,6 +116,7 @@ func memoTestTranslator(v validator.Validator, memo *validator.Memo) *BackendTra
 	tr.ValidationMemo = memo
 	tr.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
 		{Group: "test", Kind: "Overlay"}: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
 				variant := ucc.Labels["variant"]
 				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {

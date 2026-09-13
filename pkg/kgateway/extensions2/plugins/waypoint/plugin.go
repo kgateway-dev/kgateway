@@ -2,6 +2,8 @@ package waypoint
 
 import (
 	"context"
+	"hash/fnv"
+	"io"
 	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -68,13 +70,42 @@ func NewPlugin(
 			// TODO: Currently endpoints are still being added to an EDS CLA out of this plugin.
 			// Contributing a PerClientProcessEndpoints function can return an empty CLA but
 			// it is still redundant.
-			VirtualWaypointGK: {
-				PerClientClusterOverlay: pcp.clusterOverlay,
-			},
+			VirtualWaypointGK: pcp.policyPlugin(),
 		}
 	}
 
 	return plugin
+}
+
+// policyPlugin is the registration NewPlugin contributes when ingress-use-waypoint
+// is enabled. Tests check the overlay against the inputs hash registered beside
+// it, so both come from here.
+func (t *PerClientProcessor) policyPlugin() sdk.PolicyPlugin {
+	return sdk.PolicyPlugin{
+		Name:                    "waypoint",
+		PerClientClusterOverlay: t.clusterOverlay,
+		OverlayInputsHash:       t.overlayInputsHash,
+	}
+}
+
+// overlayInputsHash declares what clusterOverlay reads from the backend: the
+// ingress-use-waypoint inputs, the object's name and namespace that key the
+// waypoint lookup (the attachment itself is fetched), and what
+// ApplyIngressUseWaypointCluster inlines into the STATIC cluster: the resolved
+// addresses and the port. The addresses are the reason this declaration
+// exists: a core Service's spec.clusterIPs can change (single- to dual-stack)
+// without moving anything else the framework compares.
+func (t *PerClientProcessor) overlayInputsHash(in ir.BackendObjectIR) uint64 {
+	hasher := fnv.New64a()
+	IngressUseWaypointInputsHash(hasher, in)
+	if in.Obj != nil {
+		utils.HashStringField(hasher, in.Obj.GetName())
+	}
+	for _, addr := range waypointquery.BackendAddresses(in) {
+		utils.HashStringField(hasher, addr)
+	}
+	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
+	return hasher.Sum64()
 }
 
 type PerClientProcessor struct {
@@ -272,7 +303,24 @@ func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Se
 	return sortedAddresses
 }
 
+// IngressUseWaypointInputsHash writes into hasher every field of the backend
+// that HasIngressUseWaypointLabel reads: the object's own ingress-use-waypoint
+// label, its namespace, and the namespaces of its aliases. The namespace labels
+// consulted for those are fetched, so KRT tracks them. Every plugin whose
+// overlay calls HasIngressUseWaypointLabel folds this into its
+// OverlayInputsHash, so the declaration cannot drift from the reader.
+func IngressUseWaypointInputsHash(hasher io.Writer, in ir.BackendObjectIR) {
+	if in.Obj != nil {
+		utils.HashStringField(hasher, in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel])
+		utils.HashStringField(hasher, in.Obj.GetNamespace())
+	}
+	for _, alias := range in.Aliases {
+		utils.HashStringField(hasher, alias.GetNamespace())
+	}
+}
+
 // HasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
+// Its inputs are declared by IngressUseWaypointInputsHash; keep the two in step.
 func HasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *collections.CommonCollections, in ir.BackendObjectIR) bool {
 	// Check the backend's own label first
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {

@@ -1,10 +1,8 @@
 package irtranslator
 
 import (
-	"cmp"
 	"context"
 	"errors"
-	"slices"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -43,9 +41,12 @@ type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
 	EndpointPlugins     []EndpointPlugin
-	CommonCols          *collections.CommonCollections
-	Validator           validator.Validator
-	Mode                apisettings.ValidationMode
+	// ClusterOverlays is OrderedClusterOverlays(ContributedPolicies), computed
+	// once by the constructor. Left nil, it is derived on every use.
+	ClusterOverlays []ClusterOverlayPlugin
+	CommonCols      *collections.CommonCollections
+	Validator       validator.Validator
+	Mode            apisettings.ValidationMode
 	// ValidationMemo memoizes strict-mode verdicts by cluster content. Per-client
 	// translation validates each overlaid cluster once per connected client on
 	// every walk over the backends, and nearly all of those clusters are
@@ -208,39 +209,16 @@ func (t *BackendTranslator) ApplyPerClient(
 		return nil, nil //nolint:nilerr // base.Error is reported by the base row, not per client
 	}
 
-	// Gather overlays. Each plugin must self-determine applicability and return
-	// nil in the common case; this keeps the per-client cluster collection sparse.
-	type overlayEntry struct {
-		gk schema.GroupKind
-		ov *sdk.ClusterOverlay
-	}
-	var overlays []overlayEntry
-	for gk, policyPlugin := range t.ContributedPolicies {
-		switch {
-		case policyPlugin.PerClientClusterOverlay != nil:
-			if ov := policyPlugin.PerClientClusterOverlay(kctx, ctx, ucc, *backend); ov != nil {
-				overlays = append(overlays, overlayEntry{gk: gk, ov: ov})
-			}
-		case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-			legacy := policyPlugin.PerClientProcessBackend //nolint:staticcheck // wrapped as an always-applicable overlay
-			overlays = append(overlays, overlayEntry{gk: gk, ov: &sdk.ClusterOverlay{
-				Mutate: func(out *envoyclusterv3.Cluster) {
-					legacy(kctx, ctx, ucc, *backend, out)
-				},
-			}})
+	// Gather overlays in plugin order. Each plugin must self-determine
+	// applicability and return nil in the common case; this keeps the per-client
+	// cluster collection sparse. The order is fixed by OrderedClusterOverlays so
+	// the mutated proto (and therefore its version hash, which drives KRT
+	// equality and interning) is byte-stable across recomputes.
+	var overlays []*sdk.ClusterOverlay
+	for _, plugin := range t.orderedClusterOverlays() {
+		if ov := plugin.overlay(kctx, ctx, ucc, *backend); ov != nil {
+			overlays = append(overlays, ov)
 		}
-	}
-	// ContributedPolicies is a map, so gathering order is nondeterministic. When
-	// more than one overlay applies, apply in GroupKind order so the mutated proto
-	// (and therefore its version hash, which drives KRT equality and interning) is
-	// byte-stable across recomputes.
-	if len(overlays) > 1 {
-		slices.SortFunc(overlays, func(a, b overlayEntry) int {
-			if c := cmp.Compare(a.gk.Group, b.gk.Group); c != 0 {
-				return c
-			}
-			return cmp.Compare(a.gk.Kind, b.gk.Kind)
-		})
 	}
 
 	// Determine whether the unmodified base needs an inline CLA. This is only a
@@ -267,9 +245,9 @@ func (t *BackendTranslator) ApplyPerClient(
 		removeDefaultedLocalityConfig(out)
 	}
 
-	for _, entry := range overlays {
-		if entry.ov.Mutate != nil {
-			entry.ov.Mutate(out)
+	for _, overlay := range overlays {
+		if overlay.Mutate != nil {
+			overlay.Mutate(out)
 		}
 	}
 

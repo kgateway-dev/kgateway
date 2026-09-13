@@ -197,27 +197,33 @@ func lbEndpointPipe(path string) *envoyendpointv3.LbEndpoint {
 	}
 }
 
-// TestBaseEnvoyClusterEquals_SeesBackendMetadata pins why the base row carries its
-// Backend: a metadata-only change to the backing object (a label an overlay
-// branches on) must make the row unequal even though the shared proto, and so
-// ClusterVersion, is unchanged. Without it KRT would keep the old row and no
-// client would rerun its overlays.
-func TestBaseEnvoyClusterEquals_SeesBackendMetadata(t *testing.T) {
+// TestBaseEnvoyClusterEquals_ComparesDeclaredInputsNotBackend pins how backend
+// metadata reaches clients. The row carries its Backend for per-client
+// processing but does not compare it: a metadata change reaches every client
+// only through OverlayInputsHash, the fold of what the overlays declared they
+// read. So two rows whose backends differ in a label no overlay declared are
+// equal even though the shared proto, and so ClusterVersion, is unchanged and
+// the Backend pointers differ, and two rows that differ only in
+// OverlayInputsHash are not. Without the first, every undeclared write would
+// rerun every client; without the second, a declared one would reach none.
+func TestBaseEnvoyClusterEquals_ComparesDeclaredInputsNotBackend(t *testing.T) {
 	cluster := sharedproto.Wrap(staticInlineCLACluster())
-	rowFor := func(labels map[string]string) baseEnvoyCluster {
+	rowFor := func(labels map[string]string, overlayInputs uint64) baseEnvoyCluster {
 		backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
 		backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: "1", Generation: 1, Labels: labels,
 		}}
-		return baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7, Backend: &backend}
+		return baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7, OverlayInputsHash: overlayInputs, Backend: &backend}
 	}
 
-	require.True(t, rowFor(nil).Equals(rowFor(nil)), "identical backends must compare equal")
-	require.False(t, rowFor(nil).Equals(rowFor(map[string]string{"ingress-use-waypoint": "true"})),
-		"a label-only change on the backing object must make the base row unequal")
+	require.True(t, rowFor(nil, 1).Equals(rowFor(nil, 1)), "identical rows must compare equal")
+	require.True(t, rowFor(nil, 1).Equals(rowFor(map[string]string{"unread": "true"}, 1)),
+		"a change to the backing object that moves no declared input must leave the row equal")
+	require.False(t, rowFor(nil, 1).Equals(rowFor(map[string]string{"ingress-use-waypoint": "true"}, 2)),
+		"a change that moves a declared input must make the row unequal")
 
-	// Rows built without a backend (test fixtures) compare by the remaining fields.
-	fixture := baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7}
+	// Rows built without a backend (test fixtures) compare by the same fields.
+	fixture := baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7, OverlayInputsHash: 1}
 	require.True(t, fixture.Equals(fixture))
-	require.False(t, fixture.Equals(rowFor(nil)), "a fixture row is never equal to a row with a backend")
+	require.True(t, fixture.Equals(rowFor(nil, 1)), "the retained backend is not part of the row's identity")
 }

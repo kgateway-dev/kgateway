@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
@@ -40,6 +42,10 @@ func edsBackendTranslator(policies map[schema.GroupKind]sdk.PolicyPlugin) *irtra
 	}
 	return bt
 }
+
+// readsNothing is the OverlayInputsHash of a test overlay that reads no field
+// of the backend: it branches on the client alone, or on nothing.
+func readsNothing(ir.BackendObjectIR) uint64 { return 0 }
 
 func overlayBackend() *ir.BackendObjectIR {
 	b := newTestBackend(ir.ObjectSource{Group: "group", Kind: "kind", Name: "name", Namespace: "ns"}, 80)
@@ -73,6 +79,7 @@ func TestApplyPerClient_DoesNotMutateBase(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				if ucc.Labels["match"] != "yes" {
 					return nil
@@ -119,6 +126,7 @@ func TestApplyPerClient_BaseErrorIsNoOp(t *testing.T) {
 	overlayCalls := 0
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				overlayCalls++
 				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {}}
@@ -203,6 +211,7 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		endpointCalls := 0
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
+				OverlayInputsHash: readsNothing,
 				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
 					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
 						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
@@ -230,6 +239,7 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		original := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "original"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
+				OverlayInputsHash: readsNothing,
 				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
 					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
 						out.LoadAssignment = nil
@@ -254,6 +264,7 @@ func TestApplyPerClient_ReevaluatesInlineCLAAfterOverlay(t *testing.T) {
 		overlayCLA := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "overlay"}
 		bt := inlineEndpointBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 			{Group: "test", Kind: "Overlay"}: {
+				OverlayInputsHash: readsNothing,
 				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
 					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
 						out.LoadAssignment = overlayCLA
@@ -281,6 +292,7 @@ func TestApplyPerClient_ReappliesGatewayBackendClientCertificateAfterOverlay(t *
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
 					out.TransportSocket = upstreamTLSTransportSocket(t, "overlay.example.com", "overlay-sds-secret")
@@ -437,6 +449,7 @@ func edsWithConfigBackendTranslator(policies map[schema.GroupKind]sdk.PolicyPlug
 func inlineRedirectOverlay(gk schema.GroupKind) map[schema.GroupKind]sdk.PolicyPlugin {
 	return map[schema.GroupKind]sdk.PolicyPlugin{
 		gk: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{Mutate: redirectToInlineCLA}
 			},
@@ -500,6 +513,7 @@ func TestApplyPerClient_KeepsDefaultedLocalityWhenStillEDS(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
@@ -532,6 +546,7 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
@@ -573,6 +588,7 @@ func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
 	explicitWeightedConfig := &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
@@ -618,71 +634,6 @@ func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {
 	}
 }
 
-// TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable pins the
-// compatibility adapter for the deprecated PerClientProcessBackend hook. A legacy
-// hook cannot report a no-op, so the framework treats it as applicable to every
-// client: it must not run during base translation, it must force a per-client
-// cluster to materialize, and it must receive a clone rather than the shared base.
-func TestApplyPerClient_LegacyPerClientProcessBackendIsAlwaysApplicable(t *testing.T) {
-	legacyGK := schema.GroupKind{Group: "test", Kind: "Legacy"}
-	calls := 0
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		legacyGK: {
-			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
-				calls++
-				out.AltStatName = "legacy-" + ucc.Role
-			},
-		},
-	})
-	backend := overlayBackend()
-	ctx := context.Background()
-
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
-	require.NotNil(t, base)
-	require.NoError(t, base.Error)
-	require.Equal(t, 0, calls, "a per-client hook must not run during base translation")
-
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
-	require.NoError(t, err)
-	require.NotNil(t, perClient, "a legacy hook cannot decline, so every client must materialize a cluster")
-	assert.Equal(t, 1, calls, "the legacy hook must run exactly once per client")
-	assert.Equal(t, "legacy-role", perClient.GetAltStatName(), "the legacy hook's mutation must land on the per-client cluster")
-	assert.NotSame(t, base.Cluster, perClient)
-	assert.Empty(t, base.Cluster.GetAltStatName(), "the legacy hook must have mutated a clone, not the shared base")
-}
-
-// TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook: a plugin that
-// registers both hooks is treated as migrated. Only PerClientClusterOverlay runs,
-// so its nil (decline) is honored instead of being overridden by the
-// always-applicable legacy adapter, and the pair keeps the sparse fast path.
-func TestApplyPerClient_ClusterOverlayTakesPrecedenceOverLegacyHook(t *testing.T) {
-	gk := schema.GroupKind{Group: "test", Kind: "Migrated"}
-	legacyCalls := 0
-	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
-		gk: {
-			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
-				return nil
-			},
-			PerClientProcessBackend: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // exercising the deprecated hook's adapter
-				legacyCalls++
-			},
-		},
-	})
-	backend := overlayBackend()
-	ctx := context.Background()
-
-	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
-	require.NotNil(t, base)
-	require.NoError(t, base.Error)
-
-	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
-	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
-	require.NoError(t, err)
-	assert.Nil(t, perClient, "the migrated hook declined, so the pair must take the fast path")
-	assert.Equal(t, 0, legacyCalls, "the legacy hook must not run when the plugin also registers PerClientClusterOverlay")
-}
-
 // TestApplyPerClient_AppliesOverlaysInGroupKindOrder: ContributedPolicies is a
 // map, so the gather order is random. When more than one overlay applies to a
 // pair they must run in (Group, Kind) order, so the resulting proto — and its
@@ -694,6 +645,7 @@ func TestApplyPerClient_AppliesOverlaysInGroupKindOrder(t *testing.T) {
 	var applied []string
 	writer := func(value string) sdk.PolicyPlugin {
 		return sdk.PolicyPlugin{
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
@@ -738,6 +690,7 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
+			OverlayInputsHash: readsNothing,
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
@@ -837,4 +790,93 @@ func TestTranslateBackendBase_EndpointHookApplicabilityGatesInlineCLA(t *testing
 		require.Nil(t, base.Cluster.GetLoadAssignment(), "an undeclared hook is assumed to apply everywhere")
 		assert.True(t, base.NeedsInlineCLA())
 	})
+}
+
+// TestOverlayInputsHash_FoldsDeclaredInputsInPluginOrder: the base row's
+// OverlayInputsHash is what lets a backend write that changes nothing any
+// overlay reads stop at the base re-translation. It must be zero with no
+// overlays, byte-stable across recomputes regardless of map iteration order,
+// move when any plugin's declared inputs move, and mix each plugin's identity
+// in so two plugins reporting swapped values do not collide.
+func TestOverlayInputsHash_FoldsDeclaredInputsInPluginOrder(t *testing.T) {
+	backend := overlayBackend()
+	backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "ns", Name: "name", UID: "uid", ResourceVersion: "1",
+		Labels: map[string]string{"a": "1", "b": "1"},
+	}}
+	labelHash := func(key string) sdk.OverlayInputsHash {
+		return func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.Obj.GetLabels()[key]) }
+	}
+	declined := func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+		return nil
+	}
+	policies := map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test", Kind: "A"}: {Name: "a", PerClientClusterOverlay: declined, OverlayInputsHash: labelHash("a")},
+		{Group: "test", Kind: "B"}: {Name: "b", PerClientClusterOverlay: declined, OverlayInputsHash: labelHash("b")},
+		// A plugin without an overlay contributes nothing, whatever it declares.
+		{Group: "test", Kind: "NoOverlay"}: {Name: "none", OverlayInputsHash: labelHash("a")},
+	}
+
+	assert.Zero(t, edsBackendTranslator(nil).OverlayInputsHash(*backend), "no overlays, no inputs")
+
+	bt := edsBackendTranslator(policies)
+	want := bt.OverlayInputsHash(*backend)
+	for range 50 {
+		// A fresh translator re-derives the order from the map each time.
+		assert.Equal(t, want, edsBackendTranslator(policies).OverlayInputsHash(*backend), "the fold must not depend on map order")
+	}
+
+	other := *backend
+	other.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "ns", Name: "name", UID: "uid", ResourceVersion: "2",
+		Labels: map[string]string{"a": "1", "b": "1"},
+	}}
+	assert.Equal(t, want, bt.OverlayInputsHash(other), "a write that moves no declared input leaves the fold unchanged")
+
+	other.Obj.(*corev1.Service).Labels["b"] = "2"
+	assert.NotEqual(t, want, bt.OverlayInputsHash(other), "a declared input moving must move the fold")
+
+	swapped := map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test", Kind: "A"}: {Name: "a", PerClientClusterOverlay: declined, OverlayInputsHash: labelHash("b")},
+		{Group: "test", Kind: "B"}: {Name: "b", PerClientClusterOverlay: declined, OverlayInputsHash: labelHash("a")},
+	}
+	backend.Obj.(*corev1.Service).Labels["b"] = "2"
+	assert.NotEqual(t, bt.OverlayInputsHash(*backend), edsBackendTranslator(swapped).OverlayInputsHash(*backend),
+		"the same values reported by different plugins must not collide")
+}
+
+// TestOrderedClusterOverlays_UndeclaredInputsTreatWholeObjectAsRead: an
+// overlay registered without OverlayInputsHash is a plugin bug the framework
+// cannot repair, only contain. It is given the declaration that is never
+// stale: every write to the backing object, resourceVersion included, changes
+// the fold, so such a plugin costs a walk per write rather than serving stale
+// configuration. The overlay itself still runs.
+func TestOrderedClusterOverlays_UndeclaredInputsTreatWholeObjectAsRead(t *testing.T) {
+	applied := 0
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test", Kind: "Undeclared"}: {
+			PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) { applied++ }}
+			},
+		},
+	})
+	backend := overlayBackend()
+	backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "name", UID: "uid", ResourceVersion: "1"}}
+	before := bt.OverlayInputsHash(*backend)
+
+	touched := *backend
+	touched.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "name", UID: "uid", ResourceVersion: "2"}}
+	assert.NotEqual(t, before, bt.OverlayInputsHash(touched), "without a declaration every write to the object must count")
+
+	bare := *backend
+	bare.Obj = nil
+	assert.Equal(t, bt.OverlayInputsHash(bare), bt.OverlayInputsHash(bare), "an IR without a backing object still folds deterministically")
+
+	ctx := context.Background()
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	require.NotNil(t, base)
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ir.UniquelyConnectedClient{}, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, perClient)
+	assert.Equal(t, 1, applied, "the undeclared overlay must still be applied")
 }

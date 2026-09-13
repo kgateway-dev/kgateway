@@ -11,9 +11,11 @@ import (
 	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/overlaytest"
 )
 
 const drHost = "reviews.default.svc.cluster.local"
@@ -129,5 +131,55 @@ func TestEndpointsMayApply_ByHostname(t *testing.T) {
 		b := drBackend()
 		b.CanonicalHostname = ""
 		assert.False(t, d.endpointsMayApply(krt.TestingDummyContext{}, b), "FetchDestRulesFor never matches an empty host either")
+	})
+}
+
+// TestOverlayInputsHash_CoversClusterOverlayInputs checks the declaration the
+// plugin registers beside its overlay: every backend field whose change moves
+// the overlay's output must move the hash. The rule chosen here has a top-level
+// outlier policy and a different one for port 80, so both the hostname (which
+// selects the rule) and the port (which selects the policy within it) change
+// the output. Labels, annotations and the resourceVersion are the controls: the
+// overlay does not read them, and the harness only requires that what changes
+// the output is declared.
+func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
+	topLevel := &v1alpha3.OutlierDetection{Consecutive_5XxErrors: &wrapperspb.UInt32Value{Value: 3}}
+	portLevel := &v1alpha3.OutlierDetection{Consecutive_5XxErrors: &wrapperspb.UInt32Value{Value: 7}}
+	d := newDestrulePlugin(t, destRule("rule", &v1alpha3.TrafficPolicy{
+		OutlierDetection: topLevel,
+		PortLevelSettings: []*v1alpha3.TrafficPolicy_PortTrafficPolicy{{
+			Port:             &v1alpha3.PortSelector{Number: 80},
+			OutlierDetection: portLevel,
+		}},
+	}))
+
+	backend := drBackend()
+	backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "ns", Name: "reviews", UID: "uid", ResourceVersion: "1",
+		Labels: map[string]string{"app": "reviews"},
+	}}
+
+	overlaytest.AssertInputsHashCoversOverlay(t, overlaytest.Case{
+		Plugin:  d.policyPlugin(),
+		Backend: backend,
+		Clients: []ir.UniquelyConnectedClient{
+			ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{}),
+			ir.NewUniquelyConnectedClient("role", "other-ns", nil, ir.PodLocality{}),
+		},
+		Mutations: []overlaytest.Mutation{
+			{Name: "hostname without a rule", Apply: func(b *ir.BackendObjectIR) {
+				b.CanonicalHostname = "ratings.default.svc.cluster.local"
+			}},
+			{Name: "port without a port-level policy", Apply: func(b *ir.BackendObjectIR) {
+				rebuilt := ir.NewBackendObjectIR(b.GetObjectSource(), 8080, "", "")
+				rebuilt.CanonicalHostname = b.CanonicalHostname
+				rebuilt.Obj = b.Obj
+				*b = rebuilt
+			}},
+			{Name: "app protocol", Apply: func(b *ir.BackendObjectIR) { b.AppProtocol = ir.HTTP2AppProtocol }},
+			overlaytest.SetLabel(t, "app", "other"),
+			overlaytest.SetAnnotation(t, "meta.helm.sh/release-name", "x"),
+			overlaytest.SetResourceVersion(t, "2"),
+		},
 	})
 }

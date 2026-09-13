@@ -188,15 +188,21 @@ complete by construction the first time it exists. In particular:
   `NeedsInlineCLA` above), so the walk allocates only for overlaid pairs and client-ordered
   CLAs.
 
-**Backend metadata reaches clients through equality, not through a second input.** An overlay
-may branch on the backing object's labels (the waypoint redirect does), so a metadata-only
-Service change must rebuild every client's payload even when the shared proto is byte-identical.
-`baseEnvoyCluster.Equals` therefore compares its `Backend` through
-`BackendObjectIR.EqualsIgnoringResourceVersion`, which sees the object's UID, generation, labels
-and annotations — everything an overlay can branch on — but deliberately not its
-`resourceVersion`; see [Open Questions](#open-questions) for why the version is left out.
-`backendEquals` and `objectContentEquals` are nil-safe, so rows built without a backing object
-(test fixtures) compare by their remaining fields.
+**What overlays read from the backend reaches clients through a declared hash, not through a
+second input.** An overlay may branch on the backing object (the waypoint redirect reads a label
+and inlines `spec.clusterIPs`), so a change to what it reads must rebuild every client's payload
+even when the shared proto is byte-identical — and a change to anything else must not, because a
+base change reruns every client's walk. The framework cannot see which fields an overlay reads,
+so the plugin declares them: `OverlayInputsHash` (`pkg/pluginsdk/types.go`) is required beside
+`PerClientClusterOverlay` and hashes exactly the backend fields the overlay and its `Mutate`
+consume. `BackendTranslator.OverlayInputsHash` folds every plugin's declaration in plugin order,
+mixed with the plugin's identity, and the base transform stores the result as
+`baseEnvoyCluster.OverlayInputsHash`. The row compares that and `ClusterVersion`; its `Backend`
+is retained for `ApplyPerClient` but is `+noKrtEquals`. When both hashes are unchanged KRT keeps
+the old row, so the overlays are handed the backend of the last row that differed — which is
+correct precisely because every field they read is in the hash, and is the whole reason the
+declaration is required rather than optional. See [Open Questions](#open-questions) for the
+measurements and the two versions of this design that preceded it.
 
 `baseClusterVersion` folds the inline endpoints hash **and** the attached-policy hash into the
 base proto hash when `SupportsInlineCLA` is true. The per-client CLA is built from
@@ -235,28 +241,59 @@ off by default because the re-hash is exactly the marshal cost the interning exi
 
 ### Plugin
 
-Two SDK hooks change; both keep the old hook working through a compatibility adapter, so no
-downstream plugin is forced to migrate in this EP.
+Two SDK hooks change. The endpoint hook keeps the old form working through a compatibility
+adapter; the cluster hook does not — the old form is removed, because the new one carries a
+declaration the framework depends on for correctness and an adapter could only guess at it.
 
-**`PerClientClusterOverlay`** replaces `PerClientProcessBackend`:
+**`PerClientClusterOverlay` and `OverlayInputsHash`** replace `PerClientProcessBackend`:
 
 ```go
 type PerClientClusterOverlay func(krt.HandlerContext, context.Context,
     ir.UniquelyConnectedClient, ir.BackendObjectIR) *ClusterOverlay
 
 type ClusterOverlay struct{ Mutate func(out *envoyclusterv3.Cluster) }
+
+type OverlayInputsHash func(backend ir.BackendObjectIR) uint64
 ```
 
 Returning `nil` means "this pair needs no per-client cluster changes". Self-gating is what
 keeps per-client state sparse, so the plugin — not the framework — owns the cheap
 applicability check. `Mutate` is invoked exactly once with a fresh clone and must not retain
-its argument. `PerClientProcessBackend` is retained as deprecated and adapted as an
-always-applicable overlay, since a legacy hook cannot report a no-op cheaply.
+its argument.
 
-Both in-tree users were migrated with their cheap filters ordered before their expensive
-fetches: destrule returns `nil` unless a matching destination rule has outlier detection;
-waypoint returns `nil` unless the client carries `ambient.istio.io/redirection=enabled` and
-the backend opts into ingress-use-waypoint, before the Gateway `FetchOne`.
+`OverlayInputsHash` declares which fields of the backend the overlay reads, as a hash over
+their values, and is required beside it. Inputs fetched through the `HandlerContext` are not
+declared (KRT tracks them) and neither is the client (the payload is per client); everything
+read off the `BackendObjectIR` is — IR fields, labels, annotations, and spec fields read
+through `Obj`. Over-declaring costs a walk of every client over the base collection;
+under-declaring serves stale configuration. An overlay registered without a declaration is a
+plugin bug the framework contains rather than repairs: `OrderedClusterOverlays` logs it at
+startup and substitutes a declaration over the object's UID, `resourceVersion` and generation,
+so every write to the object reruns every client for it, which is never stale, only expensive.
+
+`pkg/pluginsdk/overlaytest` makes the declaration checkable by any plugin, in tree or out:
+given a fixture backend the overlay applies to, the mutations a backend can undergo, and the
+clients to evaluate, `AssertInputsHashCoversOverlay` asserts that every mutation which changes
+the overlay's output for some client also changes the hash. Only that direction is asserted.
+Both in-tree plugins run it against the exact `PolicyPlugin` they register (`policyPlugin()`
+in each), so an overlay cannot start reading a field its declaration lacks without a test
+failing in the plugin's own package.
+
+Both in-tree users declare their inputs beside their overlays, with their cheap filters
+ordered before their expensive fetches. destrule returns `nil` unless a matching destination
+rule has outlier detection, and declares the canonical hostname (which selects the rules) and
+the port (which selects the port-level policy). waypoint returns `nil` unless the client carries
+`ambient.istio.io/redirection=enabled` and the backend opts into ingress-use-waypoint, before
+the Gateway `FetchOne`; it declares the ingress-use-waypoint label, the object's namespace and
+alias namespaces (whose labels are fetched), the object's name (which keys the waypoint
+lookup), the resolved addresses it inlines, and the port. `IngressUseWaypointInputsHash` is
+exported next to `HasIngressUseWaypointLabel` so any other plugin that calls the latter folds
+the same declaration and the two cannot drift.
+
+A plugin outside this tree that still registers `PerClientProcessBackend` stops compiling
+against this change. Its migration is the registration of `PerClientClusterOverlay`, with its
+cheapest client-side check as the `nil` fast path, plus a declaration over the backend fields
+it reads; `overlaytest` verifies the declaration in that plugin's own package.
 
 **`EndpointEditorPlugin`** replaces the raw `*EndpointsInputs` hook. `EndpointInputsEditor`
 (`pkg/kgateway/endpoints/editor.go`) exposes reads plus explicit setters, and a
@@ -391,7 +428,7 @@ deltas identified:
 
 | Before | After | Rationale / compensation |
 | --- | --- | --- |
-| `ProcessBackend` and `PerClientProcessBackend` interleaved in `ContributedPolicies` map order | all `ProcessBackend` in the base, then overlays in `GroupKind` order | map order was nondeterministic; overlay output now feeds a content hash that drives KRT equality and interning, so it must be stable |
+| `ProcessBackend` and `PerClientProcessBackend` interleaved in `ContributedPolicies` map order | all `ProcessBackend` in the base, then overlays in `(Group, Kind, Name)` order | map order was nondeterministic; overlay output now feeds a content hash that drives KRT equality and interning, so it must be stable |
 | `defaultLocalityConfig` ran *after* per-client hooks and saw the final cluster shape | runs on the base, before overlays | `undoDefaultedLocalityConfig` re-evaluates the EDS guard and reverts the default when an overlay has replaced the EDS cluster with an inline one, including dropping a `CommonLbConfig` it allocated itself |
 | `clusterSupportsInlineCLA` evaluated on the final cluster | evaluated on the base | an overlay that inlines a CLA sets `LoadAssignment`, which the `out.GetLoadAssignment() == nil` re-check already respects |
 | Strict-mode validation ran once, on the final per-client cluster | base validated unless `NeedsInlineCLA`; per-client cluster always validated | CLA-less inline-CLA bases would fail validation spuriously; overlay output was previously never validated at all |
@@ -458,8 +495,14 @@ every point in the stack.
 **Unit.**
 - `backends_test.go` — `baseClusterVersion`: reflects inline-CLA endpoint and policy changes,
   stays stable for EDS endpoint changes, zero for errored bases.
-- `backends_test.go` — `baseEnvoyCluster.Equals` sees a metadata-only change on the backing
-  object and treats fixture rows without a backend consistently.
+- `backends_test.go` — `baseEnvoyCluster.Equals` compares the declared overlay inputs and not
+  the retained backend: an undeclared change leaves the row equal, a declared one does not.
+- `backend_overlay_test.go` — `OverlayInputsHash` is zero without overlays, independent of map
+  order, moves with any declaration, and mixes plugin identity; an overlay registered without a
+  declaration still runs and is treated as reading the whole object.
+- `overlaytest_test.go` — the harness reports an undeclared read, reports a vacuous case, and
+  its mutations do not alias the fixture. `destrule_plugin_test.go` and
+  `cluster_overlay_test.go` (waypoint) run the harness against each plugin's registration.
 - `backends_resolution_test.go` — a renamed cluster drops only its own backend.
 - `backend_overlay_test.go`, `backend_validation_test.go` — overlay gathering, deterministic
   ordering, locality-default undo, strict-mode validation of overlay output.
@@ -476,8 +519,9 @@ built — canonical locality ordering makes normalization unnecessary — so it 
 ordering regresses; its failure message names both causes and points at the byte-stability test
 first.
 
-**KRT integration.** `backends_integration_test.go` (overlay wiring; backend metadata-only
-update rebuilds every client's payload), `cla_intern_test.go` (equivalent clients share a CLA;
+**KRT integration.** `backends_integration_test.go` (overlay wiring; a declared label change
+rebuilds every client's payload; a `resourceVersion`-only write and an undeclared annotation
+write re-translate the base and rerun no client), `cla_intern_test.go` (equivalent clients share a CLA;
 distinct clients must not alias), `backends_disabled_pod_locality_test.go`
 (`DISABLE_POD_LOCALITY_XDS` shared-capability buckets without global withholding),
 `perclient_clusters_stress_test.go` (sustained trigger-driven churn never strands a stable
@@ -487,7 +531,9 @@ client).
 sparse collection publishes, so gateway translation fixtures continue to assert real output.
 
 **Benchmarks.** `BenchmarkPerClientClusters` (translator), `BenchmarkEndpointInputsResolver`
-(scalar edit vs replacement builder vs legacy deep copy, at 10/100/1000 endpoints).
+(scalar edit vs replacement builder vs legacy deep copy, at 10/100/1000 endpoints),
+`BenchmarkPerClientBackendAnnotationUpdate` (an undeclared write stops at the base; the overlay
+call count is asserted unchanged after the loop).
 
 **CI enforcement.** `ASSERT_SHARED_PROTO_IMMUTABILITY` on the deployed controller in every
 e2e suite and both conformance install paths, so a mutation after sharing surfaces as a
@@ -528,33 +574,38 @@ that makes it sound.
 
 ## Open Questions
 
-**A Service write that changes nothing must not reach the clients.** The base row compares its
-backend IR so that overlays reading backend metadata see a label change, but `BackendObjectIR.Equals`
-falls back to `resourceVersion` for kinds without `metadata.generation`, and every Service write
-bumps that: status updates, and annotation touches from Helm, Argo, external-dns or a cloud
-load-balancer controller. Compared that way, each such write re-ran every client's walk to
-rebuild a byte-identical payload — 71 MB and 314k allocations at 48 clients x 2000 backends, where
-main's dense collection re-translated 48 pairs and stopped. The base row now compares the backend
-with `EqualsIgnoringResourceVersion` (UID, generation, labels, annotations and every IR field; the
-proto hash already says whether the translation moved), so a `resourceVersion`-only write ends at
-the base: 5 KB and 40 allocations. A write that changes an annotation no overlay reads still reruns
-every walk (69 MB at 48 x 2000), because the row cannot know which annotations overlays read; each
-client then finds its payload hash unchanged and KRT keeps its old row. Memoizing the assembled
-`envoycache.Resources` per client was measured and rejected: it recovers only the map build, about
-6% of that walk, and the row slice and base fetch are the rest. An overlay-declared set of metadata
-keys would let the base row ignore unrelated annotations altogether.
+**A Service write that changes nothing an overlay reads must not reach the clients.** This
+design went through three versions. First the base row compared its backend IR wholesale, so
+that overlays reading backend metadata saw a label change; but `BackendObjectIR.Equals` falls
+back to `resourceVersion` for kinds without `metadata.generation`, and every Service write bumps
+that — status updates, and annotation touches from Helm, Argo, external-dns or a cloud
+load-balancer controller. Each such write re-ran every client's walk to rebuild a byte-identical
+payload: 71 MB and 314k allocations at 48 clients x 2000 backends, where main's dense collection
+re-translated 48 pairs and stopped. Second, the row compared the backend by content (UID,
+generation, labels, annotations, every IR field) and left `resourceVersion` out, which ended a
+`resourceVersion`-only write at the base (5 KB, 40 allocations) but still reran every walk for an
+annotation no overlay reads (69 MB at 48 x 2000), because the row could not know which
+annotations overlays read. It also made spec fields a problem carried by review: a spec change
+on a generation-less kind reached clients only if it reached a compared IR field, `ObjIr`, or
+the base proto hash, and the waypoint overlay's `spec.clusterIPs` reached none of them until the
+kubernetes plugin projected the addresses into `ObjIr` by convention.
 
-**Spec fields an overlay reads are the same problem, and are not self-enforcing.** Leaving
-`resourceVersion` out means a spec change on a generation-less kind reaches clients only if it
-reaches a compared IR field, `ObjIr`, or the base proto hash. Base translation of a Service
-emits EDS and never reads `spec.clusterIPs`, but the waypoint overlay inlines them into a STATIC
-cluster, so converting a Service single-stack -> dual-stack would have left those clients on the
-stale address. The kubernetes plugin now projects the resolved addresses into `ObjIr`, mirroring
-what the serviceentry plugin already does for the VIPs that land in ServiceEntry status (#14391),
-and `PerClientClusterOverlay` documents the rule: read only what the framework can detect a
-change in, and project anything else through `ObjIr`. That rule is carried by review, not by the
-compiler — the same overlay-declared key set floated above would make it mechanical for spec as
-well as metadata.
+The third version, the one implemented, moves the knowledge to the only party that has it: the
+plugin declares what its overlay reads through `OverlayInputsHash`, the base row compares that
+fold and the proto hash, and does not compare the backend at all. A write that moves neither —
+`resourceVersion`, status, an undeclared annotation — ends at the base re-translation with no
+client reruns (`BenchmarkPerClientBackendAnnotationUpdate`: 67 µs, 21 KB and 145 allocations
+per write on an inline-endpoint backend, most of it that backend's base CLA), and a write that
+moves a declared field reaches every client. The spec case is no longer a convention: the
+waypoint plugin declares the addresses at the point it reads them, the `ObjIr` projection in the
+kubernetes plugin is gone, and `pkg/pluginsdk/overlaytest` fails a plugin's own tests when its
+overlay reads a field its declaration lacks. The alternative considered, an API-free memo that
+skips `ApplyPerClient` for an unchanged `(name, ClusterVersion, backend content hash)`, is
+unsound: a DestinationRule change reruns the client's transform through the overlay's fetch
+dependency, but the memo would still hit and serve the pre-change clone. Only the overlay knows
+its full input set, which is why the declaration is a plugin hook. Memoizing the assembled
+`envoycache.Resources` per client was also measured and rejected: it recovers only the map
+build, about 6% of a walk.
 
 **A base change reruns every client's walk.** The per-client transform depends on the whole
 base collection, so any backend change reruns `N` transforms of `O(M)` each.
@@ -572,6 +623,7 @@ number measured before this was noticed):
 | One backend's output changes; all 12 payloads rebuilt | 3.0 ms, 5.4 MB, 36k allocs | 4.4 ms |
 | One rule changes; the 3 matching payloads rebuilt, the other 9 untouched | 1.1 ms, 1.7 MB, 18k allocs | 1.6 ms |
 | One Service write that changes only `resourceVersion` | 5 KB, 38 allocs, no client reruns | same |
+| One Service write that changes an annotation no overlay declared (inline-endpoint backend) | 67 µs, 21 KB, 145 allocs, no client reruns | same |
 
 Earlier runs of the same benchmark had the tripwire armed and so read about twice these. In those
 units: before client-independent inline CLAs were built on the base, with all 100 inline backends

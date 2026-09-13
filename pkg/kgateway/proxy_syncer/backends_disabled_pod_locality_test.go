@@ -47,6 +47,7 @@ func TestPerClientClustersTrackSharedClientCapability(t *testing.T) {
 		},
 		ContributedPolicies: sdk.ContributesPolicies{
 			overlayGK: {
+				OverlayInputsHash: readsNothing,
 				PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, ucc ir.UniquelyConnectedClient, _ ir.BackendObjectIR) *sdk.ClusterOverlay {
 					if !ucc.KnowsLocalCluster {
 						return nil
