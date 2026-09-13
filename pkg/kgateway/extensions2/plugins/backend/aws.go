@@ -241,6 +241,7 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 func buildLambdaFilters(
 	arn string,
 	region string,
+	hostRewrite string,
 	auth *kgateway.AwsAuth,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
@@ -254,10 +255,13 @@ func buildLambdaFilters(
 		payloadPassthrough = false
 	}
 
+	// The aws_lambda filter swaps in this host before the aws_request_signing filter that follows it
+	// computes the SigV4 signature, so the signed host matches the endpoint the request is sent to.
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
 		Arn:                arn,
 		InvocationMode:     invokeMode,
 		PayloadPassthrough: payloadPassthrough,
+		HostRewrite:        hostRewrite,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lambda config: %w", err)
