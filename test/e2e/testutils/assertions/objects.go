@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,6 +26,29 @@ func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client
 			WithTimeout(time.Second*20).
 			WithPolling(time.Millisecond*200).
 			Should(Succeed(), fmt.Sprintf("object %s %s should be available in cluster", o.GetObjectKind().GroupVersionKind().String(), client.ObjectKeyFromObject(o).String()))
+	}
+}
+
+// EventuallyCRDsEstablished asserts that the named CustomResourceDefinitions exist and have
+// their Established condition set to True. Helm returns as soon as it has applied the CRD
+// manifests, before the API server has necessarily finished registering them, so callers that
+// immediately create custom resources of those kinds should wait on this first to avoid racing
+// the apiserver (surfaces as "no matches for kind" errors).
+func (p *Provider) EventuallyCRDsEstablished(ctx context.Context, crdNames ...string) {
+	p.t.Helper()
+	for _, name := range crdNames {
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		p.Gomega.Eventually(ctx, func(innerG Gomega) {
+			innerG.Expect(p.clusterContext.Client.Get(ctx, client.ObjectKey{Name: name}, crd)).NotTo(HaveOccurred())
+			innerG.Expect(crd.Status.Conditions).To(ContainElement(SatisfyAll(
+				HaveField("Type", apiextensionsv1.Established),
+				HaveField("Status", apiextensionsv1.ConditionTrue),
+			)), fmt.Sprintf("CRD %s should be Established", name))
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second*20).
+			WithPolling(time.Millisecond*200).
+			Should(Succeed(), fmt.Sprintf("CRD %s should become Established", name))
 	}
 }
 
