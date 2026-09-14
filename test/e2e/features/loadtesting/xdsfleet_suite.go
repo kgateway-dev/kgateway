@@ -73,8 +73,9 @@ type XdsFleetSuite struct {
 	originalEnv          map[string]*corev1.EnvVar
 	originalResources    *corev1.ResourceRequirements
 
-	testNamespace string
-	gateways      []string
+	testNamespace   string
+	gateways        []string
+	controllerImage string
 
 	metricsPF  portforward.PortForwarder
 	metricsURL string
@@ -289,6 +290,21 @@ func (s *XdsFleetSuite) SetupSuite() {
 		s.T().Logf("capping controller memory at %s for the run", fleetMemoryLimit)
 		s.Require().NoError(s.setMemoryLimit(fleetMemoryLimit), "should cap controller memory")
 	}
+
+	// Record the image actually running, and refuse to measure without it.
+	//
+	// Every figure this suite emits describes one control-plane build, and
+	// nothing else in the run states which. A runner that deploys by tag can
+	// fail to deploy - a failed `helm upgrade` leaves the PREVIOUS image running
+	// and exits without touching the fleet - and the benchmark will then happily
+	// measure the wrong build under the new build's label. That has happened:
+	// four arms of a comparison were collected against a stale image before
+	// anyone noticed. Stamping the image into every record makes a mislabeled
+	// run detectable afterwards rather than silently publishable.
+	img, err := s.readControllerImage()
+	s.Require().NoError(err, "should read the controller image being measured")
+	s.controllerImage = img
+	s.T().Logf("measuring controller image %s", img)
 
 	s.createNamespace()
 	s.createZeroReplicaGatewayParameters()
@@ -1297,6 +1313,11 @@ func (s *XdsFleetSuite) emitFailure(reason string) {
 }
 
 func (s *XdsFleetSuite) emit(prefix string, v map[string]any) {
+	if s.controllerImage != "" {
+		if _, present := v["controller_image"]; !present {
+			v["controller_image"] = s.controllerImage
+		}
+	}
 	line := prefix + " " + mustJSON(v)
 	s.T().Log(line)
 	if s.out != nil {
@@ -1379,6 +1400,21 @@ func (s *XdsFleetSuite) restoreEnv() error {
 
 // setMemoryLimit sets (or with "0" clears) the controller container's memory
 // limit and waits for the new generation to roll out.
+// readControllerImage returns the image of the container this suite measures.
+func (s *XdsFleetSuite) readControllerImage() (string, error) {
+	var dep appsv1.Deployment
+	if err := s.testInstallation.ClusterContext.Client.Get(s.ctx,
+		types.NamespacedName{Namespace: s.installNamespace, Name: s.controllerDeployment}, &dep); err != nil {
+		return "", err
+	}
+	for _, c := range dep.Spec.Template.Spec.Containers {
+		if c.Name == s.controllerContainer {
+			return c.Image, nil
+		}
+	}
+	return "", fmt.Errorf("container %q not found in deployment %q", s.controllerContainer, s.controllerDeployment)
+}
+
 func (s *XdsFleetSuite) setMemoryLimit(limit string) error {
 	if err := s.testInstallation.Actions.Kubectl().RunCommand(s.ctx,
 		"set", "resources", "-n", s.installNamespace,
