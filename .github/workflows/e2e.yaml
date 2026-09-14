@@ -97,6 +97,13 @@ jobs:
             localstack: 'false'
           # May 29, 2026: ~10 minutes
           - cluster-name: 'cluster-five'
+            # Dual-stack so the Deployer suite's TestDualStackService can run: it
+            # needs a cluster with both families configured to provision a
+            # RequireDualStack proxy Service, and it is what covers the MetalLB
+            # pool's dual branch. Every other suite on this cluster keeps getting
+            # the single-stack IPv4 Services it got before -- kind's dual-stack
+            # mode is IPv4-primary.
+            ip-family: 'dual'
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
             localstack: 'false'
@@ -117,6 +124,19 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
             localstack: 'false'
+          # An IPv6-only cluster over the basic routing suites. This has to be
+          # ipv6-only rather than dual-stack to be worth running: kind's
+          # dual-stack mode is IPv4-primary and Services default to SingleStack
+          # IPv4, so the suites here would exercise the same IPv4 paths as every
+          # other cluster and would pass just as well without the IPv6 fixes. In
+          # an IPv6-only cluster the readiness probe, the xDS connection, and the
+          # request path are all IPv6 by construction. Two-family Services are
+          # covered separately by cluster-five, which runs dual-stack.
+          - cluster-name: 'cluster-ipv6'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^Deployer$$'
+            localstack: 'false'
+            ip-family: 'ipv6'
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-multi-install'
             go-test-args: '-timeout=5m'
@@ -167,6 +187,7 @@ jobs:
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           localstack: ${{ matrix.test.localstack }}
           gateway-api-version: ${{ matrix.test.gateway-api-version }}
+          ip-family: ${{ matrix.test.ip-family || 'ipv4' }}
       - id: setup-k3d-cluster
         name: Setup k3d Cluster
         if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}

@@ -53,8 +53,12 @@ data:
     }
     http {
       server {
+          # A bare `listen 80` binds 0.0.0.0 only, which is unreachable in an
+          # IPv6-only cluster; nginx defaults [::] listeners to ipv6only=on.
           listen              80;
+          listen              [::]:80;
           listen              443 ssl;
+          listen              [::]:443 ssl;
           server_name         example.com;
           ssl_certificate     /etc/nginx/example.crt;
           ssl_certificate_key /etc/nginx/example.key;
