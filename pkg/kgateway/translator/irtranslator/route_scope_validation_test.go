@@ -19,6 +19,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -48,7 +49,7 @@ func TestFinalRouteConfigurationPreservesScopeSettings(t *testing.T) {
 		return nil
 	}}
 	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
-	config, err := anypb.New(wrapperspb.Bool(true))
+	config, err := utils.MessageToAny(wrapperspb.Bool(true))
 	require.NoError(t, err)
 	attachRouteConfigPass(h, routeConfigPassFunc{applyContext: func(ctx *ir.RouteConfigContext) {
 		ctx.TypedFilterConfig.AddTypedConfig("inherited", wrapperspb.Bool(true))
@@ -70,7 +71,7 @@ func TestFinalRouteConfigurationPreservesScopeSettings(t *testing.T) {
 }
 
 func TestFinalRouteConfigurationIsolatesScopeFailures(t *testing.T) {
-	config, err := anypb.New(wrapperspb.Bool(true))
+	config, err := utils.MessageToAny(wrapperspb.Bool(true))
 	require.NoError(t, err)
 	for _, tc := range []struct {
 		name          string
