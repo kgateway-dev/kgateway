@@ -409,3 +409,37 @@ This test follows a specific methodology inspired by gateway-api-bench and imple
 - **Real Traffic Validation**: Uses curl probing instead of unreliable metrics
 - **Status Propagation**: Tests how quickly gateway status reflects route changes
 - **Realistic Load**: Tests performance under production-like conditions with simulated backends
+
+### Automatic xDS benchmark runs
+
+Nightly load testing runs XdsCost and XdsFleet after AttachedRoutes and
+StrictChurn. Staged releases run them after AttachedRoutes automatically;
+the release load-test job is advisory and is not a dependency of publication.
+There is no longer a release dispatch opt-in for load testing. Nightly runs
+use the benchmark action from the checked-out branch, so LTS branches gain
+this coverage when the change is backported.
+
+Both paths call `make run-xds-bench-ci` against the installation already
+prepared by their workflow. The shared STANDARD-validation profile uses:
+
+- XdsCost: 3 Gateways, 30 static backends, 30 EDS routes, and 3 iterations.
+- XdsFleet: 500 Services, 24 Gateways with 2 streams each, 10 inline backends,
+  4 waves, 3 zones, endpoint pods and pod locality, a 2Gi controller memory
+  limit, and 3 churn iterations.
+
+Each benchmark has a 20-minute Go timeout. The load-test jobs allow 120
+minutes for setup, existing load tests, and benchmarks. This is a bounded
+regression workload, not a measurement of production fleet capacity; its
+runtime on hosted CI runners still needs to be observed.
+
+The runner attempts both benchmarks sequentially, retains failures, and
+rejects fleet failure verdicts, missing phases, incomplete waves, and waves
+that were not served or settled. Benchmark failures mark the load-test job
+failed while release publication remains independent.
+
+Logs, original prefixed records, and normalized JSONL (objects with
+`event` and `data` fields) are saved under `_output/xds-bench/` and uploaded
+even when the benchmark step fails. Each invocation truncates its own
+record files so an earlier run cannot satisfy the completion checks.
+For a local run, use `make run-xds-bench-ci` with the usual `CLUSTER_NAME`
+and `INSTALL_NAMESPACE` settings; Go, jq, and an installed cluster are required.

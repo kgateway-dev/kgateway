@@ -58,3 +58,15 @@ runs:
         echo "::group::KGateway strict churn convergence test"
         make run-load-tests-strict-churn
         echo "::endgroup::"
+
+    - name: Run xDS benchmarks
+      shell: bash
+      run: |
+        KGW_BENCH_LABEL="$(git rev-parse HEAD)" make run-xds-bench-ci
+
+    - name: Upload xDS benchmark results
+      if: ${{ always() }}
+      uses: ./.github/actions/upload-artifact
+      with:
+        name: nightly-xds-benchmarks
+        path: _output/xds-bench/
