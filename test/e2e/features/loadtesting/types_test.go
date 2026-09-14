@@ -3,7 +3,11 @@
 package loadtesting
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -92,4 +96,27 @@ func TestFleetReadinessRequiresEveryLiveStream(t *testing.T) {
 	close(clients[0].done)
 	assert.Equal(t, 99, servedStreams(clients), "terminated streams must not count as served")
 	assert.Zero(t, servedStreams([]*syntheticClient{{done: make(chan struct{})}}), "older streams cannot satisfy a new stream's readiness")
+}
+
+func TestBenchConvergenceRequiresQuietWindow(t *testing.T) {
+	oldFleetTimeout, oldCostTimeout := fleetIterTimeout, benchIterationTimeout
+	oldFleetSettle, oldCostSettle := fleetSettleMillis, benchSettleMillis
+	t.Cleanup(func() {
+		fleetIterTimeout, benchIterationTimeout = oldFleetTimeout, oldCostTimeout
+		fleetSettleMillis, benchSettleMillis = oldFleetSettle, oldCostSettle
+	})
+	fleetIterTimeout, benchIterationTimeout = 300*time.Millisecond, 300*time.Millisecond
+	fleetSettleMillis, benchSettleMillis = 1000, 1000
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintln(w, "kgateway_xds_snapshot_transforms_total 1")
+	}))
+	defer server.Close()
+	fleet := &XdsFleetSuite{metricsURL: server.URL}
+	fleet.SetT(t)
+	_, ok := fleet.waitConverged(0)
+	assert.False(t, ok, "a transform without a full quiet window must time out")
+	cost := &XdsCostSuite{metricsURL: server.URL}
+	cost.SetT(t)
+	_, ok = cost.waitConverged(0, time.Now())
+	assert.False(t, ok, "cost suite must also require a full quiet window")
 }

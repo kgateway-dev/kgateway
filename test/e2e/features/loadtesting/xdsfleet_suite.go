@@ -1179,9 +1179,6 @@ func (s *XdsFleetSuite) waitConverged(before float64) (time.Time, bool) {
 			return last, true
 		}
 	}
-	if !last.IsZero() {
-		return last, true
-	}
 	return time.Time{}, false
 }
 

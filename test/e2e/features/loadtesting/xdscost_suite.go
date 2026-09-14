@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -22,8 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/stretchr/testify/suite"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -463,9 +462,6 @@ func (s *XdsCostSuite) waitConverged(before float64, t0 time.Time) (time.Time, b
 		}
 		// Nothing yet: keep waiting for the first push.
 		_ = t0
-	}
-	if !last.IsZero() {
-		return last, true
 	}
 	return time.Time{}, false
 }
