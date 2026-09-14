@@ -186,6 +186,23 @@ func (i *TestInstallation) InstallKgatewayCRDsFromLocalChart(ctx context.Context
 			ChartUri:        crdChartURI,
 		})
 	i.AssertionsT(t).Require.NoError(err)
+
+	// Helm returns as soon as the CRD manifests are applied, before the apiserver has
+	// necessarily finished establishing them. Callers commonly create custom resources of
+	// these kinds immediately after this call returns, so wait here to avoid racing the
+	// apiserver (surfaces as "no matches for kind" errors).
+	i.AssertionsT(t).EventuallyCRDsEstablished(ctx, kgatewayCRDNames...)
+}
+
+// kgatewayCRDNames are the CustomResourceDefinitions installed by the kgateway-crds chart.
+var kgatewayCRDNames = []string{
+	"backendconfigpolicies.gateway.kgateway.dev",
+	"backends.gateway.kgateway.dev",
+	"directresponses.gateway.kgateway.dev",
+	"gatewayextensions.gateway.kgateway.dev",
+	"gatewayparameters.gateway.kgateway.dev",
+	"listenerpolicies.gateway.kgateway.dev",
+	"trafficpolicies.gateway.kgateway.dev",
 }
 
 func (i *TestInstallation) InstallKgatewayCoreFromLocalChart(ctx context.Context, t *testing.T) {
