@@ -71,7 +71,7 @@ drain() {
     kubectl --context "$KUBE_CONTEXT" delete pods -n "$ns" --all --force --grace-period=0 --wait=false >/dev/null 2>&1
     kubectl --context "$KUBE_CONTEXT" delete ns "$ns" --wait=false >/dev/null 2>&1
   done
-  for node in $(kubectl --context "$KUBE_CONTEXT" get nodes --no-headers 2>/dev/null | awk '$1 ~ /node-[0-9]+$/ && $1 !~ /control-plane/ {print $1}'); do
+  for node in $(kubectl --context "$KUBE_CONTEXT" get nodes -l loadtest=true --no-headers 2>/dev/null | awk '$1 ~ /^kgw-fleet-[0-9]+-node-[0-9]+$/ {print $1}'); do
     kubectl --context "$KUBE_CONTEXT" delete node "$node" >/dev/null 2>&1
   done
   for _ in $(seq 1 60); do
