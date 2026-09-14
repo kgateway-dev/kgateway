@@ -171,7 +171,8 @@ func (s *tsuite) TestBackendTLSPolicyAndStatus() {
 		ObservedGeneration: backendTlsPolicy.Generation,
 	})
 
-	// A policy on a routed kgateway Backend reports both the Gateway and the Backend.
+	// A policy on a routed kgateway Backend reports the Gateway only: the route reaches the
+	// Backend, so the Backend target ancestor is suppressed.
 	s.assertPolicyStatusForPolicy(wellknownBackendTlsPolicy, gatewayMeta, metav1.Condition{
 		Type:    string(gwv1.PolicyConditionAccepted),
 		Status:  metav1.ConditionTrue,
@@ -234,13 +235,13 @@ func (s *tsuite) TestBackendTLSPolicyErrorStatusForTerminatedTLSRoute() {
 // references still reports status, against the Backend itself, since kgateway applies the
 // TLS config to that Backend's cluster regardless of routing (e.g. a GatewayExtension backend).
 func (s *tsuite) TestBackendTLSPolicyStatusForUnroutedBackend() {
-	s.assertPolicyStatusWithAncestors(unroutedBackendTlsPolicy, metav1.Condition{
+	s.assertPolicyStatusForTargets(unroutedBackendTlsPolicy, metav1.Condition{
 		Type:    string(gwv1.PolicyConditionAccepted),
 		Status:  metav1.ConditionTrue,
 		Reason:  string(gwv1.PolicyReasonAccepted),
 		Message: reports.PolicyAcceptedMsg,
 	})
-	s.assertPolicyStatusWithAncestors(unroutedBackendTlsPolicy, metav1.Condition{
+	s.assertPolicyStatusForTargets(unroutedBackendTlsPolicy, metav1.Condition{
 		Type:    string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 		Status:  metav1.ConditionTrue,
 		Reason:  string(gwv1.BackendTLSPolicyReasonResolvedRefs),
@@ -252,23 +253,37 @@ func (s *tsuite) assertPolicyStatus(inCondition metav1.Condition) {
 	s.assertPolicyStatusForPolicy(backendTlsPolicy, gatewayMeta, inCondition)
 }
 
-// assertPolicyStatusForPolicy asserts the policy is reported against the given Gateway, and
-// against each of its targets, with the expected condition on every ancestor.
+// assertPolicyStatusForPolicy asserts the policy is reported against exactly the given
+// Gateway. A policy a route reaches reports only its Gateway ancestors: target ancestors are
+// a fallback for policies no route references, and are suppressed once a Gateway ancestor
+// exists.
 func (s *tsuite) assertPolicyStatusForPolicy(
 	policy *gwv1.BackendTLSPolicy,
 	ancestorMeta metav1.ObjectMeta,
 	inCondition metav1.Condition,
 ) {
-	s.assertPolicyStatusWithAncestors(policy, inCondition, gatewayParentReference(ancestorMeta))
+	s.assertPolicyAncestors(policy, inCondition, func(*gwv1.BackendTLSPolicy) []gwv1.ParentReference {
+		return []gwv1.ParentReference{gatewayParentReference(ancestorMeta)}
+	})
 }
 
-// assertPolicyStatusWithAncestors asserts that kgateway owns exactly one ancestor per
-// spec.targetRef plus each of extraAncestors, and that every one of them carries inCondition.
-// Ancestors written by other controllers are ignored.
-func (s *tsuite) assertPolicyStatusWithAncestors(
+// assertPolicyStatusForTargets asserts the policy is reported against exactly one ancestor
+// per spec.targetRef, the shape an unrouted policy has: with no Gateway ancestor to supersede
+// them, the target ancestors are the only status the policy gets.
+func (s *tsuite) assertPolicyStatusForTargets(
 	policy *gwv1.BackendTLSPolicy,
 	inCondition metav1.Condition,
-	extraAncestors ...gwv1.ParentReference,
+) {
+	s.assertPolicyAncestors(policy, inCondition, targetAncestorReferences)
+}
+
+// assertPolicyAncestors asserts that kgateway owns exactly the ancestors expectedRefs derives
+// from the live policy, and that every one of them carries inCondition. Ancestors written by
+// other controllers are ignored.
+func (s *tsuite) assertPolicyAncestors(
+	policy *gwv1.BackendTLSPolicy,
+	inCondition metav1.Condition,
+	expectedRefs func(*gwv1.BackendTLSPolicy) []gwv1.ParentReference,
 ) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	p := s.TestInstallation.AssertionsT(s.T())
@@ -278,7 +293,7 @@ func (s *tsuite) assertPolicyStatusWithAncestors(
 		err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx, objKey, tlsPol)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "failed to get BackendTLSPolicy %s", objKey)
 
-		expectedRefs := append(targetAncestorReferences(tlsPol), extraAncestors...)
+		expected := expectedRefs(tlsPol)
 
 		var ours []gwv1.PolicyAncestorStatus
 		for _, ancestor := range tlsPol.Status.Ancestors {
@@ -286,13 +301,13 @@ func (s *tsuite) assertPolicyStatusWithAncestors(
 				ours = append(ours, ancestor)
 			}
 		}
-		g.Expect(ours).To(gomega.HaveLen(len(expectedRefs)), "kgateway should own one ancestor per target plus %d extra, got %v", len(extraAncestors), ours)
+		g.Expect(ours).To(gomega.HaveLen(len(expected)), "kgateway should own exactly %d ancestors, got %v", len(expected), ours)
 
 		expectedObservedGeneration := inCondition.ObservedGeneration
 		if expectedObservedGeneration == 0 {
 			expectedObservedGeneration = tlsPol.Generation
 		}
-		for _, expectedRef := range expectedRefs {
+		for _, expectedRef := range expected {
 			idx := -1
 			for i, ancestor := range ours {
 				if kgwreports.ParentRefEqual(ancestor.AncestorRef, expectedRef) {

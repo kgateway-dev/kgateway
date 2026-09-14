@@ -43,10 +43,12 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 
 		// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
 		// (Accepted/ResolvedRefs/Conflicted) rather than kgateway's Valid/Attached, and
-		// resolves conflicts the way translation does. The target ancestor reported here is
-		// additive to the Gateway ancestors the translator reports for every route that uses
-		// the target: it is the only status an unrouted target, or a Backend used solely by a
-		// GatewayExtension, ever gets.
+		// resolves conflicts the way translation does. The target ancestor reported here is a
+		// fallback: it is the only status an unrouted target, or a Backend used solely by a
+		// GatewayExtension, ever gets. It is reported unconditionally because this collection
+		// cannot see whether a route reaches the target — that is knowable only once both
+		// contribution sources have been reduced, so BuildDesiredPolicyStatus drops these
+		// again for any policy that also has a Gateway ancestor.
 		reportBackendTLSPolicies(reporter, targetRef, obj.GetAttachedPolicies().Policies[btpGK])
 
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
@@ -119,9 +121,10 @@ func backendAncestorRef(src ir.ObjectSource) gwv1.ParentReference {
 
 // reportBackendTLSPolicies reports each BackendTLSPolicy in policies against the target it
 // attaches to. The effective policy is chosen by the plugin's MergePolicies on the same
-// unfiltered slice translation hands it, so the target ancestor never disagrees with the
-// Gateway ancestor or with what is actually applied: an older invalid policy still takes
-// precedence, and the newer valid one is Conflicted, not Accepted.
+// unfiltered slice translation hands it, so the target ancestor never disagrees with what is
+// actually applied, or with the Gateway ancestor that supersedes it on a routed target: an
+// older invalid policy still takes precedence, and the newer valid one is Conflicted, not
+// Accepted.
 func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.ParentReference, policies []ir.PolicyAtt) {
 	if len(policies) == 0 {
 		return
