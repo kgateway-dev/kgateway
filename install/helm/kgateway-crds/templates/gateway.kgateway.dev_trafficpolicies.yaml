@@ -1975,6 +1975,18 @@ spec:
                         maximum: 100
                         minimum: 0
                         type: integer
+                      shareAcrossGateway:
+                        description: |-
+                          ShareAcrossGateway applies the token bucket to the Gateway as a whole rather than to each
+                          proxy replica individually. Each replica is given an even share of the bucket based on the
+                          current number of replicas of the Gateway, so the configured rate is the total rate admitted
+                          by all replicas combined. For example, with tokensPerFill=100 and fillInterval=1s, a Gateway
+                          with 4 replicas admits 25 requests per second per gateway. Because the allocation is divided,
+                          maxTokens must be greater than or equal to the number of replicas, otherwise no requests are
+                          admitted.
+
+                          Defaults to false.
+                        type: boolean
                       tokenBucket:
                         description: |-
                           TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
@@ -2014,6 +2026,10 @@ spec:
                         - maxTokens
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: shareAcrossGateway requires tokenBucket to be set
+                      rule: '!has(self.shareAcrossGateway) || !self.shareAcrossGateway
+                        || has(self.tokenBucket)'
                 type: object
               rbac:
                 description: |-
