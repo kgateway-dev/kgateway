@@ -3,6 +3,7 @@
 package loadtesting
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,7 +11,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestValidationMetricsDeltaClampsCounterResets(t *testing.T) {
@@ -138,5 +146,34 @@ func TestBenchmarkEnvRestoresValueSources(t *testing.T) {
 		if env != nil {
 			assert.Contains(t, restored, *env)
 		}
+	}
+}
+
+func TestBenchmarkResourceRestoration(t *testing.T) {
+	for _, original := range []corev1.ResourceRequirements{
+		{},
+		{Limits: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")}},
+		{Limits: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")}, Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")}},
+	} {
+		scheme := runtime.NewScheme()
+		require.NoError(t, appsv1.AddToScheme(scheme))
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{Name: "controller", Namespace: "test"},
+			Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{Containers: []corev1.Container{
+				{Name: "controller", Resources: corev1.ResourceRequirements{
+					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("8Gi")},
+					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("8Gi")},
+				}},
+				{Name: "sidecar", Image: "unchanged"},
+			}}}},
+		}
+		kube := fake.NewClientBuilder().WithScheme(scheme).WithObjects(deployment).Build()
+		require.NoError(t, updateBenchmarkContainer(context.Background(), kube, "test", "controller", "controller", func(c *corev1.Container) {
+			c.Resources = *original.DeepCopy()
+		}))
+		var restored appsv1.Deployment
+		require.NoError(t, kube.Get(context.Background(), client.ObjectKeyFromObject(deployment), &restored))
+		assert.Equal(t, original, restored.Spec.Template.Spec.Containers[0].Resources)
+		assert.Equal(t, deployment.Spec.Template.Spec.Containers[1], restored.Spec.Template.Spec.Containers[1])
 	}
 }

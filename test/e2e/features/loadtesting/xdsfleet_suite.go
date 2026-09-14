@@ -71,6 +71,7 @@ type XdsFleetSuite struct {
 	controllerDeployment string
 	controllerContainer  string
 	originalEnv          map[string]*corev1.EnvVar
+	originalResources    *corev1.ResourceRequirements
 
 	testNamespace string
 	gateways      []string
@@ -322,10 +323,9 @@ func (s *XdsFleetSuite) TearDownSuite() {
 			s.T().Logf("failed to restore controller env (cluster left modified): %v", err)
 		}
 	}
-	if fleetMemoryLimit != "" {
-		// "0" removes the limit rather than setting it to zero.
-		if err := s.setMemoryLimit("0"); err != nil {
-			s.T().Logf("failed to remove controller memory cap (cluster left modified): %v", err)
+	if s.originalResources != nil {
+		if err := s.restoreResources(); err != nil {
+			s.T().Logf("failed to restore controller resources (cluster left modified): %v", err)
 		}
 	}
 	if s.out != nil {
@@ -1280,6 +1280,9 @@ func (s *XdsFleetSuite) snapshotEnv(names []string) error {
 	if container == nil {
 		return fmt.Errorf("container %s not found", s.controllerContainer)
 	}
+	if fleetMemoryLimit != "" {
+		s.originalResources = container.Resources.DeepCopy()
+	}
 	s.originalEnv = make(map[string]*corev1.EnvVar, len(names))
 	for _, name := range names {
 		s.originalEnv[name] = nil
@@ -1344,3 +1347,16 @@ var fleetSubscriptions = []string{
 }
 
 var gatewayParametersGVK = backendGVK.GroupVersion().WithKind("GatewayParameters")
+
+// restoreResources replaces the full saved configuration, removing requests
+// introduced by Kubernetes defaulting when the benchmark limit was applied.
+func (s *XdsFleetSuite) restoreResources() error {
+	if err := updateBenchmarkContainer(s.ctx, s.testInstallation.ClusterContext.Client,
+		s.installNamespace, s.controllerDeployment, s.controllerContainer, func(c *corev1.Container) {
+			c.Resources = *s.originalResources.DeepCopy()
+		}); err != nil {
+		return err
+	}
+	return s.testInstallation.Actions.Kubectl().DeploymentRolloutStatus(s.ctx,
+		s.controllerDeployment, "-n", s.installNamespace, "--timeout=300s")
+}
