@@ -1,0 +1,63 @@
+# This route exercises OpenID provider config discovery: the GatewayExtension below sets only
+# issuerURI, so the control plane fetches Keycloak's well-known document itself instead of
+# being handed the endpoints. Keycloak serves that document under a private CA, so discovery
+# only succeeds if the CA on the keycloak BackendTLSPolicy is honored controller-side.
+# See https://github.com/kgateway-dev/kgateway/issues/14062.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: oauth-discovery
+spec:
+  parentRefs:
+  - name: oauth-gateway
+  hostnames:
+  - example.com # must match a SAN in the Keycloak TLS cert
+  rules:
+  - name: rule0
+    matches:
+    - path:
+        type: PathPrefix
+        value: /anything/discovery
+    backendRefs:
+    - name: httpbin
+      port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: oauth-route-discovery
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: oauth-discovery
+  oauth2:
+    extensionRef:
+      name: keycloak-oauth-discovery
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: keycloak-oauth-discovery
+spec:
+  oauth2:
+    backendRef:
+      kind: Service
+      name: keycloak
+      port: 443
+    # The issuer is named by an in-cluster DNS name, because discovery is a control-plane
+    # fetch and the controller runs in its own namespace. The Keycloak certificate carries
+    # this name as a SAN; the CA that signed it comes from the keycloak BackendTLSPolicy in
+    # setup.yaml, which is the whole point of this test.
+    issuerURI: https://keycloak.default.svc.cluster.local/realms/master
+    # tokenEndpoint, authorizationEndpoint and endSessionEndpoint are deliberately omitted:
+    # spelling them out is what skips discovery, so setting any of them here would stop this
+    # route from covering the discovery path at all.
+    credentials:
+      clientID: kgateway-client-id # must match the clientId created in Keycloak
+      clientSecretRef:
+        name: oauth-client-secret
+    redirectURI: https://example.com/anything/discovery/oauth2/redirect # must match REDIRECT_URL_DISCOVERY in Keycloak setup
+    logoutPath: /logout
+    forwardAccessToken: true
+    scopes: ["openid", "email"]
