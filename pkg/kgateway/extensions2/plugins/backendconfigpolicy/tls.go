@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -246,9 +247,19 @@ func parseTLSParameters(tlsParameters *kgateway.TLSParameters) (*envoytlsv3.TlsP
 		return nil, err
 	}
 
+	cipherSuites, err := sslutils.ValidateTlsStrings(tlsParameters.CipherSuites, sslutils.SupportedCipherSuites, "cipher suite")
+	if err != nil {
+		return nil, err
+	}
+
+	ecdhCurves, err := sslutils.ValidateTlsStrings(tlsParameters.EcdhCurves, sslutils.SupportedEcdhCurves, "ECDH curve")
+	if err != nil {
+		return nil, err
+	}
+
 	return &envoytlsv3.TlsParameters{
-		CipherSuites:              tlsParameters.CipherSuites,
-		EcdhCurves:                tlsParameters.EcdhCurves,
+		CipherSuites:              cipherSuites,
+		EcdhCurves:                ecdhCurves,
 		SignatureAlgorithms:       tlsParameters.SignatureAlgorithms,
 		TlsMinimumProtocolVersion: tlsMinVersion,
 		TlsMaximumProtocolVersion: tlsMaxVersion,

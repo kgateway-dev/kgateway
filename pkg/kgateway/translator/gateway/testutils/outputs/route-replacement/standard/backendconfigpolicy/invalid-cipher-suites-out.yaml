@@ -1,33 +1,9 @@
 Clusters:
-- commonLbConfig:
-    localityWeightedLbConfig: {}
-  connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
+- loadAssignment:
+    clusterName: kube_gwtest_example-svc_80
+  metadata: {}
   name: kube_gwtest_example-svc_80
-  transportSocket:
-    name: envoy.transport_sockets.tls
-    typedConfig:
-      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-      commonTlsContext:
-        tlsParams:
-          cipherSuites:
-          - BOGUS_CIPHER_SUITE_1
-          - INVALID_AES_256_GCM_SHA384
-          - FAKE_ECDHE_RSA_WITH_AES_128_CBC_SHA
-          ecdhCurves:
-          - invalid-curve-p256
-          - bogus-secp384r1
-          - fake-x25519
-          signatureAlgorithms:
-          - rsa_unknown_algo
-          - ecdsa_bogus
-          tlsMaximumProtocolVersion: TLSv1_3
-          tlsMinimumProtocolVersion: TLSv1_2
-  type: EDS
+  type: STATIC
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -159,13 +135,14 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
+          message: 'unsupported cipher suite: "BOGUS_CIPHER_SUITE_1" (ensure you are
+            using a BoringSSL-supported name)'
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway
