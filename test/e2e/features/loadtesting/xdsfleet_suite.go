@@ -86,7 +86,12 @@ type XdsFleetSuite struct {
 	activeConn        *grpc.ClientConn
 	activeConnStreams int
 
-	out *os.File
+	out                     *os.File
+	observing               bool
+	controllerFailureReason string
+	restartBaseline         int32
+	survivedGateways        int
+	attemptedGateways       int
 }
 
 // Fleet shape. The defaults describe the production shape this was built to
@@ -363,6 +368,8 @@ func (s *XdsFleetSuite) TearDownSuite() {
 // TestXdsFleet connects the fleet in waves, measuring after each, then prices
 // the churn events at full fan-out.
 func (s *XdsFleetSuite) TestXdsFleet() {
+	s.restartBaseline = s.controllerRestarts()
+	s.observing = true
 	perWave := fleetGateways / fleetWaves
 	if perWave == 0 {
 		perWave = fleetGateways
@@ -374,7 +381,15 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		start := time.Now()
 		newClients := (target - connected) * s.clientsPerGateway()
 		firstNewStream := len(s.clients)
-		s.connectGateways(connected, target)
+		s.attemptedGateways = target
+		if err := s.connectGateways(connected, target); err != nil {
+			reason := s.controllerFailure()
+			if reason == "" {
+				reason = fmt.Sprintf("could not open wave streams: %v", err)
+			}
+			s.emitFailure(reason)
+			return
+		}
 		connected = target
 		// Wait for the clients this wave added to actually be served before
 		// measuring anything.
@@ -393,17 +408,23 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		// wave timeout is not a measurement to record and move past - it is the
 		// point where this build stopped keeping up, so the ladder ends there.
 		servedAll := s.waitServed(s.clients[firstNewStream:], fleetWaveTimeout)
-		settled := s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout)
-		// A stream that never received a response is not a connected client, and
-		// a fleet of those measures nothing at all. Stop rather than report a
-		// zero as if it were a result.
-		if acks := s.totalAcks(); acks == 0 {
-			s.Require().FailNow("no synthetic xDS stream received a response",
-				"connected %d gateways (%d streams) but got 0 acks and %d receive errors; first error: %s",
-				connected, connected*fleetStreamsPerGateway, s.totalRecvErrors(), s.firstStreamError())
+		settled := servedAll && s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout)
+		// Scrapes may fail precisely when the controller reaches its capacity.
+		// Preserve the failure verdict before attempting any fatal assertions.
+		if reason := s.controllerFailure(); reason != "" {
+			s.emitFailure(reason)
+			return
 		}
-		sample := s.scrape()
+		sample, sampleErr := readControllerSample(s.metricsURL)
 		restarts := s.controllerRestarts()
+		if reason := s.controllerFailure(); reason != "" {
+			s.emitFailure(reason)
+			return
+		}
+		if sampleErr != nil {
+			s.emitFailure(fmt.Sprintf("controller metrics unavailable: %v", sampleErr))
+			return
+		}
 		// A wave that connects clients and produces no new responses is not a
 		// measurement. Those clients are attached and receiving nothing, so the
 		// control plane is not building their snapshots, and every figure below
@@ -452,25 +473,14 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		s.T().Logf("wave %d: gateways=%d clients=%d settled=%v heap=%.0fMB rss=%.0fMB cpu=%.1fs resources=%.0f restarts=%d",
 			wave, connected, connected*s.clientsPerGateway(), settled, sample.HeapInuse/1e6, sample.RSS/1e6, sample.CPUSeconds, sample.Resources, restarts)
 		if !servedAll {
-			s.emit("xds_fleet_verdict", map[string]any{
-				"build": benchLabel, "survived_clients": (connected - perWave) * s.clientsPerGateway(),
-				"died_at_clients":   connected * s.clientsPerGateway(),
-				"reason":            "could not serve the clients added in this wave within the wave timeout",
-				"survived_gateways": connected - perWave, "died_at_gateways": connected,
-			})
+			s.emitFailure("could not serve the streams added in this wave within the wave timeout")
 			return
 		}
-		if restarts > 0 {
-			died := connected * s.clientsPerGateway()
-			survived := (connected - perWave) * s.clientsPerGateway()
-			s.T().Logf("controller restarted during wave %d; the build did not survive %d clients at this shape", wave, died)
-			s.emit("xds_fleet_verdict", map[string]any{
-				"build": benchLabel, "survived_clients": survived,
-				"died_at_clients": died, "reason": "controller restarted (out of memory or crash)",
-				"survived_gateways": connected - perWave, "died_at_gateways": connected,
-			})
+		if !settled {
+			s.emitFailure("controller did not complete the quiet window within the wave timeout")
 			return
 		}
+		s.survivedGateways = connected
 	}
 
 	s.runFleetPhase("EdsChurn", func(i int) { s.churnEndpointSlice(i) })
@@ -941,7 +951,7 @@ func (s *XdsFleetSuite) startForwards() {
 // connectGateways opens streams for gateways [from, to), pausing between them
 // when fleetTrickleMs is set. See that knob for why the pause changes what is
 // being measured rather than just how long it takes.
-func (s *XdsFleetSuite) connectGateways(from, to int) {
+func (s *XdsFleetSuite) connectGateways(from, to int) error {
 	for i := from; i < to; i++ {
 		role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, s.testNamespace, s.gateways[i])
 		for r := range fleetStreamsPerGateway {
@@ -949,10 +959,13 @@ func (s *XdsFleetSuite) connectGateways(from, to int) {
 				time.Sleep(time.Duration(fleetTrickleMs) * time.Millisecond)
 			}
 			c, err := s.openStreamRetrying(role, fmt.Sprintf("%s.%s", s.podName(i, r), s.testNamespace))
-			s.Require().NoError(err, "should open xDS stream for %s", role)
+			if err != nil {
+				return fmt.Errorf("open xDS stream for %s: %w", role, err)
+			}
 			s.clients = append(s.clients, c)
 		}
 	}
+	return nil
 }
 
 // openStreamRetrying retries a stream open, because the port-forward tunnel
@@ -965,6 +978,9 @@ func (s *XdsFleetSuite) openStreamRetrying(role, nodeID string) (*syntheticClien
 		c, err = s.openStream(role, nodeID)
 		if err == nil {
 			return c, nil
+		}
+		if reason := s.controllerFailure(); reason != "" {
+			return nil, fmt.Errorf("%s", reason)
 		}
 		// Retain the old connection for its established streams and teardown.
 		// Only stop assigning new streams to it.
@@ -1140,6 +1156,16 @@ func (s *XdsFleetSuite) reconnectOneGateway(i int) {
 
 func (s *XdsFleetSuite) scrape() controllerSample {
 	sample, err := readControllerSample(s.metricsURL)
+	if s.observing {
+		reason := s.controllerFailure()
+		if reason == "" && err != nil {
+			reason = fmt.Sprintf("controller metrics unavailable: %v", err)
+		}
+		if reason != "" {
+			s.emitFailure(reason)
+			s.Require().FailNow("fleet measurement aborted", reason)
+		}
+	}
 	s.Require().NoError(err, "should scrape %s", s.metricsURL)
 	return sample
 }
@@ -1171,7 +1197,15 @@ func (s *XdsFleetSuite) waitConverged(before float64) (time.Time, bool) {
 	seen := before
 	for time.Now().Before(deadline) {
 		time.Sleep(250 * time.Millisecond)
-		cur := s.scrape().Transforms
+		if s.controllerFailure() != "" {
+			return time.Time{}, false
+		}
+		sample, err := readControllerSample(s.metricsURL)
+		if err != nil {
+			last = time.Time{}
+			continue
+		}
+		cur := sample.Transforms
 		if cur > seen {
 			seen = cur
 			last = time.Now()
@@ -1205,6 +1239,9 @@ func servedStreams(clients []*syntheticClient) int {
 func (s *XdsFleetSuite) waitServed(clients []*syntheticClient, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
+		if s.controllerFailure() != "" {
+			return false
+		}
 		if servedStreams(clients) == len(clients) {
 			return true
 		}
@@ -1215,21 +1252,48 @@ func (s *XdsFleetSuite) waitServed(clients []*syntheticClient, timeout time.Dura
 
 func (s *XdsFleetSuite) waitQuiet(quiet, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
-	last := s.scrape().Transforms
-	stableSince := time.Now()
+	var last float64
+	var stableSince time.Time
 	for time.Now().Before(deadline) {
+		if s.controllerFailure() != "" {
+			return false
+		}
+		sample, err := readControllerSample(s.metricsURL)
+		if err != nil {
+			// Missing samples cannot establish a continuous quiet window.
+			stableSince = time.Time{}
+		} else {
+			if stableSince.IsZero() || sample.Transforms != last {
+				last = sample.Transforms
+				stableSince = time.Now()
+			}
+			if time.Since(stableSince) >= quiet {
+				return true
+			}
+		}
 		time.Sleep(500 * time.Millisecond)
-		cur := s.scrape().Transforms
-		if cur != last {
-			last = cur
-			stableSince = time.Now()
-			continue
-		}
-		if time.Since(stableSince) >= quiet {
-			return true
-		}
 	}
 	return false
+}
+
+// controllerFailure is independent of the metrics port-forward, which can die
+// with the pod. Ignore restarts that preceded this measurement run.
+func (s *XdsFleetSuite) controllerFailure() string {
+	if s.observing && s.controllerRestarts() > s.restartBaseline {
+		s.controllerFailureReason = "controller restarted (out of memory or crash)"
+	}
+	return s.controllerFailureReason
+}
+
+func (s *XdsFleetSuite) emitFailure(reason string) {
+	s.emit("xds_fleet_verdict", map[string]any{
+		"build":             benchLabel,
+		"survived_clients":  s.survivedGateways * s.clientsPerGateway(),
+		"died_at_clients":   s.attemptedGateways * s.clientsPerGateway(),
+		"survived_gateways": s.survivedGateways,
+		"died_at_gateways":  s.attemptedGateways,
+		"reason":            reason,
+	})
 }
 
 func (s *XdsFleetSuite) emit(prefix string, v map[string]any) {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -22,6 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/cluster"
 )
 
 func TestValidationMetricsDeltaClampsCounterResets(t *testing.T) {
@@ -201,4 +206,67 @@ func TestFleetOpenRetryPreservesPreviousConnection(t *testing.T) {
 	assert.NotEqual(t, connectivity.Shutdown, conn.GetState(), "retry must not close the connection carrying earlier streams")
 	assert.Contains(t, fleet.conns, conn, "original connection remains owned for teardown")
 	assert.Greater(t, len(fleet.conns), 1, "retry should allocate fresh connections")
+}
+
+func TestFleetCrashEmitsVerdictWithUnavailableMetrics(t *testing.T) {
+	oldGateways, oldWaves, oldStreams := fleetGateways, fleetWaves, fleetStreamsPerGateway
+	t.Cleanup(func() {
+		fleetGateways, fleetWaves, fleetStreamsPerGateway = oldGateways, oldWaves, oldStreams
+	})
+	// Skip network stream creation and exercise the wave observation path.
+	fleetGateways, fleetWaves, fleetStreamsPerGateway = 1, 1, 0
+	scheme := runtime.NewScheme()
+	require.NoError(t, corev1.AddToScheme(scheme))
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "controller-pod", Namespace: "test"},
+		Status:     corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "controller", RestartCount: 2}}},
+	}
+	kube := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pod).WithObjects(pod).Build()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		var current corev1.Pod
+		if err := kube.Get(context.Background(), client.ObjectKeyFromObject(pod), &current); err != nil {
+			t.Error(err)
+		}
+		current.Status.ContainerStatuses[0].RestartCount = 3
+		if err := kube.Status().Update(context.Background(), &current); err != nil {
+			t.Error(err)
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	outputPath := filepath.Join(t.TempDir(), "verdict.jsonl")
+	output, err := os.Create(outputPath)
+	require.NoError(t, err)
+	defer output.Close()
+	fleet := &XdsFleetSuite{
+		LoadTestingSuite: LoadTestingSuite{
+			ctx:              context.Background(),
+			testInstallation: &e2e.TestInstallation{ClusterContext: &cluster.Context{Client: kube}},
+		},
+		installNamespace: "test", controllerDeployment: "controller",
+		gateways: []string{"gateway"}, metricsURL: server.URL, out: output,
+	}
+	fleet.SetT(t)
+	fleet.TestXdsFleet()
+	assert.False(t, fleet.waitServed(nil, time.Second), "a restart must prevent readiness even if all streams are ready")
+	_, converged := fleet.waitConverged(0)
+	assert.False(t, converged, "a restart must stop convergence polling")
+	data, err := os.ReadFile(outputPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "xds_fleet_verdict")
+	assert.Contains(t, string(data), "controller restarted")
+	assert.Contains(t, string(data), "\"survived_gateways\":0")
+	assert.NotContains(t, string(data), "xds_fleet_wave", "unavailable metrics must not produce a zero-valued wave")
+}
+
+func TestFleetQuietRejectsUnavailableMetrics(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	fleet := &XdsFleetSuite{metricsURL: server.URL}
+	fleet.SetT(t)
+	assert.False(t, fleet.waitQuiet(0, 100*time.Millisecond), "an HTTP failure is not a quiet controller")
+	_, err := readControllerSample(server.URL)
+	require.ErrorContains(t, err, "503")
 }

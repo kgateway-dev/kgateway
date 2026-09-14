@@ -590,11 +590,14 @@ func (s *XdsCostSuite) scrape() controllerSample {
 // readControllerSample scrapes one sample from a controller metrics endpoint.
 // Shared with the fleet-scale suite in xdsfleet_suite.go.
 func readControllerSample(metricsURL string) (controllerSample, error) {
-	resp, err := http.Get(metricsURL)
+	resp, err := (&http.Client{Timeout: 5 * time.Second}).Get(metricsURL)
 	if err != nil {
 		return controllerSample{}, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return controllerSample{}, fmt.Errorf("metrics returned HTTP %d", resp.StatusCode)
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return controllerSample{}, err
