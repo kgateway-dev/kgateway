@@ -1,42 +1,30 @@
-Envtests for krt/kgateway
+# kgateway setup envtests
 
-Add a `.yaml` in the test folder.
-The first time your run the test, an xds `-out.yaml` file will be created in the same folder.
-Note:
-- The test will fail in this case
-- The kubernetes service endpoint will not be written, as it has a different port every run.
+These tests cover behavior that requires a live Kubernetes control plane, such as Istio integration and update propagation. Pure-translation golden scenarios belong in `../translator/gateway/testutils/inputs/setup` and run through `TestSetupScenarios` in the gateway translator package.
 
-From here on, it will compare the xds outputs of the `scenario.yaml` of the test with the `-out.yaml` file.
+## Adding a live-control-plane scenario
 
-It is assumed that the scenario yaml has gateway named `http-gw-for-test` and a pod named `gateway`.
-The test will rename the gateway, so that the tests can run in parallel. Make sure that other resources
-in the scenario yamls are unique (though currently tests won't run in parallel).
+Add a `.yaml` file to the appropriate directory under `testdata`. The scenario must define a Gateway named `http-gw-for-test`; the test renames that Gateway to isolate scenarios. Other resource names must also be unique because these tests do not run in parallel.
 
-The test will apply the resources in the yaml file, ask for an xDS snapshot, and finally compare the snapshot with the `-out.yaml` file.
+The first run creates a sibling `-out.yaml` xDS golden and intentionally fails. Subsequent runs apply the resources, request an xDS snapshot, and compare it with that golden. The dynamically allocated endpoint for the built-in `kubernetes` Service is omitted because its port changes between runs.
 
 ## How to run
 
-From the `kgateway/pkg/kgateway` directory run:
+From the repository root, run:
 
 ```shell
-make install-go-tools
+go test -tags e2e -v ./pkg/kgateway/setup/
 ```
 
-Then run the tests in the setup directory:
-```yaml
-go test -v ./setup/
-```
+## Shared resources
 
-Test resources:
-- testdata/setup_yaml/setup.yaml: Adds the GatewayClass and GatewayParameters
-- testdata/setup_yaml/pods.yaml: Adds the shared pods and nodes
-- testdata/istio_crds_setup/crds.yaml: Adds istio CRDs
+- `testdata/setup_yaml/setup.yaml`: GatewayClass and GatewayParameters
+- `testdata/setup_yaml/pods.yaml`: shared Pods and Nodes
+- `testdata/istio_crds_setup/crds.yaml`: Istio CRDs
 
-Test setups:
+## Scenario directories
 
-- `standard`: `setup/standard` uses the standard kgateway setup
-- `istio_mtls`: `setup/istio_mtls` uses the standard kgateway setup with Istio auto mTLS enabled
-- `autodns`: `setup/autodns` uses the standard kgateway setup with auto DNS enabled
-- `istio_service_entry`: `setup/istio_service_entry` uses the standard kgateway setup with Istio service entry integration enabled
-- `istio_destination_rule`: `setup/istio_destination_rule` uses the standard kgateway setup with Istio destination rule integration enabled
-- `inference_api`: `setup/inference_api` uses the standard kgateway setup with Inference API enabled
+- `testdata/serviceentry/dr`: DestinationRules applied to ServiceEntries
+- `testdata/istio_destination_rule`: Istio DestinationRule integration
+- `testdata/traffic_distribution`: traffic distribution with Istio integration
+- `testdata/istio_mtls`: Istio auto-mTLS integration
