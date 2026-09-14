@@ -767,7 +767,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				config: []kgateway.AccessLog{
 					{
 						OpenTelemetry: &kgateway.OpenTelemetryAccessLogService{
-							GrpcService: kgateway.CommonAccessLogGrpcService{
+							GrpcService: &kgateway.CommonAccessLogGrpcService{
 								CommonGrpcService: kgateway.CommonGrpcService{
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
@@ -843,11 +843,93 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				},
 			},
 			{
+				name: "OTel Sink (HTTP)",
+				config: []kgateway.AccessLog{
+					{
+						OpenTelemetry: &kgateway.OpenTelemetryAccessLogService{
+							HttpService: &kgateway.CommonAccessLogHttpService{
+								CommonHttpService: kgateway.CommonHttpService{
+									BackendRef: gwv1.BackendRef{
+										BackendObjectReference: gwv1.BackendObjectReference{
+											Name: "test-service",
+										},
+									},
+								},
+								LogName: "otel-http-log",
+							},
+						},
+					},
+				},
+				expected: []*envoyaccesslogv3.AccessLog{
+					{
+						Name: "envoy.access_loggers.open_telemetry",
+						ConfigType: &envoyaccesslogv3.AccessLog_TypedConfig{
+							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
+								HttpService: &envoycorev3.HttpService{
+									HttpUri: &envoycorev3.HttpUri{
+										Uri: "backend_default_test-service_0",
+										HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+											Cluster: "backend_default_test-service_0",
+										},
+										Timeout: &durationpb.Duration{Seconds: 2},
+									},
+								},
+								LogName: "otel-http-log",
+								ResourceAttributes: &otelv1.KeyValueList{
+									Values: []*otelv1.KeyValue{
+										{
+											Key: "service.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "gw.default",
+												},
+											},
+										},
+										{
+											Key: "service.namespace",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "service.version",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "v1.0.0-test",
+												},
+											},
+										},
+										{
+											Key: "k8s.namespace.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "default",
+												},
+											},
+										},
+										{
+											Key: "k8s.container.name",
+											Value: &otelv1.AnyValue{
+												Value: &otelv1.AnyValue_StringValue{
+													StringValue: "kgateway-proxy",
+												},
+											},
+										},
+									},
+								},
+							}),
+						},
+					},
+				},
+			},
+			{
 				name: "OTel Sink with all the options",
 				config: []kgateway.AccessLog{
 					{
 						OpenTelemetry: &kgateway.OpenTelemetryAccessLogService{
-							GrpcService: kgateway.CommonAccessLogGrpcService{
+							GrpcService: &kgateway.CommonAccessLogGrpcService{
 								CommonGrpcService: kgateway.CommonGrpcService{
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
@@ -1295,6 +1377,14 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							return &backend
 						}(),
 						"otel-log-0": func() *ir.BackendObjectIR {
+							backend := ir.NewBackendObjectIR(ir.ObjectSource{
+								Kind:      "Backend",
+								Name:      "test-service",
+								Namespace: "default",
+							}, 0, "", "")
+							return &backend
+						}(),
+						"otel-http-log-0": func() *ir.BackendObjectIR {
 							backend := ir.NewBackendObjectIR(ir.ObjectSource{
 								Kind:      "Backend",
 								Name:      "test-service",
