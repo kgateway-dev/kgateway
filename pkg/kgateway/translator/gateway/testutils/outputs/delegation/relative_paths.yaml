@@ -87,7 +87,6 @@ Routes:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
     - match:
         safeRegex:
-          googleRe2: {}
           regex: /a/a/2/.*
       name: listener~80~example_com-route-1-httproute-route-a-a-1-0-matcher-0
       route:
@@ -153,7 +152,6 @@ Routes:
           stringMatch:
             exact: val1
         safeRegex:
-          googleRe2: {}
           regex: /x/a/2/.*
       name: listener~80~foo_com-route-1-httproute-route-a-a-1-0-matcher-0
       route:

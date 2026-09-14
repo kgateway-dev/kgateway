@@ -163,7 +163,7 @@ spec:
   body: "The requested resource was not found on this server."
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: policy-1
   generation: 1
@@ -172,10 +172,12 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  xffNumTrustedHops: 2      
+  default:
+    httpSettings:
+      xffNumTrustedHops: 2
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: policy-2
   generation: 2
@@ -184,7 +186,9 @@ spec:
   - group: gateway.networking.k8s.io
     kind: Gateway
     name: example-gateway
-  streamIdleTimeout: 30s 
+  default:
+    httpSettings:
+      streamIdleTimeout: 30s
 ---
 apiVersion: v1
 kind: Service

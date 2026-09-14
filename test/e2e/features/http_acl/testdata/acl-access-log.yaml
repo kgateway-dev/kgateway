@@ -52,7 +52,7 @@ spec:
         action: allow
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
   name: acl-access-log
   namespace: kgateway-base
@@ -61,10 +61,12 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: gateway
-  accessLog:
-    - fileSink:
-        path: /dev/stdout
-        jsonFormat:
-          blocked_by: "%DYNAMIC_METADATA(dev.kgateway.http.acl:blocked-by)%"
-          response_code: "%RESPONSE_CODE%"
-          path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+  default:
+    httpSettings:
+      accessLog:
+        - fileSink:
+            path: /dev/stdout
+            jsonFormat:
+              blocked_by: "%DYNAMIC_METADATA(dev.kgateway.http.acl:blocked-by)%"
+              response_code: "%RESPONSE_CODE%"
+              path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"

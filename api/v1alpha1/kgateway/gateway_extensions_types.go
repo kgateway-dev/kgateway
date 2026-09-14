@@ -78,9 +78,10 @@ type JWT struct {
 	// ValidationMode configures how JWT validation behaves.
 	// If unset or empty, Strict mode is used (JWT is required).
 	// If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
-	// If using this mode, make sure to consider the security implications and
+	// If set to AllowMissingOrFailed, no request is ever rejected by the JWT filter.
+	// If using either of those modes, make sure to consider the security implications and
 	// consider using an `RBAC` policy to enforce authorization.
-	// +kubebuilder:validation:Enum=Strict;AllowMissing
+	// +kubebuilder:validation:Enum=Strict;AllowMissing;AllowMissingOrFailed
 	// +optional
 	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
 
@@ -103,6 +104,16 @@ const (
 	// If a token exists, validate it.
 	// Warning: this allows requests without a JWT token.
 	ValidationModeAllowMissing ValidationMode = "AllowMissing"
+	// Validate tokens but never reject a request. Requests with a missing, expired,
+	// malformed, or otherwise invalid token are all allowed through.
+	// Every JWT is still verified, so a valid token still populates `claimsToHeaders`
+	// and the JWT dynamic metadata, and a verification failure is recorded in the
+	// dynamic metadata for observability. This is a non-enforcing mode,
+	// intended for evaluating a JWT policy against live traffic before enforcing it.
+	// Warning: this mode provides no authentication. A downstream `RBAC` policy that
+	// matches on JWT claims sees the same empty metadata for an invalid token as it does
+	// for a request with no token at all.
+	ValidationModeAllowMissingOrFailed ValidationMode = "AllowMissingOrFailed"
 )
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
@@ -135,6 +146,8 @@ type ExtGrpcService struct {
 
 	// RequestTimeout is the timeout for the gRPC request. This is the timeout for a specific request.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
@@ -159,6 +172,8 @@ type ExtHttpService struct {
 
 	// RequestTimeout is the timeout for the HTTP request. Default timeout is 2 seconds.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid timeout value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
 	RequestTimeout *metav1.Duration `json:"requestTimeout,omitempty"`
@@ -229,6 +244,8 @@ type ExtSvcRetryPolicy struct {
 // +kubebuilder:validation:XValidation:rule="has(self.maxInterval) ? duration(self.maxInterval) >= duration(self.baseInterval) : true",message="maxInterval must be greater than or equal to baseInterval"
 type RetryBackoff struct {
 	// BaseInterval specifies the base interval used with a fully jittered exponential back-off between retries.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.BaseInterval must be at least 1ms."
 	// +required
@@ -236,6 +253,8 @@ type RetryBackoff struct {
 
 	// MaxInterval specifies the maximum interval between retry attempts.
 	// Defaults to 10 times the BaseInterval if not set.
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +optional
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
@@ -263,6 +282,8 @@ type RateLimitProvider struct {
 	// For rate limiting, prefer using this timeout rather than setting the generic `timeout` on the `GrpcService`.
 	// See [envoy issue](https://github.com/envoyproxy/envoy/issues/20070) for more info.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:default="100ms"
 	Timeout metav1.Duration `json:"timeout,omitempty"`

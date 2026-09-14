@@ -275,7 +275,11 @@ func New(opts ...func(*setup)) (*setup, error) {
 	}
 
 	if s.validator == nil {
-		s.validator = validator.New(*s.globalSettings)
+		var err error
+		s.validator, err = validator.New(*s.globalSettings)
+		if err != nil {
+			return nil, fmt.Errorf("error creating validator: %w", err)
+		}
 	}
 
 	return s, nil

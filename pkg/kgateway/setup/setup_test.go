@@ -583,7 +583,7 @@ func testScenario(
 			// serialize xdsDump to yaml
 			d, err := dump.ToYaml()
 			if err != nil {
-				return fmt.Errorf("failed to serialize xdsDump: %v", err)
+				return fmt.Errorf("failed to serialize xdsDump: %w", err)
 			}
 			os.WriteFile(fout, d, 0o600)
 			return errors.New("wrote out file - nothing to test")
@@ -690,14 +690,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		for i := 0; i < sent; i++ {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %w", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.cluster.v3.Cluster" {
 				for _, anyCluster := range dresp.GetResources() {
 					var cluster envoyclusterv3.Cluster
 					if err := anyCluster.UnmarshalTo(&cluster); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cluster: %w", err))
 					}
 					clusters = append(clusters, &cluster)
 				}
@@ -706,7 +706,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 				for _, anyListener := range dresp.GetResources() {
 					var listener envoylistenerv3.Listener
 					if err := anyListener.UnmarshalTo(&listener); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %w", err))
 					}
 					listeners = append(listeners, &listener)
 					needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
@@ -787,14 +787,14 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 		for range 2 {
 			dresp, err := x.adsClient.Recv()
 			if err != nil {
-				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %v", err))
+				errs = errors.Join(errs, fmt.Errorf("failed to get response from xds server: %w", err))
 			}
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.route.v3.RouteConfiguration" {
 				for _, anyRoute := range dresp.GetResources() {
 					var route envoyroutev3.RouteConfiguration
 					if err := anyRoute.UnmarshalTo(&route); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal route: %w", err))
 					}
 					routes = append(routes, &route)
 				}
@@ -802,7 +802,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 				for _, anyCla := range dresp.GetResources() {
 					var cla envoyendpointv3.ClusterLoadAssignment
 					if err := anyCla.UnmarshalTo(&cla); err != nil {
-						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %v", err))
+						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal cla: %w", err))
 					}
 					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them.
 					// also skip the per-gateway local cluster: it's requested only to satisfy the ADS

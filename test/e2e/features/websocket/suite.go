@@ -46,7 +46,7 @@ const (
 
 // dialWebSocket dials a WebSocket connection through the base gateway with the
 // given Host header. It retries until success or the eventualTimeout is reached,
-// which accounts for the HTTPListenerPolicy needing time to be reconciled and
+// which accounts for the ListenerPolicy needing time to be reconciled and
 // pushed to Envoy as xDS config.
 func (s *testingSuite) dialWebSocket(g gomega.Gomega, host string) string {
 	wsURL := fmt.Sprintf("ws://%s:%d/", common.BaseGateway.Address, 80)

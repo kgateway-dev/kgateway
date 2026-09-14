@@ -40,7 +40,7 @@ const (
 type BackendTranslator struct {
 	ContributedBackends map[schema.GroupKind]ir.BackendInit
 	ContributedPolicies map[schema.GroupKind]sdk.PolicyPlugin
-	EndpointPlugins     []sdk.EndpointPlugin
+	EndpointPlugins     []EndpointPlugin
 	CommonCols          *collections.CommonCollections
 	Validator           validator.Validator
 	Mode                apisettings.ValidationMode
@@ -180,9 +180,8 @@ func (t *BackendTranslator) runPolicies(
 	}
 
 	if endpointInputs != nil {
-		for _, processEndpoints := range t.orderedEndpointPlugins() {
-			processEndpoints(kctx, ctx, ucc, endpointInputs)
-		}
+		resolved, _ := ResolveEndpointInputs(kctx, ctx, ucc, *endpointInputs, t.orderedEndpointPlugins())
+		endpointInputs = &resolved
 	}
 
 	// for clusters that want a CLA _and_ initialized with inlineEps, build the CLA.
@@ -198,7 +197,7 @@ func (t *BackendTranslator) runPolicies(
 	return errors.Join(errs...)
 }
 
-func (t *BackendTranslator) orderedEndpointPlugins() []sdk.EndpointPlugin {
+func (t *BackendTranslator) orderedEndpointPlugins() []EndpointPlugin {
 	if t.EndpointPlugins != nil {
 		return t.EndpointPlugins
 	}

@@ -41,9 +41,9 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			gk: {
-				Name:                      "destrule",
-				PerClientProcessBackend:   d.processBackend,
-				PerClientProcessEndpoints: d.processEndpoints,
+				Name:                    "destrule",
+				PerClientProcessBackend: d.processBackend,
+				PerClientEditEndpoints:  d.processEndpoints,
 			},
 		},
 	}
@@ -59,20 +59,20 @@ func (d *destrulePlugin) processEndpoints(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	ucc ir.UniquelyConnectedClient,
-	out *endpoints.EndpointsInputs,
+	out endpoints.EndpointInputsEditor,
 ) uint64 {
-	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, out.EndpointsForBackend.Hostname, ucc.Labels)
+	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, out.Hostname(), ucc.Labels)
 	if destrule == nil {
 		return 0
 	}
 
-	trafficPolicy := getTrafficPolicy(destrule, out.EndpointsForBackend.Port)
+	trafficPolicy := getTrafficPolicy(destrule, out.Port())
 	localityLb := getLocalityLbSetting(trafficPolicy)
 	if localityLb == nil {
 		return 0
 	}
 
-	out.PriorityInfo = getPriorityInfoFromDestrule(localityLb)
+	out.SetPriorityInfo(getPriorityInfoFromDestrule(localityLb))
 	hasher := fnv.New64()
 	hasher.Write([]byte(destrule.UID))
 	hasher.Write(fmt.Appendf(nil, "%v", destrule.Generation))

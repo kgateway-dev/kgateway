@@ -269,7 +269,7 @@ type Settings struct {
 	// randomized drain, closing the busy-stream reordering window on additions.
 	// It does not change ACK-skew or removal ordering, because those depend on
 	// when resource-type watches are open.
-	EnableOrderedAds bool `split_words:"true" default:"false"`
+	EnableOrderedAds bool `split_words:"true" default:"true"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.

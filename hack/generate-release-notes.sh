@@ -39,6 +39,12 @@ function cleanup() {
     fi
 }
 
+# Kinds that can carry a release note, in the order their sections appear in the
+# generated notes. A PR may have several kind/* labels; its note is filed under
+# the first of these that is present, so this order doubles as precedence. Every
+# entry needs a matching case in get_section_title.
+SECTION_ORDER=(breaking_change feature fix deprecation documentation cleanup install bump)
+
 # Get section title for a given kind
 function get_section_title() {
     local kind="$1"
@@ -53,6 +59,21 @@ function get_section_title() {
         "bump") echo "Dependency Updates" ;;
         *) echo "" ;;
     esac
+}
+
+# Pick the highest-precedence kind from a newline-separated list of label names.
+# Prints nothing if the PR carries no kind that can hold a release note.
+function pick_kind() {
+    local labels="$1" kind label
+    for kind in "${SECTION_ORDER[@]}"; do
+        while IFS= read -r label; do
+            if [ "$label" = "kind/$kind" ]; then
+                echo "$kind"
+                return 0
+            fi
+        done <<< "$labels"
+    done
+    return 0
 }
 
 # Check if a release note is effectively "NONE"
@@ -197,18 +218,17 @@ function process_prs() {
         # Get PR labels
         LABELS=$(echo "$PR_DATA" | jq -r '.labels[].name')
 
-        # Find the kind label
-        KIND=""
-        while read -r LABEL; do
-            if [[ "$LABEL" =~ ^kind/ ]]; then
-                KIND=${LABEL#kind/}
-                break
-            fi
-        done <<< "$LABELS"
+        # Decide which section the note belongs to. The GitHub API returns
+        # labels in label-id order, so the precedence list has to do the
+        # choosing rather than whichever kind happens to come back first.
+        KIND=$(pick_kind "$LABELS")
 
-        # Skip if no kind label
+        # A note with no eligible kind has nowhere to go. Warn on stderr rather
+        # than dropping it silently, so it can be fixed before the release.
         if [[ -z "$KIND" ]]; then
-            echo "PR #$PR_NUMBER missing kind label, skipping"
+            echo "WARNING: PR #$PR_NUMBER has a release note but no kind label that carries one; note dropped" >&2
+            echo "  labels: $(echo "$LABELS" | tr '\n' ' ')" >&2
+            echo "  note: $RELEASE_NOTE" >&2
             continue
         fi
 
@@ -216,12 +236,15 @@ function process_prs() {
 
         # Get section title
         SECTION_TITLE=$(get_section_title "$KIND")
-        if [ -n "$SECTION_TITLE" ]; then
-            local pr_link="([#$PR_NUMBER](https://github.com/$owner/$repo/pull/$PR_NUMBER))"
-            local formatted_note=$(format_release_note "$RELEASE_NOTE" "$pr_link")
-            echo "Formatted note for PR #$PR_NUMBER: '$formatted_note'"
-            echo "$formatted_note" >> "$TEMP_DIR/$KIND.txt"
+        if [[ -z "$SECTION_TITLE" ]]; then
+            echo "WARNING: kind/$KIND has no section title; SECTION_ORDER and get_section_title disagree" >&2
+            continue
         fi
+
+        local pr_link="([#$PR_NUMBER](https://github.com/$owner/$repo/pull/$PR_NUMBER))"
+        local formatted_note=$(format_release_note "$RELEASE_NOTE" "$pr_link")
+        echo "Formatted note for PR #$PR_NUMBER: '$formatted_note'"
+        echo "$formatted_note" >> "$TEMP_DIR/$KIND.txt"
     done < "$pr_numbers_file"
 }
 
@@ -292,7 +315,7 @@ process_prs "$OWNER" "$REPO" "$PREVIOUS_TAG" "$CURRENT_TAG" "$TEMP_DIR/prs.txt"
 
 # Check if we found any release notes
 FOUND_NOTES=0
-for KIND in breaking_change feature fix deprecation documentation cleanup install bump; do
+for KIND in "${SECTION_ORDER[@]}"; do
     if [[ -f "$TEMP_DIR/$KIND.txt" ]]; then
         FOUND_NOTES=1
         break
@@ -320,7 +343,7 @@ cat > "$OUTPUT_FILE" << EOF
 EOF
 
 # Generate the final release notes
-for KIND in breaking_change feature fix deprecation documentation cleanup install bump; do
+for KIND in "${SECTION_ORDER[@]}"; do
     if [[ -f "$TEMP_DIR/$KIND.txt" ]]; then
         SECTION_TITLE=$(get_section_title "$KIND")
         echo -e "\n#### $SECTION_TITLE\n" >> "$OUTPUT_FILE"

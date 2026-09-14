@@ -427,8 +427,8 @@ func extractAncestorConditions(ancestors []gwv1.PolicyAncestorStatus) [][]metav1
 	return result
 }
 
-// EventuallyHTTPListenerPolicyCondition checks that provided HTTPListenerPolicy condition is set to expect.
-func (p *Provider) EventuallyHTTPListenerPolicyCondition(
+// EventuallyListenerPolicyCondition checks that provided ListenerPolicy condition is set to expect.
+func (p *Provider) EventuallyListenerPolicyCondition(
 	ctx context.Context,
 	name string,
 	namespace string,
@@ -439,10 +439,10 @@ func (p *Provider) EventuallyHTTPListenerPolicyCondition(
 	ginkgo.GinkgoHelper()
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
-		hlp := &kgateway.HTTPListenerPolicy{}
-		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, hlp)
-		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get HTTPListenerPolicy %s/%s", namespace, name))
-		g.Expect(extractAncestorConditions(hlp.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(string(cond), expect))
+		lp := &kgateway.ListenerPolicy{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, lp)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), fmt.Sprintf("failed to get ListenerPolicy %s/%s", namespace, name))
+		g.Expect(extractAncestorConditions(lp.Status.Ancestors)).To(matchers.HaveAnyAncestorCondition(string(cond), expect))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 

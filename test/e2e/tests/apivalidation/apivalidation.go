@@ -530,12 +530,12 @@ spec:
 			wantErrors: []string{"statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"},
 		},
 		{
-			name: "HTTPListenerPolicy: valid target references",
+			name: "ListenerPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-valid-targets
+  name: listener-policy-valid-targets
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
@@ -549,34 +549,92 @@ spec:
 `,
 		},
 		{
-			name: "HTTPListenerPolicy: invalid target reference - HTTPRoute not allowed",
+			name: "ListenerPolicy: invalid target reference - HTTPRoute not allowed",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-invalid-target-httproute
+  name: listener-policy-invalid-target-httproute
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: test-route
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway resource"},
 		},
 		{
-			name: "HTTPListenerPolicy: invalid target reference - wrong resource type",
+			name: "ListenerPolicy: invalid target reference - wrong resource type",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: HTTPListenerPolicy
+kind: ListenerPolicy
 metadata:
-  name: http-listener-policy-invalid-target
+  name: listener-policy-invalid-target
 spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: ListenerSet
     name: test-listener
 `,
-			wantErrors: []string{"targetRefs may only reference Gateway resources"},
+			wantErrors: []string{"targetRefs may only reference Gateway resource"},
+		},
+		{
+			name: "ListenerPolicy: grpcStats rejects both statsForAllMethods and methodAllowlist",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpcstats-both
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      grpcStats:
+        statsForAllMethods: true
+        methodAllowlist:
+        - /pkg.Service/Method
+`,
+			wantErrors: []string{"exactly one of statsForAllMethods or methodAllowlist must be set"},
+		},
+		{
+			name: "ListenerPolicy: grpcStats accepts statsForAllMethods only",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpcstats-all
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      grpcStats:
+        statsForAllMethods: true
+`,
+		},
+		{
+			name: "ListenerPolicy: grpcStats accepts methodAllowlist only",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-grpcstats-allowlist
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      grpcStats:
+        methodAllowlist:
+        - /pkg.Service/Method
+`,
 		},
 		{
 			name: "DirectResponse: empty body not allowed",
@@ -796,6 +854,172 @@ spec:
     maxRequestSize: 4Gi
 `,
 			wantErrors: []string{"maxRequestSize must be greater than 0 and less than 4Gi"},
+		},
+		{
+			name: "TrafficPolicy Buffer with filterStage",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 1Ki
+    filterStage:
+      stage: AuthN
+      predicate: Before
+`,
+		},
+		{
+			name: "TrafficPolicy Buffer filterStage with disable",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    disable: {}
+    filterStage:
+      stage: AuthN
+      predicate: Before
+`,
+			wantErrors: []string{"filterStage cannot be set when disable is set"},
+		},
+		{
+			// weight defaults to 0, so the rule has to compare it rather than test for presence
+			name: "TrafficPolicy Buffer filterStage with a weight",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: test
+spec:
+  buffer:
+    maxRequestSize: 1Ki
+    filterStage:
+      stage: AuthN
+      predicate: Before
+      weight: 1
+`,
+			wantErrors: []string{"filterStage.weight has no effect for buffer and must be 0"},
+		},
+		{
+			name: "GatewayExtension: jwt provider accepts a whole-second clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-valid
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 1h30m
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+		},
+		{
+			name: "GatewayExtension: jwt provider rejects a sub-second clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-subsecond
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 500ms
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+			wantErrors: []string{
+				"only whole seconds are supported",
+			},
+		},
+		{
+			name: "GatewayExtension: jwt provider rejects a zero clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-zero
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 0s
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+			wantErrors: []string{
+				"clockSkew must be at least 1s",
+			},
+		},
+		{
+			name: "GatewayExtension: jwt provider rejects an out-of-range clockSkew",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: jwt-clock-skew-too-large
+spec:
+  jwt:
+    providers:
+    - name: example
+      issuer: https://example.com
+      clockSkew: 87601h
+      jwks:
+        local:
+          inline: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruK9KacQjDePRyfG7oPI
+            aqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa/ijLV9huoNvpdflld4B+SaT7
+            m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3
+            ur5BaBCc+BZZRRaXDTLy6KyD1Pyd6XRsxyZXt/SYOIww0NSt5u0CTyZUGJhQungJ
+            pI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0+owLsA25WJOPZXizxpTB4tPvJu
+            YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
+            CwIDAQAB
+            -----END PUBLIC KEY-----
+`,
+			wantErrors: []string{
+				"clockSkew must not exceed 87600h",
+			},
 		},
 		{
 			name: "ProxyDeployment: Strategy is fully fleshed out",

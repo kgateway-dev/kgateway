@@ -123,7 +123,7 @@ func findMetrics(target string) ([]metricInfo, error) {
 	for _, file := range files {
 		metrics, err := parseFile(file)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing %s: %v", file, err)
+			return nil, fmt.Errorf("error parsing %s: %w", file, err)
 		}
 
 		allMetrics = append(allMetrics, metrics...)

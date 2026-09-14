@@ -1,0 +1,29 @@
+# OSV-Scanner ignore list for the build-tooling module (tools/go.mod).
+#
+# OSV-Scanner loads configuration from the directory containing the lockfile,
+# so entries for tools/go.mod findings must live here rather than in the
+# repository-root osv-scanner.toml.
+#
+# Only entries that are unambiguous false positives belong here. Each entry
+# must explain *why* it is a false positive so a future reader can re-verify.
+#
+# Format reference: https://google.github.io/osv-scanner/configuration/
+
+# GO-2026-5932 is not a versioned vulnerability but a permanent "won't fix"
+# design advisory: golang.org/x/crypto/openpgp is unmaintained and unsafe by
+# design, so no fixed version will ever be published. Bumping x/crypto cannot
+# clear it.
+#
+# tools/go.mod exists solely to pin developer and CI tooling via `tool`
+# directives (yamlfmt, goreleaser, cloud-provider-kind, setup-envtest). None
+# of its dependencies are linked into a shipped kgateway binary or container
+# image. openpgp reaches this module only through goreleaser's own dependency
+# graph, not through any kgateway code.
+#
+# Re-verify with:
+#   cd tools && go list -deps github.com/goreleaser/goreleaser/v2 | grep x/crypto/openpgp
+#   sed -n '/^tool (/,/^)/p' tools/go.mod
+
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "Won't-fix design advisory for golang.org/x/crypto/openpgp; no fixed version will ever exist. tools/go.mod pins build-only tooling via `tool` directives (yamlfmt, goreleaser, cloud-provider-kind, setup-envtest) and none of its dependencies ship in a kgateway binary or image; openpgp is reachable only through goreleaser's own dependency graph, not through kgateway code"

@@ -34,18 +34,8 @@ func HashProtoWithHasher(hasher hash.Hash, resource proto.Message) {
 	var buffer [1024]byte
 	mo := proto.MarshalOptions{Deterministic: true}
 	buf := buffer[:0]
-	out, err := mo.MarshalAppend(buf, resource)
-	if err != nil {
-		//if e.logger != nil {
-		//	e.logger.DPanic("marshalling envoy snapshot components", zap.Error(err))
-		//}
-	}
-	_, err = hasher.Write(out)
-	if err != nil {
-		//if e.logger != nil {
-		//	e.logger.DPanic("constructing hash for envoy snapshot components", zap.Error(err))
-		//}
-	}
+	out, _ := mo.MarshalAppend(buf, resource)
+	_, _ = hasher.Write(out)
 }
 
 func HashMetadata(newhash func() hash.Hash64, md *envoycorev3.Metadata) uint64 {

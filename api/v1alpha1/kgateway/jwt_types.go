@@ -60,6 +60,19 @@ type JWTProvider struct {
 	// If false or not set, the header containing the token will be removed.
 	// +optional
 	ForwardToken *bool `json:"forwardToken,omitempty"`
+
+	// ClockSkew is the tolerance applied when verifying the time constraints of the JWT,
+	// i.e. the 'exp' and 'nbf' claims.
+	// Only whole seconds are supported, so the duration must not have a millisecond component.
+	// If unspecified, the Envoy default of 60s is used. A zero value is not accepted because
+	// Envoy interprets it as unset and falls back to that default.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s)){1,3}$')",message="invalid duration value: only whole seconds are supported, e.g. 1h, 30s"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="clockSkew must be at least 1s."
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('87600h')",message="clockSkew must not exceed 87600h."
+	ClockSkew *metav1.Duration `json:"clockSkew,omitempty"`
 }
 
 // HeaderSource configures how to retrieve a JWT from a header
@@ -149,6 +162,8 @@ type RemoteJWKS struct {
 	// Duration after which the cached JWKS expires.
 	// If unspecified, the default cache duration is 5 minutes.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="cacheDuration must be at least 1ms."
 	CacheDuration *metav1.Duration `json:"cacheDuration,omitempty"`
@@ -162,6 +177,14 @@ type RemoteJWKS struct {
 	// when the remote JWKS server is unavailable.
 	// +optional
 	RetryPolicy *JWKSRetryPolicy `json:"retryPolicy,omitempty"`
+
+	// Timeout for fetching the remote JWKS. If not specified, defaults to 5s.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 }
 
 // JWKSAsyncFetch configures asynchronous fetching of the remote JWKS.
@@ -177,6 +200,8 @@ type JWKSAsyncFetch struct {
 	// FailedRefetchDuration is how long to wait before retrying the fetch after a failure.
 	// If unspecified, Envoy default of 1 second is used.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="failedRefetchDuration must be at least 1ms."
 	FailedRefetchDuration *metav1.Duration `json:"failedRefetchDuration,omitempty"`
@@ -206,6 +231,8 @@ type JWKSRetryBackOff struct {
 	// BaseInterval is the base interval for the exponential backoff computation.
 	// It must be greater than zero and less than or equal to MaxInterval.
 	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="baseInterval must be at least 1ms."
 	BaseInterval metav1.Duration `json:"baseInterval"`
@@ -213,6 +240,8 @@ type JWKSRetryBackOff struct {
 	// MaxInterval is the maximum interval between retries. If set, it must be greater than
 	// or equal to BaseInterval. Defaults to 10 times the BaseInterval.
 	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="maxInterval must be at least 1ms."
 	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`

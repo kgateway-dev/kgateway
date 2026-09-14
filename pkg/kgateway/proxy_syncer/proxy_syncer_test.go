@@ -3,389 +3,69 @@ package proxy_syncer
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/types"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
-func TestIsGatewayStatusEqual(t *testing.T) {
-	addrType := gwv1.HostnameAddressType
+func TestStatusContributionsReduceRouteParentsAcrossGateways(t *testing.T) {
+	route := types.NamespacedName{Namespace: "default", Name: "route"}
+	gw1 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-1"}}
+	gw2 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-2"}}
 
-	status1 := &gwv1.GatewayStatus{
-		Addresses: []gwv1.GatewayStatusAddress{
-			{
-				Type:  &addrType,
-				Value: "address1",
-			},
-		},
-	}
-	// same as status1
-	status2 := &gwv1.GatewayStatus{
-		Addresses: []gwv1.GatewayStatusAddress{
-			{
-				Type:  &addrType,
-				Value: "address1",
-			},
-		},
-	}
-	// different from status1
-	status3 := &gwv1.GatewayStatus{
-		Addresses: []gwv1.GatewayStatusAddress{
-			{
-				Type:  &addrType,
-				Value: "address2",
-			},
-		},
-	}
+	first := reports.NewReportMap()
+	first.HTTPRoutes[route] = &reports.RouteReport{Parents: map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}}}
+	second := reports.NewReportMap()
+	second.HTTPRoutes[route] = &reports.RouteReport{Parents: map[reports.ParentRefKey]*reports.ParentRefReport{gw2: {}}}
 
-	tests := []struct {
-		name string
-		objA *gwv1.GatewayStatus
-		objB *gwv1.GatewayStatus
-		want bool
-	}{
-		{"EqualStatus", status1, status2, true},
-		{"DifferentStatus", status1, status3, false},
-	}
+	contributions := append(
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw-1"}, first),
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw-2"}, second)...,
+	)
+	reduced := reports.ReduceStatusContributions(contributions)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isGatewayStatusEqual(tt.objA, tt.objB); got != tt.want {
-				t.Errorf("isGatewayStatusEqual() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	require.Equal(t, map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}, gw2: {}}, reduced.Route.Parents)
 }
 
-func TestIsRouteStatusEqual(t *testing.T) {
-	status1 := &gwv1.RouteStatus{
-		Parents: []gwv1.RouteParentStatus{
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("default")),
-				},
-			},
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("default")),
-				},
-			},
-		},
-	}
-	// Same as status1
-	status2 := &gwv1.RouteStatus{
-		Parents: []gwv1.RouteParentStatus{
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("default")),
-				},
-			},
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("default")),
-				},
-			},
-		},
-	}
-	// Same as status1, but with reversed parent order.
-	status2Reordered := &gwv1.RouteStatus{
-		Parents: []gwv1.RouteParentStatus{
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("default")),
-				},
-			},
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("default")),
-				},
-			},
-		},
-	}
-	// Different from status1
-	status3 := &gwv1.RouteStatus{
-		Parents: []gwv1.RouteParentStatus{
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("my-other-ns")),
-				},
-			},
-			{
-				ParentRef: gwv1.ParentReference{
-					Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-					Kind:      new(gwv1.Kind(wellknown.TCPRouteKind)),
-					Name:      "parent",
-					Namespace: new(gwv1.Namespace("my-other-ns")),
-				},
-			},
-		},
-	}
+func TestStatusContributionsReducePolicyAncestorsAcrossPaths(t *testing.T) {
+	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
+	gw := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"}}
+	backend := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"}}
 
-	tests := []struct {
-		name string
-		objA *gwv1.RouteStatus
-		objB *gwv1.RouteStatus
-		want bool
-	}{
-		{"EqualStatus", status1, status2, true},
-		{"EqualStatusReorderedParents", status1, status2Reordered, true},
-		{"DifferentStatus", status1, status3, false},
-	}
+	gatewayReport := reports.NewReportMap()
+	gatewayReport.Policies[policy] = &reports.PolicyReport{Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}}}
+	backendReport := reports.NewReportMap()
+	backendReport.Policies[policy] = &reports.PolicyReport{Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{backend: {}}}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isRouteStatusEqual(tt.objA, tt.objB); got != tt.want {
-				t.Errorf("isRouteStatusEqual() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	contributions := append(
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw"}, gatewayReport),
+		reports.StatusContributionsFromReportMap(reports.StatusSource{Kind: reports.BackendPolicyStatusSource, Name: "default/backend"}, backendReport)...,
+	)
+	reduced := reports.ReduceStatusContributions(contributions)
+
+	require.Equal(t, map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}, backend: {}}, reduced.Policy.Ancestors)
 }
 
-func TestMergeProxyReports(t *testing.T) {
-	tests := []struct {
-		name     string
-		proxies  []GatewayXdsResources
-		expected reports.ReportMap
-	}{
-		{
-			name: "Merge HTTPRoute reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				HTTPRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge TCPRoute reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				TCPRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge TLSRoute reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
-							{Name: "route1", Namespace: "default"}: {
-								Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				TLSRoutes: map[types.NamespacedName]*reports.RouteReport{
-					{Name: "route1", Namespace: "default"}: {
-						Parents: map[reports.ParentRefKey]*reports.ParentRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Merge Policy reports for different parents",
-			proxies: []GatewayXdsResources{
-				{
-					reports: reports.ReportMap{
-						Policies: map[reporter.PolicyKey]*reports.PolicyReport{
-							{Name: "policy1", Namespace: "default"}: {
-								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-				{
-					reports: reports.ReportMap{
-						Policies: map[reporter.PolicyKey]*reports.PolicyReport{
-							{Name: "policy1", Namespace: "default"}: {
-								Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
-									{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-								},
-							},
-						},
-					},
-				},
-			},
-			expected: reports.ReportMap{
-				Policies: map[reporter.PolicyKey]*reports.PolicyReport{
-					{Name: "policy1", Namespace: "default"}: {
-						Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{
-							{NamespacedName: types.NamespacedName{Name: "gw-1", Namespace: "default"}}: {},
-							{NamespacedName: types.NamespacedName{Name: "gw-2", Namespace: "default"}}: {},
-						},
-					},
-				},
-			},
+func TestGatewayTranslationOutputSeparatesStatusFromXdsEquality(t *testing.T) {
+	nn := types.NamespacedName{Namespace: "default", Name: "gateway"}
+	base := gatewayTranslationOutput{
+		Xds: GatewayXdsResources{NamespacedName: nn},
+		Status: GatewayStatusSnapshot{
+			NamespacedName: nn,
+			Contributions: []reports.StatusContribution{{
+				Target: reports.StatusKey{NamespacedName: nn},
+				Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: nn.String()},
+			}},
 		},
 	}
+	changed := base
+	changed.Status.Contributions = []reports.StatusContribution{{
+		Target: reports.StatusKey{NamespacedName: nn},
+		Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "changed"},
+	}}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-
-			actual := mergeProxyReports(tt.proxies)
-			if tt.expected.HTTPRoutes != nil {
-				a.Equal(tt.expected.HTTPRoutes, actual.HTTPRoutes)
-			}
-			if tt.expected.TCPRoutes != nil {
-				a.Equal(tt.expected.TCPRoutes, actual.TCPRoutes)
-			}
-			if tt.expected.TLSRoutes != nil {
-				a.Equal(tt.expected.TLSRoutes, actual.TLSRoutes)
-			}
-			if tt.expected.Policies != nil {
-				a.Equal(tt.expected.Policies, actual.Policies)
-			}
-		})
-	}
-}
-
-func TestIsListenerSetStatusEqual(t *testing.T) {
-	status1 := &gwv1.ListenerSetStatus{
-		Listeners: []gwv1.ListenerEntryStatus{
-			{
-				Name:           "listener-1",
-				AttachedRoutes: 2,
-			},
-		},
-	}
-	// same as status1
-	status2 := &gwv1.ListenerSetStatus{
-		Listeners: []gwv1.ListenerEntryStatus{
-			{
-				Name:           "listener-1",
-				AttachedRoutes: 2,
-			},
-		},
-	}
-	// different from status1
-	status3 := &gwv1.ListenerSetStatus{
-		Listeners: []gwv1.ListenerEntryStatus{
-			{
-				Name:           "listener-2",
-				AttachedRoutes: 1,
-			},
-		},
-	}
-
-	tests := []struct {
-		name string
-		objA *gwv1.ListenerSetStatus
-		objB *gwv1.ListenerSetStatus
-		want bool
-	}{
-		{"EqualStatus", status1, status2, true},
-		{"DifferentStatus", status1, status3, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := isListenerSetStatusEqual(tt.objA, tt.objB); got != tt.want {
-				t.Errorf("isListenerSetStatusEqual() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	require.True(t, base.Xds.Equals(changed.Xds), "status-only changes must not invalidate the xDS projection")
+	require.False(t, base.Equals(changed), "the status projection must still observe status-only changes")
 }

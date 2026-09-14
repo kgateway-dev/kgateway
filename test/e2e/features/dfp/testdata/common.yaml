@@ -17,7 +17,31 @@ spec:
     - name: gateway
       namespace: kgateway-base
   rules:
-    - backendRefs:
+    - name: connect
+      matches:
+        - method: CONNECT
+      backendRefs:
         - name: dfp-backend
           group: gateway.kgateway.dev
           kind: Backend
+    - name: http
+      backendRefs:
+        - name: dfp-backend
+          group: gateway.kgateway.dev
+          kind: Backend
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: dfp-connect-termination
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-dfp
+      sectionName: connect
+  httpUpgrade:
+    - type: CONNECT
+      connect:
+        terminate: true

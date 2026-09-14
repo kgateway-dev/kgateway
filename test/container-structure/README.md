@@ -50,7 +50,7 @@ make container-structure-test-envoy-wrapper
 
 ## CI Integration
 
-Container structure tests run automatically in the release workflow (`.github/workflows/release.yaml`) as part of the `goreleaser` job, after images are built. This means they run on every PR, push to main, and release. Both amd64 and arm64 images are tested against the locally-built images (arm64 via QEMU), without pulling from a registry.
+Container structure tests run automatically in the release workflow (`.github/workflows/release.yaml`) as part of the `stage` job, after images are built. This means they run on every PR, push to main, and release. Both amd64 and arm64 images are tested against the locally-built images (arm64 via QEMU), without pulling from a registry. On the release path they run against the staged images, and are one of the gates a release must pass before those images are promoted to the published tag.
 
 ## Adding Tests
 

@@ -13,6 +13,8 @@ import (
 
 var _ cache.NodeHash = new(nodeRoleHasher)
 
+type contextKey string
+
 const (
 	// KeyDelimiter is the character used to join segments of a cache key
 	KeyDelimiter = "~"
@@ -21,7 +23,7 @@ const (
 	RoleKey = "role"
 
 	// PeerCtxKey is the key used to store the peer information in the context
-	PeerCtxKey = "peer"
+	PeerCtxKey contextKey = "peer"
 
 	// FallbackNodeCacheKey is used to let nodes know they have a bad config
 	// we assign a "fix me" snapshot for bad nodes

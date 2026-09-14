@@ -181,23 +181,6 @@ func (c *requestConfig) buildHTTPClient() *http.Client {
 			tlsConfig.MaxVersion = parseTLSVersion(c.tlsMaxVersion)
 		}
 
-		// Configure cipher suites (simplified)
-		if c.ciphers != "" {
-			// Note: Go's TLS implementation uses predefined cipher suites
-			// This would require parsing the cipher string and mapping to Go's constants
-			// For simplicity, this is left as a placeholder
-		}
-
-		// Configure curves (simplified)
-		if c.curves != "" {
-			// Similar to ciphers, this would require parsing and mapping
-		}
-
-		// Configure signature algorithms (simplified)
-		if c.signatureAlgorithms != "" {
-			// Similar to ciphers, this would require parsing and mapping
-		}
-
 		transport.TLSClientConfig = tlsConfig
 	}
 

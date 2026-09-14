@@ -3,6 +3,7 @@ package fake
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
@@ -58,7 +59,7 @@ func NewClientWithExtraGVRs(t test.Failer, extraGVRs []schema.GroupVersionResour
 		kgateway: fakeKgwClient(kgw...),
 	}
 
-	allCRDs := append(testutils.AllCRDs, extraGVRs...)
+	allCRDs := slices.Concat(testutils.AllCRDs, extraGVRs)
 	for _, crd := range allCRDs {
 		clienttest.MakeCRDWithAnnotations(t, c.Client, crd, map[string]string{
 			consts.BundleVersionAnnotation: consts.BundleVersion,
@@ -123,7 +124,6 @@ func filterObjects(objects ...client.Object) (istio []client.Object, kgw []clien
 			*kgateway.DirectResponse,
 			*kgateway.GatewayExtension,
 			*kgateway.GatewayParameters,
-			*kgateway.HTTPListenerPolicy,
 			*kgateway.ListenerPolicy,
 			*kgateway.TrafficPolicy:
 			kgw = append(kgw, obj)
@@ -153,7 +153,7 @@ func getGVR(obj client.Object, scheme *runtime.Scheme) (schema.GroupVersionResou
 		// try unsafe guess
 		gvr, _ = meta.UnsafeGuessKindToResource(gvk)
 		if gvr == (schema.GroupVersionResource{}) {
-			return schema.GroupVersionResource{}, fmt.Errorf("failed to get GVR for object %s: %v", kubeutils.NamespacedNameFrom(obj), err)
+			return schema.GroupVersionResource{}, fmt.Errorf("failed to get GVR for object %s: %w", kubeutils.NamespacedNameFrom(obj), err)
 		}
 	}
 	if gvr.Group == "core" {
@@ -261,8 +261,6 @@ func kindForSeededCRD(resource schema.GroupVersionResource) string {
 		return wellknown.BackendConfigPolicyGVK.Kind
 	case wellknown.TrafficPolicyGVR:
 		return wellknown.TrafficPolicyGVK.Kind
-	case wellknown.HTTPListenerPolicyGVR:
-		return wellknown.HTTPListenerPolicyGVK.Kind
 	case wellknown.ListenerPolicyGVR:
 		return wellknown.ListenerPolicyGVK.Kind
 	case wellknown.DirectResponseGVR:

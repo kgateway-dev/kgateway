@@ -43,14 +43,14 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.BaseTestingSuite.BeforeTest(suiteName, testName)
 
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(s.Ctx, "access-logs", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "access-logs", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 }
 
 // TestAccessLogWithFileSink tests access log with file sink
 func (s *testingSuite) TestAccessLogWithFileSink() {
 	pods := s.getPods(fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, gatewayObjectMeta.GetName()))
 
-	// The file-sink HTTPListenerPolicy and the transformation TrafficPolicy that
+	// The file-sink ListenerPolicy and the transformation TrafficPolicy that
 	// enriches the log with dynamic metadata propagate to Envoy independently of
 	// their Accepted status, so a single request sent before they are both live
 	// produces an access log missing the expected fields. Send inside the poll

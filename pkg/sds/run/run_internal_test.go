@@ -135,7 +135,7 @@ func TestRunWatcherLoopRecoversFromSingleObservedTornRotation(t *testing.T) {
 		}
 	}
 
-	srv := server.SetupEnvoySDS([]server.Secret{{
+	srv := server.SetupEnvoySDS(context.Background(), []server.Secret{{
 		SslKeyFile:        keyPath,
 		SslCertFile:       certPath,
 		SslCaFile:         caPath,

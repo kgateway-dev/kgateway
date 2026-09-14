@@ -154,7 +154,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		if xdsSnap == nil {
 			return nil
 		}
-		return toResources(gw, *xdsSnap, reportsMap)
+		return &toTranslationOutput(gw, *xdsSnap, reportsMap).Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(
@@ -393,7 +393,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		if xdsSnap == nil {
 			return nil
 		}
-		return toResources(gw, *xdsSnap, reportsMap)
+		return &toTranslationOutput(gw, *xdsSnap, reportsMap).Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
 	epPerClient := NewPerClientEnvoyEndpoints(

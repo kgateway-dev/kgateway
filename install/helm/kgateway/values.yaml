@@ -84,6 +84,8 @@ controller:
   securityContext: null
   # -- Configure resource requests and limits for the controller container.
   resources: null
+  # -- Compute GOMEMLIMIT as this percentage of resources.limits.memory at render time. Valid values are 1-100; 0 disables percentage calculation and preserves the resourceFieldRef behavior. Recommended values are 80-90.
+  goMemLimitPercent: 0
   # -- Set node selector labels for controller pod scheduling.
   nodeSelector: null
   # -- Set tolerations for controller pod scheduling.

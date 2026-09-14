@@ -40,17 +40,17 @@ Listeners:
     name: listener~80
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        upgradeConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.upgradeConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/upgrades
   name: listener~80
 Routes:
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
-      merge.HTTPListenerPolicy.gateway.kgateway.dev:
-        upgradeConfig:
-        - gateway.kgateway.dev/HTTPListenerPolicy/default/upgrades
+      merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.upgradeConfig:
+        - gateway.kgateway.dev/ListenerPolicy/default/upgrades
   name: listener~80
   virtualHosts:
   - domains:
@@ -136,7 +136,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    HTTPListenerPolicy/default/upgrades:
+    ListenerPolicy/default/upgrades:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

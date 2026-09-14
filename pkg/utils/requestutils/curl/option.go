@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -36,6 +37,15 @@ const (
 
 // Option represents an option for a curl request.
 type Option func(config *requestConfig)
+
+// Extend returns a new Option slice containing base followed by extra.
+//
+// Use this instead of append(base, extra...) whenever base is a shared or reused
+// slice: append may write into base's spare capacity, so two callers extending
+// the same base can silently clobber each other's options.
+func Extend(base []Option, extra ...Option) []Option {
+	return slices.Concat(base, extra)
+}
 
 // WithContext returns the Option to set a context on the curl request. The context
 // is used by ExecuteRequest to build the http.Request and aborts the in-flight

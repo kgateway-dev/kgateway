@@ -5,6 +5,7 @@ package common
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -83,7 +84,7 @@ func namespacesFromManifests(manifests ...string) ([]string, error) {
 		for {
 			obj := &unstructured.Unstructured{}
 			if err := decoder.Decode(obj); err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					break
 				}
 				return nil, fmt.Errorf("decode manifest %s: %w", manifest, err)

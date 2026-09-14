@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -310,35 +309,4 @@ func (r *gatewayQueries) GetConfigMapForRef(kctx krt.HandlerContext, ctx context
 		Namespace: fromns,
 	}
 	return r.collections.ConfigMaps.GetConfigMap(kctx, f, configMapRef)
-}
-
-func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []gwv1b1.ReferenceGrant) bool {
-	for _, refGrant := range grantsInToNs {
-		for _, from := range refGrant.Spec.From {
-			if string(from.Namespace) != fromns {
-				continue
-			}
-			if coreIfEmpty(fromgk.Group) == coreIfEmpty(string(from.Group)) && fromgk.Kind == string(from.Kind) {
-				for _, to := range refGrant.Spec.To {
-					if coreIfEmpty(togk.Group) == coreIfEmpty(string(to.Group)) && togk.Kind == string(to.Kind) {
-						if to.Name == nil || string(*to.Name) == toname {
-							return true
-						}
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
-// Note that the spec has examples where the "core" api group is explicitly specified.
-// so this helper function converts an empty string (which implies core api group) to the
-// explicit "core" api group. It should only be used in places where the spec specifies that empty
-// group means "core" api group (some place in the spec may default to the "gateway" api group instead.
-func coreIfEmpty(s string) string {
-	if s == "" {
-		return "core"
-	}
-	return s
 }

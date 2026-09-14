@@ -104,7 +104,7 @@ func (g *Gateway) SendConsistentlyFor(ctx context.Context, t *testing.T, match *
 // (the underlying gomega HaveHttpResponse matcher does not print the actual body —
 // see test/gomega/matchers/have_http_response.go).
 func (g *Gateway) matchOnce(ctx context.Context, fullOpts []curl.Option, match *matchers.HttpResponse) error {
-	r, err := curl.ExecuteRequest(append(fullOpts, curl.WithContext(ctx))...)
+	r, err := curl.ExecuteRequest(curl.Extend(fullOpts, curl.WithContext(ctx))...)
 	if err != nil {
 		return err
 	}
@@ -134,5 +134,5 @@ func (g *Gateway) curlOpts(opts []curl.Option) []curl.Option {
 	} else {
 		hostOpt = curl.WithHost(g.Address)
 	}
-	return append([]curl.Option{hostOpt}, opts...)
+	return curl.Extend([]curl.Option{hostOpt}, opts...)
 }

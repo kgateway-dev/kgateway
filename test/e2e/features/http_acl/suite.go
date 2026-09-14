@@ -395,7 +395,7 @@ func (s *testingSuite) TestHttpACLDynamicMetadata() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx, "httpbin-route", "kgateway-base", gwv1.RouteConditionAccepted, metav1.ConditionTrue,
 	)
-	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPListenerPolicyCondition(
+	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(
 		s.Ctx, "acl-access-log", "kgateway-base", gwv1.GatewayConditionAccepted, metav1.ConditionTrue,
 	)
 

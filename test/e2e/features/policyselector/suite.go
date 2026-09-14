@@ -53,7 +53,7 @@ func (s *tsuite) TestLabelSelector() {
 		curl.WithPort(gatewayPort),
 	)
 
-	// Verify access logs with HTTPListenerPolicy
+	// Verify access logs with ListenerPolicy
 	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
 		s.Ctx, "kgateway-base", fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, "gateway"),
 	)

@@ -1,11 +1,13 @@
 package proxy_syncer
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -13,14 +15,92 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	kgtranslator "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
+
+func TestPerClientEnvoyEndpointsUsesResolvedReplacementHash(t *testing.T) {
+	g := gomega.NewWithT(t)
+	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
+	pluginGK := schema.GroupKind{Group: "test.example.io", Kind: "EndpointReplacement"}
+
+	translator := kgtranslator.NewCombinedTranslator(t.Context(), sdk.Plugin{
+		ContributesPolicies: sdk.ContributesPolicies{
+			pluginGK: {
+				PerClientEditEndpoints: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
+					replacement := out.NewEndpointSet()
+					replacement.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: &envoyendpointv3.LbEndpoint{
+						HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{Endpoint: &envoyendpointv3.Endpoint{
+							Address: &envoycorev3.Address{Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: out.Hostname()}}},
+						}},
+					}})
+					out.ReplaceEndpoints(replacement)
+					return 0 // Replacement content is already reflected by LbEpsEqualityHash.
+				},
+			},
+		},
+	}, nil, nil)
+
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "backend"}, 80, "", "")
+	source := ir.NewEndpointsForBackend(backend)
+	source.Hostname = "replacement-a"
+	source.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: &envoyendpointv3.LbEndpoint{
+		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{Endpoint: &envoyendpointv3.Endpoint{
+			Address: &envoycorev3.Address{Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "source"}}},
+		}},
+	}})
+	sourceHash := source.LbEpsEqualityHash
+	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("ReplacementHashClients")...)
+	sources := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{*source}, krtopts.ToOptions("ReplacementHashEndpoints")...)
+	perClient := NewPerClientEnvoyEndpoints(krtopts, uccs, sources, translator.TranslateEndpoints)
+
+	var initialHash uint64
+	g.Eventually(func() string {
+		rows := perClient.FetchEndpointsForClient(krt.TestingDummyContext{}, ucc)
+		if len(rows) != 1 {
+			return ""
+		}
+		initialHash = rows[0].EndpointsHash
+		return endpointPipePath(rows[0].Endpoints)
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal("replacement-a"))
+	g.Expect(initialHash).ToNot(gomega.Equal(sourceHash),
+		"the row key must use the replacement set's resolved hash, not the source hash")
+
+	updated := *source
+	updated.Hostname = "replacement-b"
+	g.Expect(updated.LbEpsEqualityHash).To(gomega.Equal(sourceHash),
+		"precondition: only the plugin's replacement output changes the endpoint hash")
+	sources.UpdateObject(updated)
+
+	var updatedHash uint64
+	g.Eventually(func() string {
+		rows := perClient.FetchEndpointsForClient(krt.TestingDummyContext{}, ucc)
+		if len(rows) != 1 {
+			return ""
+		}
+		updatedHash = rows[0].EndpointsHash
+		return endpointPipePath(rows[0].Endpoints)
+	}, time.Second, 20*time.Millisecond).Should(gomega.Equal("replacement-b"),
+		"a replacement-only update must not be suppressed by stale KRT equality")
+	g.Expect(updatedHash).ToNot(gomega.Equal(initialHash))
+}
+
+func endpointPipePath(cla *envoyendpointv3.ClusterLoadAssignment) string {
+	if len(cla.GetEndpoints()) == 0 || len(cla.GetEndpoints()[0].GetLbEndpoints()) == 0 {
+		return ""
+	}
+	return cla.GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetPipe().GetPath()
+}
 
 func TestFilterEndpointResourcesForStaticClusters_FiltersStaticClusterCLAs(t *testing.T) {
 	// Clusters: one STATIC ("static-cluster"), one EDS ("eds-cluster").

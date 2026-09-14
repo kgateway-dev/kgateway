@@ -97,13 +97,14 @@ func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	cmd.Stderr = &e
 	if err := cmd.Run(); err != nil {
 		rawErr := normalizeEnvoyError(e.String())
-		if _, ok := err.(*exec.ExitError); ok {
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
 			if rawErr == "" {
 				rawErr = err.Error()
 			}
 			return fmt.Errorf("%w: %s", ErrInvalidXDS, rawErr)
 		}
-		return fmt.Errorf("envoy validate invocation failed: %v", err)
+		return fmt.Errorf("envoy validate invocation failed: %w", err)
 	}
 	return nil
 }
@@ -195,7 +196,8 @@ func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	}
 
 	rawErr := strings.TrimSpace(stderr.String())
-	if _, ok := err.(*exec.ExitError); ok {
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
 		// Extract just the envoy error message, ignoring Docker pull output
 		if envoyErr := extractEnvoyError(rawErr); envoyErr != "" {
 			return fmt.Errorf("%w: %s", ErrInvalidXDS, normalizeEnvoyError(envoyErr))
@@ -205,7 +207,7 @@ func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 		}
 		return fmt.Errorf("%w: %s", ErrInvalidXDS, normalizeEnvoyError(rawErr))
 	}
-	return fmt.Errorf("envoy validate invocation failed: %v", err)
+	return fmt.Errorf("envoy validate invocation failed: %w", err)
 }
 
 // extractEnvoyError extracts the actual Envoy validation error from stderr output,

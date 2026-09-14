@@ -56,6 +56,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					},
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
 						IdleTimeout:              new(metav1.Duration{Duration: 60 * time.Second}),
+						MaxConnectionDuration:    new(metav1.Duration{Duration: 10 * time.Minute}),
 						MaxHeadersCount:          new(int32(100)),
 						MaxStreamDuration:        new(metav1.Duration{Duration: 30 * time.Second}),
 						MaxRequestsPerConnection: new(int32(100)),
@@ -81,6 +82,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
 						CommonHttpProtocolOptions: &envoycorev3.HttpProtocolOptions{
 							IdleTimeout:              durationpb.New(60 * time.Second),
+							MaxConnectionDuration:    durationpb.New(10 * time.Minute),
 							MaxHeadersCount:          &wrapperspb.UInt32Value{Value: 100},
 							MaxStreamDuration:        durationpb.New(30 * time.Second),
 							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 100},
@@ -747,12 +749,18 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		}
 		return inputs
 	}
+	runPlugin := func(plugin backendConfigEndpointPlugin, ucc ir.UniquelyConnectedClient, inputs *endpoints.EndpointsInputs) uint64 {
+		resolver := endpoints.NewEndpointInputsResolver(*inputs)
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ucc, resolver)
+		*inputs = resolver.Inputs()
+		return hash
+	}
 
 	t.Run("ignores policies without zoneAware", func(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(false, nil, servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{}, inputs)
 
 		assert.Zero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionPreferSameZone, inputs.EndpointsForBackend.TrafficDistribution)
@@ -763,7 +771,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(true, nil, servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -774,7 +782,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(2)), servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -789,7 +797,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs.PriorityInfo = priorityInfo
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -810,7 +818,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs = withPolicies(inputs, newPolicy(true, new(uint32(1)), hostnamePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
