@@ -58,13 +58,8 @@ func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backend
 			})
 	}
 	if commonCols.RawListenerSets != nil {
-		// The normalized collection holds both the promoted and legacy flavors keyed by
-		// namespace/name, so either target kind resolves against it.
 		for _, gvk := range wellknown.AllListenerSetGVKs() {
-			resolvers[gvk.GroupKind()] = sectionedTargetResolver(commonCols.RawListenerSets, gvk.Kind,
-				func(ls *gwv1.ListenerSet, section string) bool {
-					return slices.ContainsFunc(ls.Spec.Listeners, func(l gwv1.ListenerEntry) bool { return string(l.Name) == section })
-				})
+			resolvers[gvk.GroupKind()] = listenerSetTargetResolver(commonCols.RawListenerSets, gvk)
 		}
 	}
 	if commonCols.RawHTTPRoutes != nil {
@@ -117,6 +112,32 @@ func sectionedTargetResolver[T controllers.Object](col krt.Collection[T], kind s
 		}
 		return nil
 	}
+}
+
+// listenerSetTargetResolver resolves one ListenerSet flavor against the normalized collection,
+// which holds both the promoted and the legacy XListenerSet objects keyed by namespace/name with
+// the source GVK kept in TypeMeta (empty means promoted). Attachment keys policies on that GVK,
+// so a same-named object of the other flavor is not the target and must not count as found.
+func listenerSetTargetResolver(col krt.Collection[*gwv1.ListenerSet], gvk schema.GroupVersionKind) policyTargetResolver {
+	return func(kctx krt.HandlerContext, namespace, name, sectionName string) error {
+		ls := krt.FetchOne(kctx, col, krt.FilterKey(namespace+"/"+name))
+		if ls == nil || listenerSetGroupKind(*ls) != gvk.GroupKind() {
+			return targetNotFoundError(gvk.Kind, namespace, name)
+		}
+		if sectionName != "" && !slices.ContainsFunc((*ls).Spec.Listeners, func(l gwv1.ListenerEntry) bool { return string(l.Name) == sectionName }) {
+			return fmt.Errorf("sectionName %q not found in %s %s/%s", sectionName, gvk.Kind, namespace, name)
+		}
+		return nil
+	}
+}
+
+// listenerSetGroupKind mirrors the attachment path's rule: an object without a GVK in TypeMeta
+// is a promoted ListenerSet.
+func listenerSetGroupKind(ls *gwv1.ListenerSet) schema.GroupKind {
+	if gvk := ls.GroupVersionKind(); !gvk.Empty() {
+		return gvk.GroupKind()
+	}
+	return wellknown.ListenerSetGVK.GroupKind()
 }
 
 func targetNotFoundError(kind, namespace, name string) error {
@@ -195,17 +216,21 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) reports
 		Name:      policy.Name,
 	}
 	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(PolicyTargetsAncestorRef(policy.ObjectSource))
+	// ObservedGeneration is set here as well as on the report: the standard policy builder
+	// stamps it from the report, but BackendTLSPolicy's builder copies conditions verbatim.
 	ancestor.SetCondition(reporter.PolicyCondition{
-		Type:    string(shared.PolicyConditionAccepted),
-		Status:  metav1.ConditionFalse,
-		Reason:  string(shared.PolicyReasonTargetNotFound),
-		Message: strings.Join(problems, "; "),
+		Type:               string(shared.PolicyConditionAccepted),
+		Status:             metav1.ConditionFalse,
+		Reason:             string(shared.PolicyReasonTargetNotFound),
+		Message:            strings.Join(problems, "; "),
+		ObservedGeneration: generation,
 	})
 	ancestor.SetCondition(reporter.PolicyCondition{
-		Type:    string(shared.PolicyConditionAttached),
-		Status:  metav1.ConditionFalse,
-		Reason:  string(shared.PolicyReasonTargetNotFound),
-		Message: reporter.PolicyTargetNotFoundMsg,
+		Type:               string(shared.PolicyConditionAttached),
+		Status:             metav1.ConditionFalse,
+		Reason:             string(shared.PolicyReasonTargetNotFound),
+		Message:            reporter.PolicyTargetNotFoundMsg,
+		ObservedGeneration: generation,
 	})
 	return reportMap
 }

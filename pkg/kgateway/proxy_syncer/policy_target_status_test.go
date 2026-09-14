@@ -9,10 +9,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -56,6 +58,10 @@ func serviceRef(name string) ir.PolicyRef {
 	return ir.PolicyRef{Group: "", Kind: wellknown.ServiceGVK.Kind, Name: name}
 }
 
+func listenerSetRef(gvk schema.GroupVersionKind, name, section string) ir.PolicyRef {
+	return ir.PolicyRef{Group: gvk.Group, Kind: gvk.Kind, Name: name, SectionName: section}
+}
+
 type policyTargetFixture struct {
 	gateways      krt.StaticCollection[*gwv1.Gateway]
 	policies      krt.StaticCollection[ir.PolicyWrapper]
@@ -78,11 +84,23 @@ func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTa
 	services := krt.NewStaticCollection(nil, []*corev1.Service{{
 		ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: policyTargetTestNS},
 	}}, krtopts.ToOptions("Services")...)
+	// The normalized ListenerSet collection: a promoted object carries no GVK in TypeMeta,
+	// a legacy one is stamped XListenerSet by the converter.
+	legacy := &gwv1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "ls-legacy", Namespace: policyTargetTestNS},
+		Spec:       gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
+	}
+	legacy.SetGroupVersionKind(wellknown.XListenerSetGVK)
+	listenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{
+		{ObjectMeta: metav1.ObjectMeta{Name: "ls-promoted", Namespace: policyTargetTestNS}},
+		legacy,
+	}, krtopts.ToOptions("ListenerSets")...)
 
 	resolvers := newPolicyTargetResolvers(&collections.CommonCollections{
-		RawGateways:   gateways,
-		RawHTTPRoutes: routes,
-		Services:      services,
+		RawGateways:     gateways,
+		RawListenerSets: listenerSets,
+		RawHTTPRoutes:   routes,
+		Services:        services,
 	}, nil)
 
 	policyCol := krt.NewStaticCollection(nil, policies, krtopts.ToOptions("Policies")...)
@@ -155,6 +173,60 @@ func TestPolicyTargetStatusContributions(t *testing.T) {
 	accepted = acceptedCondition(t, byPolicy["bad-section"], badSection)
 	require.Equal(t, `sectionName "https" not found in Gateway default/gw; sectionName "rule-z" not found in HTTPRoute default/route-a`,
 		accepted.Message)
+}
+
+// TestPolicyTargetStatusContributionsListenerSetFlavors pins that a ListenerSet target is
+// matched on group and kind, not only on name: attachment keys policies on the object's own
+// GVK, so a same-named object of the other flavor is not the target.
+func TestPolicyTargetStatusContributionsListenerSetFlavors(t *testing.T) {
+	promoted, legacy := wellknown.ListenerSetGVK, wellknown.XListenerSetGVK
+	resolved := trafficPolicyWrapper("resolved", 1,
+		listenerSetRef(promoted, "ls-promoted", ""), listenerSetRef(legacy, "ls-legacy", ""), listenerSetRef(legacy, "ls-legacy", "http"))
+	legacyRefToPromoted := trafficPolicyWrapper("legacy-ref-to-promoted", 1, listenerSetRef(legacy, "ls-promoted", ""))
+	promotedRefToLegacy := trafficPolicyWrapper("promoted-ref-to-legacy", 1, listenerSetRef(promoted, "ls-legacy", ""))
+	badSection := trafficPolicyWrapper("bad-section", 1, listenerSetRef(legacy, "ls-legacy", "https"))
+
+	f := newPolicyTargetFixture(t, resolved, legacyRefToPromoted, promotedRefToLegacy, badSection)
+
+	byPolicy := map[string]reports.StatusContribution{}
+	for _, c := range f.contributions.List() {
+		byPolicy[c.Target.Name] = c
+	}
+	require.NotContains(t, byPolicy, "resolved")
+	require.Equal(t, "XListenerSet default/ls-promoted not found",
+		acceptedCondition(t, byPolicy["legacy-ref-to-promoted"], legacyRefToPromoted).Message)
+	require.Equal(t, "ListenerSet default/ls-legacy not found",
+		acceptedCondition(t, byPolicy["promoted-ref-to-legacy"], promotedRefToLegacy).Message)
+	require.Equal(t, `sectionName "https" not found in XListenerSet default/ls-legacy`,
+		acceptedCondition(t, byPolicy["bad-section"], badSection).Message)
+}
+
+// TestPolicyTargetReportThroughBackendTLSPolicyBuilder pins ObservedGeneration on the
+// conditions themselves: BackendTLSPolicy's builder copies report conditions verbatim rather
+// than stamping the report's generation the way the standard builder does.
+func TestPolicyTargetReportThroughBackendTLSPolicyBuilder(t *testing.T) {
+	const generation int64 = 7
+	btp := &gwv1.BackendTLSPolicy{ObjectMeta: metav1.ObjectMeta{Name: "btp", Namespace: policyTargetTestNS, Generation: generation}}
+	policy := ir.PolicyWrapper{
+		ObjectSource: ir.ObjectSource{
+			Group: wellknown.BackendTLSPolicyGVK.Group, Kind: wellknown.BackendTLSPolicyGVK.Kind,
+			Namespace: btp.Namespace, Name: btp.Name,
+		},
+		Policy:     btp,
+		PolicyIR:   policyTargetTestIR{},
+		TargetRefs: []ir.PolicyRef{serviceRef("missing")},
+	}
+	key := reporter.PolicyKey{Group: policy.Group, Kind: policy.Kind, Namespace: policy.Namespace, Name: policy.Name}
+
+	reportMap := buildPolicyTargetReport(policy, []string{"Service default/missing not found"})
+	status := backendtlspolicy.BuildDesiredPolicyStatus(reportMap.PolicyReport(key), btp, "test-controller")
+	require.NotNil(t, status)
+	require.Len(t, status.Ancestors, 1)
+	require.Len(t, status.Ancestors[0].Conditions, 2)
+	for _, condition := range status.Ancestors[0].Conditions {
+		require.Equal(t, generation, condition.ObservedGeneration, "condition %s", condition.Type)
+		require.Equal(t, string(shared.PolicyReasonTargetNotFound), condition.Reason)
+	}
 }
 
 // TestPolicyTargetStatusContributionsFollowTarget pins the krt dependency: creating the missing
