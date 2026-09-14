@@ -2,15 +2,20 @@ package trafficpolicy
 
 import (
 	"encoding/json"
+	"fmt"
 	"slices"
 
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -47,11 +52,22 @@ func (r *rustformationIR) Validate() error {
 }
 
 // constructRustformation constructs the rustformation policy IR from the policy specification.
-func constructRustformation(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr) error {
+func constructRustformation(
+	krtctx krt.HandlerContext,
+	in *kgateway.TrafficPolicy,
+	commoncol *collections.CommonCollections,
+	out *trafficPolicySpecIr,
+) error {
 	if in.Spec.Transformation == nil {
 		return nil
 	}
-	rustformation, err := toRustFormationPerRouteConfig(in.Spec.Transformation)
+
+	secrets, err := resolveTransformationSecrets(krtctx, in, commoncol)
+	if err != nil {
+		return err
+	}
+
+	rustformation, err := toRustFormationPerRouteConfig(in.Spec.Transformation, secrets)
 	if err != nil {
 		return err
 	}
@@ -61,15 +77,60 @@ func constructRustformation(in *kgateway.TrafficPolicy, out *trafficPolicySpecIr
 	return nil
 }
 
+func resolveTransformationSecrets(krtctx krt.HandlerContext, policy *kgateway.TrafficPolicy, commoncol *collections.CommonCollections) (map[string]map[string]string, error) {
+	resolved := make(map[string]map[string]string)
+
+	from := krtcollections.From{
+		GroupKind: wellknown.TrafficPolicyGVK.GroupKind(),
+		Namespace: policy.Namespace,
+	}
+
+	var secretRefs []kgateway.TransformationSecretRef
+	if policy.Spec.Transformation.Request != nil {
+		secretRefs = append(secretRefs, policy.Spec.Transformation.Request.SecretRefs...)
+	}
+	if policy.Spec.Transformation.Response != nil {
+		secretRefs = append(secretRefs, policy.Spec.Transformation.Response.SecretRefs...)
+	}
+
+	for _, ref := range secretRefs {
+		if _, exists := resolved[ref.Name]; exists {
+			continue // Already resolved
+		}
+
+		secret, err := commoncol.Secrets.GetSecret(krtctx, from, ref.Secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret %s for transformation: %w", ref.Name, err)
+		}
+
+		data := make(map[string]string)
+		for k, v := range secret.Data {
+			data[k] = string(v)
+		}
+		resolved[ref.Name] = data
+	}
+	return resolved, nil
+}
+
+type rustTransformationPolicy struct {
+	Request  *kgateway.Transform          `json:"request,omitempty"`
+	Response *kgateway.Transform          `json:"response,omitempty"`
+	Secrets  map[string]map[string]string `json:"secrets,omitempty"`
+}
+
 // toRustFormationPerRouteConfig converts a TransformationPolicy to a RustFormation per route config.
 // The shape of this function currently resembles that of the traditional API
 // Feel free to change the shape and flow of this function as needed provided there are sufficient unit tests on the configuration output.
 // The most dangerous updates here will be any switch over env variables that we are working on.s
-func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy) (*dynamicmodulesv3.DynamicModuleFilterPerRoute, error) {
+func toRustFormationPerRouteConfig(t *kgateway.TransformationPolicy, secrets map[string]map[string]string) (*dynamicmodulesv3.DynamicModuleFilterPerRoute, error) {
 	if t == nil || *t == (kgateway.TransformationPolicy{}) {
 		return nil, nil
 	}
-	rustformationJson, err := json.Marshal(t)
+	rustformationJson, err := json.Marshal(&rustTransformationPolicy{
+		Request:  t.Request,
+		Response: t.Response,
+		Secrets:  secrets,
+	})
 	if err != nil {
 		return nil, err
 	}

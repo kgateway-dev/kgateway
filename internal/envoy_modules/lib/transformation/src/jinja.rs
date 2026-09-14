@@ -810,6 +810,15 @@ pub fn create_env_with_templates(
     config: &LocalTransformationConfig,
 ) -> Result<Environment<'static>> {
     let mut env = new_jinja_env();
+    let secrets = config.secrets.clone();
+    env.add_function("secret", move |_state: &State, ref_name: String, key: String| -> Result<String, minijinja::Error> {
+        if let Some(secret_map) = secrets.get(&ref_name) {
+            if let Some(val) = secret_map.get(&key) {
+                return Ok(val.clone());
+            }
+        }
+        Err(minijinja::Error::new(minijinja::ErrorKind::InvalidOperation, format!("secret '{}' or key '{}' not found", ref_name, key)))
+    });
     if let Some(request) = &config.request {
         for pair in &request.add {
             if pair.value.is_empty() {

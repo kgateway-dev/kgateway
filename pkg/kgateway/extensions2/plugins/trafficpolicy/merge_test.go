@@ -154,7 +154,7 @@ func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
 					},
 				},
 			}
-			require.NoError(t, constructRustformation(in, &tp.spec))
+			require.NoError(t, constructRustformation(nil, in, nil, &tp.spec))
 			return tp
 		}
 		transformJSON := func(t *testing.T, tp *TrafficPolicy) string {
