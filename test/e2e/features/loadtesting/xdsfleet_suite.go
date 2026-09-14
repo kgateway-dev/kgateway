@@ -81,8 +81,10 @@ type XdsFleetSuite struct {
 	xdsPFs     []portforward.PortForwarder
 	xdsAddrs   []string
 
-	clients []*syntheticClient
-	conns   []*grpc.ClientConn
+	clients           []*syntheticClient
+	conns             []*grpc.ClientConn
+	activeConn        *grpc.ClientConn
+	activeConnStreams int
 
 	out *os.File
 }
@@ -964,11 +966,9 @@ func (s *XdsFleetSuite) openStreamRetrying(role, nodeID string) (*syntheticClien
 		if err == nil {
 			return c, nil
 		}
-		// Drop the connection that failed so the next attempt dials a new one.
-		if n := len(s.conns); n > 0 {
-			_ = s.conns[n-1].Close()
-			s.conns = s.conns[:n-1]
-		}
+		// Retain the old connection for its established streams and teardown.
+		// Only stop assigning new streams to it.
+		s.activeConn = nil
 		time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
 	}
 	return nil, err
@@ -978,7 +978,7 @@ func (s *XdsFleetSuite) openStreamRetrying(role, nodeID string) (*syntheticClien
 // stream that subscribes to the wildcard resources a proxy subscribes to.
 func (s *XdsFleetSuite) openStream(role, nodeID string) (*syntheticClient, error) {
 	streamsPerConn := max(fleetStreamsPerConn, 1)
-	if len(s.conns) == 0 || len(s.clients)%streamsPerConn == 0 {
+	if s.activeConn == nil || s.activeConnStreams >= streamsPerConn {
 		// Spread connections over the tunnels so no single relay carries the
 		// whole fleet.
 		addr := s.xdsAddrs[len(s.conns)%len(s.xdsAddrs)]
@@ -989,8 +989,9 @@ func (s *XdsFleetSuite) openStream(role, nodeID string) (*syntheticClient, error
 			return nil, err
 		}
 		s.conns = append(s.conns, conn)
+		s.activeConn, s.activeConnStreams = conn, 0
 	}
-	conn := s.conns[len(s.conns)-1]
+	conn := s.activeConn
 
 	ctx, cancel := context.WithCancel(s.ctx)
 	stream, err := discoveryv3.NewAggregatedDiscoveryServiceClient(conn).StreamAggregatedResources(ctx)
@@ -1018,6 +1019,7 @@ func (s *XdsFleetSuite) openStream(role, nodeID string) (*syntheticClient, error
 		}
 	}
 	go c.pump(node)
+	s.activeConnStreams++
 	return c, nil
 }
 

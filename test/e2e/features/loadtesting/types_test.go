@@ -12,6 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -176,4 +179,26 @@ func TestBenchmarkResourceRestoration(t *testing.T) {
 		assert.Equal(t, original, restored.Spec.Template.Spec.Containers[0].Resources)
 		assert.Equal(t, deployment.Spec.Template.Spec.Containers[1], restored.Spec.Template.Spec.Containers[1])
 	}
+}
+
+func TestFleetOpenRetryPreservesPreviousConnection(t *testing.T) {
+	conn, err := grpc.NewClient("localhost:0", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Force stream opens to fail deterministically.
+	fleet := &XdsFleetSuite{
+		LoadTestingSuite: LoadTestingSuite{ctx: ctx},
+		conns:            []*grpc.ClientConn{conn}, activeConn: conn, activeConnStreams: 1,
+		xdsAddrs: []string{"localhost:0"},
+	}
+	defer func() {
+		for _, c := range fleet.conns {
+			_ = c.Close()
+		}
+	}()
+	_, err = fleet.openStreamRetrying("role", "pod.namespace")
+	require.Error(t, err)
+	assert.NotEqual(t, connectivity.Shutdown, conn.GetState(), "retry must not close the connection carrying earlier streams")
+	assert.Contains(t, fleet.conns, conn, "original connection remains owned for teardown")
+	assert.Greater(t, len(fleet.conns), 1, "retry should allocate fresh connections")
 }
