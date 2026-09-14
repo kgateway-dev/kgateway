@@ -400,22 +400,22 @@ func TestComputeRouteConfigurationStrictIsolatesInvalidRouteAfterBatchFailure(t 
 		routes := routesFromValidationBootstrap(t, config)
 		routeCounts = append(routeCounts, len(routes))
 		switch calls {
-		case 1:
+		case 1, 2:
 			require.Len(t, routes, 2)
 			return errors.New("batch failed")
-		case 2:
+		case 3:
 			require.Len(t, routes, 1)
 			assert.Contains(t, routes[0].GetName(), "route-0")
 			return nil
-		case 3:
-			require.Len(t, routes, 1)
-			assert.Contains(t, routes[0].GetName(), "route-1")
-			return errors.New("bad route")
 		case 4:
 			require.Len(t, routes, 1)
 			assert.Contains(t, routes[0].GetName(), "route-1")
-			return nil
+			return errors.New("bad route")
 		case 5:
+			require.Len(t, routes, 1)
+			assert.Contains(t, routes[0].GetName(), "route-1")
+			return nil
+		case 6, 7:
 			require.Len(t, routes, 2)
 			return nil
 		default:
@@ -441,16 +441,22 @@ func TestComputeRouteConfigurationStrictIsolatesInvalidRouteAfterBatchFailure(t 
 	assert.True(t, ok)
 	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
 	assert.True(t, ok)
-	assert.Equal(t, []int{2, 1, 1, 1, 2}, routeCounts)
+	assert.Equal(t, []int{2, 2, 1, 1, 1, 2, 2}, routeCounts)
 }
 
 type routeConfigPassFunc struct {
 	ir.UnimplementedProxyTranslationPass
-	apply func(*envoyroutev3.RouteConfiguration)
+	apply        func(*envoyroutev3.RouteConfiguration)
+	applyContext func(*ir.RouteConfigContext)
 }
 
-func (p routeConfigPassFunc) ApplyRouteConfigPlugin(_ *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
-	p.apply(out)
+func (p routeConfigPassFunc) ApplyRouteConfigPlugin(ctx *ir.RouteConfigContext, out *envoyroutev3.RouteConfiguration) {
+	if p.applyContext != nil {
+		p.applyContext(ctx)
+	}
+	if p.apply != nil {
+		p.apply(out)
+	}
 }
 
 func attachRouteConfigPass(h *httpRouteConfigurationTranslator, pass ir.ProxyTranslationPass) {
@@ -703,9 +709,11 @@ func routesFromValidationBootstrap(t *testing.T, config *envoybootstrapv3.Bootst
 	require.NotEmpty(t, filters)
 	hcm := &envoy_hcm.HttpConnectionManager{}
 	require.NoError(t, filters[0].GetTypedConfig().UnmarshalTo(hcm))
-	vhosts := hcm.GetRouteConfig().GetVirtualHosts()
-	require.Len(t, vhosts, 1)
-	return vhosts[0].GetRoutes()
+	var routes []*envoyroutev3.Route
+	for _, vhost := range hcm.GetRouteConfig().GetVirtualHosts() {
+		routes = append(routes, vhost.GetRoutes()...)
+	}
+	return routes
 }
 
 func TestSummarizeRuleErrors_NilReturnsEmpty(t *testing.T) {

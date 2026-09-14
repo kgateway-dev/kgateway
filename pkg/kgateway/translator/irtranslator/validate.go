@@ -234,14 +234,24 @@ func validateMatcherOnlyEnvoy(ctx context.Context, route *envoyroutev3.Route, v 
 
 // validateFullRoutes validates a set of complete route configurations in one Envoy invocation.
 func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, &envoyroutev3.RouteConfiguration{
+		VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "placeholder_vhost", Domains: []string{"*"}, Routes: routes}},
+	}, v)
+}
+
+// validateFullRouteConfiguration retains the final scope-level settings as well as
+// routes. Rebuilding only the routes loses inherited filter config and vhost rate limits.
+func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator) error {
 	builder := bootstrap.New()
+	builder.SetRouteConfiguration(config)
 	clusterNames := make([]string, 0)
 	// A batched route bootstrap can reference the same backend cluster from many routes.
 	// Track names here so validation adds only one stub Cluster per unique Envoy cluster name.
 	seenClusterNames := make(map[string]struct{})
-	for _, route := range routes {
-		builder.AddRoute(route)
-		clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
+	for _, vhost := range config.GetVirtualHosts() {
+		for _, route := range vhost.GetRoutes() {
+			clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
+		}
 	}
 	stubClusters := createStubClusters(clusterNames)
 	for _, cluster := range stubClusters {
@@ -249,6 +259,12 @@ func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v val
 	}
 
 	return runValidation(ctx, v, builder, validator.CallerRouteFull)
+}
+
+func validateFullVirtualHost(ctx context.Context, vhost *envoyroutev3.VirtualHost, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, &envoyroutev3.RouteConfiguration{
+		VirtualHosts: []*envoyroutev3.VirtualHost{vhost},
+	}, v)
 }
 
 func validateGeneratedMatcher(match *envoyroutev3.RouteMatch) (bool, error) {

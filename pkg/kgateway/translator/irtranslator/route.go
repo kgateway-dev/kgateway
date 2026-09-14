@@ -488,6 +488,22 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 	if h.validationLevel != apisettings.ValidationStandard && h.validationLevel != apisettings.ValidationStrict {
 		return
 	}
+	// Validate the complete output before isolating failures. This is one Envoy
+	// invocation on the successful strict path, including all inherited settings.
+	if h.validationLevel == apisettings.ValidationStrict {
+		var preEnvoyErr error
+		for _, vhost := range cfg.GetVirtualHosts() {
+			for _, route := range vhost.GetRoutes() {
+				if err := validateRoutePreEnvoy(route, h.validationLevel); err != nil {
+					preEnvoyErr = err
+					break
+				}
+			}
+		}
+		if preEnvoyErr == nil && validateFullRouteConfiguration(ctx, cfg, h.validator) == nil {
+			return
+		}
+	}
 	vhostNameCounts := make(map[string]int, len(cfg.GetVirtualHosts()))
 	for _, vhost := range cfg.GetVirtualHosts() {
 		if name := vhost.GetName(); name != "" {
@@ -498,6 +514,21 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 		name := vhost.GetName()
 		cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, vhost, validationCtx.forVirtualHost(vhost, name != "" && vhostNameCounts[name] == 1))
 	}
+	if h.validationLevel == apisettings.ValidationStrict {
+		if err := validateFullRouteConfiguration(ctx, cfg, h.validator); err != nil {
+			h.logger.Error("route configuration validation failed after virtual host isolation", "error", err)
+			incRouteReplacementMetric(h.gw, err)
+			for _, cvh := range validationCtx.vhostsByPointer {
+				h.reportVirtualHostReplacement(cvh.in, err)
+			}
+			// Scope-level fields can themselves be invalid. Retaining them while
+			// replacing only VirtualHosts would send the same invalid config again.
+			proto.Reset(cfg)
+			cfg.Name = h.routeConfigName
+			cfg.IgnorePortInHostMatching = true
+			cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
+		}
+	}
 }
 
 func (h *httpRouteConfigurationTranslator) validateRouteBatch(
@@ -506,6 +537,9 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatch(
 	validationCtx vhostRouteValidationContext,
 ) *envoyroutev3.VirtualHost {
 	if len(out.GetRoutes()) == 0 {
+		if h.validationLevel == apisettings.ValidationStrict {
+			return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, out)
+		}
 		return out
 	}
 	routeNameCounts := make(map[string]int, len(out.GetRoutes()))
@@ -525,7 +559,7 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatch(
 		if h.validationLevel != apisettings.ValidationStrict {
 			return out
 		}
-		if err := validateFullRoutes(ctx, out.GetRoutes(), h.validator); err == nil {
+		if err := validateFullVirtualHost(ctx, out, h.validator); err == nil {
 			return out
 		} else {
 			h.logger.Debug("strict route batch validation failed; isolating invalid routes", "vhost", out.GetName(), "error", err)
@@ -548,11 +582,8 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatch(
 		isolatedRoutes = append(isolatedRoutes, route)
 	}
 	out.Routes = isolatedRoutes
-	if len(out.GetRoutes()) == 0 {
-		return out
-	}
 	if h.validationLevel == apisettings.ValidationStrict {
-		return h.validateIsolatedStrictRouteBatch(ctx, validationCtx.virtualHost, out)
+		return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, out)
 	}
 	return out
 }
@@ -575,30 +606,39 @@ func (h *httpRouteConfigurationTranslator) finalizeValidatedRoute(
 	return replaceRouteWithDirectResponse(route)
 }
 
-func (h *httpRouteConfigurationTranslator) validateIsolatedStrictRouteBatch(
+func (h *httpRouteConfigurationTranslator) validateIsolatedVirtualHost(
 	ctx context.Context,
 	virtualHost *ir.VirtualHost,
 	out *envoyroutev3.VirtualHost,
 ) *envoyroutev3.VirtualHost {
-	if err := validateFullRoutes(ctx, out.GetRoutes(), h.validator); err != nil {
-		h.logger.Error("strict route batch validation failed after invalid route isolation", "vhost", out.GetName(), "error", err)
+	if err := validateFullVirtualHost(ctx, out, h.validator); err != nil {
+		h.logger.Error("virtual host validation failed after invalid route isolation", "vhost", out.GetName(), "error", err)
 		incRouteReplacementMetric(h.gw, err)
-		if h.reporter != nil && virtualHost != nil && virtualHost.ParentRef.Parent != nil {
-			reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
-			reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
-				Type:    gwv1.ListenerConditionAccepted,
-				Status:  metav1.ConditionFalse,
-				Reason:  reportssdk.ListenerReplacedReason,
-				Message: err.Error(),
-			})
-		}
+		h.reportVirtualHostReplacement(virtualHost, err)
 		domain := "*"
 		if len(out.GetDomains()) > 0 {
 			domain = out.GetDomains()[0]
 		}
-		return setFallBackConfig(out.GetName(), domain)
+		fallback := setFallBackConfig(out.GetName(), domain)
+		if len(out.GetDomains()) > 0 {
+			fallback.Domains = append([]string(nil), out.GetDomains()...)
+		}
+		return fallback
 	}
 	return out
+}
+
+func (h *httpRouteConfigurationTranslator) reportVirtualHostReplacement(virtualHost *ir.VirtualHost, err error) {
+	if h.reporter == nil || virtualHost == nil || virtualHost.ParentRef.Parent == nil {
+		return
+	}
+	reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
+	reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  reportssdk.ListenerReplacedReason,
+		Message: err.Error(),
+	})
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(
