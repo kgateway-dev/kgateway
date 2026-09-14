@@ -114,10 +114,8 @@ type JWTClaimToHeader struct {
 
 	// Overwrite removes any value of Header that the downstream client sent before the
 	// JWT is verified, so that the upstream only ever sees the value copied from the
-	// claim. Envoy appends the claim value to the existing header rather than replacing
-	// it, so without this a client can smuggle its own value alongside the verified one.
-	// The removal is applied on routes where this provider's jwtAuth policy is active.
-	// Defaults to false, which preserves any client-supplied value.
+	// claim. By default, Envoy appends the copied value to the existing header.
+	// Defaults to false, which preserves the existing behavior.
 	// +optional
 	Overwrite *bool `json:"overwrite,omitempty"`
 }
