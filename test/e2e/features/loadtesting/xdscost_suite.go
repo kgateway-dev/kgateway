@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
@@ -787,20 +788,17 @@ func (s *XdsCostSuite) snapshotControllerEnv(names []string) error {
 }
 
 func (s *XdsCostSuite) restoreControllerEnv() error {
-	exprs := make([]string, 0, len(s.originalControllerEnv))
-	for name, orig := range s.originalControllerEnv {
-		if orig == nil || orig.ValueFrom != nil {
-			// Unset it: `kubectl set env NAME-` removes the variable.
-			exprs = append(exprs, name+"-")
-			continue
-		}
-		exprs = append(exprs, name+"="+orig.Value)
-	}
-	if len(exprs) == 0 {
+	if len(s.originalControllerEnv) == 0 {
 		return nil
 	}
-	sort.Strings(exprs)
-	return s.setControllerEnv(exprs...)
+	if err := updateBenchmarkContainer(s.ctx, s.testInstallation.ClusterContext.Client,
+		s.installNamespace, s.controllerDeployment, s.controllerContainer, func(c *corev1.Container) {
+			c.Env = restoredBenchmarkEnv(c.Env, s.originalControllerEnv)
+		}); err != nil {
+		return err
+	}
+	return s.testInstallation.Actions.Kubectl().DeploymentRolloutStatus(s.ctx,
+		s.controllerDeployment, "-n", s.installNamespace, "--timeout=180s")
 }
 
 func (s *XdsCostSuite) setControllerEnv(envExprs ...string) error {
@@ -814,4 +812,43 @@ func (s *XdsCostSuite) setControllerEnv(envExprs ...string) error {
 	}
 	return s.testInstallation.Actions.Kubectl().DeploymentRolloutStatus(s.ctx,
 		s.controllerDeployment, "-n", s.installNamespace, "--timeout=180s")
+}
+
+// updateBenchmarkContainer retries against the latest deployment so unrelated
+// container configuration is preserved during benchmark restoration.
+func updateBenchmarkContainer(ctx context.Context, kube client.Client, namespace, deploymentName, containerName string, mutate func(*corev1.Container)) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var deployment appsv1.Deployment
+		if err := kube.Get(ctx, client.ObjectKey{Namespace: namespace, Name: deploymentName}, &deployment); err != nil {
+			return err
+		}
+		for i := range deployment.Spec.Template.Spec.Containers {
+			c := &deployment.Spec.Template.Spec.Containers[i]
+			if c.Name == containerName {
+				mutate(c)
+				return kube.Update(ctx, &deployment)
+			}
+		}
+		return fmt.Errorf("container %s not found on deployment %s", containerName, deploymentName)
+	})
+}
+
+func restoredBenchmarkEnv(current []corev1.EnvVar, original map[string]*corev1.EnvVar) []corev1.EnvVar {
+	restored := make([]corev1.EnvVar, 0, len(current))
+	for _, env := range current {
+		if _, modified := original[env.Name]; !modified {
+			restored = append(restored, env)
+		}
+	}
+	names := make([]string, 0, len(original))
+	for name := range original {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if env := original[name]; env != nil {
+			restored = append(restored, *env.DeepCopy())
+		}
+	}
+	return restored
 }

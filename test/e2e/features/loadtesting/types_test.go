@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestValidationMetricsDeltaClampsCounterResets(t *testing.T) {
@@ -119,4 +120,23 @@ func TestBenchConvergenceRequiresQuietWindow(t *testing.T) {
 	cost.SetT(t)
 	_, ok = cost.waitConverged(0, time.Now())
 	assert.False(t, ok, "cost suite must also require a full quiet window")
+}
+
+func TestBenchmarkEnvRestoresValueSources(t *testing.T) {
+	original := map[string]*corev1.EnvVar{
+		"SECRET":  {Name: "SECRET", ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{Key: "secret"}}},
+		"CONFIG":  {Name: "CONFIG", ValueFrom: &corev1.EnvVarSource{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{Key: "config"}}},
+		"FIELD":   {Name: "FIELD", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"}}},
+		"LITERAL": {Name: "LITERAL", Value: "original"},
+		"ADDED":   nil,
+	}
+	current := []corev1.EnvVar{{Name: "SECRET", Value: "override"}, {Name: "ADDED", Value: "temporary"}, {Name: "UNRELATED", Value: "keep"}}
+	restored := restoredBenchmarkEnv(current, original)
+	assert.Len(t, restored, 5)
+	assert.Contains(t, restored, current[2])
+	for _, env := range original {
+		if env != nil {
+			assert.Contains(t, restored, *env)
+		}
+	}
 }

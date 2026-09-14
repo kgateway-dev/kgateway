@@ -1295,18 +1295,17 @@ func (s *XdsFleetSuite) snapshotEnv(names []string) error {
 }
 
 func (s *XdsFleetSuite) restoreEnv() error {
-	exprs := make([]string, 0, len(s.originalEnv))
-	for name, orig := range s.originalEnv {
-		if orig == nil || orig.ValueFrom != nil {
-			exprs = append(exprs, name+"-")
-			continue
-		}
-		exprs = append(exprs, name+"="+orig.Value)
-	}
-	if len(exprs) == 0 {
+	if len(s.originalEnv) == 0 {
 		return nil
 	}
-	return s.setEnv(exprs...)
+	if err := updateBenchmarkContainer(s.ctx, s.testInstallation.ClusterContext.Client,
+		s.installNamespace, s.controllerDeployment, s.controllerContainer, func(c *corev1.Container) {
+			c.Env = restoredBenchmarkEnv(c.Env, s.originalEnv)
+		}); err != nil {
+		return err
+	}
+	return s.testInstallation.Actions.Kubectl().DeploymentRolloutStatus(s.ctx,
+		s.controllerDeployment, "-n", s.installNamespace, "--timeout=300s")
 }
 
 // setMemoryLimit sets (or with "0" clears) the controller container's memory
