@@ -14,6 +14,7 @@ import (
 	envoycompositev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/composite/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoyextprocv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	ratev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoynetworkv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
@@ -39,15 +40,19 @@ type TrafficPolicyGatewayExtensionIR struct {
 	// oauth2/global_rate_limit), and the name reaches the dataplane through providerName() as
 	// the ext_proc/ext_authz filter name and per-route typed-config key. Two identically
 	// configured extensions with different names produce different Envoy config.
-	Name             string
-	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
-	ExtProc          *envoymatchingv3.ExtensionWithMatcher
-	RateLimit        *ratev3.RateLimit
-	Jwt              *envoymatchingv3.ExtensionWithMatcher
-	OAuth2           *oauthPerProviderConfig
-	PrecedenceWeight int32
-	FilterStage      *kgateway.FilterStageSpec
-	Err              error
+	Name      string
+	ExtAuth   *envoy_ext_authz_v3.ExtAuthz
+	ExtProc   *envoymatchingv3.ExtensionWithMatcher
+	RateLimit *ratev3.RateLimit
+	Jwt       *envoymatchingv3.ExtensionWithMatcher
+	// JwtClaimHeaderStrip removes the request headers that Jwt's providers copy claims into
+	// with overwrite set, so it must run ahead of Jwt in the filter chain. Nil when no
+	// provider opts in.
+	JwtClaimHeaderStrip *header_mutationv3.HeaderMutation
+	OAuth2              *oauthPerProviderConfig
+	PrecedenceWeight    int32
+	FilterStage         *kgateway.FilterStageSpec
+	Err                 error
 }
 
 // ResourceName returns the unique name for this extension.
@@ -69,6 +74,9 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 		return false
 	}
 	if !proto.Equal(e.Jwt, other.Jwt) {
+		return false
+	}
+	if !proto.Equal(e.JwtClaimHeaderStrip, other.JwtClaimHeaderStrip) {
 		return false
 	}
 	if !e.OAuth2.Equals(other.OAuth2) {
@@ -117,6 +125,11 @@ func (e TrafficPolicyGatewayExtensionIR) Validate() error {
 	}
 	if e.Jwt != nil {
 		if err := e.Jwt.ValidateAll(); err != nil {
+			return err
+		}
+	}
+	if e.JwtClaimHeaderStrip != nil {
+		if err := e.JwtClaimHeaderStrip.ValidateAll(); err != nil {
 			return err
 		}
 	}
@@ -237,6 +250,7 @@ func gatewayExtensionBuilder(
 				return p
 			}
 			p.Jwt = buildCompositeJwtFilter(jwtConfig)
+			p.JwtClaimHeaderStrip = buildJwtClaimHeaderStrip(gExt.JWT)
 
 		case gExt.OAuth2 != nil:
 			out, err := buildOAuth2ProviderConfig(ctx, krtctx, &gExt, commoncol.BackendIndex, commoncol.Secrets, oidcDiscoverer)

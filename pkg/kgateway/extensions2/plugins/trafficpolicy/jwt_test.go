@@ -14,6 +14,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -902,6 +903,88 @@ func TestHttpFiltersJwt(t *testing.T) {
 		assert.Equal(t, filters.AfterStage(filters.AuthNStage), httpFilters[1].Stage)
 		assert.Equal(t, jwtFilterName("test-jwt"), httpFilters[2].Filter.GetName())
 		assert.Equal(t, filters.DuringStage(filters.AuthNStage), httpFilters[2].Stage)
+	})
+
+	t.Run("adds disabled claim header strip filter before authn when provider opts in", func(t *testing.T) {
+		strip := buildJwtClaimHeaderStrip(&kgateway.JWT{
+			Providers: []kgateway.NamedJWTProvider{{
+				Name: "p",
+				JWTProvider: kgateway.JWTProvider{
+					ClaimsToHeaders: []kgateway.JWTClaimToHeader{
+						{Name: "sub", Header: "x-sub", Overwrite: new(true)},
+					},
+				},
+			}},
+		})
+		plugin := &trafficPolicyPluginGwPass{
+			jwtPerProvider: ProviderNeededMap{
+				Providers: map[string][]Provider{
+					"test-filter-chain": {
+						{
+							Name: "test-jwt",
+							Extension: &TrafficPolicyGatewayExtensionIR{
+								Name:                "test-jwt",
+								Jwt:                 &envoymatchingv3.ExtensionWithMatcher{},
+								JwtClaimHeaderStrip: strip,
+							},
+						},
+					},
+				},
+			},
+		}
+		fcc := ir.FilterChainCommon{FilterChainName: "test-filter-chain"}
+
+		httpFilters, err := plugin.HttpFilters(ir.HttpFiltersContext{}, fcc)
+
+		require.NoError(t, err)
+		var stripFilter *filters.StagedHttpFilter
+		for i := range httpFilters {
+			if httpFilters[i].Filter.GetName() == jwtClaimHeaderStripFilterName("test-jwt") {
+				stripFilter = &httpFilters[i]
+			}
+		}
+		require.NotNil(t, stripFilter, "strip filter should be added to the chain")
+		assert.True(t, stripFilter.Filter.GetDisabled(), "strip filter is enabled per route, not chain-wide")
+		assert.Equal(t, filters.BeforeStage(filters.AuthNStage), stripFilter.Stage)
+		assert.Less(t,
+			filters.FilterStageComparison(stripFilter.Stage, filters.DuringStage(filters.AuthNStage)), 0,
+			"strip filter must sort ahead of the jwt filter")
+	})
+}
+
+func TestBuildJwtClaimHeaderStrip(t *testing.T) {
+	provider := func(c2h ...kgateway.JWTClaimToHeader) kgateway.NamedJWTProvider {
+		return kgateway.NamedJWTProvider{JWTProvider: kgateway.JWTProvider{ClaimsToHeaders: c2h}}
+	}
+
+	t.Run("nil when no claim opts in", func(t *testing.T) {
+		got := buildJwtClaimHeaderStrip(&kgateway.JWT{Providers: []kgateway.NamedJWTProvider{
+			provider(
+				kgateway.JWTClaimToHeader{Name: "sub", Header: "x-sub"},
+				kgateway.JWTClaimToHeader{Name: "org", Header: "x-org", Overwrite: new(false)},
+			),
+		}})
+		assert.Nil(t, got, "existing configs must produce no extra filter")
+	})
+
+	t.Run("removes opted-in headers across providers, deduplicated and sorted", func(t *testing.T) {
+		got := buildJwtClaimHeaderStrip(&kgateway.JWT{Providers: []kgateway.NamedJWTProvider{
+			provider(
+				kgateway.JWTClaimToHeader{Name: "org", Header: "x-org", Overwrite: new(true)},
+				kgateway.JWTClaimToHeader{Name: "sub", Header: "x-sub"},
+			),
+			provider(
+				kgateway.JWTClaimToHeader{Name: "org", Header: "x-org", Overwrite: new(true)},
+				kgateway.JWTClaimToHeader{Name: "aud", Header: "x-aud", Overwrite: new(true)},
+			),
+		}})
+		require.NotNil(t, got)
+		var removed []string
+		for _, m := range got.GetMutations().GetRequestMutations() {
+			removed = append(removed, m.GetRemove())
+		}
+		assert.Equal(t, []string{"x-aud", "x-org"}, removed)
+		assert.Empty(t, got.GetMutations().GetResponseMutations())
 	})
 }
 

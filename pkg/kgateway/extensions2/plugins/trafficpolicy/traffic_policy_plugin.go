@@ -624,6 +624,18 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 
 		stagedJwtFilter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, stagedJwtFilter)
+
+		// Strip client-supplied copies of claim headers ahead of the jwt filter, which appends
+		// the claim value to any existing header value instead of replacing it.
+		if strip := provider.Extension.JwtClaimHeaderStrip; strip != nil {
+			stagedStripFilter := filters.MustNewStagedFilter(
+				jwtClaimHeaderStripFilterName(provider.Name),
+				strip,
+				filters.BeforeStage(filters.AuthNStage),
+			)
+			stagedStripFilter.Filter.Disabled = true
+			stagedFilters = append(stagedFilters, stagedStripFilter)
+		}
 	}
 
 	if f := p.localRateLimitInChain[fcc.FilterChainName]; f != nil {

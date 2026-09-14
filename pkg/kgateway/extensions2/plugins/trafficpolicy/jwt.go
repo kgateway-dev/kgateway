@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"slices"
 
+	mutation_rulesv3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	header_mutationv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_mutation/v3"
 	jwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -45,6 +47,7 @@ const (
 	FailedStatusInMetadata = "failed_status"
 
 	jwtFilterNamePrefix                     = "jwt"
+	jwtClaimHeaderStripFilterNamePrefix     = "jwt_claim_header_strip"
 	jwtConfigMapKey                         = "jwks"
 	jwtGlobalDisableFilterName              = "global_disable/jwt"
 	jwtGlobalDisableFilterMetadataNamespace = "dev.kgateway.disable_jwt"
@@ -105,6 +108,11 @@ func (p *trafficPolicyPluginGwPass) handleJwt(fcn string, pCtxTypedFilterConfig 
 		jwtName := jwtFilterName(providerName)
 		pCtxTypedFilterConfig.AddTypedConfig(jwtName, cfg.perRouteConfig)
 		p.jwtPerProvider.Add(fcn, providerName, cfg.provider, filters.DuringStage(filters.AuthNStage))
+		if cfg.provider.JwtClaimHeaderStrip != nil {
+			// The strip filter is disabled in the chain; an empty per-route config enables it
+			// for this route without adding mutations of its own.
+			pCtxTypedFilterConfig.AddTypedConfig(jwtClaimHeaderStripFilterName(providerName), &header_mutationv3.HeaderMutationPerRoute{})
+		}
 	}
 
 	if len(jwtIr.perProviderConfig) > 0 {
@@ -567,4 +575,40 @@ func jwtFilterName(name string) string {
 		return jwtFilterNamePrefix
 	}
 	return fmt.Sprintf("%s/%s", jwtFilterNamePrefix, name)
+}
+
+func jwtClaimHeaderStripFilterName(name string) string {
+	if name == "" {
+		return jwtClaimHeaderStripFilterNamePrefix
+	}
+	return fmt.Sprintf("%s/%s", jwtClaimHeaderStripFilterNamePrefix, name)
+}
+
+// buildJwtClaimHeaderStrip returns a header_mutation filter config that removes every header
+// any provider copies a claim into with overwrite set, or nil when none do. Headers are
+// de-duplicated and sorted so the output is stable across providers.
+func buildJwtClaimHeaderStrip(jwt *kgateway.JWT) *header_mutationv3.HeaderMutation {
+	var headers []string
+	for _, provider := range jwt.Providers {
+		for _, c2h := range provider.ClaimsToHeaders {
+			if ptr.Deref(c2h.Overwrite, false) {
+				headers = append(headers, c2h.Header)
+			}
+		}
+	}
+	if len(headers) == 0 {
+		return nil
+	}
+	slices.Sort(headers)
+	headers = slices.Compact(headers)
+
+	mutations := make([]*mutation_rulesv3.HeaderMutation, 0, len(headers))
+	for _, h := range headers {
+		mutations = append(mutations, &mutation_rulesv3.HeaderMutation{
+			Action: &mutation_rulesv3.HeaderMutation_Remove{Remove: h},
+		})
+	}
+	return &header_mutationv3.HeaderMutation{
+		Mutations: &header_mutationv3.Mutations{RequestMutations: mutations},
+	}
 }

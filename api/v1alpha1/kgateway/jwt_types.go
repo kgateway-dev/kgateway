@@ -111,6 +111,15 @@ type JWTClaimToHeader struct {
 	// +kubebuilder:validation:MaxLength=2048
 	// +required
 	Header string `json:"header"`
+
+	// Overwrite removes any value of Header that the downstream client sent before the
+	// JWT is verified, so that the upstream only ever sees the value copied from the
+	// claim. Envoy appends the claim value to the existing header rather than replacing
+	// it, so without this a client can smuggle its own value alongside the verified one.
+	// The removal is applied on routes where this provider's jwtAuth policy is active.
+	// Defaults to false, which preserves any client-supplied value.
+	// +optional
+	Overwrite *bool `json:"overwrite,omitempty"`
 }
 
 // JWKS (JSON Web Key Set) configures the source for the JWKS
