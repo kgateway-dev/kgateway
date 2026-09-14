@@ -285,8 +285,10 @@ func (s *XdsFleetSuite) SetupSuite() {
 	s.createNamespace()
 	s.createZeroReplicaGatewayParameters()
 	s.createGateways()
-	if fleetPodLocality {
+	if fleetPodLocality || fleetEndpointPods {
 		s.createFakeNodes()
+	}
+	if fleetPodLocality {
 		s.createFakePods()
 	}
 	if fleetEndpointPods {
@@ -333,7 +335,7 @@ func (s *XdsFleetSuite) TearDownSuite() {
 	// will ever confirm their graceful deletion: the namespace then hangs in
 	// Terminating on "unexpected items still remain ... Resource=pods" forever,
 	// and the leftovers poison the next run. Force them out first.
-	if fleetPodLocality {
+	if fleetPodLocality || fleetEndpointPods {
 		if err := s.testInstallation.Actions.Kubectl().RunCommand(s.ctx,
 			"delete", "pods", "-n", s.testNamespace, "--all",
 			"--force", "--grace-period=0", "--wait=false",
@@ -341,7 +343,7 @@ func (s *XdsFleetSuite) TearDownSuite() {
 			s.T().Logf("force-deleting fake proxy pods reported: %v", err)
 		}
 	}
-	if fleetPodLocality {
+	if fleetPodLocality || fleetEndpointPods {
 		// Nodes are cluster-scoped and outlive the namespace.
 		for i := range fleetZones * 2 {
 			node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: s.nodeName(i)}}
