@@ -369,6 +369,7 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		target := min(connected+perWave, fleetGateways)
 		start := time.Now()
 		newClients := (target - connected) * s.clientsPerGateway()
+		firstNewStream := len(s.clients)
 		s.connectGateways(connected, target)
 		connected = target
 		// Wait for the clients this wave added to actually be served before
@@ -387,7 +388,7 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		// should receive at least one response. Failing to reach that inside the
 		// wave timeout is not a measurement to record and move past - it is the
 		// point where this build stopped keeping up, so the ladder ends there.
-		servedAll := s.waitServed(lastAcks+int64(newClients), fleetWaveTimeout)
+		servedAll := s.waitServed(s.clients[firstNewStream:], fleetWaveTimeout)
 		settled := s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout)
 		// A stream that never received a response is not a connected client, and
 		// a fleet of those measures nothing at all. Stop rather than report a
@@ -408,9 +409,9 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		ackDelta := acks - lastAcks
 		lastAcks = acks
 		if !servedAll {
-			s.T().Logf("wave %d: only %d of the %d clients added this wave were served within %s; "+
+			s.T().Logf("wave %d: only %d of the %d streams added this wave were served within %s; "+
 				"the build stopped keeping up here, so the ladder ends at %d clients",
-				wave, ackDelta, newClients, fleetWaveTimeout, connected*s.clientsPerGateway())
+				wave, servedStreams(s.clients[firstNewStream:]), len(s.clients)-firstNewStream, fleetWaveTimeout, connected*s.clientsPerGateway())
 		}
 		s.emit("xds_fleet_wave", map[string]any{
 			"build": benchLabel, "validation": benchValidation,
@@ -1182,18 +1183,33 @@ func (s *XdsFleetSuite) waitConverged(before float64) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// waitServed blocks until the clients' cumulative acknowledgements reach want,
-// which is one response per newly connected client. It returns false on timeout,
-// meaning the control plane did not serve everything this wave attached.
-func (s *XdsFleetSuite) waitServed(want int64, timeout time.Duration) bool {
+// servedStreams counts live streams that have acknowledged at least one response.
+// ACKs for other resource types or other streams cannot satisfy this gate.
+func servedStreams(clients []*syntheticClient) int {
+	served := 0
+	for _, c := range clients {
+		select {
+		case <-c.done:
+			continue
+		default:
+		}
+		if c.acks.Load() > 0 {
+			served++
+		}
+	}
+	return served
+}
+
+// waitServed waits for every stream opened in this wave to receive a response.
+func (s *XdsFleetSuite) waitServed(clients []*syntheticClient, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if s.totalAcks() >= want {
+		if servedStreams(clients) == len(clients) {
 			return true
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	return s.totalAcks() >= want
+	return servedStreams(clients) == len(clients)
 }
 
 func (s *XdsFleetSuite) waitQuiet(quiet, timeout time.Duration) bool {

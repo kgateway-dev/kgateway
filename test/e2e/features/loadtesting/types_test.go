@@ -75,3 +75,21 @@ func TestValidationMetricsDeltaClampsCounterResets(t *testing.T) {
 	assert.Zero(t, caller.DurationCount)
 	assert.Zero(t, caller.DurationSeconds)
 }
+
+func TestFleetReadinessRequiresEveryLiveStream(t *testing.T) {
+	clients := make([]*syntheticClient, 100)
+	for i := range clients {
+		clients[i] = &syntheticClient{done: make(chan struct{})}
+		if i < 34 {
+			clients[i].acks.Store(3)
+		}
+	}
+	assert.Equal(t, 34, servedStreams(clients), "multiple resource ACKs must not count as additional served streams")
+	for _, c := range clients {
+		c.acks.Store(1)
+	}
+	assert.Equal(t, 100, servedStreams(clients))
+	close(clients[0].done)
+	assert.Equal(t, 99, servedStreams(clients), "terminated streams must not count as served")
+	assert.Zero(t, servedStreams([]*syntheticClient{{done: make(chan struct{})}}), "older streams cannot satisfy a new stream's readiness")
+}
