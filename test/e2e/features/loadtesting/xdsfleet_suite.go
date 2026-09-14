@@ -509,7 +509,7 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 	sortFloats(latencies)
 	s.emit("xds_fleet_result", map[string]any{
 		"build": benchLabel, "validation": benchValidation, "phase": name,
-		"clients": fleetGateways, "services": fleetServices, "inline_backends": fleetInlineBackends,
+		"clients": fleetGateways * s.clientsPerGateway(), "services": fleetServices, "inline_backends": fleetInlineBackends,
 		"trickle_ms":            fleetTrickleMs,
 		"iterations":            len(latencies),
 		"wall_seconds":          wall.Seconds(),
