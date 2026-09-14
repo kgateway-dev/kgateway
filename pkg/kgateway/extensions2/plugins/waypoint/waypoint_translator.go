@@ -114,6 +114,11 @@ func (w *waypointTranslator) Translate(
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
 	}
 
+	// Waypoint Gateways skip the core translator, so AttachedRoutes must be
+	// reported here from the unique routes already collected at Gateway and
+	// Service attachment.
+	gwReporter.Listener(&gwListener.Listener).SetAttachedRoutes(uint(attachedRoutes.Len()))
+
 	// ensure consistent ordering in outputs
 	proxyListener.HttpFilterChain = slices.SortBy(proxyListener.HttpFilterChain, func(fc ir.HttpFilterChainIR) string {
 		return fc.FilterChainName
