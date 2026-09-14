@@ -1608,6 +1608,7 @@ spec:
                             description: |-
                               ClaimsToHeaders copies JWT claims into upstream request headers.
                               Setting this clears Envoy's route cache so routing uses the updated headers.
+                              The overwrite option is not supported here.
                             items:
                               description: JWTClaimToHeader allows copying verified
                                 claims to headers sent upstream
@@ -1640,6 +1641,9 @@ spec:
                             maxItems: 32
                             minItems: 1
                             type: array
+                            x-kubernetes-validations:
+                            - message: overwrite is not supported for OAuth2 claimsToHeaders
+                              rule: '!self.exists(c, has(c.overwrite))'
                         type: object
                       idToken:
                         description: |-
@@ -1663,6 +1667,7 @@ spec:
                             description: |-
                               ClaimsToHeaders copies JWT claims into upstream request headers.
                               Setting this clears Envoy's route cache so routing uses the updated headers.
+                              The overwrite option is not supported here.
                             items:
                               description: JWTClaimToHeader allows copying verified
                                 claims to headers sent upstream
@@ -1695,6 +1700,9 @@ spec:
                             maxItems: 32
                             minItems: 1
                             type: array
+                            x-kubernetes-validations:
+                            - message: overwrite is not supported for OAuth2 claimsToHeaders
+                              rule: '!self.exists(c, has(c.overwrite))'
                         type: object
                       jwksBackendRef:
                         description: |-

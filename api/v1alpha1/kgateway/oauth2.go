@@ -238,8 +238,10 @@ type OAuth2JWTProcessingConfig struct {
 
 	// ClaimsToHeaders copies JWT claims into upstream request headers.
 	// Setting this clears Envoy's route cache so routing uses the updated headers.
+	// The overwrite option is not supported here.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:XValidation:rule="!self.exists(c, has(c.overwrite))",message="overwrite is not supported for OAuth2 claimsToHeaders"
 	// +optional
 	ClaimsToHeaders []JWTClaimToHeader `json:"claimsToHeaders,omitempty"`
 }
