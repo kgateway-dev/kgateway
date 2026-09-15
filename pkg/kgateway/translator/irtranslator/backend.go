@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"hash/fnv"
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
@@ -58,11 +60,14 @@ type BackendTranslator struct {
 
 // overlayPlugin is one policy plugin's per-client cluster hook: either the
 // self-gating overlay or, for plugins not yet migrated, the legacy eager
-// mutator, which is treated as applicable to every client.
+// mutator, which is treated as applicable to every client. inputsHash is the
+// plugin's declaration of what that hook reads from the backend, and is never
+// nil: a hook that did not declare gets wholeObjectInputsHash.
 type overlayPlugin struct {
-	gk      schema.GroupKind
-	overlay sdk.PerClientClusterOverlay
-	legacy  sdk.PerClientProcessBackend
+	gk         schema.GroupKind
+	overlay    sdk.PerClientClusterOverlay
+	legacy     sdk.PerClientProcessBackend
+	inputsHash sdk.OverlayInputsHash
 }
 
 // orderedOverlayPlugins returns the plugins with a per-client cluster hook in
@@ -74,9 +79,23 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 		for gk, policyPlugin := range t.ContributedPolicies {
 			switch {
 			case policyPlugin.PerClientClusterOverlay != nil:
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay})
+				inputsHash := policyPlugin.OverlayInputsHash
+				if inputsHash == nil {
+					// A plugin bug: the framework cannot know what the overlay
+					// reads, so it must assume everything. Never stale, only
+					// expensive; see sdk.OverlayInputsHash.
+					logger.Error("per-client cluster overlay registered without OverlayInputsHash; every write to a backend will rerun every client for it",
+						"group", gk.Group, "kind", gk.Kind, "plugin", policyPlugin.Name)
+					inputsHash = wholeObjectInputsHash
+				}
+				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash})
 			case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend}) //nolint:staticcheck // wrapped as an always-applicable overlay
+				// A legacy hook cannot declare what it reads — that is the
+				// knowledge the overlay contract exists to capture — so it is
+				// given the same whole-object declaration as an undeclared
+				// overlay. Correct, and no worse than the eager behavior it
+				// already had.
+				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend, inputsHash: wholeObjectInputsHash}) //nolint:staticcheck // wrapped as an always-applicable overlay
 			}
 		}
 		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
@@ -87,6 +106,44 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 		})
 	})
 	return t.overlayPlugins
+}
+
+// wholeObjectInputsHash is the declaration for a hook that made none: the
+// backing object's identity and every version field it has, so any write to it
+// counts as a change. IR fields derived from the object move with it, and the
+// base proto hash covers the rest.
+func wholeObjectInputsHash(backend ir.BackendObjectIR) uint64 {
+	if backend.Obj == nil {
+		return 0
+	}
+	hasher := fnv.New64a()
+	utils.HashStringField(hasher, string(backend.Obj.GetUID()))
+	utils.HashStringField(hasher, backend.Obj.GetResourceVersion())
+	utils.HashStringField(hasher, strconv.FormatInt(backend.Obj.GetGeneration(), 10))
+	return hasher.Sum64()
+}
+
+// OverlayInputsHash folds every per-client cluster hook's declared backend
+// inputs into one value, in plugin order and mixed with each plugin's
+// (Group, Kind), so two plugins reporting swapped values do not collide. It is
+// zero when no plugin contributes such a hook.
+//
+// A consumer that caches the shared base translation carries this beside the
+// translated proto's hash: together they say whether any client's view of this
+// backend can have changed, which is what lets a write that moves neither stop
+// at the base re-translation instead of fanning out to every client.
+func (t *BackendTranslator) OverlayInputsHash(backend ir.BackendObjectIR) uint64 {
+	plugins := t.orderedOverlayPlugins()
+	if len(plugins) == 0 {
+		return 0
+	}
+	hasher := fnv.New64a()
+	for _, plugin := range plugins {
+		utils.HashStringField(hasher, plugin.gk.Group)
+		utils.HashStringField(hasher, plugin.gk.Kind)
+		utils.HashUint64(hasher, plugin.inputsHash(backend))
+	}
+	return hasher.Sum64()
 }
 
 // BaseCluster is the UCC-invariant result of translating a backend into an Envoy
