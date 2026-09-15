@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -9,16 +10,19 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	utilkrt "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 // Policy status is otherwise produced by reverse lookup: Gateway and Backend translation ask
@@ -44,9 +48,11 @@ type policyTargetResolver func(kctx krt.HandlerContext, namespace, name, section
 type policyTargetResolvers map[schema.GroupKind]policyTargetResolver
 
 // newPolicyTargetResolvers builds resolvers for every kind kgateway's policies may target and
-// has an informer for. Collections a CommonCollections was built without are skipped, so a
-// partially initialized set (as some tests build) simply checks fewer kinds.
-func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backends krt.Collection[*kgateway.Backend]) policyTargetResolvers {
+// has an informer for: the Gateway API kinds, Service, Backend, and every alias kind a backend
+// plugin declares (for example the Istio Hostname and ServiceEntry aliases). Collections a
+// CommonCollections was built without are skipped, so a partially initialized set (as some
+// tests build) simply checks fewer kinds.
+func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backendPlugins map[schema.GroupKind]sdk.BackendPlugin) policyTargetResolvers {
 	resolvers := policyTargetResolvers{}
 	if commonCols == nil {
 		return resolvers
@@ -83,9 +89,10 @@ func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backend
 	if commonCols.Services != nil {
 		resolvers[wellknown.ServiceGVK.GroupKind()] = existingTargetResolver(commonCols.Services, wellknown.ServiceGVK.Kind)
 	}
-	if backends != nil {
+	if backends := backendPlugins[wellknown.BackendGVK.GroupKind()].RawBackends; backends != nil {
 		resolvers[wellknown.BackendGVK.GroupKind()] = existingTargetResolver(backends, wellknown.BackendGVK.Kind)
 	}
+	maps.Copy(resolvers, aliasTargetResolvers(backendPlugins))
 	return resolvers
 }
 
@@ -116,12 +123,13 @@ func sectionedTargetResolver[T controllers.Object](col krt.Collection[T], kind s
 
 // listenerSetTargetResolver resolves one ListenerSet flavor against the normalized collection,
 // which holds both the promoted and the legacy XListenerSet objects keyed by namespace/name with
-// the source GVK kept in TypeMeta (empty means promoted). Attachment keys policies on that GVK,
-// so a same-named object of the other flavor is not the target and must not count as found.
+// the source GVK kept in TypeMeta (empty means promoted, as on the attachment path). Attachment
+// keys policies on that GVK, so a same-named object of the other flavor is not the target and
+// must not count as found.
 func listenerSetTargetResolver(col krt.Collection[*gwv1.ListenerSet], gvk schema.GroupVersionKind) policyTargetResolver {
 	return func(kctx krt.HandlerContext, namespace, name, sectionName string) error {
 		ls := krt.FetchOne(kctx, col, krt.FilterKey(namespace+"/"+name))
-		if ls == nil || listenerSetGroupKind(*ls) != gvk.GroupKind() {
+		if ls == nil || statussync.ObjectGVKOrDefault(*ls, wellknown.ListenerSetGVK).GroupKind() != gvk.GroupKind() {
 			return targetNotFoundError(gvk.Kind, namespace, name)
 		}
 		if sectionName != "" && !slices.ContainsFunc((*ls).Spec.Listeners, func(l gwv1.ListenerEntry) bool { return string(l.Name) == sectionName }) {
@@ -131,13 +139,52 @@ func listenerSetTargetResolver(col krt.Collection[*gwv1.ListenerSet], gvk schema
 	}
 }
 
-// listenerSetGroupKind mirrors the attachment path's rule: an object without a GVK in TypeMeta
-// is a promoted ListenerSet.
-func listenerSetGroupKind(ls *gwv1.ListenerSet) schema.GroupKind {
-	if gvk := ls.GroupVersionKind(); !gvk.Empty() {
-		return gvk.GroupKind()
+// aliasTargetResolvers builds a resolver for every alias kind the backend plugins declare. A
+// policy targets an alias kind (for example networking.istio.io/Hostname) by name, and the
+// backend index attaches it to every backend carrying a matching alias, so the target exists
+// when at least one backend of a plugin claiming that kind carries the alias. The lookup mirrors
+// the attachment rule: an alias without a namespace is scoped to its backend's namespace.
+func aliasTargetResolvers(backendPlugins map[schema.GroupKind]sdk.BackendPlugin) policyTargetResolvers {
+	type aliasIndex struct {
+		backends krt.Collection[ir.BackendObjectIR]
+		byAlias  krt.Index[ir.ObjectSource, ir.BackendObjectIR]
 	}
-	return wellknown.ListenerSetGVK.GroupKind()
+	indexesByAliasKind := map[schema.GroupKind][]aliasIndex{}
+	for _, plugin := range backendPlugins {
+		if plugin.Backends == nil || len(plugin.AliasKinds) == 0 {
+			continue
+		}
+		idx := aliasIndex{
+			backends: plugin.Backends,
+			byAlias: utilkrt.UnnamedIndex(plugin.Backends, func(backend ir.BackendObjectIR) []ir.ObjectSource {
+				keys := make([]ir.ObjectSource, 0, len(backend.Aliases))
+				for _, alias := range backend.Aliases {
+					if alias.Namespace == "" {
+						alias.Namespace = backend.GetNamespace()
+					}
+					keys = append(keys, alias)
+				}
+				return keys
+			}),
+		}
+		for _, gk := range plugin.AliasKinds {
+			indexesByAliasKind[gk] = append(indexesByAliasKind[gk], idx)
+		}
+	}
+
+	resolvers := policyTargetResolvers{}
+	for gk, indexes := range indexesByAliasKind {
+		resolvers[gk] = func(kctx krt.HandlerContext, namespace, name, _ string) error {
+			key := ir.ObjectSource{Group: gk.Group, Kind: gk.Kind, Namespace: namespace, Name: name}
+			for _, idx := range indexes {
+				if len(krt.Fetch(kctx, idx.backends, krt.FilterIndex(idx.byAlias, key))) > 0 {
+					return nil
+				}
+			}
+			return targetNotFoundError(gk.Kind, namespace, name)
+		}
+	}
+	return resolvers
 }
 
 func targetNotFoundError(kind, namespace, name string) error {
@@ -173,12 +220,8 @@ func policyTargetStatusContributions(
 		if len(problems) == 0 {
 			return nil
 		}
-		reportMap := buildPolicyTargetReport(policy, problems)
-		contributions := reports.StatusContributionsFromReportMap(reports.StatusSource{
-			Kind: reports.PolicyTargetStatusSource,
-			Name: policy.ResourceName(),
-		}, reportMap)
-		return &contributions[0]
+		contribution := policyTargetStatusContribution(policy, problems)
+		return &contribution
 	}, krtopts.ToOptions(name+"-policyTargetStatusContributions")...)
 }
 
@@ -202,8 +245,24 @@ func unresolvedPolicyTargets(kctx krt.HandlerContext, policy ir.PolicyWrapper, r
 	return problems
 }
 
+// policyTargetStatusContribution wraps the policy's target report as the single contribution
+// of the policy-target source for that policy.
+func policyTargetStatusContribution(policy ir.PolicyWrapper, problems []string) reports.StatusContribution {
+	return reports.StatusContribution{
+		Target: reports.StatusKey{
+			GroupKind:      schema.GroupKind{Group: policy.Group, Kind: policy.Kind},
+			NamespacedName: types.NamespacedName{Namespace: policy.Namespace, Name: policy.Name},
+		},
+		Source: reports.StatusSource{
+			Kind: reports.PolicyTargetStatusSource,
+			Name: policy.ResourceName(),
+		},
+		StatusReport: reports.StatusReport{Policy: buildPolicyTargetReport(policy, problems)},
+	}
+}
+
 // buildPolicyTargetReport reports the unresolved targets on the policy's own ancestor.
-func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) reports.ReportMap {
+func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *reports.PolicyReport {
 	reportMap := reports.NewPolicyReportMap()
 	var generation int64
 	if policy.Policy != nil {
@@ -216,8 +275,10 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) reports
 		Name:      policy.Name,
 	}
 	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(PolicyTargetsAncestorRef(policy.ObjectSource))
-	// ObservedGeneration is set here as well as on the report: the standard policy builder
-	// stamps it from the report, but BackendTLSPolicy's builder copies conditions verbatim.
+	// The standard policy builder stamps the report's generation onto every condition, and the
+	// reducer keeps the generation of whichever contribution sorts first for the policy, so the
+	// per-condition value below only matters for builders that copy conditions verbatim, such
+	// as BackendTLSPolicy's.
 	ancestor.SetCondition(reporter.PolicyCondition{
 		Type:               string(shared.PolicyConditionAccepted),
 		Status:             metav1.ConditionFalse,
@@ -232,5 +293,5 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) reports
 		Message:            reporter.PolicyTargetNotFoundMsg,
 		ObservedGeneration: generation,
 	})
-	return reportMap
+	return reportMap.PolicyReport(key)
 }

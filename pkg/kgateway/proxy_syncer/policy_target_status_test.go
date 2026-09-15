@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -62,6 +63,27 @@ func listenerSetRef(gvk schema.GroupVersionKind, name, section string) ir.Policy
 	return ir.PolicyRef{Group: gvk.Group, Kind: gvk.Kind, Name: name, SectionName: section}
 }
 
+// serviceEntryBackend mirrors how the serviceentry plugin aliases its backends.
+func serviceEntryBackend(name, namespace, hostname string) ir.BackendObjectIR {
+	objSrc := ir.ObjectSource{
+		Group: wellknown.ServiceEntryGVK.Group, Kind: wellknown.ServiceEntryGVK.Kind, Namespace: namespace, Name: name,
+	}
+	backend := ir.NewBackendObjectIR(objSrc, 80, hostname, "istio-se")
+	backend.Aliases = []ir.ObjectSource{
+		objSrc,
+		{Group: wellknown.HostnameGVK.Group, Kind: wellknown.HostnameGVK.Kind, Name: hostname},
+	}
+	return backend
+}
+
+func hostnameRef(hostname string) ir.PolicyRef {
+	return ir.PolicyRef{Group: wellknown.HostnameGVK.Group, Kind: wellknown.HostnameGVK.Kind, Name: hostname}
+}
+
+func serviceEntryRef(name string) ir.PolicyRef {
+	return ir.PolicyRef{Group: wellknown.ServiceEntryGVK.Group, Kind: wellknown.ServiceEntryGVK.Kind, Name: name}
+}
+
 type policyTargetFixture struct {
 	gateways      krt.StaticCollection[*gwv1.Gateway]
 	policies      krt.StaticCollection[ir.PolicyWrapper]
@@ -95,13 +117,24 @@ func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTa
 		{ObjectMeta: metav1.ObjectMeta{Name: "ls-promoted", Namespace: policyTargetTestNS}},
 		legacy,
 	}, krtopts.ToOptions("ListenerSets")...)
+	// A backend plugin exposing alias kinds, shaped like the serviceentry plugin: one backend per
+	// host carrying the ServiceEntry itself and a namespace-less Hostname alias.
+	serviceEntryBackends := krt.NewStaticCollection(nil, []ir.BackendObjectIR{
+		serviceEntryBackend("se", policyTargetTestNS, "se.example.com"),
+		serviceEntryBackend("se-other-ns", "other", "other.example.com"),
+	}, krtopts.ToOptions("ServiceEntryBackends")...)
 
 	resolvers := newPolicyTargetResolvers(&collections.CommonCollections{
 		RawGateways:     gateways,
 		RawListenerSets: listenerSets,
 		RawHTTPRoutes:   routes,
 		Services:        services,
-	}, nil)
+	}, map[schema.GroupKind]sdk.BackendPlugin{
+		wellknown.ServiceEntryGVK.GroupKind(): {
+			Backends:   serviceEntryBackends,
+			AliasKinds: []schema.GroupKind{wellknown.HostnameGVK.GroupKind(), wellknown.ServiceEntryGVK.GroupKind()},
+		},
+	})
 
 	policyCol := krt.NewStaticCollection(nil, policies, krtopts.ToOptions("Policies")...)
 	contributions := policyTargetStatusContributions(policyCol, resolvers, krtopts, "test")
@@ -201,6 +234,31 @@ func TestPolicyTargetStatusContributionsListenerSetFlavors(t *testing.T) {
 		acceptedCondition(t, byPolicy["bad-section"], badSection).Message)
 }
 
+// TestPolicyTargetStatusContributionsAliasKinds pins that alias kinds declared by backend
+// plugins resolve through the backends carrying the alias, scoped to the policy's namespace the
+// way attachment scopes a namespace-less alias to its backend's namespace.
+func TestPolicyTargetStatusContributionsAliasKinds(t *testing.T) {
+	resolved := trafficPolicyWrapper("resolved", 1, hostnameRef("se.example.com"), serviceEntryRef("se"))
+	missingHost := trafficPolicyWrapper("missing-host", 1, hostnameRef("se.exmaple.com"))
+	otherNamespaceHost := trafficPolicyWrapper("other-ns-host", 1, hostnameRef("other.example.com"))
+	missingServiceEntry := trafficPolicyWrapper("missing-se", 1, serviceEntryRef("se-typo"))
+
+	f := newPolicyTargetFixture(t, resolved, missingHost, otherNamespaceHost, missingServiceEntry)
+
+	byPolicy := map[string]reports.StatusContribution{}
+	for _, c := range f.contributions.List() {
+		byPolicy[c.Target.Name] = c
+	}
+	require.NotContains(t, byPolicy, "resolved", "a host and a ServiceEntry the plugin exposes both resolve")
+	require.Equal(t, "Hostname default/se.exmaple.com not found",
+		acceptedCondition(t, byPolicy["missing-host"], missingHost).Message)
+	require.Equal(t, "Hostname default/other.example.com not found",
+		acceptedCondition(t, byPolicy["other-ns-host"], otherNamespaceHost).Message,
+		"a host declared only by a ServiceEntry in another namespace is not a target of this policy")
+	require.Equal(t, "ServiceEntry default/se-typo not found",
+		acceptedCondition(t, byPolicy["missing-se"], missingServiceEntry).Message)
+}
+
 // TestPolicyTargetReportThroughBackendTLSPolicyBuilder pins ObservedGeneration on the
 // conditions themselves: BackendTLSPolicy's builder copies report conditions verbatim rather
 // than stamping the report's generation the way the standard builder does.
@@ -216,10 +274,9 @@ func TestPolicyTargetReportThroughBackendTLSPolicyBuilder(t *testing.T) {
 		PolicyIR:   policyTargetTestIR{},
 		TargetRefs: []ir.PolicyRef{serviceRef("missing")},
 	}
-	key := reporter.PolicyKey{Group: policy.Group, Kind: policy.Kind, Namespace: policy.Namespace, Name: policy.Name}
 
-	reportMap := buildPolicyTargetReport(policy, []string{"Service default/missing not found"})
-	status := backendtlspolicy.BuildDesiredPolicyStatus(reportMap.PolicyReport(key), btp, "test-controller")
+	report := buildPolicyTargetReport(policy, []string{"Service default/missing not found"})
+	status := backendtlspolicy.BuildDesiredPolicyStatus(report, btp, "test-controller")
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, 1)
 	require.Len(t, status.Ancestors[0].Conditions, 2)
@@ -268,9 +325,8 @@ func TestPolicyTargetContributionMergesWithGatewayAncestors(t *testing.T) {
 
 	contributions := reports.StatusContributionsFromReportMap(
 		reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/gw"}, gatewayReports)
-	contributions = append(contributions, reports.StatusContributionsFromReportMap(
-		reports.StatusSource{Kind: reports.PolicyTargetStatusSource, Name: policy.ResourceName()},
-		buildPolicyTargetReport(policy, []string{"HTTPRoute default/route-b-typo not found"}))...)
+	contributions = append(contributions,
+		policyTargetStatusContribution(policy, []string{"HTTPRoute default/route-b-typo not found"}))
 
 	reduced := reports.ReduceStatusContributions(contributions)
 	status := reports.BuildPolicyStatus(reduced.Policy, key, "test-controller", gwv1.PolicyStatus{})

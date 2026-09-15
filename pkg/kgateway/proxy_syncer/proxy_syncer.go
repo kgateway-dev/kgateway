@@ -324,7 +324,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	// something. A policy whose targetRef names a missing object attaches nowhere, so this
 	// producer checks every policy's own targetRefs and reports the unresolved ones. See
 	// policy_target_status.go.
-	policyTargetResolvers := newPolicyTargetResolvers(s.commonCols, kgwBackendPlugin.RawBackends)
+	policyTargetResolvers := newPolicyTargetResolvers(s.commonCols, s.plugins.ContributesBackends)
 	statusContributions := []krt.Collection[reports.StatusContribution]{
 		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
