@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"testing"
+	"time"
 
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -78,4 +79,43 @@ func TestDisabledScopingLeavesTheGatewayProjectionEmpty(t *testing.T) {
 		emittedClustersFor(clusterScoping{}, envoycache.Resources{}, envoycache.Resources{}).
 			Equals(emittedClusters{}),
 		"a disabled projection must equal the zero value, so it never invalidates the row")
+}
+
+// TestDisabledScopingHasNoTransitionWindows completes the off-switch: with CDS
+// unscoped, neither window is in force, whatever the durations are set to.
+// Nothing is ever de-referenced and no cluster is ever new to a client, so a
+// gate built from this configuration keeps no per-client transition state and
+// every publish takes the path it took before the feature existed.
+func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
+	configured := clusterScopingFrom(apisettings.Settings{
+		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryAll,
+		ClusterDereferenceGrace: time.Hour,
+		ClusterReferenceAhead:   time.Hour,
+	})
+
+	assert.Zero(t, configured.DereferenceGrace(),
+		"a de-reference window is meaningless when no cluster ever leaves the emitted set")
+	assert.Zero(t, configured.ReferenceAhead(),
+		"a reference-ahead window is meaningless when every cluster was delivered long ago")
+
+	gate := newPublishGate(time.Minute, false, configured)
+	assert.False(t, gate.appliesTransitionGraces(),
+		"the coherent publish path must be untouched when CDS is not scoped")
+}
+
+// TestScopedClustersUsesTheConfiguredWindows is the negative control: the
+// durations must actually reach the gate once scoping is on, or the windows
+// would silently never apply.
+func TestScopedClustersUsesTheConfiguredWindows(t *testing.T) {
+	configured := clusterScopingFrom(apisettings.Settings{
+		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryReferenced,
+		ClusterDereferenceGrace: 7 * time.Second,
+		ClusterReferenceAhead:   3 * time.Second,
+	})
+
+	assert.Equal(t, 7*time.Second, configured.DereferenceGrace())
+	assert.Equal(t, 3*time.Second, configured.ReferenceAhead())
+
+	gate := newPublishGate(time.Minute, false, configured)
+	assert.True(t, gate.appliesTransitionGraces())
 }
