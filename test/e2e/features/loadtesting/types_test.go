@@ -145,6 +145,29 @@ func TestBenchConvergenceRequiresQuietWindow(t *testing.T) {
 	assert.False(t, ok, "cost suite must also require a full quiet window")
 }
 
+func TestBenchQuietWindow(t *testing.T) {
+	for _, changing := range []bool{false, true} {
+		t.Run(fmt.Sprintf("changing=%v", changing), func(t *testing.T) {
+			transforms := 1
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if changing {
+					transforms++
+				}
+				fmt.Fprintf(w, "kgateway_xds_snapshot_transforms_total %d\n", transforms)
+			}))
+			defer server.Close()
+			cost := &XdsCostSuite{metricsURL: server.URL}
+			cost.SetT(t)
+			assert.Equal(t, !changing, cost.waitQuiet(100*time.Millisecond, time.Second),
+				"cost measurements require an uninterrupted quiet window")
+			fleet := &XdsFleetSuite{metricsURL: server.URL}
+			fleet.SetT(t)
+			assert.Equal(t, !changing, fleet.waitQuiet(100*time.Millisecond, time.Second),
+				"fleet measurements require an uninterrupted quiet window")
+		})
+	}
+}
+
 func TestBenchmarkEnvRestoresValueSources(t *testing.T) {
 	original := map[string]*corev1.EnvVar{
 		"SECRET":  {Name: "SECRET", ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{Key: "secret"}}},

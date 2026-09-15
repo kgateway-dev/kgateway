@@ -242,8 +242,8 @@ a single-node cluster every replica of one Gateway collapses into one client.
 
 Each phase reports, per change: controller CPU milliseconds, megabytes
 allocated, xDS syncs and snapshot transforms, and convergence latency measured
-to the last xDS sync for that change. Each phase emits an `xds_cost_result` JSON
-line and the run emits `xds_cost_summary`, so two builds are compared by
+to the last observed snapshot transform for that change. Each phase emits an
+`xds_cost_result` JSON line and the run emits `xds_cost_summary`, so two builds are compared by
 diffing output. On a build that carries them, the sparse-CDS deferral metrics
 (`kgateway_xds_snapshot_cluster_deferrals_total`) are picked up automatically and
 reported per change; on a build without them they read zero.

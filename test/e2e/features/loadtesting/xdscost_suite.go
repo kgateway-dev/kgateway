@@ -212,7 +212,7 @@ type phaseResult struct {
 	SyncsPerChange      float64 `json:"syncs_per_change"`
 	TransformsPerChange float64 `json:"transforms_per_change"`
 	DeferralsPerChange  float64 `json:"deferrals_per_change"`
-	// Convergence latency to the last xDS sync for the change, in milliseconds.
+	// Convergence latency to the last observed snapshot transform for the change, in milliseconds.
 	LatencyMinMillis    float64 `json:"latency_ms_min"`
 	LatencyMedianMillis float64 `json:"latency_ms_median"`
 	LatencyMaxMillis    float64 `json:"latency_ms_max"`
@@ -322,7 +322,7 @@ func (s *XdsCostSuite) SetupSuite() {
 	}, 3*time.Minute, 500*time.Millisecond, "every gateway must have a successful per-client transform")
 	// Let the fleet reach steady state, so phase deltas measure the change
 	// rather than the tail of setup.
-	s.waitQuiet(4*time.Second, 3*time.Minute)
+	s.Require().True(s.waitQuiet(4*time.Second, 3*time.Minute), "controller must go quiet after setup")
 	warm := s.scrape()
 	s.T().Logf("XdsCost: warm state resources=%.0f heap=%.1fMB rss=%.1fMB goroutines=%.0f cpu=%.1fs",
 		warm.Resources, warm.HeapInuse/1e6, warm.RSS/1e6, warm.Goroutines, warm.CPUSeconds)
@@ -356,7 +356,7 @@ func (s *XdsCostSuite) TearDownSuite() {
 // read net of background work. It is not a phase: nothing is mutated.
 func (s *XdsCostSuite) measureIdle() {
 	window := time.Duration(benchIdleSeconds) * time.Second
-	s.waitQuiet(2*time.Second, 2*time.Minute)
+	s.Require().True(s.waitQuiet(2*time.Second, 2*time.Minute), "controller must go quiet before measuring idle cost")
 	before := s.scrape()
 	time.Sleep(window)
 	after := s.scrape()
@@ -401,7 +401,7 @@ func (s *XdsCostSuite) runPhase(name, note string, mutate func(int)) {
 	s.T().Logf("=== phase %s: %s", name, note)
 	// Start from quiet so the first iteration is not measuring the previous
 	// phase's tail.
-	s.waitQuiet(2*time.Second, 2*time.Minute)
+	s.Require().True(s.waitQuiet(2*time.Second, 2*time.Minute), "controller must go quiet before phase %s", name)
 
 	before := s.scrape()
 	start := time.Now()
@@ -488,7 +488,7 @@ func (s *XdsCostSuite) waitConverged(before float64, t0 time.Time) (time.Time, b
 }
 
 // waitQuiet blocks until the transform counter has been unchanged for quiet.
-func (s *XdsCostSuite) waitQuiet(quiet, timeout time.Duration) {
+func (s *XdsCostSuite) waitQuiet(quiet, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	last := s.scrape().Transforms
 	stableSince := time.Now()
@@ -501,10 +501,10 @@ func (s *XdsCostSuite) waitQuiet(quiet, timeout time.Duration) {
 			continue
 		}
 		if time.Since(stableSince) >= quiet {
-			return
+			return true
 		}
 	}
-	s.T().Logf("fleet did not go quiet within %s; continuing", timeout)
+	return false
 }
 
 // churnStaticBackend edits one static Backend's host, rotating through the set.

@@ -411,10 +411,7 @@ func (s *XdsFleetSuite) TearDownSuite() {
 func (s *XdsFleetSuite) TestXdsFleet() {
 	s.restartBaseline = s.controllerRestarts()
 	s.observing = true
-	perWave := fleetGateways / fleetWaves
-	if perWave == 0 {
-		perWave = fleetGateways
-	}
+	perWave := (fleetGateways + fleetWaves - 1) / fleetWaves
 	connected := 0
 	var lastAcks int64
 	for wave := 1; connected < fleetGateways; wave++ {
@@ -545,7 +542,8 @@ func (s *XdsFleetSuite) clientsPerGateway() int {
 
 func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 	s.T().Logf("=== fleet phase %s at %d clients", name, fleetGateways*s.clientsPerGateway())
-	s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout)
+	s.Require().True(s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout),
+		"controller must go quiet before phase %s", name)
 	before := s.scrape()
 	startRestarts := s.controllerRestarts()
 	start := time.Now()
