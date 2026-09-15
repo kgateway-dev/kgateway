@@ -23,13 +23,30 @@ type clusterScoping struct {
 	// dereferenceGrace is the de-reference grace. Read it through
 	// DereferenceGrace, which is 0 when scoping is off.
 	dereferenceGrace time.Duration
+	// referenceAhead is how long a route update onto a newly-emitted cluster is
+	// held so the cluster lands first. Meaningless with scoping off, where every
+	// backend's cluster was delivered long before any route could name it, so it
+	// is read only through ReferenceAhead.
+	referenceAhead time.Duration
 }
 
 func clusterScopingFrom(s apisettings.Settings) clusterScoping {
 	return clusterScoping{
 		mode:             s.ClusterDiscoveryMode,
 		dereferenceGrace: s.ClusterDereferenceGrace,
+		referenceAhead:   s.ClusterReferenceAhead,
 	}
+}
+
+// ReferenceAhead is how long a route update onto a newly-emitted cluster is
+// held, and 0 whenever CDS is not scoped: with every backend emitted
+// unconditionally there is no such thing as a cluster new to this client, so
+// there is nothing to deliver ahead of anything.
+func (c clusterScoping) ReferenceAhead() time.Duration {
+	if !c.ScopesClusters() {
+		return 0
+	}
+	return c.referenceAhead
 }
 
 // DereferenceGrace is how long a de-referenced cluster stays published, and 0
@@ -74,5 +91,13 @@ func scopedClusters() clusterScoping {
 func scopedClustersWithGrace(grace time.Duration) clusterScoping {
 	s := scopedClusters()
 	s.dereferenceGrace = grace
+	return s
+}
+
+// scopedClustersWithReferenceAhead is the enabled configuration with an
+// addition-side window, for tests that exercise the retarget transition.
+func scopedClustersWithReferenceAhead(ahead time.Duration) clusterScoping {
+	s := scopedClusters()
+	s.referenceAhead = ahead
 	return s
 }
