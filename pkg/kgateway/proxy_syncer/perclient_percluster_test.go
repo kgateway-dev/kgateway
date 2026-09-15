@@ -60,6 +60,7 @@ func TestSnapshotPerClientScaleToZeroPublishesEmptyCLA(t *testing.T) {
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -135,6 +136,7 @@ func TestSnapshotPerClientWarmingClusterHoldsOnlyRouteFlip(t *testing.T) {
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -222,6 +224,7 @@ func TestSnapshotPerClientFlipReleasesOnByteIdenticalDerivedEmptyCLA(t *testing.
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -298,6 +301,7 @@ func TestSnapshotPerClientErroredClusterIsNotCarriedDuringHeldFlip(t *testing.T)
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)

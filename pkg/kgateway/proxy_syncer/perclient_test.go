@@ -369,6 +369,7 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	// Built at once but deferred: cluster-b is referenced and missing.
@@ -450,6 +451,7 @@ func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testi
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	// Deferred: the referenced cluster has no derived CLA. A placeholder keeps the
@@ -548,6 +550,7 @@ func TestSnapshotPerClientFiltersStaleEndpointResourcesWhenClusterRemoved(t *tes
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -620,6 +623,7 @@ func TestSnapshotPerClientFilteredEdsSnapshotRespondsToNamedADSRequestAfterClust
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	initialSnap := eventuallySingleSnapshot(t, snapshots)
@@ -715,6 +719,7 @@ func TestSnapshotPerClientDefersMakeBeforeBreakRouteUntilNewEndpointReady(t *tes
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -814,6 +819,7 @@ func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -910,6 +916,7 @@ func TestSnapshotPerClientDefersWeightedRouteUntilAllEndpointsReady(t *testing.T
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -984,6 +991,7 @@ func TestSnapshotPerClientDefersUntilReferencedEDSServiceNameHasEndpoints(t *tes
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	// Deferred: a placeholder stands in under the underived service_name.
@@ -1036,6 +1044,7 @@ func TestSnapshotPerClientServiceNameEdsSnapshotRespondsToNamedADSRequestAfterCl
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	initialSnap := eventuallySingleSnapshot(t, snapshots)
@@ -1129,6 +1138,7 @@ func TestSnapshotPerClientEndpointOnlyUpdateOnlyChangesEDSVersion(t *testing.T) 
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	initialSnap := eventuallySingleSnapshot(t, snapshots)
@@ -1192,6 +1202,7 @@ func TestSnapshotPerClientPartialUpdateForOneClientDoesNotPoisonAnotherClient(t 
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
@@ -1324,6 +1335,7 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -1482,6 +1494,7 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -1546,6 +1559,7 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -1646,6 +1660,7 @@ func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {

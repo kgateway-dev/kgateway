@@ -48,6 +48,7 @@ func snapshotPerClient(
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 	endpoints PerClientEnvoyEndpoints,
 	clusters PerClientEnvoyClusters,
+	scoping clusterScoping,
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
 	// PerClientEnvoyClusters stores each client's assembled CDS payload (shared bases plus the client's overlays).
@@ -97,15 +98,40 @@ func snapshotPerClient(
 
 		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc.clusters.Items))
 		clusterResources := clustersForUcc.clusters
+		clustersHash := clustersForUcc.clustersHash
+		clusterVersions := clustersForUcc.clusterVersions
+
+		// Drop backends the generated configuration does not reference, when the
+		// operator has asked for that. Filtering here rather than in translation
+		// keeps base translation shared and O(backends), and EDS follows for free
+		// because filterEndpointResourcesForClusters below aligns CLAs to
+		// whatever CDS ends up containing.
+		var filtered bool
+		clusterResources, clusterVersions, filtered = filterClustersToEmitted(
+			scoping,
+			listenerRouteSnapshot.EmittedClusters,
+			clusterResources,
+			clusterVersions,
+		)
+		if filtered {
+			// Version over what survived: a dropped cluster that leaves the
+			// version unchanged is a cluster Envoy never stops serving.
+			clustersHash = emittedClustersHash(clusterVersions)
+			clusterResources.Version = strconv.FormatUint(clustersHash, 10)
+			logger.Debug("emitting referenced clusters only",
+				"client", ucc.ResourceName(),
+				"emitted", len(clusterResources.Items),
+				"translated", len(clustersForUcc.clusters.Items))
+		}
 
 		snap := XdsSnapWrapper{}
 		if len(listenerRouteSnapshot.Clusters) > 0 {
-			clustersProto := make(map[string]envoycachetypes.ResourceWithTTL, len(listenerRouteSnapshot.Clusters)+len(clustersForUcc.clusters.Items))
-			maps.Copy(clustersProto, clustersForUcc.clusters.Items)
+			clustersProto := make(map[string]envoycachetypes.ResourceWithTTL, len(listenerRouteSnapshot.Clusters)+len(clusterResources.Items))
+			maps.Copy(clustersProto, clusterResources.Items)
 			for _, item := range listenerRouteSnapshot.Clusters {
 				clustersProto[envoycache.GetResourceName(item.Resource)] = item
 			}
-			clusterResources.Version = strconv.FormatUint(clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash, 10)
+			clusterResources.Version = strconv.FormatUint(clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
 		missingClusters := findMissingReferencedClusters(
