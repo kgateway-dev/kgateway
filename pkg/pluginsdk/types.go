@@ -59,6 +59,26 @@ type ClusterOverlay struct {
 	Mutate func(out *envoyclusterv3.Cluster)
 }
 
+// PerClientClusterOverlay decides whether a client/backend pair needs a
+// mutation on top of the shared base cluster, and returns it if so. Returning
+// nil is the common case and keeps the pair on the shared base with nothing
+// allocated for it.
+//
+// Overlays compose. Every overlay that applies to a pair mutates the same
+// clone, in a fixed (Group, Kind) order. That order exists so the resulting
+// proto is byte-stable across recomputes -- its content hash drives KRT
+// equality, so an order that varied run to run would churn every client -- and
+// not as a precedence policy. Nobody chose which plugin should win a contested
+// field; the winner is whichever sorts later, which is a lexical accident.
+//
+// So do not write an overlay that depends on running before or after another,
+// or that expects to observe another's mutation. Confine each overlay to the
+// fields it owns. The in-tree overlays satisfy that today -- destrule writes
+// outlier detection, locality LB config and TCP keepalive; waypoint rewrites
+// the discovery type and load assignment -- but the framework does not enforce
+// it, and their one interaction, destrule selecting locality-weighted LB on a
+// cluster waypoint then converts to STATIC with inlined addresses, is a
+// judgment call rather than a designed outcome.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
