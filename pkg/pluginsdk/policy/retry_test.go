@@ -5,6 +5,8 @@ import (
 	"time"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	omitcanaryhostsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/omit_canary_hosts/v3"
+	previoushostsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/previous_hosts/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -14,6 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 )
 
 func TestBuildRetryPolicy(t *testing.T) {
@@ -136,6 +139,87 @@ func TestBuildRetryPolicy(t *testing.T) {
 				RetryOn:              "5xx,gateway-error,reset",
 				NumRetries:           wrapperspb.UInt32(3),
 				RetriableStatusCodes: nil,
+			},
+		},
+		{
+			name: "retry policy with no retry host predicates set",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"5xx"},
+				Attempts: int32(1),
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:            "5xx",
+				NumRetries:         wrapperspb.UInt32(1),
+				RetryHostPredicate: nil,
+			},
+		},
+		{
+			name: "retry policy with PreviousHosts retry host predicate",
+			input: &kgateway.Retry{
+				RetryOn:             []kgateway.RetryOnCondition{"5xx"},
+				Attempts:            int32(1),
+				RetryHostPredicates: []kgateway.RetryHostPredicate{kgateway.RetryHostPredicatePreviousHosts},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:    "5xx",
+				NumRetries: wrapperspb.UInt32(1),
+				RetryHostPredicate: []*envoyroutev3.RetryPolicy_RetryHostPredicate{
+					{
+						Name: "envoy.retry_host_predicates.previous_hosts",
+						ConfigType: &envoyroutev3.RetryPolicy_RetryHostPredicate_TypedConfig{
+							TypedConfig: utils.MustMessageToAny(&previoushostsv3.PreviousHostsPredicate{}),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "retry policy with OmitCanaryHosts retry host predicate",
+			input: &kgateway.Retry{
+				RetryOn:             []kgateway.RetryOnCondition{"5xx"},
+				Attempts:            int32(1),
+				RetryHostPredicates: []kgateway.RetryHostPredicate{kgateway.RetryHostPredicateOmitCanaryHosts},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:    "5xx",
+				NumRetries: wrapperspb.UInt32(1),
+				RetryHostPredicate: []*envoyroutev3.RetryPolicy_RetryHostPredicate{
+					{
+						Name: "envoy.retry_host_predicates.omit_canary_hosts",
+						ConfigType: &envoyroutev3.RetryPolicy_RetryHostPredicate_TypedConfig{
+							TypedConfig: utils.MustMessageToAny(&omitcanaryhostsv3.OmitCanaryHostsPredicate{}),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "retry policy with both retry host predicates, in configured order",
+			input: &kgateway.Retry{
+				RetryOn:  []kgateway.RetryOnCondition{"5xx"},
+				Attempts: int32(1),
+				RetryHostPredicates: []kgateway.RetryHostPredicate{
+					kgateway.RetryHostPredicateOmitCanaryHosts,
+					kgateway.RetryHostPredicatePreviousHosts,
+				},
+			},
+			want: &envoyroutev3.RetryPolicy{
+				RetryOn:    "5xx",
+				NumRetries: wrapperspb.UInt32(1),
+				RetryHostPredicate: []*envoyroutev3.RetryPolicy_RetryHostPredicate{
+					{
+						Name: "envoy.retry_host_predicates.omit_canary_hosts",
+						ConfigType: &envoyroutev3.RetryPolicy_RetryHostPredicate_TypedConfig{
+							TypedConfig: utils.MustMessageToAny(&omitcanaryhostsv3.OmitCanaryHostsPredicate{}),
+						},
+					},
+					{
+						Name: "envoy.retry_host_predicates.previous_hosts",
+						ConfigType: &envoyroutev3.RetryPolicy_RetryHostPredicate_TypedConfig{
+							TypedConfig: utils.MustMessageToAny(&previoushostsv3.PreviousHostsPredicate{}),
+						},
+					},
+				},
 			},
 		},
 	}
