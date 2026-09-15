@@ -134,6 +134,9 @@ pub trait TransformationOps {
     fn drain_response_body(&mut self, number_of_bytes: usize) -> bool;
     fn append_response_body(&mut self, data: &[u8]) -> bool;
     fn set_dynamic_metadata_string(&mut self, namespace: &str, key: &str, value: &str);
+    fn get_connection_attribute(&mut self, _attribute_name: &str) -> Option<String> {
+        None
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
