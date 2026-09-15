@@ -1,6 +1,6 @@
 # A single policy offering all three codecs. Envoy installs one compressor filter per codec and
-# negotiates against the request's Accept-Encoding header. Selection is client-driven, so the
-# list order is not a server-side preference.
+# negotiates against the request's Accept-Encoding header. The winning codec depends on the
+# gateway-wide CompressionLibraryPreference setting, which applies a server-side order by default.
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
