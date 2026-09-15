@@ -23,6 +23,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -630,15 +631,40 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 		"the second validation must see the overlay's mutation, i.e. the complete per-client cluster")
 }
 
-// TestTranslateBackendBase_StrictModeDefersValidationForInlineCLA is a
-// regression test for strict-mode validation of CLA-built-per-client backends
-// (e.g. ServiceEntry DNS/STATIC resolution). The base cluster carries no
-// LoadAssignment — the CLA is attached per client in ApplyPerClient — and Envoy
-// rejects some CLA-less clusters outright (logical-DNS semantics require exactly
-// one endpoint). Validating the incomplete base would blackhole a perfectly
-// valid backend for every client, so TranslateBackendBase must defer validation
-// to ApplyPerClient, which validates the complete per-client cluster.
-func TestTranslateBackendBase_StrictModeDefersValidationForInlineCLA(t *testing.T) {
+// inlineCLAStrictTranslator builds a strict-mode translator whose only backend
+// is a STRICT_DNS cluster with one inline endpoint, and whose validator mimics
+// Envoy's logical-DNS check: any cluster without a load_assignment is rejected.
+// distribution decides whether the CLA depends on the client.
+func inlineCLAStrictTranslator(distribution wellknown.TrafficDistribution, validated *[]*envoyclusterv3.Cluster) *irtranslator.BackendTranslator {
+	var bt irtranslator.BackendTranslator
+	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
+		{Group: "core", Kind: "Service"}: {
+			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
+				eps := ir.NewEndpointsForBackend(in)
+				eps.TrafficDistribution = distribution
+				eps.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: pipeEndpoint("a")})
+				return eps
+			},
+		},
+	}
+	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
+	bt.Mode = apisettings.ValidationStrict
+	bt.Validator = &mockValidator{
+		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+			for _, c := range config.GetStaticResources().GetClusters() {
+				*validated = append(*validated, c)
+				if c.GetLoadAssignment() == nil {
+					return errors.New("clusters must have a load_assignment")
+				}
+			}
+			return nil
+		},
+	}
+	return &bt
+}
+
+func inlineCLABackend() *ir.BackendObjectIR {
 	backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "core",
 		Kind:      "Service",
@@ -648,42 +674,55 @@ func TestTranslateBackendBase_StrictModeDefersValidationForInlineCLA(t *testing.
 	backendIR.AttachedPolicies = ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
-	backend := &backendIR
+	return &backendIR
+}
 
+// TestTranslateBackendBase_ClientIndependentInlineCLAIsBuiltOnBase: a
+// ServiceEntry-style STRICT_DNS backend with no traffic distribution and no
+// endpoint hook that could apply produces the same CLA for every client, so
+// the base carries it, strict mode validates the complete base exactly once,
+// and ApplyPerClient has nothing to materialize.
+func TestTranslateBackendBase_ClientIndependentInlineCLAIsBuiltOnBase(t *testing.T) {
 	var validatedClusters []*envoyclusterv3.Cluster
-	var bt irtranslator.BackendTranslator
-	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
-		{Group: "core", Kind: "Service"}: {
-			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-				out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
-				eps := ir.NewEndpointsForBackend(in)
-				eps.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: pipeEndpoint("a")})
-				return eps
-			},
-		},
-	}
-	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
-	bt.Mode = apisettings.ValidationStrict
-	// Mimics Envoy's logical-DNS check: any cluster without a load_assignment
-	// is rejected. A valid ServiceEntry-style backend passed this on main only
-	// because validation ran after the CLA was attached.
-	bt.Validator = &mockValidator{
-		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-			for _, c := range config.GetStaticResources().GetClusters() {
-				validatedClusters = append(validatedClusters, c)
-				if c.GetLoadAssignment() == nil {
-					return errors.New("clusters must have a load_assignment")
-				}
-			}
-			return nil
-		},
-	}
+	bt := inlineCLAStrictTranslator(wellknown.TrafficDistributionAny, &validatedClusters)
+	backend := inlineCLABackend()
+
+	ctx := context.Background()
+	base := bt.TranslateBackendBase(ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error, "a base that carries its CLA must pass validation")
+	require.NotNil(t, base.Cluster.GetLoadAssignment(), "the client-independent CLA must be built onto the base")
+	require.Len(t, base.Cluster.GetLoadAssignment().GetEndpoints(), 1)
+	require.False(t, base.NeedsInlineCLA(), "a base with its CLA is complete")
+	require.Len(t, validatedClusters, 1, "strict mode must validate the complete base exactly once")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{Region: "r1", Zone: "z1"})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.Nil(t, perClient, "no per-client cluster: every client publishes the shared base")
+	require.Len(t, validatedClusters, 1, "nothing is re-validated per client")
+}
+
+// TestTranslateBackendBase_StrictModeDefersValidationForClientDependentInlineCLA
+// is a regression test for strict-mode validation of CLA-built-per-client
+// backends. With a traffic distribution that orders endpoints by the client's
+// zone, the CLA cannot live on the base; the base then carries no
+// LoadAssignment, and validating it would blackhole a valid backend for every
+// client (Envoy rejects some CLA-less clusters outright). TranslateBackendBase
+// must defer validation to ApplyPerClient, which validates the complete
+// per-client cluster.
+func TestTranslateBackendBase_StrictModeDefersValidationForClientDependentInlineCLA(t *testing.T) {
+	var validatedClusters []*envoyclusterv3.Cluster
+	bt := inlineCLAStrictTranslator(wellknown.TrafficDistributionPreferSameZone, &validatedClusters)
+	backend := inlineCLABackend()
 
 	ctx := context.Background()
 	base := bt.TranslateBackendBase(ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error,
-		"the CLA-less base must not be validated (and so must not error) — its CLA is built per client")
+		"the CLA-less base must not be validated (and so must not error): its CLA is built per client")
+	require.Nil(t, base.Cluster.GetLoadAssignment(), "a client-dependent CLA must not be built onto the base")
+	require.True(t, base.NeedsInlineCLA())
 	require.Empty(t, validatedClusters, "validation must be deferred until the per-client CLA exists")
 
 	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
