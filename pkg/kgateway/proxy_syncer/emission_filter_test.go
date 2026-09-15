@@ -97,7 +97,7 @@ func TestFilterClustersToEmittedVersionsOverWhatSurvives(t *testing.T) {
 func TestFilterClustersToEmittedRevertsForRequestTimeSelectors(t *testing.T) {
 	clusters, versions := clusterResourcesFor("routed", "candidate-a", "candidate-b")
 	unfilterable := emissionSet("routed")
-	unfilterable.Unresolvable = []string{`cluster_header "x-target"`}
+	unfilterable.RequestTimeSelectors = []requestTimeSelector{{selectorClusterHeader, "x-target"}}
 
 	got, gotVersions, filtered := filterClustersToEmitted(
 		scopedClusters(), unfilterable, clusters, versions)

@@ -1,9 +1,10 @@
 package proxy_syncer
 
 import (
-	"fmt"
+	"cmp"
 	"maps"
 	"slices"
+	"strconv"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -16,21 +17,59 @@ import (
 // emittedClusters is the set of cluster names a gateway's generated
 // configuration could name, together with whatever made that set unreliable.
 //
-// Unresolvable is the reason list for request-time destinations the walk cannot
-// see (see collectReferencedClustersForEmission). A non-empty list means the set
-// is not a safe basis for filtering CDS for this gateway: a consumer must fall
-// back to emitting every cluster rather than pruning candidates the data plane
-// may still select.
+// RequestTimeSelectors are destinations the walk cannot see. Any of them that no
+// plugin has claimed makes the set unsafe to filter on for this gateway: the
+// consumer must emit every cluster rather than prune candidates the data plane
+// may still select. See Filterable.
 type emittedClusters struct {
-	Names        map[string]struct{}
-	Unresolvable []string
+	Names map[string]struct{}
+	// RequestTimeSelectors are the destination selectors the walk cannot
+	// resolve, carried structurally rather than as prose so a plugin's claim can
+	// be matched against the selector that plugin owns.
+	RequestTimeSelectors []requestTimeSelector
 }
 
-// Filterable reports whether this set can be used to prune CDS.
-func (e emittedClusters) Filterable() bool { return len(e.Unresolvable) == 0 }
+// requestTimeSelector identifies one route action that picks its destination per
+// request. Name is the cluster specifier plugin's extension name, or the header
+// a cluster-header route reads.
+type requestTimeSelector struct {
+	Kind string
+	Name string
+}
+
+const (
+	selectorClusterHeader   = "cluster_header"
+	selectorSpecifierPlugin = "cluster_specifier_plugin"
+	selectorInlinePlugin    = "inline_cluster_specifier_plugin"
+)
+
+func (s requestTimeSelector) String() string { return s.Kind + " " + strconv.Quote(s.Name) }
+
+// Filterable reports whether this set can be used to prune CDS, given what
+// plugins have claimed. Every request-time selector must be accounted for: one
+// that is not can select a cluster named nowhere, and pruning candidates it may
+// select does not fail visibly.
+func (e emittedClusters) Filterable(claims emissionClaims) bool {
+	return len(e.unaccountedSelectors(claims)) == 0
+}
+
+// unaccountedSelectors are the request-time selectors no claim covers, which is
+// what a log or metric should name: "this gateway is unscoped" is only
+// actionable with the selector that caused it.
+func (e emittedClusters) unaccountedSelectors(claims emissionClaims) []string {
+	var unaccounted []string
+	for _, selector := range e.RequestTimeSelectors {
+		if claims.accountsFor(selector) {
+			continue
+		}
+		unaccounted = append(unaccounted, selector.String())
+	}
+	return unaccounted
+}
 
 func (e emittedClusters) Equals(in emittedClusters) bool {
-	return maps.Equal(e.Names, in.Names) && slices.Equal(e.Unresolvable, in.Unresolvable)
+	return maps.Equal(e.Names, in.Names) &&
+		slices.Equal(e.RequestTimeSelectors, in.RequestTimeSelectors)
 }
 
 // collectReferencedClustersForEmission returns every cluster name reachable from
@@ -58,25 +97,31 @@ func (e emittedClusters) Equals(in emittedClusters) bool {
 // resolution target it, and it may be named by no proto in a healthy build.
 //
 // The second half of the result is the request-time-destination guard; see
-// collectUnresolvableSelectors.
+// collectRequestTimeSelectors, matched against plugin claims by
+// emittedClusters.Filterable.
 func collectReferencedClustersForEmission(routes, listeners envoycache.Resources) emittedClusters {
 	out := emittedClusters{Names: map[string]struct{}{
 		wellknown.BlackholeClusterName: {},
 	}}
 
-	unresolvable := make(map[string]struct{})
+	selectors := make(map[requestTimeSelector]struct{})
 	visit := func(msg proto.Message) {
 		extractEmissionClusterCandidates(msg, out.Names)
-		collectUnresolvableSelectors(msg, unresolvable)
+		collectRequestTimeSelectors(msg, selectors)
 	}
 	walkResourceProtos(routes, visit)
 	walkResourceProtos(listeners, visit)
 
-	out.Unresolvable = make([]string, 0, len(unresolvable))
-	for reason := range unresolvable {
-		out.Unresolvable = append(out.Unresolvable, reason)
+	out.RequestTimeSelectors = make([]requestTimeSelector, 0, len(selectors))
+	for selector := range selectors {
+		out.RequestTimeSelectors = append(out.RequestTimeSelectors, selector)
 	}
-	slices.Sort(out.Unresolvable)
+	slices.SortFunc(out.RequestTimeSelectors, func(a, b requestTimeSelector) int {
+		if c := cmp.Compare(a.Kind, b.Kind); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return out
 }
@@ -130,7 +175,7 @@ func addCandidate(candidates map[string]struct{}, s string) {
 	candidates[s] = struct{}{}
 }
 
-// collectUnresolvableSelectors records route actions that choose their
+// collectRequestTimeSelectors records route actions that choose their
 // destination at request time, from a set the configuration never enumerates.
 //
 // A cluster-header route reads the name from a request header. A cluster
@@ -144,12 +189,14 @@ func addCandidate(candidates map[string]struct{}, s string) {
 // whether its computed cluster exists and falls back when it does not, so
 // pruning a candidate does not produce a visible 503 — every affected request
 // quietly lands on the fallback instead. Reporting the selector is what turns
-// silent misrouting into a visible, metric-bearing loss of the optimization.
+// silent misrouting into a visible, metric-bearing loss of the optimization,
+// and it is what a plugin claim is matched against: a selector some plugin has
+// accounted for stops forcing its gateway back to emitting everything.
 //
 // All three oneof arms are named explicitly rather than matched by exclusion,
 // so a new declarative arm does not silently disable filtering, and so the
 // inline arm — the easiest to overlook — cannot be dropped by accident.
-func collectUnresolvableSelectors(msg proto.Message, unresolvable map[string]struct{}) {
+func collectRequestTimeSelectors(msg proto.Message, selectors map[requestTimeSelector]struct{}) {
 	action, ok := msg.(*envoyroutev3.RouteAction)
 	if !ok {
 		return
@@ -157,11 +204,11 @@ func collectUnresolvableSelectors(msg proto.Message, unresolvable map[string]str
 
 	switch action.GetClusterSpecifier().(type) {
 	case *envoyroutev3.RouteAction_ClusterHeader:
-		unresolvable[fmt.Sprintf("cluster_header %q", action.GetClusterHeader())] = struct{}{}
+		selectors[requestTimeSelector{selectorClusterHeader, action.GetClusterHeader()}] = struct{}{}
 	case *envoyroutev3.RouteAction_ClusterSpecifierPlugin:
-		unresolvable[fmt.Sprintf("cluster_specifier_plugin %q", action.GetClusterSpecifierPlugin())] = struct{}{}
+		selectors[requestTimeSelector{selectorSpecifierPlugin, action.GetClusterSpecifierPlugin()}] = struct{}{}
 	case *envoyroutev3.RouteAction_InlineClusterSpecifierPlugin:
 		name := action.GetInlineClusterSpecifierPlugin().GetExtension().GetName()
-		unresolvable[fmt.Sprintf("inline_cluster_specifier_plugin %q", name)] = struct{}{}
+		selectors[requestTimeSelector{selectorInlinePlugin, name}] = struct{}{}
 	}
 }
