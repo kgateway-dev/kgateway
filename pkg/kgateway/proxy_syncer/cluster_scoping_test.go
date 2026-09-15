@@ -17,14 +17,14 @@ import (
 // is sent. The zero Settings, and the documented default, both leave CDS
 // unscoped.
 func TestClusterScopingIsOffByDefault(t *testing.T) {
-	assert.False(t, clusterScopingFrom(apisettings.Settings{}).ScopesClusters(),
+	assert.False(t, clusterScopingFrom(apisettings.Settings{}, nil).ScopesClusters(),
 		"the zero Settings must not scope clusters")
 	assert.False(t, clusterScopingFrom(apisettings.Settings{
 		ClusterDiscoveryMode: apisettings.ClusterDiscoveryAll,
-	}).ScopesClusters())
+	}, nil).ScopesClusters())
 	assert.True(t, clusterScopingFrom(apisettings.Settings{
 		ClusterDiscoveryMode: apisettings.ClusterDiscoveryReferenced,
-	}).ScopesClusters())
+	}, nil).ScopesClusters())
 }
 
 // TestDisabledScopingSkipsTheEmissionWalkEntirely pins that turning the feature
@@ -49,7 +49,7 @@ func TestDisabledScopingSkipsTheEmissionWalkEntirely(t *testing.T) {
 
 	disabled := emittedClustersFor(clusterScoping{}, routes, listeners)
 	assert.Empty(t, disabled.Names, "nothing is collected when CDS is not scoped")
-	assert.Empty(t, disabled.Unresolvable)
+	assert.Empty(t, disabled.RequestTimeSelectors)
 
 	enabled := emittedClustersFor(scopedClusters(), routes, listeners)
 	require.Contains(t, enabled.Names, "routed",
@@ -91,7 +91,7 @@ func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryAll,
 		ClusterDereferenceGrace: time.Hour,
 		ClusterReferenceAhead:   time.Hour,
-	})
+	}, nil)
 
 	assert.Zero(t, configured.DereferenceGrace(),
 		"a de-reference window is meaningless when no cluster ever leaves the emitted set")
@@ -111,7 +111,7 @@ func TestScopedClustersUsesTheConfiguredWindows(t *testing.T) {
 		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryReferenced,
 		ClusterDereferenceGrace: 7 * time.Second,
 		ClusterReferenceAhead:   3 * time.Second,
-	})
+	}, nil)
 
 	assert.Equal(t, 7*time.Second, configured.DereferenceGrace())
 	assert.Equal(t, 3*time.Second, configured.ReferenceAhead())
