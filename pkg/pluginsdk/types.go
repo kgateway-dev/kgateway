@@ -79,6 +79,13 @@ type ClusterOverlay struct {
 // it, and their one interaction, destrule selecting locality-weighted LB on a
 // cluster waypoint then converts to STATIC with inlined addresses, is a
 // judgment call rather than a designed outcome.
+//
+// Anything it reads through kctx registers a KRT dependency and is tracked for
+// it; ucc is what the pair is keyed on. Everything else it reads off in must be
+// declared by the OverlayInputsHash registered beside it, or a consumer that
+// caches the base translation will serve it stale. There is no field of in that
+// is safe to read undeclared: the base row that holds the backend is kept for
+// as long as the declared inputs and the translated proto compare equal.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,

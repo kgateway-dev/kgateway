@@ -84,7 +84,9 @@ func (i *TestInstallation) InstallContext() *install.Context { return i.Metadata
 func (i *TestInstallation) Underlying() *TestInstallation { return i }
 
 // UpgradeKgatewayCore implements Installation by running `helm upgrade`
-// against the kgateway chart at its local path.
+// against the kgateway chart at its local path. A caller that composes its own
+// valuesFiles does not have to carry the test-only assertions: they are appended
+// here, so an upgrade cannot silently disarm them mid-suite.
 func (i *TestInstallation) UpgradeKgatewayCore(
 	ctx context.Context,
 	t *testing.T,
@@ -103,7 +105,7 @@ func (i *TestInstallation) UpgradeKgatewayCore(
 		helmutils.InstallOpts{
 			Namespace:       i.Metadata.InstallNamespace,
 			CreateNamespace: true,
-			ValuesFiles:     valuesFiles,
+			ValuesFiles:     withTestAssertions(valuesFiles),
 			ReleaseName:     helmutils.ChartName,
 			ChartUri:        chartUri,
 			ExtraArgs:       mergedExtraArgs,
