@@ -35,6 +35,7 @@ func newPublishGateTestTranslator(t *testing.T, prior bool, budget time.Duration
 		stubPriorXDS{has: prior},
 		budget,
 		true,
+		clusterScoping{},
 	)
 	return &pt
 }

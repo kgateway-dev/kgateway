@@ -74,6 +74,19 @@ func (s *ProxyTranslator) syncXds(
 	// mutated the snapshot shared with the krt cache. Publication goes
 	// through the publish gate so it cancels any pending bounded publish or
 	// flip release and cannot race an expiring budget timer.
+	// A de-reference produces a perfectly coherent build -- nothing is missing,
+	// a cluster simply stopped being emitted -- so the removal side cannot ride
+	// on the deferred path above. When a grace is configured, a coherent
+	// snapshot is published through the same carry-forward resolution, with no
+	// holds, so a cluster that just left the emitted set stays published until
+	// its window closes.
+	if s.gate.retainsDereferenced() {
+		if err := s.gate.publishWithDereferenceGrace(ctx, s.xdsCache, snapWrap); err != nil {
+			logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		}
+		return
+	}
+
 	if err := s.gate.publish(ctx, s.xdsCache, proxyKey, snap); err != nil {
 		// A rejected snapshot leaves the client on its previous config; surface
 		// it rather than silently dropping the update.
@@ -115,7 +128,7 @@ func publishedReferencedClusters(published envoycache.ResourceSnapshot) map[stri
 // new routes publish as-is even with never-ready gaps — used by the gate's
 // flip-release bound so a steady-state-unready reference cannot pin the
 // client's route/listener/secret updates forever (#14352).
-func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool) (*envoycache.Snapshot, []string) {
+func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, graced map[string]struct{}) (*envoycache.Snapshot, []string) {
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 
@@ -174,6 +187,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		for _, name := range snapWrap.missingReferenced {
 			carryRefs[name] = struct{}{}
 		}
+	}
+
+	// Clusters within their de-reference grace are carried the same way: they
+	// are absent from this build because nothing references them any more, and
+	// they stay published until the window closes so the route update that
+	// stopped naming them reaches Envoy first.
+	for name := range graced {
+		carryRefs[name] = struct{}{}
 	}
 
 	// Carry forward cluster/CLA pairs (a carried CLA always travels with
