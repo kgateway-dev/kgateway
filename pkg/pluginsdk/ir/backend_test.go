@@ -262,50 +262,6 @@ func serviceBackedIR(rv string, labels map[string]string, generation int64) Back
 	return b
 }
 
-func TestBackendObjectIREqualsIgnoringResourceVersion(t *testing.T) {
-	base := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
-
-	t.Run("resourceVersion-only write", func(t *testing.T) {
-		other := serviceBackedIR("2", map[string]string{"a": "1"}, 0)
-		assert.False(t, base.Equals(other), "Equals must see the version move")
-		assert.True(t, base.EqualsIgnoringResourceVersion(other), "content is unchanged")
-	})
-	t.Run("label change", func(t *testing.T) {
-		other := serviceBackedIR("2", map[string]string{"a": "2"}, 0)
-		assert.False(t, base.Equals(other))
-		assert.False(t, base.EqualsIgnoringResourceVersion(other), "labels are content overlays read")
-	})
-	t.Run("annotation-only write", func(t *testing.T) {
-		// Cloud load-balancer controllers, external-dns, Argo and kubectl apply
-		// all write annotations no per-client overlay reads. Such a write must
-		// stop at the base, not rerun every client's walk over every backend.
-		other := serviceBackedIR("2", map[string]string{"a": "1"}, 0)
-		other.Obj.(*corev1.Service).Annotations = map[string]string{"external-dns.alpha.kubernetes.io/hostname": "svc.example.com"}
-		assert.False(t, base.Equals(other), "Equals still sees the version move")
-		assert.True(t, base.EqualsIgnoringResourceVersion(other), "an annotation-only write is not content any client can observe")
-	})
-	t.Run("generation change", func(t *testing.T) {
-		other := serviceBackedIR("1", map[string]string{"a": "1"}, 1)
-		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a spec generation is content")
-	})
-	t.Run("different object identity", func(t *testing.T) {
-		other := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
-		other.Obj.(*corev1.Service).UID = "other-uid"
-		assert.False(t, base.EqualsIgnoringResourceVersion(other), "a recreated object is a different object")
-	})
-	t.Run("IR field change", func(t *testing.T) {
-		other := serviceBackedIR("1", map[string]string{"a": "1"}, 0)
-		other.AppProtocol = AppProtocol("grpc")
-		assert.False(t, base.EqualsIgnoringResourceVersion(other), "every non-object field still counts")
-	})
-	t.Run("absent objects", func(t *testing.T) {
-		a := NewBackendObjectIR(ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-		b := NewBackendObjectIR(ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-		assert.True(t, a.EqualsIgnoringResourceVersion(b), "two IRs without a backing object are equal")
-		assert.False(t, a.EqualsIgnoringResourceVersion(base), "an absent object never equals a present one")
-	})
-}
-
 // addressesIR is a minimal plugin-owned ObjIr, standing in for the projections
 // the kubernetes and serviceentry plugins attach.
 type addressesIR struct{ addrs []string }
@@ -328,8 +284,6 @@ func TestBackendObjectIREqualsIsSymmetricOnObjIr(t *testing.T) {
 
 	assert.False(t, with.Equals(without), "an IR with plugin state is not equal to one without")
 	assert.False(t, without.Equals(with), "and the answer must not depend on which side is the receiver")
-	assert.False(t, without.EqualsIgnoringResourceVersion(with))
-	assert.False(t, with.EqualsIgnoringResourceVersion(without))
 
 	same := serviceBackedIR("1", nil, 0)
 	same.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}

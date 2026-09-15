@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -15,6 +17,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -197,27 +201,50 @@ func lbEndpointPipe(path string) *envoyendpointv3.LbEndpoint {
 	}
 }
 
-// TestBaseEnvoyClusterEquals_SeesBackendMetadata pins why the base row carries its
-// Backend: a metadata-only change to the backing object (a label an overlay
-// branches on) must make the row unequal even though the shared proto, and so
-// ClusterVersion, is unchanged. Without it KRT would keep the old row and no
-// client would rerun its overlays.
-func TestBaseEnvoyClusterEquals_SeesBackendMetadata(t *testing.T) {
+// TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs pins why the base row
+// carries OverlayInputsHash: a metadata-only change to the backing object that
+// an overlay declared (a label it branches on) must make the row unequal even
+// though the shared proto, and so ClusterVersion, is unchanged. Without it KRT
+// would keep the old row and no client would rerun its overlays.
+//
+// The row is built through the translator rather than by setting the field by
+// hand, so this fails if the fold stops reaching the declaration.
+func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
+	const overlayLabel = "ingress-use-waypoint"
 	cluster := sharedproto.Wrap(staticInlineCLACluster())
+	translator := &irtranslator.BackendTranslator{
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
+			{Group: "test", Kind: "Overlay"}: {
+				PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return nil
+				},
+				OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
+					return utils.HashString(in.Obj.GetLabels()[overlayLabel])
+				},
+			},
+		},
+	}
 	rowFor := func(labels map[string]string) baseEnvoyCluster {
 		backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
 		backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: "1", Generation: 1, Labels: labels,
 		}}
-		return baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7, Backend: &backend}
+		return baseEnvoyCluster{
+			Name: "c", Cluster: cluster, ClusterVersion: 7,
+			OverlayInputsHash: translator.OverlayInputsHash(backend),
+			Backend:           &backend,
+		}
 	}
 
 	require.True(t, rowFor(nil).Equals(rowFor(nil)), "identical backends must compare equal")
-	require.False(t, rowFor(nil).Equals(rowFor(map[string]string{"ingress-use-waypoint": "true"})),
-		"a label-only change on the backing object must make the base row unequal")
+	require.False(t, rowFor(nil).Equals(rowFor(map[string]string{overlayLabel: "true"})),
+		"a change to a declared input must make the base row unequal")
+	require.True(t, rowFor(nil).Equals(rowFor(map[string]string{"unread": "true"})),
+		"a label no overlay declared must leave the row equal, so no client's walk reruns")
 
 	// Rows built without a backend (test fixtures) compare by the remaining fields.
 	fixture := baseEnvoyCluster{Name: "c", Cluster: cluster, ClusterVersion: 7}
 	require.True(t, fixture.Equals(fixture))
-	require.False(t, fixture.Equals(rowFor(nil)), "a fixture row is never equal to a row with a backend")
+	require.False(t, fixture.Equals(rowFor(map[string]string{overlayLabel: "true"})),
+		"a fixture row is never equal to a row whose declared inputs are set")
 }
