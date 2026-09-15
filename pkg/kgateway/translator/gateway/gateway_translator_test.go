@@ -4089,6 +4089,14 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "builtin_rule_inheritance.yaml")
 	})
 
+	t.Run("DeepMergePreferChild with a builtin path rewrite", func(t *testing.T) {
+		test(t, "deep_merge_prefer_child_rewrite.yaml")
+	})
+
+	t.Run("DeepMergePreferParent with a TrafficPolicy path rewrite", func(t *testing.T) {
+		test(t, "deep_merge_prefer_parent_policy_rewrite.yaml")
+	})
+
 	t.Run("Label based delegation", func(t *testing.T) {
 		test(t, "label_based.yaml")
 	})
