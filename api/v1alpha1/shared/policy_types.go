@@ -64,7 +64,7 @@ const (
 	// PolicyReasonTargetNotFound is used with the "Accepted" and "Attached" conditions when one or
 	// more of the policy's targetRefs name a resource that does not exist. It matches the Gateway
 	// API's PolicyReasonTargetNotFound. The conditions are reported on the policy's own ancestor
-	// entry (see PolicyTargetsAncestorRef in pkg/kgateway/proxy_syncer), since a missing target has
+	// entry (see pkg/kgateway/proxy_syncer/policy_target_status.go), since a missing target has
 	// no Gateway ancestor to report under.
 	PolicyReasonTargetNotFound PolicyConditionReason = "TargetNotFound"
 )

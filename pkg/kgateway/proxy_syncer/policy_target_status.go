@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -34,7 +35,7 @@ import (
 // This producer walks each policy's own targetRefs forward instead. Every explicit ref is
 // resolved against the informer-backed collection for its kind through krt, so the check is
 // dependency tracked and costs no API calls. Unresolved refs are reported on one ancestor per
-// policy, PolicyTargetsAncestorRef, with Accepted=False/TargetNotFound, alongside whatever
+// policy, policyTargetsAncestorRef, with Accepted=False/TargetNotFound, alongside whatever
 // Gateway ancestors the valid refs produced. When the target appears, the contribution stops
 // and the writer retracts the ancestor through the normal stale-status path.
 
@@ -58,85 +59,79 @@ func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backend
 		return resolvers
 	}
 	if commonCols.RawGateways != nil {
-		resolvers[wellknown.GatewayGVK.GroupKind()] = sectionedTargetResolver(commonCols.RawGateways, wellknown.GatewayGVK.Kind,
-			func(gw *gwv1.Gateway, section string) bool {
-				return slices.ContainsFunc(gw.Spec.Listeners, func(l gwv1.Listener) bool { return string(l.Name) == section })
+		resolvers[wellknown.GatewayGVK.GroupKind()] = objectTargetResolver(commonCols.RawGateways, wellknown.GatewayGVK.Kind, nil,
+			func(gw *gwv1.Gateway) []string {
+				return namesOf(gw.Spec.Listeners, func(l gwv1.Listener) string { return string(l.Name) })
 			})
 	}
 	if commonCols.RawListenerSets != nil {
+		// The normalized collection holds both the promoted and the legacy XListenerSet objects
+		// keyed by namespace/name, with the source GVK kept in TypeMeta (empty means promoted, as
+		// on the attachment path). Attachment keys policies on that GVK, so a same-named object
+		// of the other flavor is not the target and must not count as found.
 		for _, gvk := range wellknown.AllListenerSetGVKs() {
-			resolvers[gvk.GroupKind()] = listenerSetTargetResolver(commonCols.RawListenerSets, gvk)
+			resolvers[gvk.GroupKind()] = objectTargetResolver(commonCols.RawListenerSets, gvk.Kind,
+				func(ls *gwv1.ListenerSet) bool {
+					return statussync.ObjectGVKOrDefault(ls, wellknown.ListenerSetGVK).GroupKind() == gvk.GroupKind()
+				},
+				func(ls *gwv1.ListenerSet) []string {
+					return namesOf(ls.Spec.Listeners, func(l gwv1.ListenerEntry) string { return string(l.Name) })
+				})
 		}
 	}
 	if commonCols.RawHTTPRoutes != nil {
-		resolvers[wellknown.HTTPRouteGVK.GroupKind()] = sectionedTargetResolver(commonCols.RawHTTPRoutes, wellknown.HTTPRouteGVK.Kind,
-			func(route *gwv1.HTTPRoute, section string) bool {
-				return slices.ContainsFunc(route.Spec.Rules, func(r gwv1.HTTPRouteRule) bool {
-					return r.Name != nil && string(*r.Name) == section
-				})
+		resolvers[wellknown.HTTPRouteGVK.GroupKind()] = objectTargetResolver(commonCols.RawHTTPRoutes, wellknown.HTTPRouteGVK.Kind, nil,
+			func(route *gwv1.HTTPRoute) []string {
+				return namesOf(route.Spec.Rules, func(r gwv1.HTTPRouteRule) string { return string(ptr.Deref(r.Name, "")) })
 			})
 	}
 	if commonCols.RawGRPCRoutes != nil {
-		resolvers[wellknown.GRPCRouteGVK.GroupKind()] = sectionedTargetResolver(commonCols.RawGRPCRoutes, wellknown.GRPCRouteGVK.Kind,
-			func(route *gwv1.GRPCRoute, section string) bool {
-				return slices.ContainsFunc(route.Spec.Rules, func(r gwv1.GRPCRouteRule) bool {
-					return r.Name != nil && string(*r.Name) == section
-				})
+		resolvers[wellknown.GRPCRouteGVK.GroupKind()] = objectTargetResolver(commonCols.RawGRPCRoutes, wellknown.GRPCRouteGVK.Kind, nil,
+			func(route *gwv1.GRPCRoute) []string {
+				return namesOf(route.Spec.Rules, func(r gwv1.GRPCRouteRule) string { return string(ptr.Deref(r.Name, "")) })
 			})
 	}
 	// Service and Backend refs may carry a sectionName (a port name) on some policy kinds;
 	// only the object's existence is checked for them.
 	if commonCols.Services != nil {
-		resolvers[wellknown.ServiceGVK.GroupKind()] = existingTargetResolver(commonCols.Services, wellknown.ServiceGVK.Kind)
+		resolvers[wellknown.ServiceGVK.GroupKind()] = objectTargetResolver(commonCols.Services, wellknown.ServiceGVK.Kind, nil, nil)
 	}
 	if backends := backendPlugins[wellknown.BackendGVK.GroupKind()].RawBackends; backends != nil {
-		resolvers[wellknown.BackendGVK.GroupKind()] = existingTargetResolver(backends, wellknown.BackendGVK.Kind)
+		resolvers[wellknown.BackendGVK.GroupKind()] = objectTargetResolver(backends, wellknown.BackendGVK.Kind, nil, nil)
 	}
 	maps.Copy(resolvers, aliasTargetResolvers(backendPlugins))
 	return resolvers
 }
 
-// existingTargetResolver checks only that the named object exists.
-func existingTargetResolver[T controllers.Object](col krt.Collection[T], kind string) policyTargetResolver {
-	return func(kctx krt.HandlerContext, namespace, name, _ string) error {
-		if krt.FetchOne(kctx, col, krt.FilterKey(namespace+"/"+name)) == nil {
-			return targetNotFoundError(kind, namespace, name)
-		}
-		return nil
-	}
-}
-
-// sectionedTargetResolver checks that the named object exists and, if the ref is scoped to a
-// section, that hasSection finds it on the object.
-func sectionedTargetResolver[T controllers.Object](col krt.Collection[T], kind string, hasSection func(obj T, section string) bool) policyTargetResolver {
+// objectTargetResolver checks that the named object exists in col and, when set, that matches
+// accepts it. When the ref carries a sectionName and sectionNames is set, the section must be
+// one of the object's; a nil sectionNames accepts any sectionName unchecked.
+func objectTargetResolver[T controllers.Object](
+	col krt.Collection[T],
+	kind string,
+	matches func(obj T) bool,
+	sectionNames func(obj T) []string,
+) policyTargetResolver {
 	return func(kctx krt.HandlerContext, namespace, name, sectionName string) error {
 		obj := krt.FetchOne(kctx, col, krt.FilterKey(namespace+"/"+name))
-		if obj == nil {
+		if obj == nil || (matches != nil && !matches(*obj)) {
 			return targetNotFoundError(kind, namespace, name)
 		}
-		if sectionName != "" && !hasSection(*obj, sectionName) {
+		if sectionName != "" && sectionNames != nil && !slices.Contains(sectionNames(*obj), sectionName) {
 			return fmt.Errorf("sectionName %q not found in %s %s/%s", sectionName, kind, namespace, name)
 		}
 		return nil
 	}
 }
 
-// listenerSetTargetResolver resolves one ListenerSet flavor against the normalized collection,
-// which holds both the promoted and the legacy XListenerSet objects keyed by namespace/name with
-// the source GVK kept in TypeMeta (empty means promoted, as on the attachment path). Attachment
-// keys policies on that GVK, so a same-named object of the other flavor is not the target and
-// must not count as found.
-func listenerSetTargetResolver(col krt.Collection[*gwv1.ListenerSet], gvk schema.GroupVersionKind) policyTargetResolver {
-	return func(kctx krt.HandlerContext, namespace, name, sectionName string) error {
-		ls := krt.FetchOne(kctx, col, krt.FilterKey(namespace+"/"+name))
-		if ls == nil || statussync.ObjectGVKOrDefault(*ls, wellknown.ListenerSetGVK).GroupKind() != gvk.GroupKind() {
-			return targetNotFoundError(gvk.Kind, namespace, name)
-		}
-		if sectionName != "" && !slices.ContainsFunc((*ls).Spec.Listeners, func(l gwv1.ListenerEntry) bool { return string(l.Name) == sectionName }) {
-			return fmt.Errorf("sectionName %q not found in %s %s/%s", sectionName, gvk.Kind, namespace, name)
-		}
-		return nil
+// namesOf projects each item to its name. An unnamed item projects to "", which no sectionName
+// can equal since refs without one are not section checked.
+func namesOf[T any](items []T, name func(T) string) []string {
+	names := make([]string, 0, len(items))
+	for _, item := range items {
+		names = append(names, name(item))
 	}
+	return names
 }
 
 // aliasTargetResolvers builds a resolver for every alias kind the backend plugins declare. A
@@ -191,14 +186,14 @@ func targetNotFoundError(kind, namespace, name string) error {
 	return fmt.Errorf("%s %s/%s not found", kind, namespace, name)
 }
 
-// PolicyTargetsAncestorRef is the ancestor under which a policy's targetRef resolution is
+// policyTargetsAncestorRef is the ancestor under which a policy's targetRef resolution is
 // reported: the policy itself. A missing target has no Gateway to report under, and using the
 // missing ref as the ancestor would collide with the real ancestor the moment the target
 // appears (Backend-attached policies report the target object as their ancestor) and would
 // eat into the ancestor cap one entry per typo. One self-referencing entry per policy avoids
 // both. Group and kind are explicit because the CRD schema defaults an ancestorRef's kind to
 // Gateway when they are omitted.
-func PolicyTargetsAncestorRef(policy ir.ObjectSource) gwv1.ParentReference {
+func policyTargetsAncestorRef(policy ir.ObjectSource) gwv1.ParentReference {
 	return gwv1.ParentReference{
 		Group:     new(gwv1.Group(policy.Group)),
 		Kind:      new(gwv1.Kind(policy.Kind)),
@@ -208,12 +203,12 @@ func PolicyTargetsAncestorRef(policy ir.ObjectSource) gwv1.ParentReference {
 }
 
 // policyTargetStatusContributions emits one contribution per policy that has at least one
-// explicit targetRef the resolvers cannot resolve, and nothing for every other policy.
+// explicit targetRef the resolvers cannot resolve, and nothing for every other policy. policies
+// may hold every policy kind at once: a PolicyWrapper's key already includes its group and kind.
 func policyTargetStatusContributions(
 	policies krt.Collection[ir.PolicyWrapper],
 	resolvers policyTargetResolvers,
 	krtopts krtutil.KrtOptions,
-	name string,
 ) krt.Collection[reports.StatusContribution] {
 	return krt.NewCollection(policies, func(kctx krt.HandlerContext, policy ir.PolicyWrapper) *reports.StatusContribution {
 		problems := unresolvedPolicyTargets(kctx, policy, resolvers)
@@ -222,7 +217,7 @@ func policyTargetStatusContributions(
 		}
 		contribution := policyTargetStatusContribution(policy, problems)
 		return &contribution
-	}, krtopts.ToOptions(name+"-policyTargetStatusContributions")...)
+	}, krtopts.ToOptions("PolicyTargetStatusContributions")...)
 }
 
 // unresolvedPolicyTargets returns one message per explicit targetRef that does not resolve, in
@@ -274,7 +269,7 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *report
 		Namespace: policy.Namespace,
 		Name:      policy.Name,
 	}
-	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(PolicyTargetsAncestorRef(policy.ObjectSource))
+	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(policyTargetsAncestorRef(policy.ObjectSource))
 	// The standard policy builder stamps the report's generation onto every condition, and the
 	// reducer keeps the generation of whichever contribution sorts first for the policy, so the
 	// per-condition value below only matters for builders that copy conditions verbatim, such

@@ -137,7 +137,7 @@ func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTa
 	})
 
 	policyCol := krt.NewStaticCollection(nil, policies, krtopts.ToOptions("Policies")...)
-	contributions := policyTargetStatusContributions(policyCol, resolvers, krtopts, "test")
+	contributions := policyTargetStatusContributions(policyCol, resolvers, krtopts)
 	require.True(t, contributions.WaitUntilSynced(t.Context().Done()), "contributions should sync")
 	return policyTargetFixture{gateways: gateways, policies: policyCol, contributions: contributions}
 }
@@ -159,7 +159,7 @@ func acceptedCondition(t *testing.T, c reports.StatusContribution, policy ir.Pol
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, 1)
 	ancestor := status.Ancestors[0]
-	require.True(t, reports.ParentRefEqual(PolicyTargetsAncestorRef(policy.ObjectSource), ancestor.AncestorRef),
+	require.True(t, reports.ParentRefEqual(policyTargetsAncestorRef(policy.ObjectSource), ancestor.AncestorRef),
 		"the ancestor should be the policy itself, with explicit group and kind: %+v", ancestor.AncestorRef)
 
 	attached := meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAttached))
@@ -341,7 +341,7 @@ func TestPolicyTargetContributionMergesWithGatewayAncestors(t *testing.T) {
 		case reports.ParentRefEqual(ancestor.AncestorRef, gatewayAncestor):
 			sawGateway = true
 			require.Equal(t, metav1.ConditionTrue, accepted.Status, "the valid target keeps its healthy Gateway ancestor")
-		case reports.ParentRefEqual(ancestor.AncestorRef, PolicyTargetsAncestorRef(policy.ObjectSource)):
+		case reports.ParentRefEqual(ancestor.AncestorRef, policyTargetsAncestorRef(policy.ObjectSource)):
 			sawSelf = true
 			require.Equal(t, string(shared.PolicyReasonTargetNotFound), accepted.Reason)
 		default:
