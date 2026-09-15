@@ -184,9 +184,7 @@ type HeaderModifiers struct {
 }
 
 // HTTPHeaderFilter defines a filter that modifies the headers of an HTTP request or response.
-// Only one action for a given header name is permitted. Filters specifying multiple actions of
-// the same or different type for any one header name are invalid and will be rejected by CRD
-// validation. Configuration to set or add multiple values for a header must use RFC 7230 header
+// Configuration to set or add multiple values for a header must use RFC 7230 header
 // value formatting, separating each value with a comma.
 // Unlike the Gateway API HTTPHeaderFilter, each entry also supports sourcing the value from a
 // Kubernetes Secret via secretRef.
