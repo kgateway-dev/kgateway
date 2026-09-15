@@ -83,6 +83,7 @@ type StartConfig struct {
 	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniquelyConnectedClient]
+	XDSClientState    krtcollections.XDSClientState
 
 	KrtOptions krtutil.KrtOptions
 
@@ -152,6 +153,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
+		cfg.XDSClientState,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := cfg.Manager.Add(proxySyncer); err != nil {
