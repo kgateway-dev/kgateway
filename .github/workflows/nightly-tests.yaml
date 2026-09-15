@@ -39,12 +39,15 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       refs: ${{ steps.determine.outputs.refs }}
+      should_run: ${{ steps.determine.outputs.should_run }}
     steps:
       - id: determine
         name: Determine Refs
         shell: bash
         env:
           INPUT_TARGET_REF: ${{ inputs.target_ref }}
+          IS_FORK: ${{ github.event.repository.fork }}
+          ENABLE_NIGHTLY_TESTS_ON_FORK: ${{ vars.ENABLE_NIGHTLY_TESTS_ON_FORK }}
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
             refs='[
@@ -65,10 +68,35 @@ jobs:
           refs="$(jq -c . <<< "${refs}")"
           echo "refs=${refs}" >> "$GITHUB_OUTPUT"
 
+          # Nightly tests don't have much of a reason to run in forks, and will fail if the expected LTS branches are not present.
+          # Don't run in forks, unless enabled via the ENABLE_NIGHTLY_TESTS_ON_FORK variable.
+          # Manual runs are always honored
+          should_run=true
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" && "${IS_FORK}" == "true" ]]; then
+            # Truthy values follow the is_truthy() convention in hack/run-e2e-test.sh.
+            if ! [[ "${ENABLE_NIGHTLY_TESTS_ON_FORK,,}" =~ ^(1|true|yes|y)$ ]]; then
+              should_run=false
+            fi
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+
+          if [[ "${should_run}" != "true" ]]; then
+            {
+              echo "### Nightly tests skipped"
+              echo
+              echo "\`${GITHUB_REPOSITORY}\` is a fork, and the nightly schedule is off by default on forks."
+              echo
+              echo "To run it here, add a repository variable \`ENABLE_NIGHTLY_TESTS_ON_FORK\` set to \`1\`,"
+              echo "\`true\`, \`yes\`, or \`y\` (Settings > Secrets and variables > Actions > Variables), and make"
+              echo "sure the LTS branches the cron targets exist in this fork. Individual runs can also be started"
+              echo "from the \"Run workflow\" button."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   kube_gateway_api_conformance_tests:
     name: Conformance (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }}, gw-api=${{matrix.gateway-api-channel}})
     needs: determine_refs
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *' }}
+    if: ${{ needs.determine_refs.outputs.should_run == 'true' && ((github.event_name == 'workflow_dispatch' && inputs.run-conformance ) || github.event.schedule == '0 5 * * *') }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
@@ -102,7 +130,7 @@ jobs:
   kube_gateway_api_load_tests:
     name: Load Tests (ref=${{ matrix.ref.display_ref }}, type=Kubernetes Gateway API, k8s=${{ matrix.env-versions.label }})
     needs: determine_refs
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
+    if: ${{ needs.determine_refs.outputs.should_run == 'true' && ((github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *') }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
@@ -131,7 +159,7 @@ jobs:
   kgateway_e2e_tests_for_gateway_api_versions:
     name: E2E (ref=${{ matrix.ref.display_ref }}, k8s=${{ matrix.env-versions.label }}, gw-api=${{ matrix.gateway-api-version.version }}-${{ matrix.gateway-api-version.channel }})
     needs: determine_refs
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *' }}
+    if: ${{ needs.determine_refs.outputs.should_run == 'true' && ((github.event_name == 'workflow_dispatch' && inputs.run-e2e-tests ) || github.event.schedule == '0 5 * * *') }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     strategy:
