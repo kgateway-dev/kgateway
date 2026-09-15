@@ -80,25 +80,12 @@ type ClusterOverlay struct {
 // locality mode when replacing backend endpoints with a service VIP; that
 // redirect cannot use the backend endpoints' locality weights.
 //
-// Read only inputs the framework can detect a change in, or the overlay will
-// go stale:
-//
-//   - anything reached through kctx, which registers a KRT dependency;
-//   - ucc;
-//   - fields of in that BackendObjectIR.EqualsIgnoringResourceVersion compares
-//     — the IR fields, ObjIr, and the backing object's UID, generation and
-//     labels.
-//
-// Notably absent are the backing object's annotations, and spec on a kind that
-// leaves metadata.generation at 0, such as a core Service. Annotations are not
-// compared because every controller that touches a Service writes them and no
-// overlay reads them; an overlay that needs one must have its plugin project it
-// into ObjIr. Spec is the same story: the base row holds the backend it was
-// built from, and KRT keeps that row when equality says nothing moved, so a
-// spec field no compared input reflects stays stale until something else
-// changes. An overlay that needs such a field must have its plugin project the
-// field into ObjIr, the way the kubernetes and serviceentry plugins carry
-// resolved addresses for the waypoint overlay.
+// Anything it reads through kctx registers a KRT dependency and is tracked for
+// it; ucc is what the pair is keyed on. Everything else it reads off in must be
+// declared by the OverlayInputsHash registered beside it, or a consumer that
+// caches the base translation will serve it stale. There is no field of in that
+// is safe to read undeclared: the base row that holds the backend is kept for
+// as long as the declared inputs and the translated proto compare equal.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,

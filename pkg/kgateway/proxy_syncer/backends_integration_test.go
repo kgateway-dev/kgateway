@@ -20,6 +20,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -120,9 +121,10 @@ func TestNewPerClientEnvoyClusters_SparseOverlayWiring(t *testing.T) {
 // TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients covers
 // the waypoint ingress-use-waypoint failure mode: a metadata-only Service label
 // update changes whether a per-client overlay applies, even though the shared
-// base cluster is byte-identical. The base row compares its Backend through
-// BackendObjectIR.Equals, which sees the object's version, so the row changes
-// and every client's payload is rebuilt from the updated backend.
+// base cluster is byte-identical. The overlay here declares nothing, so it is
+// treated as reading the whole backing object and the row moves on any write to
+// it — the safe default. Every client's payload is rebuilt from the updated
+// backend.
 func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *testing.T) {
 	ctx := t.Context()
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
@@ -395,6 +397,13 @@ func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *te
 						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
 					}}
 				},
+				// The one label the overlay branches on, and nothing else. This
+				// declaration is what makes the two assertions below both hold:
+				// the resourceVersion-only write is invisible to it, the label
+				// write moves it.
+				OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
+					return utils.HashString(in.Obj.GetLabels()["overlay"])
+				},
 			},
 		},
 	}
@@ -437,4 +446,68 @@ func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *te
 		}, 2*time.Second, 10*time.Millisecond, "client %s must see the overlay", ucc.ResourceName())
 	}
 	assert.EqualValues(t, 2*len(clients), overlayRuns.Load(), "the label change reran each client once")
+}
+
+// TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient is the
+// safety half of the declaration contract. An overlay that registers no
+// OverlayInputsHash is a plugin bug, and the framework cannot know what it
+// reads, so it must assume the worst: every write to the backing object moves
+// the row and every client re-evaluates. The undeclared overlay here reads a
+// label, but the assertion deliberately uses a resourceVersion-only write —
+// the cheapest write there is — because the guarantee must not depend on the
+// write touching anything the overlay actually looks at.
+func TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient(t *testing.T) {
+	ctx := t.Context()
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	var overlayRuns atomic.Int64
+	translator := &irtranslator.BackendTranslator{
+		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
+			{Group: "", Kind: "Service"}: {
+				InitEnvoyBackend: func(_ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					return nil
+				},
+			},
+		},
+		ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
+			// No OverlayInputsHash: the case this test exists for.
+			{Group: "test", Kind: "Undeclared"}: {
+				PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+					overlayRuns.Add(1)
+					if in.Obj.GetLabels()["overlay"] != "true" {
+						return nil
+					}
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+					}}
+				},
+			},
+		},
+	}
+
+	serviceBackend := func(rv string) *ir.BackendObjectIR {
+		b := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+		b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv,
+		}}
+		return &b
+	}
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{serviceBackend("1")}, krtopts.ToOptions("FinalBackends")...)
+	clients := []ir.UniquelyConnectedClient{
+		ir.NewUniquelyConnectedClient("a", "ns", nil, ir.PodLocality{}),
+		ir.NewUniquelyConnectedClient("b", "ns", nil, ir.PodLocality{}),
+	}
+	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UCCs")...)
+
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	for _, ucc := range clients {
+		require.Eventually(t, func() bool { return len(storedClustersForClient(pcc, ucc)) == 1 }, 2*time.Second, 10*time.Millisecond)
+	}
+	settled := overlayRuns.Load()
+	require.EqualValues(t, len(clients), settled, "each client evaluated the backend once")
+
+	finalBackends.UpdateObject(serviceBackend("2"))
+	require.Eventually(t, func() bool { return overlayRuns.Load() > settled }, 2*time.Second, 10*time.Millisecond,
+		"an undeclared overlay must re-evaluate on any write, including a resourceVersion-only one")
 }

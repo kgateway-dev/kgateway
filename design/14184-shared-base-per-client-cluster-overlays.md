@@ -174,9 +174,17 @@ complete by construction the first time it exists. In particular:
 **Backend metadata reaches clients through equality, not through a second input.** An overlay
 may branch on the backing object's labels (the waypoint redirect does), so a metadata-only
 Service change must rebuild every client's payload even when the shared proto is byte-identical.
-`baseEnvoyCluster.Equals` therefore compares its `Backend` through `BackendObjectIR.Equals`,
-which already sees the object's version, labels, and annotations. `versionEquals` is nil-safe so
-rows built without a backing object (test fixtures) compare by their remaining fields.
+`baseEnvoyCluster` therefore carries `OverlayInputsHash`, the fold of every overlay plugin's
+declaration of what it reads from the backend, and compares that rather than the `Backend`
+itself. The row keeps the `Backend` for the overlays to read, marked `+noKrtEquals`: when
+`Equals` returns true KRT keeps the old row, so the overlays are handed the backend of the last
+row that differed, which is correct precisely because every field they read is in the hash.
+
+Comparing the declaration rather than the object is what makes the row able to distinguish a
+write that matters from one that does not. A status update, an annotation, or a label no
+overlay branches on moves neither the hash nor the proto, so the write stops at the base
+re-translation instead of rerunning every client's `O(M)` walk. A plugin that declares nothing
+is assumed to read the whole object, which costs that walk but is never stale.
 
 `baseClusterVersion` folds the inline endpoints hash **and** the attached-policy hash into the
 base proto hash when `SupportsInlineCLA` is true. The per-client CLA is built from
@@ -507,16 +515,26 @@ that makes it sound.
 
 ## Open Questions
 
-**Spec fields read by overlays must participate in backend equality.** The base row uses
-`BackendObjectIR.EqualsIgnoringResourceVersion`, so a spec change on a generation-less kind
-reaches clients only if it reaches a compared IR field, `ObjIr`, or the base proto hash.
-Base translation of a Service emits EDS and never reads `spec.clusterIPs`, but the waypoint
-overlay inlines them into a STATIC cluster, so converting a Service single-stack -> dual-stack
-would have left those clients on the stale address. The kubernetes plugin now projects the
-resolved addresses into `ObjIr`, mirroring what the serviceentry plugin already does for the
-VIPs that land in ServiceEntry status (#14391), and `PerClientClusterOverlay` documents the
-rule: read only what the framework can detect a change in, and project anything else through
-`ObjIr`. That rule is enforced by review rather than by the compiler.
+**Spec fields read by overlays must be declared, not projected.** Base translation of a Service
+emits EDS and never reads `spec.clusterIPs`, but the waypoint overlay inlines them into a STATIC
+cluster, and core Services leave `metadata.generation` at 0. Converting a Service single-stack
+-> dual-stack therefore moves nothing the framework compares on its own, and would leave those
+clients on the stale address.
+
+An earlier revision closed this by having the kubernetes plugin project the resolved addresses
+into `ObjIr`, mirroring the serviceentry plugin's handling of the VIPs that land in ServiceEntry
+status (#14391). That worked but left the rule — read only what the framework can detect a
+change in, project anything else — enforced by review, in a different package from the plugin
+that knows what its overlay reads. The waypoint plugin now declares the addresses in its
+`OverlayInputsHash` instead, and `pkg/pluginsdk/overlaytest` checks the declaration against the
+overlay: given the mutations a backend can undergo, every mutation that changes the overlay's
+output must change the hash. The rule is now enforced by a test a plugin can run, and the
+`ObjIr` projection the kubernetes plugin carried for this is gone.
+
+What remains unenforced is that a plugin must run that test at all. An overlay that registers no
+declaration is logged and treated as reading everything, so the failure mode of forgetting is
+cost, not staleness; an overlay that registers an *incomplete* declaration and no test is still
+a way to be wrong.
 
 **A base change reruns every client's walk.** The per-client transform depends on the whole
 base collection, so any backend change reruns `N` transforms of `O(M)` each.
