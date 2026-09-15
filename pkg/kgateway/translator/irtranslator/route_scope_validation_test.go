@@ -16,8 +16,10 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -258,4 +260,104 @@ func TestRouteIsolationPreservesSharedDependencies(t *testing.T) {
 		assert.Equal(t, pluginName, vh.Routes[0].GetRoute().GetClusterSpecifierPlugin(), "healthy dependent route must retain its action")
 	}
 	assert.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[1].GetDirectResponse().GetStatus())
+}
+
+func TestFinalRouteValidationReportsSourceRoute(t *testing.T) {
+	const marker = "invalid-for-status"
+	for _, tc := range []struct {
+		name       string
+		mutate     func(*envoyroutev3.RouteConfiguration) *envoyroutev3.Route
+		associated bool
+	}{
+		{name: "in-place mutation", associated: true, mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route { return cfg.VirtualHosts[0].Routes[1] }},
+		{name: "renamed original pointer", associated: true, mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			routes := cfg.VirtualHosts[0].Routes
+			routes[1].Name = routes[0].Name
+			return routes[1]
+		}},
+		{name: "cloned route", associated: true, mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			vh := cfg.VirtualHosts[0]
+			vh.Routes[1] = proto.CloneOf(vh.Routes[1])
+			return vh.Routes[1]
+		}},
+		{name: "cloned virtual host", associated: true, mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			cfg.VirtualHosts[0] = proto.CloneOf(cfg.VirtualHosts[0])
+			return cfg.VirtualHosts[0].Routes[1]
+		}},
+		{name: "appended unrelated route", mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			vh := cfg.VirtualHosts[0]
+			route := proto.CloneOf(vh.Routes[1])
+			route.Name = "new-route"
+			vh.Routes = append(vh.Routes, route)
+			return route
+		}},
+		{name: "appended duplicate name", mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			vh := cfg.VirtualHosts[0]
+			route := proto.CloneOf(vh.Routes[1])
+			vh.Routes = append(vh.Routes, route)
+			return route
+		}},
+		{name: "ambiguous original names", mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			vh := cfg.VirtualHosts[0]
+			vh.Routes[0].Name = "duplicate"
+			vh.Routes[1].Name = "duplicate"
+			route := proto.CloneOf(vh.Routes[1])
+			vh.Routes = []*envoyroutev3.Route{route}
+			return route
+		}},
+		{name: "appended unrelated virtual host", mutate: func(cfg *envoyroutev3.RouteConfiguration) *envoyroutev3.Route {
+			vh := proto.CloneOf(cfg.VirtualHosts[0])
+			vh.Name = "new-vhost"
+			vh.Domains = []string{"new.example.com"}
+			cfg.VirtualHosts = append(cfg.VirtualHosts, vh)
+			return vh.Routes[1]
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rm := reports.NewReportMap()
+			h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+			h.reporter = reports.NewReporter(&rm)
+			inputs := []*ir.VirtualHost{{Name: "vhost", Hostname: "example.com"}}
+			parent := gwv1.ParentReference{Name: "gateway"}
+			for i, name := range []string{"healthy", "target"} {
+				rule := testRouteIR(i*7, "/"+name, "cluster-"+name)
+				rule.Parent = &ir.HttpRouteIR{
+					ObjectSource: ir.ObjectSource{Name: name, Namespace: "default", Kind: "HTTPRoute"},
+					SourceObject: &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"}},
+				}
+				rule.ParentRef = parent
+				inputs[0].Rules = append(inputs[0].Rules, rule)
+			}
+			attachRouteConfigPass(h, routeConfigPassFunc{apply: func(cfg *envoyroutev3.RouteConfiguration) {
+				tc.mutate(cfg).GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+			}})
+			cfg := h.ComputeRouteConfiguration(t.Context(), inputs)
+			replacements := 0
+			for _, vh := range cfg.VirtualHosts {
+				for _, route := range vh.Routes {
+					if route.GetDirectResponse().GetStatus() == 500 {
+						replacements++
+					}
+				}
+			}
+			require.Equal(t, 1, replacements, "invalid output must be isolated even without a source association")
+			require.Len(t, rm.HTTPRoutes, 2, "plugin-added output must not invent a Kubernetes source")
+			for _, name := range []string{"healthy", "target"} {
+				report := rm.HTTPRoutes[types.NamespacedName{Namespace: "default", Name: name}]
+				require.NotNil(t, report)
+				require.Len(t, report.Parents, 1)
+				for _, refReport := range report.Parents {
+					condition := meta.FindStatusCondition(refReport.Conditions, conditions.KgatewayConditionProgrammed)
+					if tc.associated && name == "target" {
+						require.NotNil(t, condition, "source route must report failed programming")
+						assert.Equal(t, metav1.ConditionFalse, condition.Status)
+						assert.Equal(t, string(reportssdk.RouteRuleReplacedReason), condition.Reason)
+						assert.Contains(t, condition.Message, "Replaced Rule (7)", "report the originating rule index")
+					} else {
+						assert.Nil(t, condition, "unaffected sources must not be blamed for invalid plugin output")
+					}
+				}
+			}
+		})
+	}
 }
