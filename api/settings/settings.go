@@ -41,6 +41,43 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
+// ClusterDiscoveryMode determines which backends become Envoy clusters in a
+// proxy's CDS, and therefore which ClusterLoadAssignments reach its EDS.
+type ClusterDiscoveryMode string
+
+const (
+	// ClusterDiscoveryAll emits a cluster for every backend in discovery scope,
+	// whether or not the generated configuration references it.
+	//
+	// This is historically what made route retargets safe: a destination that
+	// already exists cannot be missing when a route starts naming it. The cost
+	// is that every proxy replica carries, and reports stats for, the whole
+	// inventory -- including backends no route will ever target.
+	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
+	// ClusterDiscoveryReferenced emits only the clusters the generated
+	// configuration references, including ancillary ones named from filter
+	// configuration (ext_authz, ext_proc, rate limit, access-log sinks, JWKS).
+	//
+	// A gateway whose routes select a destination at request time -- a cluster
+	// header, or a cluster specifier plugin -- reverts to ALL for that gateway,
+	// because the candidates such a route may select are named nowhere in the
+	// configuration and pruning them would silently reroute to the plugin's
+	// fallback rather than fail visibly.
+	ClusterDiscoveryReferenced ClusterDiscoveryMode = "REFERENCED"
+)
+
+// Decode implements envconfig.Decoder.
+func (c *ClusterDiscoveryMode) Decode(value string) error {
+	mode := ClusterDiscoveryMode(strings.ToUpper(value))
+	switch mode {
+	case ClusterDiscoveryAll, ClusterDiscoveryReferenced:
+		*c = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid cluster discovery mode: %q", value)
+	}
+}
+
 // ValidatorMode selects the strict-validation execution strategy.
 type ValidatorMode string
 
@@ -405,6 +442,22 @@ type Settings struct {
 	// inconsistency would reintroduce the unbounded withholds the publication
 	// engine removed. Off by default; enabled in e2e and conformance runs.
 	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
+
+	// ClusterDiscoveryMode selects which backends reach a proxy's CDS.
+	// Supported values are:
+	//
+	//   - "ALL" (default): every backend in discovery scope becomes a cluster.
+	//   - "REFERENCED": only clusters the generated configuration references.
+	//
+	// REFERENCED is what shrinks config_dump and per-proxy stats cardinality on
+	// clusters with many Services and few routed ones. It is experimental: a
+	// route retarget publishes the new cluster in the same coherent snapshot as
+	// the route that names it, and Envoy does not necessarily apply CDS before
+	// RDS within one snapshot, so a retarget can briefly 503 NC where ALL never
+	// would. The transition graces that close that window are separate work;
+	// until then, treat this as a trade of a transient retarget blip for a
+	// permanently smaller data plane.
+	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:
