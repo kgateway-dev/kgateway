@@ -66,6 +66,24 @@ type PerClientClusterOverlay func(
 	in ir.BackendObjectIR,
 ) *ClusterOverlay
 
+// OverlayInputsHash declares what a PerClientClusterOverlay reads from the
+// backend. It must move for every backend field whose change can change the
+// overlay's output, and it is the only thing that makes such a change reach
+// clients: the shared base row carrying the backend is kept for as long as its
+// hashes compare equal, so a field the overlay reads and this leaves out is
+// served stale until something else about the backend moves.
+//
+// Only what the overlay reads directly off the BackendObjectIR needs hashing.
+// What it reaches through krt.Fetch is already tracked by KRT, which reruns the
+// client when it changes. Declaring more than is read is sound, only expensive:
+// it costs a walk of every client for a write no client can observe.
+//
+// Register it beside PerClientClusterOverlay. An overlay registered without one
+// is treated as reading the whole backing object — never stale, only expensive.
+// pkg/pluginsdk/overlaytest checks a declaration against its overlay
+// mechanically; a plugin contributing an overlay should run it.
+type OverlayInputsHash func(in ir.BackendObjectIR) uint64
+
 // PerClientProcessBackend is the legacy eager cluster mutation hook.
 // Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
 // applicable to every client because they cannot report a no-op cheaply.
@@ -88,6 +106,10 @@ type PolicyPlugin struct {
 	// Backend processing for envoy proxy
 	ProcessBackend          ProcessBackend
 	PerClientClusterOverlay PerClientClusterOverlay
+	// OverlayInputsHash declares the backend fields PerClientClusterOverlay
+	// reads. Required beside it; an overlay without one is treated as reading
+	// the whole backing object.
+	OverlayInputsHash OverlayInputsHash
 	// Deprecated: use PerClientClusterOverlay.
 	PerClientProcessBackend PerClientProcessBackend
 	PerClientEditEndpoints  EndpointEditorPlugin
