@@ -147,6 +147,15 @@ func TestDependsOnClient(t *testing.T) {
 			switch {
 			case !tc.depends:
 				assert.True(t, same, "a client-independent CLA must be identical for every client")
+				// Two connected clients agreeing is not the claim
+				// TranslateBackendBase relies on. It builds the shared base's
+				// assignment with the zero client, which has no labels and no
+				// locality and so matches no endpoint's topology, a shape no
+				// connected client has. If any path treated that as special the
+				// base would publish an assignment every client disagrees with.
+				claZero := PrioritizeEndpoints(nil, ir.UniquelyConnectedClient{}, inputs)
+				assert.Equal(t, utils.HashProto(claZ1), utils.HashProto(claZero),
+					"the zero client TranslateBackendBase builds the shared base with must produce the CLA every client gets")
 			case tc.differsByZone:
 				assert.False(t, same, "a client-dependent CLA must differ between clients in different zones")
 			}
