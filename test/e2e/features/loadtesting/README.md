@@ -210,8 +210,9 @@ strict AttachedRoutes runs. Run it locally with
 `xdscost_suite.go` is StrictChurn's measurement sibling. StrictChurn asks "did
 the fleet stay served under churn"; XdsCost asks "what did each kind of change
 cost the controller", which is the question that separates competing per-client
-CDS topologies. It is a benchmark, not an assertion suite: it has no pass/fail
-thresholds, and it is meant to be run twice against two builds and diffed.
+CDS topologies. It has no performance pass/fail thresholds and is meant to be
+run twice against two builds and diffed. Every mutation must converge; a
+timeout invalidates the measurement and fails the suite.
 
 It measures the controller from the outside, scraping the controller's own
 `/metrics` (port 9092) before and after each change. `pkg/metrics` registers the
@@ -285,7 +286,10 @@ each is 1600 Envoy pods that no single machine can run:
   suite sets: with auth on, the server takes identity from a ServiceAccount JWT
   on the gRPC metadata and a stream without a real pod's token is rejected.
   Identity then comes from the node metadata role, which changes how the role is
-  derived but not what is translated for it.
+  derived but not what is translated for it. The suite also temporarily sets
+  `KGW_XDS_TLS=false` for its plaintext connection. Streams subscribe to CDS,
+  LDS, RDS, and the EDS names advertised by CDS, including the local cluster
+  when pod locality is enabled.
 
 With pod-locality xDS on — the default, and how the suite runs unless
 `KGW_FLEET_POD_LOCALITY=false` — every stream must resolve to a real Pod object,
@@ -293,7 +297,9 @@ so the suite creates fake Nodes across `KGW_FLEET_ZONES` and binds a fake Pod pe
 stream. That also makes client identity **per-pod**: `HashLabels` hashes every
 augmented label including `kubernetes.io/hostname`, so two proxies of one Gateway
 on different nodes are two clients. Client count is
-`gateways × min(replicas, zones)`, not `gateways`.
+`gateways × min(replicas, zones × 2)`. With
+`KGW_FLEET_IDENTITY_INCLUDE_NODE=false` on a build supporting that setting,
+replicas collapse by zone and the count is `gateways × min(replicas, zones)`.
 
 The controller is capped at `KGW_FLEET_MEMORY_LIMIT` (8Gi by default) so that
 running out of memory is a clean container restart, which the suite detects via
@@ -422,10 +428,12 @@ this coverage when the change is backported.
 Both paths call `make run-xds-bench-ci` against the installation already
 prepared by their workflow. The shared STANDARD-validation profile uses:
 
-- XdsCost: 3 Gateways, 30 static backends, 30 EDS routes, and 3 iterations.
+- XdsCost: 3 Gateways, 30 static backends, 30 requested EDS routes (40 simulated Services), and 3 iterations.
 - XdsFleet: 500 Services, 24 Gateways with 2 streams each, 10 inline backends,
-  4 waves, 3 zones, endpoint pods and pod locality, a 2Gi controller memory
-  limit, and 3 churn iterations.
+  4 waves, pod locality and endpoint pods disabled (24 unique clients), a 2Gi
+  controller memory limit, and 3 churn iterations. Fake Nodes are excluded
+  from this shared CI profile because they can destabilize kind networking.
+  Run locality experiments on a dedicated benchmark cluster.
 
 Each benchmark has a 20-minute Go timeout. The load-test jobs allow 120
 minutes for setup, existing load tests, and benchmarks. This is a bounded
@@ -434,7 +442,7 @@ runtime on hosted CI runners still needs to be observed.
 
 The runner attempts both benchmarks sequentially, retains failures, and
 rejects fleet failure verdicts, missing phases, incomplete waves, and waves
-that were not served or settled. Benchmark failures mark the load-test job
+that were not served or settled, and phases with timed-out iterations. Benchmark failures mark the load-test job
 failed while release publication remains independent.
 
 Logs, original prefixed records, and normalized JSONL (objects with

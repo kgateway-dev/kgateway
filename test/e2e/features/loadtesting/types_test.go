@@ -5,6 +5,7 @@ package loadtesting
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +13,10 @@ import (
 	"testing"
 	"time"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -25,8 +30,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 func TestValidationMetricsDeltaClampsCounterResets(t *testing.T) {
@@ -118,7 +125,7 @@ func TestFleetReadinessRequiresEveryLiveStream(t *testing.T) {
 func TestBenchConvergenceRequiresQuietWindow(t *testing.T) {
 	oldFleetTimeout, oldCostTimeout := fleetIterTimeout, benchIterationTimeout
 	oldFleetSettle, oldCostSettle := fleetSettleMillis, benchSettleMillis
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		fleetIterTimeout, benchIterationTimeout = oldFleetTimeout, oldCostTimeout
 		fleetSettleMillis, benchSettleMillis = oldFleetSettle, oldCostSettle
 	})
@@ -210,7 +217,7 @@ func TestFleetOpenRetryPreservesPreviousConnection(t *testing.T) {
 
 func TestFleetCrashEmitsVerdictWithUnavailableMetrics(t *testing.T) {
 	oldGateways, oldWaves, oldStreams := fleetGateways, fleetWaves, fleetStreamsPerGateway
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		fleetGateways, fleetWaves, fleetStreamsPerGateway = oldGateways, oldWaves, oldStreams
 	})
 	// Skip network stream creation and exercise the wave observation path.
@@ -269,4 +276,124 @@ func TestFleetQuietRejectsUnavailableMetrics(t *testing.T) {
 	assert.False(t, fleet.waitQuiet(0, 100*time.Millisecond), "an HTTP failure is not a quiet controller")
 	_, err := readControllerSample(server.URL)
 	require.ErrorContains(t, err, "503")
+}
+
+func TestFleetClientCountAccountsForRepeatedIdentities(t *testing.T) {
+	oldLocality, oldStreams, oldZones, oldIdentity := fleetPodLocality, fleetStreamsPerGateway, fleetZones, fleetIdentityIncludeNode
+	testutils.Cleanup(t, func() {
+		fleetPodLocality, fleetStreamsPerGateway, fleetZones, fleetIdentityIncludeNode = oldLocality, oldStreams, oldZones, oldIdentity
+	})
+	for _, tc := range []struct {
+		name        string
+		locality    bool
+		streams     int
+		includeNode string
+		want        int
+	}{
+		{"role only", false, 10, "", 1},
+		{"distinct nodes", true, 2, "", 2},
+		{"repeated nodes", true, 10, "true", 6},
+		{"distinct zones", true, 2, "false", 2},
+		{"repeated zones", true, 10, "false", 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fleetPodLocality, fleetStreamsPerGateway, fleetZones, fleetIdentityIncludeNode = tc.locality, tc.streams, 3, tc.includeNode
+			assert.Equal(t, tc.want, (&XdsFleetSuite{}).clientsPerGateway())
+		})
+	}
+}
+
+func TestFleetEndpointSubscriptions(t *testing.T) {
+	response := &discoveryv3.DiscoveryResponse{}
+	for _, cluster := range []*envoyclusterv3.Cluster{
+		{Name: "inline", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}},
+		{Name: "service", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}},
+		{Name: "named-service", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}, EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{ServiceName: "endpoint-name"}},
+	} {
+		resource, err := utils.MessageToAny(cluster)
+		require.NoError(t, err)
+		response.Resources = append(response.Resources, resource)
+	}
+	names, err := fleetEndpointNames(response, "local-cluster")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"local-cluster", "service", "endpoint-name"}, names)
+}
+
+func TestBenchmarkMetricsTrackSuccessfulGateways(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintln(w, `# TYPE kgateway_xds_snapshot_transforms_total counter
+kgateway_xds_snapshot_transforms_total{namespace="bench",gateway="ready",result="success"} 1
+kgateway_xds_snapshot_transforms_total{namespace="bench",gateway="failed",result="error"} 2
+kgateway_xds_snapshot_transforms_total{namespace="bench",gateway="idle",result="success"} 0`)
+	}))
+	defer server.Close()
+	sample, err := readControllerSample(server.URL)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]bool{"bench/ready": true}, sample.TransformedGateways)
+}
+
+func TestBenchmarkEnvPreservesExplicitEmptyValue(t *testing.T) {
+	t.Setenv("KGW_TEST_BENCH_EMPTY", "")
+	assert.Empty(t, benchEnvString("KGW_TEST_BENCH_EMPTY", "8Gi"))
+}
+
+func TestBenchmarkControllerSelectionUsesAppLabel(t *testing.T) {
+	t.Setenv("KGW_LOADTEST_CONTROLLER_APP", "kgateway")
+	scheme := runtime.NewScheme()
+	require.NoError(t, appsv1.AddToScheme(scheme))
+	controller := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: "custom-controller", Namespace: "test", Labels: map[string]string{"app.kubernetes.io/name": "kgateway"}},
+		Spec:       appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "controller"}}}}},
+	}
+	decoy := controller.DeepCopy()
+	decoy.Name, decoy.Labels = "kgateway-decoy", nil
+	kube := fake.NewClientBuilder().WithScheme(scheme).WithObjects(controller, decoy).Build()
+	base := func() LoadTestingSuite {
+		return LoadTestingSuite{ctx: context.Background(), testInstallation: &e2e.TestInstallation{ClusterContext: &cluster.Context{Client: kube}}}
+	}
+	cost := &XdsCostSuite{LoadTestingSuite: base(), installNamespace: "test"}
+	fleet := &XdsFleetSuite{LoadTestingSuite: base(), installNamespace: "test"}
+	for _, resolve := range []func() (string, string, error){cost.resolveController, fleet.resolveController} {
+		name, container, err := resolve()
+		require.NoError(t, err)
+		assert.Equal(t, "custom-controller", name)
+		assert.Equal(t, "controller", container)
+	}
+}
+
+type fleetTestStream struct {
+	grpc.ClientStream
+	responses []*discoveryv3.DiscoveryResponse
+	sent      []*discoveryv3.DiscoveryRequest
+}
+
+func (s *fleetTestStream) Send(request *discoveryv3.DiscoveryRequest) error {
+	s.sent = append(s.sent, request)
+	return nil
+}
+
+func (s *fleetTestStream) Recv() (*discoveryv3.DiscoveryResponse, error) {
+	if len(s.responses) == 0 {
+		return nil, io.EOF
+	}
+	response := s.responses[0]
+	s.responses = s.responses[1:]
+	return response, nil
+}
+
+func TestFleetPumpPreservesEndpointSubscriptionOnACK(t *testing.T) {
+	stream := &fleetTestStream{responses: []*discoveryv3.DiscoveryResponse{
+		{TypeUrl: resourcev3.ClusterType, VersionInfo: "cds", Nonce: "cds-nonce"},
+		{TypeUrl: resourcev3.EndpointType, VersionInfo: "eds", Nonce: "eds-nonce"},
+		{TypeUrl: resourcev3.RouteType, VersionInfo: "rds", Nonce: "rds-nonce"},
+	}}
+	c := &syntheticClient{stream: stream, localClusterName: "local-cluster", done: make(chan struct{})}
+	c.pump(&envoycorev3.Node{Id: "proxy"})
+	require.Len(t, stream.sent, 4)
+	assert.Equal(t, resourcev3.EndpointType, stream.sent[1].TypeUrl)
+	assert.Equal(t, []string{"local-cluster"}, stream.sent[1].ResourceNames)
+	assert.Equal(t, stream.sent[1].ResourceNames, stream.sent[2].ResourceNames)
+	assert.Equal(t, "eds-nonce", stream.sent[2].ResponseNonce)
+	assert.Equal(t, "rds-nonce", stream.sent[3].ResponseNonce)
+	assert.EqualValues(t, 3, c.acks.Load())
 }

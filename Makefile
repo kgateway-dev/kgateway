@@ -1291,8 +1291,8 @@ run-xds-bench-ci: export KGW_FLEET_INLINE_BACKENDS := 10
 run-xds-bench-ci: export KGW_FLEET_STREAMS_PER_GATEWAY := 2
 run-xds-bench-ci: export KGW_FLEET_WAVES := 4
 run-xds-bench-ci: export KGW_FLEET_ZONES := 3
-run-xds-bench-ci: export KGW_FLEET_POD_LOCALITY := true
-run-xds-bench-ci: export KGW_FLEET_ENDPOINT_PODS := true
+run-xds-bench-ci: export KGW_FLEET_POD_LOCALITY := false
+run-xds-bench-ci: export KGW_FLEET_ENDPOINT_PODS := false
 run-xds-bench-ci: export KGW_FLEET_MEMORY_LIMIT := 2Gi
 run-xds-bench-ci: export KGW_FLEET_ITERATIONS := 3
 run-xds-bench-ci: export KGW_FLEET_SETTLE_MS := 1500
@@ -1325,13 +1325,15 @@ validate-xds-bench-ci-results: ## Check benchmark completion and fleet failure v
 	@jq -es --arg suite "$(XDS_BENCH_SUITE)" \
 		'if $$suite == "cost" then \
 			([.[] | select(.event == "xds_cost_result") | .data.phase] | sort) == ["BaseChurn","EdsChurn","Reconnect"] \
+			and all(.[] | select(.event == "xds_cost_result"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
 			and any(.[]; .event == "xds_cost_summary" and (.data.phases | length) == 3) \
 		elif $$suite == "fleet" then \
 			all(.[]; .event != "xds_fleet_verdict") \
 			and ([.[] | select(.event == "xds_fleet_wave")] | length) == 4 \
 			and all(.[] | select(.event == "xds_fleet_wave"); .data.served == true and .data.settled == true) \
-			and any(.[]; .event == "xds_fleet_wave" and .data.gateways == 24 and .data.clients == 48) \
+			and any(.[]; .event == "xds_fleet_wave" and .data.gateways == 24 and .data.clients == 24) \
 			and ([.[] | select(.event == "xds_fleet_result") | .data.phase] | sort) == ["BaseChurn","EdsChurn","StreamReconnect"] \
+			and all(.[] | select(.event == "xds_fleet_result"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
 		else false end' "$(XDS_BENCH_OUTPUT_DIR)/$(XDS_BENCH_SUITE).jsonl"
 
 #----------------------------------------------------------------------------------

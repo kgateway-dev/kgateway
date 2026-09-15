@@ -4,6 +4,7 @@ package loadtesting
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,9 +15,10 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -34,8 +36,10 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 )
 
 // XdsFleet is XdsCost at production fan-out. XdsCost tops out around twenty
@@ -197,7 +201,7 @@ var (
 // that is not one so a stray comma cannot silently unset a controller variable.
 func extraEnvPairs() []string {
 	var pairs []string
-	for _, kv := range strings.Split(fleetExtraEnv, ",") {
+	for kv := range strings.SplitSeq(fleetExtraEnv, ",") {
 		kv = strings.TrimSpace(kv)
 		if k, _, ok := strings.Cut(kv, "="); ok && k != "" {
 			pairs = append(pairs, kv)
@@ -223,14 +227,16 @@ func NewXdsFleetSuite(ctx context.Context, testInst *e2e.TestInstallation) suite
 // subscribe to the wildcard resources a proxy subscribes to, and acknowledge
 // every response so the server considers the client caught up.
 type syntheticClient struct {
-	role     string
-	nodeID   string
-	stream   discoveryv3.AggregatedDiscoveryService_StreamAggregatedResourcesClient
-	cancel   context.CancelFunc
-	acks     atomic.Int64
-	recvErrs atomic.Int64
-	firstErr atomic.Pointer[string]
-	done     chan struct{}
+	role             string
+	nodeID           string
+	localClusterName string
+	endpointNames    []string
+	stream           discoveryv3.AggregatedDiscoveryService_StreamAggregatedResourcesClient
+	cancel           context.CancelFunc
+	acks             atomic.Int64
+	recvErrs         atomic.Int64
+	firstErr         atomic.Pointer[string]
+	done             chan struct{}
 }
 
 func (s *XdsFleetSuite) SetupSuite() {
@@ -238,7 +244,7 @@ func (s *XdsFleetSuite) SetupSuite() {
 		s.T().Skip("XdsFleet mutates the controller deployment; set KGW_ENABLE_XDS_FLEET=true (or use `make run-xds-fleet-bench`) to run it")
 	}
 	s.installNamespace = s.testInstallation.Metadata.InstallNamespace
-	s.testNamespace = fmt.Sprintf("kgw-fleet-%d", time.Now().Unix())
+	s.testNamespace = fmt.Sprintf("kgw-fleet-%d", time.Now().UnixNano())
 
 	if path := os.Getenv("KGW_BENCH_OUT"); path != "" {
 		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
@@ -261,7 +267,7 @@ func (s *XdsFleetSuite) SetupSuite() {
 	// the role is derived, not what is translated for it.
 	extraEnv := extraEnvPairs()
 	snapshotNames := []string{
-		"KGW_VALIDATION_MODE", "DISABLE_POD_LOCALITY_XDS", "KGW_XDS_AUTH", "KGW_XDS_IDENTITY_INCLUDE_NODE",
+		"KGW_VALIDATION_MODE", "DISABLE_POD_LOCALITY_XDS", "KGW_XDS_AUTH", "KGW_XDS_TLS", "KGW_XDS_IDENTITY_INCLUDE_NODE",
 	}
 	for _, kv := range extraEnv {
 		name, _, _ := strings.Cut(kv, "=")
@@ -276,6 +282,7 @@ func (s *XdsFleetSuite) SetupSuite() {
 		"KGW_VALIDATION_MODE=" + benchValidation,
 		localityEnv,
 		"KGW_XDS_AUTH=false",
+		"KGW_XDS_TLS=false",
 	}
 	if fleetIdentityIncludeNode != "" {
 		envs = append(envs, "KGW_XDS_IDENTITY_INCLUDE_NODE="+fleetIdentityIncludeNode)
@@ -343,12 +350,12 @@ func (s *XdsFleetSuite) TearDownSuite() {
 	}
 	if s.originalEnv != nil {
 		if err := s.restoreEnv(); err != nil {
-			s.T().Logf("failed to restore controller env (cluster left modified): %v", err)
+			s.T().Errorf("failed to restore controller env (cluster left modified): %v", err)
 		}
 	}
 	if s.originalResources != nil {
 		if err := s.restoreResources(); err != nil {
-			s.T().Logf("failed to restore controller resources (cluster left modified): %v", err)
+			s.T().Errorf("failed to restore controller resources (cluster left modified): %v", err)
 		}
 	}
 	if s.out != nil {
@@ -457,9 +464,8 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		s.emit("xds_fleet_wave", map[string]any{
 			"build": benchLabel, "validation": benchValidation,
 			"wave": wave, "gateways": connected,
-			// With pod locality on, replicas of one Gateway land on different
-			// nodes and are therefore different unique clients, so the client
-			// count is the stream count, not the Gateway count.
+			// Repeated node/locality identities share a client even when
+			// they use separate streams.
 			"clients":             connected * s.clientsPerGateway(),
 			"streams":             connected * fleetStreamsPerGateway,
 			"services":            fleetServices,
@@ -505,11 +511,14 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 }
 
 // clientsPerGateway is how many unique clients one Gateway's replicas produce.
-// With pod locality on, replica identity includes the node hostname, so replicas
-// spread across nodes are distinct clients; with it off they collapse into one.
+// With pod locality on, replicas share identities when their nodes (or zones
+// when node identity is disabled) repeat; with it off they collapse into one.
 func (s *XdsFleetSuite) clientsPerGateway() int {
 	if fleetPodLocality {
-		return fleetStreamsPerGateway
+		if strings.EqualFold(fleetIdentityIncludeNode, "false") {
+			return min(fleetStreamsPerGateway, fleetZones)
+		}
+		return min(fleetStreamsPerGateway, fleetZones*2)
 	}
 	return 1
 }
@@ -521,12 +530,14 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 	startRestarts := s.controllerRestarts()
 	start := time.Now()
 	var latencies []float64
+	timedOut := 0
 	for i := range fleetIterations {
 		t0 := time.Now()
 		tBefore := s.scrape().Transforms
 		mutate(i)
 		last, ok := s.waitConverged(tBefore)
 		if !ok {
+			timedOut++
 			s.T().Logf("phase %s iteration %d did not converge in %s", name, i, fleetIterTimeout)
 			latencies = append(latencies, float64(fleetIterTimeout.Milliseconds()))
 			continue
@@ -542,6 +553,7 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 		"clients": fleetGateways * s.clientsPerGateway(), "services": fleetServices, "inline_backends": fleetInlineBackends,
 		"trickle_ms":            fleetTrickleMs,
 		"iterations":            len(latencies),
+		"timed_out_iterations":  timedOut,
 		"wall_seconds":          wall.Seconds(),
 		"cpu_ms_per_change":     (after.CPUSeconds - before.CPUSeconds) * 1000 / n,
 		"alloc_mb_per_change":   (after.AllocBytes - before.AllocBytes) / 1e6 / n,
@@ -553,6 +565,7 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 		"rss_mb_after":          after.RSS / 1e6,
 		"controller_restarts":   s.controllerRestarts() - startRestarts,
 	})
+	s.Assert().Zero(timedOut, "phase %s must converge on every iteration", name)
 }
 
 // ---- fleet construction ----
@@ -882,24 +895,19 @@ func (s *XdsFleetSuite) createIgnoreExists(obj client.Object) error {
 }
 
 func (s *XdsFleetSuite) parallelDo(n int, fn func(int) error) {
-	workers := min(fleetCreateWorkers, n)
-	if workers < 1 {
-		workers = 1
-	}
+	workers := max(min(fleetCreateWorkers, n), 1)
 	idx := make(chan int, workers)
 	var wg sync.WaitGroup
 	var firstErr atomic.Pointer[error]
 	for range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for i := range idx {
 				if err := fn(i); err != nil {
 					e := err
 					firstErr.CompareAndSwap(nil, &e)
 				}
 			}
-		}()
+		})
 	}
 	for i := range n {
 		idx <- i
@@ -1042,6 +1050,9 @@ func (s *XdsFleetSuite) openStream(role, nodeID string) (*syntheticClient, error
 		}},
 		UserAgentName: "envoy",
 	}
+	if fleetPodLocality {
+		c.localClusterName, _, _ = (ir.UniquelyConnectedClient{Role: role}).LocalClusterInfo()
+	}
 	for _, typeURL := range fleetSubscriptions {
 		if err := stream.Send(&discoveryv3.DiscoveryRequest{
 			Node: node, TypeUrl: typeURL,
@@ -1062,14 +1073,19 @@ func (c *syntheticClient) pump(node *envoycorev3.Node) {
 	for {
 		resp, err := c.stream.Recv()
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				c.recvErrs.Add(1)
 				msg := err.Error()
 				c.firstErr.CompareAndSwap(nil, &msg)
 			}
 			return
 		}
+		var resourceNames []string
+		if resp.GetTypeUrl() == resourcev3.EndpointType {
+			resourceNames = c.endpointNames
+		}
 		if err := c.stream.Send(&discoveryv3.DiscoveryRequest{
+			ResourceNames: resourceNames,
 			Node:          node,
 			TypeUrl:       resp.GetTypeUrl(),
 			VersionInfo:   resp.GetVersionInfo(),
@@ -1077,8 +1093,45 @@ func (c *syntheticClient) pump(node *envoycorev3.Node) {
 		}); err != nil {
 			return
 		}
+		if resp.GetTypeUrl() == resourcev3.ClusterType {
+			names, err := fleetEndpointNames(resp, c.localClusterName)
+			if err != nil {
+				c.recvErrs.Add(1)
+				msg := err.Error()
+				c.firstErr.Store(&msg)
+				return
+			}
+			c.endpointNames = names
+			if err := c.stream.Send(&discoveryv3.DiscoveryRequest{Node: node, TypeUrl: resourcev3.EndpointType, ResourceNames: names}); err != nil {
+				return
+			}
+		}
 		c.acks.Add(1)
 	}
+}
+
+// fleetEndpointNames includes every EDS service advertised by CDS and the
+// bootstrap local cluster, preserving the ADS subscription on subsequent ACKs.
+func fleetEndpointNames(response *discoveryv3.DiscoveryResponse, localCluster string) ([]string, error) {
+	names := []string{}
+	if localCluster != "" {
+		names = append(names, localCluster)
+	}
+	for _, resource := range response.GetResources() {
+		var cluster envoyclusterv3.Cluster
+		if err := resource.UnmarshalTo(&cluster); err != nil {
+			return nil, err
+		}
+		if cluster.GetType() != envoyclusterv3.Cluster_EDS {
+			continue
+		}
+		name := cluster.GetEdsClusterConfig().GetServiceName()
+		if name == "" {
+			name = cluster.GetName()
+		}
+		names = append(names, name)
+	}
+	return names, nil
 }
 
 func (s *XdsFleetSuite) stopClients() {
@@ -1161,11 +1214,13 @@ func (s *XdsFleetSuite) reconnectOneGateway(i int) {
 		kept = append(kept, c)
 	}
 	s.clients = kept
+	firstReopened := len(s.clients)
 	for r := range fleetStreamsPerGateway {
 		c, err := s.openStream(role, fmt.Sprintf("%s.%s", s.podName(gwIdx, r), s.testNamespace))
 		s.Require().NoError(err, "should reopen stream for %s", role)
 		s.clients = append(s.clients, c)
 	}
+	s.Require().True(s.waitServed(s.clients[firstReopened:], fleetIterTimeout), "every reopened stream must be served")
 }
 
 // ---- controller observation ----
@@ -1303,12 +1358,13 @@ func (s *XdsFleetSuite) controllerFailure() string {
 
 func (s *XdsFleetSuite) emitFailure(reason string) {
 	s.emit("xds_fleet_verdict", map[string]any{
-		"build":             benchLabel,
-		"survived_clients":  s.survivedGateways * s.clientsPerGateway(),
-		"died_at_clients":   s.attemptedGateways * s.clientsPerGateway(),
-		"survived_gateways": s.survivedGateways,
-		"died_at_gateways":  s.attemptedGateways,
-		"reason":            reason,
+		"build":              benchLabel,
+		"survived_clients":   s.survivedGateways * s.clientsPerGateway(),
+		"died_at_clients":    s.attemptedGateways * s.clientsPerGateway(),
+		"survived_gateways":  s.survivedGateways,
+		"died_at_gateways":   s.attemptedGateways,
+		"reason":             reason,
+		"first_stream_error": s.firstStreamError(),
 	})
 }
 
@@ -1332,11 +1388,11 @@ func (s *XdsFleetSuite) emit(prefix string, v map[string]any) {
 func (s *XdsFleetSuite) resolveController() (string, string, error) {
 	var deployments appsv1.DeploymentList
 	if err := s.testInstallation.ClusterContext.Client.List(s.ctx, &deployments,
-		client.InNamespace(s.installNamespace)); err != nil {
+		client.InNamespace(s.installNamespace), client.MatchingLabels{testdefaults.WellKnownAppLabel: controllerAppName()}); err != nil {
 		return "", "", err
 	}
 	for _, d := range deployments.Items {
-		if !hasPrefixIn(d.GetName(), "kgateway") || len(d.Spec.Template.Spec.Containers) == 0 {
+		if len(d.Spec.Template.Spec.Containers) == 0 {
 			continue
 		}
 		container := d.Spec.Template.Spec.Containers[0].Name
@@ -1441,11 +1497,12 @@ func (s *XdsFleetSuite) setEnv(envExprs ...string) error {
 		s.controllerDeployment, "-n", s.installNamespace, "--timeout=300s")
 }
 
-// fleetSubscriptions are the wildcard resource types a proxy subscribes to.
+// fleetSubscriptions are the initial wildcard subscriptions. EDS names are
+// derived from CDS responses, plus the bootstrap local cluster.
 var fleetSubscriptions = []string{
 	"type.googleapis.com/" + string((&envoyclusterv3.Cluster{}).ProtoReflect().Descriptor().FullName()),
 	"type.googleapis.com/" + string((&envoylistenerv3.Listener{}).ProtoReflect().Descriptor().FullName()),
-	"type.googleapis.com/" + string((&envoyendpointv3.ClusterLoadAssignment{}).ProtoReflect().Descriptor().FullName()),
+	"type.googleapis.com/" + string((&envoyroutev3.RouteConfiguration{}).ProtoReflect().Descriptor().FullName()),
 }
 
 var gatewayParametersGVK = backendGVK.GroupVersion().WithKind("GatewayParameters")

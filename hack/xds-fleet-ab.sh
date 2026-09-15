@@ -80,13 +80,15 @@ drain() {
     sleep 10
   done
   echo "  WARNING: fleet namespaces still terminating after 10m" >&2
+  return 1
 }
 
 run_arm() {
   local label=$1 chart=$2 tag=$3 extra=${4:-}
   local log="$LOG_DIR/xdsfleet_${label}.log"
+  local status
 
-  drain
+  drain || return 1
   if ! helm upgrade --install kgateway "$chart" \
       --kube-context "$KUBE_CONTEXT" --namespace "$INSTALL_NAMESPACE" \
       --set image.tag="$tag" --set image.registry="$IMAGE_REGISTRY" \
@@ -96,7 +98,7 @@ run_arm() {
     return 1
   fi
   kubectl --context "$KUBE_CONTEXT" -n "$INSTALL_NAMESPACE" \
-    rollout status deploy/kgateway --timeout=300s >/dev/null 2>&1
+    rollout status deploy/kgateway --timeout=300s >/dev/null 2>&1 || return 1
 
   echo "=== $label (tag=$tag services=$KGW_FLEET_SERVICES gateways=$KGW_FLEET_GATEWAYS extra=${extra:-none})"
   # -count=1 is load-bearing: go test caches a successful run and will
@@ -106,28 +108,33 @@ run_arm() {
   KGW_BENCH_LABEL="$label" KGW_FLEET_EXTRA_ENV="$extra" KGW_BENCH_OUT="$OUT" \
     go test -C "$REPO_ROOT" -tags=e2e -v -count=1 -timeout 120m \
       ./test/e2e/tests -run '^TestKgateway$/^XdsFleet$' > "$log" 2>&1
-  echo "  exit=$? waves=$(grep -c xds_fleet_wave "$log" 2>/dev/null) log=$log"
+  status=$?
+  echo "  exit=$status waves=$(grep -c xds_fleet_wave "$log" 2>/dev/null) log=$log"
+  return "$status"
 }
 
 [ $# -ge 2 ] || usage
 OUT=$1; shift
 : > "$OUT"
 
+failed=0
 for arm in "$@"; do
   IFS=: read -r label chart tag extra <<<"$arm"
   if [ -z "${label:-}" ] || [ -z "${chart:-}" ] || [ -z "${tag:-}" ]; then
     echo "malformed arm: $arm" >&2
     usage
   fi
-  run_arm "$label" "$chart" "$tag" "${extra:-}"
+  run_arm "$label" "$chart" "$tag" "${extra:-}" || failed=1
 done
-drain
+drain || failed=1
 
 echo
 echo "=== ladder ($OUT)"
-sed -e 's/^xds_fleet_[a-z]* //' < "$OUT" | jq -r '
+sed -n -e 's/^xds_fleet_wave //p' -e 's/^xds_fleet_verdict //p' < "$OUT" | jq -r '
   if .died_at_clients then
     "\(.build)\tDIED at \(.died_at_clients) clients"
   else
     "\(.build)\t\(.clients) clients\t\(.heap_inuse_mb|floor)MB heap\t\(.rss_mb|floor)MB rss\t\(.cpu_seconds)s cpu\t\((.xds_resources/.clients)|floor) res/client"
   end' 2>/dev/null || cat < "$OUT"
+
+exit "$failed"

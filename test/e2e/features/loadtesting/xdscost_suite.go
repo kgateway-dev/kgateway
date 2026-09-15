@@ -9,11 +9,13 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +29,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 )
 
 // XdsCost is a repeatable control-plane cost benchmark for the per-client xDS
@@ -83,8 +86,9 @@ type XdsCostSuite struct {
 	metricsPF  portforward.PortForwarder
 	metricsURL string
 
-	results []phaseResult
-	out     *os.File
+	edsServices int
+	results     []phaseResult
+	out         *os.File
 	// churnGen makes every mutation write a value nothing has written before,
 	// so no patch is silently a no-op.
 	churnGen int
@@ -145,7 +149,7 @@ func benchEnvInt(name string, def int) int {
 }
 
 func benchEnvString(name, def string) string {
-	if v := os.Getenv(name); v != "" {
+	if v, ok := os.LookupEnv(name); ok {
 		return v
 	}
 	return def
@@ -172,7 +176,8 @@ type controllerSample struct {
 	// per-client snapshot transform that ran. This is both the fan-out measure
 	// and the convergence signal, because it advances for any input that
 	// reaches per-client assembly.
-	Transforms float64 `json:"xds_transforms_total"`
+	Transforms          float64         `json:"xds_transforms_total"`
+	TransformedGateways map[string]bool `json:"-"`
 	// Deferrals is kgateway_xds_snapshot_cluster_deferrals_total summed. It
 	// exists only on the sparse-delta build, where a client's whole CDS is
 	// withheld until the delta sets catch up; absent means zero.
@@ -190,10 +195,11 @@ type controllerSample struct {
 
 // phaseResult is one phase's measurement, emitted as JSON.
 type phaseResult struct {
-	Build      string `json:"build"`
-	Phase      string `json:"phase"`
-	Validation string `json:"validation"`
-	Iterations int    `json:"iterations"`
+	Build              string `json:"build"`
+	Phase              string `json:"phase"`
+	Validation         string `json:"validation"`
+	Iterations         int    `json:"iterations"`
+	TimedOutIterations int    `json:"timed_out_iterations"`
 	// Fleet shape.
 	Gateways       int `json:"gateways"`
 	StaticBackends int `json:"static_backends"`
@@ -287,6 +293,7 @@ func (s *XdsCostSuite) SetupSuite() {
 	// actually built: the EdsChurn phase rotates over that, not over
 	// KGW_BENCH_EDS_ROUTES.
 	simCfg := s.loadTestManager.simulator.config
+	s.edsServices = simCfg.FakeNodeCount * simCfg.ServicesPerNode
 	s.T().Logf("XdsCost: EDS simulation %s has %d services (%d nodes x %d per node) in %s",
 		simCfg.SimulationName, simCfg.FakeNodeCount*simCfg.ServicesPerNode,
 		simCfg.FakeNodeCount, simCfg.ServicesPerNode, simCfg.Namespace)
@@ -304,6 +311,15 @@ func (s *XdsCostSuite) SetupSuite() {
 	}
 
 	s.startMetricsForward()
+	s.Require().Eventually(func() bool {
+		sample := s.scrape()
+		for _, gateway := range s.gateways {
+			if !sample.TransformedGateways[s.loadTestManager.testNamespace+"/"+gateway] {
+				return false
+			}
+		}
+		return true
+	}, 3*time.Minute, 500*time.Millisecond, "every gateway must have a successful per-client transform")
 	// Let the fleet reach steady state, so phase deltas measure the change
 	// rather than the tail of setup.
 	s.waitQuiet(4*time.Second, 3*time.Minute)
@@ -324,7 +340,7 @@ func (s *XdsCostSuite) TearDownSuite() {
 	}
 	if s.originalControllerEnv != nil {
 		if err := s.restoreControllerEnv(); err != nil {
-			s.T().Logf("failed to restore controller env (cluster left modified): %v", err)
+			s.T().Errorf("failed to restore controller env (cluster left modified): %v", err)
 		}
 	}
 	if s.out != nil {
@@ -390,6 +406,7 @@ func (s *XdsCostSuite) runPhase(name, note string, mutate func(int)) {
 	before := s.scrape()
 	start := time.Now()
 	latencies := make([]float64, 0, benchIterations)
+	timedOut := 0
 
 	for i := range benchIterations {
 		transformsBefore := s.scrape().Transforms
@@ -397,6 +414,7 @@ func (s *XdsCostSuite) runPhase(name, note string, mutate func(int)) {
 		mutate(i)
 		last, ok := s.waitConverged(transformsBefore, t0)
 		if !ok {
+			timedOut++
 			s.T().Logf("phase %s iteration %d did not converge within %s; recording the timeout", name, i, benchIterationTimeout)
 			latencies = append(latencies, float64(benchIterationTimeout.Milliseconds()))
 			continue
@@ -410,16 +428,17 @@ func (s *XdsCostSuite) runPhase(name, note string, mutate func(int)) {
 	if n == 0 {
 		n = 1
 	}
-	sort.Float64s(latencies)
+	slices.Sort(latencies)
 
 	res := phaseResult{
 		Build:                  benchLabel,
 		Phase:                  name,
 		Validation:             strings.ToUpper(benchValidation),
 		Iterations:             benchIterations,
+		TimedOutIterations:     timedOut,
 		Gateways:               benchGateways,
 		StaticBackends:         benchStaticBackends,
-		EdsRoutes:              benchEdsRoutes,
+		EdsRoutes:              s.edsServices,
 		WallSeconds:            wall.Seconds(),
 		CPUMillisPerChange:     (after.CPUSeconds - before.CPUSeconds) * 1000 / n,
 		AllocMBPerChange:       (after.AllocBytes - before.AllocBytes) / 1e6 / n,
@@ -439,6 +458,7 @@ func (s *XdsCostSuite) runPhase(name, note string, mutate func(int)) {
 	}
 	s.results = append(s.results, res)
 	s.emit("xds_cost_result", res)
+	s.Assert().Zero(timedOut, "phase %s must converge on every iteration", name)
 }
 
 // waitConverged polls the controller's per-client transform counter until it has
@@ -603,6 +623,28 @@ func readControllerSample(metricsURL string) (controllerSample, error) {
 		return controllerSample{}, err
 	}
 
+	parser := expfmt.NewTextParser(model.LegacyValidation)
+	families, err := parser.TextToMetricFamilies(strings.NewReader(string(body)))
+	if err != nil {
+		return controllerSample{}, fmt.Errorf("parse controller metrics: %w", err)
+	}
+	transformed := make(map[string]bool)
+	for _, metric := range families["kgateway_xds_snapshot_transforms_total"].GetMetric() {
+		var namespace, gateway, result string
+		for _, label := range metric.GetLabel() {
+			switch label.GetName() {
+			case "namespace":
+				namespace = label.GetValue()
+			case "gateway":
+				gateway = label.GetValue()
+			case "result":
+				result = label.GetValue()
+			}
+		}
+		if result == "success" && metric.GetCounter().GetValue() > 0 {
+			transformed[namespace+"/"+gateway] = true
+		}
+	}
 	sums := sumFamilies(string(body), []string{
 		"process_cpu_seconds_total",
 		"process_resident_memory_bytes",
@@ -616,17 +658,18 @@ func readControllerSample(metricsURL string) (controllerSample, error) {
 		"kgateway_xds_snapshot_deferred_clients",
 	})
 	return controllerSample{
-		At:              time.Now(),
-		CPUSeconds:      sums["process_cpu_seconds_total"],
-		AllocBytes:      sums["go_memstats_alloc_bytes_total"],
-		HeapInuse:       sums["go_memstats_heap_inuse_bytes"],
-		RSS:             sums["process_resident_memory_bytes"],
-		Goroutines:      sums["go_goroutines"],
-		Syncs:           sums["kgateway_xds_snapshot_syncs_total"],
-		Transforms:      sums["kgateway_xds_snapshot_transforms_total"],
-		Deferrals:       sums["kgateway_xds_snapshot_cluster_deferrals_total"],
-		Resources:       sums["kgateway_xds_snapshot_resources"],
-		DeferredClients: sums["kgateway_xds_snapshot_deferred_clients"],
+		At:                  time.Now(),
+		TransformedGateways: transformed,
+		CPUSeconds:          sums["process_cpu_seconds_total"],
+		AllocBytes:          sums["go_memstats_alloc_bytes_total"],
+		HeapInuse:           sums["go_memstats_heap_inuse_bytes"],
+		RSS:                 sums["process_resident_memory_bytes"],
+		Goroutines:          sums["go_goroutines"],
+		Syncs:               sums["kgateway_xds_snapshot_syncs_total"],
+		Transforms:          sums["kgateway_xds_snapshot_transforms_total"],
+		Deferrals:           sums["kgateway_xds_snapshot_cluster_deferrals_total"],
+		Resources:           sums["kgateway_xds_snapshot_resources"],
+		DeferredClients:     sums["kgateway_xds_snapshot_deferred_clients"],
 	}, nil
 }
 
@@ -640,7 +683,7 @@ func mustJSON(v any) string {
 }
 
 // sortFloats sorts in place; the fleet suite uses it before percentile.
-func sortFloats(v []float64) { sort.Float64s(v) }
+func sortFloats(v []float64) { slices.Sort(v) }
 
 // hasPrefixIn reports whether name contains sub, used for controller pod and
 // container name matching where the release name is not known exactly.
@@ -656,7 +699,7 @@ func sumFamilies(body string, names []string) map[string]float64 {
 		want[n] = true
 		out[n] = 0
 	}
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		if line == "" || line[0] == '#' {
 			continue
 		}
@@ -684,10 +727,7 @@ func percentile(sorted []float64, q float64) float64 {
 	if len(sorted) == 0 {
 		return 0
 	}
-	idx := int(q * float64(len(sorted)-1))
-	if idx < 0 {
-		idx = 0
-	}
+	idx := max(int(q*float64(len(sorted)-1)), 0)
 	if idx >= len(sorted) {
 		idx = len(sorted) - 1
 	}
@@ -708,7 +748,7 @@ func (s *XdsCostSuite) emit(prefix string, v any) {
 
 func (s *XdsCostSuite) report() {
 	s.T().Logf("=== XdsCost summary: build=%s validation=%s gateways=%d staticBackends=%d edsRoutes=%d",
-		benchLabel, strings.ToUpper(benchValidation), benchGateways, benchStaticBackends, benchEdsRoutes)
+		benchLabel, strings.ToUpper(benchValidation), benchGateways, benchStaticBackends, s.edsServices)
 	s.T().Logf("idle baseline: %.1f cpu-ms/s, %.1f alloc-MB/s", s.idleCPUMillisPerSecond, s.idleAllocMBPerSecond)
 	s.T().Logf("%-11s %10s %10s %12s %12s %12s %11s %10s",
 		"phase", "cpu-ms/ch", "net-cpu", "alloc-MB/ch", "net-alloc", "transf/ch", "median-ms", "heap-MB")
@@ -725,7 +765,7 @@ func (s *XdsCostSuite) report() {
 		"validation":               strings.ToUpper(benchValidation),
 		"gateways":                 benchGateways,
 		"static_backends":          benchStaticBackends,
-		"eds_routes":               benchEdsRoutes,
+		"eds_routes":               s.edsServices,
 		"iterations":               benchIterations,
 		"phases":                   s.results,
 	})
@@ -735,14 +775,11 @@ func (s *XdsCostSuite) report() {
 func (s *XdsCostSuite) resolveController() (string, string, error) {
 	var deployments appsv1.DeploymentList
 	if err := s.testInstallation.ClusterContext.Client.List(s.ctx, &deployments,
-		client.InNamespace(s.installNamespace)); err != nil {
+		client.InNamespace(s.installNamespace), client.MatchingLabels{testdefaults.WellKnownAppLabel: controllerAppName()}); err != nil {
 		return "", "", err
 	}
 	for _, d := range deployments.Items {
 		name := d.GetName()
-		if !strings.Contains(name, "kgateway") {
-			continue
-		}
 		if len(d.Spec.Template.Spec.Containers) == 0 {
 			continue
 		}
@@ -847,7 +884,7 @@ func restoredBenchmarkEnv(current []corev1.EnvVar, original map[string]*corev1.E
 	for name := range original {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	for _, name := range names {
 		if env := original[name]; env != nil {
 			restored = append(restored, *env.DeepCopy())
