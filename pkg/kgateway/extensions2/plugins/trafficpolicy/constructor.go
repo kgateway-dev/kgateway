@@ -73,6 +73,10 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	if err := constructGlobalRateLimit(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
+	// Construct quota-based global rate limit specific IR.
+	if err := constructRateLimitQuota(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct cors specific IR
 	constructCORS(policyCR, &outSpec)
 	// Construct csrf specific IR
