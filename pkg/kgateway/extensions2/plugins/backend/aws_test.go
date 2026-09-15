@@ -5,6 +5,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	envoy_lambda_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -176,6 +177,53 @@ func newLambdaBackend(name, endpointURL string) *kgateway.Backend {
 					FunctionName: "hello-function",
 					Qualifier:    "live",
 					EndpointURL:  &endpointURL,
+				},
+			},
+		},
+	}
+}
+
+func TestLambdaFiltersRewriteHostToTheLambdaEndpoint(t *testing.T) {
+	customEndpoint := "http://localstack.default.svc.cluster.local:4566"
+	tests := []struct {
+		name    string
+		backend *kgateway.Backend
+		want    string
+	}{
+		{
+			name:    "default endpoint",
+			backend: newLambdaBackendInRegion("us-east-2", nil),
+			want:    "lambda.us-east-2.amazonaws.com",
+		},
+		{
+			name:    "custom endpoint URL",
+			backend: newLambdaBackendInRegion("us-east-2", &customEndpoint),
+			want:    "localstack.default.svc.cluster.local",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backendIR := buildTranslateFunc(nil, nil, true)(krt.TestingDummyContext{}, tt.backend)
+			require.Empty(t, backendIR.errors)
+			require.NotNil(t, backendIR.awsIr)
+
+			var lambdaConfig envoy_lambda_v3.Config
+			err := anypb.UnmarshalTo(backendIR.awsIr.lambdaIr.lambdaFilters.lambdaConfigAny, &lambdaConfig, proto.UnmarshalOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, lambdaConfig.GetHostRewrite())
+		})
+	}
+}
+
+func newLambdaBackendInRegion(region string, endpointURL *string) *kgateway.Backend {
+	return &kgateway.Backend{
+		Spec: kgateway.BackendSpec{
+			Aws: &kgateway.AwsBackend{
+				Region:    region,
+				AccountId: "111111111111",
+				Lambda: &kgateway.AwsLambda{
+					FunctionName: "hello-function",
+					EndpointURL:  endpointURL,
 				},
 			},
 		},
