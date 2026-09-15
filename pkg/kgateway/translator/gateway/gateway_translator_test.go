@@ -1599,6 +1599,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// The golden deliberately emits NO cluster for the invalid Backend, even
+	// though the route still names it. That is what makes the rest of the
+	// fixture work: route replacement already puts
+	// clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR on the route, and that
+	// only fires when the cluster is genuinely absent. Emitting an endpointless
+	// STATIC cluster instead — as translation did before backends were split
+	// into a shared base and per-client overlays — left the cluster present, so
+	// the declared 500 was dead config and a request got 503 (no healthy
+	// upstream) from an empty cluster. The name is still carried in the errored
+	// set, so publication treats it as failed-closed rather than as a missing
+	// reference to wait for.
 	t.Run("Priority groups backend with non-static member reports error", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/priority_groups_aws_error.yaml"},
