@@ -1,9 +1,11 @@
 package proxy_syncer
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	sfsvalue "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/set_filter_state/v3"
@@ -19,21 +21,80 @@ import (
 // emittedClusters is the set of cluster names a gateway's generated
 // configuration could name, together with whatever made that set unreliable.
 //
-// Unresolvable is the reason list for request-time destinations the walk cannot
-// see (see collectReferencedClustersForEmission). A non-empty list means the set
-// is not a safe basis for filtering CDS for this gateway: a consumer must fall
-// back to emitting every cluster rather than pruning candidates the data plane
-// may still select.
+// RequestTimeSelectors are destinations the walk cannot see. Any of them that no
+// plugin has claimed makes the set unsafe to filter on for this gateway: the
+// consumer must emit every cluster rather than prune candidates the data plane
+// may still select. See Filterable.
 type emittedClusters struct {
-	Names        map[string]struct{}
-	Unresolvable []string
+	Names map[string]struct{}
+	// RequestTimeSelectors are the destination selectors the walk cannot
+	// resolve, carried structurally rather than as prose so a plugin's claim can
+	// be matched against the selector that plugin owns.
+	RequestTimeSelectors []requestTimeSelector
 }
 
-// Filterable reports whether this set can be used to prune CDS.
-func (e emittedClusters) Filterable() bool { return len(e.Unresolvable) == 0 }
+// requestTimeSelector identifies one piece of configuration that picks its
+// destination per request or connection. Name is the cluster specifier
+// plugin's extension name, the header a cluster-header route reads, or what
+// the kind's comment says.
+type requestTimeSelector struct {
+	Kind string
+	Name string
+}
+
+const (
+	selectorClusterHeader   = "cluster_header"
+	selectorSpecifierPlugin = "cluster_specifier_plugin"
+	selectorInlinePlugin    = "inline_cluster_specifier_plugin"
+	// selectorUnknownSpecifier is a cluster_specifier arm this code does not
+	// know; Name is its Go type.
+	selectorUnknownSpecifier = "cluster_specifier"
+	// selectorSniCluster is the sni_cluster network filter, which sets a
+	// TcpProxy's cluster from the connection's SNI.
+	selectorSniCluster = "sni_cluster"
+	// selectorFilterState is a filter state object that overrides a
+	// destination; Name is its key.
+	selectorFilterState = "filter_state"
+	// selectorOpaqueConfig is a typed_config the walk could not decode; Name
+	// is its type URL.
+	selectorOpaqueConfig = "undecodable typed_config"
+	// selectorScript is code that can call any cluster (scriptedConfigs);
+	// Name is its message's full name.
+	selectorScript = "script"
+)
+
+func (s requestTimeSelector) String() string {
+	if s.Name == "" {
+		return s.Kind
+	}
+	return s.Kind + " " + strconv.Quote(s.Name)
+}
+
+// Filterable reports whether this set can be used to prune CDS, given what
+// plugins have claimed. Every request-time selector must be accounted for: one
+// that is not can select a cluster named nowhere, and pruning candidates it may
+// select does not fail visibly.
+func (e emittedClusters) Filterable(claims emissionClaims) bool {
+	return len(e.unaccountedSelectors(claims)) == 0
+}
+
+// unaccountedSelectors are the request-time selectors no claim covers, which is
+// what a log or metric should name: "this gateway is unscoped" is only
+// actionable with the selector that caused it.
+func (e emittedClusters) unaccountedSelectors(claims emissionClaims) []string {
+	var unaccounted []string
+	for _, selector := range e.RequestTimeSelectors {
+		if claims.accountsFor(selector) {
+			continue
+		}
+		unaccounted = append(unaccounted, selector.String())
+	}
+	return unaccounted
+}
 
 func (e emittedClusters) Equals(in emittedClusters) bool {
-	return maps.Equal(e.Names, in.Names) && slices.Equal(e.Unresolvable, in.Unresolvable)
+	return maps.Equal(e.Names, in.Names) &&
+		slices.Equal(e.RequestTimeSelectors, in.RequestTimeSelectors)
 }
 
 // collectReferencedClustersForEmission returns every cluster name reachable from
@@ -61,25 +122,31 @@ func (e emittedClusters) Equals(in emittedClusters) bool {
 // resolution target it, and it may be named by no proto in a healthy build.
 //
 // The second half of the result is the request-time-destination guard; see
-// collectUnresolvableSelectors.
+// collectRequestTimeSelectors, matched against plugin claims by
+// emittedClusters.Filterable.
 func collectReferencedClustersForEmission(routes, listeners envoycache.Resources) emittedClusters {
 	out := emittedClusters{Names: map[string]struct{}{
 		wellknown.BlackholeClusterName: {},
 	}}
 
-	unresolvable := make(map[string]struct{})
+	selectors := make(map[requestTimeSelector]struct{})
 	visit := func(msg proto.Message) {
 		extractEmissionClusterCandidates(msg, out.Names)
-		collectUnresolvableSelectors(msg, unresolvable)
+		collectRequestTimeSelectors(msg, selectors)
 	}
 	walkResourceProtos(routes, visit)
 	walkResourceProtos(listeners, visit)
 
-	out.Unresolvable = make([]string, 0, len(unresolvable))
-	for reason := range unresolvable {
-		out.Unresolvable = append(out.Unresolvable, reason)
+	out.RequestTimeSelectors = make([]requestTimeSelector, 0, len(selectors))
+	for selector := range selectors {
+		out.RequestTimeSelectors = append(out.RequestTimeSelectors, selector)
 	}
-	slices.Sort(out.Unresolvable)
+	slices.SortFunc(out.RequestTimeSelectors, func(a, b requestTimeSelector) int {
+		if c := cmp.Compare(a.Kind, b.Kind); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return out
 }
@@ -135,7 +202,7 @@ func addCandidate(candidates map[string]struct{}, s string) {
 // tcpProxyClusterFilterStateKey names the filter-state override for TcpProxy's cluster.
 const tcpProxyClusterFilterStateKey = "envoy.tcp_proxy.cluster"
 
-// collectUnresolvableSelectors records configuration that chooses a
+// collectRequestTimeSelectors records configuration that chooses a
 // destination cluster at request or connection time, from a set the
 // configuration never enumerates.
 //
@@ -156,52 +223,54 @@ const tcpProxyClusterFilterStateKey = "envoy.tcp_proxy.cluster"
 // whether its computed cluster exists and falls back when it does not, so
 // pruning a candidate does not produce a visible 503 — every affected request
 // quietly lands on the fallback instead. Reporting the selector is what turns
-// silent misrouting into a visible, metric-bearing loss of the optimization.
+// silent misrouting into a visible, metric-bearing loss of the optimization,
+// and it is what a plugin claim is matched against: a selector some plugin has
+// accounted for stops forcing its gateway back to emitting everything.
 //
 // Every arm of the cluster_specifier oneof is classified explicitly, and an arm
 // this code does not know is reported too: a go-control-plane bump that adds a
 // request-time arm must not silently prune its candidates. Over-reporting only
 // costs the optimization; TestRouteActionClusterSpecifierArmsAreClassified
 // makes a new arm a deliberate decision.
-func collectUnresolvableSelectors(msg proto.Message, unresolvable map[string]struct{}) {
+func collectRequestTimeSelectors(msg proto.Message, selectors map[requestTimeSelector]struct{}) {
 	switch m := msg.(type) {
 	case *envoyroutev3.RouteAction:
 		switch spec := m.GetClusterSpecifier().(type) {
 		case nil, *envoyroutev3.RouteAction_Cluster, *envoyroutev3.RouteAction_WeightedClusters:
 			// Declarative: the walk sees every name.
 		case *envoyroutev3.RouteAction_ClusterHeader:
-			unresolvable[fmt.Sprintf("cluster_header %q", m.GetClusterHeader())] = struct{}{}
+			selectors[requestTimeSelector{selectorClusterHeader, m.GetClusterHeader()}] = struct{}{}
 		case *envoyroutev3.RouteAction_ClusterSpecifierPlugin:
-			unresolvable[fmt.Sprintf("cluster_specifier_plugin %q", m.GetClusterSpecifierPlugin())] = struct{}{}
+			selectors[requestTimeSelector{selectorSpecifierPlugin, m.GetClusterSpecifierPlugin()}] = struct{}{}
 		case *envoyroutev3.RouteAction_InlineClusterSpecifierPlugin:
 			name := m.GetInlineClusterSpecifierPlugin().GetExtension().GetName()
-			unresolvable[fmt.Sprintf("inline_cluster_specifier_plugin %q", name)] = struct{}{}
+			selectors[requestTimeSelector{selectorInlinePlugin, name}] = struct{}{}
 		default:
-			unresolvable[fmt.Sprintf("cluster_specifier %T", spec)] = struct{}{}
+			selectors[requestTimeSelector{selectorUnknownSpecifier, fmt.Sprintf("%T", spec)}] = struct{}{}
 		}
 	case *envoyroutev3.WeightedCluster_ClusterWeight:
 		if header := m.GetClusterHeader(); header != "" {
-			unresolvable[fmt.Sprintf("cluster_header %q", header)] = struct{}{}
+			selectors[requestTimeSelector{selectorClusterHeader, header}] = struct{}{}
 		}
 	case *envoyroutev3.RouteAction_RequestMirrorPolicy:
 		if header := m.GetClusterHeader(); header != "" {
-			unresolvable[fmt.Sprintf("cluster_header %q", header)] = struct{}{}
+			selectors[requestTimeSelector{selectorClusterHeader, header}] = struct{}{}
 		}
 	case *envoysniclusterv3.SniCluster:
-		unresolvable["sni_cluster"] = struct{}{}
+		selectors[requestTimeSelector{Kind: selectorSniCluster}] = struct{}{}
 	case *sfsvalue.FilterStateValue:
 		if m.GetObjectKey() == tcpProxyClusterFilterStateKey {
-			unresolvable[fmt.Sprintf("filter_state %q", tcpProxyClusterFilterStateKey)] = struct{}{}
+			selectors[requestTimeSelector{selectorFilterState, tcpProxyClusterFilterStateKey}] = struct{}{}
 		}
 	case *anypb.Any:
 		// The walk hands over only typed configs it could not decode; any
 		// cluster they name is invisible to it.
-		unresolvable[fmt.Sprintf("undecodable typed_config %q", m.GetTypeUrl())] = struct{}{}
+		selectors[requestTimeSelector{selectorOpaqueConfig, m.GetTypeUrl()}] = struct{}{}
 	default:
 		// Matched by name: importing these packages would link them into the
 		// controller, and an unlinked one is reported as undecodable above.
 		if name := msg.ProtoReflect().Descriptor().FullName(); scriptedConfigs[name] {
-			unresolvable[fmt.Sprintf("script %q", name)] = struct{}{}
+			selectors[requestTimeSelector{selectorScript, string(name)}] = struct{}{}
 		}
 	}
 }
@@ -280,7 +349,7 @@ func walkProtoValue(v protoreflect.Value, visit func(proto.Message)) {
 			// A typed config whose Go type is not linked into this binary (or
 			// that is malformed) can name clusters the walk cannot see. Hand
 			// the opaque Any itself to visit, so the emission guard reports it
-			// (collectUnresolvableSelectors) rather than pruning what it names.
+			// (collectRequestTimeSelectors) rather than pruning what it names.
 			logger.Debug("typed_config not decodable during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
 			visit(anyMsg)
 			return

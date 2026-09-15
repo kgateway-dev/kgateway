@@ -140,7 +140,7 @@ func TestGoldenCorpusScopabilityMatchesRequestTimeSelectors(t *testing.T) {
 
 			if len(selectors) > 0 {
 				unscopable++
-				require.Falsef(t, emission.Filterable(),
+				require.Falsef(t, emission.Filterable(emissionClaims{}),
 					"the fixture picks a destination at request time (%v), but the scan reports nothing; "+
 						"scoping would prune the clusters it can select", selectors)
 				return
@@ -148,14 +148,14 @@ func TestGoldenCorpusScopabilityMatchesRequestTimeSelectors(t *testing.T) {
 			if reason, ok := unscopableGoldens[rel]; ok {
 				listed[rel] = true
 				unscopable++
-				require.Falsef(t, emission.Filterable(),
+				require.Falsef(t, emission.Filterable(emissionClaims{}),
 					"unscopableGoldens lists this fixture (%s), but it is now scopable; remove the entry", reason)
 				return
 			}
 			scopable++
-			require.Truef(t, emission.Filterable(),
+			require.Truef(t, emission.Filterable(emissionClaims{}),
 				"the fixture has no request-time selector, but the scan reports %v, so its gateway would emit every "+
-					"cluster; fix the scan, or list the fixture in unscopableGoldens with the reason", emission.Unresolvable)
+					"cluster; fix the scan, or list the fixture in unscopableGoldens with the reason", emission.RequestTimeSelectors)
 		})
 	}
 

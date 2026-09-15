@@ -111,10 +111,11 @@ func snapshotPerClient(
 			clusterVersions,
 		)
 		// unscopedBy is why this client's CDS is not scoped: the gateway's own
-		// request-time selectors, else those in a kept backend's listeners.
+		// request-time selectors no claim accounts for, else those in a kept
+		// backend's listeners.
 		var unscopedBy []string
 		if scoping.ScopesClusters() {
-			unscopedBy = listenerRouteSnapshot.EmittedClusters.Unresolvable
+			unscopedBy = listenerRouteSnapshot.EmittedClusters.unaccountedSelectors(scoping.Claims())
 			if len(unscopedBy) == 0 {
 				clusterResources, clusterVersions, filtered, unscopedBy = keepBackendListenerTargets(
 					clustersForUcc.clusters,

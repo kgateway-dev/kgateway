@@ -165,7 +165,7 @@ func reportClusterScopingDisabled(log *slog.Logger, clientKey string, reasons []
 	state := gatewayScopingStateLocked(cd)
 	state.clients[clientKey] = len(reasons) > 0
 	if state.update() {
-		log.Warn("cluster scoping disabled for this gateway: its configuration or a kept backend's listeners select a destination at request time",
+		log.Warn("cluster scoping disabled for this gateway: its configuration or a kept backend's listeners select a destination at request time that no plugin claimed",
 			"client", clientKey,
 			"reasons", reasons)
 	}

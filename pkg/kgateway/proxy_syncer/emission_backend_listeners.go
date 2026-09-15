@@ -19,11 +19,12 @@ import (
 //
 // A request-time selector in one of those listeners keeps every cluster, as one
 // in the gateway's own configuration does, and is returned as a fallback reason
-// naming the backend and listener. Only kept backends' listeners are walked, so
-// a dropped backend's selector changes nothing; they are walked even when kept
-// is already everything translated, so a selector is reported either way. The
-// targets are not routing targets for the publication gate, which reads only
-// the gateway's routes and listeners.
+// naming the backend and listener. Claims cover the gateway's routes, not a
+// backend's own listeners, so none accounts for it. Only kept backends'
+// listeners are walked, so a dropped backend's selector changes nothing; they
+// are walked even when kept is already everything translated, so a selector is
+// reported either way. The targets are not routing targets for the publication
+// gate, which reads only the gateway's routes and listeners.
 //
 // translated and translatedVersions are the unfiltered set, and kept and
 // keptVersions what filterClustersToEmitted retained from it. It returns the
@@ -52,8 +53,8 @@ func keepBackendListenerTargets(
 		for _, l := range backendListeners[name].items {
 			listener := l.BorrowForRead()
 			targets := listenerTargets(listener)
-			for _, reason := range targets.Unresolvable {
-				fallback = append(fallback, fmt.Sprintf("backend %q listener %q: %s", name, listener.GetName(), reason))
+			for _, selector := range targets.RequestTimeSelectors {
+				fallback = append(fallback, fmt.Sprintf("backend %q listener %q: %s", name, listener.GetName(), selector))
 			}
 			for target := range targets.Names {
 				item, exists := translated.Items[target]
