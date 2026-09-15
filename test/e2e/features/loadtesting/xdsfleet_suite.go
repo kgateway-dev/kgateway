@@ -130,6 +130,23 @@ var (
 	// without this the benchmark cannot see the cost it is meant to measure.
 	// Costs one Pod per endpoint.
 	fleetEndpointPods = benchEnvString("KGW_FLEET_ENDPOINT_PODS", "false") == "true"
+	// fleetRoutesPerGateway attaches N HTTPRoutes to every Gateway, each naming
+	// fleetBackendsPerRoute of the fleet's Services.
+	//
+	// Zero - the default - creates none, which is the shape every earlier run
+	// used: the control plane emits a cluster for every backend in scope
+	// regardless of whether anything routes to it, so routes change nothing it
+	// sends. That stops being true under referenced-only cluster discovery,
+	// where the emitted set is computed by walking the generated routes and
+	// listeners. A fleet with no routes references nothing, so scoping would
+	// collapse every proxy's CDS to approximately empty and report a saving
+	// that is really just a control plane with nothing to say. Routes are what
+	// make that feature measurable rather than trivially "winning".
+	fleetRoutesPerGateway = benchEnvInt("KGW_FLEET_ROUTES_PER_GATEWAY", 0)
+	// fleetBackendsPerRoute is how many Services each route names. The product
+	// with fleetRoutesPerGateway is how many of the fleet's Services a single
+	// proxy can reach, and therefore how many clusters scoping should leave it.
+	fleetBackendsPerRoute = benchEnvInt("KGW_FLEET_BACKENDS_PER_ROUTE", 1)
 	// fleetStreamsPerGateway reproduces replica count. It multiplies streams,
 	// not unique clients.
 	fleetStreamsPerGateway = benchEnvInt("KGW_FLEET_STREAMS_PER_GATEWAY", 2)
@@ -327,6 +344,7 @@ func (s *XdsFleetSuite) SetupSuite() {
 	}
 	s.createServicesAndEndpoints()
 	s.createInlineBackends()
+	s.createRoutes()
 
 	s.startForwards()
 	s.waitForGatewaySnapshots()
@@ -473,6 +491,8 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 			"fat_services":        fleetFatServices,
 			"fat_service_eps":     fleetFatServiceEndpoints,
 			"endpoint_pods":       fleetEndpointPods,
+			"routes_per_gateway":  fleetRoutesPerGateway,
+			"backends_per_route":  fleetBackendsPerRoute,
 			"trickle_ms":          fleetTrickleMs,
 			"inline_backends":     fleetInlineBackends,
 			"settled":             settled,
@@ -631,6 +651,88 @@ func (s *XdsFleetSuite) createGateways() {
 		return s.createIgnoreExists(gw)
 	})
 	s.T().Logf("created %d Gateways in %s", fleetGateways, time.Since(start).Round(time.Second))
+}
+
+// routeBackendsFor picks which Services gateway i routes to. Gateways take
+// overlapping but different slices, walking the Service list by a stride, so the
+// union across the fleet covers it while no single proxy reaches all of it -
+// which is the asymmetry referenced-only discovery exists to exploit. A fleet
+// where every gateway reaches every Service would have nothing to scope.
+func routeBackendsFor(gateway, route int) []int {
+	out := make([]int, 0, fleetBackendsPerRoute)
+	for b := range fleetBackendsPerRoute {
+		idx := (gateway*fleetRoutesPerGateway*fleetBackendsPerRoute + route*fleetBackendsPerRoute + b) % fleetServices
+		out = append(out, idx)
+	}
+	return out
+}
+
+// distinctRoutedServices is how many of the fleet's Services the whole fleet
+// routes to, reported so a scoped run can be read against what was reachable.
+func distinctRoutedServices() int {
+	if fleetRoutesPerGateway == 0 {
+		return 0
+	}
+	seen := map[int]struct{}{}
+	for g := range fleetGateways {
+		for r := range fleetRoutesPerGateway {
+			for _, b := range routeBackendsFor(g, r) {
+				seen[b] = struct{}{}
+			}
+		}
+	}
+	return len(seen)
+}
+
+// createRoutes attaches HTTPRoutes to every Gateway. See fleetRoutesPerGateway
+// for why a fleet without them cannot measure referenced-only discovery.
+func (s *XdsFleetSuite) createRoutes() {
+	if fleetRoutesPerGateway == 0 {
+		return
+	}
+	start := time.Now()
+	total := fleetGateways * fleetRoutesPerGateway
+	port := gwv1.PortNumber(8080)
+	s.parallelDo(total, func(n int) error {
+		gwIdx, routeIdx := n/fleetRoutesPerGateway, n%fleetRoutesPerGateway
+		refs := make([]gwv1.HTTPBackendRef, 0, fleetBackendsPerRoute)
+		for _, b := range routeBackendsFor(gwIdx, routeIdx) {
+			refs = append(refs, gwv1.HTTPBackendRef{
+				BackendRef: gwv1.BackendRef{
+					BackendObjectReference: gwv1.BackendObjectReference{
+						Name: gwv1.ObjectName(fmt.Sprintf("fleet-svc-%d", b)),
+						Port: &port,
+					},
+				},
+			})
+		}
+		prefix := gwv1.PathMatchPathPrefix
+		path := fmt.Sprintf("/r%d", routeIdx)
+		route := &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("fleet-rt-%d-%d", gwIdx, routeIdx),
+				Namespace: s.testNamespace,
+				Labels:    map[string]string{"loadtest": "true"},
+			},
+			Spec: gwv1.HTTPRouteSpec{
+				CommonRouteSpec: gwv1.CommonRouteSpec{
+					ParentRefs: []gwv1.ParentReference{{
+						Name: gwv1.ObjectName(s.gateways[gwIdx]),
+					}},
+				},
+				Rules: []gwv1.HTTPRouteRule{{
+					Matches: []gwv1.HTTPRouteMatch{{
+						Path: &gwv1.HTTPPathMatch{Type: &prefix, Value: &path},
+					}},
+					BackendRefs: refs,
+				}},
+			},
+		}
+		return s.createIgnoreExists(route)
+	})
+	s.T().Logf("created %d HTTPRoutes (%d per Gateway, %d backends each; %d distinct Services routed) in %s",
+		total, fleetRoutesPerGateway, fleetBackendsPerRoute, distinctRoutedServices(),
+		time.Since(start).Round(time.Second))
 }
 
 // createServicesAndEndpoints builds the Kubernetes Service fleet: EDS clusters
