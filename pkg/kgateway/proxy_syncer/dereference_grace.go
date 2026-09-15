@@ -72,6 +72,7 @@ func (g *publishGate) graceDereferencedClustersLocked(
 
 	var graced map[string]struct{}
 	var soonest time.Duration
+	var opened, pruned int
 	for name := range publishedClusters {
 		if _, stillEmitted := building.Items[name]; stillEmitted {
 			// Re-referenced (or never de-referenced): drop any record, so the
@@ -98,10 +99,17 @@ func (g *publishGate) graceDereferencedClustersLocked(
 			// Grace elapsed: stop publishing it, and forget it so a later
 			// re-reference is a fresh addition rather than an expired removal.
 			delete(state.since, name)
+			pruned++
 			continue
 		}
 		if graced == nil {
 			graced = make(map[string]struct{})
+		}
+		if !recorded {
+			// Counted where the window opens, not on every publish that keeps
+			// it open, so the counter measures de-reference events rather than
+			// publish frequency.
+			opened++
 		}
 		graced[name] = struct{}{}
 		if soonest == 0 || remaining < soonest {
@@ -112,6 +120,8 @@ func (g *publishGate) graceDereferencedClustersLocked(
 	if state != nil && len(state.since) == 0 {
 		g.cancelDereferenceTimerLocked(proxyKey)
 	}
+	recordClusterScopingTransition(proxyKey, transitionDereferenceGraced, opened)
+	recordClusterScopingTransition(proxyKey, transitionDereferencePruned, pruned)
 	return graced, soonest
 }
 
@@ -262,6 +272,8 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 	if len(newlyEmitted) > 0 {
 		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
 		recordFlipHeld(snapWrap.proxyKey)
+		recordClusterScopingTransition(snapWrap.proxyKey, transitionReferenceAheadHeld, len(newlyEmitted))
+		recordClusterScopingTransition(snapWrap.proxyKey, transitionReferenceAheadHeld, len(newlyEmitted))
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes, now)
 	} else {
 		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
