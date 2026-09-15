@@ -63,7 +63,13 @@ func TestPerClientEnvoyEndpointsUsesResolvedReplacementHash(t *testing.T) {
 	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("ReplacementHashClients")...)
 	sources := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{*source}, krtopts.ToOptions("ReplacementHashEndpoints")...)
-	perClient := NewPerClientEnvoyEndpoints(krtopts, uccs, sources, translator.TranslateEndpoints)
+	perClient := NewPerClientEnvoyEndpoints(
+		krtopts,
+		uccs,
+		sources,
+		translator.ResolveEndpoints,
+		translator.BuildClusterLoadAssignment,
+	)
 
 	var initialHash uint64
 	g.Eventually(func() string {
@@ -72,7 +78,7 @@ func TestPerClientEnvoyEndpointsUsesResolvedReplacementHash(t *testing.T) {
 			return ""
 		}
 		initialHash = rows[0].EndpointsHash
-		return endpointPipePath(rows[0].Endpoints)
+		return endpointPipePath(rows[0].Endpoints.Clone())
 	}, time.Second, 20*time.Millisecond).Should(gomega.Equal("replacement-a"))
 	g.Expect(initialHash).ToNot(gomega.Equal(sourceHash),
 		"the row key must use the replacement set's resolved hash, not the source hash")
@@ -90,7 +96,7 @@ func TestPerClientEnvoyEndpointsUsesResolvedReplacementHash(t *testing.T) {
 			return ""
 		}
 		updatedHash = rows[0].EndpointsHash
-		return endpointPipePath(rows[0].Endpoints)
+		return endpointPipePath(rows[0].Endpoints.Clone())
 	}, time.Second, 20*time.Millisecond).Should(gomega.Equal("replacement-b"),
 		"a replacement-only update must not be suppressed by stale KRT equality")
 	g.Expect(updatedHash).ToNot(gomega.Equal(initialHash))

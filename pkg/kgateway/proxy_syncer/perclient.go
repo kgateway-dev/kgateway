@@ -33,6 +33,20 @@ func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
 	return c.endpoints.Version == k.endpoints.Version && c.resourceName == k.resourceName
 }
 
+// snapshotPerClient assembles the complete xDS snapshot each connected client should
+// receive, joining the per-Gateway listener/route translation with that client's own
+// clusters and endpoints. It is the last stage of translation: everything downstream
+// just ships what this produces.
+//
+// It publishes only complete snapshots. When a client's per-client inputs have not
+// caught up with the event being processed, it returns nil rather than a partial
+// snapshot; the subscriber treats that as "keep serving what Envoy already has".
+// Retaining the last coherent config is always preferable to publishing an
+// incoherent one, which Envoy would apply — dropping routes or endpoints that are
+// still valid.
+//
+// extraEndpointCollections are additional per-client endpoint sources merged into the
+// same EDS payload, currently the gateway's own local cluster.
 func snapshotPerClient(
 	krtopts krtutil.KrtOptions,
 	uccCol krt.Collection[ir.UniquelyConnectedClient],
@@ -55,7 +69,9 @@ func snapshotPerClient(
 		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
 		var endpointsHash uint64
 		for _, ep := range endpointsForUcc {
-			endpointsProto = append(endpointsProto, envoycachetypes.ResourceWithTTL{Resource: ep.Endpoints})
+			// ResourceWithTTL is the only exit for the interned CLA; it runs
+			// the mutation tripwire when armed. See package sharedproto.
+			endpointsProto = append(endpointsProto, ep.Endpoints.ResourceWithTTL())
 			endpointsHash ^= ep.EndpointsHash
 		}
 
