@@ -399,39 +399,17 @@ func TestComputeRouteConfigurationStrictIsolatesInvalidRouteAfterBatchFailure(t 
 		calls++
 		routes := routesFromValidationBootstrap(t, config)
 		routeCounts = append(routeCounts, len(routes))
-		switch calls {
-		case 1, 2:
-			require.Len(t, routes, 2)
-			return errors.New("batch failed")
-		case 3:
-			require.Len(t, routes, 1)
-			assert.Contains(t, routes[0].GetName(), "route-0")
-			return nil
-		case 4:
-			require.Len(t, routes, 1)
-			assert.Contains(t, routes[0].GetName(), "route-1")
-			return errors.New("bad route")
-		case 5:
-			require.Len(t, routes, 1)
-			assert.Contains(t, routes[0].GetName(), "route-1")
-			return nil
-		case 6, 7:
-			require.Len(t, routes, 2)
-			return nil
-		default:
-			t.Fatalf("unexpected validation call %d", calls)
-			return nil
+		for _, route := range routes {
+			if route.GetRoute().GetCluster() == "cluster-two" {
+				return errors.New("bad route")
+			}
 		}
+		return nil
 	}}
 	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
-
 	cfg := h.ComputeRouteConfiguration(context.Background(), []*ir.VirtualHost{{
-		Name:     "test-vhost",
-		Hostname: "example.com",
-		Rules: []ir.HttpRouteRuleMatchIR{
-			testRouteIR(0, "/one", "cluster-one"),
-			testRouteIR(1, "/two", "cluster-two"),
-		},
+		Name: "test-vhost", Hostname: "example.com",
+		Rules: []ir.HttpRouteRuleMatchIR{testRouteIR(0, "/one", "cluster-one"), testRouteIR(1, "/two", "cluster-two")},
 	}})
 
 	require.Len(t, cfg.GetVirtualHosts(), 1)
@@ -441,7 +419,7 @@ func TestComputeRouteConfigurationStrictIsolatesInvalidRouteAfterBatchFailure(t 
 	assert.True(t, ok)
 	_, ok = out.GetRoutes()[1].GetAction().(*envoyroutev3.Route_DirectResponse)
 	assert.True(t, ok)
-	assert.Equal(t, []int{2, 2, 1, 1, 1, 2, 2}, routeCounts)
+	assert.Equal(t, []int{2, 1, 2, 1, 1, 1, 1, 2, 2}, routeCounts)
 }
 
 type routeConfigPassFunc struct {

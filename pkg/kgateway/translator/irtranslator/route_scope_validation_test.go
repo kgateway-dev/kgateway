@@ -200,3 +200,62 @@ func TestFinalRouteConfigurationIsolatesScopeFailures(t *testing.T) {
 		})
 	}
 }
+
+// A valid route may need a named extension from its parent RouteConfiguration.
+// An unrelated failure must not strip that dependency during vhost or route isolation.
+func TestRouteIsolationPreservesSharedDependencies(t *testing.T) {
+	const pluginName = "shared-selector"
+	isolatedDependentRoute := false
+	v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
+		cfg := routeConfigurationFromBootstrap(t, b)
+		declared := false
+		for _, plugin := range cfg.ClusterSpecifierPlugins {
+			if plugin.GetExtension().GetName() == pluginName {
+				declared = true
+			}
+		}
+		var bad bool
+		for _, vh := range cfg.VirtualHosts {
+			for _, route := range vh.Routes {
+				if route.GetRoute().GetClusterSpecifierPlugin() == pluginName {
+					require.True(t, declared, "isolating a route must retain its named cluster specifier plugin")
+					require.NotNil(t, cfg.TypedPerFilterConfig["shared"], "RC inheritance must survive isolation")
+					require.NotNil(t, vh.TypedPerFilterConfig["inherited"], "vhost inheritance must survive route isolation")
+					if len(cfg.VirtualHosts) == 1 && len(vh.Routes) == 1 {
+						isolatedDependentRoute = true
+					}
+				}
+				bad = bad || route.GetRoute().GetCluster() == "invalid"
+			}
+		}
+		if bad {
+			return errors.New("invalid route action")
+		}
+		return nil
+	}}
+	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+	inherited, err := utils.MessageToAny(wrapperspb.Bool(true))
+	require.NoError(t, err)
+	attachRouteConfigPass(h, routeConfigPassFunc{
+		applyContext: func(ctx *ir.RouteConfigContext) {
+			ctx.TypedFilterConfig.AddTypedConfig("shared", wrapperspb.Bool(true))
+		},
+		apply: func(cfg *envoyroutev3.RouteConfiguration) {
+			cfg.ClusterSpecifierPlugins = []*envoyroutev3.ClusterSpecifierPlugin{{Extension: &envoycorev3.TypedExtensionConfig{Name: pluginName}}}
+			for _, vh := range cfg.VirtualHosts {
+				vh.TypedPerFilterConfig = map[string]*anypb.Any{"inherited": inherited}
+				vh.Routes[0].GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_ClusterSpecifierPlugin{ClusterSpecifierPlugin: pluginName}
+			}
+		},
+	})
+	inputs := scopeTestVirtualHosts()
+	inputs[0].Rules = append(inputs[0].Rules, testRouteIR(1, "/bad", "invalid"))
+	cfg := h.ComputeRouteConfiguration(context.Background(), inputs)
+	require.True(t, isolatedDependentRoute, "exercise individual route validation as well as vhost validation")
+	require.Len(t, cfg.VirtualHosts, 2)
+	require.Len(t, cfg.VirtualHosts[0].Routes, 2)
+	for _, vh := range cfg.VirtualHosts {
+		assert.Equal(t, pluginName, vh.Routes[0].GetRoute().GetClusterSpecifierPlugin(), "healthy dependent route must retain its action")
+	}
+	assert.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[1].GetDirectResponse().GetStatus())
+}

@@ -11,6 +11,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/proto"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
@@ -242,6 +243,10 @@ func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v val
 // validateFullRouteConfiguration retains the final scope-level settings as well as
 // routes. Rebuilding only the routes loses inherited filter config and vhost rate limits.
 func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator) error {
+	return validateRouteConfigurationWithCaller(ctx, config, v, validator.CallerRouteFull)
+}
+
+func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator, caller validator.ValidationCaller) error {
 	builder := bootstrap.New()
 	builder.SetRouteConfiguration(config)
 	clusterNames := make([]string, 0)
@@ -258,13 +263,49 @@ func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.Ro
 		builder.AddCluster(cluster)
 	}
 
-	return runValidation(ctx, v, builder, validator.CallerRouteFull)
+	return runValidation(ctx, v, builder, caller)
 }
 
-func validateFullVirtualHost(ctx context.Context, vhost *envoyroutev3.VirtualHost, v validator.Validator) error {
-	return validateFullRouteConfiguration(ctx, &envoyroutev3.RouteConfiguration{
-		VirtualHosts: []*envoyroutev3.VirtualHost{vhost},
-	}, v)
+// routeValidationScope preserves inherited configuration and named dependencies
+// while narrowing the routes under validation. It never edits the emitted config.
+type routeValidationScope struct {
+	config *envoyroutev3.RouteConfiguration
+	vhost  *envoyroutev3.VirtualHost
+}
+
+func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoyroutev3.RouteConfiguration {
+	config := proto.CloneOf(s.config)
+	vhost := proto.CloneOf(s.vhost)
+	vhost.Routes = routes
+	config.VirtualHosts = []*envoyroutev3.VirtualHost{vhost}
+	return config
+}
+
+func (s routeValidationScope) validate(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, s.configuration(routes), v)
+}
+
+func (s routeValidationScope) validateRoute(ctx context.Context, route *envoyroutev3.Route, v validator.Validator, mode apisettings.ValidationMode) error {
+	if err := validateRoutePreEnvoy(route, mode); err != nil {
+		return err
+	}
+	if mode != apisettings.ValidationStrict {
+		return nil
+	}
+	fullErr := s.validate(ctx, []*envoyroutev3.Route{route}, v)
+	if fullErr == nil {
+		return nil
+	}
+	// Shared settings have already passed validation with a neutral route. Retain
+	// them while distinguishing a bad matcher from a bad action or route override.
+	matcherRoute := &envoyroutev3.Route{
+		Name: route.GetName(), Match: route.GetMatch(),
+		Action: &envoyroutev3.Route_DirectResponse{DirectResponse: &envoyroutev3.DirectResponseAction{Status: 500}},
+	}
+	if err := validateRouteConfigurationWithCaller(ctx, s.configuration([]*envoyroutev3.Route{matcherRoute}), v, validator.CallerRouteMatcher); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
+	}
+	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
 }
 
 func validateGeneratedMatcher(match *envoyroutev3.RouteMatch) (bool, error) {
