@@ -93,9 +93,16 @@ type publishGate struct {
 	// construction.
 	checkConsistency bool
 
+	// dereferenceGrace is how long a cluster that has left the emitted set is
+	// still published; 0 disables retention. Only non-zero in REFERENCED
+	// cluster discovery mode, where clusters leave the set at all. Written
+	// once at construction.
+	dereferenceGrace time.Duration
+
 	mu           sync.Mutex
 	pending      map[string]*pendingFirstPublish
 	pendingFlips map[string]*pendingFlipRelease
+	dereferenced map[string]*dereferenceState
 }
 
 type pendingFirstPublish struct {
@@ -118,12 +125,14 @@ type pendingFlipRelease struct {
 	timer    *time.Timer
 }
 
-func newPublishGate(budget time.Duration, checkConsistency bool) *publishGate {
+func newPublishGate(budget time.Duration, checkConsistency bool, scoping clusterScoping) *publishGate {
 	return &publishGate{
 		budget:           budget,
 		checkConsistency: checkConsistency,
+		dereferenceGrace: scoping.DereferenceGrace(),
 		pending:          make(map[string]*pendingFirstPublish),
 		pendingFlips:     make(map[string]*pendingFlipRelease),
+		dereferenced:     make(map[string]*dereferenceState),
 	}
 }
 
@@ -163,6 +172,9 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
+	// Deliberately NOT cancelling the de-reference timer: a publish that carried
+	// graced clusters forward still needs the timer that later removes them.
+	// graceDereferencedClustersLocked cancels it when the last window closes.
 	return g.setSnapshot(ctx, cache, proxyKey, snap)
 }
 
@@ -200,13 +212,24 @@ func (g *publishGate) resolveDeferred(
 		g.offerColdLocked(ctx, cache, snapWrap, hasPriorXDSVersion)
 		return nil
 	}
-	resolved, heldBlocking := resolveDeferredPerCluster(snapWrap, published, true)
+	// Retain clusters this build stopped emitting, briefly, so the route update
+	// that de-referenced them reaches Envoy before they disappear.
+	graced, soonestExpiry := g.graceDereferencedClustersLocked(
+		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], time.Now())
+	resolved, heldBlocking := resolveDeferredPerCluster(snapWrap, published, true, graced)
+	var publishErr error
 	if len(heldBlocking) > 0 {
 		// The held snapshot still publishes (CDS/EDS keep flowing); the
 		// gate additionally arms the flip-release bound for the episode.
-		return g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking)
+	} else {
+		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved)
 	}
-	return g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved)
+	// Armed after publishing: a carried-forward graced cluster is only removed
+	// by this timer, and arming before the publish would let publishLocked's
+	// cleanup cancel the very timer that prunes what it just carried.
+	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonestExpiry)
+	return publishErr
 }
 
 // offerColdLocked records the latest deferred snapshot for a never-published
@@ -360,7 +383,9 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 	if err != nil {
 		return // nothing published to resolve against; nothing was held
 	}
-	released, _ := resolveDeferredPerCluster(pf.wrap, published, false)
+	graced, _ := g.graceDereferencedClustersLocked(
+		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
+	released, _ := resolveDeferredPerCluster(pf.wrap, published, false, graced)
 	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
 		"proxy_key", proxyKey, "flip_blocking", pf.blocking)
 	if err := g.setSnapshot(ctx, cache, proxyKey, released); err != nil {
@@ -393,6 +418,7 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
+	g.cancelDereferenceTimerLocked(proxyKey)
 }
 
 // snapshotConsistencyError checks the dynamic graph together with the gateway's

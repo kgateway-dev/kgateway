@@ -459,6 +459,22 @@ type Settings struct {
 	// permanently smaller data plane.
 	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
 
+	// ClusterDereferenceGrace is how long a cluster that has left the emitted
+	// set is still published, in REFERENCED mode only.
+	//
+	// Removing it the moment the last route stops naming it is unsafe in the
+	// other direction from an addition: Envoy is delivered CDS before RDS, so
+	// the cluster would go before the route that still targets it, and requests
+	// in that window get 503 NC. Retaining it for a bounded period makes the
+	// emitted set "referenced now, plus recently de-referenced", so the route
+	// update always lands first.
+	//
+	// The window must exceed worst-case RDS propagation for the fleet, which is
+	// why it is tunable rather than fixed. 0 removes clusters immediately,
+	// which is only safe if the deployment accepts that race. Ignored in ALL
+	// mode, where nothing is ever de-referenced.
+	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
+
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:
 	// - "OFF": No ReferenceGrant validation. All cross-namespace references are permitted.
