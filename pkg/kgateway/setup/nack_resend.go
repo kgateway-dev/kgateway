@@ -34,43 +34,47 @@ var xdsNackResendsSuppressed = metrics.NewCounter(
 // one line that says what was rejected.
 //
 // The suppressor recognizes a NACK of exactly what would be re-sent, which is
-// when the snapshot's current version for the type equals the version this
-// node was last sent for it, and parks the watch instead: the request handed
+// when the snapshot's current version for the type equals the version identified
+// by this stream's matching nonce, and parks the watch instead: the request handed
 // to the cache claims the current version, so the cache registers a watch that
 // fires on the next snapshot change and sends nothing now. A NACK arriving
 // after the snapshot already moved is passed through unchanged, so a
 // correction is delivered immediately. ACKs and first requests are never
 // touched.
 //
-// Versions are tracked per cache node and type from the server's response
-// callback. Several streams can share a node key; that is safe because a NACK
-// of a version is the same decision for every stream that holds it, and a
-// stream that has not been sent that version cannot NACK it.
+// Sent versions and nonces are tracked per stream and resource type. Nonces
+// are only unique within a stream: two streams sharing a cache node can both
+// use nonce "1" for different versions. A NACK may suppress only the version
+// sent on its own stream with its matching nonce. Request associations are
+// consumed by CreateWatch, replaced by the next request, or removed on close.
 type nackResendSuppressor struct {
 	envoycache.SnapshotCache
 	hasher envoycache.NodeHash
 
-	mu sync.Mutex
-	// lastSent is the version most recently sent to a node for a type.
-	lastSent map[sentVersionKey]string
-	// streamNode remembers each open stream's node so lastSent can be dropped
-	// once no stream for that node remains.
-	streamNode  map[int64]string
-	nodeStreams map[string]int
+	mu      sync.Mutex
+	streams map[int64]*nackStreamState
+	pending map[*discoveryv3.DiscoveryRequest]pendingNack
 }
 
-type sentVersionKey struct {
-	node    string
-	typeURL string
+type (
+	sentNackResponse struct{ node, nonce, version string }
+	nackStreamState  struct {
+		sent    map[string]sentNackResponse
+		pending *discoveryv3.DiscoveryRequest
+	}
+)
+
+type pendingNack struct {
+	stream   *nackStreamState
+	response sentNackResponse
 }
 
 func newNackResendSuppressor(inner envoycache.SnapshotCache, hasher envoycache.NodeHash) *nackResendSuppressor {
 	return &nackResendSuppressor{
 		SnapshotCache: inner,
 		hasher:        hasher,
-		lastSent:      make(map[sentVersionKey]string),
-		streamNode:    make(map[int64]string),
-		nodeStreams:   make(map[string]int),
+		streams:       make(map[int64]*nackStreamState),
+		pending:       make(map[*discoveryv3.DiscoveryRequest]pendingNack),
 	}
 }
 
@@ -85,41 +89,56 @@ func (s *nackResendSuppressor) callbacks() xdsserver.Callbacks {
 }
 
 func (s *nackResendSuppressor) onStreamRequest(streamID int64, req *discoveryv3.DiscoveryRequest) error {
-	node := s.hasher.ID(req.GetNode())
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, known := s.streamNode[streamID]; !known {
-		s.streamNode[streamID] = node
-		s.nodeStreams[node]++
+	st := s.streams[streamID]
+	if st == nil {
+		st = &nackStreamState{sent: make(map[string]sentNackResponse)}
+		s.streams[streamID] = st
+	}
+	// A callback can be followed by nonce rejection instead of CreateWatch.
+	// Retain at most one association per stream, including on ignored requests.
+	delete(s.pending, st.pending)
+	st.pending = nil
+	sent, ok := st.sent[req.GetTypeUrl()]
+	if req.GetErrorDetail() != nil && ok && sent.nonce != "" && sent.nonce == req.GetResponseNonce() && sent.node == s.hasher.ID(req.GetNode()) {
+		st.pending = req
+		s.pending[req] = pendingNack{stream: st, response: sent}
 	}
 	return nil
 }
 
-func (s *nackResendSuppressor) onStreamResponse(_ context.Context, _ int64, req *discoveryv3.DiscoveryRequest, resp *discoveryv3.DiscoveryResponse) {
-	key := sentVersionKey{node: s.hasher.ID(req.GetNode()), typeURL: resp.GetTypeUrl()}
+func (s *nackResendSuppressor) onStreamResponse(_ context.Context, streamID int64, req *discoveryv3.DiscoveryRequest, resp *discoveryv3.DiscoveryResponse) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.lastSent[key] = resp.GetVersionInfo()
+	if st := s.streams[streamID]; st != nil {
+		st.sent[resp.GetTypeUrl()] = sentNackResponse{node: s.hasher.ID(req.GetNode()), nonce: resp.GetNonce(), version: resp.GetVersionInfo()}
+	}
 }
 
 func (s *nackResendSuppressor) onStreamClosed(streamID int64, _ *envoycorev3.Node) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	node, known := s.streamNode[streamID]
-	if !known {
-		return
+	if st := s.streams[streamID]; st != nil {
+		delete(s.pending, st.pending)
 	}
-	delete(s.streamNode, streamID)
-	s.nodeStreams[node]--
-	if s.nodeStreams[node] > 0 {
-		return
+	delete(s.streams, streamID)
+}
+
+// rejectedVersion bridges the stream callback to the cache without changing
+// the original request observed by logging/auth callbacks. The pinned SotW
+// server passes that same request pointer to CreateWatch in both ADS modes.
+// If that contract changes, an unassociated request passes through unchanged.
+func (s *nackResendSuppressor) rejectedVersion(req *envoycache.Request) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	pending, ok := s.pending[req]
+	if !ok {
+		return "", false
 	}
-	delete(s.nodeStreams, node)
-	for key := range s.lastSent {
-		if key.node == node {
-			delete(s.lastSent, key)
-		}
-	}
+	delete(s.pending, req)
+	pending.stream.pending = nil
+	return pending.response.version, true
 }
 
 // CreateWatch parks a NACK of the current snapshot version and delegates
@@ -129,9 +148,7 @@ func (s *nackResendSuppressor) CreateWatch(req *envoycache.Request, sub envoycac
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
 	}
 	node := s.hasher.ID(req.GetNode())
-	s.mu.Lock()
-	rejected, tracked := s.lastSent[sentVersionKey{node: node, typeURL: req.GetTypeUrl()}]
-	s.mu.Unlock()
+	rejected, tracked := s.rejectedVersion(req)
 	if !tracked {
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
 	}
