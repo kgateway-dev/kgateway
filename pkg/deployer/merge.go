@@ -167,10 +167,13 @@ func deepMergePodSecurityContext(dst, src *corev1.PodSecurityContext) *corev1.Po
 	dst.RunAsGroup = MergePointers(dst.RunAsGroup, src.RunAsGroup)
 	dst.RunAsNonRoot = MergePointers(dst.RunAsNonRoot, src.RunAsNonRoot)
 	dst.SupplementalGroups = DeepMergeSlices(dst.SupplementalGroups, src.SupplementalGroups)
+	dst.SupplementalGroupsPolicy = MergePointers(dst.SupplementalGroupsPolicy, src.SupplementalGroupsPolicy)
 	dst.FSGroup = MergePointers(dst.FSGroup, src.FSGroup)
 	dst.Sysctls = DeepMergeSlices(dst.Sysctls, src.Sysctls)
 	dst.FSGroupChangePolicy = MergePointers(dst.FSGroupChangePolicy, src.FSGroupChangePolicy)
 	dst.SeccompProfile = deepMergeSeccompProfile(dst.SeccompProfile, src.SeccompProfile)
+	dst.AppArmorProfile = deepMergeAppArmorProfile(dst.AppArmorProfile, src.AppArmorProfile)
+	dst.SELinuxChangePolicy = MergePointers(dst.SELinuxChangePolicy, src.SELinuxChangePolicy)
 
 	return dst
 }
@@ -213,6 +216,21 @@ func deepMergeWindowsSecurityContextOptions(dst, src *corev1.WindowsSecurityCont
 
 func deepMergeSeccompProfile(dst, src *corev1.SeccompProfile) *corev1.SeccompProfile {
 	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Type = MergeComparable(dst.Type, src.Type)
+	dst.LocalhostProfile = MergePointers(dst.LocalhostProfile, src.LocalhostProfile)
+
+	return dst
+}
+
+func deepMergeAppArmorProfile(dst, src *corev1.AppArmorProfile) *corev1.AppArmorProfile {
 	if src == nil {
 		return dst
 	}
@@ -748,6 +766,7 @@ func DeepMergeSecurityContext(dst, src *corev1.SecurityContext) *corev1.Security
 	dst.AllowPrivilegeEscalation = MergePointers(dst.AllowPrivilegeEscalation, src.AllowPrivilegeEscalation)
 	dst.ProcMount = MergePointers(dst.ProcMount, src.ProcMount)
 	dst.SeccompProfile = deepMergeSeccompProfile(dst.SeccompProfile, src.SeccompProfile)
+	dst.AppArmorProfile = deepMergeAppArmorProfile(dst.AppArmorProfile, src.AppArmorProfile)
 
 	return dst
 }
