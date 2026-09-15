@@ -372,19 +372,44 @@ func stringSet(values []string) map[string]struct{} {
 }
 
 func collectResourceClusterReferences(resources envoycache.Resources, referencedClusters map[string]struct{}) {
+	walkResourceProtos(resources, func(msg proto.Message) {
+		extractGatingClusterReferences(msg, referencedClusters)
+	})
+}
+
+// walkResourceProtos visits every message reachable from resources, descending
+// into nested messages, lists, maps, and typed_config (anypb.Any) payloads, and
+// calls visit on each.
+//
+// The traversal is shared by the two cluster-reference collectors, which differ
+// only in what they extract from each visited message: the readiness gate takes
+// route targets alone (extractGatingClusterReferences), while emission takes
+// every string that could name a cluster (see emission_clusters.go). Keeping one
+// traversal means a message shape newly reachable in the output — a filter
+// nested somewhere the walk did not previously reach — becomes visible to both
+// at once, rather than to whichever collector was remembered.
+func walkResourceProtos(resources envoycache.Resources, visit func(proto.Message)) {
 	for _, item := range resources.Items {
 		if item.Resource == nil {
 			continue
 		}
-		collectProtoClusterReferences(item.Resource, referencedClusters)
+		walkProto(item.Resource, visit)
 	}
 }
 
-func collectProtoClusterReferences(msg proto.Message, referencedClusters map[string]struct{}) {
+func walkProto(msg proto.Message, visit func(proto.Message)) {
 	if msg == nil {
 		return
 	}
+	visit(msg)
+	walkNestedProtos(msg.ProtoReflect(), visit)
+}
 
+// extractGatingClusterReferences takes the cluster names whose absence must
+// defer publication: route and TCP-proxy targets only. See collectReferencedClusters
+// for why ancillary references (ext_authz, JWKS, access-log sinks) are
+// deliberately excluded here.
+func extractGatingClusterReferences(msg proto.Message, referencedClusters map[string]struct{}) {
 	switch typedMsg := msg.(type) {
 	case *envoyroutev3.RouteAction:
 		switch clusterSpecifier := typedMsg.GetClusterSpecifier().(type) {
@@ -419,14 +444,9 @@ func collectProtoClusterReferences(msg proto.Message, referencedClusters map[str
 			}
 		}
 	}
-
-	collectNestedProtoClusterReferences(msg.ProtoReflect(), referencedClusters)
 }
 
-func collectNestedProtoClusterReferences(
-	msg protoreflect.Message,
-	referencedClusters map[string]struct{},
-) {
+func walkNestedProtos(msg protoreflect.Message, visit func(proto.Message)) {
 	if !msg.IsValid() {
 		return
 	}
@@ -436,22 +456,22 @@ func collectNestedProtoClusterReferences(
 		case fd.IsList() && fd.Message() != nil:
 			list := v.List()
 			for i := 0; i < list.Len(); i++ {
-				collectProtoClusterReferencesFromValue(list.Get(i), referencedClusters)
+				walkProtoValue(list.Get(i), visit)
 			}
 		case fd.IsMap() && fd.MapValue().Message() != nil:
 			m := v.Map()
 			m.Range(func(_ protoreflect.MapKey, value protoreflect.Value) bool {
-				collectProtoClusterReferencesFromValue(value, referencedClusters)
+				walkProtoValue(value, visit)
 				return true
 			})
 		case !fd.IsList() && !fd.IsMap() && fd.Message() != nil:
-			collectProtoClusterReferencesFromValue(v, referencedClusters)
+			walkProtoValue(v, visit)
 		}
 		return true
 	})
 }
 
-func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClusters map[string]struct{}) {
+func walkProtoValue(v protoreflect.Value, visit func(proto.Message)) {
 	msg := v.Message()
 	if !msg.IsValid() {
 		return
@@ -465,11 +485,11 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 			logger.Debug("skipping typed_config during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
 			return
 		}
-		collectProtoClusterReferences(nestedMsg, referencedClusters)
+		walkProto(nestedMsg, visit)
 		return
 	}
 
-	collectProtoClusterReferences(msg.Interface(), referencedClusters)
+	walkProto(msg.Interface(), visit)
 }
 
 // filterEndpointResourcesForClusters returns the EDS resource set that exactly
