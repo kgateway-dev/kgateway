@@ -54,7 +54,7 @@ func newConnectionStartFixture(t *testing.T) *connectionStartFixture {
 			TypeUrl: resourcev3.ListenerType,
 		})
 	}
-	f.translator = NewProxyTranslator(f.cache, state, time.Hour, true)
+	f.translator = NewProxyTranslator(f.cache, state, time.Hour, true, clusterScoping{})
 	require.True(t, f.translator.registerConnectionStartHooks(ctx, state, func(string) *XdsSnapWrapper { return f.current.Load() }))
 	t.Cleanup(func() { f.translator.gate.clientDeparted(f.role) })
 	return f
