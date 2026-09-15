@@ -169,15 +169,15 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 // path stays exactly as it was.
 func (g *publishGate) retainsDereferenced() bool { return g.dereferenceGrace > 0 }
 
-// publishWithDereferenceGrace publishes a coherent snapshot, carrying forward
-// the clusters whose grace window is still open.
+// publishWithTransitionGraces publishes a coherent snapshot with both emitted-set
+// transitions made safe: clusters whose de-reference window is still open are
+// carried forward, and a route update that retargets onto a cluster the client
+// has never been sent is held back until that cluster has had time to land.
 //
-// A removal is coherent by construction, so it never reaches the deferred
-// resolution path; this is the removal side's equivalent, and it holds nothing:
-// routes, listeners and secrets are published as built. The only difference
-// from a plain publish is that clusters which just left the emitted set, and
-// their ClusterLoadAssignments, are still in the snapshot.
-func (g *publishGate) publishWithDereferenceGrace(
+// Both transitions produce coherent builds -- nothing is missing, the emitted
+// set simply changed -- so neither reaches the deferred resolution path that
+// handles unready clusters. This is their equivalent.
+func (g *publishGate) publishWithTransitionGraces(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
 	snapWrap XdsSnapWrapper,
@@ -194,13 +194,32 @@ func (g *publishGate) publishWithDereferenceGrace(
 
 	graced, soonest := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], time.Now())
-	if len(graced) == 0 {
+
+	// The addition side rides the same path, for the same reason: a retarget
+	// onto a cluster the client has never been sent is a coherent build too.
+	// Holding routes, listeners and secrets at their published versions
+	// publishes the new cluster's CDS by itself, and the existing flip-release
+	// timer sends the route once the window closes.
+	var newlyEmitted []string
+	if g.holdsReferenceAhead() {
+		newlyEmitted = newlyEmittedReferences(snapWrap, published)
+	}
+
+	if len(graced) == 0 && len(newlyEmitted) == 0 {
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap)
 	}
 
 	resolved, _ := resolveDeferredPerCluster(snapWrap, published, false, graced)
-	if err := g.setSnapshot(ctx, cache, snapWrap.proxyKey, resolved); err != nil {
-		return err
+	var publishErr error
+	if len(newlyEmitted) > 0 {
+		held := holdRoutingTypes(resolved, published)
+		recordFlipHeld(snapWrap.proxyKey)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, newlyEmitted, true)
+	} else {
+		publishErr = g.setSnapshot(ctx, cache, snapWrap.proxyKey, resolved)
+	}
+	if publishErr != nil {
+		return publishErr
 	}
 	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonest)
 	return nil
