@@ -23,6 +23,9 @@ type GatewayExtension struct {
 	// This is specifically for global rate limiting that communicates with an external rate limit service.
 	RateLimit *kgateway.RateLimitProvider
 
+	// RateLimitQuota configures a Rate Limit Quota Service provider.
+	RateLimitQuota *kgateway.RateLimitQuotaProvider
+
 	// JWT configures the jwt providers
 	JWT *kgateway.JWT
 
@@ -56,6 +59,9 @@ func (e GatewayExtension) Equals(other GatewayExtension) bool {
 		return false
 	}
 	if !reflect.DeepEqual(e.RateLimit, other.RateLimit) {
+		return false
+	}
+	if !reflect.DeepEqual(e.RateLimitQuota, other.RateLimitQuota) {
 		return false
 	}
 	if !reflect.DeepEqual(e.JWT, other.JWT) {
