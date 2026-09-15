@@ -300,7 +300,19 @@ func (c routeValidationContext) forVirtualHost(vhost *envoyroutev3.VirtualHost, 
 	if !ok && finalNameUnique {
 		cvh = c.vhostsByName[vhost.GetName()]
 	}
-	return newVhostRouteValidationContext(cvh)
+	ctx := newVhostRouteValidationContext(cvh)
+	// Freeze name eligibility before isolation can drop a duplicate. Removing
+	// one route must not give its source identity to an unrelated clone.
+	nameCounts := make(map[string]int, len(vhost.GetRoutes()))
+	for _, route := range vhost.GetRoutes() {
+		nameCounts[route.GetName()]++
+	}
+	for name := range ctx.routesByName {
+		if nameCounts[name] != 1 {
+			delete(ctx.routesByName, name)
+		}
+	}
+	return ctx
 }
 
 func newVhostRouteValidationContext(cvh computedVirtualHost) vhostRouteValidationContext {
@@ -488,45 +500,77 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 	if h.validationLevel != apisettings.ValidationStandard && h.validationLevel != apisettings.ValidationStrict {
 		return
 	}
-	// Validate the complete output before isolating failures. This is one Envoy
-	// invocation on the successful strict path, including all inherited settings.
-	if h.validationLevel == apisettings.ValidationStrict {
-		var preEnvoyErr error
-		for _, vhost := range cfg.GetVirtualHosts() {
-			for _, route := range vhost.GetRoutes() {
-				if err := validateRoutePreEnvoy(route, h.validationLevel); err != nil {
-					preEnvoyErr = err
-					break
-				}
-			}
-		}
-		if preEnvoyErr == nil && validateFullRouteConfiguration(ctx, cfg, h.validator) == nil {
-			return
-		}
-		// Establish that shared fields are valid independently of the actual
-		// virtual hosts before attributing a failure to any individual route.
-		shared := proto.CloneOf(cfg)
-		shared.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("validation", "*")}
-		if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
-			h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
-			return
-		}
-	}
 	vhostNameCounts := make(map[string]int, len(cfg.GetVirtualHosts()))
 	for _, vhost := range cfg.GetVirtualHosts() {
 		if name := vhost.GetName(); name != "" {
 			vhostNameCounts[name]++
 		}
 	}
+	contexts := make([]vhostRouteValidationContext, len(cfg.GetVirtualHosts()))
 	for i, vhost := range cfg.GetVirtualHosts() {
 		name := vhost.GetName()
-		cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, cfg, vhost, validationCtx.forVirtualHost(vhost, name != "" && vhostNameCounts[name] == 1))
+		contexts[i] = validationCtx.forVirtualHost(vhost, name != "" && vhostNameCounts[name] == 1)
+		h.validateRouteBatchPreEnvoy(vhost, contexts[i])
 	}
-	if h.validationLevel == apisettings.ValidationStrict {
-		if err := validateFullRouteConfiguration(ctx, cfg, h.validator); err != nil {
-			h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+	if h.validationLevel != apisettings.ValidationStrict {
+		return
+	}
+	// Repair all lightweight failures before invoking Envoy. Even a large batch
+	// with malformed rewrites or generated matchers needs only one invocation
+	// when the repaired configuration is valid.
+	if validateFullRouteConfiguration(ctx, cfg, h.validator) == nil {
+		return
+	}
+	// Check shared fields before attributing a failure to individual routes.
+	shared := proto.CloneOf(cfg)
+	shared.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("validation", "*")}
+	if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
+		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+		return
+	}
+	for i, vhost := range cfg.GetVirtualHosts() {
+		cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, cfg, vhost, contexts[i])
+	}
+	if err := validateFullRouteConfiguration(ctx, cfg, h.validator); err != nil {
+		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+	}
+}
+
+// validateRouteBatchPreEnvoy handles cheap failures without running Envoy for
+// each healthy sibling. Name uniqueness is measured before any routes are dropped.
+func (h *httpRouteConfigurationTranslator) validateRouteBatchPreEnvoy(out *envoyroutev3.VirtualHost, validationCtx vhostRouteValidationContext) {
+	if len(out.GetRoutes()) == 0 {
+		return
+	}
+	var errs []error
+	for i, route := range out.Routes {
+		if err := validateRoutePreEnvoy(route, h.validationLevel); err != nil {
+			if errs == nil {
+				errs = make([]error, len(out.Routes))
+			}
+			errs[i] = err
 		}
 	}
+	if errs == nil {
+		return
+	}
+	nameCounts := make(map[string]int, len(out.Routes))
+	for _, route := range out.Routes {
+		if name := route.GetName(); name != "" {
+			nameCounts[name]++
+		}
+	}
+	routes := make([]*envoyroutev3.Route, 0, len(out.Routes))
+	for i, route := range out.Routes {
+		if errs[i] != nil {
+			name := route.GetName()
+			route = h.finalizeValidatedRoute(validationCtx, route, errs[i], name != "" && nameCounts[name] == 1)
+		}
+		if route != nil {
+			routes = append(routes, route)
+		}
+	}
+	out.Routes = routes
 }
 
 func (h *httpRouteConfigurationTranslator) replaceInvalidRouteConfiguration(cfg *envoyroutev3.RouteConfiguration, validationCtx routeValidationContext, err error) {
@@ -549,43 +593,18 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatch(
 	validationCtx vhostRouteValidationContext,
 ) *envoyroutev3.VirtualHost {
 	scope := routeValidationScope{config: cfg, vhost: out}
-	if len(out.GetRoutes()) == 0 {
-		if h.validationLevel == apisettings.ValidationStrict {
-			return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, scope, out)
-		}
+	if err := scope.validate(ctx, out.GetRoutes(), h.validator); err == nil {
 		return out
+	}
+	// A broken inherited setting must replace the vhost, not mark all its
+	// source routes invalid. Named RC dependencies remain available here.
+	if err := scope.validate(ctx, setFallBackConfig("validation", "*").Routes, h.validator); err != nil {
+		return h.replaceInvalidVirtualHost(validationCtx.virtualHost, out, err)
 	}
 	routeNameCounts := make(map[string]int, len(out.GetRoutes()))
 	for _, route := range out.GetRoutes() {
 		if name := route.GetName(); name != "" {
 			routeNameCounts[name]++
-		}
-	}
-	var preEnvoyErr error
-	for _, route := range out.GetRoutes() {
-		if err := validateRoutePreEnvoy(route, h.validationLevel); err != nil {
-			preEnvoyErr = err
-			break
-		}
-	}
-	if preEnvoyErr == nil {
-		if h.validationLevel != apisettings.ValidationStrict {
-			return out
-		}
-		if err := scope.validate(ctx, out.GetRoutes(), h.validator); err == nil {
-			return out
-		} else {
-			h.logger.Debug("strict route batch validation failed; isolating invalid routes", "vhost", out.GetName(), "error", err)
-		}
-	} else {
-		h.logger.Debug("route batch pre-Envoy validation failed; isolating invalid routes", "vhost", out.GetName(), "error", preEnvoyErr)
-	}
-
-	if h.validationLevel == apisettings.ValidationStrict {
-		// A broken inherited setting must replace the vhost, not mark all its
-		// source routes invalid. Named RC dependencies remain available here.
-		if err := scope.validate(ctx, setFallBackConfig("validation", "*").Routes, h.validator); err != nil {
-			return h.replaceInvalidVirtualHost(validationCtx.virtualHost, out, err)
 		}
 	}
 
@@ -603,10 +622,7 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatch(
 		isolatedRoutes = append(isolatedRoutes, route)
 	}
 	out.Routes = isolatedRoutes
-	if h.validationLevel == apisettings.ValidationStrict {
-		return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, scope, out)
-	}
-	return out
+	return h.validateIsolatedVirtualHost(ctx, validationCtx.virtualHost, scope, out)
 }
 
 func (h *httpRouteConfigurationTranslator) finalizeValidatedRoute(

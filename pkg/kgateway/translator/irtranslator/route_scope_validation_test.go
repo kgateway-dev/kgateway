@@ -3,12 +3,14 @@ package irtranslator
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -359,5 +361,76 @@ func TestFinalRouteValidationReportsSourceRoute(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCheapRouteFailuresRemainBatched(t *testing.T) {
+	for _, count := range []int{10, 1000} {
+		t.Run(strconv.Itoa(count), func(t *testing.T) {
+			calls := 0
+			v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
+				calls++
+				routes := routesFromValidationBootstrap(t, b)
+				require.Len(t, routes, 2*count-1, "drop only the malformed matcher before invoking Envoy")
+				for _, route := range routes {
+					require.NoError(t, validateRoutePreEnvoy(route, apisettings.ValidationStrict), "every cheap failure must be repaired before batch validation")
+				}
+				return nil
+			}}
+			h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+			inputs := scopeTestVirtualHosts()
+			for _, vh := range inputs {
+				vh.Rules = nil
+				for i := range count {
+					vh.Rules = append(vh.Rules, testRouteIR(i, "/route-"+strconv.Itoa(i), "shared-cluster"))
+				}
+			}
+			attachRouteConfigPass(h, routeConfigPassFunc{apply: func(cfg *envoyroutev3.RouteConfiguration) {
+				cfg.VirtualHosts[0].Routes[0].GetRoute().PrefixRewrite = "/bad//rewrite"
+				cfg.VirtualHosts[1].Routes[0].Match = &envoyroutev3.RouteMatch{PathSpecifier: &envoyroutev3.RouteMatch_SafeRegex{SafeRegex: &matcherv3.RegexMatcher{Regex: "["}}}
+			}})
+			cfg := h.ComputeRouteConfiguration(t.Context(), inputs)
+			require.Equal(t, 1, calls, "cheap failures must not cause one Envoy invocation per healthy route")
+			require.Len(t, cfg.VirtualHosts, 2)
+			require.Len(t, cfg.VirtualHosts[0].Routes, count)
+			require.Len(t, cfg.VirtualHosts[1].Routes, count-1)
+			assert.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[0].GetDirectResponse().GetStatus())
+			for _, route := range cfg.VirtualHosts[0].Routes[1:] {
+				require.NotNil(t, route.GetRoute(), "healthy siblings must keep their forwarding action")
+			}
+		})
+	}
+}
+
+func TestCheapRouteDropPreservesSourceAttribution(t *testing.T) {
+	const marker = "invalid-appended-route"
+	rm := reports.NewReportMap()
+	h := testHTTPRouteTranslator(invalidClusterValidator(t, marker), apisettings.ValidationStrict)
+	h.reporter = reports.NewReporter(&rm)
+	rule := testRouteIR(7, "/original", "cluster")
+	rule.Parent = &ir.HttpRouteIR{
+		ObjectSource: ir.ObjectSource{Name: "original", Namespace: "default", Kind: "HTTPRoute"},
+		SourceObject: &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "original", Namespace: "default"}},
+	}
+	rule.ParentRef = gwv1.ParentReference{Name: "gateway"}
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(cfg *envoyroutev3.RouteConfiguration) {
+		vh := cfg.VirtualHosts[0]
+		original := vh.Routes[0]
+		appended := proto.CloneOf(original)
+		appended.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: marker}
+		original.Match = &envoyroutev3.RouteMatch{PathSpecifier: &envoyroutev3.RouteMatch_SafeRegex{SafeRegex: &matcherv3.RegexMatcher{Regex: "["}}}
+		vh.Routes = append(vh.Routes, appended)
+	}})
+	cfg := h.ComputeRouteConfiguration(t.Context(), []*ir.VirtualHost{{Name: "vhost", Hostname: "example.com", Rules: []ir.HttpRouteRuleMatchIR{rule}}})
+	require.Len(t, cfg.VirtualHosts[0].Routes, 1, "drop the original and retain the replaced appended route")
+	require.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[0].GetDirectResponse().GetStatus())
+	report := rm.HTTPRoutes[types.NamespacedName{Name: "original", Namespace: "default"}]
+	require.NotNil(t, report)
+	require.Len(t, report.Parents, 1)
+	for _, parent := range report.Parents {
+		condition := meta.FindStatusCondition(parent.Conditions, conditions.KgatewayConditionProgrammed)
+		require.NotNil(t, condition)
+		assert.Equal(t, string(reportssdk.RouteRuleDroppedReason), condition.Reason, "the appended clone must not overwrite the original route's dropped status")
+		assert.Contains(t, condition.Message, "Dropped Rule (7)")
 	}
 }
