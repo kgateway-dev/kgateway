@@ -170,6 +170,7 @@ rules:
   - referencegrants
   - tcproutes
   - tlsroutes
+  - udproutes
   verbs:
   - get
   - list
@@ -185,6 +186,7 @@ rules:
   - listenersets/status
   - tcproutes/status
   - tlsroutes/status
+  - udproutes/status
   verbs:
   - patch
   - update

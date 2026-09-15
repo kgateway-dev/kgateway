@@ -203,3 +203,33 @@ func (c *TlsRouteIR) GetHostnames() []string {
 }
 
 var _ Route = &TlsRouteIR{}
+
+type UdpRouteIR struct {
+	ObjectSource `json:",inline"`
+	SourceObject *gwv1.UDPRoute
+	// +krtEqualsTodo include parent references when computing equality
+	ParentRefs       []gwv1.ParentReference
+	AttachedPolicies AttachedPolicies
+	Backends         []BackendRefIR
+}
+
+func (c *UdpRouteIR) GetParentRefs() []gwv1.ParentReference {
+	return c.ParentRefs
+}
+
+func (c *UdpRouteIR) GetSourceObject() metav1.Object {
+	return c.SourceObject
+}
+
+func (c UdpRouteIR) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c UdpRouteIR) Equals(in UdpRouteIR) bool {
+	return c.ObjectSource == in.ObjectSource &&
+		versionEquals(c.SourceObject, in.SourceObject) &&
+		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
+		backendsEqual(c.Backends, in.Backends)
+}
+
+var _ Route = &UdpRouteIR{}
