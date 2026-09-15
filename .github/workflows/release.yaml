@@ -673,17 +673,26 @@ jobs:
             fi
             # A matching digest means an earlier attempt got this far and re-copying is a no-op; a
             # differing one means this version was published from other bytes and must not be
-            # overwritten. An absent tag or unreachable registry falls through to the checks above.
-            if published="$(./hack/ci/manifest-digest.sh "$dst" 2>/dev/null)"; then
+            # overwritten. Buildx reports a missing manifest with this exact diagnostic; every
+            # other lookup failure is operational, so fail closed rather than risk overwriting a
+            # tag whose digest could not be determined.
+            if published="$(./hack/ci/manifest-digest.sh "$dst" 2>&1)"; then
               if [[ "$published" != "$exp" ]]; then
                 echo "${dst} is already published with digest ${published}, not the gated ${exp}"
                 exit 1
               fi
               echo "${dst} already holds the gated digest; re-copying is a no-op"
+            elif [[ "$published" == "ERROR: ${dst}: not found" ]]; then
+              echo "${dst} is not published yet"
+            else
+              echo "unable to determine whether ${dst} is already published; refusing to overwrite it" >&2
+              echo "$published" >&2
+              exit 1
             fi
             manifest_json="$(docker buildx imagetools inspect "${src}@${exp}" --raw)"
             # Write the per-arch child tags before the index. The index is the tag users pull, so a
             # failure partway leaves unreferenced child tags rather than a :VERSION missing them.
+            declare -A arch_digest_by_arch=()
             for arch in amd64 arm64; do
               # The index carries exactly one manifest per platform. Anything else — a variant
               # duplicate, or none at all — makes the digest to promote ambiguous, so refuse rather
@@ -695,12 +704,36 @@ jobs:
                 echo "expected exactly 1 linux/${arch} manifest in ${image}, found ${#arch_digests[@]}"
                 exit 1
               fi
-              arch_digest="${arch_digests[0]}"
+              arch_digest_by_arch["$arch"]="${arch_digests[0]}"
+            done
+            # Check every child tag before copying any of them. A previous attempt may have
+            # published children without reaching the top-level index; only the gated child digest
+            # may already occupy each tag. As above, continue only on a confirmed not-found.
+            for arch in amd64 arm64; do
+              arch_dst="${dst}-${arch}"
+              arch_digest="${arch_digest_by_arch[$arch]}"
+              if arch_published="$(./hack/ci/manifest-digest.sh "$arch_dst" 2>&1)"; then
+                if [[ "$arch_published" != "$arch_digest" ]]; then
+                  echo "${arch_dst} is already published with digest ${arch_published}, not the gated ${arch_digest}"
+                  exit 1
+                fi
+                echo "${arch_dst} already holds the gated digest; re-copying is a no-op"
+              elif [[ "$arch_published" == "ERROR: ${arch_dst}: not found" ]]; then
+                echo "${arch_dst} is not published yet"
+              else
+                echo "unable to determine whether ${arch_dst} is already published; refusing to overwrite it" >&2
+                echo "$arch_published" >&2
+                exit 1
+              fi
+            done
+            for arch in amd64 arm64; do
+              arch_dst="${dst}-${arch}"
+              arch_digest="${arch_digest_by_arch[$arch]}"
               # --prefer-index=false carbon-copies the child manifest (preserving its media type
               # and digest); the default wraps a single manifest in a new one-platform index.
               # --prefer-index=false requires buildx >= 0.15.
               docker buildx imagetools create --prefer-index=false \
-                -t "${dst}-${arch}" \
+                -t "$arch_dst" \
                 "${src}@${arch_digest}"
             done
             docker buildx imagetools create -t "$dst" "${src}@${exp}"
