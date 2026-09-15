@@ -416,6 +416,9 @@ func baseHarnessGatewayExtension() GatewayExtension {
 		RateLimit: &kgateway.RateLimitProvider{
 			Domain: "my-domain",
 		},
+		RateLimitQuota: &kgateway.RateLimitQuotaProvider{
+			Domain: "my-quota-domain",
+		},
 		JWT:              nil,
 		OAuth2:           nil,
 		PrecedenceWeight: 5,
@@ -458,6 +461,12 @@ func TestHarnessGatewayExtensionEquals(t *testing.T) {
 			Field: "RateLimit",
 			Mutate: func(e *GatewayExtension) {
 				e.RateLimit = &kgateway.RateLimitProvider{Domain: "other-domain"}
+			},
+		},
+		{
+			Field: "RateLimitQuota",
+			Mutate: func(e *GatewayExtension) {
+				e.RateLimitQuota = &kgateway.RateLimitQuotaProvider{Domain: "other-quota-domain"}
 			},
 		},
 		{

@@ -472,7 +472,133 @@ type RateLimit struct {
 	// Global defines a global rate limiting policy using an external service.
 	// +optional
 	Global *RateLimitPolicy `json:"global,omitempty"`
+
+	// Quota defines quota-based global rate limiting using an external Rate
+	// Limit Quota Service (RLQS).
+	// +optional
+	Quota *RateLimitQuotaPolicy `json:"quota,omitempty"`
 }
+
+// RateLimitQuotaPolicy defines a quota bucket and its behavior while an RLQS
+// assignment is unavailable.
+type RateLimitQuotaPolicy struct {
+	// ExtensionRef references a GatewayExtension that provides the RLQS server.
+	// +required
+	ExtensionRef shared.NamespacedObjectReference `json:"extensionRef"`
+
+	// Bucket defines the key-value pairs that identify this quota bucket. Static
+	// values and values extracted from request headers may be combined. Requests
+	// for which a dynamic value cannot be produced are allowed and not reported
+	// to the RLQS.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
+	// +listType=map
+	// +listMapKey=key
+	Bucket []RateLimitQuotaBucketEntry `json:"bucket"`
+
+	// ReportingInterval controls how often Envoy reports this bucket's usage to
+	// the RLQS. Defaults to 5s.
+	// +optional
+	// +kubebuilder:default="5s"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) > duration('100ms')",message="must be greater than 100ms"
+	ReportingInterval *metav1.Duration `json:"reportingInterval,omitempty"`
+
+	// NoAssignmentBehavior controls requests before the RLQS returns the first
+	// assignment. Defaults to Allow.
+	// +optional
+	// +kubebuilder:default=Allow
+	NoAssignmentBehavior *RateLimitQuotaFallback `json:"noAssignmentBehavior,omitempty"`
+
+	// ExpiredAssignmentBehavior controls requests after an assignment expires
+	// and cannot be refreshed. If omitted, Envoy abandons the expired bucket and
+	// starts a new subscription when the next matching request arrives.
+	// +optional
+	ExpiredAssignmentBehavior *RateLimitQuotaExpiredAssignmentBehavior `json:"expiredAssignmentBehavior,omitempty"`
+
+	// DenyStatus is the HTTP status returned when quota is denied. Defaults to 429.
+	// +optional
+	// +kubebuilder:default=429
+	// +kubebuilder:validation:Minimum=400
+	// +kubebuilder:validation:Maximum=599
+	DenyStatus *uint32 `json:"denyStatus,omitempty"`
+}
+
+// RateLimitQuotaBucketEntryType defines how a bucket entry value is produced.
+// +kubebuilder:validation:Enum=Generic;Header
+type RateLimitQuotaBucketEntryType string
+
+const (
+	// RateLimitQuotaBucketEntryTypeGeneric uses a static value.
+	RateLimitQuotaBucketEntryTypeGeneric RateLimitQuotaBucketEntryType = "Generic"
+	// RateLimitQuotaBucketEntryTypeHeader reads the value from a request header.
+	RateLimitQuotaBucketEntryTypeHeader RateLimitQuotaBucketEntryType = "Header"
+)
+
+// RateLimitQuotaBucketEntry defines one key in an RLQS bucket identifier.
+// +kubebuilder:validation:XValidation:message="exactly one entry type must be specified",rule="(self.type == 'Generic' && has(self.value) && !has(self.header)) || (self.type == 'Header' && has(self.header) && !has(self.value))"
+type RateLimitQuotaBucketEntry struct {
+	// Key is the bucket identifier key.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Key string `json:"key"`
+
+	// Type specifies how this entry's value is produced.
+	// +required
+	Type RateLimitQuotaBucketEntryType `json:"type"`
+
+	// Value is the static value used when Type is Generic.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Value *string `json:"value,omitempty"`
+
+	// Header is the request header used when Type is Header.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Header *string `json:"header,omitempty"`
+}
+
+// RateLimitQuotaFallback controls whether requests are allowed when no quota
+// assignment is available.
+// +kubebuilder:validation:Enum=Allow;Deny
+type RateLimitQuotaFallback string
+
+const (
+	RateLimitQuotaFallbackAllow RateLimitQuotaFallback = "Allow"
+	RateLimitQuotaFallbackDeny  RateLimitQuotaFallback = "Deny"
+)
+
+// RateLimitQuotaExpiredAssignmentBehavior controls the bounded behavior after
+// an RLQS assignment expires.
+type RateLimitQuotaExpiredAssignmentBehavior struct {
+	// Strategy selects whether Envoy reuses the last assignment or applies a
+	// blanket allow/deny decision while waiting for a refresh.
+	// +required
+	Strategy RateLimitQuotaExpiredAssignmentStrategy `json:"strategy"`
+
+	// Timeout bounds how long the selected strategy is used before Envoy
+	// abandons the bucket and starts a new subscription.
+	// +required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) > duration('0s')",message="must be greater than 0s"
+	Timeout metav1.Duration `json:"timeout"`
+}
+
+// RateLimitQuotaExpiredAssignmentStrategy defines the strategy used after an
+// assignment expires.
+// +kubebuilder:validation:Enum=ReuseLast;Allow;Deny
+type RateLimitQuotaExpiredAssignmentStrategy string
+
+const (
+	RateLimitQuotaExpiredAssignmentStrategyReuseLast RateLimitQuotaExpiredAssignmentStrategy = "ReuseLast"
+	RateLimitQuotaExpiredAssignmentStrategyAllow     RateLimitQuotaExpiredAssignmentStrategy = "Allow"
+	RateLimitQuotaExpiredAssignmentStrategyDeny      RateLimitQuotaExpiredAssignmentStrategy = "Deny"
+)
 
 // LocalRateLimitPolicy configures local rate limiting using a token bucket.
 // +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"

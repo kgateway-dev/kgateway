@@ -37,6 +37,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/policyselector"
 	global_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/global"
 	local_rate_limit "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/local"
+	rate_limit_quota "github.com/kgateway-dev/kgateway/v2/test/e2e/features/rate_limit/quota"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/rbac"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/route_delegation"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/grpcroute"
@@ -87,6 +88,7 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("LocalRateLimit", local_rate_limit.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GlobalRateLimit", global_rate_limit.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("RateLimitQuota", rate_limit_quota.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TrafficPolicyStatus", trafficpolicystatus.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)

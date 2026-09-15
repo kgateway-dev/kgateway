@@ -145,10 +145,17 @@ jobs:
           CLUSTER_NAME: flake-${{ matrix.run-number }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         run: make cluster-load-extproc-server
+      - name: Load shared RLQS server
+        shell: bash
+        env:
+          CLUSTER_NAME: flake-${{ matrix.run-number }}
+          CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+        run: make cluster-load-rlqs-server
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
           SKIP_EXTPROC_SERVER_SETUP: "true"
+          SKIP_RLQS_SERVER_SETUP: "true"
         with:
           cluster-name: flake-${{ matrix.run-number }}
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
