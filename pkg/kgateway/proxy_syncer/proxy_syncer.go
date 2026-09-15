@@ -216,10 +216,11 @@ func NewProxySyncer(
 		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget, a returning proxy is answered from its previous connection's snapshot until the next publish to it, and departed proxies' snapshots are never reclaimed")
 	}
 	return &ProxySyncer{
-		controllerName:             controllerName,
-		commonCols:                 commonCols,
-		apiClient:                  client,
-		proxyTranslator:            NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck),
+		controllerName: controllerName,
+		commonCols:     commonCols,
+		apiClient:      client,
+		proxyTranslator: NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck,
+			clusterScopingFrom(commonCols.Settings)),
 		uniqueClients:              uniqueClients,
 		clientState:                xdsClientState,
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
@@ -235,14 +236,20 @@ type ProxyTranslator struct {
 	gate *publishGate
 }
 
-// NewProxyTranslator builds the translator that publishes per-client
-// snapshots. xdsClientState, when non-nil, tells warm clients (ones that
-// reported a prior accepted xDS version) from cold ones; a nil value treats
-// every client as cold.
-func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState krtcollections.XDSClientState, publishBudget time.Duration, checkSnapshotConsistency bool) ProxyTranslator {
+// NewProxyTranslator builds the publishing half of the syncer. dereferenceGrace
+// is how long a cluster that has left the emitted set stays published; pass 0
+// when cluster discovery emits everything, since nothing is ever de-referenced
+// then.
+func NewProxyTranslator(
+	xdsCache envoycache.SnapshotCache,
+	xdsClientState krtcollections.XDSClientState,
+	publishBudget time.Duration,
+	checkSnapshotConsistency bool,
+	scoping clusterScoping,
+) ProxyTranslator {
 	return ProxyTranslator{
 		xdsCache: xdsCache,
-		gate:     newPublishGate(publishBudget, checkSnapshotConsistency, xdsClientState),
+		gate:     newPublishGate(publishBudget, checkSnapshotConsistency, xdsClientState, scoping),
 	}
 }
 

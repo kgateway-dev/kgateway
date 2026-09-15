@@ -105,7 +105,7 @@ func TestVersionEndpointSetKeepsItems(t *testing.T) {
 // The gate remembers each client's last written EDS contributions for
 // carry-forward and forgets them on reclaim.
 func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
-	gate := newPublishGate(0, false, nil)
+	gate := newPublishGate(0, false, nil, clusterScoping{})
 	cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("1", []envoycachetypes.ResourceWithTTL{
@@ -140,7 +140,7 @@ func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
 }
 
 func TestPublishGatePreservesHashesWhenSettlingEndpoints(t *testing.T) {
-	gate := newPublishGate(0, false, stubPriorXDS{has: true})
+	gate := newPublishGate(0, false, stubPriorXDS{has: true}, clusterScoping{})
 	cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 	ucc := newTestUcc("client")
 	build := func(hashes map[string]uint64) *envoycache.Snapshot {

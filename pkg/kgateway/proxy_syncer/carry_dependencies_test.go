@@ -259,7 +259,7 @@ func TestCarryDependencyCyclesEnd(t *testing.T) {
 	require.NoError(t, err)
 	build.Resources[envoycachetypes.Route] = routeResourcesForClusters("x")
 
-	composed, _, _ := resolveDeferredPerCluster(XdsSnapWrapper{snap: build, proxyKey: publishGateTestClient, missingReferenced: []string{"x"}}, published, true,
+	composed, _, _ := resolveDeferredPerCluster(XdsSnapWrapper{snap: build, proxyKey: publishGateTestClient, missingReferenced: []string{"x"}}, published, true, nil,
 		func(string) (uint64, bool) { return 0, false })
 
 	assert.ElementsMatch(t, []string{"x", "y"}, mapKeys(composed.Resources[envoycachetypes.Cluster].Items))

@@ -64,7 +64,7 @@ func TestSnapshotPerClientScaleToZeroPublishesEmptyCLA(t *testing.T) {
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -140,7 +140,7 @@ func TestSnapshotPerClientWarmingClusterHoldsOnlyRouteFlip(t *testing.T) {
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -228,7 +228,7 @@ func TestSnapshotPerClientFlipReleasesOnByteIdenticalDerivedEmptyCLA(t *testing.
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -305,7 +305,7 @@ func TestSnapshotPerClientErroredClusterIsNotCarriedDuringHeldFlip(t *testing.T)
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
