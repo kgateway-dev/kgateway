@@ -23,22 +23,15 @@ import (
 // per-pair but the proto count is per distinct result.
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
-	// Endpoints is wrapped so consumers cannot mutate the CLA interned across
-	// every UCC whose built result is equal; see package sharedproto. EndpointsHash
-	// combines the resolved endpoint content, endpoint-plugin contributions, and
-	// load-balancing context into a compact version fingerprint.
-	//
-	// Equals stands in for comparing this proto with EndpointsHash, a 64-bit
-	// FNV-1a fold of its inputs. That is an assumption, not a proof of equality:
-	// a collision between two successive revisions of one row would leave that
-	// client on stale endpoints until any other change moved the hash. Interning
-	// does not inherit the assumption because it uses the hash only to pick a
-	// bucket and confirms content equality itself
-	// (TestNewPerClientEnvoyEndpointsDoesNotAliasHashCollisions); KRT equality
-	// and the client's EDS version, which XORs these hashes, do rely on it.
-	// +noKrtEquals EndpointsHash is a 64-bit content hash standing in for the proto; collision-freedom is assumed, see above
-	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
+	// Endpoints is shared across clients and compared through ContentHash.
+	// +noKrtEquals compared through ContentHash
+	Endpoints sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
+	// EndpointsHash tracks translation inputs, including changes that leave the
+	// built assignment unchanged.
 	EndpointsHash uint64
+	// ContentHash digests the built assignment for EDS versioning. Both hashes
+	// participate in row equality; only published content drives EDS updates.
+	ContentHash   uint64
 	endpointsName string
 	// resourceName caches the KRT identity key, which KRT recomputes for every row
 	// on every recompute (slices.GroupUnique over the transform output) and again on
@@ -68,6 +61,7 @@ func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName s
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 	return c.Client.Equals(in.Client) &&
 		c.EndpointsHash == in.EndpointsHash &&
+		c.ContentHash == in.ContentHash &&
 		c.endpointsName == in.endpointsName
 }
 
@@ -267,6 +261,7 @@ func NewPerClientEnvoyEndpoints(
 				Client:        ucc,
 				Endpoints:     cla,
 				EndpointsHash: endpointsHash,
+				ContentHash:   contentHashOf(candidate),
 				endpointsName: epName,
 				resourceName:  uccEndpointsResourceName(ucc, epName),
 			}
@@ -314,4 +309,12 @@ func combineEndpointHash(parts ...uint64) uint64 {
 		utils.HashUint64(hasher, part)
 	}
 	return hasher.Sum64()
+}
+
+// contentHashOf digests a built assignment; nil has a stable zero digest.
+func contentHashOf(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
+	if cla == nil {
+		return 0
+	}
+	return utils.HashProto(cla)
 }
