@@ -61,6 +61,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 		"KGW_CLUSTER_DISCOVERY_MODE":                    string(ClusterDiscoveryReferenced),
+		"KGW_CLUSTER_DEREFERENCE_GRACE":                 "30s",
 	}
 }
 
@@ -109,6 +110,7 @@ func TestSettings(t *testing.T) {
 				ValidatorCacheSize:                    0,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				ClusterDiscoveryMode:                  ClusterDiscoveryAll,
+				ClusterDereferenceGrace:               5 * time.Second,
 				EnableBuiltinDefaultMetrics:           false,
 				GlobalPolicyNamespace:                 "",
 				DisableLeaderElection:                 false,
@@ -178,6 +180,7 @@ func TestSettings(t *testing.T) {
 				EnableRouteSourceMetadata:   true,
 				ReferenceGrantMode:          ReferenceGrantStrict,
 				ClusterDiscoveryMode:        ClusterDiscoveryReferenced,
+				ClusterDereferenceGrace:     30 * time.Second,
 			},
 		},
 		{
@@ -276,6 +279,7 @@ func TestSettings(t *testing.T) {
 				AwsEc2RefreshInterval:                 30 * time.Second,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				ClusterDiscoveryMode:                  ClusterDiscoveryAll,
+				ClusterDereferenceGrace:               5 * time.Second,
 				PolicyMerge:                           "{}",
 				XdsAuth:                               true,
 				XdsTLS:                                false,
