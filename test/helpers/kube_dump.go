@@ -319,7 +319,7 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 	outDir string, namespaces []string,
 ) {
 	for _, ns := range namespaces {
-		controllerPodNames, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "kgateway=kgateway")
+		controllerPodNames, err := kubectlCli.GetAllPodsInNsWithLabel(ctx, ns, "kgateway=kgateway")
 		if err != nil {
 			fmt.Printf("error fetching controller pod names: %f\n", err)
 			continue
@@ -388,7 +388,7 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 	for _, ns := range namespaces {
 		proxies := []string{}
 
-		kubeGatewayProxies, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "kgateway=kube-gateway")
+		kubeGatewayProxies, err := kubectlCli.GetAllPodsInNsWithLabel(ctx, ns, "kgateway=kube-gateway")
 		if err != nil {
 			fmt.Printf("error fetching kube-gateway proxies: %f\n", err)
 		} else {
