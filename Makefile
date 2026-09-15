@@ -193,11 +193,13 @@ mod-download:  ## Download transitive dependencies
 	go mod download
 	cd tools && go mod download
 	cd test/e2e/defaults/extproc && go mod download
+	cd test/e2e/defaults/rlqs && go mod download
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy the go mod file
 	@echo "Tidying tools..." && cd tools && go mod tidy
 	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
+	@echo "Tidying test/e2e/defaults/rlqs..." && cd test/e2e/defaults/rlqs && go mod tidy
 	@echo "Tidying top level" && go mod tidy
 
 #----------------------------------------------------------------------------
@@ -430,6 +432,7 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # var and are therefore out of scope under k3d.
 CLUSTER_TYPE ?= kind
 SKIP_EXTPROC_SERVER_SETUP ?= false
+SKIP_RLQS_SERVER_SETUP ?= false
 
 E2E_SHARED_IMAGE_ARCHIVE ?= $(OUTPUT_DIR)/e2e-images/shared-images.tar
 E2E_SHARED_IMAGE_TAGS = \
@@ -437,7 +440,8 @@ E2E_SHARED_IMAGE_TAGS = \
 	$(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION) \
 	$(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION) \
 	$(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION) \
-	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+	$(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) \
+	$(IMAGE_REGISTRY)/$(RLQS_SERVER_IMAGE_REPO):$(RLQS_SERVER_VERSION)
 
 .PHONY: cluster-load-extproc-server
 ifeq ($(CLUSTER_TYPE),k3d)
@@ -446,14 +450,21 @@ else
 cluster-load-extproc-server: kind-load-extproc-server
 endif
 
+.PHONY: cluster-load-rlqs-server
+ifeq ($(CLUSTER_TYPE),k3d)
+cluster-load-rlqs-server: k3d-load-rlqs-server
+else
+cluster-load-rlqs-server: kind-load-rlqs-server
+endif
+
 .PHONY: e2e-test
-e2e-test: maybe-setup-extproc-server
+e2e-test: maybe-setup-extproc-server maybe-setup-rlqs-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 
 .PHONY: e2e-shared-images-docker
-e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
+e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker rlqs-server-docker ## Build shared docker images for e2e shards
 
 .PHONY: save-e2e-shared-images
 save-e2e-shared-images: e2e-shared-images-docker ## Save shared e2e shard images to a docker archive
@@ -466,6 +477,14 @@ maybe-setup-extproc-server:
 	@echo "Skipping extproc-server build and load"
 else
 maybe-setup-extproc-server: extproc-server-docker cluster-load-extproc-server
+endif
+
+.PHONY: maybe-setup-rlqs-server
+ifeq ($(SKIP_RLQS_SERVER_SETUP),true)
+maybe-setup-rlqs-server:
+	@echo "Skipping rlqs-server build and load"
+else
+maybe-setup-rlqs-server: rlqs-server-docker cluster-load-rlqs-server
 endif
 
 
@@ -561,9 +580,14 @@ unit-with-coverage:
 	@$(MAKE) --no-print-directory unit GO_TEST_ARGS="$(GO_TEST_ARGS) $(GO_TEST_COVERAGE_ARGS)"
 
 .PHONY: unit
+unit: test-rlqs-server
 unit: ## Run all unit tests (excludes e2e tests)
 	@echo "Running unit tests (excluding e2e)..."
 	@$(MAKE) --no-print-directory go-test TEST_TAG=""
+
+.PHONY: test-rlqs-server
+test-rlqs-server:
+	cd test/e2e/defaults/rlqs && go test ./...
 
 .PHONY: validate-test-coverage
 validate-test-coverage: ## Validate the test coverage
@@ -674,7 +698,8 @@ MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum \
 	tools/go.mod tools/go.sum \
-	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
+	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum \
+	test/e2e/defaults/rlqs/go.mod test/e2e/defaults/rlqs/go.sum
 
 # Clean generated code
 .PHONY: clean-gen
@@ -962,6 +987,28 @@ kind-load-extproc-server:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) --name $(CLUSTER_NAME)
 
 #----------------------------------------------------------------------------------
+# rlqs-server (used in e2e tests)
+#----------------------------------------------------------------------------------
+
+RLQS_SERVER_DIR=test/e2e/defaults/rlqs
+RLQS_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(RLQS_SERVER_DIR)
+export RLQS_SERVER_IMAGE_REPO ?= rlqs-server
+RLQS_SERVER_VERSION=0.0.1
+
+$(RLQS_SERVER_OUTPUT_DIR)/.docker-stamp-$(RLQS_SERVER_VERSION)-$(GOARCH): $(shell find $(RLQS_SERVER_DIR) -name '*.go') $(RLQS_SERVER_DIR)/go.mod $(RLQS_SERVER_DIR)/go.sum $(RLQS_SERVER_DIR)/Dockerfile
+	$(BUILDX_BUILD) --load $(PLATFORM) $(RLQS_SERVER_DIR) -f $(RLQS_SERVER_DIR)/Dockerfile \
+		-t $(IMAGE_REGISTRY)/$(RLQS_SERVER_IMAGE_REPO):$(RLQS_SERVER_VERSION)
+	@mkdir -p $(dir $@)
+	@touch $@
+
+.PHONY: rlqs-server-docker
+rlqs-server-docker: $(RLQS_SERVER_OUTPUT_DIR)/.docker-stamp-$(RLQS_SERVER_VERSION)-$(GOARCH)
+
+.PHONY: kind-load-rlqs-server
+kind-load-rlqs-server:
+	$(KIND) load docker-image $(IMAGE_REGISTRY)/$(RLQS_SERVER_IMAGE_REPO):$(RLQS_SERVER_VERSION) --name $(CLUSTER_NAME)
+
+#----------------------------------------------------------------------------------
 # Helm
 #----------------------------------------------------------------------------------
 
@@ -1213,6 +1260,10 @@ k3d-load-dummy-idp:
 .PHONY: k3d-load-extproc-server
 k3d-load-extproc-server:
 	$(K3D) image import $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
+
+.PHONY: k3d-load-rlqs-server
+k3d-load-rlqs-server:
+	$(K3D) image import $(IMAGE_REGISTRY)/$(RLQS_SERVER_IMAGE_REPO):$(RLQS_SERVER_VERSION) -c $(K3D_CLUSTER_NAME)
 
 .PHONY: setup-base-k3d
 setup-base-k3d: k3d-create gw-api-crds ## Setup k3d base infrastructure (cluster, CRDs, custom instant-setup loadbalancer).
