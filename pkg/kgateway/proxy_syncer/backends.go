@@ -44,15 +44,22 @@ type baseEnvoyCluster struct {
 	BackendSource ir.ObjectSource
 	// BackendGeneration is the observed generation of the source Backend.
 	BackendGeneration int64
-	// Backend is the IR this cluster was translated from. Per-client processing
-	// and the overlays it runs read it, so it is compared by content: a
-	// metadata change to the backing object (a Service label an overlay
-	// branches on) then reaches every client even when the shared proto is
-	// byte-identical, without a second collection keyed on the raw backend. Its
-	// resourceVersion is deliberately not compared: every Service write bumps
-	// it, including status and controller annotation touches, and the proto
-	// hash above already says whether the translation moved. Comparing it
-	// would rerun every client's walk for a write that changed nothing.
+	// OverlayInputsHash is the fold of every overlay plugin's declared backend
+	// inputs (BackendTranslator.OverlayInputsHash). Per-client processing reads
+	// Backend through the overlays, and this is how a change to what they read
+	// (a Service label the waypoint overlay branches on) reaches every client
+	// even when the shared proto is byte-identical. A write that moves neither
+	// this nor ClusterVersion — a status update, an annotation no overlay
+	// reads, a label none branches on — leaves the row equal, and no client's
+	// walk reruns.
+	OverlayInputsHash uint64
+	// Backend is the IR this cluster was translated from, retained for
+	// per-client processing. It is not compared: the overlays are the only
+	// readers, and OverlayInputsHash carries exactly the fields they declared.
+	// When Equals returns true KRT keeps the old row, so the overlays are handed
+	// the Backend of the last row that differed; that is correct precisely
+	// because every field they read is in the hash.
+	// +noKrtEquals
 	Backend *ir.BackendObjectIR
 	// Base is the non-proto portion of the base-translation result retained for
 	// per-client processing. Base.Cluster is always nil: the only retained copy
@@ -69,17 +76,10 @@ func (b baseEnvoyCluster) ResourceName() string { return b.Name }
 func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
 	return b.Name == in.Name &&
 		b.ClusterVersion == in.ClusterVersion &&
+		b.OverlayInputsHash == in.OverlayInputsHash &&
 		b.BackendSource == in.BackendSource &&
 		b.BackendGeneration == in.BackendGeneration &&
-		errorsEqual(b.Error, in.Error) &&
-		backendEquals(b.Backend, in.Backend)
-}
-
-func backendEquals(a, b *ir.BackendObjectIR) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return a.EqualsIgnoringResourceVersion(*b)
+		errorsEqual(b.Error, in.Error)
 }
 
 // uccWithCluster is one client's view of one backend's cluster: the shared base
@@ -489,6 +489,7 @@ func NewPerClientEnvoyClusters(
 			Name:              name,
 			Cluster:           sharedCluster,
 			ClusterVersion:    clusterVersion,
+			OverlayInputsHash: translator.OverlayInputsHash(*backendObj),
 			Error:             baseRes.Error,
 			BackendSource:     backendObj.GetObjectSource(),
 			BackendGeneration: backendGeneration,
