@@ -1,15 +1,25 @@
-// Package overlaytest checks a plugin's OverlayInputsHash against its
+// Package overlaytest checks the declarations a policy plugin makes about its
+// per-client hooks against what those hooks actually do. Both declarations are
+// promises the framework relies on but cannot verify, and breaking either one
+// serves a client configuration built from inputs it no longer matches.
+//
+// [AssertInputsHashCoversOverlay] checks OverlayInputsHash against
 // PerClientClusterOverlay: every field of the backend whose change moves the
 // overlay's output must move the hash. A field the overlay reads but the hash
 // leaves out is served stale, because the shared base row that carries the
-// backend is kept for as long as its hashes compare equal. The check is
-// mechanical so a plugin cannot land an overlay that reads more than it
-// declares: give it a fixture backend, the mutations a backend can undergo, and
-// the clients to evaluate, and it asserts the implication for each.
+// backend is kept for as long as its hashes compare equal. Give it a fixture
+// backend, the mutations a backend can undergo, and the clients to evaluate,
+// and it asserts the implication for each.
 //
-// Only that direction is asserted. A hash that moves when the output does not
-// costs one walk of every client over the base collection, which is a
-// performance matter, not a correctness one, and is left to review.
+// [AssertMayApplyCoversEndpointHook] checks PerClientEndpointsMayApply against
+// the endpoint hook it gates: a backend the predicate rules out must be one the
+// hook would not have touched, for any client. A backend wrongly ruled out gets
+// one inline ClusterLoadAssignment shared by every client, silently missing
+// whatever the hook would have contributed.
+//
+// Only those directions are asserted. Over-declaring, in either sense, costs
+// work that could have been shared, which is a performance matter, not a
+// correctness one, and is left to review.
 package overlaytest
 
 import (
