@@ -6,6 +6,7 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 // clusterScoping is the whole referenced-only cluster discovery feature's
@@ -29,15 +30,25 @@ type clusterScoping struct {
 	// backend's cluster was delivered long before any route could name it, so it
 	// is read only through ReferenceAhead.
 	referenceAhead time.Duration
+	// claims are the destinations plugins declared they may route to that the
+	// generated configuration never names. Gathered once at startup; a tree with
+	// no such plugin carries an empty set and pays nothing for it.
+	claims emissionClaims
 }
 
-func clusterScopingFrom(s apisettings.Settings) clusterScoping {
+func clusterScopingFrom(s apisettings.Settings, policies sdk.ContributesPolicies) clusterScoping {
 	return clusterScoping{
 		mode:             s.ClusterDiscoveryMode,
 		dereferenceGrace: s.ClusterDereferenceGrace,
 		referenceAhead:   s.ClusterReferenceAhead,
+		claims:           collectEmissionClaims(policies),
 	}
 }
+
+// Claims are what plugins declared they may route to beyond what the
+// configuration names. Consulted both to decide whether a gateway can be scoped
+// at all and to keep the claimed clusters emitted.
+func (c clusterScoping) Claims() emissionClaims { return c.claims }
 
 // ReferenceAhead is how long a route update onto a newly-emitted cluster is
 // held, and 0 whenever CDS is not scoped: with every backend emitted

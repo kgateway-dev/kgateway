@@ -214,7 +214,7 @@ func NewProxySyncer(
 		commonCols:     commonCols,
 		apiClient:      client,
 		proxyTranslator: NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck,
-			clusterScopingFrom(commonCols.Settings)),
+			clusterScopingFrom(commonCols.Settings, mergedPlugins.ContributesPolicies)),
 		uniqueClients:              uniqueClients,
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
@@ -303,7 +303,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	// Resolved once: every path this feature touches asks scoping.ScopesClusters(),
 	// and with it false none of them do anything.
-	scoping := clusterScopingFrom(s.commonCols.Settings)
+	scoping := clusterScopingFrom(s.commonCols.Settings, s.plugins.ContributesPolicies)
 	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
 		// with controllerName matching s.controllerName (envoy controller). The filtering happens

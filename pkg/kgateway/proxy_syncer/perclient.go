@@ -132,12 +132,12 @@ func snapshotPerClient(
 			recordClusterScopingEmission(ucc.ResourceName(),
 				len(clusterResources.Items),
 				len(clustersForUcc.clusters.Items)-len(clusterResources.Items))
-			recordClusterScopingDisabled(ucc.ResourceName(),
-				!listenerRouteSnapshot.EmittedClusters.Filterable())
-			if !listenerRouteSnapshot.EmittedClusters.Filterable() {
-				logger.Warn("cluster scoping disabled for this gateway: a route selects its destination at request time",
+			unaccounted := listenerRouteSnapshot.EmittedClusters.unaccountedSelectors(scoping.Claims())
+			recordClusterScopingDisabled(ucc.ResourceName(), len(unaccounted) > 0)
+			if len(unaccounted) > 0 {
+				logger.Warn("cluster scoping disabled for this gateway: a route selects its destination at request time and no plugin claimed it",
 					"client", ucc.ResourceName(),
-					"unresolvable", listenerRouteSnapshot.EmittedClusters.Unresolvable)
+					"unaccounted_selectors", unaccounted)
 			}
 		}
 

@@ -78,6 +78,28 @@ computed cluster is absent, so pruning a candidate does not produce a visible
 503 — every affected request quietly goes somewhere else instead. The metric is
 what turns that into something you can alert on.
 
+### Claiming, so one plugin does not cost the whole gateway
+
+A plugin can declare what it may route to, through `ClusterEmissionClaim` in
+`pkg/pluginsdk`. A gateway whose every request-time selector is claimed keeps
+scoping for every other backend, instead of reverting wholesale.
+
+A claim says three things: which selectors it accounts for (matched against the
+extension name the plugin puts in `cluster_specifier_plugin`, in either its
+referenced or inline form), which exact cluster names to keep, and which name
+prefixes to keep for candidates that cannot be enumerated ahead of time.
+
+Two rules are worth knowing. An **empty prefix is rejected**: it would re-admit
+the entire inventory while still reporting the gateway as scoped, which is worse
+than reverting because it is invisible. And a **cluster-header selector can
+never be claimed** — the destination is whatever the client sends, so nothing a
+plugin declares can bound it, and such a gateway stays unscoped.
+
+A claim should also cover the plugin's own resources. A plugin of this shape
+commonly emits an endpointless placeholder cluster so an unmatched request fails
+closed; once no route names that placeholder, scoping would otherwise prune the
+very cluster that makes the feature safe.
+
 ## Settings
 
 | Setting | Default | Effect |
