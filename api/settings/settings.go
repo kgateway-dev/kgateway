@@ -467,6 +467,25 @@ type Settings struct {
 	// mode, where nothing is ever de-referenced.
 	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
 
+	// ClusterReferenceAhead is how long a route update that retargets onto a
+	// newly-emitted cluster is held back, in REFERENCED mode only, so the
+	// cluster is delivered first.
+	//
+	// Publishing both in one coherent snapshot is not enough. Envoy does not
+	// necessarily apply CDS before RDS within a snapshot, and after a CDS
+	// response is sent its watch stays closed until Envoy ACKs, so a route
+	// update landing in that window reaches the wire on the still-open RDS
+	// watch before any CDS carrying its destination. That is reachable whenever
+	// a route is retargeted while an earlier cluster update is un-ACKed, and no
+	// server option closes it. Emit-all never had the problem because
+	// destinations were delivered long before any route named them.
+	//
+	// The cost is route-edit latency, but only for edits that introduce a
+	// destination the proxy has never seen. 0 publishes cluster and route
+	// together and accepts the blip. The hold is additionally bounded by
+	// PerClientPublishBudget, so a misconfigured window cannot pin updates.
+	ClusterReferenceAhead time.Duration `split_words:"true" default:"2s"`
+
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:
 	// - "OFF": No ReferenceGrant validation. All cross-namespace references are permitted.

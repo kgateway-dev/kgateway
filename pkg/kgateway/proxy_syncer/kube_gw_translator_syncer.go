@@ -74,14 +74,13 @@ func (s *ProxyTranslator) syncXds(
 	// mutated the snapshot shared with the krt cache. Publication goes
 	// through the publish gate so it cancels any pending bounded publish or
 	// flip release and cannot race an expiring budget timer.
-	// A de-reference produces a perfectly coherent build -- nothing is missing,
-	// a cluster simply stopped being emitted -- so the removal side cannot ride
-	// on the deferred path above. When a grace is configured, a coherent
-	// snapshot is published through the same carry-forward resolution, with no
-	// holds, so a cluster that just left the emitted set stays published until
-	// its window closes.
-	if s.gate.retainsDereferenced() {
-		if err := s.gate.publishWithDereferenceGrace(ctx, s.xdsCache, snapWrap); err != nil {
+	// Both emitted-set transitions produce coherent builds -- a cluster losing
+	// its last reference, and a route gaining a destination never sent to this
+	// client -- so neither can ride the deferred path above. When either window
+	// is configured, a coherent snapshot publishes through the path that makes
+	// them safe.
+	if s.gate.appliesTransitionGraces() {
+		if err := s.gate.publishWithTransitionGraces(ctx, s.xdsCache, snapWrap); err != nil {
 			logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
 		}
 		return
