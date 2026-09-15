@@ -69,6 +69,8 @@ func DeepMergeMaps[keyT comparable, valT any](dst, src map[keyT]valT) map[keyT]v
 	return dst
 }
 
+// DeepMergeSlices keeps dst for a nil src, clears it for an empty src, and otherwise appends src to dst.
+// Lists whose entries must be unique by key (e.g. sysctls) need a keyed merge instead.
 func DeepMergeSlices[T any](dst, src []T) []T {
 	// nil src override means just use dst
 	if src == nil {
@@ -167,10 +169,13 @@ func deepMergePodSecurityContext(dst, src *corev1.PodSecurityContext) *corev1.Po
 	dst.RunAsGroup = MergePointers(dst.RunAsGroup, src.RunAsGroup)
 	dst.RunAsNonRoot = MergePointers(dst.RunAsNonRoot, src.RunAsNonRoot)
 	dst.SupplementalGroups = DeepMergeSlices(dst.SupplementalGroups, src.SupplementalGroups)
+	dst.SupplementalGroupsPolicy = MergePointers(dst.SupplementalGroupsPolicy, src.SupplementalGroupsPolicy)
 	dst.FSGroup = MergePointers(dst.FSGroup, src.FSGroup)
-	dst.Sysctls = DeepMergeSlices(dst.Sysctls, src.Sysctls)
+	dst.Sysctls = deepMergeSysctls(dst.Sysctls, src.Sysctls)
 	dst.FSGroupChangePolicy = MergePointers(dst.FSGroupChangePolicy, src.FSGroupChangePolicy)
 	dst.SeccompProfile = deepMergeSeccompProfile(dst.SeccompProfile, src.SeccompProfile)
+	dst.AppArmorProfile = MergePointers(dst.AppArmorProfile, src.AppArmorProfile)
+	dst.SELinuxChangePolicy = MergePointers(dst.SELinuxChangePolicy, src.SELinuxChangePolicy)
 
 	return dst
 }
@@ -223,6 +228,33 @@ func deepMergeSeccompProfile(dst, src *corev1.SeccompProfile) *corev1.SeccompPro
 
 	dst.Type = MergeComparable(dst.Type, src.Type)
 	dst.LocalhostProfile = MergePointers(dst.LocalhostProfile, src.LocalhostProfile)
+
+	return dst
+}
+
+// deepMergeSysctls merges by name so src values win, since Kubernetes rejects duplicate sysctl names.
+func deepMergeSysctls(dst, src []corev1.Sysctl) []corev1.Sysctl {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil || len(src) == 0 {
+		return src
+	}
+
+	indexByName := make(map[string]int, len(dst))
+	for i, sysctl := range dst {
+		indexByName[sysctl.Name] = i
+	}
+	for _, sysctl := range src {
+		if i, ok := indexByName[sysctl.Name]; ok {
+			dst[i] = sysctl
+			continue
+		}
+		indexByName[sysctl.Name] = len(dst)
+		dst = append(dst, sysctl)
+	}
 
 	return dst
 }
@@ -748,6 +780,7 @@ func DeepMergeSecurityContext(dst, src *corev1.SecurityContext) *corev1.Security
 	dst.AllowPrivilegeEscalation = MergePointers(dst.AllowPrivilegeEscalation, src.AllowPrivilegeEscalation)
 	dst.ProcMount = MergePointers(dst.ProcMount, src.ProcMount)
 	dst.SeccompProfile = deepMergeSeccompProfile(dst.SeccompProfile, src.SeccompProfile)
+	dst.AppArmorProfile = MergePointers(dst.AppArmorProfile, src.AppArmorProfile)
 
 	return dst
 }
