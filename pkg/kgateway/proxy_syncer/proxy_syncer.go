@@ -320,13 +320,29 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		krtopts,
 	)
 
+	// Gateway and Backend translation only ever report on policies that attached to
+	// something. A policy whose targetRef names a missing object attaches nowhere, so this
+	// producer checks every policy's own targetRefs and reports the unresolved ones. See
+	// policy_target_status.go.
+	var policyCols []krt.Collection[ir.PolicyWrapper]
+	for _, plugin := range s.plugins.ContributesPolicies {
+		if plugin.Policies != nil {
+			policyCols = append(policyCols, plugin.Policies)
+		}
+	}
+	allPolicies := krt.JoinCollection(policyCols, krtopts.ToOptions("PolicyTargetPolicies")...)
+	policyTargetContributions := policyTargetStatusContributions(allPolicies,
+		newPolicyTargetResolvers(s.commonCols, s.plugins.ContributesBackends), krtopts)
+
 	// All status paths now meet as independently keyed contributions. Policy
-	// ancestors from Gateway and Backend translation naturally reduce under the
-	// same policy key without a competing singleton writer.
+	// ancestors from Gateway translation, Backend translation, and targetRef
+	// resolution naturally reduce under the same policy key without a competing
+	// singleton writer.
 	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
 		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
 		backendContributions,
+		policyTargetContributions,
 	}, krtopts.ToOptions("StatusContributions")...)
 
 	s.waitForSync = []cache.InformerSynced{

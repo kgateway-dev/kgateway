@@ -19,6 +19,10 @@ const (
 
 	PolicyOverriddenMsg = "Overridden due to conflict with higher priority policy in target(s)"
 
+	// PolicyTargetNotFoundMsg is the Attached message reported on a policy whose targetRefs
+	// name objects that do not exist.
+	PolicyTargetNotFoundMsg = "Policy is not attached to targets that could not be resolved"
+
 	// RouteRuleDroppedReason is used with the Accepted=False condition when the route rule is dropped.
 	RouteRuleDroppedReason = "RouteRuleDropped"
 
