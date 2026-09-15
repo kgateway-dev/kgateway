@@ -1,0 +1,230 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - name: fast
+    matches:
+    - path:
+        type: Exact
+        value: /fast
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - name: slow
+    matches:
+    - path:
+        type: PathPrefix
+        value: /slow
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - name: reports
+    matches:
+    - path:
+        type: PathPrefix
+        value: /reports
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - name: audit
+    matches:
+    - path:
+        type: PathPrefix
+        value: /audit
+    backendRefs:
+    - name: example-svc
+      port: 80
+  - name: other
+    matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: example-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: quota-fast
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+    sectionName: fast
+  rateLimit:
+    quota:
+      extensionRef:
+        name: rlqs
+      bucket:
+      - key: route
+        type: Generic
+        value: fast
+      - key: tenant
+        type: Header
+        header: x-tenant-id
+      reportingInterval: 2s
+      noAssignmentBehavior: Deny
+      expiredAssignmentBehavior:
+        strategy: ReuseLast
+        timeout: 30s
+      denyStatus: 503
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: quota-slow
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+    sectionName: slow
+  rateLimit:
+    quota:
+      extensionRef:
+        name: rlqs
+      bucket:
+      - key: route
+        type: Generic
+        value: slow
+      expiredAssignmentBehavior:
+        strategy: Deny
+        timeout: 20s
+---
+# Header-only bucket with explicit Allow fallbacks and the default deny status.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: quota-reports
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+    sectionName: reports
+  rateLimit:
+    quota:
+      extensionRef:
+        name: rlqs
+      bucket:
+      - key: user
+        type: Header
+        header: x-user-id
+      - key: api-key
+        type: Header
+        header: x-api-key
+      reportingInterval: 1s
+      noAssignmentBehavior: Allow
+      expiredAssignmentBehavior:
+        strategy: Allow
+        timeout: 10s
+      denyStatus: 429
+---
+# Second RLQS provider on the same listener produces a separate filter.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: quota-audit
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+    sectionName: audit
+  rateLimit:
+    quota:
+      extensionRef:
+        name: rlqs-audit
+      bucket:
+      - key: route
+        type: Generic
+        value: audit
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: quota-gateway
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  rateLimit:
+    quota:
+      extensionRef:
+        name: rlqs
+      bucket:
+      - key: route
+        type: Generic
+        value: default
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: rlqs
+spec:
+  type: RateLimitQuota
+  rateLimitQuota:
+    grpcService:
+      backendRef:
+        name: rlqs
+        port: 18081
+    domain: example
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: rlqs-audit
+spec:
+  type: RateLimitQuota
+  rateLimitQuota:
+    grpcService:
+      backendRef:
+        name: rlqs
+        port: 18081
+      authority: rlqs-audit.example.internal
+    domain: audit
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rlqs
+spec:
+  ports:
+  - port: 18081
+    name: grpc
+    targetPort: 18081
+    appProtocol: kubernetes.io/h2c
+  selector:
+    app: rlqs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: test

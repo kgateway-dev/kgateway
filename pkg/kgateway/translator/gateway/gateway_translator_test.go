@@ -3098,6 +3098,30 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy RateLimit Quota", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/rate-limit-quota.yaml"},
+			outputFile: "traffic-policy/rate-limit-quota.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
+	t.Run("TrafficPolicy RateLimit Quota with cross-namespace GatewayExtension", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/rate-limit-quota-cross-namespace.yaml"},
+			outputFile: "traffic-policy/rate-limit-quota-cross-namespace.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy RateLimit with cross-namespace GatewayExtension", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/ratelimit-cross-namespace.yaml"},

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"google.golang.org/protobuf/proto"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -38,14 +39,17 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator, e
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil, enableAuthMetadata).(*trafficPolicyPluginGwPass)
 
-	// Use a placeholder filter chain name for validation
+	// Use a placeholder filter chain and route for validation. Policies that are
+	// scoped by Envoy route name (e.g. rate limit quota) need a named route to
+	// emit their listener filter.
 	const validationFilterChain = "validation-filter-chain"
+	placeholderRoute := &envoyroutev3.Route{Name: "validation-route"}
 
 	if err := fakePass.ApplyForRoute(&ir.RouteContext{
 		Policy:            p,
 		TypedFilterConfig: typedPerFilterConfig,
 		FilterChainName:   validationFilterChain,
-	}, nil); err != nil {
+	}, placeholderRoute); err != nil {
 		return err
 	}
 
