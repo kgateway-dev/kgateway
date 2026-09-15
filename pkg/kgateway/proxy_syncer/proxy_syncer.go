@@ -93,6 +93,12 @@ type GatewayXdsResources struct {
 	// +noKrtEquals derived from Routes and Listeners, whose content-hash versions Equals compares
 	ReferencedClusters map[string]struct{}
 
+	// EmittedClusters is the over-approximating set of cluster names the generated
+	// Routes and Listeners could name, plus any request-time selector that makes
+	// that set unsafe to filter on. ReferencedClusters is always a subset of its
+	// Names; see collectReferencedClustersForEmission.
+	EmittedClusters emittedClusters
+
 	// Secrets are items in the SDS response payload.
 	Secrets envoycache.Resources
 }
@@ -106,7 +112,8 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
-		r.Secrets.Version == in.Secrets.Version
+		r.Secrets.Version == in.Secrets.Version &&
+		r.EmittedClusters.Equals(in.EmittedClusters)
 }
 
 // GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
@@ -175,6 +182,7 @@ func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, 
 			Listeners:          listeners,
 			Secrets:            sliceToResources(xdsSnap.Secrets),
 			ReferencedClusters: collectReferencedClusters(routes, listeners),
+			EmittedClusters:    collectReferencedClustersForEmission(routes, listeners),
 		},
 		Status: GatewayStatusSnapshot{
 			NamespacedName: nn,
