@@ -286,6 +286,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
 
+	// MaxConnectionDuration is the maximum duration of a connection, measured from
+	// when the connection was established. When this duration is reached, Envoy starts
+	// the drain sequence. If unset, there is no maximum connection duration.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
+
 	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
 	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
 	// clients to reconnect. This allows L4 load balancers like AWS NLB to rebalance long-lived
@@ -793,9 +803,7 @@ type CELFilter struct {
 // A request will be logged if the runtime key is set and the request's random value is less than the percent_sampled value.
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
 type RuntimeFilter struct {
-	// The runtime key to look up in the runtime implementation. This key determines whether
-	// the access log is enabled. When the runtime key value is set, the filter checks this key
-	// at runtime to decide whether to log each request.
+	// RuntimeKey identifies the runtime setting used to decide whether to log each request.
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	RuntimeKey string `json:"runtimeKey"`
@@ -1080,7 +1088,10 @@ const (
 
 // UpgradeConfig represents configuration for HTTP upgrades.
 type UpgradeConfig struct {
-	// List of upgrade types to enable (e.g. "websocket", "CONNECT", etc.)
+	// EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+	// and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+	// upstream without termination. To terminate CONNECT and forward its payload
+	// as raw TCP data, configure httpUpgrade in a TrafficPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +optional
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`

@@ -610,6 +610,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with local rate limiting shared across the gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-share-across-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with local and global rate limiting combined", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/local-and-global-combined"},
@@ -942,6 +953,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/buffer-route.yaml"},
 			outputFile: "traffic-policy/buffer-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with buffer filter stage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/buffer-filter-stage.yaml"},
+			outputFile: "traffic-policy/buffer-filter-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with HTTP upgrades attached to route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-upgrade-route.yaml"},
+			outputFile: "traffic-policy/http-upgrade-route.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3492,10 +3525,43 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("JWT Policy using remote JWKS with custom timeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/remote-jwks-timeout.yaml"},
+			outputFile: "jwt/remote-jwks-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with clock skew", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/clock-skew.yaml"},
+			outputFile: "jwt/clock-skew.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy with validation mode AllowMissing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"jwt/gateway-validation-mode.yaml"},
 			outputFile: "jwt/gateway-validation-mode.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with validation mode AllowMissingOrFailed", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/gateway-validation-mode-allow-missing-or-failed.yaml"},
+			outputFile: "jwt/gateway-validation-mode-allow-missing-or-failed.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

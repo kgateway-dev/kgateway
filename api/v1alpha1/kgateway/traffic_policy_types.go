@@ -44,7 +44,10 @@ type TrafficPolicyList struct {
 // +kubebuilder:validation:XValidation:rule="!has(self.urlRewrite) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute')))",message="urlRewrite can only be used when targeting HTTPRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.tracing) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="tracing can only be used when targeting HTTPRoute or GRPCRoute resources"
 // +kubebuilder:validation:XValidation:rule="!has(self.statPrefix) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'HTTPRoute' || r.kind == 'GRPCRoute')))",message="statPrefix can only be used when targeting HTTPRoute or GRPCRoute resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || ((!has(self.targetRefs) || self.targetRefs.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))) && (!has(self.targetSelectors) || self.targetSelectors.all(r, r.kind == 'Gateway' || r.kind == 'HTTPRoute' || r.kind.endsWith('ListenerSet'))))",message="httpUpgrade can only be used when targeting Gateway, HTTPRoute, or ListenerSet resources"
+// +kubebuilder:validation:XValidation:rule="!has(self.httpUpgrade) || self.httpUpgrade.all(x, self.httpUpgrade.exists_one(y, y.type.lowerAscii() == x.type.lowerAscii()))",message="httpUpgrade types must be unique ignoring ASCII case"
 // +kubebuilder:validation:XValidation:rule="has(self.retry) && has(self.timeouts) ? (has(self.retry.perTryTimeout) && has(self.timeouts.request) ? duration(self.retry.perTryTimeout) < duration(self.timeouts.request) : true) : true",message="retry.perTryTimeout must be less than timeouts.request"
+// +kubebuilder:validation:XValidation:rule="!has(self.buffer) || has(self.buffer.disable) || !has(self.httpUpgrade) || self.httpUpgrade.size() == 0",message="buffer cannot be used together with httpUpgrade unless buffering is disabled"
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
@@ -111,6 +114,19 @@ type TrafficPolicySpec struct {
 	// Requests exceeding this size will return a 413 response.
 	// +optional
 	Buffer *Buffer `json:"buffer,omitempty"`
+
+	// HTTPUpgrade configures HTTP protocol upgrades on the targeted routes.
+	// Route-level upgrade settings override the matching upgrade type configured
+	// on the listener. CONNECT termination is applied per route and cannot be
+	// configured on a listener. After an upgrade is established, tunneled payload
+	// is not inspected by HTTP filters. Authenticate and authorize the initial
+	// upgrade request, enable upgrades only for trusted clients, and avoid request
+	// buffering.
+	// +optional
+	// +kubebuilder:validation:MaxItems=16
+	// +listType=map
+	// +listMapKey=type
+	HTTPUpgrade []ProtocolUpgradeConfig `json:"httpUpgrade,omitempty"`
 
 	// Timeouts defines the timeouts for requests.
 	// It is applicable to HTTPRoutes, GRPCRoutes, and Gateways (including individual
@@ -255,8 +271,37 @@ type RequestMirrorPolicy struct {
 	HostRewriteLiteral *string `json:"hostRewriteLiteral,omitempty"`
 }
 
+// ProtocolUpgradeConfig specifies configuration for an HTTP protocol upgrade.
+// +kubebuilder:validation:XValidation:rule="!has(self.connect) || self.type.lowerAscii() == 'connect'",message="connect configuration is only allowed when type is CONNECT"
+type ProtocolUpgradeConfig struct {
+	// Type is the case-insensitive protocol upgrade token, such as "websocket",
+	// "CONNECT", or "spdy/3.1". Do not configure the same token more than once,
+	// including variants that differ only by letter case.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	Type string `json:"type"`
+
+	// Connect configures CONNECT-specific behavior. It is valid only when type
+	// is "CONNECT".
+	// +optional
+	Connect *ConnectConfig `json:"connect,omitempty"`
+}
+
+// ConnectConfig specifies how CONNECT requests are forwarded upstream.
+type ConnectConfig struct {
+	// Terminate causes the gateway to terminate the CONNECT request and forward
+	// the request payload upstream as raw TCP data. When false or omitted, the
+	// CONNECT request is proxied upstream without termination.
+	//
+	// Because the payload is forwarded as raw bytes, configuring TLS for the
+	// selected backend wraps those bytes in a separate upstream TLS session. Leave
+	// backend TLS disabled when the payload must reach the upstream unchanged.
+	// +optional
+	Terminate *bool `json:"terminate,omitempty"`
+}
+
 // URLRewrite specifies URL rewrite rules using regular expressions.
-// This allows more flexible and advanced path rewriting based on regex patterns.
 // +kubebuilder:validation:AtLeastOneOf=pathRegex
 type URLRewrite struct {
 	// Path specifies the path rewrite configuration.
@@ -429,11 +474,10 @@ type RateLimit struct {
 	Global *RateLimitPolicy `json:"global,omitempty"`
 }
 
-// LocalRateLimitPolicy represents a policy for local rate limiting.
-// It defines the configuration for rate limiting using a token bucket mechanism.
+// LocalRateLimitPolicy configures local rate limiting using a token bucket.
+// +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"
 type LocalRateLimitPolicy struct {
-	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
-	// It defines the parameters for controlling the rate at which requests are allowed.
+	// TokenBucket configures the local rate limiter's token bucket.
 	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
 
@@ -448,10 +492,21 @@ type LocalRateLimitPolicy struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentEnforced *int32 `json:"percentEnforced,omitempty"`
+
+	// ShareAcrossGateway applies the token bucket to the Gateway as a whole rather than to each
+	// proxy replica individually. Each replica is given an even share of the bucket based on the
+	// current number of replicas of the Gateway, so the configured rate is the total rate admitted
+	// by all replicas combined. For example, with tokensPerFill=100 and fillInterval=1s, a Gateway
+	// with 4 replicas admits 25 requests per second per gateway. Because the allocation is divided,
+	// maxTokens must be greater than or equal to the number of replicas, otherwise no requests are
+	// admitted.
+	//
+	// Defaults to false.
+	// +optional
+	ShareAcrossGateway *bool `json:"shareAcrossGateway,omitempty"`
 }
 
-// TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
-// It controls the rate at which tokens are generated and consumed for a specific operation.
+// TokenBucket configures the burst capacity and refill rate of a token bucket.
 type TokenBucket struct {
 	// MaxTokens specifies the maximum number of tokens that the bucket can hold.
 	// This value must be greater than or equal to 1.
@@ -462,7 +517,6 @@ type TokenBucket struct {
 
 	// TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
 	// If not specified, it defaults to 1.
-	// This controls the steady-state rate of token generation.
 	// +optional
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
@@ -470,7 +524,6 @@ type TokenBucket struct {
 
 	// FillInterval defines the time duration between consecutive token fills.
 	// This value must be a valid duration string (e.g., "1s", "500ms").
-	// It determines the frequency of token replenishment.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
@@ -706,6 +759,8 @@ type LabelSelector struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
+// +kubebuilder:validation:XValidation:message="filterStage cannot be set when disable is set",rule="!(has(self.disable) && has(self.filterStage))"
+// +kubebuilder:validation:XValidation:message="filterStage.weight has no effect for buffer and must be 0: a filter chain carries at most one buffer filter, so there is nothing to break ties against",rule="!has(self.filterStage) || self.filterStage.weight == 0"
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
@@ -718,6 +773,27 @@ type Buffer struct {
 	// Can be used to disable buffer policies applied at a higher level in the config hierarchy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+
+	// FilterStage sets the buffer filter's position in the HTTP filter chain.
+	// By default, it runs after authentication, authorization, and rate limiting.
+	// Place it before filters that read or hold the body, such as ext_proc or body
+	// transformations, to enforce maxRequestSize before those filters consume it.
+	// Earlier buffering uses memory even for requests that later filters reject.
+	//
+	// Placement affects every route on the listener. If policies request different
+	// stages, the earliest wins. Policies that only set disable do not affect
+	// placement. Per-route maxRequestSize and disable overrides still apply.
+	// Keep stages consistent or use separate listeners to avoid moving buffering
+	// earlier for other routes.
+	//
+	// Request decompressors stay ahead of the buffer so maxRequestSize applies to
+	// the decompressed body. Placing the buffer at Fault also moves decompression
+	// ahead of fault injection, CORS, and ext_proc filters staged at Fault for all
+	// routes on the listener.
+	//
+	// filterStage.weight must be 0.
+	// +optional
+	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 // Compression configures HTTP response compression and request decompression behavior.

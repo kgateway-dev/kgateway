@@ -10,10 +10,6 @@ on:
           Prereleases are allowed; build metadata (a '+' suffix) is not, because the version
           becomes an image/chart tag and '+' is not a valid OCI tag character.
           Examples: v1.2.3, v2.0.0-alpha.1, v1.0.0-beta.2
-      run_load_tests:
-        type: boolean
-        default: false
-        description: "Run load tests against the staged artifacts before publishing (does not gate the release)"
       allow_missing_previous_version:
         type: boolean
         default: false
@@ -542,9 +538,10 @@ jobs:
 
   load_tests:
     name: Load Testing
-    # Advisory: runs against the staged artifact when opted in, but does NOT gate publish.
+    timeout-minutes: 120
+    # Advisory: runs for every release against staged artifacts, but does NOT gate publish.
     needs: [setup, helm, stage]
-    if: ${{ inputs.run_load_tests }}
+    if: ${{ needs.setup.outputs.needs_release == 'true' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -576,6 +573,19 @@ jobs:
         env:
           KGATEWAY_RUN_LOAD_TESTS: "true"
           VERSION: ${{ needs.setup.outputs.version }}
+
+      - name: Run xDS benchmarks
+        run: make run-xds-bench-ci
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+          KGW_BENCH_LABEL: ${{ needs.setup.outputs.stage_tag }}
+
+      - name: Upload xDS benchmark results
+        if: ${{ always() }}
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: release-xds-benchmarks
+          path: _output/xds-bench/
 
   publish:
     name: Publish release

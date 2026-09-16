@@ -2,6 +2,8 @@
 
 ## Pull Request CI Checks
 
+Draft and ready-for-review pull requests run the same CI checks, including end-to-end and conformance tests. Existing workflow filters and security restrictions apply equally to both.
+
 The following checks are required to pass in order for a PR to be merged:
 
 ### [DCO](https://developercertificate.org/)
@@ -25,14 +27,8 @@ Runs all Go unit tests.
 Runs conformance tests against both the experimental and standard Gateway API channels.
 Uses the upstream [Kubernetes Gateway API Conformance suite](https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/conformance_test.go).
 
-**Note**: This Github Action will not run by default on a Draft Pull Request.
-After a Pull Request is marked as `Ready for Review` it will trigger the action to run.
-
 ### [Kubernetes End-to-End Tests](./e2e.yaml)
 Runs the suite of [Kubernetes End-To-End Tests](/test/e2e).
-
-**Note**: This Github Action will not run by default on a Draft Pull Request.
-After a Pull Request is marked as `Ready for Review` it will trigger the action to run.
 
 ## Interacting with CI
 

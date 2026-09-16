@@ -104,7 +104,7 @@ jobs:
     needs: determine_refs
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-load-tests ) || github.event.schedule == '0 5 * * *' }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:

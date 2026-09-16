@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.38.3
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.1
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -1245,6 +1245,96 @@ run-load-tests-production: ## Run production load tests (5000 routes)
 	@echo "Running KGateway production load tests with validation mode: $(VALIDATION_MODE)"
 	SKIP_INSTALL=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
 	go test -tags=e2e $(LOAD_TEST_GO_ARGS) -v ./test/e2e/tests -run "^TestKgateway$$/^AttachedRoutes$$/^TestAttachedRoutesProduction$$"
+
+.PHONY: run-load-tests-strict-churn
+run-load-tests-strict-churn: ## Run strict-validation churn convergence test (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_STRICT_CHURN=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -timeout 30m ./test/e2e/tests -run "^TestKgateway$$/^StrictChurn$$"
+
+# XdsCost prices what each kind of change costs the controller, by scraping the
+# controller's own metrics. Override the fleet shape and mode with
+# KGW_BENCH_GATEWAYS / KGW_BENCH_STATIC_BACKENDS / KGW_BENCH_EDS_ROUTES /
+# KGW_BENCH_ITERATIONS / KGW_BENCH_VALIDATION (STANDARD|STRICT), and name the
+# build under test with KGW_BENCH_LABEL. -count=1 is required: go test caches a
+# successful run and will otherwise replay it under new env vars.
+XDS_COST_GO_ARGS ?= -timeout=60m
+XDS_FLEET_GO_ARGS ?= -timeout=180m
+
+.PHONY: run-xds-cost-bench
+run-xds-cost-bench: ## Run the per-client xDS control-plane cost benchmark (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_XDS_COST=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -count=1 $(XDS_COST_GO_ARGS) ./test/e2e/tests -run "^TestKgateway$$/^XdsCost$$"
+
+# XdsFleet is XdsCost at production fan-out: thousands of Services and hundreds
+# of Gateways, driven by synthetic xDS streams instead of real Envoy pods, which
+# no single machine can host. Knobs: KGW_FLEET_SERVICES / KGW_FLEET_GATEWAYS /
+# KGW_FLEET_INLINE_BACKENDS / KGW_FLEET_STREAMS_PER_GATEWAY / KGW_FLEET_WAVES.
+.PHONY: run-xds-fleet-bench
+run-xds-fleet-bench: ## Run the fleet-scale per-client xDS cost benchmark (mutates the controller deployment; requires existing cluster and installation)
+	SKIP_INSTALL=true KGW_ENABLE_XDS_FLEET=true CLUSTER_NAME=$(CLUSTER_NAME) INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) \
+	go test -tags=e2e -v -count=1 $(XDS_FLEET_GO_ARGS) ./test/e2e/tests -run "^TestKgateway$$/^XdsFleet$$"
+
+
+# A bounded CI workload shared by nightly and staged-release load testing.
+# These numbers exercise fan-out and churn; they are not a production capacity claim.
+XDS_BENCH_OUTPUT_DIR ?= $(OUTPUT_DIR)/xds-bench
+.PHONY: run-xds-bench-ci
+run-xds-bench-ci: export KGW_BENCH_VALIDATION := STANDARD
+run-xds-bench-ci: export KGW_BENCH_GATEWAYS := 3
+run-xds-bench-ci: export KGW_BENCH_STATIC_BACKENDS := 30
+run-xds-bench-ci: export KGW_BENCH_EDS_ROUTES := 30
+run-xds-bench-ci: export KGW_BENCH_ITERATIONS := 3
+run-xds-bench-ci: export KGW_BENCH_IDLE_SECONDS := 5
+run-xds-bench-ci: export KGW_FLEET_SERVICES := 500
+run-xds-bench-ci: export KGW_FLEET_GATEWAYS := 24
+run-xds-bench-ci: export KGW_FLEET_INLINE_BACKENDS := 10
+run-xds-bench-ci: export KGW_FLEET_STREAMS_PER_GATEWAY := 2
+run-xds-bench-ci: export KGW_FLEET_WAVES := 4
+run-xds-bench-ci: export KGW_FLEET_ZONES := 3
+run-xds-bench-ci: export KGW_FLEET_POD_LOCALITY := false
+run-xds-bench-ci: export KGW_FLEET_ENDPOINT_PODS := false
+run-xds-bench-ci: export KGW_FLEET_MEMORY_LIMIT := 2Gi
+run-xds-bench-ci: export KGW_FLEET_ITERATIONS := 3
+run-xds-bench-ci: export KGW_FLEET_SETTLE_MS := 1500
+run-xds-bench-ci: export KGW_FLEET_WAVE_TIMEOUT_SECONDS := 120
+run-xds-bench-ci: export KGW_FLEET_ITERATION_TIMEOUT_SECONDS := 120
+run-xds-bench-ci: ## Run bounded xDS benchmarks and validate their results (existing installation)
+	@set -euo pipefail; \
+	mkdir -p "$(XDS_BENCH_OUTPUT_DIR)"; \
+	failed=0; \
+	for suite in cost fleet; do \
+		records="$(XDS_BENCH_OUTPUT_DIR)/$$suite.records"; \
+		: > "$$records"; \
+		if ! KGW_BENCH_OUT="$$records" $(MAKE) --no-print-directory run-xds-$$suite-bench \
+			XDS_COST_GO_ARGS=-timeout=20m XDS_FLEET_GO_ARGS=-timeout=20m \
+			2>&1 | tee "$(XDS_BENCH_OUTPUT_DIR)/$$suite.log"; then \
+			failed=1; \
+		fi; \
+		if ! jq -Rc 'capture("^(?<event>[^ ]+) (?<payload>.*)$$") | {event, data: (.payload | fromjson)}' \
+			"$$records" > "$(XDS_BENCH_OUTPUT_DIR)/$$suite.jsonl"; then \
+			failed=1; \
+		fi; \
+		if ! $(MAKE) --no-print-directory validate-xds-bench-ci-results XDS_BENCH_SUITE="$$suite"; then \
+			failed=1; \
+		fi; \
+	done; \
+	exit "$$failed"
+
+.PHONY: validate-xds-bench-ci-results
+validate-xds-bench-ci-results: ## Check benchmark completion and fleet failure verdicts
+	@jq -es --arg suite "$(XDS_BENCH_SUITE)" \
+		'if $$suite == "cost" then \
+			([.[] | select(.event == "xds_cost_result") | .data.phase] | sort) == ["BaseChurn","EdsChurn","Reconnect"] \
+			and all(.[] | select(.event == "xds_cost_result"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
+			and any(.[]; .event == "xds_cost_summary" and (.data.phases | length) == 3) \
+		elif $$suite == "fleet" then \
+			all(.[]; .event != "xds_fleet_verdict") \
+			and ([.[] | select(.event == "xds_fleet_wave")] | length) == 4 \
+			and all(.[] | select(.event == "xds_fleet_wave"); .data.served == true and .data.settled == true) \
+			and any(.[]; .event == "xds_fleet_wave" and .data.gateways == 24 and .data.clients == 24) \
+			and ([.[] | select(.event == "xds_fleet_result") | .data.phase] | sort) == ["BaseChurn","EdsChurn","StreamReconnect"] \
+			and all(.[] | select(.event == "xds_fleet_result"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
+		else false end' "$(XDS_BENCH_OUTPUT_DIR)/$(XDS_BENCH_SUITE).jsonl"
 
 #----------------------------------------------------------------------------------
 # MARK: Conformance
