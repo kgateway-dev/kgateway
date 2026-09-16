@@ -300,6 +300,13 @@ spec:
                               https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
                               for more information.
                             type: string
+                          maxDownstreamConnections:
+                            description: |-
+                              MaxDownstreamConnections caps active downstream connections across all listeners. Unset by default (no limit).
+                              This is bootstrap configuration, so changing it restarts the proxy.
+                            format: int64
+                            minimum: 1
+                            type: integer
                         type: object
                       env:
                         description: The container environment variables.
