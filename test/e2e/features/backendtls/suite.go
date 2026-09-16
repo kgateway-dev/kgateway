@@ -35,6 +35,8 @@ var (
 	terminatedTLSRouteManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata/terminated-tlsroute.yaml")
 	terminatedTLSRouteInvalidManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata/terminated-tlsroute-invalid.yaml")
 	unroutedBackendManifest               = filepath.Join(fsutils.MustGetThisDir(), "testdata/unrouted-backend.yaml")
+	ecdhCurveBackendManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata/ecdh-curve-backend.yaml")
+	tlsVersionBackendManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata/tls-version-backend.yaml")
 
 	backendTlsPolicy = &gwv1.BackendTLSPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -100,6 +102,12 @@ var (
 		},
 		"TestBackendTLSPolicyStatusForUnroutedBackend": {
 			Manifests: []string{unroutedBackendManifest},
+		},
+		"TestBackendTLSPolicyECDHCurveOption": {
+			Manifests: []string{ecdhCurveBackendManifest},
+		},
+		"TestBackendTLSPolicyTLSVersionOption": {
+			Manifests: []string{tlsVersionBackendManifest},
 		},
 	}
 )
@@ -246,6 +254,64 @@ func (s *tsuite) TestBackendTLSPolicyStatusForUnroutedBackend() {
 		Status:  metav1.ConditionTrue,
 		Reason:  string(gwv1.BackendTLSPolicyReasonResolvedRefs),
 		Message: resolvedAllReferencesMsg,
+	})
+}
+
+// TestBackendTLSPolicyECDHCurveOption verifies the ecdh-curves option lets a P-384 ECDSA
+// backend certificate work, which Envoy's default curve list otherwise rejects (issue #14283).
+func (s *tsuite) TestBackendTLSPolicyECDHCurveOption() {
+	s.Run("ecdh-curves option allows the P-384 backend certificate", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(defaults.NginxResponse),
+			},
+			curl.WithPort(80),
+			curl.WithHostHeader("ecdsa-allowed.example.com"),
+			curl.WithPath("/"),
+		)
+	})
+
+	s.Run("default ecdh-curves list rejects the P-384 backend certificate", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&matchers.HttpResponse{
+				StatusCode: http.StatusServiceUnavailable,
+			},
+			curl.WithPort(80),
+			curl.WithHostHeader("ecdsa-default.example.com"),
+			curl.WithPath("/"),
+		)
+	})
+}
+
+// TestBackendTLSPolicyTLSVersionOption verifies that min/max-tls-version on a BackendTLSPolicy
+// constrains the TLS version Envoy uses for the upstream handshake.
+func (s *tsuite) TestBackendTLSPolicyTLSVersionOption() {
+	s.Run("TLS 1.3-only policy matches a TLS 1.3-only backend", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(defaults.NginxResponse),
+			},
+			curl.WithPort(80),
+			curl.WithHostHeader("tls13-backend.example.com"),
+			curl.WithPath("/"),
+		)
+	})
+
+	s.Run("TLS 1.3-only policy fails against a TLS 1.2-only backend", func() {
+		common.BaseGateway.Send(
+			s.T(),
+			&matchers.HttpResponse{
+				StatusCode: http.StatusServiceUnavailable,
+			},
+			curl.WithPort(80),
+			curl.WithHostHeader("tls12-backend.example.com"),
+			curl.WithPath("/"),
+		)
 	})
 }
 
