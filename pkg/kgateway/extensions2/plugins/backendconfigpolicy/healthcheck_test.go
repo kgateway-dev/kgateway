@@ -124,6 +124,83 @@ func TestTranslateHealthCheck(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Send must stay nil: Envoy reads an empty payload as a
+			// connect-only check, so setting it to an empty payload here
+			// would silently change the check's meaning.
+			name: "TCP health check, connect-only",
+			config: &kgateway.HealthCheck{
+				Timeout:            metav1.Duration{Duration: 2 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: 3,
+				HealthyThreshold:   2,
+				Tcp:                &kgateway.HealthCheckTcp{},
+			},
+			expected: &envoycorev3.HealthCheck{
+				Timeout:            durationpb.New(2 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
+				HealthChecker: &envoycorev3.HealthCheck_TcpHealthCheck_{
+					TcpHealthCheck: &envoycorev3.HealthCheck_TcpHealthCheck{},
+				},
+			},
+		},
+		{
+			name: "TCP health check with send payload only",
+			config: &kgateway.HealthCheck{
+				Timeout:            metav1.Duration{Duration: 2 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: 3,
+				HealthyThreshold:   2,
+				Tcp: &kgateway.HealthCheckTcp{
+					Send: new("000000FF"),
+				},
+			},
+			expected: &envoycorev3.HealthCheck{
+				Timeout:            durationpb.New(2 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
+				HealthChecker: &envoycorev3.HealthCheck_TcpHealthCheck_{
+					TcpHealthCheck: &envoycorev3.HealthCheck_TcpHealthCheck{
+						Send: &envoycorev3.HealthCheck_Payload{
+							Payload: &envoycorev3.HealthCheck_Payload_Text{Text: "000000FF"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "TCP health check with send and multiple receive payloads",
+			config: &kgateway.HealthCheck{
+				Timeout:            metav1.Duration{Duration: 2 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				UnhealthyThreshold: 3,
+				HealthyThreshold:   2,
+				Tcp: &kgateway.HealthCheckTcp{
+					Send:    new("50494e47"),
+					Receive: []string{"504f", "4e47"},
+				},
+			},
+			expected: &envoycorev3.HealthCheck{
+				Timeout:            durationpb.New(2 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
+				HealthChecker: &envoycorev3.HealthCheck_TcpHealthCheck_{
+					TcpHealthCheck: &envoycorev3.HealthCheck_TcpHealthCheck{
+						Send: &envoycorev3.HealthCheck_Payload{
+							Payload: &envoycorev3.HealthCheck_Payload_Text{Text: "50494e47"},
+						},
+						Receive: []*envoycorev3.HealthCheck_Payload{
+							{Payload: &envoycorev3.HealthCheck_Payload_Text{Text: "504f"}},
+							{Payload: &envoycorev3.HealthCheck_Payload_Text{Text: "4e47"}},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
