@@ -290,3 +290,27 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *report
 	})
 	return reportMap.PolicyReport(key)
 }
+
+// GeneratePolicyTargetReports resolves every policy's explicit targetRefs once, outside a krt
+// transform, and returns the TargetNotFound reports keyed by policy: the same reports
+// policyTargetStatusContributions produces incrementally in the proxy syncer. Exported for
+// the translator golden tests, which build status from report maps rather than running the
+// syncer.
+func GeneratePolicyTargetReports(commonCols *collections.CommonCollections, plugins sdk.Plugin) reports.ReportMap {
+	resolvers := newPolicyTargetResolvers(commonCols, plugins.ContributesBackends)
+	out := reports.NewPolicyReportMap()
+	for _, plugin := range plugins.ContributesPolicies {
+		if plugin.Policies == nil {
+			continue
+		}
+		for _, policy := range plugin.Policies.List() {
+			problems := unresolvedPolicyTargets(krt.TestingDummyContext{}, policy, resolvers)
+			if len(problems) == 0 {
+				continue
+			}
+			key := reporter.PolicyKey{Group: policy.Group, Kind: policy.Kind, Namespace: policy.Namespace, Name: policy.Name}
+			out.Policies[key] = buildPolicyTargetReport(policy, problems)
+		}
+	}
+	return out
+}
