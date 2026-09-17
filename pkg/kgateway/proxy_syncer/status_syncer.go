@@ -576,11 +576,15 @@ func (s *StatusSyncer) syncGatewayStatus(ctx context.Context, logger *slog.Logge
 	logger.Debug("synced gw status for gateways", "count", len(rm.Gateways))
 }
 
-// syncListenerSetStatus will build and update status for all Listener Sets in a reportMap
+// syncListenerSetStatus builds and updates status for supported ListenerSet kinds in a reportMap.
 func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.Logger, rm reports.ReportMap) {
 	// TODO: retry within loop per LS rather than as a full block
 	err := retry.Do(func() (rErr error) {
 		for gvk, listenerSetsForGVK := range rm.ListenerSets {
+			// Leave other listener-set kinds to customStatusSync.
+			if gvk != wellknown.ListenerSetGVK && gvk != wellknown.XListenerSetGVK {
+				continue
+			}
 			for lsnn := range listenerSetsForGVK {
 				ls, legacyListenerSet, err := s.getListenerSetForStatus(ctx, lsnn, gvk)
 				if err != nil {
