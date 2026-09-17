@@ -582,7 +582,7 @@ func (s *StatusSyncer) syncListenerSetStatus(ctx context.Context, logger *slog.L
 	err := retry.Do(func() (rErr error) {
 		for gvk, listenerSetsForGVK := range rm.ListenerSets {
 			// Leave other listener-set kinds to customStatusSync.
-			if gvk != wellknown.ListenerSetGVK && gvk != wellknown.XListenerSetGVK {
+			if !wellknown.IsListenerSetGVK(gvk) {
 				continue
 			}
 			for lsnn := range listenerSetsForGVK {

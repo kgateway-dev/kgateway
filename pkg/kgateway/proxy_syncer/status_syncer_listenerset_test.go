@@ -92,7 +92,13 @@ func TestSyncListenerSetStatusSkipsUnsupportedKinds(t *testing.T) {
 				}).Build()
 			syncer := &StatusSyncer{mgr: statusSyncerTestManager{client: kubeClient}}
 			var logs bytes.Buffer
-			syncer.syncListenerSetStatus(ctx, slog.New(slog.NewTextHandler(&logs, nil)), rm)
+			logger := slog.New(slog.NewJSONHandler(&logs, nil)).With("subcomponent", "listenerSetStatusSyncer")
+			syncer.syncListenerSetStatus(ctx, logger, rm)
+			if logs.Len() > 0 {
+				t.Logf("listener-set status sync logs:\n%s", logs.String())
+			}
+			require.NotContains(t, logs.String(), "error getting ls")
+			require.NotContains(t, logs.String(), "all attempts failed at updating listener set statuses")
 
 			expected := map[schema.GroupVersionKind]int{}
 			if tc.supported {
@@ -101,8 +107,6 @@ func TestSyncListenerSetStatusSkipsUnsupportedKinds(t *testing.T) {
 			}
 			require.Equal(t, expected, reads, "only supported resources should be fetched, exactly once")
 			require.Equal(t, expected, writes, "only supported resources should receive status writes")
-			require.NotContains(t, logs.String(), "error getting ls")
-			require.NotContains(t, logs.String(), "all attempts failed")
 			require.Same(t, customReport, rm.ListenerSet(custom), "retain the report for the custom writer")
 			require.Equal(t, customConditions, customReport.GetConditions())
 			for _, obj := range objects {
