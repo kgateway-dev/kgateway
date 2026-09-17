@@ -37,7 +37,7 @@ type EndpointsCase struct {
 	// given. A predicate is a promise about every client, so include the ones
 	// whose shape the hook would otherwise act on.
 	Clients []ir.UniquelyConnectedClient
-	// Kctx is the handler context the hook fetches through. Nil is replaced by
+	// Kctx is the handler context the predicate and hook fetch through. Nil is replaced by
 	// krt.TestingDummyContext{}, which serves synced static collections.
 	Kctx krt.HandlerContext
 }
@@ -82,7 +82,7 @@ func AssertMayApplyCoversEndpointHook(t testing.TB, c EndpointsCase) {
 
 	var ruledOut, admitted int
 	for _, backend := range c.Backends {
-		if c.Plugin.PerClientEndpointsMayApply(backend) {
+		if c.Plugin.PerClientEndpointsMayApply(kctx, backend) {
 			admitted++
 			continue
 		}
