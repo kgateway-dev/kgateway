@@ -127,8 +127,8 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Base Alpine image used for the dummy-idp container. Exported for use in goreleaser.yaml.
-export ALPINE_BASE_IMAGE ?= alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
+# Static base image for dummy-idp, which is built with CGO_ENABLED=0.
+export DUMMY_IDP_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
 
 # Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
@@ -928,7 +928,7 @@ $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
 $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
 	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
+		--build-arg BASE_IMAGE=$(DUMMY_IDP_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
 	@touch $@
 
