@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/deployer"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/directresponse"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/dualstack"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/ec2"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/extproc"
@@ -96,6 +97,7 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("AutoHostRewrite", auto_host_rewrite.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("AttachedRoutes", loadtesting.NewAttachedRoutesSuite)
 	kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("DualStack", dualstack.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("PathMatching", path_matching.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TimeoutRetry", timeoutretry.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("InternalRedirect", internalredirect.NewTestingSuite)
