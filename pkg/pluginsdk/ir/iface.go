@@ -15,7 +15,10 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -311,20 +314,63 @@ func (c PolicyWrapper) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
 
+// versionEquals compares source metadata and configuration, never resourceVersion.
+// CRDs with a generation use it to detect spec changes. Generation-zero objects
+// (including Services and test fixtures) need a content comparison instead: RV
+// also changes on status writes and unrelated API-server bookkeeping.
 func versionEquals(a, b metav1.Object) bool {
-	var versionEquals bool
-	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
-		versionEquals = a.GetGeneration() == b.GetGeneration()
-		// Generation alone is insufficient because Kubernetes only increments generation on spec changes,
-		// not metadata changes like labels.
-		// ResourceVersion: is too broad as it is bumped on status changes as well.
-		if versionEquals {
-			versionEquals = maps.Equal(a.GetLabels(), b.GetLabels()) && maps.Equal(a.GetAnnotations(), b.GetAnnotations())
-		}
-	} else {
-		versionEquals = a.GetResourceVersion() == b.GetResourceVersion()
+	if a == nil || b == nil {
+		return a == nil && b == nil
 	}
-	return versionEquals && a.GetUID() == b.GetUID()
+	if !sourceMetadataEquals(a, b) {
+		return false
+	}
+	if a.GetGeneration() != 0 {
+		return true
+	}
+	// Services are a frequent generation-zero input. Compare their spec directly
+	// rather than allocating an unstructured representation on every update.
+	if svc, ok := a.(*corev1.Service); ok {
+		other, ok := b.(*corev1.Service)
+		return ok && equality.Semantic.DeepEqual(svc.Spec, other.Spec)
+	}
+	// Metadata-only sources have no configuration beyond the fields above.
+	if _, ok := a.(*metav1.ObjectMeta); ok {
+		_, ok := b.(*metav1.ObjectMeta)
+		return ok
+	}
+	// Converting to plain Kubernetes JSON values also avoids comparing embedded
+	// protobuf internals in extension objects. Ignore status and metadata here:
+	// the translation-relevant metadata was compared above, and RV/managedFields
+	// must not cause an otherwise unchanged IR to notify its dependants.
+	left, err := runtime.DefaultUnstructuredConverter.ToUnstructured(a)
+	if err != nil {
+		return false
+	}
+	right, err := runtime.DefaultUnstructuredConverter.ToUnstructured(b)
+	if err != nil {
+		return false
+	}
+	// ToUnstructured may return the original map for an Unstructured input.
+	// Clone the top level before removing fields; informer objects are immutable.
+	left = maps.Clone(left)
+	right = maps.Clone(right)
+	delete(left, "metadata")
+	delete(left, "status")
+	delete(right, "metadata")
+	delete(right, "status")
+	return equality.Semantic.DeepEqual(left, right)
+}
+
+// sourceMetadataEquals covers identity and metadata consumed by translation.
+// Status, resourceVersion, and managedFields are API-server bookkeeping.
+func sourceMetadataEquals(a, b metav1.Object) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return a.GetUID() == b.GetUID() && a.GetName() == b.GetName() &&
+		a.GetNamespace() == b.GetNamespace() && a.GetGeneration() == b.GetGeneration() &&
+		maps.Equal(a.GetLabels(), b.GetLabels()) && maps.Equal(a.GetAnnotations(), b.GetAnnotations())
 }
 
 func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
