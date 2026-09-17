@@ -132,7 +132,8 @@ func (t *Translator) ComputeListener(
 		Name:    lis.Name,
 		Address: listenerAddress,
 	}
-	if gw.PerConnectionBufferLimitBytes != nil {
+	// per_connection_buffer_limit_bytes is a TCP concept a connectionless UDPRoute listener does not use.
+	if gw.PerConnectionBufferLimitBytes != nil && len(lis.UdpFilterChain) == 0 {
 		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
 	t.runListenerPlugins(pass, gw, lis, reporter, ret)
@@ -243,8 +244,13 @@ func (t *Translator) runListenerPlugins(
 	out *envoylistenerv3.Listener,
 ) {
 	var attachedPolicies ir.AttachedPolicies
-	// Listener policies take precedence over gateway policies, so they are ordered first
-	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
+	// Listener policies take precedence over gateway policies, so they are ordered first.
+	attachedPolicies.Append(l.AttachedPolicies)
+	// Gateway-wide listener policies do not apply to a UDPRoute listener. The gate keys on the
+	// udp_proxy chain, not the UDP socket, so a future HTTP/3-over-QUIC listener still gets them.
+	if len(l.UdpFilterChain) == 0 {
+		attachedPolicies.Append(gw.AttachedHttpPolicies)
+	}
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
 		pass := pass[gk]
