@@ -1321,6 +1321,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcproute referencing an HTTP-only backend kind reports InvalidKind", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/unsupported-backend-kind.yaml"},
+			outputFile: "tcp-routing/unsupported-backend-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with multiple backend services", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/multi-backend.yaml"},
@@ -1380,6 +1391,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/invalid-backend.yaml"},
 			outputFile: "tls-routing/invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute referencing an HTTP-only backend kind reports InvalidKind", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/unsupported-backend-kind.yaml"},
+			outputFile: "tls-routing/unsupported-backend-kind.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
