@@ -151,6 +151,18 @@ func TestBackendObjectIREquals(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "backends with different supported route kinds should not be equal",
+			backend1: func() BackendObjectIR {
+				backend := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+				backend.SupportedRouteKinds = HTTPRouteKinds
+				return backend
+			},
+			backend2: func() BackendObjectIR {
+				return createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -249,4 +261,31 @@ func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testi
 	assert.JSONEq(t, `{"certificate":"[REDACTED]"}`, string(marshaled))
 	assert.NotContains(t, string(marshaled), "gateway-cert")
 	assert.NotContains(t, string(marshaled), "gateway-key")
+}
+
+func TestBackendObjectIRSupportsRouteKind(t *testing.T) {
+	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	tcp := wellknown.TCPRouteGVK.GroupKind()
+	http := wellknown.HTTPRouteGVK.GroupKind()
+	grpc := wellknown.GRPCRouteGVK.GroupKind()
+
+	t.Run("no declaration supports every route kind", func(t *testing.T) {
+		assert.True(t, base.SupportsRouteKind(tcp))
+		assert.True(t, base.SupportsRouteKind(http))
+	})
+
+	t.Run("an HTTP-only backend rejects TCPRoute but not GRPCRoute", func(t *testing.T) {
+		httpOnly := base
+		httpOnly.SupportedRouteKinds = HTTPRouteKinds
+		assert.False(t, httpOnly.SupportsRouteKind(tcp))
+		assert.True(t, httpOnly.SupportsRouteKind(http))
+		assert.True(t, httpOnly.SupportsRouteKind(grpc))
+	})
+
+	t.Run("the per-gateway client certificate clone keeps the declaration", func(t *testing.T) {
+		httpOnly := base
+		httpOnly.SupportedRouteKinds = HTTPRouteKinds
+		clone := httpOnly.CloneForGatewayBackendClientCertificate(ObjectSource{Namespace: "default", Name: "gw"}, nil)
+		assert.False(t, clone.SupportsRouteKind(tcp))
+	})
 }
