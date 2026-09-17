@@ -19,7 +19,7 @@ var endpointsTestGK = schema.GroupKind{Group: "test", Kind: "EndpointPolicy"}
 // zonePreferringPlugin acts on backends whose canonical hostname ends in the
 // gated suffix, standing in for a plugin that keys off something other than its
 // own attached policies. gate decides what its predicate claims.
-func zonePreferringPlugin(gate func(ir.BackendObjectIR) bool, mutate bool) sdk.PolicyPlugin {
+func zonePreferringPlugin(gate func(krt.HandlerContext, ir.BackendObjectIR) bool, mutate bool) sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
 		Name: "zone-preferring",
 		PerClientEditEndpoints: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, out endpoints.EndpointInputsEditor) uint64 {
@@ -61,7 +61,7 @@ func runEndpoints(t *testing.T, plugin sdk.PolicyPlugin) []string {
 }
 
 func TestAssertMayApplyCoversEndpointHook(t *testing.T) {
-	hostnameGate := func(backend ir.BackendObjectIR) bool {
+	hostnameGate := func(_ krt.HandlerContext, backend ir.BackendObjectIR) bool {
 		return strings.HasSuffix(backend.CanonicalHostname, ".gated")
 	}
 
@@ -75,7 +75,7 @@ func TestAssertMayApplyCoversEndpointHook(t *testing.T) {
 	// hook would have acted on, so the framework builds one shared inline CLA
 	// and every client silently loses the hook's contribution.
 	t.Run("a predicate that rules out a backend the hook acts on is caught", func(t *testing.T) {
-		invertedGate := func(backend ir.BackendObjectIR) bool {
+		invertedGate := func(_ krt.HandlerContext, backend ir.BackendObjectIR) bool {
 			return !strings.HasSuffix(backend.CanonicalHostname, ".gated")
 		}
 		errs := runEndpoints(t, zonePreferringPlugin(invertedGate, true))
@@ -112,13 +112,13 @@ func TestAssertMayApplyCoversEndpointHook(t *testing.T) {
 	})
 
 	t.Run("a case that proves nothing is reported", func(t *testing.T) {
-		always := func(ir.BackendObjectIR) bool { return true }
+		always := func(krt.HandlerContext, ir.BackendObjectIR) bool { return true }
 		errs := runEndpoints(t, zonePreferringPlugin(always, true))
 		if len(errs) != 1 || !strings.Contains(errs[0], "admitted every backend") {
 			t.Errorf("expected the vacuous case to be reported, got %v", errs)
 		}
 
-		never := func(ir.BackendObjectIR) bool { return false }
+		never := func(krt.HandlerContext, ir.BackendObjectIR) bool { return false }
 		errs = runEndpoints(t, zonePreferringPlugin(never, false))
 		found := false
 		for _, err := range errs {
