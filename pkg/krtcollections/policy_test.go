@@ -468,7 +468,7 @@ func backendUpstreams(backendCol krt.Collection[*kgateway.Backend]) krt.Collecti
 		}, 0, "", "")
 		backendIR.Obj = backend
 		if kinds, ok := backend.Labels[supportedRouteKindsLabel]; ok {
-			for _, kind := range strings.Split(kinds, ",") {
+			for kind := range strings.SplitSeq(kinds, ",") {
 				backendIR.SupportedRouteKinds = append(backendIR.SupportedRouteKinds, schema.GroupKind{Group: gwv1.GroupName, Kind: kind})
 			}
 		}
