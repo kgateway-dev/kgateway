@@ -198,13 +198,10 @@ type BackendObjectIR struct {
 	// through a backendRef. Nil means every route kind.
 	//
 	// A backend plugin sets this when the backend only works on a particular data
-	// path. A backend that depends on an HTTP filter -- to sign requests, to
-	// populate a DNS cache, to pick the cluster at request time -- has nothing to
-	// attach to on a TCPRoute or TLSRoute, so a reference from one would program a
-	// cluster that can never carry traffic. Declaring the supported kinds here lets
+	// path. A backend that depends on an HTTP filter has nothing to
+	// attach to on a TCPRoute or TLSRoute. Declaring the supported kinds here lets
 	// the route translator reject the reference with ResolvedRefs=False/InvalidKind
-	// instead, which is the condition Gateway API reserves for a reference to an
-	// unsupported Kind.
+	// instead.
 	SupportedRouteKinds []schema.GroupKind
 }
 
