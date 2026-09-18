@@ -47,6 +47,8 @@ var (
 	ErrParsingTLSConfig = errors.New("TLS config parse error")
 
 	ErrInvalidValidationSpec = errors.New("invalid validation spec")
+
+	ErrInvalidTLSOptions = errors.New("invalid TLS options")
 )
 
 var (
@@ -296,6 +298,12 @@ func buildTranslateFunc(
 			return &policyIr, ErrInvalidValidationSpec
 		}
 
+		if err := applyTLSExtensionOptions(spec.Options, tlsContextDefault, validationContext); err != nil {
+			perr := fmt.Errorf("%w: %w", ErrInvalidTLSOptions, err)
+			logger.Error("error applying TLS extension options", "error", perr, "policy_name", policyCR.Name)
+			return &policyIr, perr
+		}
+
 		typedConfig, err := utils.MessageToAny(tlsContextDefault)
 		if err != nil {
 			logger.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
@@ -310,6 +318,60 @@ func buildTranslateFunc(
 
 		return &policyIr, nil
 	}
+}
+
+// applyTLSExtensionOptions applies the same kgateway.dev/* TLS extension annotations supported
+// on a Gateway listener to the UpstreamTlsContext generated for a BackendTLSPolicy.
+// validationContext must be the same CertificateValidationContext already embedded in tlsContext.
+func applyTLSExtensionOptions(
+	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
+	tlsContext *envoytlsv3.UpstreamTlsContext,
+	validationContext *envoytlsv3.CertificateValidationContext,
+) error {
+	if len(options) == 0 {
+		return nil
+	}
+
+	extCfg := &ir.TLSConfig{}
+	if err := sslutils.ApplyTLSExtensionOptions(options, extCfg); err != nil {
+		return err
+	}
+
+	common := tlsContext.CommonTlsContext
+	if common.TlsParams == nil {
+		common.TlsParams = &envoytlsv3.TlsParameters{}
+	}
+	if len(extCfg.CipherSuites) > 0 {
+		common.TlsParams.CipherSuites = extCfg.CipherSuites
+	}
+	if len(extCfg.EcdhCurves) > 0 {
+		common.TlsParams.EcdhCurves = extCfg.EcdhCurves
+	}
+	if len(extCfg.SignatureAlgorithms) > 0 {
+		common.TlsParams.SignatureAlgorithms = extCfg.SignatureAlgorithms
+	}
+	if extCfg.MinTLSVersion != nil {
+		common.TlsParams.TlsMinimumProtocolVersion = *extCfg.MinTLSVersion
+	}
+	if extCfg.MaxTLSVersion != nil {
+		common.TlsParams.TlsMaximumProtocolVersion = *extCfg.MaxTLSVersion
+	}
+	if len(extCfg.AlpnProtocols) > 0 {
+		common.AlpnProtocols = extCfg.AlpnProtocols
+	}
+	if len(extCfg.VerifyCertificateHash) > 0 {
+		validationContext.VerifyCertificateHash = extCfg.VerifyCertificateHash
+	}
+	for _, san := range extCfg.VerifySubjectAltNames {
+		validationContext.MatchTypedSubjectAltNames = append(validationContext.MatchTypedSubjectAltNames, &envoytlsv3.SubjectAltNameMatcher{
+			SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+			Matcher: &envoymatcher.StringMatcher{
+				MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
+			},
+		})
+	}
+
+	return nil
 }
 
 func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {
