@@ -13,6 +13,7 @@ type RetryOnCondition string
 // Retry defines the retry policy
 //
 // +kubebuilder:validation:XValidation:rule="has(self.retryOn) || has(self.statusCodes)",message="retryOn or statusCodes must be set."
+// +kubebuilder:validation:XValidation:rule="!has(self.rateLimitedBackOff) || (has(self.retryOn) && self.retryOn.exists(r, r == 'envoy-ratelimited'))",message="rateLimitedBackOff requires retryOn to include envoy-ratelimited"
 type Retry struct {
 	// RetryOn specifies the conditions under which a retry should be attempted.
 	// +optional
@@ -62,4 +63,66 @@ type Retry struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.backoffBaseInterval must be at least 1ms."
 	BackoffBaseInterval *metav1.Duration `json:"backoffBaseInterval,omitempty"`
+
+	// RateLimitedBackOff configures back-off behavior when a retry is triggered by the
+	// envoy-ratelimited retry condition, distinct from the standard exponential back-off
+	// configured via BackoffBaseInterval.
+	// See the envoy docs for envoy.config.route.v3.RetryPolicy.RateLimitedRetryBackOff.
+	// +optional
+	RateLimitedBackOff *RateLimitedRetryBackOff `json:"rateLimitedBackOff,omitempty"`
+}
+
+// RateLimitedRetryBackOff configures the back-off interval envoy honors when a retry is
+// triggered by the envoy-ratelimited retry condition. Envoy tries each of ResetHeaders in
+// order and uses the first one that is present on the response and parses successfully.
+// If none of the reset headers are present or parse successfully, the standard back-off
+// strategy configured via BackoffBaseInterval is used instead.
+type RateLimitedRetryBackOff struct {
+	// ResetHeaders are response headers, such as "Retry-After" or "X-RateLimit-Reset", consulted
+	// in order to compute the back-off interval. The first header present on the response that
+	// parses successfully according to its Format is used; remaining headers are ignored.
+	// Required: Envoy's RateLimitedRetryBackOff message requires at least one reset header
+	// whenever it is present, so this cannot be left empty.
+	// +required
+	//
+	// +kubebuilder:validation:MinItems=1
+	ResetHeaders []ResetHeader `json:"resetHeaders"`
+
+	// MaxInterval caps the back-off interval envoy will honor from a reset header.
+	// If a header specifies a longer interval, it is discarded and the next header, if any, is tried.
+	// Defaults to 300s if not set.
+	// It is specified as a sequence of decimal numbers, each with optional fraction and a unit suffix, such as "1s" or "500ms".
+	// +optional
+	//
+	// +kubebuilder:default="300s"
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="retry.rateLimitedBackOff.maxInterval must be at least 1ms."
+	MaxInterval *metav1.Duration `json:"maxInterval,omitempty"`
+}
+
+// ResetHeaderFormat specifies how to parse a reset header's value into a back-off duration.
+//
+// +kubebuilder:validation:Enum=Seconds;UnixTimestamp
+type ResetHeaderFormat string
+
+const (
+	// ResetHeaderFormatSeconds interprets the header value as the number of seconds to wait before retrying.
+	ResetHeaderFormatSeconds ResetHeaderFormat = "Seconds"
+	// ResetHeaderFormatUnixTimestamp interprets the header value as a Unix timestamp (seconds since
+	// the epoch) at which the back-off period ends.
+	ResetHeaderFormatUnixTimestamp ResetHeaderFormat = "UnixTimestamp"
+)
+
+// ResetHeader identifies a single response header consulted when computing a rate-limited
+// retry back-off interval.
+type ResetHeader struct {
+	// Name is the response header to consult, e.g. "Retry-After" or "X-RateLimit-Reset".
+	// +required
+	Name gwv1.HTTPHeaderName `json:"name"`
+
+	// Format specifies how to interpret the header's value.
+	// +required
+	Format ResetHeaderFormat `json:"format"`
 }
