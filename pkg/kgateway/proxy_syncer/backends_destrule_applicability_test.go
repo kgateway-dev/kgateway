@@ -21,14 +21,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-// TestBaseRetranslatesWhenARuleForItsHostAppears pins the contract behind
-// PerClientEndpointsMayApply taking the base translation's HandlerContext: the
-// predicate's fetch registers a KRT dependency, so a base whose inline CLA was
-// built once (no rule named its host) is re-translated when a rule appears and
-// moves to the per-client CLA path, and moves back when the rule is removed.
-// The unit tests for HasRulesForHost use a static collection and prove the
-// answer; this proves the invalidation, through the real base and per-client
-// collections and the real DestinationRule index.
+// TestBaseRetranslatesWhenARuleForItsHostAppears tests that adding a DestinationRule for a host must invalidate its base's applicability
+// check and switch inline CLA construction to the per-client path. Removing
+// the rule must restore shared construction. This exercises the real index
+// and KRT collections.
 func TestBaseRetranslatesWhenARuleForItsHostAppears(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
