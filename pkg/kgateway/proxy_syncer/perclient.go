@@ -18,29 +18,9 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-type clustersWithErrors struct {
-	// +noKrtEquals
-	clusters envoycache.Resources
-	// +noKrtEquals
-	erroredClusters     []string
-	erroredClustersHash uint64
-	clustersHash        uint64
-	resourceName        string
-}
-
 type endpointsWithUccName struct {
 	endpoints    envoycache.Resources
 	resourceName string
-}
-
-func (c clustersWithErrors) ResourceName() string {
-	return c.resourceName
-}
-
-var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
-
-func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
-	return c.clustersHash == k.clustersHash && c.erroredClustersHash == k.erroredClustersHash && c.resourceName == k.resourceName
 }
 
 func (c endpointsWithUccName) ResourceName() string {
@@ -61,45 +41,11 @@ func snapshotPerClient(
 	clusters PerClientEnvoyClusters,
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
-	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
-		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
-		if len(clustersForUcc) == 0 {
-			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
-			return nil
-		}
-		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
-
-		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc))
-		var (
-			clustersHash        uint64
-			erroredClustersHash uint64
-			erroredClusters     []string
-		)
-		for _, c := range clustersForUcc {
-			if c.Error != nil {
-				erroredClusters = append(erroredClusters, c.Name)
-				// For errored clusters, we don't want to include the cluster version
-				// in the hash. The cluster version is the hash of the proto. because this cluster
-				// won't be sent to envoy anyway, there's no point trigger updates if it changes from
-				// one error state to a different error state.
-				erroredClustersHash ^= utils.HashString(c.Name)
-				continue
-			}
-			clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
-			clustersHash ^= c.ClusterVersion
-		}
-		clustersVersion := strconv.FormatUint(clustersHash, 10)
-
-		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
-
-		return &clustersWithErrors{
-			clusters:            clusterResources,
-			erroredClusters:     erroredClusters,
-			clustersHash:        clustersHash,
-			erroredClustersHash: erroredClustersHash,
-			resourceName:        ucc.ResourceName(),
-		}
-	}, krtopts.ToOptions("ClusterResources")...)
+	// Per-client CDS payloads are assembled by PerClientEnvoyClusters, one row per
+	// connected client, from the shared bases plus that client's own overlays. The
+	// row is complete by construction, so there is nothing to wait for here beyond
+	// the row itself existing.
+	clusterSnapshot := clusters.perClient
 
 	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
@@ -150,8 +96,16 @@ func snapshotPerClient(
 		// and were reverted. The first-connect delay in
 		// pkg/krtcollections/uniqueclients.go keeps a client's first watch
 		// from observing that convergence window.
+		//
+		// Debug rather than Info: this fires for every client on startup until
+		// its inputs land, and at fleet scale an Info line per client would
+		// drown the signal it exists for. The durable signal is the
+		// xds_snapshot_deferred_clients gauge (snapshotDeferralTracker below),
+		// which counts the clients currently in this state per gateway and,
+		// unlike this log line, also covers a client that has never had a
+		// snapshot published at all.
 		if clustersForUcc == nil || clientEndpointResources == nil {
-			logger.Info("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
+			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
@@ -272,6 +226,13 @@ func snapshotPerClient(
 				}.toMetricsLabels()...)
 		}
 	})
+
+	// Publish how many connected clients currently have no snapshot row. This
+	// is the observable form of the deferral above: the log line is Debug, and
+	// a client that never received a first snapshot never emits an event, so
+	// only a gauge derived from both collections can show a client being
+	// starved of config rather than briefly converging.
+	newSnapshotDeferralTracker().register(uccCol, xdsSnapshotsForUcc)
 
 	return xdsSnapshotsForUcc
 }
