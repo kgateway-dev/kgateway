@@ -111,7 +111,7 @@ func TestUnsupportedBackendTranslationIsRecordedAsErrored(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: noInit.ClusterName()}},
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: unregistered.ClusterName()}},
 	})
-	filtered := filterEndpointResourcesForErroredClusters(endpoints, row.erroredClusters)
+	filtered, _ := filterEndpointResourcesForClusters(row.clusters, endpoints)
 	require.Len(t, filtered.Items, 1, "CLAs of unsupported backends must be filtered with the other errored clusters")
 	require.Contains(t, filtered.Items, healthy.ClusterName())
 	require.NotEqual(t, endpoints.Version, filtered.Version, "filtering must move the EDS version so the client is pushed the narrowed set")
