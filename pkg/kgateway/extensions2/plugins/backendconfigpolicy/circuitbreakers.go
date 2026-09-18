@@ -2,6 +2,8 @@ package backendconfigpolicy
 
 import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -26,6 +28,9 @@ func translateCircuitBreakers(cb *kgateway.CircuitBreakers) *envoyclusterv3.Circ
 	if cb.MaxRetries != nil {
 		threshold.MaxRetries = wrapperspb.UInt32(uint32(*cb.MaxRetries)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
+	if cb.RetryBudget != nil {
+		threshold.RetryBudget = translateRetryBudget(cb.RetryBudget)
+	}
 	if cb.TrackRemaining != nil {
 		threshold.TrackRemaining = *cb.TrackRemaining
 	}
@@ -33,4 +38,24 @@ func translateCircuitBreakers(cb *kgateway.CircuitBreakers) *envoyclusterv3.Circ
 	return &envoyclusterv3.CircuitBreakers{
 		Thresholds: []*envoyclusterv3.CircuitBreakers_Thresholds{threshold},
 	}
+}
+
+func translateRetryBudget(rb *kgateway.RetryBudget) *envoyclusterv3.CircuitBreakers_Thresholds_RetryBudget {
+	if rb == nil {
+		return nil
+	}
+
+	retryBudget := &envoyclusterv3.CircuitBreakers_Thresholds_RetryBudget{}
+
+	if rb.BudgetPercent != nil {
+		retryBudget.BudgetPercent = &typev3.Percent{Value: float64(*rb.BudgetPercent)}
+	}
+	if rb.BudgetInterval != nil {
+		retryBudget.BudgetInterval = durationpb.New(rb.BudgetInterval.Duration)
+	}
+	if rb.MinRetryConcurrency != nil {
+		retryBudget.MinRetryConcurrency = wrapperspb.UInt32(uint32(*rb.MinRetryConcurrency)) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+
+	return retryBudget
 }
