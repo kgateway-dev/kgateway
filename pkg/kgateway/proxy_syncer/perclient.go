@@ -164,6 +164,7 @@ func snapshotPerClient(
 		snap.missingReferenced = missingClusters
 		snap.missingEndpointsReferenced = missingEndpointClusters
 		snap.erroredClusters = clustersForUcc.erroredClusters
+		snap.referencedClusters = listenerRouteSnapshot.ReferencedClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources

@@ -62,6 +62,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 		"KGW_CLUSTER_DISCOVERY_MODE":                    string(ClusterDiscoveryReferenced),
 		"KGW_CLUSTER_DEREFERENCE_GRACE":                 "30s",
+		"KGW_CLUSTER_REFERENCE_AHEAD":                   "3s",
 	}
 }
 
@@ -111,6 +112,7 @@ func TestSettings(t *testing.T) {
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				ClusterDiscoveryMode:                  ClusterDiscoveryAll,
 				ClusterDereferenceGrace:               5 * time.Second,
+				ClusterReferenceAhead:                 2 * time.Second,
 				EnableBuiltinDefaultMetrics:           false,
 				GlobalPolicyNamespace:                 "",
 				DisableLeaderElection:                 false,
@@ -181,6 +183,7 @@ func TestSettings(t *testing.T) {
 				ReferenceGrantMode:          ReferenceGrantStrict,
 				ClusterDiscoveryMode:        ClusterDiscoveryReferenced,
 				ClusterDereferenceGrace:     30 * time.Second,
+				ClusterReferenceAhead:       3 * time.Second,
 			},
 		},
 		{
@@ -280,6 +283,7 @@ func TestSettings(t *testing.T) {
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				ClusterDiscoveryMode:                  ClusterDiscoveryAll,
 				ClusterDereferenceGrace:               5 * time.Second,
+				ClusterReferenceAhead:                 2 * time.Second,
 				PolicyMerge:                           "{}",
 				XdsAuth:                               true,
 				XdsTLS:                                false,
