@@ -1323,18 +1323,18 @@ run-xds-bench-ci: ## Run bounded xDS benchmarks and validate their results (exis
 .PHONY: validate-xds-bench-ci-results
 validate-xds-bench-ci-results: ## Check benchmark completion and fleet failure verdicts
 	@jq -es --arg suite "$(XDS_BENCH_SUITE)" \
-		'if $$suite == "cost" then \
-			([.[] | select(.event == "xds_cost_result") | .data.phase] | sort) == ["BaseChurn","EdsChurn","Reconnect"] \
-			and all(.[] | select(.event == "xds_cost_result"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
-			and any(.[]; .event == "xds_cost_summary" and (.data.phases | length) == 3) \
-		elif $$suite == "fleet" then \
-			all(.[]; .event != "xds_fleet_verdict") \
-			and ([.[] | select(.event == "xds_fleet_wave")] | length) == 4 \
-			and all(.[] | select(.event == "xds_fleet_wave"); .data.served == true and .data.settled == true) \
-			and any(.[]; .event == "xds_fleet_wave" and .data.gateways == 24 and .data.clients == 24) \
-			and ([.[] | select(.event == "xds_fleet_result") | .data.phase] | sort) == ["BaseChurn","EdsChurn","StreamReconnect"] \
-			and all(.[] | select(.event == "xds_fleet_result"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
-		else false end' "$(XDS_BENCH_OUTPUT_DIR)/$(XDS_BENCH_SUITE).jsonl"
+		"if \$$suite == \"cost\" then \
+			([.[] | select(.event == \"xds_cost_result\") | .data.phase] | sort) == [\"BaseChurn\",\"EdsChurn\",\"Reconnect\"] \
+			and all(.[] | select(.event == \"xds_cost_result\"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
+			and any(.[]; .event == \"xds_cost_summary\" and (.data.phases | length) == 3) \
+		elif \$$suite == \"fleet\" then \
+			all(.[]; .event != \"xds_fleet_verdict\") \
+			and ([.[] | select(.event == \"xds_fleet_wave\")] | length) == 4 \
+			and all(.[] | select(.event == \"xds_fleet_wave\"); .data.served == true and .data.settled == true) \
+			and any(.[]; .event == \"xds_fleet_wave\" and .data.gateways == 24 and .data.clients == 24) \
+			and ([.[] | select(.event == \"xds_fleet_result\") | .data.phase] | sort) == [\"BaseChurn\",\"EdsChurn\",\"StreamReconnect\"] \
+			and all(.[] | select(.event == \"xds_fleet_result\"); .data.timed_out_iterations == 0 and .data.iterations > 0) \
+		else false end" "$(XDS_BENCH_OUTPUT_DIR)/$(XDS_BENCH_SUITE).jsonl"
 
 #----------------------------------------------------------------------------------
 # MARK: Conformance
