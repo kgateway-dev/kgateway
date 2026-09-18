@@ -52,10 +52,61 @@ type (
 	) uint64
 )
 
-// TODO: consider changing PerClientProcessBackend to look like this:
-// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR)
-// so that it only attaches the policy to the backend, and doesn't modify the backend (except for attached policies) or the cluster itself.
-// leaving as is for now as this requires better understanding of how krt would handle this.
+// ClusterOverlay carries per-client cluster mutations. Returning nil from a
+// PerClientClusterOverlay means the client/backend pair needs no mutation.
+// Mutate receives a fresh clone and must not retain it after returning.
+type ClusterOverlay struct {
+	Mutate func(out *envoyclusterv3.Cluster)
+}
+
+// PerClientClusterOverlay decides whether a client/backend pair needs a
+// mutation on top of the shared base cluster, and returns it if so. Returning
+// nil is the common case and keeps the pair on the shared base with nothing
+// allocated for it.
+//
+// Overlays compose. Every overlay that applies to a pair mutates the same
+// clone, in a fixed (Group, Kind) order. That order exists so the resulting
+// proto is byte-stable across recomputes -- its content hash drives KRT
+// equality, so an order that varied run to run would churn every client -- and
+// not as a precedence policy. Nobody chose which plugin should win a contested
+// field; the winner is whichever sorts later, which is a lexical accident.
+//
+// So do not write an overlay that depends on running before or after another,
+// or that expects to observe another's mutation. Confine each overlay to the
+// fields it owns. The in-tree overlays satisfy that today -- destrule writes
+// outlier detection, locality LB config and TCP keepalive; waypoint rewrites
+// the discovery type and load assignment -- but the framework does not enforce
+// it, and their one interaction, destrule selecting locality-weighted LB on a
+// cluster waypoint then converts to STATIC with inlined addresses, is a
+// judgment call rather than a designed outcome.
+type PerClientClusterOverlay func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	in ir.BackendObjectIR,
+) *ClusterOverlay
+
+// OverlayInputsHash declares what a PerClientClusterOverlay reads from the
+// backend. It must move for every backend field whose change can change the
+// overlay's output, and it is the only thing that makes such a change reach
+// clients: the shared base row carrying the backend is kept for as long as its
+// hashes compare equal, so a field the overlay reads and this leaves out is
+// served stale until something else about the backend moves.
+//
+// Only what the overlay reads directly off the BackendObjectIR needs hashing.
+// What it reaches through krt.Fetch is already tracked by KRT, which reruns the
+// client when it changes. Declaring more than is read is sound, only expensive:
+// it costs a walk of every client for a write no client can observe.
+//
+// Register it beside PerClientClusterOverlay. An overlay registered without one
+// is treated as reading the whole backing object — never stale, only expensive.
+// pkg/pluginsdk/overlaytest checks a declaration against its overlay
+// mechanically; a plugin contributing an overlay should run it.
+type OverlayInputsHash func(in ir.BackendObjectIR) uint64
+
+// PerClientProcessBackend is the legacy eager cluster mutation hook.
+// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
+// applicable to every client because they cannot report a no-op cheaply.
 type PerClientProcessBackend func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -74,6 +125,12 @@ type PolicyPlugin struct {
 
 	// Backend processing for envoy proxy
 	ProcessBackend          ProcessBackend
+	PerClientClusterOverlay PerClientClusterOverlay
+	// OverlayInputsHash declares the backend fields PerClientClusterOverlay
+	// reads. Required beside it; an overlay without one is treated as reading
+	// the whole backing object.
+	OverlayInputsHash OverlayInputsHash
+	// Deprecated: use PerClientClusterOverlay.
 	PerClientProcessBackend PerClientProcessBackend
 	PerClientEditEndpoints  EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.

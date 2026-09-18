@@ -879,8 +879,13 @@ func (tc TestCase) Run(
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				// In strict mode, backend validation errors are expected and should not fail the test.
-				cluster, _ := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
+				// Errored translations (including strict-mode validation failures) are
+				// skipped rather than failing the test: snapshotPerClient omits errored
+				// clusters from CDS, so the golden output must omit them too.
+				cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
+				if err != nil {
+					continue
+				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
 				}
@@ -894,7 +899,7 @@ func (tc TestCase) Run(
 						continue
 					}
 
-					cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, &clone)
+					cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, &clone)
 					if err != nil {
 						continue
 					}
@@ -910,6 +915,33 @@ func (tc TestCase) Run(
 	}
 
 	return results, nil
+}
+
+// translateBackendForGolden selects the base or per-client cluster using the
+// same translation contract as snapshot assembly. Errored translations return
+// no cluster because snapshotPerClient excludes errored rows from CDS.
+func translateBackendForGolden(
+	ctx context.Context,
+	kctx krt.HandlerContext,
+	backendTranslator *irtranslator.BackendTranslator,
+	ucc ir.UniquelyConnectedClient,
+	backend *ir.BackendObjectIR,
+) (*envoyclusterv3.Cluster, error) {
+	base := backendTranslator.TranslateBackendBase(ctx, backend)
+	if base == nil {
+		return nil, fmt.Errorf("no backend translator found for %s", backend.GetGroupKind())
+	}
+	if base.Error != nil {
+		return nil, base.Error
+	}
+	perClient, err := backendTranslator.ApplyPerClient(kctx, ctx, ucc, backend, base)
+	if err != nil {
+		return nil, err
+	}
+	if perClient != nil {
+		return perClient, nil
+	}
+	return base.Cluster, nil
 }
 
 func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
