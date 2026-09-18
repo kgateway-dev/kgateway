@@ -25,6 +25,7 @@ type Statuses struct {
 	HTTPRoutes   map[string]*gwv1.RouteStatus       `json:"httpRoutes,omitempty"`
 	TCPRoutes    map[string]*gwv1.RouteStatus       `json:"tcpRoutes,omitempty"`
 	TLSRoutes    map[string]*gwv1.RouteStatus       `json:"tlsRoutes,omitempty"`
+	UDPRoutes    map[string]*gwv1.RouteStatus       `json:"udpRoutes,omitempty"`
 	GRPCRoutes   map[string]*gwv1.RouteStatus       `json:"grpcRoutes,omitempty"`
 	Policies     map[string]*gwv1.PolicyStatus      `json:"policies,omitempty"`
 	Backends     map[string]*kgateway.BackendStatus `json:"backends,omitempty"`
@@ -46,6 +47,7 @@ func buildStatusesFromReports(
 		HTTPRoutes:   make(map[string]*gwv1.RouteStatus),
 		TCPRoutes:    make(map[string]*gwv1.RouteStatus),
 		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
+		UDPRoutes:    make(map[string]*gwv1.RouteStatus),
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
 		Policies:     make(map[string]*gwv1.PolicyStatus),
 		Backends:     make(map[string]*kgateway.BackendStatus),
@@ -137,6 +139,20 @@ func buildStatusesFromReports(
 		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
 			statuses.TLSRoutes[routeNN.String()] = status
+		}
+	}
+
+	// Build UDPRoute statuses
+	for routeNN := range reportsMap.UDPRoutes {
+		route := gwv1.UDPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      routeNN.Name,
+				Namespace: routeNN.Namespace,
+			},
+		}
+		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
+			normalizeRouteStatus(status, fixedTime)
+			statuses.UDPRoutes[routeNN.String()] = status
 		}
 	}
 
@@ -291,6 +307,7 @@ func sortStatuses(statuses *Statuses) *Statuses {
 		HTTPRoutes:   make(map[string]*gwv1.RouteStatus),
 		TCPRoutes:    make(map[string]*gwv1.RouteStatus),
 		TLSRoutes:    make(map[string]*gwv1.RouteStatus),
+		UDPRoutes:    make(map[string]*gwv1.RouteStatus),
 		GRPCRoutes:   make(map[string]*gwv1.RouteStatus),
 		Policies:     make(map[string]*gwv1.PolicyStatus),
 		Backends:     make(map[string]*kgateway.BackendStatus),
@@ -344,6 +361,16 @@ func sortStatuses(statuses *Statuses) *Statuses {
 	slices.Sort(tlsRouteKeys)
 	for _, k := range tlsRouteKeys {
 		sorted.TLSRoutes[k] = statuses.TLSRoutes[k]
+	}
+
+	// Sort UDP routes
+	udpRouteKeys := make([]string, 0, len(statuses.UDPRoutes))
+	for k := range statuses.UDPRoutes {
+		udpRouteKeys = append(udpRouteKeys, k)
+	}
+	slices.Sort(udpRouteKeys)
+	for _, k := range udpRouteKeys {
+		sorted.UDPRoutes[k] = statuses.UDPRoutes[k]
 	}
 
 	// Sort GRPC routes

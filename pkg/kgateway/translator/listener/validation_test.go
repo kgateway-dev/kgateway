@@ -310,15 +310,15 @@ func TestUnsupportedProtocol(t *testing.T) {
 	g.Expect(validListeners).To(BeEmpty())
 
 	expectedGwStatuses := map[string]gwv1.ListenerStatus{
-		"udp": {
-			Name:           "udp",
+		"custom": {
+			Name:           "custom",
 			SupportedKinds: []gwv1.RouteGroupKind{},
 			Conditions: []metav1.Condition{
 				{
 					Type:    string(gwv1.ListenerConditionAccepted),
 					Status:  metav1.ConditionFalse,
 					Reason:  string(gwv1.ListenerReasonUnsupportedProtocol),
-					Message: "Protocol UDP is unsupported.",
+					Message: "Protocol FOO is unsupported.",
 				},
 			},
 		},
@@ -2506,9 +2506,9 @@ func unsupportedProtocolGw() *gwv1.Gateway {
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
 				{
-					Name:     "udp",
+					Name:     "custom",
 					Port:     8080,
-					Protocol: gwv1.UDPProtocolType,
+					Protocol: gwv1.ProtocolType("FOO"),
 				},
 			},
 		},

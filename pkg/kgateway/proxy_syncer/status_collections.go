@@ -60,6 +60,9 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 	tlsRouteReports := statussync.RegisterKindByObjectGVK(s.statusCollections, wellknown.TLSRouteGVK,
 		s.commonCols.RawTLSRoutes, s.statusContributions, contributionsByTarget,
 		krtopts.ToOptions("TLSRouteStatusReports")...)
+	udpRouteReports := statussync.RegisterKind(s.statusCollections, wellknown.UDPRouteGVK,
+		s.commonCols.RawUDPRoutes, s.statusContributions, contributionsByTarget,
+		krtopts.ToOptions("UDPRouteStatusReports")...)
 
 	registerStatusWriter(s.statusWriters, wellknown.HTTPRouteGVK,
 		routeWriter(cl, f, s.commonCols.RawHTTPRoutes, httpRouteReports, wellknown.HTTPRouteGVK, wellknown.HTTPRouteGVR, controllerName,
@@ -136,6 +139,15 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 				))
 		}
 	}
+
+	registerStatusWriter(s.statusWriters, wellknown.UDPRouteGVK,
+		routeWriter(cl, f, s.commonCols.RawUDPRoutes, udpRouteReports, wellknown.UDPRouteGVK, wellknown.UDPRouteGVR, controllerName,
+			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.UDPRoute {
+				return &gwv1.UDPRoute{ObjectMeta: om, Status: gwv1.UDPRouteStatus{RouteStatus: st}}
+			},
+			func(o *gwv1.UDPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+			func(o *gwv1.UDPRoute) []gwv1.ParentReference { return o.Spec.ParentRefs },
+		))
 
 	// Both ListenerSet flavors normalize to one collection and one report reducer keyed by the
 	// object's own GVK, but they are written back through different APIs, so each GVK gets its
