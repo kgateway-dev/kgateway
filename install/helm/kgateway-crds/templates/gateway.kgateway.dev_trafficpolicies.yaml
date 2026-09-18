@@ -2006,6 +2006,139 @@ spec:
                     - message: shareAcrossGateway requires tokenBucket to be set
                       rule: '!has(self.shareAcrossGateway) || !self.shareAcrossGateway
                         || has(self.tokenBucket)'
+                  quota:
+                    description: |-
+                      Quota defines quota-based global rate limiting using an external Rate
+                      Limit Quota Service (RLQS).
+                    properties:
+                      bucket:
+                        description: |-
+                          Bucket defines the key-value pairs that identify this quota bucket. Static
+                          values and values extracted from request headers may be combined. Requests
+                          for which a dynamic value cannot be produced are allowed and not reported
+                          to the RLQS.
+                        items:
+                          description: RateLimitQuotaBucketEntry defines one key in
+                            an RLQS bucket identifier.
+                          properties:
+                            header:
+                              description: Header is the request header used when
+                                Type is Header.
+                              minLength: 1
+                              type: string
+                            key:
+                              description: Key is the bucket identifier key.
+                              minLength: 1
+                              type: string
+                            type:
+                              description: Type specifies how this entry's value is
+                                produced.
+                              enum:
+                              - Generic
+                              - Header
+                              type: string
+                            value:
+                              description: Value is the static value used when Type
+                                is Generic.
+                              minLength: 1
+                              type: string
+                          required:
+                          - key
+                          - type
+                          type: object
+                          x-kubernetes-validations:
+                          - message: exactly one entry type must be specified
+                            rule: (self.type == 'Generic' && has(self.value) && !has(self.header))
+                              || (self.type == 'Header' && has(self.header) && !has(self.value))
+                        maxItems: 16
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - key
+                        x-kubernetes-list-type: map
+                      denyStatus:
+                        default: 429
+                        description: DenyStatus is the HTTP status returned when quota
+                          is denied. Defaults to 429.
+                        format: int32
+                        maximum: 599
+                        minimum: 400
+                        type: integer
+                      expiredAssignmentBehavior:
+                        description: |-
+                          ExpiredAssignmentBehavior controls requests after an assignment expires
+                          and cannot be refreshed. If omitted, Envoy abandons the expired bucket and
+                          starts a new subscription when the next matching request arrives.
+                        properties:
+                          strategy:
+                            description: |-
+                              Strategy selects whether Envoy reuses the last assignment or applies a
+                              blanket allow/deny decision while waiting for a refresh.
+                            enum:
+                            - ReuseLast
+                            - Allow
+                            - Deny
+                            type: string
+                          timeout:
+                            description: |-
+                              Timeout bounds how long the selected strategy is used before Envoy
+                              abandons the bucket and starts a new subscription.
+                            maxLength: 32
+                            type: string
+                            x-kubernetes-validations:
+                            - message: invalid duration value
+                              rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                            - message: must be greater than 0s
+                              rule: duration(self) > duration('0s')
+                        required:
+                        - strategy
+                        - timeout
+                        type: object
+                      extensionRef:
+                        description: ExtensionRef references a GatewayExtension that
+                          provides the RLQS server.
+                        properties:
+                          name:
+                            description: The name of the target resource.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          namespace:
+                            description: |-
+                              The namespace of the target resource.
+                              If not set, defaults to the namespace of the parent object.
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      noAssignmentBehavior:
+                        default: Allow
+                        description: |-
+                          NoAssignmentBehavior controls requests before the RLQS returns the first
+                          assignment. Defaults to Allow.
+                        enum:
+                        - Allow
+                        - Deny
+                        type: string
+                      reportingInterval:
+                        default: 5s
+                        description: |-
+                          ReportingInterval controls how often Envoy reports this bucket's usage to
+                          the RLQS. Defaults to 5s.
+                        maxLength: 32
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                        - message: must be greater than 100ms
+                          rule: duration(self) > duration('100ms')
+                    required:
+                    - bucket
+                    - extensionRef
+                    type: object
                 type: object
               rbac:
                 description: |-

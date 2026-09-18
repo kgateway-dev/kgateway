@@ -185,6 +185,12 @@ jobs:
           CLUSTER_NAME: ${{ matrix.test.cluster-name }}
           CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
         run: make cluster-load-extproc-server
+      - name: Load shared RLQS server
+        shell: bash
+        env:
+          CLUSTER_NAME: ${{ matrix.test.cluster-name }}
+          CLUSTER_TYPE: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}
+        run: make cluster-load-rlqs-server
       - name: Disable ordered ADS escape hatch
         if: ${{ matrix.test.ordered-ads == 'false' }}
         shell: bash
@@ -196,6 +202,7 @@ jobs:
         uses: ./.github/actions/kubernetes-e2e-tests
         env:
           SKIP_EXTPROC_SERVER_SETUP: "true"
+          SKIP_RLQS_SERVER_SETUP: "true"
         with:
           cluster-name: ${{ matrix.test.cluster-name }}
           cluster-type: ${{ steps.dotenv.outputs.cluster_type || 'kind' }}

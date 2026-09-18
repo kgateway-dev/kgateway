@@ -93,6 +93,7 @@ type trafficPolicySpecIr struct {
 	extAuth          *extAuthIR
 	localRateLimit   *localRateLimitIR
 	globalRateLimit  *globalRateLimitIR
+	rateLimitQuota   *rateLimitQuotaIR
 	cors             *corsIR
 	csrf             *csrfIR
 	headerModifiers  *headerModifiersIR
@@ -142,6 +143,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 		return false
 	}
 	if !d.spec.globalRateLimit.Equals(d2.spec.globalRateLimit) {
+		return false
+	}
+	if !d.spec.rateLimitQuota.Equals(d2.spec.rateLimitQuota) {
 		return false
 	}
 	if !d.spec.cors.Equals(d2.spec.cors) {
@@ -221,6 +225,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.rustformation.Validate)
 	validators = append(validators, p.spec.localRateLimit.Validate)
 	validators = append(validators, p.spec.globalRateLimit.Validate)
+	validators = append(validators, p.spec.rateLimitQuota.Validate)
 	validators = append(validators, p.spec.extProc.Validate)
 	validators = append(validators, p.spec.extAuth.Validate)
 	validators = append(validators, p.spec.csrf.Validate)
@@ -261,17 +266,19 @@ type trafficPolicyPluginGwPass struct {
 	// should be set on routes that have been successfully authenticated
 	enableAuthMetadata bool
 
-	setTransformationInChain map[string]bool // TODO(nfuden): make this multi stage
-	localRateLimitInChain    map[string]*localratelimitv3.LocalRateLimit
-	extAuthPerProvider       ProviderNeededMap
-	extProcPerProvider       ProviderNeededMap
-	jwtPerProvider           ProviderNeededMap
-	rateLimitPerProvider     ProviderNeededMap
-	oauth2PerProvider        ProviderNeededMap
-	rbacInChain              map[string]*envoyrbacv3.RBAC
-	corsInChain              map[string]*corsv3.Cors
-	csrfInChain              map[string]*envoy_csrf_v3.CsrfPolicy
-	headerMutationInChain    map[string]*header_mutationv3.HeaderMutationPerRoute
+	setTransformationInChain  map[string]bool // TODO(nfuden): make this multi stage
+	localRateLimitInChain     map[string]*localratelimitv3.LocalRateLimit
+	extAuthPerProvider        ProviderNeededMap
+	extProcPerProvider        ProviderNeededMap
+	jwtPerProvider            ProviderNeededMap
+	rateLimitPerProvider      ProviderNeededMap
+	rateLimitQuotaPerProvider ProviderNeededMap
+	rateLimitQuotaBuckets     map[string]map[string]*rateLimitQuotaBuckets
+	oauth2PerProvider         ProviderNeededMap
+	rbacInChain               map[string]*envoyrbacv3.RBAC
+	corsInChain               map[string]*corsv3.Cors
+	csrfInChain               map[string]*envoy_csrf_v3.CsrfPolicy
+	headerMutationInChain     map[string]*header_mutationv3.HeaderMutationPerRoute
 	// Route names we've already applied requestMirror settings to on this pass, so the first
 	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
 	// pass, so the name is a safe key.
@@ -378,7 +385,7 @@ func (p *trafficPolicyPluginGwPass) ApplyRouteConfigPlugin(
 		return
 	}
 
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec, rateLimitQuotaRouteConfigScope(out))
 	p.applyGatewayLevelPerRouteSettings(policy.spec, out)
 }
 
@@ -421,7 +428,7 @@ func (p *trafficPolicyPluginGwPass) ApplyVhostPlugin(
 	// handlePerRoutePolicies keep that precedence explicit.
 	p.applyPerRouteSettings(policy.spec, out.Routes)
 
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec, rateLimitQuotaVhostScope(out))
 }
 
 // called 0 or more times
@@ -436,7 +443,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	// route metadata from pCtx to resolve its template, so it is applied here
 	// rather than in handlePerRoutePolicies.
 	applyStatPrefix(policy.spec.statPrefix, pCtx, outputRoute)
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec, rateLimitQuotaRouteScope(outputRoute))
 
 	return nil
 }
@@ -450,7 +457,7 @@ func (p *trafficPolicyPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec)
+	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, rtPolicy.spec, rateLimitQuotaPolicyScope{})
 
 	return nil
 }
@@ -649,6 +656,8 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, stagedRateLimitFilter)
 	}
 
+	stagedFilters = append(stagedFilters, p.rateLimitQuotaHTTPFilters(fcc.FilterChainName)...)
+
 	// Add Cors filter to enable cors for the listener.
 	// Requires the cors policy to be set as typed_per_filter_config.
 	if f := p.corsInChain[fcc.FilterChainName]; f != nil {
@@ -767,6 +776,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	fcn string,
 	typedFilterConfig *ir.TypedFilterConfigMap,
 	spec trafficPolicySpecIr,
+	rateLimitQuotaScope rateLimitQuotaPolicyScope,
 ) {
 	p.handleRustFormation(fcn, typedFilterConfig, spec.rustformation)
 
@@ -777,6 +787,7 @@ func (p *trafficPolicyPluginGwPass) handlePolicies(
 	p.handleExtProc(fcn, typedFilterConfig, spec.extProc)
 	p.handleJwt(fcn, typedFilterConfig, spec.jwt)
 	p.handleGlobalRateLimit(fcn, typedFilterConfig, spec.globalRateLimit)
+	p.handleRateLimitQuota(fcn, spec.rateLimitQuota, rateLimitQuotaScope)
 	p.handleLocalRateLimit(fcn, typedFilterConfig, spec.localRateLimit)
 	p.handleCors(fcn, typedFilterConfig, spec.cors)
 	p.handleCsrf(fcn, typedFilterConfig, spec.csrf)

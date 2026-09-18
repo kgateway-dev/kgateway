@@ -41,6 +41,7 @@ func NewGatewayExtensionsCollection(
 			ExtAuth:          cr.Spec.ExtAuth,
 			ExtProc:          cr.Spec.ExtProc,
 			RateLimit:        cr.Spec.RateLimit,
+			RateLimitQuota:   cr.Spec.RateLimitQuota,
 			JWT:              cr.Spec.JWT,
 			OAuth2:           cr.Spec.OAuth2,
 			PrecedenceWeight: weight,
