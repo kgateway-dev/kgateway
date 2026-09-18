@@ -42,6 +42,43 @@ var (
 	ErrPolicyNotFound        = errors.New("policy not found")
 )
 
+// MissingReferenceGrantError reports a cross-namespace reference that no
+// ReferenceGrant permits. Its message names the grant the user has to create: the
+// namespace it belongs in (the referent's, not the referrer's) and the source
+// identity it has to allow, which is the kind translation resolved the reference
+// under and not necessarily the kind that declares the field.
+type MissingReferenceGrantError struct {
+	From From
+
+	// To is the referenced resource. Namespace and Name are set only when the
+	// reference names them; a reference by label selector leaves them empty,
+	// because the matched resources are not observable without a grant and
+	// naming one would disclose that it exists.
+	To ir.ObjectSource
+}
+
+func (e *MissingReferenceGrantError) Error() string {
+	kind := e.To.Kind
+	if kind == "" {
+		kind = "resource"
+	}
+	from := fmt.Sprintf("group %q kind %q in namespace %q", e.From.Group, e.From.Kind, e.From.Namespace)
+	if e.To.Namespace == "" || e.To.Name == "" {
+		return fmt.Sprintf(
+			"%s: create a ReferenceGrant in the namespace of the referenced %s allowing references from %s",
+			ErrMissingReferenceGrant, kind, from,
+		)
+	}
+	return fmt.Sprintf(
+		"%s: create a ReferenceGrant in namespace %q allowing %s %q to be referenced from %s",
+		ErrMissingReferenceGrant, e.To.Namespace, kind, e.To.Name, from,
+	)
+}
+
+func (e *MissingReferenceGrantError) Unwrap() error {
+	return ErrMissingReferenceGrant
+}
+
 type NotFoundError struct {
 	// I call this `NotFound` so its easy to find in krt dump.
 	NotFoundObj ir.ObjectSource
