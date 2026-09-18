@@ -840,6 +840,12 @@ func (tc TestCase) Run(
 		mergedReports := reportsMap
 		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
 
+		// Policies whose targetRefs do not resolve are reported by a third producer in the proxy
+		// syncer (see proxy_syncer/policy_target_status.go). A policy may have both a Gateway
+		// ancestor from translation and a TargetNotFound ancestor, so merge by ancestor rather
+		// than replacing the policy's report.
+		mergedReports.MergePolicyReports(proxy_syncer.GeneratePolicyTargetReports(commoncol, extensions))
+
 		// Backend Accepted conditions are also generated outside gateway translation
 		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
 		// the kgateway Backend plugin's collections so golden files capture Backend

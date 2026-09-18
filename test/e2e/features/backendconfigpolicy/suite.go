@@ -16,12 +16,14 @@ import (
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -354,7 +356,39 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 		kgatewayControllerName: false,
 		otherControllerName:    true,
 	})
+
+	// The missing target is reported on the policy's own ancestor instead
+	s.assertTargetNotFound("example-policy", "kgateway-base", "Service kgateway-base/missing-svc not found")
 	// AfterTest() handles cleanup automatically
+}
+
+// assertTargetNotFound verifies the policy reports the given unresolved target on its own
+// ancestor with Accepted=False/TargetNotFound.
+func (s *testingSuite) assertTargetNotFound(policyName, policyNamespace, expectedMessage string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.BackendConfigPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		var accepted *metav1.Condition
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.ControllerName) != kgatewayControllerName ||
+				ancestor.AncestorRef.Kind == nil || string(*ancestor.AncestorRef.Kind) != wellknown.BackendConfigPolicyGVK.Kind ||
+				string(ancestor.AncestorRef.Name) != policyName {
+				continue
+			}
+			accepted = meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted))
+		}
+		g.Expect(accepted).NotTo(gomega.BeNil(), "policy should report an ancestor for itself")
+		g.Expect(accepted.Status).To(gomega.Equal(metav1.ConditionFalse))
+		g.Expect(accepted.Reason).To(gomega.Equal(string(shared.PolicyReasonTargetNotFound)))
+		g.Expect(accepted.Message).To(gomega.ContainSubstring(expectedMessage))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, controllerName string) {
