@@ -10,6 +10,7 @@ import (
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -54,7 +55,7 @@ func validationTestBackend(name string) *ir.BackendObjectIR {
 
 func translateValidationTestBase(t *testing.T, tr *BackendTranslator, backend *ir.BackendObjectIR) (*envoyclusterv3.Cluster, error) {
 	t.Helper()
-	base := tr.TranslateBackendBase(t.Context(), backend)
+	base := tr.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	return base.Cluster, base.Error
 }

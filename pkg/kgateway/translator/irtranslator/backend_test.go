@@ -37,7 +37,7 @@ func newTestBackend(objSrc ir.ObjectSource, port int32) *ir.BackendObjectIR {
 
 func translateBackendBase(t *testing.T, bt *irtranslator.BackendTranslator, backend *ir.BackendObjectIR) (*envoyclusterv3.Cluster, error) {
 	t.Helper()
-	base := bt.TranslateBackendBase(t.Context(), backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 	require.NotNil(t, base)
 	return base.Cluster, base.Error
 }
@@ -548,7 +548,7 @@ func TestApplyPerClient_StrictModeRejectsInvalidOverlay(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error, "base must pass strict validation (no overlay applied yet)")
 
@@ -615,7 +615,7 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.Len(t, validated, 1, "base translation must invoke the validator once")
@@ -688,7 +688,7 @@ func TestTranslateBackendBase_ClientIndependentInlineCLAIsBuiltOnBase(t *testing
 	backend := inlineCLABackend()
 
 	ctx := context.Background()
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error, "a base that carries its CLA must pass validation")
 	require.NotNil(t, base.Cluster.GetLoadAssignment(), "the client-independent CLA must be built onto the base")
@@ -717,7 +717,7 @@ func TestTranslateBackendBase_StrictModeDefersValidationForClientDependentInline
 	backend := inlineCLABackend()
 
 	ctx := context.Background()
-	base := bt.TranslateBackendBase(ctx, backend)
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.NoError(t, base.Error,
 		"the CLA-less base must not be validated (and so must not error): its CLA is built per client")
