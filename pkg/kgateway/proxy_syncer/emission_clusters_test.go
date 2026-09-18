@@ -38,7 +38,7 @@ func TestEmissionSetIncludesAncillaryReferencesTheGateSkips(t *testing.T) {
 		assert.NotContainsf(t, gating, name,
 			"%s must stay out of the readiness gate", name)
 	}
-	assert.True(t, emission.Filterable(), "no request-time selector is present")
+	assert.True(t, emission.Filterable(emissionClaims{}), "no request-time selector is present")
 }
 
 // TestEmissionSetAlwaysIncludesBlackhole: routes whose backends fail resolution
@@ -110,7 +110,7 @@ func TestEmissionSetCollectsDeclarativeRouteTargets(t *testing.T) {
 	} {
 		assert.Contains(t, emission.Names, name)
 	}
-	assert.True(t, emission.Filterable())
+	assert.True(t, emission.Filterable(emissionClaims{}))
 }
 
 // TestEmissionSetReportsRequestTimeSelectors pins the guard on all three arms of
@@ -161,9 +161,9 @@ func TestEmissionSetReportsRequestTimeSelectors(t *testing.T) {
 
 			emission := collectReferencedClustersForEmission(routes, envoycache.Resources{})
 
-			assert.False(t, emission.Filterable(),
+			assert.False(t, emission.Filterable(emissionClaims{}),
 				"a request-time destination must make the gateway fall back to emitting every cluster")
-			assert.Equal(t, []string{tc.expected}, emission.Unresolvable)
+			assert.Equal(t, []string{tc.expected}, emission.unaccountedSelectors(emissionClaims{}))
 		})
 	}
 }
@@ -186,8 +186,8 @@ func TestEmissionSetIsFilterableForOrdinaryRoutes(t *testing.T) {
 
 	emission := collectReferencedClustersForEmission(routes, envoycache.Resources{})
 
-	assert.True(t, emission.Filterable())
-	assert.Empty(t, emission.Unresolvable)
+	assert.True(t, emission.Filterable(emissionClaims{}))
+	assert.Empty(t, emission.RequestTimeSelectors)
 }
 
 // TestEmittedClustersEquals: the set rides on GatewayXdsResources, whose Equals
@@ -200,7 +200,7 @@ func TestEmittedClustersEquals(t *testing.T) {
 	assert.True(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}}}))
 	assert.False(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}, "b": {}}}),
 		"a changed cluster set must invalidate the projection")
-	assert.False(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}}, Unresolvable: []string{"cluster_header \"x\""}}),
+	assert.False(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}}, RequestTimeSelectors: []requestTimeSelector{{selectorClusterHeader, "x"}}}),
 		"a gateway that just became unfilterable must invalidate the projection")
 }
 
