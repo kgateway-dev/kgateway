@@ -184,26 +184,30 @@ func newLambdaBackend(name, endpointURL string) *kgateway.Backend {
 }
 
 func TestLambdaFiltersRewriteHostToTheLambdaEndpoint(t *testing.T) {
-	customEndpoint := "http://localstack.default.svc.cluster.local:4566"
 	tests := []struct {
-		name    string
-		backend *kgateway.Backend
-		want    string
+		name     string
+		endpoint string
+		want     string
 	}{
-		{
-			name:    "default endpoint",
-			backend: newLambdaBackendInRegion("us-east-2", nil),
-			want:    "lambda.us-east-2.amazonaws.com",
-		},
-		{
-			name:    "custom endpoint URL",
-			backend: newLambdaBackendInRegion("us-east-2", &customEndpoint),
-			want:    "localstack.default.svc.cluster.local",
-		},
+		{name: "default endpoint", want: "lambda.us-east-2.amazonaws.com"},
+		{name: "custom HTTP port", endpoint: "http://localstack:4566", want: "localstack:4566"},
+		{name: "custom HTTPS port", endpoint: "https://localstack:4566", want: "localstack:4566"},
+		{name: "default HTTP port", endpoint: "http://localstack:80", want: "localstack"},
+		{name: "default HTTPS port", endpoint: "https://localstack:443", want: "localstack"},
+		{name: "HTTP on port 443", endpoint: "http://localstack:443", want: "localstack:443"},
+		{name: "HTTPS on port 80", endpoint: "https://localstack:80", want: "localstack:80"},
+		{name: "IPv6 custom port", endpoint: "http://[::1]:4566", want: "[::1]:4566"},
+		{name: "IPv6 default port", endpoint: "http://[::1]:80", want: "[::1]"},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			backendIR := buildTranslateFunc(nil, nil, true)(krt.TestingDummyContext{}, tt.backend)
+			var endpointURL *string
+			if tt.endpoint != "" {
+				endpointURL = &tt.endpoint
+			}
+			backend := newLambdaBackendInRegion("us-east-2", endpointURL)
+			backendIR := buildTranslateFunc(nil, nil, true)(krt.TestingDummyContext{}, backend)
 			require.Empty(t, backendIR.errors)
 			require.NotNil(t, backendIR.awsIr)
 

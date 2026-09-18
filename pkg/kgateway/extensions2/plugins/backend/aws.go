@@ -3,8 +3,10 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -255,8 +257,7 @@ func buildLambdaFilters(
 		payloadPassthrough = false
 	}
 
-	// The aws_lambda filter swaps in this host before the aws_request_signing filter that follows it
-	// computes the SigV4 signature, so the signed host matches the endpoint the request is sent to.
+	// Use the Lambda endpoint authority instead of the client authority or a route-level rewrite.
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
 		Arn:                arn,
 		InvocationMode:     invokeMode,
@@ -336,6 +337,17 @@ type lambdaEndpointConfig struct {
 	hostname string
 	port     uint32
 	useTLS   bool
+}
+
+// authority returns the HTTP authority, omitting only the scheme's default port.
+func (u *lambdaEndpointConfig) authority() string {
+	if (u.useTLS && u.port == 443) || (!u.useTLS && u.port == 80) {
+		if strings.Contains(u.hostname, ":") {
+			return "[" + u.hostname + "]"
+		}
+		return u.hostname
+	}
+	return net.JoinHostPort(u.hostname, strconv.FormatUint(uint64(u.port), 10))
 }
 
 // Equals checks if two lambdaEndpointConfig objects are equal.

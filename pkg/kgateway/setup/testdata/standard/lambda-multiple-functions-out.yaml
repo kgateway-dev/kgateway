@@ -75,7 +75,7 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
           arn: arn:aws:lambda:us-west-2:000000000000:function:integration-service:$LATEST
-          hostRewrite: staging.localstack.dev
+          hostRewrite: staging.localstack.dev:4566
       - name: envoy.filters.http.aws_request_signing
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
