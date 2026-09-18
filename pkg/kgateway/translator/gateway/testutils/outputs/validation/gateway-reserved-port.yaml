@@ -12,7 +12,7 @@ Statuses:
         status: "True"
         type: Accepted
       - lastTransitionTime: null
-        message: ""
+        message: No valid listeners
         reason: Invalid
         status: "False"
         type: Programmed
