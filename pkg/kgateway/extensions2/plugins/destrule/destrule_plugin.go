@@ -75,6 +75,8 @@ func (d *destrulePlugin) overlayInputsHash(in ir.BackendObjectIR) uint64 {
 	return hasher.Sum64()
 }
 
+// endpointsMayApply reports whether a DestinationRule names the backend's host.
+//
 // endpointsMayApply rules a backend out of the per-client endpoint path when no
 // DestinationRule names its hostname at all. Which rule applies to a given client
 // is decided by the client's namespace and labels, so a backend with a rule for

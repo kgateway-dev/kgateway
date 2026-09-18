@@ -37,14 +37,10 @@ func gatewayPodIndexKey(namespace, gatewayName string) string {
 	return namespace + "/" + gatewayName
 }
 
-// NewPerClientLocalClusterEndpoints builds the CLA describing a gateway's own pods
-// back to that gateway — the "local cluster" Envoy compares against when deciding
-// how much traffic to keep in-zone. Each client gets a CLA covering its sibling
-// pods, so the collection is per client but not per backend.
-//
-// A client that has never subscribed to the resource is skipped rather than served
-// an empty CLA: an unrequested resource makes go-control-plane withhold the client's
-// entire EDS response (see the KnowsLocalCluster branch below).
+// NewPerClientLocalClusterEndpoints builds each gateway's local-cluster CLA
+// from its pods for Envoy's zone-aware routing. Rows are per client, not per backend.
+// Clients that have not subscribed are skipped: publishing an unrequested CLA
+// would cause go-control-plane to withhold their ADS endpoint responses.
 func NewPerClientLocalClusterEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -177,11 +173,9 @@ func buildLocalClusterLoadAssignment(
 	return cla
 }
 
-// hashLocalClusterLoadAssignment versions the local-cluster CLA for KRT change
-// detection, hashing the fields that actually reach Envoy — cluster name, and each
-// locality's endpoint addresses and ports. Pod churn that changes none of those
-// (a relabeled pod, a restarted pod keeping its IP) leaves the hash alone and so
-// does not republish EDS.
+// hashLocalClusterLoadAssignment hashes the cluster name and each locality's
+// endpoint addresses and ports for KRT change detection.
+// Pod updates that leave these unchanged do not republish EDS.
 func hashLocalClusterLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
 	hasher := fnv.New64a()
 	utils.HashStringField(hasher, cla.GetClusterName())

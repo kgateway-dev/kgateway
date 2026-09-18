@@ -10,24 +10,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// snapshotDeferralTracker derives the xds_snapshot_deferred_clients gauge from
-// collection state: a connected client is deferred while it has no row in the
-// per-client snapshot collection. snapshotPerClient returns nil for a client
-// whose per-client clusters or endpoints have not landed yet, which keeps the
-// client's last snapshot in the cache; while that lasts, nothing else in the
-// process says the client is being withheld config.
+// snapshotDeferralTracker counts connected clients without a current snapshot
+// row, including clients that have never received a snapshot. A deferred client
+// may still have its previous snapshot in the cache.
 //
-// The tracker is fed by the two collections' own event streams rather than by
-// the deferral branch, for two reasons. A client that never received a first
-// snapshot produces no snapshot event at all, so a counter incremented on the
-// deferral branch could not show the one case that matters most (a cold proxy
-// starved on connect). And a gauge maintained from both streams needs no
-// per-event scan of either collection: each event moves one key between two
-// sets and adjusts one gateway's count.
-//
-// Per-gateway counts are keyed by the client's gateway and namespace, the same
-// labels the other snapshot metrics carry, so a stuck client can be tied to a
-// Gateway without a per-client label series.
+// Client and snapshot events maintain the sets and per-gateway counts in O(1)
+// per event. Gateway and namespace labels identify affected gateways without
+// adding a metric series per client.
 type snapshotDeferralTracker struct {
 	mu sync.Mutex
 	// clients is the set of connected client keys.
@@ -47,9 +36,7 @@ func newSnapshotDeferralTracker() *snapshotDeferralTracker {
 	}
 }
 
-// register wires the tracker to the client and snapshot collections. Both
-// registrations replay existing state, so a tracker attached after either
-// collection has synced still starts from the truth.
+// register subscribes to client and snapshot events, replaying existing state.
 func (d *snapshotDeferralTracker) register(clients krt.Collection[ir.UniquelyConnectedClient], snapshots krt.Collection[XdsSnapWrapper]) {
 	clients.RegisterBatch(d.clientEvents, true)
 	snapshots.RegisterBatch(d.snapshotEvents, true)

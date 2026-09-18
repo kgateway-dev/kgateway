@@ -20,11 +20,8 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-// baseEnvoyCluster is the UCC-invariant translation result for a single backend.
-// The Cluster proto is shared across every UCC that targets this backend: it is
-// read-only on the consumer side, and per-client processing clones it before
-// modifying. Sharing it is what keeps per-client CDS state proportional to the
-// number of backends rather than to backends times clients.
+// baseEnvoyCluster is the client-independent translation of one backend.
+// Clients share its read-only Cluster proto and clone it for per-client changes.
 type baseEnvoyCluster struct {
 	// Name is both the Envoy cluster name and the KRT key; translation always
 	// names the cluster (blackhole included) after BackendObjectIR.ClusterName().
@@ -44,14 +41,8 @@ type baseEnvoyCluster struct {
 	BackendSource ir.ObjectSource
 	// BackendGeneration is the observed generation of the source Backend.
 	BackendGeneration int64
-	// OverlayInputsHash is the fold of every overlay plugin's declared backend
-	// inputs (BackendTranslator.OverlayInputsHash). Per-client processing reads
-	// Backend through the overlays, and this is how a change to what they read
-	// (a Service label the waypoint overlay branches on) reaches every client
-	// even when the shared proto is byte-identical. A write that moves neither
-	// this nor ClusterVersion — a status update, an annotation no overlay
-	// reads, a label none branches on — leaves the row equal, and no client's
-	// walk reruns.
+	// OverlayInputsHash combines the backend inputs declared by overlay plugins.
+	// Changes to these inputs must reach clients even when ClusterVersion is unchanged.
 	OverlayInputsHash uint64
 	// CompareBackendInputs enables conservative IR equality for undeclared hooks.
 	CompareBackendInputs bool
@@ -63,12 +54,10 @@ type baseEnvoyCluster struct {
 	// because every field they read is hashed or conservatively compared.
 	// +noKrtEquals
 	Backend *ir.BackendObjectIR
-	// Base is the non-proto portion of the base-translation result retained for
-	// per-client processing. Base.Cluster is always nil: the only retained copy
-	// of the shared proto lives behind Cluster, so future code cannot mutate it
-	// through a raw *BaseCluster alias. Everything ApplyPerClient reads from it
-	// (EndpointInputs, SupportsInlineCLA, DefaultedLocalityConfig) is either
-	// derived from the proto or folded into ClusterVersion by baseClusterVersion.
+	// Base retains the non-proto translation inputs used by ApplyPerClient.
+	// Base.Cluster is nil; Cluster holds the shared proto. EndpointInputs,
+	// SupportsInlineCLA, and DefaultedLocalityConfig are derived from the proto
+	// or included in ClusterVersion.
 	// +noKrtEquals
 	Base *irtranslator.BaseCluster
 }

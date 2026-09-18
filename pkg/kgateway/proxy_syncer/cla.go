@@ -17,36 +17,20 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-// UccWithEndpoints is one client's view of one backend's endpoints: the
-// ClusterLoadAssignment that client should receive, keyed by (client, backend).
-// Clients that resolve identically share a single interned CLA, so the row count is
-// per-pair but the proto count is per distinct result.
+// UccWithEndpoints holds a CLA keyed by (client, backend). Equal results share
+// one interned proto across clients.
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
-	// Endpoints is wrapped so consumers cannot mutate the CLA interned across
-	// every UCC whose built result is equal; see package sharedproto. EndpointsHash
-	// combines the resolved endpoint content, endpoint-plugin contributions, and
-	// load-balancing context into a compact version fingerprint.
-	//
-	// Equals stands in for comparing this proto with EndpointsHash, a 64-bit
-	// FNV-1a fold of its inputs. That is an assumption, not a proof of equality:
-	// a collision between two successive revisions of one row would leave that
-	// client on stale endpoints until any other change moved the hash. Interning
-	// does not inherit the assumption because it uses the hash only to pick a
-	// bucket and confirms content equality itself
-	// (TestNewPerClientEnvoyEndpointsDoesNotAliasHashCollisions); KRT equality
-	// and the client's EDS version, which XORs these hashes, do rely on it.
+	// Endpoints holds the interned, read-only CLA. EndpointsHash combines endpoint
+	// content, plugin contributions, and load-balancing context into a 64-bit hash.
+	// KRT equality and EDS versioning assume no collisions; a collision across row
+	// revisions can leave stale endpoints. Interning separately confirms content equality.
 	// +noKrtEquals EndpointsHash is a 64-bit content hash standing in for the proto; collision-freedom is assumed, see above
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
 	endpointsName string
-	// resourceName caches the KRT identity key, which KRT recomputes for every row
-	// on every recompute (slices.GroupUnique over the transform output) and again on
-	// the event path. This is the one collection still fanned out per client x per
-	// backend, so building the key on each call multiplies a format-string parse and
-	// three allocations by both dimensions. Nothing is retained that KRT wasn't
-	// already keeping: the same string is a map key in the collection state, so
-	// caching just makes the field and those keys share one allocation.
+	// resourceName caches the key used by KRT, avoiding an allocation
+	// per lookup for each client/backend pair.
 	// +noKrtEquals derived from Client and endpointsName, both of which are compared
 	resourceName string
 }
@@ -59,8 +43,7 @@ func (c UccWithEndpoints) ResourceName() string {
 	return c.resourceName
 }
 
-// uccEndpointsResourceName builds the (client, backend) identity key. Callers cache
-// the result on the row; see the resourceName field for why that is worth doing.
+// uccEndpointsResourceName builds the cached (client, backend) key.
 func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName string) string {
 	return client.ResourceName() + "/" + endpointsName
 }
@@ -71,49 +54,18 @@ func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 		c.endpointsName == in.endpointsName
 }
 
-// claRetainer carries interned CLAs from one recomputation of the endpoints
-// collection to the next, per backend.
+// claRetainer preserves each backend's interned CLAs across recomputations.
+// KRT keeps already-stored rows, so a client connecting later must receive the proto
+// those rows already hold, or each arrival cohort ends up with its own instance.
+// Each pass replaces the retained set with the distinct CLAs its rows reference.
 //
-// Without it, interning only shares among the clients present in a single pass,
-// which is not where the sharing has to happen. Every client that connects
-// re-runs this transform for every backend, and KRT keeps the object it already
-// stored whenever [UccWithEndpoints.Equals] reports no change — which it does,
-// because the CLA is deliberately not part of that comparison. So the already
-// connected clients keep the proto from the pass they joined in, the newcomer
-// keeps the one built in this pass, and clients that resolve identically end up
-// holding one proto each. Clients connect one at a time, so that is the normal
-// case, not a corner: a fleet coming up after a rolling restart would intern
-// nothing at all.
+// Sharing converges while retained entries remain available to live rows. If an
+// entry is lost, old rows and new clients can hold separate equal protos until
+// the next content change; endpoint content remains correct.
 //
-// Seeding the next pass with what the last one handed out fixes that at the
-// source: the rebuilt candidate finds the proto the stored rows already point
-// at, so every client converges on one instance and KRT's "nothing changed"
-// becomes true in the strong sense.
-//
-// Convergence holds as long as the retained entry is never dropped while rows
-// still reference it. Two things could drop it: a pass whose rows reference a
-// different instance (only after a content change, when KRT replaces the rows
-// too), and the delete handler, which therefore forgets an entry only when the
-// backend is absent from the source collection at the time the delete is
-// handled; see forgetIfAbsent. Should the entry ever be lost anyway, the cost
-// is bounded and never wrong bytes: the stored rows keep one instance, the
-// next pass hands out another, and the split heals on the next content change.
-//
-// The mirror image is an entry that outlives its backend. The transform and
-// the delete handler run on different goroutines, so a pass can store its
-// entry after the backend was deleted again and after the delete handler
-// already ran and found nothing to forget. Nothing would ever drop that
-// entry, since a gone backend produces no more events. keepIfPresent closes
-// that window by re-checking presence after the store: whichever of the two
-// looks last sees the backend gone and drops the entry.
-//
-// Lifetime is bounded by construction rather than by policy. What is retained is
-// replaced after every pass with exactly the set the returned rows reference, so
-// it can never hold more than the live distinct results for that backend, and a
-// superseded generation is released as soon as the rows that referenced it are.
-// That matters here specifically: the bucket key is a content hash, so endpoint
-// churn mints a new key on every change, and an interner that merely accumulated
-// would pin one CLA per change forever — strictly worse than not interning.
+// The delete handler and transform run on separate goroutines. forgetIfAbsent
+// preserves entries for backends re-added before the handler runs. keepIfPresent
+// removes entries stored after deletion, including when the handler ran first.
 type claRetainer struct {
 	mu sync.Mutex
 	// byBackend holds, per backend resource name, the distinct CLAs that
@@ -144,9 +96,7 @@ func (r *claRetainer) seed(backend string, interner *sharedproto.Interner[*envoy
 // keep replaces what is retained for backend with exactly the distinct CLAs rows
 // reference, which is what bounds retention to the live set.
 func (r *claRetainer) keep(backend string, rows []UccWithEndpoints) {
-	// Distinct results per backend is a small number - one per load-balancing
-	// context, so in practice one per locality - which is why a linear scan
-	// beats a map here.
+	// Each backend usually has few distinct results (one per locality), so use a linear scan.
 	var retained []retainedCLA
 	for _, row := range rows {
 		if row.Endpoints.IsNil() {
@@ -169,11 +119,9 @@ func (r *claRetainer) keep(backend string, rows []UccWithEndpoints) {
 	r.byBackend[backend] = retained
 }
 
-// keepIfPresent is keep followed by a presence re-check. present must read the
-// source collection's current state, not the event that started this pass: by
-// the time the pass stores its entry the backend can already be deleted again,
-// with the delete handler having run while the entry was not yet there. Checking
-// after the store means one of the two observers always sees the deletion.
+// keepIfPresent stores the CLAs, then checks the source collection's current
+// state. Checking after the store removes entries created after the delete
+// handler ran. present must not use the event that started the pass.
 func (r *claRetainer) keepIfPresent(backend string, rows []UccWithEndpoints, present func() bool) {
 	r.keep(backend, rows)
 	if !present() {
@@ -190,13 +138,8 @@ func (r *claRetainer) forget(backend string) {
 	delete(r.byBackend, backend)
 }
 
-// forgetIfAbsent is forget guarded by whether the backend is still in the source
-// collection at the time the delete event is handled. Delete handlers run on
-// their own goroutine, so a backend deleted and re-added in quick succession can
-// have its re-add pass seed from and replace the entry before the delete is
-// observed here; dropping the entry then would split the fleet between the
-// stored rows' proto and the next pass's fresh one until the next endpoint
-// change. When the backend is present again, its own transform owns the entry.
+// forgetIfAbsent drops retained CLAs only if the backend is currently absent.
+// A delayed delete event must not remove a re-added backend's live entry.
 func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
 	if !absent {
 		return
@@ -204,11 +147,8 @@ func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
 	r.forget(backend)
 }
 
-// PerClientEnvoyEndpoints is the endpoint half of per-client xDS: [UccWithEndpoints]
-// rows indexed by client, so assembling one client's EDS payload does not scan the
-// other clients' rows. Both [NewPerClientEnvoyEndpoints] (backend endpoints) and
-// [NewPerClientLocalClusterEndpoints] (the gateway's own local cluster) produce this
-// shape, and snapshot assembly consumes them the same way.
+// PerClientEnvoyEndpoints indexes [UccWithEndpoints] rows by client for EDS
+// assembly. Backend and local-cluster endpoint collections both use this shape.
 type PerClientEnvoyEndpoints struct {
 	endpoints krt.Collection[UccWithEndpoints]
 	index     krt.Index[string, UccWithEndpoints]
@@ -220,18 +160,11 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
-// NewPerClientEnvoyEndpoints builds a [UccWithEndpoints] row for every (client,
-// backend) pair by resolving each backend's endpoints from that client's
-// perspective — locality, labels, and any plugin-applied priority — and turning the
-// result into a ClusterLoadAssignment.
-//
+// NewPerClientEnvoyEndpoints resolves endpoints for each (client, backend) pair
+// and builds its CLA. Equal results share a read-only proto; hashes select
+// candidate buckets and content equality determines reuse.
 // resolveEndpoints and buildClusterLoadAssignment are injected rather than called
 // directly so this collection can be built against a test double.
-//
-// Endpoints must vary per client (that is what locality-aware routing means), so
-// unlike clusters there is no base to share. What is shared is the output: clients
-// whose built CLAs are equal are handed the same read-only proto. Resolution hashes
-// narrow the equality checks to a bucket but are not themselves proof of equality.
 func NewPerClientEnvoyEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -245,17 +178,9 @@ func NewPerClientEnvoyEndpoints(
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		// Loop-invariant: every row in this transform shares the same backend.
 		epName := ep.ResourceName()
-		// Intern equal CLAs across UCCs. The resolved-input hash selects a small
-		// candidate bucket; the interner confirms protobuf equality so a 64-bit
-		// collision cannot make different clients share the wrong assignment.
-		//
-		// Seeded with what the previous pass handed out, so a client that connects
-		// later converges on the proto the already-stored rows point at rather than
-		// starting a generation of its own. See [claRetainer].
-		// Candidates in one bucket alias their LbEndpoint protos through the
-		// endpoint IR, and the pinned protobuf-go's proto.Equal walks every
-		// nested field regardless, so equality uses an identity-aware
-		// comparison that agrees with proto.Equal (see clusterLoadAssignmentsEqual).
+		// Seed from retained CLAs so later clients reuse existing instances.
+		// Hashes select candidates; clusterLoadAssignmentsEqual confirms content
+		// and skips traversal of shared LbEndpoint pointers.
 		claInterner := sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]{Equal: clusterLoadAssignmentsEqual}
 		retainer.seed(epName, &claInterner)
 		for _, ucc := range uccs {
@@ -275,17 +200,8 @@ func NewPerClientEnvoyEndpoints(
 		retainer.keepIfPresent(epName, uccWithEndpointsRet, func() bool { return kgatewayEndpoints.GetKey(epName) != nil })
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
-	// A deleted backend never runs the transform again, so its retained CLAs have
-	// to be dropped here or they outlive every row that referenced them.
-	//
-	// This handler runs on its own goroutine, not on the transform's queue, so
-	// a delete followed quickly by a re-add can be observed here after the
-	// re-add's pass has already seeded from and replaced the entry. Forgetting
-	// in that order would discard the live generation: the next pass would
-	// build a fresh proto, KRT would keep the already-stored rows (equal hash),
-	// and the fleet would sit on two instances until the next endpoint change.
-	// So the entry is dropped only when the backend is really gone. If it has
-	// been re-added, its own transform owns the entry and keeps it current.
+	// Deletes do not run the transform. Remove retained CLAs here, unless
+	// the backend was re-added before this handler ran.
 	kgatewayEndpoints.RegisterBatch(func(events []krt.Event[ir.EndpointsForBackend]) {
 		for _, e := range events {
 			if e.Event == controllers.EventDelete && e.Old != nil {
@@ -304,10 +220,7 @@ func NewPerClientEnvoyEndpoints(
 	}
 }
 
-// combineEndpointHash folds the endpoint-equality, plugin, and load-balancing
-// hashes into a single key. It replaces the prior LbEpsEqualityHash ^ additionalHash
-// (which omitted the load-balancing context) so UCCs that differ only in locality
-// or priority labels no longer collide on the same key.
+// combineEndpointHash combines endpoint, plugin, and load-balancing hashes.
 func combineEndpointHash(parts ...uint64) uint64 {
 	hasher := fnv.New64a()
 	for _, part := range parts {

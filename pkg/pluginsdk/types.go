@@ -67,28 +67,22 @@ type ClusterOverlay struct {
 // nil is the common case and keeps the pair on the shared base with nothing
 // allocated for it.
 //
-// Overlays compose. Every overlay that applies to a pair mutates the same
-// clone, in a fixed (Group, Kind) order. That order exists so the resulting
-// proto is byte-stable across recomputes -- its content hash drives KRT
-// equality, so an order that varied run to run would churn every client -- and
-// not as a precedence policy. Nobody chose which plugin should win a contested
-// field; the winner is whichever sorts later, which is a lexical accident.
-//
+// Applicable overlays mutate the same clone in (Group, Kind) order for stable
+// proto content. This ordering does not define policy precedence. Each overlay
+// must write only its owned fields and must not depend on another overlay's
+// mutations. The framework does not enforce field ownership.
 // So do not write an overlay that depends on running before or after another,
 // or that expects to observe another's mutation. Confine each overlay to the
-// fields it owns. The in-tree overlays satisfy that today -- destrule writes
+// fields it owns. The overlays satisfy that today -- destrule writes
 // outlier detection, locality LB config and TCP keepalive; waypoint rewrites
 // the discovery type and load assignment -- but the framework does not enforce
 // it. Waypoint owns the discovery-type transition and clears any inherited
 // locality mode when replacing backend endpoints with a service VIP; that
 // redirect cannot use the backend endpoints' locality weights.
 //
-// Anything it reads through kctx registers a KRT dependency and is tracked for
-// it; ucc is what the pair is keyed on. Everything else it reads off in must be
-// declared by the OverlayInputsHash registered beside it, or a consumer that
-// caches the base translation will serve it stale. There is no field of in that
-// is safe to read undeclared: the base row that holds the backend is kept for
-// as long as the declared inputs and the translated proto compare equal.
+// Fetches through kctx register KRT dependencies. All fields read from in must
+// be covered by the accompanying OverlayInputsHash; otherwise KRT can retain
+// a base row whose backend inputs are stale.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -96,26 +90,19 @@ type PerClientClusterOverlay func(
 	in ir.BackendObjectIR,
 ) *ClusterOverlay
 
-// OverlayInputsHash declares what a per-client cluster hook reads from the
-// backend. It must move for every backend field whose change can change the
-// overlay's output, and it is the only thing that makes such a change reach
-// clients: the shared base row carrying the backend is kept for as long as its
-// hashes compare equal, so a field the overlay reads and this leaves out is
-// served stale until something else about the backend moves.
+// OverlayInputsHash hashes every BackendObjectIR field whose change can affect
+// the accompanying per-client cluster hook. KRT retains equal base rows, so
+// omitting an input can leave clients using stale backend state.
 //
-// Only what the overlay reads directly off the BackendObjectIR needs hashing.
-// What it reaches through krt.Fetch is already tracked by KRT, which reruns the
-// client when it changes. Declaring more than is read is sound, only expensive:
-// it costs a walk of every client for a write no client can observe.
+// Inputs fetched through krt.Fetch are tracked separately. Extra hash inputs
+// are safe but cause unnecessary client recomputation.
 //
-// Register it beside PerClientClusterOverlay or PerClientProcessBackend. A hook
-// registered without one conservatively compares the backend IR and backing
-// object version. Such hooks rerun clients on every object write; the framework
-// cannot infer their applicability from policy attachments because hooks may
-// apply globally. Declaring inputs avoids that fanout without requiring migration
-// of the mutation hook itself.
-// pkg/pluginsdk/overlaytest checks a declaration against its overlay
-// mechanically; a plugin contributing an overlay should run it.
+// Register it beside PerClientClusterOverlay or PerClientProcessBackend. Hooks
+// without this declaration fall back to comparing backend IR and backing-object
+// version, rerunning clients on every object write. Hooks may apply globally,
+// so the framework cannot infer their applicability from policy attachments.
+// Declaring inputs avoids that fanout without migrating the mutation hook.
+// Use pkg/pluginsdk/overlaytest to check the declaration against the hook.
 type OverlayInputsHash func(in ir.BackendObjectIR) uint64
 
 // PerClientProcessBackend is the legacy eager cluster mutation hook.
@@ -159,23 +146,15 @@ type PolicyPlugin struct {
 	PerClientEditEndpoints  EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
-	// PerClientEndpointsMayApply reports whether this plugin's endpoint hook
-	// (PerClientEditEndpoints or the legacy PerClientProcessEndpoints) could
-	// contribute to the given backend for at least one client. When every
-	// contributed endpoint hook rules a backend out, and the backend's own
-	// traffic distribution does not prioritize by client location, the
-	// framework builds that backend's inline ClusterLoadAssignment once on the
-	// shared base cluster instead of once per connected client.
+	// PerClientEndpointsMayApply reports whether the endpoint hook can contribute
+	// to this backend for any client. False skips the hook: it must return zero
+	// and leave inputs unchanged for every client. Nil assumes it may apply.
 	//
-	// Returning false is a promise that the hook would return 0 for this
-	// backend for every client; the hook is then not invoked for it. Nil means
-	// "may apply to any backend", which keeps the per-client build. Plugins
-	// whose hook acts only on policies of their own GroupKind attached to the
-	// backend can use AttachedPolicyEndpointsMayApply.
-	//
-	// The HandlerContext is the base translation's: a predicate that consults a
-	// collection (a rule index by hostname, say) fetches through it, so the
-	// backend's base is re-translated when the answer changes.
+	// If all hooks rule the backend out and prioritization is client-independent,
+	// the framework builds its inline CLA on the shared base. Hooks that only
+	// read their own attached policies can use AttachedPolicyEndpointsMayApply.
+	// Fetch through the supplied base-translation HandlerContext to register
+	// dependencies that invalidate this decision.
 	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
 
 	Policies       krt.Collection[ir.PolicyWrapper]

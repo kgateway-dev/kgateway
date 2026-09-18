@@ -55,10 +55,7 @@ func snapshotPerClient(
 	clusters PerClientEnvoyClusters,
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
-	// Per-client CDS payloads are assembled by PerClientEnvoyClusters, one row per
-	// connected client, from the shared bases plus that client's own overlays. The
-	// row is complete by construction, so there is nothing to wait for here beyond
-	// the row itself existing.
+	// PerClientEnvoyClusters stores each client's assembled CDS payload (shared bases plus the client's overlays).
 	clusterSnapshot := clusters.perClient
 
 	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
@@ -112,14 +109,6 @@ func snapshotPerClient(
 		// and were reverted. The first-connect delay in
 		// pkg/krtcollections/uniqueclients.go keeps a client's first watch
 		// from observing that convergence window.
-		//
-		// Debug rather than Info: this fires for every client on startup until
-		// its inputs land, and at fleet scale an Info line per client would
-		// drown the signal it exists for. The durable signal is the
-		// xds_snapshot_deferred_clients gauge (snapshotDeferralTracker below),
-		// which counts the clients currently in this state per gateway and,
-		// unlike this log line, also covers a client that has never had a
-		// snapshot published at all.
 		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
@@ -243,11 +232,8 @@ func snapshotPerClient(
 		}
 	})
 
-	// Publish how many connected clients currently have no snapshot row. This
-	// is the observable form of the deferral above: the log line is Debug, and
-	// a client that never received a first snapshot never emits an event, so
-	// only a gauge derived from both collections can show a client being
-	// starved of config rather than briefly converging.
+	// Track connected clients without snapshot rows, including those still
+	// waiting for their first snapshot.
 	newSnapshotDeferralTracker().register(uccCol, xdsSnapshotsForUcc)
 
 	return xdsSnapshotsForUcc

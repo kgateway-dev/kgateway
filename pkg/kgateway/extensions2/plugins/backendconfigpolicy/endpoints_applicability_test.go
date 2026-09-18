@@ -11,15 +11,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/overlaytest"
 )
 
-// TestEndpointsMayApplyCoversProcessEndpoints checks the promise this plugin
-// makes to the framework: a backend its PerClientEndpointsMayApply rules out is
-// one processEndpoints would not have touched, for any client. The framework
-// does not invoke the hook for such a backend and builds one inline
-// ClusterLoadAssignment shared by every client, so a predicate that rules out
-// too much loses this plugin's zone-aware configuration silently.
-//
-// The pairing under test is the registration's, not a restatement of it: both
-// fields are taken from the same values NewPlugin registers.
+// TestEndpointsMayApplyCoversProcessEndpoints checks that processEndpoints
+// contributes nothing, for any client, to a backend the plugin's
+// PerClientEndpointsMayApply rules out. The framework skips the hook for such
+// backends, so a predicate that rules out too much drops zone-aware endpoints
+// silently. See overlaytest.AssertMayApplyCoversEndpointHook.
 func TestEndpointsMayApplyCoversProcessEndpoints(t *testing.T) {
 	groupKind := wellknown.BackendConfigPolicyGVK.GroupKind()
 	endpointPlugin := &backendConfigEndpointPlugin{}
@@ -48,7 +44,7 @@ func TestEndpointsMayApplyCoversProcessEndpoints(t *testing.T) {
 			}),
 			// Admitted. The hook may still decline this one, because the
 			// attached policy need not be zone-aware; admitting a backend the
-			// hook would not touch costs a per-client build and is sound.
+			// hook would not touch is safe, but costs a per-client build.
 			backend("attached", map[schema.GroupKind][]ir.PolicyAtt{
 				groupKind: {{GroupKind: groupKind}},
 			}),

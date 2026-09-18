@@ -88,13 +88,9 @@ func (t *PerClientProcessor) policyPlugin() sdk.PolicyPlugin {
 	}
 }
 
-// overlayInputsHash declares what clusterOverlay reads from the backend: the
-// ingress-use-waypoint inputs, the object's name and namespace that key the
-// waypoint lookup (the attachment itself is fetched), and what
-// ApplyIngressUseWaypointCluster inlines into the STATIC cluster: the resolved
-// addresses and the port. The addresses are the reason this declaration
-// exists: a core Service's spec.clusterIPs can change (single- to dual-stack)
-// without moving anything else the framework compares.
+// overlayInputsHash covers the waypoint label inputs, lookup name and namespace,
+// and the resolved addresses and port inlined into STATIC clusters. Waypoint
+// attachments are fetched through KRT and tracked separately.
 func (t *PerClientProcessor) overlayInputsHash(in ir.BackendObjectIR) uint64 {
 	hasher := fnv.New64a()
 	IngressUseWaypointInputsHash(hasher, in)
@@ -309,12 +305,10 @@ func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Se
 	return sortedAddresses
 }
 
-// IngressUseWaypointInputsHash writes into hasher every field of the backend
-// that HasIngressUseWaypointLabel reads: the object's own ingress-use-waypoint
-// label, its namespace, and the namespaces of its aliases. The namespace labels
-// consulted for those are fetched, so KRT tracks them. Every plugin whose
-// overlay calls HasIngressUseWaypointLabel folds this into its
-// OverlayInputsHash, so the declaration cannot drift from the reader.
+// IngressUseWaypointInputsHash hashes the backend fields read by
+// HasIngressUseWaypointLabel: its label, namespace, and alias namespaces.
+// Namespace labels are fetched through KRT. Overlays that call
+// HasIngressUseWaypointLabel must include this hash in their OverlayInputsHash.
 func IngressUseWaypointInputsHash(hasher io.Writer, in ir.BackendObjectIR) {
 	if in.Obj != nil {
 		utils.HashStringField(hasher, in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel])
@@ -325,9 +319,8 @@ func IngressUseWaypointInputsHash(hasher io.Writer, in ir.BackendObjectIR) {
 	}
 }
 
-// HasIngressUseWaypointLabel reports whether the backend or any relevant
-// namespace/alias carries the ingress-use-waypoint label. Its inputs are
-// declared by IngressUseWaypointInputsHash; keep the two in step.
+// HasIngressUseWaypointLabel checks the backend and namespace/alias labels.
+// Keep its inputs in sync with IngressUseWaypointInputsHash.
 func HasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *collections.CommonCollections, in ir.BackendObjectIR) bool {
 	// Check the backend's own label first
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {
