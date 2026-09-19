@@ -36,8 +36,15 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	setup := base.TestCase{
 		Manifests: []string{gatewayWithRouteManifest},
 	}
+	testCases := map[string]*base.TestCase{
+		"TestDynamicForwardProxyConnectTermination": {
+			Manifests: []string{connectTerminationManifest},
+			// the manifest attaches its TrafficPolicy by sectionName, which needs a named route rule
+			MinGwApiVersion: base.GwApiRequireRouteNames,
+		},
+	}
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, nil),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
 	}
 }
 

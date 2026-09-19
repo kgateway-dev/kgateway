@@ -120,6 +120,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		backend.Obj = i
 		backend.ObjIr = backendIR
 		backend.Errors = backendIR.errors
+		backend.SupportedRouteKinds = supportedRouteKinds(i)
 
 		// Parse common annotations
 		ir.ParseObjectAnnotations(&backend, i)
@@ -146,6 +147,23 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		},
 		ExtraHasSynced: ec2Endpoints.HasSynced,
 	}
+}
+
+// supportedRouteKinds reports which route kinds may reference the Backend.
+//
+// Some Backend types are realised through HTTP filters.
+// None of those filters exist on a TCP or TLS listener, so a
+// reference from a TCPRoute or TLSRoute would program a cluster that can never carry
+// traffic. Restricting these types to HTTP route kinds turns that into a
+// ResolvedRefs=False/InvalidKind condition on the route instead.
+func supportedRouteKinds(be *kgateway.Backend) []schema.GroupKind {
+	switch {
+	case be.Spec.DynamicForwardProxy != nil,
+		be.Spec.Gcp != nil,
+		be.Spec.Aws != nil && be.Spec.Aws.Lambda != nil:
+		return ir.HTTPRouteKinds
+	}
+	return nil
 }
 
 // buildTranslateFunc builds a function that translates a Backend to a backendIr that

@@ -1,4 +1,5 @@
 name: Upload artifact
+description: Upload workflow artifacts with a unique name for each job.
 
 inputs:
   path:

@@ -236,6 +236,15 @@ func translateProvider(
 		// durations and anything above 87600h, so this conversion cannot overflow or truncate.
 		jwtProvider.ClockSkewSeconds = uint32(provider.ClockSkew.Duration.Seconds()) //nolint:gosec // G115: bounded by kubebuilder validation
 	}
+	if provider.Cache != nil {
+		jwtProvider.JwtCacheConfig = &jwtauthnv3.JwtCacheConfig{}
+		if provider.Cache.Size != nil {
+			jwtProvider.JwtCacheConfig.JwtCacheSize = *provider.Cache.Size
+		}
+		if provider.Cache.MaxTokenSize != nil {
+			jwtProvider.JwtCacheConfig.JwtMaxTokenSize = *provider.Cache.MaxTokenSize
+		}
+	}
 	translateTokenSource(provider, jwtProvider)
 	err := translateJwks(krtctx, provider.JWKS, jwtProvider, configMaps, resolver, gwExtObj)
 	if err != nil {

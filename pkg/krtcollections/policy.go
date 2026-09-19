@@ -51,6 +51,26 @@ func (n *NotFoundError) Error() string {
 	return n.NotFoundObj.Kind + " " + n.NotFoundObj.Namespace + "/" + n.NotFoundObj.Name + " not found"
 }
 
+// UnsupportedRouteKindError reports a backendRef from a route kind the backend does
+// not support. The backend exists and the reference is permitted; it is the data path
+// that cannot carry it. The route translator reports this as
+// ResolvedRefs=False/InvalidKind and routes the reference to the blackhole cluster
+// rather than programming a cluster that can never carry traffic.
+type UnsupportedRouteKindError struct {
+	Backend   ir.ObjectSource
+	RouteKind schema.GroupKind
+	Supported []schema.GroupKind
+}
+
+func (e *UnsupportedRouteKindError) Error() string {
+	supported := make([]string, 0, len(e.Supported))
+	for _, gk := range e.Supported {
+		supported = append(supported, gk.Kind)
+	}
+	return fmt.Sprintf("%s %s/%s cannot be referenced from a %s; supported route kinds: %s",
+		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.RouteKind.Kind, strings.Join(supported, ", "))
+}
+
 type BackendPortNotAllowedError struct {
 	BackendName string
 }
@@ -1518,18 +1538,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			continue
 		}
 
-		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendRef.BackendObjectReference)
-
-		// TODO: if we can't find the backend, should we
-		// still use its cluster name in case it comes up later?
-		// if so we need to think about the way create cluster names,
-		// so it only depends on the backend-ref
-		clusterName := wellknown.BlackholeClusterName
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: to}
-		}
+		backend, clusterName, err := h.resolveRouteBackend(kctx, src, ref.BackendRef.BackendObjectReference)
 		backends = append(backends, ir.HttpBackendOrDelegate{
 			Backend: &ir.BackendRefIR{
 				BackendObject: backend,
@@ -1543,16 +1552,41 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 	return backends
 }
 
+// resolveRouteBackend resolves a route rule's backendRef. Every route kind (HTTPRoute,
+// GRPCRoute, TCPRoute, TLSRoute) resolves its backendRefs through here so that the
+// backend's SupportedRouteKinds declaration is enforced uniformly.
+//
+// A resolved backend that does not support the referencing route's kind is rejected with
+// an UnsupportedRouteKindError. On any failure the returned backend is nil and the cluster
+// name is the blackhole cluster, so the route is still programmed but cannot carry traffic.
+func (h *RoutesIndex) resolveRouteBackend(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, string, error) {
+	backend, err := h.backends.GetBackendFromRef(kctx, src, ref)
+	if backend != nil && err == nil {
+		if routeGK := src.GetGroupKind(); !backend.SupportsRouteKind(routeGK) {
+			return nil, wellknown.BlackholeClusterName, &UnsupportedRouteKindError{
+				Backend:   backend.GetObjectSource(),
+				RouteKind: routeGK,
+				Supported: backend.SupportedRouteKinds,
+			}
+		}
+	}
+	// TODO: if we can't find the backend, should we
+	// still use its cluster name in case it comes up later?
+	// if so we need to think about the way create cluster names,
+	// so it only depends on the backend-ref
+	if backend == nil {
+		if err == nil {
+			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref)}
+		}
+		return nil, wellknown.BlackholeClusterName, err
+	}
+	return backend, backend.ClusterName(), err
+}
+
 func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.BackendRef) []ir.BackendRefIR {
 	backends := make([]ir.BackendRefIR, 0, len(i))
 	for _, ref := range i {
-		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := wellknown.BlackholeClusterName
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
-		}
+		backend, clusterName, err := h.resolveRouteBackend(kctx, src, ref.BackendObjectReference)
 		backends = append(backends, ir.BackendRefIR{
 			BackendObject: backend,
 			ClusterName:   clusterName,

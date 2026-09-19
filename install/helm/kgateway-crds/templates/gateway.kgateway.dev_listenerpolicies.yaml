@@ -392,10 +392,9 @@ spec:
                                             - numerator
                                             type: object
                                           runtimeKey:
-                                            description: |-
-                                              The runtime key to look up in the runtime implementation. This key determines whether
-                                              the access log is enabled. When the runtime key value is set, the filter checks this key
-                                              at runtime to decide whether to log each request.
+                                            description: RuntimeKey identifies the
+                                              runtime setting used to decide whether
+                                              to log each request.
                                             minLength: 1
                                             type: string
                                           useIndependentRandomness:
@@ -769,10 +768,9 @@ spec:
                                             - numerator
                                             type: object
                                           runtimeKey:
-                                            description: |-
-                                              The runtime key to look up in the runtime implementation. This key determines whether
-                                              the access log is enabled. When the runtime key value is set, the filter checks this key
-                                              at runtime to decide whether to log each request.
+                                            description: RuntimeKey identifies the
+                                              runtime setting used to decide whether
+                                              to log each request.
                                             minLength: 1
                                             type: string
                                           useIndependentRandomness:
@@ -858,10 +856,9 @@ spec:
                                       - numerator
                                       type: object
                                     runtimeKey:
-                                      description: |-
-                                        The runtime key to look up in the runtime implementation. This key determines whether
-                                        the access log is enabled. When the runtime key value is set, the filter checks this key
-                                        at runtime to decide whether to log each request.
+                                      description: RuntimeKey identifies the runtime
+                                        setting used to decide whether to log each
+                                        request.
                                       minLength: 1
                                       type: string
                                     useIndependentRandomness:
@@ -2004,10 +2001,9 @@ spec:
                                                 - numerator
                                                 type: object
                                               runtimeKey:
-                                                description: |-
-                                                  The runtime key to look up in the runtime implementation. This key determines whether
-                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                  at runtime to decide whether to log each request.
+                                                description: RuntimeKey identifies
+                                                  the runtime setting used to decide
+                                                  whether to log each request.
                                                 minLength: 1
                                                 type: string
                                               useIndependentRandomness:
@@ -2382,10 +2378,9 @@ spec:
                                                 - numerator
                                                 type: object
                                               runtimeKey:
-                                                description: |-
-                                                  The runtime key to look up in the runtime implementation. This key determines whether
-                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                  at runtime to decide whether to log each request.
+                                                description: RuntimeKey identifies
+                                                  the runtime setting used to decide
+                                                  whether to log each request.
                                                 minLength: 1
                                                 type: string
                                               useIndependentRandomness:
@@ -2471,10 +2466,9 @@ spec:
                                           - numerator
                                           type: object
                                         runtimeKey:
-                                          description: |-
-                                            The runtime key to look up in the runtime implementation. This key determines whether
-                                            the access log is enabled. When the runtime key value is set, the filter checks this key
-                                            at runtime to decide whether to log each request.
+                                          description: RuntimeKey identifies the runtime
+                                            setting used to decide whether to log
+                                            each request.
                                           minLength: 1
                                           type: string
                                         useIndependentRandomness:
@@ -3699,10 +3693,9 @@ spec:
                                                   - numerator
                                                   type: object
                                                 runtimeKey:
-                                                  description: |-
-                                                    The runtime key to look up in the runtime implementation. This key determines whether
-                                                    the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                    at runtime to decide whether to log each request.
+                                                  description: RuntimeKey identifies
+                                                    the runtime setting used to decide
+                                                    whether to log each request.
                                                   minLength: 1
                                                   type: string
                                                 useIndependentRandomness:
@@ -4078,10 +4071,9 @@ spec:
                                                   - numerator
                                                   type: object
                                                 runtimeKey:
-                                                  description: |-
-                                                    The runtime key to look up in the runtime implementation. This key determines whether
-                                                    the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                    at runtime to decide whether to log each request.
+                                                  description: RuntimeKey identifies
+                                                    the runtime setting used to decide
+                                                    whether to log each request.
                                                   minLength: 1
                                                   type: string
                                                 useIndependentRandomness:
@@ -4167,10 +4159,9 @@ spec:
                                             - numerator
                                             type: object
                                           runtimeKey:
-                                            description: |-
-                                              The runtime key to look up in the runtime implementation. This key determines whether
-                                              the access log is enabled. When the runtime key value is set, the filter checks this key
-                                              at runtime to decide whether to log each request.
+                                            description: RuntimeKey identifies the
+                                              runtime setting used to decide whether
+                                              to log each request.
                                             minLength: 1
                                             type: string
                                           useIndependentRandomness:
@@ -5331,10 +5322,10 @@ spec:
                                                       - numerator
                                                       type: object
                                                     runtimeKey:
-                                                      description: |-
-                                                        The runtime key to look up in the runtime implementation. This key determines whether
-                                                        the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                        at runtime to decide whether to log each request.
+                                                      description: RuntimeKey identifies
+                                                        the runtime setting used to
+                                                        decide whether to log each
+                                                        request.
                                                       minLength: 1
                                                       type: string
                                                     useIndependentRandomness:
@@ -5714,10 +5705,10 @@ spec:
                                                       - numerator
                                                       type: object
                                                     runtimeKey:
-                                                      description: |-
-                                                        The runtime key to look up in the runtime implementation. This key determines whether
-                                                        the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                        at runtime to decide whether to log each request.
+                                                      description: RuntimeKey identifies
+                                                        the runtime setting used to
+                                                        decide whether to log each
+                                                        request.
                                                       minLength: 1
                                                       type: string
                                                     useIndependentRandomness:
@@ -5804,10 +5795,9 @@ spec:
                                                 - numerator
                                                 type: object
                                               runtimeKey:
-                                                description: |-
-                                                  The runtime key to look up in the runtime implementation. This key determines whether
-                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                  at runtime to decide whether to log each request.
+                                                description: RuntimeKey identifies
+                                                  the runtime setting used to decide
+                                                  whether to log each request.
                                                 minLength: 1
                                                 type: string
                                               useIndependentRandomness:

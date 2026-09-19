@@ -193,6 +193,32 @@ type BackendObjectIR struct {
 	// When set, the backend must be translated to a distinct cluster so the client
 	// identity does not leak across Gateways that share the same backend.
 	GatewayBackendClientCertificate *GatewayBackendClientCertificateIR
+
+	// SupportedRouteKinds lists the route kinds that may reference this backend
+	// through a backendRef. Nil means every route kind.
+	//
+	// A backend plugin sets this when the backend only works on a particular data
+	// path. A backend that depends on an HTTP filter has nothing to
+	// attach to on a TCPRoute or TLSRoute. Declaring the supported kinds here lets
+	// the route translator reject the reference with ResolvedRefs=False/InvalidKind
+	// instead.
+	SupportedRouteKinds []schema.GroupKind
+}
+
+// HTTPRouteKinds is the set of route kinds that carry HTTP traffic. A backend plugin
+// whose backend is realised through HTTP filters sets SupportedRouteKinds to this.
+var HTTPRouteKinds = []schema.GroupKind{
+	wellknown.HTTPRouteGVK.GroupKind(),
+	wellknown.GRPCRouteGVK.GroupKind(),
+}
+
+// SupportsRouteKind reports whether a route of the given kind may reference this
+// backend. A backend that declares no SupportedRouteKinds supports every kind.
+func (c BackendObjectIR) SupportsRouteKind(gk schema.GroupKind) bool {
+	if len(c.SupportedRouteKinds) == 0 {
+		return true
+	}
+	return slices.Contains(c.SupportedRouteKinds, gk)
 }
 
 // NewBackendObjectIR creates a BackendObjectIR with pre-calculated resource and
@@ -269,6 +295,9 @@ func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 		return false
 	}
 	if !equalsGatewayBackendClientCertificate(c.GatewayBackendClientCertificate, in.GatewayBackendClientCertificate) {
+		return false
+	}
+	if !slices.Equal(c.SupportedRouteKinds, in.SupportedRouteKinds) {
 		return false
 	}
 	return true
