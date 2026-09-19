@@ -5,21 +5,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// clusterLoadAssignmentsEqual is proto.Equal for ClusterLoadAssignments that
-// short-circuits on shared sub-messages. PrioritizeEndpoints builds every
-// client's CLA from the same endpoint IR, so two candidates in one interning
-// bucket usually reference the very same *LbEndpoint protos; the pinned
-// protobuf-go's proto.Equal checks pointer identity only at the root and
-// otherwise walks every field of every endpoint, which made the interner's
-// equality check a second full pass over the endpoint tree per client per
-// backend on the reconnect fan-out path.
+// clusterLoadAssignmentsEqual compares CLAs like proto.Equal, skipping shared
+// LbEndpoint pointers. Candidates built from the same endpoint IR usually share
+// these pointers; proto.Equal only checks pointer identity at the root.
 //
-// The fast path handles the shape PrioritizeEndpoints emits: cluster name plus
-// locality groups carrying locality, priority, weight and endpoints. Anything
-// outside that shape (Policy, NamedEndpoints, per-locality metadata, proximity,
-// an LbConfig oneof, unknown fields) falls back to proto.Equal for the message
-// that carries it, so the result agrees with proto.Equal on every input.
-// TestClusterLoadAssignmentsEqualAgreesWithProtoEqual pins that agreement.
+// The fast path handles the shape emitted by PrioritizeEndpoints. Other fields
+// and unknown fields fall back to proto.Equal for the containing message.
 func clusterLoadAssignmentsEqual(a, b *envoyendpointv3.ClusterLoadAssignment) bool {
 	if a == b {
 		return true

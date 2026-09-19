@@ -44,14 +44,9 @@ func newFinalBackendEndpoints(
 	}, krtopts.ToOptions("FinalBackendEndpoints")...)
 }
 
-// backendEndpointVersionHash versions the policies attached to a backend, so that a
-// policy change which alters endpoint output — but leaves the endpoints themselves
-// byte-identical — still counts as a change. Without it KRT would keep the stored
-// object and clients would be pinned to endpoints built under the old policy.
-//
-// Returns 0 when there is nothing attached, which callers treat as "contributes
-// nothing" rather than as a hash value. Iteration is sorted by GroupKind so the
-// result does not depend on map order.
+// backendEndpointVersionHash hashes attached policies so policy-only endpoint
+// changes invalidate KRT rows. It returns zero for no policies, which callers
+// treat as "contributes nothing".
 func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 	if backend == nil || len(backend.AttachedPolicies.Policies) == 0 {
 		return 0

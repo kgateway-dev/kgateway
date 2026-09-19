@@ -58,7 +58,7 @@ func DependsOnClient(inputs EndpointsInputs) bool {
 	return ResolvedPriorityInfo(inputs) != nil
 }
 
-// LoadBalancingContextHash returns a hash of exactly the UCC-dependent inputs
+// LoadBalancingContextHash returns a hash of the client inputs
 // that influence PrioritizeEndpoints' output. Callers may use it to bucket CLAs
 // for interning, but must confirm content equality because the 64-bit hash can
 // collide.

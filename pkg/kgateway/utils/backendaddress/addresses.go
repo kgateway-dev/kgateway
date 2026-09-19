@@ -1,10 +1,5 @@
-// Package backendaddress resolves the addresses a backend object exposes to
-// the data plane. It is the shared home for helpers that more than one plugin
-// needs: the kubernetes plugin projects a Service's addresses into its backend
-// IR so a clusterIPs change is visible to per-client equality, the waypoint
-// query layer inlines them into STATIC clusters, and the serviceentry plugin
-// reads a ServiceEntry's spec and auto-allocated addresses. Keeping them here
-// lets those plugins share the logic without importing one another.
+// Package backendaddress resolves Service and ServiceEntry addresses for backend
+// IR and waypoint clusters, without requiring plugins to import one another.
 package backendaddress
 
 import (
