@@ -41,9 +41,10 @@ var (
 )
 
 func backends(refNs string) []any {
+	var port gwv1.PortNumber = 8080
 	return []any{
-		httpRouteWithSvcBackendRef(refNs),
-		tcpRouteWithBackendRef(refNs),
+		httpRouteWithSvcBackendRef(refNs, port),
+		tcpRouteWithBackendRef(refNs, port),
 	}
 }
 
@@ -72,6 +73,26 @@ func TestGetBackendSameNamespace(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetBackendPortNotFound(t *testing.T) {
+	// The service only exposes port 8080, but the route references port 9090.
+	var port gwv1.PortNumber = 9090
+	inputs := []any{svc("")}
+	inputs = append(inputs, httpRouteWithSvcBackendRef("", port))
+	ir := translateRoute(t, inputs)
+	if ir == nil {
+		t.Fatalf("expected ir")
+	}
+	backends := getBackends(ir)
+	if backends == nil {
+		t.Fatalf("expected backends")
+	}
+	require.Error(t, backends[0].Err)
+	var portNotFound *BackendPortNotFoundError
+	require.ErrorAs(t, backends[0].Err, &portNotFound)
+	assert.Equal(t, int32(9090), portNotFound.Port)
+	assert.Contains(t, backends[0].Err.Error(), "does not expose port 9090")
 }
 
 func TestRoutesFor(t *testing.T) {
@@ -476,13 +497,12 @@ func backendUpstreams(backendCol krt.Collection[*kgateway.Backend]) krt.Collecti
 	})
 }
 
-func httpRouteWithSvcBackendRef(refNs string) *gwv1.HTTPRoute {
+func httpRouteWithSvcBackendRef(refNs string, port gwv1.PortNumber) *gwv1.HTTPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
 		ns = &n
 	}
-	var port gwv1.PortNumber = 8080
 	return &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "httproute",
@@ -508,13 +528,12 @@ func httpRouteWithSvcBackendRef(refNs string) *gwv1.HTTPRoute {
 	}
 }
 
-func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
+func tcpRouteWithBackendRef(refNs string, port gwv1.PortNumber) *gwv1a2.TCPRoute {
 	var ns *gwv1.Namespace
 	if refNs != "" {
 		n := gwv1.Namespace(refNs)
 		ns = &n
 	}
-	var port gwv1.PortNumber = 8080
 	return &gwv1a2.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tcproute",

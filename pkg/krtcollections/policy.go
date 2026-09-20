@@ -79,6 +79,21 @@ func (e *BackendPortNotAllowedError) Error() string {
 	return fmt.Sprintf("BackendRef to \"%s\" includes a port. Do not specify a port when referencing a Backend resource, as it defines its own port configuration", e.BackendName)
 }
 
+// BackendPortNotFoundError reports a backendRef that points at an existing backend
+// object but a port it does not expose. The object is found; only the requested port
+// is missing. This is reported as ResolvedRefs=False/BackendNotFound with a message
+// that names the offending port, so users are not led to believe the backend itself
+// does not exist (see issue #11998).
+type BackendPortNotFoundError struct {
+	Backend ir.ObjectSource
+	Port    int32
+}
+
+func (e *BackendPortNotFoundError) Error() string {
+	return fmt.Sprintf("%s %s/%s exists but does not expose port %d; check the backendRef port",
+		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.Port)
+}
+
 // ListenerCollection defines an interface that returns the listeners belonging to the implementing struct
 type ListenerCollection interface {
 	GetListeners() []gwv1.Listener
@@ -312,6 +327,13 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
 	if up == nil {
+		// The backend object exists but does not expose the requested port. Report that
+		// specifically instead of a generic not-found, which misleads users into thinking
+		// the backend itself is missing (issue #11998).
+		if gwport != nil && i.backendExistsAnyPort(kctx, col, key) {
+			return nil, &BackendPortNotFoundError{Backend: key, Port: int32(*gwport)}
+		}
+
 		var (
 			err     error
 			aliasUp *ir.BackendObjectIR
@@ -325,6 +347,15 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 	}
 
 	return *up, nil
+}
+
+// backendExistsAnyPort reports whether col holds any backend entry for the given object
+// source, regardless of port.
+func (i *BackendIndex) backendExistsAnyPort(kctx krt.HandlerContext, col krt.Collection[*ir.BackendObjectIR], key ir.ObjectSource) bool {
+	return len(krt.Fetch(kctx, col, krt.FilterGeneric(func(a any) bool {
+		backend, ok := a.(*ir.BackendObjectIR)
+		return ok && backend.GetObjectSource() == key
+	}))) > 0
 }
 
 func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, port int32) (*ir.BackendObjectIR, error) {
