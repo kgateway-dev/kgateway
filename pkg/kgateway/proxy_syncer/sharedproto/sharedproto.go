@@ -22,6 +22,7 @@ package sharedproto
 
 import (
 	"fmt"
+	"time"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"google.golang.org/protobuf/proto"
@@ -42,13 +43,16 @@ var AssertImmutability = envutils.IsEnvTruthy("ASSERT_SHARED_PROTO_IMMUTABILITY"
 
 // Shared wraps a proto that is aliased across per-client xDS snapshots.
 // The zero value is an empty wrapper: IsNil reports true and verification is
-// disabled (hash 0 = "not captured"), which is what rows built without a proto
+// disabled, which is what rows built without a proto
 // (e.g. status-only views and test fixtures) get for free.
 type Shared[M proto.Message] struct {
-	msg M
+	msg    M
+	ttl    time.Duration
+	hasTTL bool
 	// hash is the content hash captured at wrap time when AssertImmutability
-	// was set; 0 means "not captured" and disables verification.
-	hash uint64
+	// was set. Every uint64 value, including zero, is a valid captured hash.
+	hash     uint64
+	captured bool
 }
 
 // Wrap takes ownership of msg as a shared, read-only proto. The caller must
@@ -58,18 +62,26 @@ func Wrap[M proto.Message](msg M) Shared[M] {
 	if AssertImmutability {
 		hash = utils.HashProto(msg)
 	}
-	return Shared[M]{msg: msg, hash: hash}
+	return Shared[M]{msg: msg, hash: hash, captured: AssertImmutability}
 }
 
 // WrapPrehashed is Wrap for producers that already computed the proto's
 // utils.HashProto content hash (e.g. for versioning), making capture free.
-// Pass 0 to explicitly opt the proto out of verification (e.g. error-path
-// blackholes that are never published).
+// Zero is a valid content hash and does not opt out of verification.
 func WrapPrehashed[M proto.Message](msg M, contentHash uint64) Shared[M] {
 	if !AssertImmutability {
 		contentHash = 0
 	}
-	return Shared[M]{msg: msg, hash: contentHash}
+	return Shared[M]{msg: msg, hash: contentHash, captured: AssertImmutability}
+}
+
+// WithTTL returns a wrapper with a per-resource TTL, sharing the same immutable
+// proto. Existing constructors leave TTL absent; an explicit zero is preserved.
+// TTL is stored by value so snapshot consumers cannot mutate this wrapper's
+// metadata through ResourceWithTTL's duration pointer.
+func (s Shared[M]) WithTTL(ttl time.Duration) Shared[M] {
+	s.ttl, s.hasTTL = ttl, true
+	return s
 }
 
 // IsNil reports whether the wrapper carries no proto (zero value or wrapped
@@ -111,7 +123,7 @@ func (s Shared[M]) BorrowForRead() M {
 // first re-hashes the proto and panics if it no longer matches its wrap-time
 // hash, naming the resource.
 func (s Shared[M]) ResourceWithTTL() envoycachetypes.ResourceWithTTL {
-	if AssertImmutability && s.hash != 0 {
+	if AssertImmutability && s.captured && !s.IsNil() {
 		if got := utils.HashProto(s.msg); got != s.hash {
 			panic(fmt.Sprintf(
 				"shared proto %q (%s) was mutated after creation (hash %d at wrap, %d now): "+
@@ -119,7 +131,12 @@ func (s Shared[M]) ResourceWithTTL() envoycachetypes.ResourceWithTTL {
 				resourceLabel(s.msg), s.msg.ProtoReflect().Descriptor().FullName(), s.hash, got))
 		}
 	}
-	return envoycachetypes.ResourceWithTTL{Resource: s.msg}
+	resource := envoycachetypes.ResourceWithTTL{Resource: s.msg}
+	if s.hasTTL {
+		ttl := s.ttl
+		resource.TTL = &ttl
+	}
+	return resource
 }
 
 // Same reports whether two wrappers alias the same underlying proto instance.

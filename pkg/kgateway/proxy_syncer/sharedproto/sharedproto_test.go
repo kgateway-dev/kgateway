@@ -2,6 +2,7 @@ package sharedproto
 
 import (
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/stretchr/testify/assert"
@@ -33,16 +34,25 @@ func TestResourceWithTTL_PanicsOnMutation(t *testing.T) {
 		"a mutated shared proto must trip the assertion")
 }
 
-func TestResourceWithTTL_SkipsUncaptured(t *testing.T) {
+func TestResourceWithTTL_VerifiesZeroHash(t *testing.T) {
 	withAssertions(t, true)
-	cluster := &envoyclusterv3.Cluster{Name: "fixture"}
+	// Supplying a captured zero for a nonzero-hash message simulates drift
+	// from a resource whose original hash was zero. Zero is a hash, not opt-out.
+	cluster := &envoyclusterv3.Cluster{Name: "nonzero-hash"}
+	require.NotZero(t, utils.HashProto(cluster))
 	s := WrapPrehashed(cluster, 0)
-	cluster.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+	require.Panics(t, func() { s.ResourceWithTTL() })
+}
 
-	require.NotPanics(t, func() { s.ResourceWithTTL() },
-		"hash 0 means not captured (error-path rows, flag off at wrap) and must be skipped")
-	require.Same(t, cluster, s.ResourceWithTTL().Resource,
-		"the wrapped proto must be handed to the snapshot unchanged")
+func TestResourceWithTTL_SkipsUncaptured(t *testing.T) {
+	withAssertions(t, false)
+	cluster := &envoyclusterv3.Cluster{Name: "fixture"}
+	s := Wrap(cluster)
+	withAssertions(t, true)
+	cluster.Name = "changed"
+	require.NotPanics(t, func() { s.ResourceWithTTL() }, "enabling assertions later cannot verify an uncaptured hash")
+	var empty Shared[*envoyclusterv3.Cluster]
+	require.NotPanics(t, func() { empty.ResourceWithTTL() })
 }
 
 func TestWrap_RespectsFlag(t *testing.T) {
@@ -113,4 +123,20 @@ func TestIsNil(t *testing.T) {
 	require.True(t, zero.IsNil(), "zero-value wrapper carries no proto")
 	require.True(t, Wrap[*envoyclusterv3.Cluster](nil).IsNil(), "wrapped typed-nil is nil")
 	require.False(t, Wrap(&envoyclusterv3.Cluster{}).IsNil())
+}
+
+func TestWithTTLRetainsValueWithoutAliasing(t *testing.T) {
+	withAssertions(t, true)
+	original := Wrap(&envoyclusterv3.Cluster{Name: "expiring"})
+	expiring := original.WithTTL(5 * time.Second)
+	require.True(t, Same(original, expiring), "TTL metadata does not copy the proto")
+	require.Nil(t, original.ResourceWithTTL().TTL, "existing wrappers remain non-expiring")
+	resource := expiring.ResourceWithTTL()
+	require.NotNil(t, resource.TTL)
+	require.Equal(t, 5*time.Second, *resource.TTL)
+	*resource.TTL = time.Hour
+	require.Equal(t, 5*time.Second, *expiring.ResourceWithTTL().TTL, "published TTL pointers cannot mutate wrapper metadata")
+	require.Equal(t, time.Duration(0), *original.WithTTL(0).ResourceWithTTL().TTL, "explicit zero is distinct from absent TTL")
+	expiring.BorrowForRead().Name = "mutated"
+	require.Panics(t, func() { expiring.ResourceWithTTL() }, "TTL retains the mutation tripwire")
 }
