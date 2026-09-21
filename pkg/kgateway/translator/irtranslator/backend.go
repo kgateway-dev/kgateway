@@ -65,10 +65,11 @@ type BackendTranslator struct {
 // plugin's declaration of what that hook reads from the backend, and is never
 // nil: a hook that did not declare gets wholeObjectInputsHash.
 type overlayPlugin struct {
-	gk         schema.GroupKind
-	overlay    sdk.PerClientClusterOverlay
-	legacy     sdk.PerClientProcessBackend
-	inputsHash sdk.OverlayInputsHash
+	gk               schema.GroupKind
+	overlay          sdk.PerClientClusterOverlay
+	legacy           sdk.PerClientProcessBackend
+	inputsHash       sdk.OverlayInputsHash
+	undeclaredInputs bool
 }
 
 // orderedOverlayPlugins returns the plugins with a per-client cluster hook in
@@ -89,14 +90,13 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 						"group", gk.Group, "kind", gk.Kind, "plugin", policyPlugin.Name)
 					inputsHash = wholeObjectInputsHash
 				}
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash})
+				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, overlay: policyPlugin.PerClientClusterOverlay, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil})
 			case policyPlugin.PerClientProcessBackend != nil: //nolint:staticcheck // compatibility boundary for legacy plugins
-				// A legacy hook cannot declare what it reads — that is the
-				// knowledge the overlay contract exists to capture — so it is
-				// given the same whole-object declaration as an undeclared
-				// overlay. Correct, and no worse than the eager behavior it
-				// already had.
-				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend, inputsHash: wholeObjectInputsHash}) //nolint:staticcheck // wrapped as an always-applicable overlay
+				inputsHash := policyPlugin.OverlayInputsHash
+				if inputsHash == nil {
+					inputsHash = wholeObjectInputsHash
+				}
+				t.overlayPlugins = append(t.overlayPlugins, overlayPlugin{gk: gk, legacy: policyPlugin.PerClientProcessBackend, inputsHash: inputsHash, undeclaredInputs: policyPlugin.OverlayInputsHash == nil}) //nolint:staticcheck // compatibility boundary
 			}
 		}
 		slices.SortFunc(t.overlayPlugins, func(a, b overlayPlugin) int {
@@ -109,10 +109,24 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 	return t.overlayPlugins
 }
 
+// HasUndeclaredOverlayInputs reports whether a cached base must also compare
+// the retained BackendObjectIR. Object-version hashing alone cannot cover an
+// undeclared hook's IR reads, especially when the backend has no backing object.
+// Do not infer applicability from AttachedPolicies: hooks may apply globally.
+func (t *BackendTranslator) HasUndeclaredOverlayInputs() bool {
+	for _, plugin := range t.orderedOverlayPlugins() {
+		if plugin.undeclaredInputs {
+			return true
+		}
+	}
+	return false
+}
+
 // wholeObjectInputsHash is the declaration for a hook that made none: the
 // backing object's identity and every version field it has, so any write to it
-// counts as a change. IR fields derived from the object move with it, and the
-// base proto hash covers the rest.
+// counts as a change. Consumers must additionally compare BackendObjectIR
+// when HasUndeclaredOverlayInputs is true; this hash alone does not cover IR
+// fields or backends without a backing object.
 func wholeObjectInputsHash(backend ir.BackendObjectIR) uint64 {
 	if backend.Obj == nil {
 		return 0

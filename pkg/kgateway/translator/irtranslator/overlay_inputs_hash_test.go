@@ -98,10 +98,9 @@ func TestOverlayInputsHash_UndeclaredOverlayFallsBackToWholeObject(t *testing.T)
 }
 
 // TestOverlayInputsHash_LegacyHookFallsBackToWholeObject: the deprecated
-// PerClientProcessBackend cannot declare what it reads — that is the knowledge
-// the overlay contract exists to capture — so it gets the same whole-object
+// PerClientProcessBackend without an input declaration gets the same whole-object
 // treatment as an undeclared overlay. A plugin that has not migrated is
-// therefore correct at the cost of a walk per write, and migrating is what buys
+// therefore correct at the cost of a walk per write; declaring its inputs buys
 // the saving back.
 func TestOverlayInputsHash_LegacyHookFallsBackToWholeObject(t *testing.T) {
 	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
@@ -113,7 +112,7 @@ func TestOverlayInputsHash_LegacyHookFallsBackToWholeObject(t *testing.T) {
 	backend := hashBackend()
 
 	assert.NotEqual(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(*withAnnotation(backend, "2")),
-		"a legacy hook cannot declare its inputs, so every write to the backing object must move the fold")
+		"an undeclared legacy hook must observe every backing-object write")
 }
 
 // TestOverlayInputsHash_MigratedPluginDoesNotPayForItsLegacyHook: a plugin
@@ -182,4 +181,18 @@ func TestOverlayInputsHash_IsStableAcrossCalls(t *testing.T) {
 	for range 20 {
 		assert.Equal(t, want, edsBackendTranslator(policies).OverlayInputsHash(*backend))
 	}
+}
+
+func TestOverlayInputsHash_LegacyHookHonorsDeclaration(t *testing.T) {
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test", Kind: "Legacy"}: {
+			PerClientProcessBackend: noopLegacy, //nolint:staticcheck // exercising legacy compatibility
+			OverlayInputsHash:       func(in ir.BackendObjectIR) uint64 { return utils.HashString(in.CanonicalHostname) },
+		},
+	})
+	backend := hashBackend()
+	assert.Equal(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(*withAnnotation(backend, "2")), "a legacy declaration excludes unread metadata writes")
+	changed := *backend
+	changed.CanonicalHostname = "changed"
+	assert.NotEqual(t, bt.OverlayInputsHash(*backend), bt.OverlayInputsHash(changed))
 }

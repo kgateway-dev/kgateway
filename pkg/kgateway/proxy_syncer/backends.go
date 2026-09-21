@@ -53,12 +53,14 @@ type baseEnvoyCluster struct {
 	// reads, a label none branches on — leaves the row equal, and no client's
 	// walk reruns.
 	OverlayInputsHash uint64
+	// CompareBackendInputs enables conservative IR equality for undeclared hooks.
+	CompareBackendInputs bool
 	// Backend is the IR this cluster was translated from, retained for
-	// per-client processing. It is not compared: the overlays are the only
-	// readers, and OverlayInputsHash carries exactly the fields they declared.
+	// per-client processing. Declared hooks use OverlayInputsHash; undeclared
+	// hooks additionally compare this IR when CompareBackendInputs is true.
 	// When Equals returns true KRT keeps the old row, so the overlays are handed
 	// the Backend of the last row that differed; that is correct precisely
-	// because every field they read is in the hash.
+	// because every field they read is hashed or conservatively compared.
 	// +noKrtEquals
 	Backend *ir.BackendObjectIR
 	// Base is the non-proto portion of the base-translation result retained for
@@ -74,6 +76,18 @@ type baseEnvoyCluster struct {
 func (b baseEnvoyCluster) ResourceName() string { return b.Name }
 
 func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
+	if b.CompareBackendInputs != in.CompareBackendInputs {
+		return false
+	}
+	if b.CompareBackendInputs {
+		if b.Backend == nil || in.Backend == nil {
+			if b.Backend != in.Backend {
+				return false
+			}
+		} else if !b.Backend.Equals(*in.Backend) {
+			return false
+		}
+	}
 	return b.Name == in.Name &&
 		b.ClusterVersion == in.ClusterVersion &&
 		b.OverlayInputsHash == in.OverlayInputsHash &&
@@ -475,15 +489,16 @@ func NewPerClientEnvoyClusters(
 			backendGeneration = backendObj.Obj.GetGeneration()
 		}
 		return &baseEnvoyCluster{
-			Name:              name,
-			Cluster:           sharedCluster,
-			ClusterVersion:    clusterVersion,
-			OverlayInputsHash: translator.OverlayInputsHash(*backendObj),
-			Error:             baseRes.Error,
-			BackendSource:     backendObj.GetObjectSource(),
-			BackendGeneration: backendGeneration,
-			Backend:           backendObj,
-			Base:              baseRes,
+			Name:                 name,
+			Cluster:              sharedCluster,
+			ClusterVersion:       clusterVersion,
+			OverlayInputsHash:    translator.OverlayInputsHash(*backendObj),
+			CompareBackendInputs: translator.HasUndeclaredOverlayInputs(),
+			Error:                baseRes.Error,
+			BackendSource:        backendObj.GetObjectSource(),
+			BackendGeneration:    backendGeneration,
+			Backend:              backendObj,
+			Base:                 baseRes,
 		}
 	}, krtopts.ToOptions("BaseEnvoyClusters")...)
 

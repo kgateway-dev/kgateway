@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -510,4 +511,45 @@ func TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient(t *testing
 	finalBackends.UpdateObject(serviceBackend("2"))
 	require.Eventually(t, func() bool { return overlayRuns.Load() > settled }, 2*time.Second, 10*time.Millisecond,
 		"an undeclared overlay must re-evaluate on any write, including a resourceVersion-only one")
+}
+
+func TestUndeclaredHooksObserveNilObjectBackendUpdates(t *testing.T) {
+	for _, legacy := range []bool{false, true} {
+		t.Run(fmt.Sprint("legacy=", legacy), func(t *testing.T) {
+			backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "synthetic"}, 80, "", "")
+			backend.CanonicalHostname = "before"
+			mutate := func(in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { out.AltStatName = in.CanonicalHostname }
+			plugin := sdk.PolicyPlugin{}
+			if legacy {
+				plugin.PerClientProcessBackend = func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) { //nolint:staticcheck // verify legacy compatibility
+					mutate(in, out)
+				}
+			} else {
+				plugin.PerClientClusterOverlay = func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) { mutate(in, out) }}
+				}
+			}
+			translator := &irtranslator.BackendTranslator{
+				ContributedBackends: map[schema.GroupKind]ir.BackendInit{backend.GetGroupKind(): {InitEnvoyBackend: func(_ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					return nil
+				}}},
+				ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{{Group: "test", Kind: "Undeclared"}: plugin},
+			}
+			opts := krtutil.NewKrtOptions(t.Context().Done(), nil)
+			backends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, opts.ToOptions("Backends")...)
+			client := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
+			clients := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{client}, opts.ToOptions("Clients")...)
+			pcc := NewPerClientEnvoyClusters(t.Context(), opts, translator, backends, clients)
+			require.Eventually(t, func() bool {
+				return storedClustersForClient(pcc, client)[backend.ClusterName()].GetAltStatName() == "before"
+			}, 2*time.Second, 10*time.Millisecond)
+			updated := backend
+			updated.CanonicalHostname = "after"
+			backends.UpdateObject(&updated)
+			require.Eventually(t, func() bool {
+				return storedClustersForClient(pcc, client)[backend.ClusterName()].GetAltStatName() == "after"
+			}, 2*time.Second, 10*time.Millisecond)
+		})
+	}
 }

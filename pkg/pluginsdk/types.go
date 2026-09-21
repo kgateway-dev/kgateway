@@ -93,7 +93,7 @@ type PerClientClusterOverlay func(
 	in ir.BackendObjectIR,
 ) *ClusterOverlay
 
-// OverlayInputsHash declares what a PerClientClusterOverlay reads from the
+// OverlayInputsHash declares what a per-client cluster hook reads from the
 // backend. It must move for every backend field whose change can change the
 // overlay's output, and it is the only thing that makes such a change reach
 // clients: the shared base row carrying the backend is kept for as long as its
@@ -105,8 +105,12 @@ type PerClientClusterOverlay func(
 // client when it changes. Declaring more than is read is sound, only expensive:
 // it costs a walk of every client for a write no client can observe.
 //
-// Register it beside PerClientClusterOverlay. An overlay registered without one
-// is treated as reading the whole backing object — never stale, only expensive.
+// Register it beside PerClientClusterOverlay or PerClientProcessBackend. A hook
+// registered without one conservatively compares the backend IR and backing
+// object version. Such hooks rerun clients on every object write; the framework
+// cannot infer their applicability from policy attachments because hooks may
+// apply globally. Declaring inputs avoids that fanout without requiring migration
+// of the mutation hook itself.
 // pkg/pluginsdk/overlaytest checks a declaration against its overlay
 // mechanically; a plugin contributing an overlay should run it.
 type OverlayInputsHash func(in ir.BackendObjectIR) uint64
@@ -133,9 +137,9 @@ type PolicyPlugin struct {
 	// Backend processing for envoy proxy
 	ProcessBackend          ProcessBackend
 	PerClientClusterOverlay PerClientClusterOverlay
-	// OverlayInputsHash declares the backend fields PerClientClusterOverlay
-	// reads. Required beside it; an overlay without one is treated as reading
-	// the whole backing object.
+	// OverlayInputsHash declares the backend fields the per-client hook reads.
+	// Required for efficient change detection with either hook; absent a
+	// declaration, consumers compare backend IR and backing-object version.
 	OverlayInputsHash OverlayInputsHash
 	// Deprecated: use PerClientClusterOverlay.
 	PerClientProcessBackend PerClientProcessBackend

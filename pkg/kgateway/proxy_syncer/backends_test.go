@@ -248,3 +248,27 @@ func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
 	require.False(t, fixture.Equals(rowFor(map[string]string{overlayLabel: "true"})),
 		"a fixture row is never equal to a row whose declared inputs are set")
 }
+
+func TestBaseEnvoyClusterEquals_UndeclaredInputs(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	changed := backend
+	changed.CanonicalHostname = "changed"
+	base := baseEnvoyCluster{Name: backend.ClusterName(), Backend: &backend, CompareBackendInputs: true}
+	other := base
+	other.Backend = &changed
+	require.True(t, base.Equals(base))
+	require.False(t, base.Equals(other), "nil-Obj backend IR changes must reach undeclared hooks")
+	require.False(t, other.Equals(base), "comparison must be symmetric")
+	other = base
+	other.CompareBackendInputs = false
+	require.False(t, base.Equals(other), "changing the comparison mode must invalidate the row")
+	other = base
+	other.Backend = nil
+	require.False(t, base.Equals(other))
+	require.False(t, other.Equals(base))
+	require.True(t, other.Equals(other), "empty fixtures remain reflexive")
+	base.CompareBackendInputs = false
+	other = base
+	other.Backend = &changed
+	require.True(t, base.Equals(other), "declared hooks compare their hash instead of unread IR fields")
+}
