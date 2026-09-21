@@ -888,7 +888,7 @@ func TestApplyPerClient_RejectsMissingInlineEndpointSource(t *testing.T) {
 				}},
 			})
 			backend := overlayBackend()
-			base := bt.TranslateBackendBase(t.Context(), backend)
+			base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 			out, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
 			require.EqualError(t, err, "per-client overlay requires an inline load assignment but no endpoint inputs are available")
 			require.Equal(t, backend.ClusterName(), out.GetName())
@@ -932,7 +932,7 @@ func TestApplyPerClient_RejectsGatewayClientIdentityDowngrade(t *testing.T) {
 				return eps
 			}
 			bt.ContributedBackends[backend.GetGroupKind()] = init
-			base := bt.TranslateBackendBase(t.Context(), backend)
+			base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
 			require.NoError(t, base.Error)
 			out, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
 			require.ErrorContains(t, err, "gateway backend client certificate")
