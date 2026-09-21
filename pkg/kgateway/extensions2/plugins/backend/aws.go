@@ -3,7 +3,6 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -341,13 +340,15 @@ type lambdaEndpointConfig struct {
 
 // authority returns the HTTP authority, omitting only the scheme's default port.
 func (u *lambdaEndpointConfig) authority() string {
-	if (u.useTLS && u.port == 443) || (!u.useTLS && u.port == 80) {
-		if strings.Contains(u.hostname, ":") {
-			return "[" + u.hostname + "]"
-		}
-		return u.hostname
+	host := u.hostname
+	if strings.Contains(host, ":") {
+		// url.Hostname() strips the brackets an IPv6 authority needs.
+		host = "[" + host + "]"
 	}
-	return net.JoinHostPort(u.hostname, strconv.FormatUint(uint64(u.port), 10))
+	if (u.useTLS && u.port == 443) || (!u.useTLS && u.port == 80) {
+		return host
+	}
+	return host + ":" + strconv.FormatUint(uint64(u.port), 10)
 }
 
 // Equals checks if two lambdaEndpointConfig objects are equal.
