@@ -1342,7 +1342,7 @@ validate-xds-bench-ci-results: ## Check benchmark completion and fleet failure v
 #----------------------------------------------------------------------------------
 
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
-CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=https://github.com/kgateway-dev/kgateway -contact=https://github.com/kgateway-dev/kgateway/issues/new/choose
 # This test uses port 9091 which is reserved for the metrics port. The test passes if the port in the conformance test is changed
 CONFORMANCE_SKIP_TESTS :=
 CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_REPORT_ARGS)
