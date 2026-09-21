@@ -2,6 +2,9 @@ package backend
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"maps"
@@ -142,10 +145,10 @@ type ec2BackendConfig struct {
 }
 
 type ec2CredentialKey struct {
-	region                string
-	roleArn               string
-	secretResourceName    string
-	secretResourceVersion string
+	region             string
+	roleArn            string
+	secretResourceName string
+	secretContentHash  string
 }
 
 type ec2CredentialSource struct {
@@ -197,8 +200,8 @@ type ec2InstanceLister interface {
 }
 
 // ec2ClientIdentity identifies a cached EC2 client independent of the secret's
-// resource version. At most one client is cached per identity, so a newer
-// secret version overwrites (and thus evicts) the prior client without needing
+// contents. At most one client is cached per identity, so rotated credentials
+// overwrite (and thus evict) the prior client without needing
 // to scan the cache for superseded entries.
 type ec2ClientIdentity struct {
 	region             string
@@ -206,37 +209,37 @@ type ec2ClientIdentity struct {
 	secretResourceName string
 }
 
-func (k ec2ClientIdentity) singleflightKey(secretResourceVersion string) string {
+func (k ec2ClientIdentity) singleflightKey(secretContentHash string) string {
 	return strings.Join([]string{
 		k.region,
 		k.roleArn,
 		k.secretResourceName,
-		secretResourceVersion,
+		secretContentHash,
 	}, "\x00")
 }
 
-// ec2CachedClient is a cached client together with the secret resource version
-// it was built from, so a rotated secret can be detected on lookup.
+// ec2CachedClient retains the credential fingerprint used to build the client.
+// API-server revisions alone must not invalidate it.
 type ec2CachedClient struct {
-	secretResourceVersion string
-	client                *awsec2.Client
+	secretContentHash string
+	client            *awsec2.Client
 }
 
 type ec2BackendStateKey struct {
-	region                string // +noKrtEquals compared in endpointSemanticsEqual
-	roleArn               string
-	port                  uint32                  // +noKrtEquals compared in endpointSemanticsEqual
-	addressType           kgateway.AwsAddressType // +noKrtEquals compared in endpointSemanticsEqual
-	filters               []ec2TagFilter          // +noKrtEquals compared in endpointSemanticsEqual
-	secretResourceName    string
-	secretResourceVersion string
+	region             string // +noKrtEquals compared in endpointSemanticsEqual
+	roleArn            string
+	port               uint32                  // +noKrtEquals compared in endpointSemanticsEqual
+	addressType        kgateway.AwsAddressType // +noKrtEquals compared in endpointSemanticsEqual
+	filters            []ec2TagFilter          // +noKrtEquals compared in endpointSemanticsEqual
+	secretResourceName string
+	secretContentHash  string
 }
 
 func (k ec2BackendStateKey) Equals(other ec2BackendStateKey) bool {
 	return k.endpointSemanticsEqual(other) &&
 		k.roleArn == other.roleArn &&
 		k.secretResourceName == other.secretResourceName &&
-		k.secretResourceVersion == other.secretResourceVersion
+		k.secretContentHash == other.secretContentHash
 }
 
 // endpointSemanticsEqual reports whether two configs resolve to the same
@@ -271,24 +274,22 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 		region:  source.region,
 		roleArn: source.roleArn,
 	}
-	version := ""
+	contentHash := ""
 	if source.secret != nil {
 		identity.secretResourceName = source.secret.ResourceName()
-		if source.secret.Obj != nil {
-			version = source.secret.Obj.GetResourceVersion()
-		}
+		contentHash = ec2SecretContentHash(source.secret)
 	}
 
 	l.mu.Lock()
-	if cached, ok := l.clients[identity]; ok && cached.secretResourceVersion == version {
+	if cached, ok := l.clients[identity]; ok && cached.secretContentHash == contentHash {
 		l.mu.Unlock()
 		return cached.client, nil
 	}
 	l.mu.Unlock()
 
-	value, err, _ := l.clientLoads.Do(identity.singleflightKey(version), func() (any, error) {
+	value, err, _ := l.clientLoads.Do(identity.singleflightKey(contentHash), func() (any, error) {
 		l.mu.Lock()
-		if cached, ok := l.clients[identity]; ok && cached.secretResourceVersion == version {
+		if cached, ok := l.clients[identity]; ok && cached.secretContentHash == contentHash {
 			l.mu.Unlock()
 			return cached.client, nil
 		}
@@ -301,13 +302,13 @@ func (l *awsEc2InstanceLister) clientFor(ctx context.Context, source ec2Credenti
 
 		l.mu.Lock()
 		defer l.mu.Unlock()
-		// Another caller may have populated the entry for this version meanwhile.
-		// Storing per-identity means a different version overwrites (and evicts)
-		// the prior client without scanning the cache.
-		if cached, ok := l.clients[identity]; ok && cached.secretResourceVersion == version {
+		// Another caller may have populated the entry for these credentials meanwhile.
+		// Storing per identity lets rotated credentials replace the prior client
+		// without scanning the cache.
+		if cached, ok := l.clients[identity]; ok && cached.secretContentHash == contentHash {
 			return cached.client, nil
 		}
-		l.clients[identity] = ec2CachedClient{secretResourceVersion: version, client: client}
+		l.clients[identity] = ec2CachedClient{secretContentHash: contentHash, client: client}
 		return client, nil
 	})
 	if err != nil {
@@ -633,9 +634,7 @@ func (c *ec2EndpointsCollection) computeState(ctx context.Context) (map[string]e
 		}
 		if cfg.secret != nil {
 			key.secretResourceName = cfg.secret.ResourceName()
-			if cfg.secret.Obj != nil {
-				key.secretResourceVersion = cfg.secret.Obj.GetResourceVersion()
-			}
+			key.secretContentHash = ec2SecretContentHash(cfg.secret)
 		}
 		byCredential[key] = append(byCredential[key], cfg)
 	}
@@ -1029,6 +1028,33 @@ func normalizeEc2TagFilters(in []kgateway.AwsTagFilter) []ec2TagFilter {
 	return out
 }
 
+// ec2SecretContentHash detects credential rotation and object replacement without
+// treating an RV-only update as a rotation. Length-prefixed fields make the hash
+// unambiguous, and sorting makes it independent of map iteration order. Never
+// put credential bytes directly in cache/singleflight keys or diagnostics.
+func ec2SecretContentHash(secret *ir.Secret) string {
+	if secret == nil {
+		return ""
+	}
+	h := sha256.New()
+	writeField := func(value []byte) {
+		var length [8]byte
+		binary.BigEndian.PutUint64(length[:], uint64(len(value)))
+		h.Write(length[:])
+		h.Write(value)
+	}
+	if secret.Obj != nil {
+		writeField([]byte(secret.Obj.GetUID()))
+	} else {
+		writeField(nil)
+	}
+	for _, key := range slices.Sorted(maps.Keys(secret.Data)) {
+		writeField([]byte(key))
+		writeField(secret.Data[key])
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func (c ec2BackendConfig) stateKey() ec2BackendStateKey {
 	key := ec2BackendStateKey{
 		region:      c.region,
@@ -1039,9 +1065,7 @@ func (c ec2BackendConfig) stateKey() ec2BackendStateKey {
 	}
 	if c.secret != nil {
 		key.secretResourceName = c.secret.ResourceName()
-		if c.secret.Obj != nil {
-			key.secretResourceVersion = c.secret.Obj.GetResourceVersion()
-		}
+		key.secretContentHash = ec2SecretContentHash(c.secret)
 	}
 	return key
 }
