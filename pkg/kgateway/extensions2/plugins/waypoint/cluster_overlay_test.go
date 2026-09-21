@@ -2,6 +2,10 @@ package waypoint
 
 import (
 	"context"
+
+	envoytypev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -171,4 +175,22 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 			overlaytest.SetResourceVersion(t, "2"),
 		},
 	})
+}
+
+func TestWaypointRedirectClearsInheritedLocalityMode(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	backend.Obj = &corev1.Service{Spec: corev1.ServiceSpec{ClusterIP: "10.0.0.1", ClusterIPs: []string{"10.0.0.1"}}}
+	out := &envoyclusterv3.Cluster{
+		Name: backend.ClusterName(),
+		CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{
+			HealthyPanicThreshold: &envoytypev3.Percent{Value: 25},
+			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			},
+		},
+	}
+	ApplyIngressUseWaypointCluster(backend, out, &apisettings.Settings{})
+	require.Nil(t, out.GetCommonLbConfig().GetLocalityConfigSpecifier(), "service VIP endpoints have no locality weights")
+	require.Equal(t, float64(25), out.GetCommonLbConfig().GetHealthyPanicThreshold().GetValue(), "unrelated LB settings survive")
+	require.Len(t, out.GetLoadAssignment().GetEndpoints(), 1)
 }

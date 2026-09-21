@@ -185,6 +185,12 @@ func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.C
 		Type: envoyclusterv3.Cluster_STATIC,
 	}
 	out.EdsClusterConfig = nil
+	// The redirect uses a service VIP, not the backend's locality-weighted
+	// endpoints. Drop any locality mode inherited from an earlier policy while
+	// preserving unrelated CommonLbConfig settings.
+	if out.CommonLbConfig != nil {
+		out.CommonLbConfig.LocalityConfigSpecifier = nil
+	}
 	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
 		ClusterName: out.GetName(),
 		Endpoints:   make([]*envoyendpointv3.LocalityLbEndpoints, 0, 1),
