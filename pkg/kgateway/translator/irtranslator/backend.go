@@ -350,10 +350,12 @@ func (t *BackendTranslator) ApplyPerClient(
 		}
 	}
 
-	needsInlineCLA := base.EndpointInputs != nil &&
-		clusterSupportsInlineCLA(out) &&
+	needsInlineCLA := clusterSupportsInlineCLA(out) &&
 		out.GetLoadAssignment() == nil
 	if needsInlineCLA {
+		if base.EndpointInputs == nil {
+			return buildBlackholeCluster(backend), errors.New("per-client overlay requires an inline load assignment but no endpoint inputs are available")
+		}
 		// Gather endpoint plugins lazily — only inline-CLA clusters consume them,
 		// so the common EDS path (which returns early above) never pays for this.
 		// Resolve through the copy-on-write editor. Modern plugins clone only
@@ -368,6 +370,12 @@ func (t *BackendTranslator) ApplyPerClient(
 	// defaultLocalityConfig leaves an existing specifier untouched.
 	if base.DefaultedLocalityConfig {
 		defaultLocalityConfig(out)
+	}
+
+	if backend.GatewayBackendClientCertificate != nil {
+		if err := validateGatewayClientIdentityOverlay(base.Cluster, out); err != nil {
+			return buildBlackholeCluster(backend), err
+		}
 	}
 
 	// Gateway-scoped client identity is authoritative over every policy-produced
@@ -672,6 +680,34 @@ func createCommonLbConfig(b *ir.BackendObjectIR) *envoyclusterv3.Cluster_CommonL
 	return nil
 }
 
+// validateGatewayClientIdentityOverlay prevents a per-client overlay from silently
+// dropping a Gateway identity already installed on a TLS path. Plaintext bases
+// remain plaintext: configuring a Gateway certificate does not enable TLS.
+func validateGatewayClientIdentityOverlay(base, out *envoyclusterv3.Cluster) error {
+	usableTLS := func(socket *envoycorev3.TransportSocket) bool {
+		return socket.GetName() == envoywellknown.TransportSocketTls && socket.GetTypedConfig() != nil
+	}
+	if usableTLS(base.GetTransportSocket()) && !usableTLS(out.GetTransportSocket()) {
+		return errors.New("per-client overlay removed TLS required by the gateway backend client certificate")
+	}
+	for _, before := range base.GetTransportSocketMatches() {
+		if !usableTLS(before.GetTransportSocket()) {
+			continue
+		}
+		socket := out.GetTransportSocket()
+		for _, after := range out.GetTransportSocketMatches() {
+			if after.GetName() == before.GetName() {
+				socket = after.GetTransportSocket()
+				break
+			}
+		}
+		if !usableTLS(socket) {
+			return errors.New("per-client overlay removed a TLS socket match required by the gateway backend client certificate")
+		}
+	}
+	return nil
+}
+
 func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *ir.BackendObjectIR) error {
 	if backend == nil || backend.GatewayBackendClientCertificate == nil {
 		return nil
@@ -708,7 +744,7 @@ func injectGatewayBackendClientCertificate(
 	}
 	typedConfig := transportSocket.GetTypedConfig()
 	if typedConfig == nil {
-		return nil, nil
+		return nil, errors.New("TLS socket has no configuration for the gateway backend client certificate")
 	}
 
 	tlsContext := &envoytlsv3.UpstreamTlsContext{}

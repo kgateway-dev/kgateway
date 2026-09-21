@@ -569,8 +569,7 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
-						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}
-						out.EdsClusterConfig = nil
+						redirectToInlineCLA(out)
 						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
 							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
 								ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
@@ -803,4 +802,71 @@ func TestApplyPerClient_UndoKeepsCommonLbConfigPopulatedByOverlay(t *testing.T) 
 		"only the defaulted locality specifier is reverted")
 	assert.True(t, perClient.GetCommonLbConfig().GetIgnoreNewHostsUntilFirstHc(),
 		"the overlay's own CommonLbConfig field must survive the undo")
+}
+
+func TestApplyPerClient_RejectsMissingInlineEndpointSource(t *testing.T) {
+	for _, discovery := range []envoyclusterv3.Cluster_DiscoveryType{envoyclusterv3.Cluster_STATIC, envoyclusterv3.Cluster_STRICT_DNS, envoyclusterv3.Cluster_LOGICAL_DNS} {
+		t.Run(discovery.String(), func(t *testing.T) {
+			bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+				{Group: "test", Kind: "Redirect"}: {PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: discovery}
+						out.EdsClusterConfig = nil
+					}}
+				}},
+			})
+			backend := overlayBackend()
+			base := bt.TranslateBackendBase(t.Context(), backend)
+			out, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+			require.EqualError(t, err, "per-client overlay requires an inline load assignment but no endpoint inputs are available")
+			require.Equal(t, backend.ClusterName(), out.GetName())
+			require.Empty(t, out.GetLoadAssignment().GetEndpoints())
+			require.Equal(t, envoyclusterv3.Cluster_EDS, base.Cluster.GetType())
+		})
+	}
+}
+
+func TestApplyPerClient_RejectsGatewayClientIdentityDowngrade(t *testing.T) {
+	for _, mode := range []string{"raw socket", "removed socket", "TLS without config", "raw socket match"} {
+		t.Run(mode, func(t *testing.T) {
+			bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+				{Group: "test", Kind: "Downgrade"}: {PerClientClusterOverlay: func(krt.HandlerContext, context.Context, ir.UniquelyConnectedClient, ir.BackendObjectIR) *sdk.ClusterOverlay {
+					return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+						switch mode {
+						case "raw socket":
+							out.TransportSocket = &envoycorev3.TransportSocket{Name: "envoy.transport_sockets.raw_buffer"}
+						case "removed socket":
+							out.TransportSocket = nil
+						case "TLS without config":
+							out.TransportSocket = &envoycorev3.TransportSocket{Name: envoywellknown.TransportSocketTls}
+						case "raw socket match":
+							out.TransportSocketMatches[0].TransportSocket = &envoycorev3.TransportSocket{Name: "envoy.transport_sockets.raw_buffer"}
+						}
+					}}
+				}},
+			})
+			backend := overlayBackend()
+			backend.GatewayBackendClientCertificate = &ir.GatewayBackendClientCertificateIR{Certificate: ir.TLSCertificate{CertChain: []byte("cert"), PrivateKey: []byte("key")}}
+			socket := upstreamTLSTransportSocket(t, "backend.example", "identity")
+			init := bt.ContributedBackends[backend.GetGroupKind()]
+			originalInit := init.InitEnvoyBackend
+			init.InitEnvoyBackend = func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				eps := originalInit(ctx, in, out)
+				if mode == "raw socket match" {
+					out.TransportSocketMatches = []*envoyclusterv3.Cluster_TransportSocketMatch{{Name: "tls", TransportSocket: socket}}
+				} else {
+					out.TransportSocket = socket
+				}
+				return eps
+			}
+			bt.ContributedBackends[backend.GetGroupKind()] = init
+			base := bt.TranslateBackendBase(t.Context(), backend)
+			require.NoError(t, base.Error)
+			out, err := bt.ApplyPerClient(krt.TestingDummyContext{}, t.Context(), ir.UniquelyConnectedClient{}, backend, base)
+			require.ErrorContains(t, err, "gateway backend client certificate")
+			require.Equal(t, backend.ClusterName(), out.GetName())
+			require.Empty(t, out.GetLoadAssignment().GetEndpoints())
+			require.NotNil(t, socket.GetTypedConfig(), "base TLS config must remain untouched")
+		})
+	}
 }

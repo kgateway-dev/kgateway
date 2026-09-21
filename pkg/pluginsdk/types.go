@@ -76,9 +76,9 @@ type ClusterOverlay struct {
 // fields it owns. The in-tree overlays satisfy that today -- destrule writes
 // outlier detection, locality LB config and TCP keepalive; waypoint rewrites
 // the discovery type and load assignment -- but the framework does not enforce
-// it, and their one interaction, destrule selecting locality-weighted LB on a
-// cluster waypoint then converts to STATIC with inlined addresses, is a
-// judgment call rather than a designed outcome.
+// it. Waypoint owns the discovery-type transition and clears any inherited
+// locality mode when replacing backend endpoints with a service VIP; that
+// redirect cannot use the backend endpoints' locality weights.
 type PerClientClusterOverlay func(
 	kctx krt.HandlerContext,
 	ctx context.Context,

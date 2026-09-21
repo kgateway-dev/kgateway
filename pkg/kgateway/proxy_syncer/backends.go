@@ -86,9 +86,6 @@ func NewPerClientEnvoyClusters(
 			return nil
 		}
 		base := translator.TranslateBackendBase(ctx, backendObj)
-		if base == nil {
-			return nil
-		}
 		uccWithClusterRet := make([]uccWithCluster, 0, len(clients))
 
 		for _, ucc := range clients {
