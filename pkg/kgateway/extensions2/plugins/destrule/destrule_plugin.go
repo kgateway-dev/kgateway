@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/api/networking/v1alpha3"
@@ -120,6 +122,15 @@ func (d *destrulePlugin) clusterOverlay(kctx krt.HandlerContext, ctx context.Con
 }
 
 func applyLocalityLbConfig(trafficPolicy *v1alpha3.TrafficPolicy, outCluster *envoyclusterv3.Cluster) {
+	// A preceding waypoint overlay may have replaced EDS with an unweighted
+	// service VIP. Do not reintroduce locality weighting on that final inline
+	// assignment. STATIC backends with actual locality weights still use it.
+	if outCluster.GetType() == envoyclusterv3.Cluster_STATIC && outCluster.GetLoadAssignment() != nil &&
+		!slices.ContainsFunc(outCluster.GetLoadAssignment().GetEndpoints(), func(ep *envoyendpointv3.LocalityLbEndpoints) bool {
+			return ep.GetLoadBalancingWeight().GetValue() > 0
+		}) {
+		return
+	}
 	if getLocalityLbSetting(trafficPolicy) == nil {
 		return
 	}
