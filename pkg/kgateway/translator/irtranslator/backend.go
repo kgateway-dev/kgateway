@@ -15,6 +15,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	envoyproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -684,28 +685,68 @@ func createCommonLbConfig(b *ir.BackendObjectIR) *envoyclusterv3.Cluster_CommonL
 // dropping a Gateway identity already installed on a TLS path. Plaintext bases
 // remain plaintext: configuring a Gateway certificate does not enable TLS.
 func validateGatewayClientIdentityOverlay(base, out *envoyclusterv3.Cluster) error {
-	usableTLS := func(socket *envoycorev3.TransportSocket) bool {
-		return socket.GetName() == envoywellknown.TransportSocketTls && socket.GetTypedConfig() != nil
+	// An empty match is Envoy's fallback even when TransportSocket is nil.
+	fallback := func(c *envoyclusterv3.Cluster) *envoycorev3.TransportSocket {
+		for _, match := range c.GetTransportSocketMatches() {
+			if len(match.GetMatch().GetFields()) == 0 {
+				return match.GetTransportSocket()
+			}
+		}
+		return c.GetTransportSocket()
 	}
-	if usableTLS(base.GetTransportSocket()) && !usableTLS(out.GetTransportSocket()) {
+	if gatewayIdentityTLS(fallback(base), 0) && !gatewayIdentityTLS(fallback(out), 0) {
 		return errors.New("per-client overlay removed TLS required by the gateway backend client certificate")
 	}
 	for _, before := range base.GetTransportSocketMatches() {
-		if !usableTLS(before.GetTransportSocket()) {
+		if !gatewayIdentityTLS(before.GetTransportSocket(), 0) {
 			continue
 		}
-		socket := out.GetTransportSocket()
+		socket := fallback(out)
 		for _, after := range out.GetTransportSocketMatches() {
-			if after.GetName() == before.GetName() {
+			if proto.Equal(after.GetMatch(), before.GetMatch()) {
 				socket = after.GetTransportSocket()
 				break
 			}
 		}
-		if !usableTLS(socket) {
+		if !gatewayIdentityTLS(socket, 0) {
 			return errors.New("per-client overlay removed a TLS socket match required by the gateway backend client certificate")
 		}
 	}
+	// A new plaintext match must not bypass a TLS fallback or an existing TLS
+	// match. Only retain plaintext selections whose preceding match predicates
+	// are unchanged, preserving Envoy's first-match semantics.
+	hasTLS := gatewayIdentityTLS(fallback(base), 0)
+	for _, match := range base.GetTransportSocketMatches() {
+		hasTLS = hasTLS || gatewayIdentityTLS(match.GetTransportSocket(), 0)
+	}
+	if hasTLS {
+		prefixUnchanged := true
+		for i, after := range out.GetTransportSocketMatches() {
+			prefixUnchanged = prefixUnchanged && i < len(base.GetTransportSocketMatches()) && proto.Equal(base.GetTransportSocketMatches()[i].GetMatch(), after.GetMatch())
+			if !gatewayIdentityTLS(after.GetTransportSocket(), 0) && (!prefixUnchanged || gatewayIdentityTLS(base.GetTransportSocketMatches()[i].GetTransportSocket(), 0)) {
+				return errors.New("per-client overlay added a plaintext socket match bypassing the gateway backend client certificate")
+			}
+		}
+	}
 	return nil
+}
+
+const proxyProtocolSocketName = "envoy.transport_sockets.upstream_proxy_protocol"
+
+// Follow supported wrappers without treating an opaque non-TLS socket as TLS.
+func gatewayIdentityTLS(socket *envoycorev3.TransportSocket, depth int) bool {
+	if depth > 16 || socket.GetTypedConfig() == nil {
+		return false
+	}
+	switch socket.GetName() {
+	case envoywellknown.TransportSocketTls:
+		return socket.GetTypedConfig().UnmarshalTo(&envoytlsv3.UpstreamTlsContext{}) == nil
+	case proxyProtocolSocketName:
+		wrapper := &envoyproxyv3.ProxyProtocolUpstreamTransport{}
+		return socket.GetTypedConfig().UnmarshalTo(wrapper) == nil && gatewayIdentityTLS(wrapper.GetTransportSocket(), depth+1)
+	default:
+		return false
+	}
 }
 
 func applyGatewayBackendClientCertificate(out *envoyclusterv3.Cluster, backend *ir.BackendObjectIR) error {
@@ -739,6 +780,35 @@ func injectGatewayBackendClientCertificate(
 	transportSocket *envoycorev3.TransportSocket,
 	certificate ir.TLSCertificate,
 ) (*envoycorev3.TransportSocket, error) {
+	return injectGatewayBackendClientCertificateAtDepth(transportSocket, certificate, 0)
+}
+
+func injectGatewayBackendClientCertificateAtDepth(transportSocket *envoycorev3.TransportSocket, certificate ir.TLSCertificate, depth int) (*envoycorev3.TransportSocket, error) {
+	if depth > 16 {
+		return nil, errors.New("transport socket nesting exceeds limit for gateway backend client certificate")
+	}
+	if transportSocket.GetName() == proxyProtocolSocketName {
+		wrapper := &envoyproxyv3.ProxyProtocolUpstreamTransport{}
+		if transportSocket.GetTypedConfig() == nil {
+			return nil, errors.New("PROXY socket has no configuration for the gateway backend client certificate")
+		}
+		if err := transportSocket.GetTypedConfig().UnmarshalTo(wrapper); err != nil {
+			return nil, err
+		}
+		inner, err := injectGatewayBackendClientCertificateAtDepth(wrapper.GetTransportSocket(), certificate, depth+1)
+		if err != nil || inner == nil {
+			return nil, err
+		}
+		wrapper.TransportSocket = inner
+		config, err := utils.MessageToAny(wrapper)
+		if err != nil {
+			return nil, err
+		}
+		cloned := proto.Clone(transportSocket).(*envoycorev3.TransportSocket)
+		cloned.ConfigType = &envoycorev3.TransportSocket_TypedConfig{TypedConfig: config}
+		return cloned, nil
+	}
+
 	if transportSocket == nil || transportSocket.GetName() != envoywellknown.TransportSocketTls {
 		return nil, nil
 	}
