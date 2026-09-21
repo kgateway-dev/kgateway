@@ -354,6 +354,11 @@ func TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration(t *test
 		return stored != nil && stored[name] == nil
 	}, 2*time.Second, 20*time.Millisecond, "an errored cluster must be excluded from the client's payload")
 
+	row := pcc.perClient.GetKey(ucc.ResourceName())
+	require.Len(t, row.perClientErrors, 1)
+	require.NotPanics(t, func() { row.perClientErrors[0].Cluster.ResourceWithTTL() },
+		"an unchanged error-path proto must have a valid captured content hash")
+
 	// Same client, same error, next generation of the backend.
 	updated := backend
 	updated.Obj = serviceAt(2)

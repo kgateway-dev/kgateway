@@ -323,9 +323,9 @@ func clustersForClient(
 			if perClient != nil {
 				row.Name = perClient.GetName()
 			}
-			// Hash 0: errored rows are never published, so they opt out of
-			// tripwire verification.
-			row.Cluster = sharedproto.WrapPrehashed(perClient, 0)
+			// Error rows are not published, but retained protos still obey the
+			// wrapper contract: zero is a valid hash, not a verification opt-out.
+			row.Cluster = sharedproto.Wrap(perClient)
 			row.ClusterVersion = utils.HashString(err.Error())
 			row.Error = err
 			row.PerClientError = true
