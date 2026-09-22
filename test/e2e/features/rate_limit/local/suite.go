@@ -27,6 +27,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestLocalRateLimitForRoute": {
 			Manifests: []string{httpRoutesManifest, routeLocalRateLimitManifest},
 		},
+		"TestLocalRateLimitDescriptors": {
+			Manifests: []string{httpRoutesManifest, routeLocalRateLimitDescriptors},
+		},
 		"TestLocalRateLimitForGateway": {
 			Manifests: []string{httpRoutesManifest, gwLocalRateLimitManifest},
 		},
@@ -43,6 +46,14 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
 	}
+}
+
+// TestLocalRateLimitDescriptors verifies that each distinct header value receives its own
+// dynamic descriptor token bucket.
+func (s *testingSuite) TestLocalRateLimitDescriptors() {
+	s.assertResponseWithHeader("/path1", "x-user-id", "user-one", http.StatusOK)
+	s.assertResponseWithHeader("/path1", "x-user-id", "user-one", http.StatusTooManyRequests)
+	s.assertResponseWithHeader("/path1", "x-user-id", "user-two", http.StatusOK)
 }
 
 // Test cases for local rate limit on a route (/path1)
@@ -143,6 +154,19 @@ func (s *testingSuite) assertEventualResponse(path string, expectedStatus int) {
 		},
 		curl.WithPath(path),
 		curl.WithHostHeader("example.com"),
+		curl.WithPort(80),
+	)
+}
+
+func (s *testingSuite) assertResponseWithHeader(path, header, value string, expectedStatus int) {
+	common.BaseGateway.Send(
+		s.T(),
+		&testmatchers.HttpResponse{
+			StatusCode: expectedStatus,
+		},
+		curl.WithPath(path),
+		curl.WithHostHeader("example.com"),
+		curl.WithHeader(header, value),
 		curl.WithPort(80),
 	)
 }

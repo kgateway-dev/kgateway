@@ -238,6 +238,14 @@ Routes:
                 headerName: X-User-Type
         ratelimit/local:
           '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          alwaysConsumeDefaultTokenBucket: false
+          descriptors:
+          - entries:
+            - key: X-User-Type
+            tokenBucket:
+              fillInterval: 1s
+              maxTokens: 2
+              tokensPerFill: 1
           filterEnabled:
             defaultValue:
               numerator: 100
@@ -246,6 +254,11 @@ Routes:
             defaultValue:
               numerator: 100
             runtimeKey: local_rate_limit_enforced
+          rateLimits:
+          - actions:
+            - requestHeaders:
+                descriptorKey: X-User-Type
+                headerName: X-User-Type
           statPrefix: http_local_rate_limiter
           tokenBucket:
             fillInterval: 1s
