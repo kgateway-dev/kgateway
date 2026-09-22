@@ -149,9 +149,8 @@ Statuses:
       ancestors:
       - ancestorRef:
           group: gateway.kgateway.dev
-          kind: BackendConfigPolicy
-          name: missing-service
-          namespace: default
+          kind: StatusSummary
+          name: StatusSummary
         conditions:
         - lastTransitionTime: null
           message: Service default/missing-svc not found
@@ -170,9 +169,8 @@ Statuses:
       ancestors:
       - ancestorRef:
           group: gateway.kgateway.dev
-          kind: TrafficPolicy
-          name: bad-section
-          namespace: default
+          kind: StatusSummary
+          name: StatusSummary
         conditions:
         - lastTransitionTime: null
           message: sectionName "rule-z" not found in HTTPRoute default/route-a
@@ -191,9 +189,8 @@ Statuses:
       ancestors:
       - ancestorRef:
           group: gateway.kgateway.dev
-          kind: TrafficPolicy
-          name: partial
-          namespace: default
+          kind: StatusSummary
+          name: StatusSummary
         conditions:
         - lastTransitionTime: null
           message: HTTPRoute default/route-b-typo not found

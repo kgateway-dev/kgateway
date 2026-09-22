@@ -142,8 +142,8 @@ func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTa
 	return policyTargetFixture{gateways: gateways, policies: policyCol, contributions: contributions}
 }
 
-// acceptedCondition returns the Accepted condition of the single self-referencing ancestor in
-// a policy target contribution, failing the test if the contribution has any other shape.
+// acceptedCondition returns the Accepted condition of the single summary ancestor in a policy
+// target contribution, failing the test if the contribution has any other shape.
 func acceptedCondition(t *testing.T, c reports.StatusContribution, policy ir.PolicyWrapper) metav1.Condition {
 	t.Helper()
 	require.Equal(t, reports.PolicyTargetStatusSource, c.Source.Kind)
@@ -159,8 +159,8 @@ func acceptedCondition(t *testing.T, c reports.StatusContribution, policy ir.Pol
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, 1)
 	ancestor := status.Ancestors[0]
-	require.True(t, reports.ParentRefEqual(policyTargetsAncestorRef(policy.ObjectSource), ancestor.AncestorRef),
-		"the ancestor should be the policy itself, with explicit group and kind: %+v", ancestor.AncestorRef)
+	require.True(t, reports.ParentRefEqual(reporter.PolicyStatusSummaryAncestorRef(), ancestor.AncestorRef),
+		"the ancestor should be the summary entry, with explicit group and kind: %+v", ancestor.AncestorRef)
 
 	attached := meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAttached))
 	require.NotNil(t, attached)
@@ -341,7 +341,7 @@ func TestPolicyTargetContributionMergesWithGatewayAncestors(t *testing.T) {
 		case reports.ParentRefEqual(ancestor.AncestorRef, gatewayAncestor):
 			sawGateway = true
 			require.Equal(t, metav1.ConditionTrue, accepted.Status, "the valid target keeps its healthy Gateway ancestor")
-		case reports.ParentRefEqual(ancestor.AncestorRef, policyTargetsAncestorRef(policy.ObjectSource)):
+		case reports.ParentRefEqual(ancestor.AncestorRef, reporter.PolicyStatusSummaryAncestorRef()):
 			sawSelf = true
 			require.Equal(t, string(shared.PolicyReasonTargetNotFound), accepted.Reason)
 		default:

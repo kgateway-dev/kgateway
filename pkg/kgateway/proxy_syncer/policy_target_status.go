@@ -34,9 +34,11 @@ import (
 //
 // This producer walks each policy's own targetRefs forward instead. Every explicit ref is
 // resolved against the informer-backed collection for its kind through krt, so the check is
-// dependency tracked and costs no API calls. Unresolved refs are reported on one ancestor per
-// policy, policyTargetsAncestorRef, with Accepted=False/TargetNotFound, alongside whatever
-// Gateway ancestors the valid refs produced. When the target appears, the contribution stops
+// dependency tracked and costs no API calls. Unresolved refs are reported on the policy's
+// synthetic summary ancestor (reporter.PolicyStatusSummaryAncestorRef) with
+// Accepted=False/TargetNotFound, alongside whatever Gateway ancestors the valid refs produced.
+// Using the missing ref itself as the ancestor would instead publish a ref to an object that
+// does not exist and cost one ancestor per typo under the ancestor cap. When the target appears, the contribution stops
 // and the writer retracts the ancestor through the normal stale-status path.
 
 // policyTargetResolver checks that the object one explicit targetRef names exists and, when
@@ -186,22 +188,6 @@ func targetNotFoundError(kind, namespace, name string) error {
 	return fmt.Errorf("%s %s/%s not found", kind, namespace, name)
 }
 
-// policyTargetsAncestorRef is the ancestor under which a policy's targetRef resolution is
-// reported: the policy itself. A missing target has no Gateway to report under, and using the
-// missing ref as the ancestor would collide with the real ancestor the moment the target
-// appears (Backend-attached policies report the target object as their ancestor) and would
-// eat into the ancestor cap one entry per typo. One self-referencing entry per policy avoids
-// both. Group and kind are explicit because the CRD schema defaults an ancestorRef's kind to
-// Gateway when they are omitted.
-func policyTargetsAncestorRef(policy ir.ObjectSource) gwv1.ParentReference {
-	return gwv1.ParentReference{
-		Group:     new(gwv1.Group(policy.Group)),
-		Kind:      new(gwv1.Kind(policy.Kind)),
-		Namespace: new(gwv1.Namespace(policy.Namespace)),
-		Name:      gwv1.ObjectName(policy.Name),
-	}
-}
-
 // policyTargetStatusContributions emits one contribution per policy that has at least one
 // explicit targetRef the resolvers cannot resolve, and nothing for every other policy. policies
 // may hold every policy kind at once: a PolicyWrapper's key already includes its group and kind.
@@ -256,7 +242,7 @@ func policyTargetStatusContribution(policy ir.PolicyWrapper, problems []string) 
 	}
 }
 
-// buildPolicyTargetReport reports the unresolved targets on the policy's own ancestor.
+// buildPolicyTargetReport reports the unresolved targets on the policy's summary ancestor.
 func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *reports.PolicyReport {
 	reportMap := reports.NewPolicyReportMap()
 	var generation int64
@@ -269,7 +255,7 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *report
 		Namespace: policy.Namespace,
 		Name:      policy.Name,
 	}
-	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(policyTargetsAncestorRef(policy.ObjectSource))
+	ancestor := reports.NewReporter(&reportMap).Policy(key, generation).AncestorRef(reporter.PolicyStatusSummaryAncestorRef())
 	// The standard policy builder stamps the report's generation onto every condition, and the
 	// reducer keeps the generation of whichever contribution sorts first for the policy, so the
 	// per-condition value below only matters for builders that copy conditions verbatim, such

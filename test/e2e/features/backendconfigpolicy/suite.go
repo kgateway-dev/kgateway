@@ -23,7 +23,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
@@ -357,13 +357,13 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 		otherControllerName:    true,
 	})
 
-	// The missing target is reported on the policy's own ancestor instead
+	// The missing target is reported on the policy's StatusSummary ancestor instead
 	s.assertTargetNotFound("example-policy", "kgateway-base", "Service kgateway-base/missing-svc not found")
 	// AfterTest() handles cleanup automatically
 }
 
-// assertTargetNotFound verifies the policy reports the given unresolved target on its own
-// ancestor with Accepted=False/TargetNotFound.
+// assertTargetNotFound verifies the policy reports the given unresolved target on its
+// StatusSummary ancestor with Accepted=False/TargetNotFound.
 func (s *testingSuite) assertTargetNotFound(policyName, policyNamespace, expectedMessage string) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
@@ -378,13 +378,13 @@ func (s *testingSuite) assertTargetNotFound(policyName, policyNamespace, expecte
 		var accepted *metav1.Condition
 		for _, ancestor := range policy.Status.Ancestors {
 			if string(ancestor.ControllerName) != kgatewayControllerName ||
-				ancestor.AncestorRef.Kind == nil || string(*ancestor.AncestorRef.Kind) != wellknown.BackendConfigPolicyGVK.Kind ||
-				string(ancestor.AncestorRef.Name) != policyName {
+				ancestor.AncestorRef.Kind == nil || string(*ancestor.AncestorRef.Kind) != reporter.PolicyStatusSummaryAncestorName ||
+				string(ancestor.AncestorRef.Name) != reporter.PolicyStatusSummaryAncestorName {
 				continue
 			}
 			accepted = meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted))
 		}
-		g.Expect(accepted).NotTo(gomega.BeNil(), "policy should report an ancestor for itself")
+		g.Expect(accepted).NotTo(gomega.BeNil(), "policy should report a StatusSummary ancestor")
 		g.Expect(accepted.Status).To(gomega.Equal(metav1.ConditionFalse))
 		g.Expect(accepted.Reason).To(gomega.Equal(string(shared.PolicyReasonTargetNotFound)))
 		g.Expect(accepted.Message).To(gomega.ContainSubstring(expectedMessage))

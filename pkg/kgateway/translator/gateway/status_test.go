@@ -34,7 +34,7 @@ func TestStatuses(t *testing.T) {
 	})
 
 	// A policy with one valid and one misspelled targetRef keeps the Gateway ancestor its valid
-	// target earns and additionally reports the missing target on a self-referencing ancestor;
+	// target earns and additionally reports the missing target on its StatusSummary ancestor;
 	// a policy whose only target is missing reports just that ancestor.
 	t.Run("TargetNotFound", func(t *testing.T) {
 		dir := fsutils.MustGetThisDir()
