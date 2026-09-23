@@ -349,6 +349,41 @@ func TestPolicyTargetStatusContributionsExtensionResolver(t *testing.T) {
 		"a nil registration leaves the built-in Gateway resolver in place")
 }
 
+// TestGeneratePolicyTargetReportsExtensionResolver pins that the golden-test helper applies the
+// resolvers registered through the options, as the proxy syncer does: without them an extension
+// kind is unchecked and a missing target of it reports nothing.
+func TestGeneratePolicyTargetReportsExtensionResolver(t *testing.T) {
+	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
+	extensionGK := schema.GroupKind{Group: "example.com", Kind: "ExtensionListenerSet"}
+	extensionListenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{{
+		ObjectMeta: metav1.ObjectMeta{Name: "els", Namespace: policyTargetTestNS},
+	}}, krtopts.ToOptions("ExtensionListenerSets")...)
+	missing := trafficPolicyWrapper("missing", 1,
+		ir.PolicyRef{Group: extensionGK.Group, Kind: extensionGK.Kind, Name: "els-typo"})
+	resolved := trafficPolicyWrapper("resolved", 1,
+		ir.PolicyRef{Group: extensionGK.Group, Kind: extensionGK.Kind, Name: "els"})
+	plugins := sdk.Plugin{ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
+		wellknown.TrafficPolicyGVK.GroupKind(): {
+			Policies: krt.NewStaticCollection(nil, []ir.PolicyWrapper{missing, resolved}, krtopts.ToOptions("Policies")...),
+		},
+	}}
+
+	require.Empty(t, GeneratePolicyTargetReports(nil, plugins).Policies,
+		"an extension kind without a registered resolver is not checked")
+
+	out := GeneratePolicyTargetReports(nil, plugins,
+		WithPolicyTargetResolver(extensionGK, NewObjectPolicyTargetResolver(extensionListenerSets, extensionGK.Kind, nil)))
+	require.Len(t, out.Policies, 1)
+	key := reporter.PolicyKey{Group: missing.Group, Kind: missing.Kind, Namespace: missing.Namespace, Name: missing.Name}
+	status := reports.BuildPolicyStatus(out.Policies[key], key, "test-controller", gwv1.PolicyStatus{})
+	require.NotNil(t, status)
+	require.Len(t, status.Ancestors, 1)
+	accepted := meta.FindStatusCondition(status.Ancestors[0].Conditions, string(shared.PolicyConditionAccepted))
+	require.NotNil(t, accepted)
+	require.Equal(t, string(shared.PolicyReasonTargetNotFound), accepted.Reason)
+	require.Equal(t, "ExtensionListenerSet default/els-typo not found", accepted.Message)
+}
+
 // TestPolicyTargetReportThroughBackendTLSPolicyBuilder pins ObservedGeneration on the
 // conditions themselves: BackendTLSPolicy's builder copies report conditions verbatim rather
 // than stamping the report's generation the way the standard builder does.

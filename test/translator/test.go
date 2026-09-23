@@ -246,9 +246,20 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 
 type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
+// ExtraStatusSyncerOptionsFn returns the status pipeline options an extension passes to the
+// proxy syncer (setup.WithStatusSyncerOptions). It runs after PluginsFn and before the fake
+// client starts, so informer-backed collections it builds from commoncol's client are synced
+// before translation.
+type ExtraStatusSyncerOptionsFn func(ctx context.Context, commoncol *collections.CommonCollections) []proxy_syncer.StatusSyncerOption
+
 type ExtraConfig struct {
-	NewClientFn           func(*testing.T, ...client.Object) apiclient.Client
-	PluginsFn             ExtraPluginsFn
+	NewClientFn func(*testing.T, ...client.Object) apiclient.Client
+	PluginsFn   ExtraPluginsFn
+	// StatusSyncerOptionsFn supplies the extension's status pipeline options. The harness
+	// honors the policy target resolvers among them (proxy_syncer.WithPolicyTargetResolver),
+	// so policies targeting a missing object of an extension kind report TargetNotFound as
+	// they would in the controller; other options are ignored.
+	StatusSyncerOptionsFn ExtraStatusSyncerOptionsFn
 	Schemes               runtime.SchemeBuilder
 	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
 }
@@ -755,6 +766,11 @@ func (tc TestCase) Run(
 	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
 
+	var statusSyncerOpts []proxy_syncer.StatusSyncerOption
+	if extraConfig.StatusSyncerOptionsFn != nil {
+		statusSyncerOpts = extraConfig.StatusSyncerOptionsFn(ctx, commoncol)
+	}
+
 	// needed for the Plugin Backend test (backend-plugin/gateway.yaml)
 	gk := schema.GroupKind{
 		Group: "",
@@ -844,7 +860,7 @@ func (tc TestCase) Run(
 		// syncer (see proxy_syncer/policy_target_status.go). A policy may have both a Gateway
 		// ancestor from translation and a TargetNotFound ancestor, so merge by ancestor rather
 		// than replacing the policy's report.
-		mergedReports.MergePolicyReports(proxy_syncer.GeneratePolicyTargetReports(commoncol, extensions))
+		mergedReports.MergePolicyReports(proxy_syncer.GeneratePolicyTargetReports(commoncol, extensions, statusSyncerOpts...))
 
 		// Backend Accepted conditions are also generated outside gateway translation
 		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from

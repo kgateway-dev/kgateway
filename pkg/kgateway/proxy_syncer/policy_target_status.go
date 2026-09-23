@@ -312,9 +312,17 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *report
 // transform, and returns the TargetNotFound reports keyed by policy: the same reports
 // policyTargetStatusContributions produces incrementally in the proxy syncer. Exported for
 // the translator golden tests, which build status from report maps rather than running the
-// syncer.
-func GeneratePolicyTargetReports(commonCols *collections.CommonCollections, plugins sdk.Plugin) reports.ReportMap {
-	resolvers := newPolicyTargetResolvers(commonCols, plugins.ContributesBackends, nil)
+// syncer. opts are the options the syncer would be given: resolvers registered through
+// WithPolicyTargetResolver are applied as they are there, and every other setting is ignored.
+// Resolvers run here with a dummy krt context, so the collections they read must already be
+// synced.
+func GeneratePolicyTargetReports(
+	commonCols *collections.CommonCollections,
+	plugins sdk.Plugin,
+	opts ...StatusSyncerOption,
+) reports.ReportMap {
+	extra := processStatusSyncerOptions(opts...).policyTargetResolvers
+	resolvers := newPolicyTargetResolvers(commonCols, plugins.ContributesBackends, extra)
 	out := reports.NewPolicyReportMap()
 	for _, plugin := range plugins.ContributesPolicies {
 		if plugin.Policies == nil {
