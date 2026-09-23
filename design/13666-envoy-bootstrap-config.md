@@ -68,7 +68,8 @@ We want a first-class way to mutate the bootstrap that:
   after the base bootstrap is generated**, so the base can evolve across versions
   without breaking user config.
 - Satisfy [#14088](https://github.com/kgateway-dev/kgateway/issues/14088)
-  (`stats_config.histogram_bucket_settings`) with a curated, validated field.
+  (`stats_config.histogram_bucket_settings`): expressible through the overlay
+  in Phase 1, and promoted to a curated, validated field in Phase 2 (see Phasing).
 - Protect control-plane–managed bootstrap fields from being mutated, so a
   user's stale patch can never break xDS connectivity after an upgrade.
 - Validate the merged bootstrap before rollout and report results on status, rather
@@ -168,25 +169,26 @@ This interacts with the merge semantics in a way that must be understood:
   `static_layer` appends a second layer of the same name rather than editing the
   managed one, which is confusing and unnecessary. A user who genuinely needs to
   replace the managed runtime wholesale uses `mergeStrategy: Replace` on
-  `layered_runtime` instead — and the denylist must *not* cover `layered_runtime`, so
-  this path stays open.
+  `layered_runtime` instead (deferred to Phase 3; see Phasing) — and the denylist
+  must *not* cover `layered_runtime`, so this path stays open.
 
 Two layers, deliberately:
 
 1. **Curated typed fields** (`statsConfig.histogramBucketSettings`,
    `statsFlushInterval`, `dnsResolver`, ...). These give CRD validation,
-   documentation, and a stable contract. Issue #14088 is satisfied here directly —
-   no escape hatch needed for the common ask. As new demand appears, a field is
-   promoted from the overlay into this curated set.
+   documentation, and a stable contract. Issue #14088 is the first candidate for
+   promotion here (Phase 2); until then it goes through the overlay. As new demand
+   appears, a field is promoted from the overlay into this curated set.
 
 2. **A typed proto overlay** (`overlay.value`), validated as a *partial*
    `envoy.config.bootstrap.v3.Bootstrap` via
-   `+kubebuilder:pruning:PreserveUnknownFields` plus an admission-time proto
-   validation step. The user supplies only the sub-message they care about; kgateway
-   merges it onto the generated `Bootstrap`. Because it is keyed by proto field, it
-   survives base-template changes; because it is validated against the real
-   `Bootstrap` schema, typos and bad types are rejected at admit time rather than
-   crash-looping Envoy.
+   `+kubebuilder:pruning:PreserveUnknownFields` plus a proto-schema validation step
+   (the API server does not validate under `PreserveUnknownFields`; where this step
+   runs is an open question, see Open Questions). The user supplies only the
+   sub-message they care about; kgateway merges it onto the generated `Bootstrap`.
+   Because it is keyed by proto field, it survives base-template changes; because it
+   is validated against the real `Bootstrap` schema, typos and bad types are reported
+   on status rather than crash-looping Envoy.
 
 #### Phasing
 
