@@ -288,15 +288,13 @@ type HTTPSettings struct {
 
 	// MaxConnectionDuration is the maximum duration of a connection, measured from
 	// when the connection was established. When this duration is reached, Envoy starts
-	// the drain sequence. If unset, there is no maximum connection duration; unlike
-	// IdleTimeout, setting this to 0 does not disable it. Must be at least 1s, since
-	// shorter values close connections before the TLS handshake can complete.
+	// the drain sequence. If unset, there is no maximum connection duration.
+	// Setting this to 0 does not disable it, and instead closes each connection immediately.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
-	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="maxConnectionDuration must be at least 1s"
 	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
 
 	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
