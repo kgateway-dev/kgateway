@@ -146,10 +146,18 @@ author did not intend.
 
 When no grant permits the reference, `MissingReferenceGrantError` names the namespace
 the grant belongs in and the identity it has to allow, so the grant to write is
-readable off the policy status. For a reference by label selector the message names
-neither the matched resource nor its namespace: the match set is not observable
-without a grant, and disclosing it would let a referrer probe for resources it has no
-access to.
+readable off the policy status. This covers backend refs too, such as a
+`GatewayExtension`'s, where the identity is the kind holding the ref.
+
+A reference by label selector (`apiKeyAuth.secretSelector`) works the other way round.
+`GetSecretsBySelector` looks up the grants first and searches only the referrer's own
+namespace and the namespaces whose grants permit it (`RefGrantIndex.GrantingNamespaces`),
+so a Secret the referrer cannot reference never affects the result. When nothing
+permitted matches, it returns `SelectorNoMatchError`, whose message names the selector,
+the referrer's namespace and the grant identity that would widen the search. It reads
+the same whether a matching Secret sits in an ungranted namespace or does not exist.
+If it read differently, a referrer could probe label values across the cluster for
+resources it has no access to.
 
 ## Code flow
 
@@ -216,7 +224,7 @@ invalidation is needed.
 | `pkg/krtcollections/policy.go` | `RefGrantIndex`, `NewRefGrantIndex`, `ReferenceAllowed`, `MissingReferenceGrantError` |
 | `pkg/pluginsdk/collections/collections.go` | Wires mode from settings into `NewRefGrantIndex` |
 | `pkg/kgateway/extensions2/plugins/trafficpolicy/constructor.go` | `FetchGatewayExtension` — Strict-mode ExtensionRef check; `WithSourceGroupKind` |
-| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed`; `From` |
+| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed`; grant-scoped `GetSecretsBySelector`, `SelectorNoMatchError`; `From` |
 
 ## Tests
 

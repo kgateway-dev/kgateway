@@ -179,7 +179,10 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
-            ratelimit: ratelimit: missing reference grant'
+            ratelimit: ratelimit: missing reference grant: create a ReferenceGrant
+            in namespace "remote" allowing Service "remote-ratelimit" to be referenced
+            from group "gateway.kgateway.dev" kind "GatewayExtension" in namespace
+            "denied"'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -227,7 +230,10 @@ Statuses:
           namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'ratelimit: ratelimit: missing reference grant'
+          message: 'ratelimit: ratelimit: missing reference grant: create a ReferenceGrant
+            in namespace "remote" allowing Service "remote-ratelimit" to be referenced
+            from group "gateway.kgateway.dev" kind "GatewayExtension" in namespace
+            "denied"'
           reason: Invalid
           status: "False"
           type: Accepted

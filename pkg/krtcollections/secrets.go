@@ -2,8 +2,11 @@ package krtcollections
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -19,12 +22,17 @@ type From struct {
 }
 
 type SecretIndex struct {
-	secrets   map[schema.GroupKind]krt.Collection[ir.Secret]
-	refgrants *RefGrantIndex
+	secrets     map[schema.GroupKind]krt.Collection[ir.Secret]
+	byNamespace map[schema.GroupKind]krt.Index[string, ir.Secret]
+	refgrants   *RefGrantIndex
 }
 
 func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refgrants *RefGrantIndex) *SecretIndex {
-	return &SecretIndex{secrets: secrets, refgrants: refgrants}
+	byNamespace := make(map[schema.GroupKind]krt.Index[string, ir.Secret], len(secrets))
+	for gk, col := range secrets {
+		byNamespace[gk] = krt.NewNamespaceIndex(col)
+	}
+	return &SecretIndex{secrets: secrets, byNamespace: byNamespace, refgrants: refgrants}
 }
 
 func (s *SecretIndex) HasSynced() bool {
@@ -91,11 +99,42 @@ func (s *SecretIndex) GetSecretWithoutRefGrant(kctx krt.HandlerContext, secretNa
 	return s.GetSecret(kctx, from, secretRef)
 }
 
-// GetSecretsBySelector retrieves secrets matching the label selector,
-// validating reference grants to ensure the source (from) object is allowed to reference each secret.
-// Processes all matching secrets, skipping those without required ReferenceGrants.
-// Returns all accessible secrets. Only returns an error if no accessible secrets were found and some matching secrets
-// were skipped due to missing ReferenceGrants (indicating a possible configuration issue).
+// SelectorNoMatchError reports a label selector that matched no resource the
+// referrer may reference.
+//
+// It is the only error a selector with no permitted match returns. Which resources
+// carry the labels in a namespace that has not granted the referrer access is not
+// observable, so "nothing matched" and "something matched but is not granted" must
+// read the same: telling them apart would let a referrer probe label values across
+// the cluster. The message names the namespaces searched and the grant identity that
+// widens the search, which is enough to fix either case.
+type SelectorNoMatchError struct {
+	From        From
+	To          schema.GroupKind
+	MatchLabels map[string]string
+
+	// AnyNamespace is set when ReferenceGrants are not enforced, so every namespace
+	// was searched.
+	AnyNamespace bool
+}
+
+func (e *SelectorNoMatchError) Error() string {
+	selector := labels.SelectorFromSet(e.MatchLabels).String()
+	if e.AnyNamespace {
+		return fmt.Sprintf("no %ss matching %q in any namespace", e.To.Kind, selector)
+	}
+	return fmt.Sprintf(
+		"no %ss matching %q in namespace %q or in namespaces with a ReferenceGrant allowing %ss to be referenced from group %q kind %q in namespace %q",
+		e.To.Kind, selector, e.From.Namespace, e.To.Kind, e.From.Group, e.From.Kind, e.From.Namespace,
+	)
+}
+
+// GetSecretsBySelector retrieves the secrets matching matchLabels that from may
+// reference: those in from's namespace, and those in namespaces whose ReferenceGrants
+// permit it. Only those namespaces are searched, so a secret the referrer cannot
+// reference never influences the result.
+//
+// It returns a SelectorNoMatchError when no permitted secret matches.
 func (s *SecretIndex) GetSecretsBySelector(
 	kctx krt.HandlerContext,
 	from From,
@@ -107,59 +146,47 @@ func (s *SecretIndex) GetSecretsBySelector(
 		return nil, ErrUnknownBackendKind
 	}
 
-	// First, fetch all secrets matching the label selector
-	labelMatchedSecrets := krt.Fetch(kctx, col,
-		krt.FilterGeneric(func(obj any) bool {
-			secret := obj.(ir.Secret)
-
-			// Check labels from the underlying Kubernetes Secret object
-			if secret.Obj == nil {
+	matches := krt.FilterGeneric(func(obj any) bool {
+		secret := obj.(ir.Secret)
+		if secret.Obj == nil {
+			return false
+		}
+		objLabels := secret.Obj.GetLabels()
+		if objLabels == nil {
+			return false
+		}
+		for key, value := range matchLabels {
+			if objLabels[key] != value {
 				return false
 			}
-			objLabels := secret.Obj.GetLabels()
-			if objLabels == nil {
-				return false
-			}
-			// Check if all matchLabels are present and match
-			for key, value := range matchLabels {
-				if objLabels[key] != value {
-					return false
-				}
-			}
-			return true
-		}),
-	)
+		}
+		return true
+	})
 
-	// Validate ReferenceGrant for cross-namespace secrets and collect allowed ones
+	grantingNamespaces, all := s.refgrants.GrantingNamespaces(kctx, from.GroupKind, from.Namespace, secretGK)
 	var allowedSecrets []ir.Secret
-	var hasMissingGrants bool
-	for _, secret := range labelMatchedSecrets {
-		// Only check ReferenceGrant if this is a cross-namespace reference
-		if from.Namespace != secret.Namespace {
-			to := ir.ObjectSource{
-				Group:     secret.Group,
-				Kind:      secret.Kind,
-				Namespace: secret.Namespace,
-				Name:      secret.Name,
+	if all {
+		allowedSecrets = krt.Fetch(kctx, col, matches)
+	} else {
+		byNamespace := s.byNamespace[secretGK]
+		for _, ns := range append(grantingNamespaces, from.Namespace) {
+			for _, secret := range krt.Fetch(kctx, col, krt.FilterIndex(byNamespace, ns), matches) {
+				// A grant can be limited to named secrets, so a granting namespace
+				// does not by itself permit every secret in it.
+				if ns != from.Namespace && !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, secret.ObjectSource) {
+					continue
+				}
+				allowedSecrets = append(allowedSecrets, secret)
 			}
-			if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
-				hasMissingGrants = true
-				continue
-			}
-		}
-		allowedSecrets = append(allowedSecrets, secret)
-	}
-
-	// Only return an error if no allowed secrets were found and there were missing grants.
-	// The error names no matched secret: which secrets carry the labels is not observable
-	// without a grant, so reporting one would disclose whether a resource exists in a
-	// namespace the referrer has no access to.
-	if len(allowedSecrets) == 0 && hasMissingGrants {
-		return allowedSecrets, &MissingReferenceGrantError{
-			From: from,
-			To:   ir.ObjectSource{Group: secretGK.Group, Kind: secretGK.Kind},
 		}
 	}
 
+	if len(allowedSecrets) == 0 {
+		return nil, &SelectorNoMatchError{From: from, To: secretGK, MatchLabels: matchLabels, AnyNamespace: all}
+	}
+	// Order by namespace/name so the translated config is stable across fetches.
+	slices.SortFunc(allowedSecrets, func(a, b ir.Secret) int {
+		return strings.Compare(a.ResourceName(), b.ResourceName())
+	})
 	return allowedSecrets, nil
 }
