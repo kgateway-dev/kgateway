@@ -3,7 +3,6 @@ package krtcollections
 import (
 	"errors"
 	"slices"
-	"strings"
 	"testing"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -17,7 +16,6 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 var (
@@ -129,77 +127,41 @@ func TestSecretIndexReferenceGrantSourceIdentity(t *testing.T) {
 
 			// secretSelector, as spec.apiKeyAuth.secretSelector resolves it.
 			secrets, err := idx.GetSecretsBySelector(krtctx, from, secretGK, map[string]string{"app": "keys"})
-			switch {
-			case tt.allowed && err != nil:
-				t.Fatalf("GetSecretsBySelector() = %v, want the reference to be permitted", err)
-			case tt.allowed && len(secrets) != 1:
-				t.Errorf("GetSecretsBySelector() returned %d secrets, want 1", len(secrets))
-			case !tt.allowed && !errors.As(err, new(*SelectorNoMatchError)):
-				t.Fatalf("GetSecretsBySelector() = %v, want a selector no-match error", err)
-			case !tt.allowed && len(secrets) != 0:
-				t.Errorf("GetSecretsBySelector() returned %d secrets, want none", len(secrets))
+			want := 0
+			if tt.allowed {
+				want = 1
+			}
+			if err != nil {
+				t.Fatalf("GetSecretsBySelector() = %v, want no error", err)
+			}
+			if len(secrets) != want {
+				t.Errorf("GetSecretsBySelector() returned %d secrets, want %d", len(secrets), want)
 			}
 		})
 	}
 }
 
-// TestMissingReferenceGrantErrorNamesTheGrant covers the message for a reference that
-// names its referent: the user wrote that name, so repeating it discloses nothing, and
-// it is what makes the grant to create readable off the policy status.
-func TestMissingReferenceGrantErrorNamesTheGrant(t *testing.T) {
-	idx := newTestSecretIndex(t, testSecret())
-
-	ns := gwv1.Namespace("secrets-ns")
-	_, err := idx.GetSecret(krt.TestingDummyContext{}, From{GroupKind: sourceGK, Namespace: "app-ns"},
-		gwv1.SecretObjectReference{Name: "api-keys", Namespace: &ns})
-	if !errors.Is(err, ErrMissingReferenceGrant) {
-		t.Fatalf("GetSecret() = %v, want a missing reference grant error", err)
-	}
-	for _, want := range []string{`namespace "secrets-ns"`, `Secret "api-keys"`, `kind "TrafficPolicy"`, `namespace "app-ns"`} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("GetSecret() error = %q, want it to mention %s", err, want)
-		}
-	}
-}
-
-// TestSecretsBySelectorErrorOmitsMatchedSecrets pins that a denied selector says
-// nothing about what it matched, down to whether it matched anything. Which secrets
-// carry a label is not observable without a grant, so if a match in an ungranted
-// namespace read differently from no match at all, a referrer could probe labels to
-// learn that a secret exists in a namespace that never granted it access.
-func TestSecretsBySelectorErrorOmitsMatchedSecrets(t *testing.T) {
+// TestSecretsBySelectorDeniedMatchReadsAsNoMatch pins that a selector whose only
+// match sits in a namespace with no grant gives the same result as a selector that
+// matches nothing. Which secrets carry a label is not observable without a grant, so
+// if the two differed, a referrer could probe labels to learn that a secret exists in
+// a namespace that never granted it access.
+func TestSecretsBySelectorDeniedMatchReadsAsNoMatch(t *testing.T) {
 	from := From{GroupKind: sourceGK, Namespace: "app-ns"}
 	selector := map[string]string{"app": "keys"}
 
 	// A matching secret exists, but in a namespace with no grant.
-	_, errDenied := newTestSecretIndex(t, testSecret()).
+	denied, errDenied := newTestSecretIndex(t, testSecret()).
 		GetSecretsBySelector(krt.TestingDummyContext{}, from, secretGK, selector)
 	// No secret carries the labels anywhere.
-	_, errAbsent := newTestSecretIndex(t).
+	absent, errAbsent := newTestSecretIndex(t).
 		GetSecretsBySelector(krt.TestingDummyContext{}, from, secretGK, selector)
 
-	for name, err := range map[string]error{"denied": errDenied, "absent": errAbsent} {
-		if !errors.As(err, new(*SelectorNoMatchError)) {
-			t.Fatalf("%s: GetSecretsBySelector() = %v, want a selector no-match error", name, err)
-		}
-		if errors.Is(err, ErrMissingReferenceGrant) {
-			t.Errorf("%s: GetSecretsBySelector() = %v, want it not to claim a missing grant, which would reveal a match", name, err)
-		}
+	if errDenied != nil || errAbsent != nil {
+		t.Fatalf("GetSecretsBySelector() errors = (denied: %v, absent: %v), want none for either", errDenied, errAbsent)
 	}
-	if errDenied.Error() != errAbsent.Error() {
-		t.Fatalf("a denied match and no match read differently:\n  denied: %s\n  absent: %s", errDenied, errAbsent)
-	}
-	for _, leaked := range []string{"api-keys", "secrets-ns"} {
-		if strings.Contains(errDenied.Error(), leaked) {
-			t.Errorf("GetSecretsBySelector() error = %q, want it to disclose nothing about the matched secrets, but it names %q", errDenied, leaked)
-		}
-	}
-	// The source side and the selector are entirely user-authored, so they stay in the
-	// message: they say which grant would widen the search.
-	for _, want := range []string{`"app=keys"`, `kind "TrafficPolicy"`, `namespace "app-ns"`} {
-		if !strings.Contains(errDenied.Error(), want) {
-			t.Errorf("GetSecretsBySelector() error = %q, want it to mention %s", errDenied, want)
-		}
+	if len(denied) != 0 || len(absent) != 0 {
+		t.Fatalf("GetSecretsBySelector() returned (denied: %d, absent: %d) secrets, want none for either", len(denied), len(absent))
 	}
 }
 
@@ -259,12 +221,6 @@ func TestSecretsBySelectorSearchScope(t *testing.T) {
 			idx := newTestSecretIndexWithMode(t, mode, tt.objs...)
 			secrets, err := idx.GetSecretsBySelector(krt.TestingDummyContext{},
 				From{GroupKind: sourceGK, Namespace: "app-ns"}, secretGK, map[string]string{"app": "keys"})
-			if len(tt.want) == 0 {
-				if !errors.As(err, new(*SelectorNoMatchError)) {
-					t.Fatalf("GetSecretsBySelector() = %v, want a selector no-match error", err)
-				}
-				return
-			}
 			if err != nil {
 				t.Fatalf("GetSecretsBySelector() = %v, want no error", err)
 			}
@@ -272,43 +228,10 @@ func TestSecretsBySelectorSearchScope(t *testing.T) {
 			for _, sec := range secrets {
 				got = append(got, sec.Namespace+"/"+sec.Name)
 			}
+			slices.Sort(got)
 			if !slices.Equal(got, tt.want) {
 				t.Errorf("GetSecretsBySelector() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-// TestSelectorNoMatchErrorAnyNamespace pins that with grants not enforced the message
-// does not point at a ReferenceGrant, which would change nothing.
-func TestSelectorNoMatchErrorAnyNamespace(t *testing.T) {
-	idx := newTestSecretIndexWithMode(t, apisettings.ReferenceGrantOff)
-	_, err := idx.GetSecretsBySelector(krt.TestingDummyContext{},
-		From{GroupKind: sourceGK, Namespace: "app-ns"}, secretGK, map[string]string{"app": "keys"})
-	if want := `no Secrets matching "app=keys" in any namespace`; err == nil || err.Error() != want {
-		t.Fatalf("GetSecretsBySelector() = %v, want %q", err, want)
-	}
-}
-
-// TestBackendRefMissingReferenceGrantNamesTheGrant covers backend refs, such as a
-// GatewayExtension's: the message names the grant to create, including the kind that
-// holds the reference, rather than a bare "missing reference grant".
-func TestBackendRefMissingReferenceGrantNamesTheGrant(t *testing.T) {
-	mock := krttest.NewMock(t, nil)
-	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
-	backends := NewBackendIndex(krtutil.KrtOptions{}, nil, refgrants)
-
-	src := ir.ObjectSource{Group: "gateway.kgateway.dev", Kind: "GatewayExtension", Namespace: "app-ns", Name: "ext-auth"}
-	ns := gwv1.Namespace("svc-ns")
-	_, err := backends.GetBackendFromRef(krt.TestingDummyContext{}, src, gwv1.BackendObjectReference{Name: "auth-svc", Namespace: &ns})
-
-	var grantErr *MissingReferenceGrantError
-	if !errors.As(err, &grantErr) {
-		t.Fatalf("GetBackendFromRef() = %v, want a MissingReferenceGrantError", err)
-	}
-	for _, want := range []string{`namespace "svc-ns"`, `Service "auth-svc"`, `kind "GatewayExtension"`, `namespace "app-ns"`} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("GetBackendFromRef() error = %q, want it to mention %s", err, want)
-		}
 	}
 }

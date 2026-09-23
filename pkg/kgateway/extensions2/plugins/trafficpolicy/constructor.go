@@ -195,7 +195,7 @@ func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerConte
 			Name:      string(extensionRef.Name),
 		}
 		if !c.commoncol.RefGrants.ReferenceAllowed(krtctx, from.GroupKind, from.Namespace, to) {
-			return nil, &krtcollections.MissingReferenceGrantError{From: from, To: to}
+			return nil, krtcollections.ErrMissingReferenceGrant
 		}
 	}
 

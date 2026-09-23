@@ -104,7 +104,7 @@ func constructAPIKeyAuth(
 		}
 		secrets = []ir.Secret{*secret}
 	} else if ak.SecretSelector != nil {
-		// Fetch the secrets matching the labels that ReferenceGrants let the policy reference
+		// Fetch secrets matching labels and namespace with ReferenceGrant validation
 		var err error
 		secrets, err = commoncol.Secrets.GetSecretsBySelector(
 			krtctx,
@@ -114,6 +114,9 @@ func constructAPIKeyAuth(
 		)
 		if err != nil {
 			return fmt.Errorf("failed to get secrets by selector: %w", err)
+		}
+		if len(secrets) == 0 {
+			return fmt.Errorf("no secrets found matching selector %v in namespace %s", ak.SecretSelector.MatchLabels, policy.Namespace)
 		}
 	} else {
 		// We shouldn't get here because the spec validation should catch this

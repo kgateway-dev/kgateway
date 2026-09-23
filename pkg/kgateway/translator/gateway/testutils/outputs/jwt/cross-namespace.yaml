@@ -250,10 +250,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
-            jwt: jwt: remote jwks: unresolved backend ref: missing reference grant:
-            create a ReferenceGrant in namespace "remote" allowing Service "remote-jwks"
-            to be referenced from group "gateway.kgateway.dev" kind "GatewayExtension"
-            in namespace "denied"'
+            jwt: jwt: remote jwks: unresolved backend ref: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -302,9 +299,7 @@ Statuses:
         conditions:
         - lastTransitionTime: null
           message: 'jwt: jwt: remote jwks: unresolved backend ref: missing reference
-            grant: create a ReferenceGrant in namespace "remote" allowing Service
-            "remote-jwks" to be referenced from group "gateway.kgateway.dev" kind
-            "GatewayExtension" in namespace "denied"'
+            grant'
           reason: Invalid
           status: "False"
           type: Accepted

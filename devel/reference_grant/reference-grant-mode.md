@@ -165,7 +165,7 @@ FetchGatewayExtension()                pkg/.../trafficpolicy/constructor.go
             WithSourceGroupKind), fromNs,
       to:   GatewayExtension GK, targetNs, name
     )
-    -> MissingReferenceGrantError if denied
+    -> ErrMissingReferenceGrant if denied
   krt.FetchOne(gatewayExtensions, ...)
 ```
 
@@ -180,10 +180,10 @@ invalidation is needed.
 | File | Role |
 |---|---|
 | `api/settings/settings.go` | `ReferenceGrantMode` type and `Settings.ReferenceGrantMode` field |
-| `pkg/krtcollections/policy.go` | `RefGrantIndex`, `NewRefGrantIndex`, `ReferenceAllowed`, `MissingReferenceGrantError` |
+| `pkg/krtcollections/policy.go` | `RefGrantIndex`, `NewRefGrantIndex`, `ReferenceAllowed` |
 | `pkg/pluginsdk/collections/collections.go` | Wires mode from settings into `NewRefGrantIndex` |
 | `pkg/kgateway/extensions2/plugins/trafficpolicy/constructor.go` | `FetchGatewayExtension` — Strict-mode ExtensionRef check; `WithSourceGroupKind` |
-| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed`; grant-scoped `GetSecretsBySelector`, `SelectorNoMatchError`; `From` |
+| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed`; `From` |
 
 ## Tests
 
