@@ -42,12 +42,7 @@ type TrafficPolicyConstructorOption func(*TrafficPolicyConstructor)
 // secrets, secret-backed header values, and, in Strict mode, GatewayExtension
 // references.
 //
-// It defaults to gateway.kgateway.dev/TrafficPolicy, the kind that declares the spec.
-// Set it when a different kind carries the spec being translated, so a ReferenceGrant
-// names the resource that actually holds the reference. It replaces the default
-// rather than adding to it: from.kind identifies one referencing kind, and a
-// namespace granting access to one kind has not granted it to another, which may well
-// be creatable by a different set of users.
+// Defaults to gateway.kgateway.dev/TrafficPolicy
 func WithSourceGroupKind(gk schema.GroupKind) TrafficPolicyConstructorOption {
 	return func(c *TrafficPolicyConstructor) {
 		c.sourceGroupKind = gk

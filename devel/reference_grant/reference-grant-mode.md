@@ -118,47 +118,6 @@ spec:
       kind: GatewayExtension
 ```
 
-## Source identity
-
-A ReferenceGrant's `from.group`/`from.kind` name the kind that holds the reference,
-and translation decides which kind that is. Every cross-namespace reference in
-`TrafficPolicySpec` resolves under `gateway.kgateway.dev/TrafficPolicy` by default:
-`basicAuth.secretRef`, `apiKeyAuth.secretRef`, `apiKeyAuth.secretSelector`,
-secret-backed `headerModifiers` values, and `extensionRef` in Strict mode. References
-held by another resource are unaffected - a `GatewayExtension` backend ref is granted
-from `GatewayExtension` no matter what pointed at it.
-
-When a kind other than `TrafficPolicy` carries the spec being translated, that kind is
-what a user creates and what a namespace owner is deciding to trust, so it is the
-identity a grant has to name. `WithSourceGroupKind` sets it:
-
-```go
-constructor := trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol,
-    trafficpolicy.WithSourceGroupKind(schema.GroupKind{
-        Group: "example.io", Kind: "ExamplePolicy",
-    }))
-```
-
-The identity replaces the default rather than adding to it. A grant permits one
-referencing kind, and the kinds involved here are usually creatable by different sets
-of users, so treating them as interchangeable would let a grant hand out access its
-author did not intend.
-
-When no grant permits the reference, `MissingReferenceGrantError` names the namespace
-the grant belongs in and the identity it has to allow, so the grant to write is
-readable off the policy status. This covers backend refs too, such as a
-`GatewayExtension`'s, where the identity is the kind holding the ref.
-
-A reference by label selector (`apiKeyAuth.secretSelector`) works the other way round.
-`GetSecretsBySelector` looks up the grants first and searches only the referrer's own
-namespace and the namespaces whose grants permit it (`RefGrantIndex.GrantingNamespaces`),
-so a Secret the referrer cannot reference never affects the result. When nothing
-permitted matches, it returns `SelectorNoMatchError`, whose message names the selector,
-the referrer's namespace and the grant identity that would widen the search. It reads
-the same whether a matching Secret sits in an ungranted namespace or does not exist.
-If it read differently, a referrer could probe label values across the cluster for
-resources it has no access to.
-
 ## Code flow
 
 ### Off mode — all checks bypassed
