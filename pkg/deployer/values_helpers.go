@@ -10,6 +10,7 @@ import (
 
 	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -319,6 +320,97 @@ func toHelmStringMatcher(l []shared.StringMatcher) []HelmStringMatcher {
 		})
 	}
 	return out
+}
+
+// ApplyKubernetesProxyConfigValues maps every field of a KubernetesProxyConfig onto the
+// gateway helm values. gateway.Ports must already be populated, since the security context
+// defaulting depends on whether privileged ports are in use, and cfg may be mutated by that
+// defaulting. Values derived from the Gateway or the environment (ports, xds, gateway
+// labels/annotations, load-balancer IP) remain the caller's responsibility.
+func ApplyKubernetesProxyConfigValues(gateway *HelmGateway, cfg *kgateway.KubernetesProxyConfig, istioAutoMtlsEnabled bool) error {
+	// The security contexts may need to be updated if privileged ports are used.
+	// This may affect both the PodSecurityContext and the SecurityContexts for the containers defined in cfg.
+	// Note: this call may populate the PodSecurityContext and SecurityContext fields in cfg if they are null,
+	// so this needs to happen before those fields are extracted to local variables.
+	UpdateSecurityContexts(cfg, gateway.Ports)
+
+	deployConfig := cfg.GetDeployment()
+	podConfig := cfg.GetPodTemplate()
+	envoyContainerConfig := cfg.GetEnvoyContainer()
+	svcConfig := cfg.GetService()
+	svcAccountConfig := cfg.GetServiceAccount()
+	istioConfig := cfg.GetIstio()
+
+	sdsContainerConfig := cfg.GetSdsContainer()
+	statsConfig := cfg.GetStats()
+	istioContainerConfig := istioConfig.GetIstioProxyContainer()
+
+	// deployment values
+	if deployConfig.GetReplicas() != nil {
+		gateway.ReplicaCount = new(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+	gateway.Strategy = deployConfig.GetStrategy()
+
+	// service values
+	gateway.Service = GetServiceValues(svcConfig)
+	// serviceaccount values
+	gateway.ServiceAccount = GetServiceAccountValues(svcAccountConfig)
+	// pod template values
+	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
+	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
+	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
+	gateway.PodSecurityContext = podConfig.GetSecurityContext()
+	gateway.NodeSelector = podConfig.GetNodeSelector()
+	gateway.Affinity = podConfig.GetAffinity()
+	gateway.Tolerations = podConfig.GetTolerations()
+	gateway.StartupProbe = podConfig.GetStartupProbe()
+	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
+	gateway.LivenessProbe = podConfig.GetLivenessProbe()
+	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
+	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
+	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
+	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
+	gateway.PriorityClassName = podConfig.GetPriorityClassName()
+
+	gateway.DataPlaneType = DataPlaneEnvoy
+	gateway.LogFormat = envoyContainerConfig.GetBootstrap().GetLogFormat()
+	gateway.LogLevel = envoyContainerConfig.GetBootstrap().GetLogLevel()
+	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
+	compLogLevelStr, err := ComponentLogLevelsToString(compLogLevels)
+	if err != nil {
+		return err
+	}
+	gateway.ComponentLogLevel = &compLogLevelStr
+
+	// Extract DNS resolver configuration
+	dnsResolverConfig := envoyContainerConfig.GetBootstrap().GetDnsResolver()
+	if dnsResolverConfig != nil {
+		var udpMaxQueries *int32
+		if maybeMaxQ := ptr.Deref(dnsResolverConfig.GetUdpMaxQueries(), 0); maybeMaxQ > 0 {
+			udpMaxQueries = &maybeMaxQ
+		}
+		gateway.DnsResolver = &HelmDnsResolver{
+			UdpMaxQueries: udpMaxQueries,
+		}
+	}
+
+	gateway.EnableReadinessProbeProxyProtocol = envoyContainerConfig.GetBootstrap().GetEnableReadinessProbeProxyProtocol()
+
+	gateway.Resources = envoyContainerConfig.GetResources()
+	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
+	gateway.Image = GetImageValues(envoyContainerConfig.GetImage())
+	gateway.ExtraArgs = envoyContainerConfig.GetExtraArgs()
+	gateway.Env = envoyContainerConfig.GetEnv()
+	gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
+
+	// istio values
+	gateway.Istio = GetIstioValues(istioAutoMtlsEnabled, istioConfig)
+	gateway.SdsContainer = GetSdsContainerValues(sdsContainerConfig)
+	gateway.IstioContainer = GetIstioContainerValues(istioContainerConfig)
+
+	gateway.Stats = GetStatsValues(statsConfig)
+
+	return nil
 }
 
 // ComponentLogLevelsToString converts the key-value pairs in the map into a string of the

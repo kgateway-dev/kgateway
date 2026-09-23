@@ -37,7 +37,7 @@ make dummy-idp
 
 # Build Docker image with custom tag (from the output directory)
 docker build -f _output/hack/dummy-idp/Dockerfile.dummy-idp \
-  --build-arg BASE_IMAGE=alpine:3.17.6 \
+  --build-arg BASE_IMAGE=cgr.dev/chainguard/static:latest \
   --build-arg GOARCH=amd64 \
   -t dummy-idp:local \
   _output/hack/dummy-idp

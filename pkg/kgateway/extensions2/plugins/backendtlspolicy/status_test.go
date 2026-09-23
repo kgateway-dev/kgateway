@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	pluginreporter "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
@@ -183,6 +184,78 @@ func TestBuildDesiredPolicyStatusLeavesAncestorCapToWriter(t *testing.T) {
 
 	merged := statussync.MergePolicyAncestorStatuses("kgateway.dev/kgateway", nil, status.Ancestors)
 	require.Len(t, merged, reports.MaxPolicyStatusAncestors)
+}
+
+func TestBuildDesiredPolicyStatusSuppressesTargetAncestors(t *testing.T) {
+	key := pluginreporter.PolicyKey{
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "BackendTLSPolicy",
+		Namespace: "default",
+		Name:      "tls-policy",
+	}
+	ref := func(group, kind, name string) gwv1.ParentReference {
+		return gwv1.ParentReference{
+			Group:     new(gwv1.Group(group)),
+			Kind:      new(gwv1.Kind(kind)),
+			Namespace: new(gwv1.Namespace("default")),
+			Name:      gwv1.ObjectName(name),
+		}
+	}
+	serviceRef := ref("", wellknown.ServiceKind, "svc")
+	backendRef := ref(wellknown.BackendGVK.Group, wellknown.BackendGVK.Kind, "oauth-backend")
+	gatewayRef := ref(wellknown.GatewayGroup, wellknown.GatewayKind, "gw")
+	listenerSetRef := ref(wellknown.XListenerSetGroup, wellknown.XListenerSetKind, "ls")
+
+	build := func(t *testing.T, refs ...gwv1.ParentReference) []gwv1.PolicyAncestorStatus {
+		t.Helper()
+		rm := reports.NewReportMap()
+		policyReporter := reports.NewReporter(&rm).Policy(key, 1)
+		for _, r := range refs {
+			ancestorReporter := policyReporter.AncestorRef(r)
+			for _, condition := range BuildPolicyConditions(newTestPolicyAtt("tls-policy", time.Unix(10, 0)), nil) {
+				ancestorReporter.SetCondition(condition)
+			}
+		}
+		status := BuildDesiredPolicyStatus(rm.PolicyReport(key), &gwv1.BackendTLSPolicy{
+			ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
+		}, "kgateway.dev/kgateway")
+		require.NotNil(t, status)
+		return status.Ancestors
+	}
+	names := func(ancestors []gwv1.PolicyAncestorStatus) []string {
+		out := make([]string, 0, len(ancestors))
+		for _, a := range ancestors {
+			out = append(out, string(*a.AncestorRef.Kind)+"/"+string(a.AncestorRef.Name))
+		}
+		return out
+	}
+
+	t.Run("target ancestors are the whole status when no route reaches the target", func(t *testing.T) {
+		got := build(t, serviceRef, backendRef)
+		require.ElementsMatch(t, []string{"Service/svc", "Backend/oauth-backend"}, names(got),
+			"an unrouted policy should report every target it attaches to")
+	})
+
+	t.Run("a Gateway ancestor suppresses target ancestors", func(t *testing.T) {
+		got := build(t, serviceRef, gatewayRef)
+		require.Equal(t, []string{"Gateway/gw"}, names(got),
+			"a routed policy should report the same ancestors it reported before target ancestors existed")
+	})
+
+	t.Run("an XListenerSet ancestor suppresses target ancestors", func(t *testing.T) {
+		got := build(t, serviceRef, listenerSetRef)
+		require.Equal(t, []string{"XListenerSet/ls"}, names(got),
+			"a route attached through a listener set reports the listener set, not the target")
+	})
+
+	t.Run("suppression is per policy, not per target", func(t *testing.T) {
+		// backendRef is unrouted, but serviceRef is routed and earns the Gateway ancestor.
+		// Nothing in the report says which targetRef the Gateway ancestor came from, so the
+		// unrouted target loses its ancestor too. Known gap: a policy mixing routed and
+		// unrouted targets reports only its Gateway ancestors.
+		got := build(t, serviceRef, backendRef, gatewayRef)
+		require.Equal(t, []string{"Gateway/gw"}, names(got))
+	})
 }
 
 func newTestPolicyAtt(name string, created time.Time) ir.PolicyAtt {

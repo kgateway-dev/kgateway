@@ -16,11 +16,13 @@ type ApplyStatusFn[O controllers.ComparableObject, S any] func(current O, status
 // issuing one. CheckWriterIdempotent passes trivially for an object the writer declines to
 // write, so a test that means to exercise convergence should assert this first rather than
 // silently checking nothing.
-func WriterWouldWrite[O controllers.ComparableObject, S any](w Writer[O, S], current O) bool {
+// res must be the identity the writer is registered under, since that is what its Desired
+// keys its report lookup on.
+func WriterWouldWrite[O controllers.ComparableObject, S any](w Writer[O, S], res Resource, current O) bool {
 	if controllers.IsNil(current) {
 		return false
 	}
-	decision := w.decide(current)
+	decision := w.decide(res, current)
 	return decision.has && decision.write
 }
 
@@ -46,15 +48,18 @@ func WriterWouldWrite[O controllers.ComparableObject, S any](w Writer[O, S], cur
 // Every writer registered with the status pipeline should run this, including downstream
 // writers added via WithStatusRegistration — the invariant is a property of the pipeline,
 // not of the writers that shipped with it.
+// res must be the identity the writer is registered under, since that is what its Desired
+// keys its report lookup on.
 func CheckWriterIdempotent[O controllers.ComparableObject, S any](
 	w Writer[O, S],
+	res Resource,
 	current O,
 	apply ApplyStatusFn[O, S],
 ) error {
 	if controllers.IsNil(current) {
 		return fmt.Errorf("status writer %q: current object is nil, nothing to check", w.Name)
 	}
-	first := w.decide(current)
+	first := w.decide(res, current)
 	if !first.has || !first.write {
 		return nil
 	}
@@ -71,7 +76,7 @@ func CheckWriterIdempotent[O controllers.ComparableObject, S any](
 			w.Name, renderStatus(w.GetStatus(next)), renderStatus(first.status))
 	}
 
-	second := w.decide(next)
+	second := w.decide(res, next)
 	if !second.has || !second.write {
 		return nil
 	}

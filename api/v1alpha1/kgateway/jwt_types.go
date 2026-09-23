@@ -41,11 +41,8 @@ type JWTProvider struct {
 	// +optional
 	TokenSource *JWTTokenSource `json:"tokenSource,omitempty"`
 
-	// ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
-	// Optionally set the claims from the JWT payload that you want to extract and add as headers
-	// to the request before the request is forwarded to the upstream destination.
-	// Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-	// This allows the JWT filter to correctly affect routing decisions.
+	// ClaimsToHeaders copies JWT claims into upstream request headers.
+	// Setting this clears Envoy's route cache so routing uses the updated headers.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +optional
@@ -60,6 +57,49 @@ type JWTProvider struct {
 	// If false or not set, the header containing the token will be removed.
 	// +optional
 	ForwardToken *bool `json:"forwardToken,omitempty"`
+
+	// ClockSkew is the tolerance applied when verifying the time constraints of the JWT,
+	// i.e. the 'exp' and 'nbf' claims.
+	// Only whole seconds are supported, so the duration must not have a millisecond component.
+	// If unspecified, the Envoy default of 60s is used. A zero value is not accepted because
+	// Envoy interprets it as unset and falls back to that default.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s)){1,3}$')",message="invalid duration value: only whole seconds are supported, e.g. 1h, 30s"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1s')",message="clockSkew must be at least 1s."
+	// +kubebuilder:validation:XValidation:rule="duration(self) <= duration('87600h')",message="clockSkew must not exceed 87600h."
+	ClockSkew *metav1.Duration `json:"clockSkew,omitempty"`
+
+	// Cache enables an in-memory cache of successfully verified tokens, so that a token
+	// presented more than once does not pay for a repeated parse, JWKS lookup, and
+	// signature verification.
+	// Setting this field, even to an empty object, turns the cache on; leaving it unset
+	// leaves it off.
+	// Caching does not extend a token's validity: only verified tokens are cached, and
+	// every cache hit is re-checked against the token's time constraints and evicted if
+	// it has expired.
+	// The cache is per Envoy worker thread, so the effective number of cached tokens for
+	// the whole proxy is Size multiplied by the worker thread count.
+	// +optional
+	Cache *JWTCache `json:"cache,omitempty"`
+}
+
+// JWTCache configures the cache of successfully verified JWTs.
+// Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-msg-extensions-filters-http-jwt-authn-v3-jwtcacheconfig
+type JWTCache struct {
+	// Size is the number of verified tokens to cache, per Envoy worker thread.
+	// If unspecified, the Envoy default of 100 is used.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	Size *uint32 `json:"size,omitempty"`
+
+	// MaxTokenSize is the maximum size of a single cached token in bytes.
+	// If this field is not set the default value 4096
+	// bytes is used. The maximum value for a token is inclusive.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxTokenSize *uint32 `json:"maxTokenSize,omitempty"`
 }
 
 // HeaderSource configures how to retrieve a JWT from a header
@@ -164,6 +204,14 @@ type RemoteJWKS struct {
 	// when the remote JWKS server is unavailable.
 	// +optional
 	RetryPolicy *JWKSRetryPolicy `json:"retryPolicy,omitempty"`
+
+	// Timeout for fetching the remote JWKS. If not specified, defaults to 5s.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="timeout must be at least 1ms."
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
 }
 
 // JWKSAsyncFetch configures asynchronous fetching of the remote JWKS.

@@ -1,0 +1,35 @@
+# CONNECT requests hit Envoy's dedicated connect matcher, so they need their own route rather
+# than the catch-all rule in common.yaml.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: route-dfp-connect
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  rules:
+    - name: connect
+      matches:
+        - method: CONNECT
+      backendRefs:
+        - name: dfp-backend
+          group: gateway.kgateway.dev
+          kind: Backend
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: dfp-connect-termination
+  namespace: kgateway-base
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-dfp-connect
+      sectionName: connect
+  httpUpgrade:
+    - type: CONNECT
+      connect:
+        terminate: true

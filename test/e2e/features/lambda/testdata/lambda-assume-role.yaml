@@ -1,0 +1,116 @@
+---
+# A dedicated gateway for the AssumeRole test so the base AWS credentials and
+# the STS host alias don't leak into the other lambda tests.
+#
+# Role chaining requires the proxy to reach https://sts.us-east-1.amazonaws.com:443,
+# which Envoy hardcodes; the hostAliases entry points that hostname at the
+# localstack-sts service (port 443 -> localstack's gateway port). The suite
+# replaces STS_SERVICE_CLUSTER_IP with the service's cluster IP before applying.
+#
+# The base credentials that sign the sts:AssumeRole call deliberately come from
+# a web identity token (what IRSA injects on EKS) rather than static env vars:
+# the web identity provider is asynchronous, so this exercises the path where
+# Envoy < v1.39.0 never issued the AssumeRole call and hung every request
+# (envoyproxy/envoy#45643, kgateway-dev/kgateway#14661). Static env-var
+# credentials are resolved synchronously and mask that bug. Localstack accepts
+# any token.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lambda-assume-role-web-identity
+  namespace: lambda-test
+data:
+  token: "not-a-real-oidc-token"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: lambda-assume-role-gateway
+  namespace: lambda-test
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        logLevel: debug
+      # Envoy's default provider chain picks these up the same way it does the
+      # IRSA-injected variables on EKS.
+      env:
+        - name: AWS_ROLE_ARN
+          value: arn:aws:iam::000000000000:role/base-identity
+        - name: AWS_WEB_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+    deploymentOverlay:
+      spec:
+        template:
+          spec:
+            hostAliases:
+              - ip: "STS_SERVICE_CLUSTER_IP"
+                hostnames:
+                  - sts.us-east-1.amazonaws.com
+            volumes:
+              - name: web-identity-token
+                configMap:
+                  name: lambda-assume-role-web-identity
+            containers:
+              - name: kgateway-proxy
+                volumeMounts:
+                  - name: web-identity-token
+                    mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+                    readOnly: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: lambda-assume-role-gateway
+  namespace: lambda-test
+spec:
+  gatewayClassName: kgateway
+  infrastructure:
+    parametersRef:
+      name: lambda-assume-role-gateway
+      group: gateway.kgateway.dev
+      kind: GatewayParameters
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lambda-assume-role-route
+  namespace: lambda-test
+spec:
+  parentRefs:
+    - name: lambda-assume-role-gateway
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /lambda
+      backendRefs:
+        - name: lambda-assume-role-backend
+          kind: Backend
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: lambda-assume-role-backend
+  namespace: lambda-test
+spec:
+  type: AWS
+  aws:
+    auth:
+      type: AssumeRole
+      assumeRole:
+        roleArn: arn:aws:iam::000000000000:role/lambda-invoke-target
+    lambda:
+      accountId: "000000000000"
+      functionName: hello-function
+      endpointURL: "http://172.18.0.2:31566"

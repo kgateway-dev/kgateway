@@ -189,7 +189,7 @@ func TestMergeRouteParentStatusesCapsAtGatewayAPILimit(t *testing.T) {
 
 func TestRetryStatusWriteRetriesTransientErrors(t *testing.T) {
 	attempts := 0
-	err := RetryStatusWrite(context.Background(), func() error {
+	err := retryStatusWrite(context.Background(), func() error {
 		attempts++
 		if attempts < 3 {
 			return errors.New("transient")
@@ -203,7 +203,7 @@ func TestRetryStatusWriteRetriesTransientErrors(t *testing.T) {
 func TestRetryStatusWriteStopsOnContextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	attempts := 0
-	err := RetryStatusWrite(ctx, func() error {
+	err := retryStatusWrite(ctx, func() error {
 		attempts++
 		cancel()
 		return errors.New("transient")

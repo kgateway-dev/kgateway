@@ -234,9 +234,9 @@ func TestRegisterPolicyStatusWriterIsIdempotent(t *testing.T) {
 
 	writer, ok := f.writer.(statussync.Writer[*gwv1.BackendTLSPolicy, gwv1.PolicyStatus])
 	require.True(t, ok, "the registered syncer should be the generic writer")
-	require.True(t, statussync.WriterWouldWrite(writer, f.current(t)),
+	require.True(t, statussync.WriterWouldWrite(writer, policyResource(), f.current(t)),
 		"the stale status must actually be written, or the check below proves nothing")
-	require.NoError(t, statussync.CheckWriterIdempotent(writer, f.current(t),
+	require.NoError(t, statussync.CheckWriterIdempotent(writer, policyResource(), f.current(t),
 		func(current *gwv1.BackendTLSPolicy, status gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
 			next := current.DeepCopy()
 			next.Status = *status.DeepCopy()
