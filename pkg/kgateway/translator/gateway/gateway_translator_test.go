@@ -297,6 +297,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("httproute with backend ref to an undefined port reports correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/backend-ref-port-not-found.yaml"},
+			outputFile: "backends/backend-ref-port-not-found.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableIstioIntegration = true
+		})
+	})
+
 	t.Run("httproute with backend port error reports correctly", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/backend-ref-port-error.yaml"},
