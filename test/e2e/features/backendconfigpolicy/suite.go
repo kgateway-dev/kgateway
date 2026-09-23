@@ -359,7 +359,36 @@ func (s *testingSuite) TestBackendConfigPolicyClearStaleStatus() {
 
 	// The missing target is reported on the policy's StatusSummary ancestor instead
 	s.assertTargetNotFound("example-policy", "kgateway-base", "Service kgateway-base/missing-svc not found")
+
+	// Pointing the targetRef back at the Service retracts the StatusSummary entry and restores
+	// the Service ancestor, still without touching the other controller's ancestor
+	s.ApplyManifests(&base.TestCase{Manifests: []string{setupManifest}})
+	s.assertNoStatusSummary("example-policy", "kgateway-base")
+	s.assertAncestorStatuses("example-svc", map[string]bool{
+		kgatewayControllerName: true,
+		otherControllerName:    true,
+	})
 	// AfterTest() handles cleanup automatically
+}
+
+// assertNoStatusSummary verifies the policy no longer carries a kgateway StatusSummary ancestor.
+func (s *testingSuite) assertNoStatusSummary(policyName, policyNamespace string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.BackendConfigPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: policyNamespace},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		for _, ancestor := range policy.Status.Ancestors {
+			g.Expect(string(ancestor.ControllerName) == kgatewayControllerName &&
+				reporter.IsPolicyStatusSummaryAncestorRef(ancestor.AncestorRef)).To(gomega.BeFalse(),
+				"policy should no longer report a StatusSummary ancestor: %+v", ancestor)
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
 // assertTargetNotFound verifies the policy reports the given unresolved target on its

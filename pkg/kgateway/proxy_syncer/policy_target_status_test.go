@@ -1,28 +1,37 @@
 package proxy_syncer
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/test"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
+	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	utilkrt "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 type policyTargetTestIR struct{}
@@ -93,6 +102,17 @@ func serviceEntryRef(name string) ir.PolicyRef {
 	return ir.PolicyRef{Group: wellknown.ServiceEntryGVK.Group, Kind: wellknown.ServiceEntryGVK.Kind, Name: name}
 }
 
+// policyTargetGateway returns a Gateway in the test namespace with one HTTP listener per name.
+func policyTargetGateway(name string, listeners ...gwv1.SectionName) *gwv1.Gateway {
+	gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: policyTargetTestNS}}
+	port := gwv1.PortNumber(80)
+	for _, l := range listeners {
+		gw.Spec.Listeners = append(gw.Spec.Listeners, gwv1.Listener{Name: l, Port: port, Protocol: gwv1.HTTPProtocolType})
+		port++
+	}
+	return gw
+}
+
 type policyTargetFixture struct {
 	gateways      krt.StaticCollection[*gwv1.Gateway]
 	policies      krt.StaticCollection[ir.PolicyWrapper]
@@ -110,10 +130,8 @@ func newPolicyTargetFixtureWithOptions(t *testing.T, opts []StatusSyncerOption, 
 	t.Helper()
 	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
 
-	gateways := krt.NewStaticCollection(nil, []*gwv1.Gateway{{
-		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: policyTargetTestNS},
-		Spec:       gwv1.GatewaySpec{Listeners: []gwv1.Listener{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
-	}}, krtopts.ToOptions("Gateways")...)
+	gateways := krt.NewStaticCollection(nil, []*gwv1.Gateway{policyTargetGateway("gw", "http")},
+		krtopts.ToOptions("Gateways")...)
 	ruleName := gwv1.SectionName("rule-a")
 	routes := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{{
 		ObjectMeta: metav1.ObjectMeta{Name: "route-a", Namespace: policyTargetTestNS},
@@ -411,21 +429,85 @@ func TestPolicyTargetReportThroughBackendTLSPolicyBuilder(t *testing.T) {
 	}
 }
 
-// TestPolicyTargetStatusContributionsFollowTarget pins the krt dependency: creating the missing
-// target retracts the contribution, and deleting it again brings the contribution back.
+// TestPolicyTargetStatusContributionsFollowTarget pins the krt dependencies: the contribution
+// is recomputed when the target object changes and when the policy's own targetRefs change, and
+// it is retracted as soon as every ref resolves.
 func TestPolicyTargetStatusContributionsFollowTarget(t *testing.T) {
-	policy := trafficPolicyWrapper("policy", 1, gatewayRef("late", ""))
-	f := newPolicyTargetFixture(t, policy)
-	require.Len(t, f.contributions.List(), 1, "the Gateway does not exist yet")
+	// contributionFor returns the policy's contribution and the Accepted message and
+	// generation it carries, without asserting on its shape: mid-update it may still describe
+	// the previous generation.
+	contributionFor := func(f policyTargetFixture, policy ir.PolicyWrapper) (*reports.StatusContribution, string, int64) {
+		for _, c := range f.contributions.List() {
+			if c.Target.Name != policy.Name || c.Policy == nil {
+				continue
+			}
+			for _, ancestor := range c.Policy.Ancestors {
+				if accepted := meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted)); accepted != nil {
+					return &c, accepted.Message, accepted.ObservedGeneration
+				}
+			}
+		}
+		return nil, "", 0
+	}
+	// waitFor waits until the policy's contribution reports want for the policy's current
+	// generation ("" meaning no contribution), then checks the contribution's full shape.
+	waitFor := func(t *testing.T, f policyTargetFixture, policy ir.PolicyWrapper, want, why string) {
+		t.Helper()
+		gen := policy.Policy.GetGeneration()
+		require.Eventually(t, func() bool {
+			c, msg, got := contributionFor(f, policy)
+			if want == "" {
+				return c == nil
+			}
+			return msg == want && got == gen
+		}, 5*time.Second, 10*time.Millisecond, why)
+		if c, _, _ := contributionFor(f, policy); c != nil {
+			acceptedCondition(t, *c, policy)
+		}
+	}
 
-	late := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "late", Namespace: policyTargetTestNS}}
-	f.gateways.UpdateObject(late)
-	require.Eventually(t, func() bool { return len(f.contributions.List()) == 0 },
-		5*time.Second, 10*time.Millisecond, "creating the target should retract the contribution")
+	t.Run("the target is created and deleted", func(t *testing.T) {
+		policy := trafficPolicyWrapper("policy", 1, gatewayRef("late", ""))
+		f := newPolicyTargetFixture(t, policy)
+		waitFor(t, f, policy, "Gateway default/late not found", "the Gateway does not exist yet")
 
-	f.gateways.DeleteObject(krt.GetKey(late))
-	require.Eventually(t, func() bool { return len(f.contributions.List()) == 1 },
-		5*time.Second, 10*time.Millisecond, "deleting the target should report it missing again")
+		late := policyTargetGateway("late")
+		f.gateways.UpdateObject(late)
+		waitFor(t, f, policy, "", "creating the target should retract the contribution")
+
+		f.gateways.DeleteObject(krt.GetKey(late))
+		waitFor(t, f, policy, "Gateway default/late not found", "deleting the target should report it missing again")
+	})
+
+	t.Run("a section is added and then renamed", func(t *testing.T) {
+		policy := trafficPolicyWrapper("policy", 1, gatewayRef("gw", "https"))
+		f := newPolicyTargetFixture(t, policy)
+		const missingSection = `sectionName "https" not found in Gateway default/gw`
+		waitFor(t, f, policy, missingSection, "the Gateway has no https listener yet")
+
+		f.gateways.UpdateObject(policyTargetGateway("gw", "http", "https"))
+		waitFor(t, f, policy, "", "adding the listener should retract the contribution")
+
+		f.gateways.UpdateObject(policyTargetGateway("gw", "http", "https-renamed"))
+		waitFor(t, f, policy, missingSection, "renaming the listener should report the section missing again")
+	})
+
+	t.Run("the policy's targetRefs are fixed", func(t *testing.T) {
+		policy := trafficPolicyWrapper("policy", 1, gatewayRef("gw-typo", ""), httpRouteRef("route-a", "rule-z"))
+		f := newPolicyTargetFixture(t, policy)
+		waitFor(t, f, policy,
+			`Gateway default/gw-typo not found; sectionName "rule-z" not found in HTTPRoute default/route-a`,
+			"both refs are wrong")
+
+		partlyFixed := trafficPolicyWrapper("policy", 2, gatewayRef("gw", ""), httpRouteRef("route-a", "rule-z"))
+		f.policies.UpdateObject(partlyFixed)
+		waitFor(t, f, partlyFixed, `sectionName "rule-z" not found in HTTPRoute default/route-a`,
+			"fixing one ref should leave only the other reported")
+
+		fixed := trafficPolicyWrapper("policy", 3, gatewayRef("gw", ""), httpRouteRef("route-a", "rule-a"))
+		f.policies.UpdateObject(fixed)
+		waitFor(t, f, fixed, "", "fixing every ref should retract the contribution")
+	})
 }
 
 // TestPolicyTargetContributionMergesWithGatewayAncestors covers the one-valid-one-typo case
@@ -474,4 +556,162 @@ func TestPolicyTargetContributionMergesWithGatewayAncestors(t *testing.T) {
 		}
 	}
 	require.True(t, sawGateway && sawSelf, "both ancestors should be present")
+}
+
+// TestPolicyTargetStatusSummaryIsRemovedFromWrittenStatus runs the policy target producer
+// through the status collections and a registered policy writer against a fake API server: the
+// StatusSummary entry is written while a target is missing, and a later write removes it once
+// the target exists. Each case runs with the standard policy builder and with
+// BackendTLSPolicy's builder, which suppresses non-Gateway ancestors once a Gateway ancestor
+// exists and must still keep the summary.
+func TestPolicyTargetStatusSummaryIsRemovedFromWrittenStatus(t *testing.T) {
+	builders := []struct {
+		name  string
+		build pluginutils.BuildDesiredPolicyStatusFn[*gwv1.BackendTLSPolicy]
+	}{
+		{name: "standard builder", build: nil},
+		{name: "BackendTLSPolicy builder", build: backendtlspolicy.BuildDesiredPolicyStatus},
+	}
+	for _, b := range builders {
+		t.Run(b.name, func(t *testing.T) {
+			t.Run("the summary is the only ancestor", func(t *testing.T) {
+				runStatusSummaryRemoval(t, b.build, false)
+			})
+			t.Run("the summary sits beside a Gateway ancestor", func(t *testing.T) {
+				runStatusSummaryRemoval(t, b.build, true)
+			})
+		})
+	}
+}
+
+func runStatusSummaryRemoval(
+	t *testing.T,
+	buildDesired pluginutils.BuildDesiredPolicyStatusFn[*gwv1.BackendTLSPolicy],
+	withGatewayAncestor bool,
+) {
+	const controller = "kgateway.dev/kgateway"
+	gvk := wellknown.BackendTLSPolicyGVK
+	stop := test.NewStop(t)
+	krtopts := krtutil.NewKrtOptions(stop, nil)
+
+	c := kube.NewFakeClient()
+	cl := kclient.NewFiltered[*gwv1.BackendTLSPolicy](c, kclient.Filter{})
+	btps := krt.WrapClient(cl, krtopts.ToOptions("BackendTLSPolicies")...)
+	btp := &gwv1.BackendTLSPolicy{
+		ObjectMeta: metav1.ObjectMeta{Name: "btp", Namespace: policyTargetTestNS, Generation: 1},
+		Spec: gwv1.BackendTLSPolicySpec{TargetRefs: []gwv1.LocalPolicyTargetReferenceWithSectionName{{
+			LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{Group: "", Kind: "Service", Name: "svc-late"},
+		}}},
+	}
+	_, err := c.GatewayAPI().GatewayV1().BackendTLSPolicies(policyTargetTestNS).Create(context.Background(), btp, metav1.CreateOptions{})
+	require.NoError(t, err)
+	c.RunAndWait(stop)
+
+	// The producer, fed the way the proxy syncer feeds it: policy wrappers derived from the
+	// informer, resolved against a Service collection that starts without the target.
+	services := krt.NewStaticCollection[*corev1.Service](nil, nil, krtopts.ToOptions("Services")...)
+	policies := krt.NewCollection(btps, func(_ krt.HandlerContext, p *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
+		return &ir.PolicyWrapper{
+			ObjectSource: ir.ObjectSource{Group: gvk.Group, Kind: gvk.Kind, Namespace: p.Namespace, Name: p.Name},
+			Policy:       p,
+			PolicyIR:     policyTargetTestIR{},
+			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(p.Spec.TargetRefs),
+		}
+	}, krtopts.ToOptions("BackendTLSPolicyWrappers")...)
+	targetContributions := policyTargetStatusContributions(policies,
+		newPolicyTargetResolvers(&collections.CommonCollections{Services: services}, nil, nil), krtopts)
+
+	// Gateway translation's contribution, standing in for a second targetRef that is routed.
+	gatewayAncestor := gwv1.ParentReference{
+		Group:     new(gwv1.Group(wellknown.GatewayGVK.Group)),
+		Kind:      new(gwv1.Kind(wellknown.GatewayGVK.Kind)),
+		Namespace: new(gwv1.Namespace(policyTargetTestNS)),
+		Name:      "gw",
+	}
+	var gatewayContributions []reports.StatusContribution
+	if withGatewayAncestor {
+		reportMap := reports.NewPolicyReportMap()
+		key := reporter.PolicyKey{Group: gvk.Group, Kind: gvk.Kind, Namespace: btp.Namespace, Name: btp.Name}
+		r := reports.NewReporter(&reportMap).Policy(key, 1).AncestorRef(gatewayAncestor)
+		r.SetCondition(reporter.PolicyCondition{
+			Type: string(shared.PolicyConditionAccepted), Status: metav1.ConditionTrue,
+			Reason: string(shared.PolicyReasonValid), ObservedGeneration: 1,
+		})
+		r.SetAttachmentState(reporter.PolicyAttachmentStateAttached)
+		gatewayContributions = reports.StatusContributionsFromReportMap(
+			reports.StatusSource{Kind: reports.GatewayStatusSource, Name: policyTargetTestNS + "/gw"}, reportMap)
+	}
+	contributions := krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
+		krt.NewStaticCollection(nil, gatewayContributions, krtopts.ToOptions("GatewayContributions")...),
+		targetContributions,
+	}, krtopts.ToOptions("StatusContributions")...)
+	byTarget := utilkrt.UnnamedIndex(contributions, func(c reports.StatusContribution) []reports.StatusKey {
+		return []reports.StatusKey{c.Target}
+	})
+
+	statusCollections := statussync.NewStatusCollections()
+	var writer statussync.ResourceStatusSyncer
+	pluginutils.RegisterPolicyStatusWithBuilder(gvk, btps, cl, controller,
+		func(p *gwv1.BackendTLSPolicy) gwv1.PolicyStatus { return p.Status },
+		func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
+			return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
+		},
+		buildDesired, pluginutils.NoConditionErrorMetric,
+	)(sdk.PolicyStatusInputs{
+		Collections:           statusCollections,
+		StatusContributions:   contributions,
+		ContributionsByTarget: byTarget,
+		KrtOpts:               krtopts,
+		RegisterWriter: func(_ schema.GroupVersionKind, w statussync.ResourceStatusSyncer) {
+			writer = w
+		},
+	})
+	require.NotNil(t, writer, "the hook must register a writer")
+	require.Eventually(t, statusCollections.HasSynced, 5*time.Second, 10*time.Millisecond,
+		"the report reducer must sync")
+
+	res := statussync.Resource{
+		GroupVersionKind: gvk,
+		NamespacedName:   types.NamespacedName{Namespace: btp.Namespace, Name: btp.Name},
+	}
+	live := func() []gwv1.PolicyAncestorStatus {
+		got, err := c.GatewayAPI().GatewayV1().BackendTLSPolicies(policyTargetTestNS).
+			Get(context.Background(), btp.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		return got.Status.Ancestors
+	}
+	hasAncestor := func(ancestors []gwv1.PolicyAncestorStatus, match func(gwv1.ParentReference) bool) bool {
+		for _, a := range ancestors {
+			if string(a.ControllerName) == controller && match(a.AncestorRef) {
+				return true
+			}
+		}
+		return false
+	}
+	isSummary := reporter.IsPolicyStatusSummaryAncestorRef
+	isGateway := func(ref gwv1.ParentReference) bool { return reports.ParentRefEqual(ref, gatewayAncestor) }
+
+	// Each write builds from whatever the reducer holds at that moment, so write until the
+	// expected status lands, as the queue would on every report change.
+	require.Eventually(t, func() bool {
+		writer.ApplyStatus(context.Background(), res)
+		return hasAncestor(live(), isSummary)
+	}, 5*time.Second, 10*time.Millisecond, "the missing Service should be written on the StatusSummary ancestor")
+	if withGatewayAncestor {
+		require.True(t, hasAncestor(live(), isGateway), "the Gateway ancestor should be written beside the summary")
+	}
+
+	services.UpdateObject(&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "svc-late", Namespace: policyTargetTestNS}})
+	require.Eventually(t, func() bool {
+		writer.ApplyStatus(context.Background(), res)
+		return !hasAncestor(live(), isSummary)
+	}, 5*time.Second, 10*time.Millisecond, "creating the Service should remove the written StatusSummary ancestor")
+
+	ancestors := live()
+	if withGatewayAncestor {
+		require.Len(t, ancestors, 1, "only the Gateway ancestor should remain")
+		require.True(t, hasAncestor(ancestors, isGateway), "removing the summary must not touch the Gateway ancestor")
+	} else {
+		require.Empty(t, ancestors, "the summary was the policy's only ancestor, so nothing of ours should remain")
+	}
 }
