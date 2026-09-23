@@ -64,6 +64,11 @@ type BackendTranslator struct {
 	// iterating and sorting the policy map there would be paid per pair.
 	overlayOnce    sync.Once
 	overlayPlugins []overlayPlugin
+
+	// baseClusterHooks is the (Group, Kind)-ordered set of ProcessBaseCluster
+	// hooks, computed once on first use for the same reason as overlayPlugins.
+	baseClusterOnce  sync.Once
+	baseClusterHooks []sdk.ProcessBaseCluster
 }
 
 // overlayPlugin is one policy plugin's per-client cluster hook: either the
@@ -114,6 +119,30 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 		})
 	})
 	return t.overlayPlugins
+}
+
+// orderedBaseClusterHooks returns the contributed ProcessBaseCluster hooks in
+// (Group, Kind) order. applyBasePolicies iterates the policy map, which leaves
+// its hooks unordered; these run after all of them, in a stable order.
+func (t *BackendTranslator) orderedBaseClusterHooks() []sdk.ProcessBaseCluster {
+	t.baseClusterOnce.Do(func() {
+		gks := make([]schema.GroupKind, 0, len(t.ContributedPolicies))
+		for gk, policyPlugin := range t.ContributedPolicies {
+			if policyPlugin.ProcessBaseCluster != nil {
+				gks = append(gks, gk)
+			}
+		}
+		slices.SortFunc(gks, func(a, b schema.GroupKind) int {
+			if c := cmp.Compare(a.Group, b.Group); c != 0 {
+				return c
+			}
+			return cmp.Compare(a.Kind, b.Kind)
+		})
+		for _, gk := range gks {
+			t.baseClusterHooks = append(t.baseClusterHooks, t.ContributedPolicies[gk].ProcessBaseCluster)
+		}
+	})
+	return t.baseClusterHooks
 }
 
 // HasUndeclaredOverlayInputs reports whether a cached base must also compare
@@ -273,11 +302,16 @@ func (t *BackendTranslator) TranslateBackendBase(
 	processDnsLookupFamily(out, t.CommonCols)
 
 	// Apply non-per-client policies. Plugins with PerClientClusterOverlay run
-	// later in ApplyPerClient; plugins with ProcessBackend are UCC-invariant
-	// and run here once.
+	// later in ApplyPerClient; plugins with ProcessBackend or
+	// ProcessBaseCluster are UCC-invariant and run here once.
 	if err := t.applyBasePolicies(ctx, backend, out); err != nil {
 		logger.Error("failed to apply policies to cluster", "cluster", out.GetName(), "error", err)
 		return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
+	}
+	// Client-independent hooks that apply to every backend run after the
+	// attached policies, so they can build on what those policies set.
+	for _, hook := range t.orderedBaseClusterHooks() {
+		hook(kctx, ctx, *backend, out)
 	}
 	defaultedLocality := defaultLocalityConfig(out)
 	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
@@ -327,7 +361,8 @@ func (t *BackendTranslator) TranslateBackendBase(
 }
 
 // ApplyPerClient computes per-client cluster mutations on top of base. Returns nil
-// when the (ucc, backend) pair needs no per-client processing — callers must then
+// when the (ucc, backend) pair needs no per-client processing, including when the
+// applicable overlays leave the cluster equal to the base — callers must then
 // reference base.Cluster directly. When non-nil, the returned cluster is a freshly
 // allocated proto that callers may retain independently of base.Cluster.
 //
@@ -451,6 +486,17 @@ func (t *BackendTranslator) ApplyPerClient(
 		logger.Error("failed to apply gateway backend client certificate to per-client cluster",
 			"cluster", out.GetName(), "ucc", ucc.ResourceName(), "error", err)
 		return buildBlackholeCluster(backend), err
+	}
+
+	// An overlay can only tell whether it changes the cluster once it sees the
+	// cluster, so some applicable overlays leave the clone equal to the base
+	// (an overlay whose Mutate finds its work already done, say). Publishing
+	// that clone would give the client a cluster of its own identical to the
+	// shared one, and validate it again. Hand the pair back to the base
+	// instead. A base that needs an inline CLA never compares equal here: the
+	// clone has one and the base does not.
+	if proto.Equal(out, base.Cluster) {
+		return nil, nil
 	}
 
 	// Strict-mode validation on the post-overlay cluster. Non-inline-CLA bases

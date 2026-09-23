@@ -57,7 +57,12 @@ type (
 
 // ClusterOverlay carries per-client cluster mutations. Returning nil from a
 // PerClientClusterOverlay means the client/backend pair needs no mutation.
-// Mutate receives a fresh clone and must not retain it after returning.
+// Mutate receives a fresh clone and must not retain it after returning. When
+// every applicable overlay leaves the clone equal to the shared base, the pair
+// keeps using the base, so Mutate may leave the cluster unchanged when the
+// decision depends on the cluster itself. Prefer returning nil whenever the
+// decision can be made without the cluster: that skips the clone and the
+// comparison.
 type ClusterOverlay struct {
 	Mutate func(out *envoyclusterv3.Cluster)
 }
@@ -105,6 +110,25 @@ type PerClientClusterOverlay func(
 // Use pkg/pluginsdk/overlaytest to check the declaration against the hook.
 type OverlayInputsHash func(in ir.BackendObjectIR) uint64
 
+// ProcessBaseCluster is a client-independent cluster mutation that runs for
+// every backend, whether or not a policy is attached to it. It runs during
+// base translation, after every ProcessBackend hook (so it sees the transport
+// sockets and other fields those policies set, and may wrap them) and before
+// any PerClientClusterOverlay. Hooks from different plugins run in
+// (Group, Kind) order.
+//
+// Use it instead of a PerClientClusterOverlay that would return the same
+// mutation for every client: the result lands once on the shared base rather
+// than on a clone per client. The base is re-translated whenever the backend
+// IR changes, so no input declaration is needed for fields read from in.
+// Fetches through kctx register dependencies of the base translation.
+type ProcessBaseCluster func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	in ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+)
+
 // PerClientProcessBackend is the legacy eager cluster mutation hook.
 // Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
 // applicable to every client because they cannot report a no-op cheaply.
@@ -135,7 +159,10 @@ type PolicyPlugin struct {
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
-	ProcessBackend          ProcessBackend
+	ProcessBackend ProcessBackend
+	// ProcessBaseCluster runs for every backend after all ProcessBackend
+	// hooks; see ProcessBaseCluster.
+	ProcessBaseCluster      ProcessBaseCluster
 	PerClientClusterOverlay PerClientClusterOverlay
 	// OverlayInputsHash declares the backend fields the per-client hook reads.
 	// Required for efficient change detection with either hook; absent a
