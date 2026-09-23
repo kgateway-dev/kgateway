@@ -64,6 +64,9 @@ type ProxySyncer struct {
 	statusCollections *statussync.StatusCollections
 	statusWriters     map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
 
+	// extraPolicyTargetResolvers are the resolvers registered with WithPolicyTargetResolver.
+	extraPolicyTargetResolvers policyTargetResolvers
+
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
 }
@@ -182,15 +185,18 @@ func NewProxySyncer(
 	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 	validator validator.Validator,
+	opts ...StatusSyncerOption,
 ) *ProxySyncer {
+	optCfg := processStatusSyncerOptions(opts...)
 	return &ProxySyncer{
-		controllerName:  controllerName,
-		commonCols:      commonCols,
-		apiClient:       client,
-		proxyTranslator: NewProxyTranslator(xdsCache),
-		uniqueClients:   uniqueClients,
-		translator:      translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
-		plugins:         mergedPlugins,
+		controllerName:             controllerName,
+		commonCols:                 commonCols,
+		apiClient:                  client,
+		proxyTranslator:            NewProxyTranslator(xdsCache),
+		uniqueClients:              uniqueClients,
+		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
+		plugins:                    mergedPlugins,
+		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
 	}
 }
 
@@ -332,7 +338,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	}
 	allPolicies := krt.JoinCollection(policyCols, krtopts.ToOptions("PolicyTargetPolicies")...)
 	policyTargetContributions := policyTargetStatusContributions(allPolicies,
-		newPolicyTargetResolvers(s.commonCols, s.plugins.ContributesBackends), krtopts)
+		newPolicyTargetResolvers(s.commonCols, s.plugins.ContributesBackends, s.extraPolicyTargetResolvers), krtopts)
 
 	// All status paths now meet as independently keyed contributions. Policy
 	// ancestors from Gateway translation, Backend translation, and targetRef

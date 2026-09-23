@@ -41,23 +41,31 @@ import (
 // does not exist and cost one ancestor per typo under the ancestor cap. When the target appears, the contribution stops
 // and the writer retracts the ancestor through the normal stale-status path.
 
-// policyTargetResolver checks that the object one explicit targetRef names exists and, when
-// the ref carries a sectionName, that the section exists on it. The error is user-facing and
-// becomes the status message.
-type policyTargetResolver func(kctx krt.HandlerContext, namespace, name, sectionName string) error
+// PolicyTargetResolver checks that the object one explicit targetRef names exists and, when
+// the ref carries a sectionName, that the section exists on it. namespace is the policy's own,
+// since targetRefs are namespace local. The error is user-facing and becomes the status
+// message. Resolvers run inside a krt transform: they must read through kctx so the check
+// re-runs when the target appears or disappears.
+type PolicyTargetResolver func(kctx krt.HandlerContext, namespace, name, sectionName string) error
 
 // policyTargetResolvers maps a target GroupKind to its resolver. Kinds without an entry are
 // not checked: a policy targeting them reports nothing extra, as before.
-type policyTargetResolvers map[schema.GroupKind]policyTargetResolver
+type policyTargetResolvers map[schema.GroupKind]PolicyTargetResolver
 
 // newPolicyTargetResolvers builds resolvers for every kind kgateway's policies may target and
 // has an informer for: the Gateway API kinds, Service, Backend, and every alias kind a backend
 // plugin declares (for example the Istio Hostname and ServiceEntry aliases). Collections a
 // CommonCollections was built without are skipped, so a partially initialized set (as some
-// tests build) simply checks fewer kinds.
-func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backendPlugins map[schema.GroupKind]sdk.BackendPlugin) policyTargetResolvers {
+// tests build) simply checks fewer kinds. extra, registered through WithPolicyTargetResolver,
+// is applied last and so replaces a built-in resolver for the same kind.
+func newPolicyTargetResolvers(
+	commonCols *collections.CommonCollections,
+	backendPlugins map[schema.GroupKind]sdk.BackendPlugin,
+	extra policyTargetResolvers,
+) policyTargetResolvers {
 	resolvers := policyTargetResolvers{}
 	if commonCols == nil {
+		maps.Copy(resolvers, extra)
 		return resolvers
 	}
 	if commonCols.RawGateways != nil {
@@ -93,6 +101,15 @@ func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backend
 				return namesOf(route.Spec.Rules, func(r gwv1.GRPCRouteRule) string { return string(ptr.Deref(r.Name, "")) })
 			})
 	}
+	// TCPRoutes and TLSRoutes attach policies only at the route level, never per rule, so their
+	// sectionName is left unchecked, as for Service below. Every served version is normalized
+	// into one collection, and the group and kind are the same across versions.
+	if commonCols.RawTCPRoutes != nil {
+		resolvers[wellknown.TCPRouteGVK.GroupKind()] = objectTargetResolver(commonCols.RawTCPRoutes, wellknown.TCPRouteGVK.Kind, nil, nil)
+	}
+	if commonCols.RawTLSRoutes != nil {
+		resolvers[wellknown.TLSRouteGVK.GroupKind()] = objectTargetResolver(commonCols.RawTLSRoutes, wellknown.TLSRouteGVK.Kind, nil, nil)
+	}
 	// Service and Backend refs may carry a sectionName (a port name) on some policy kinds;
 	// only the object's existence is checked for them.
 	if commonCols.Services != nil {
@@ -102,7 +119,21 @@ func newPolicyTargetResolvers(commonCols *collections.CommonCollections, backend
 		resolvers[wellknown.BackendGVK.GroupKind()] = objectTargetResolver(backends, wellknown.BackendGVK.Kind, nil, nil)
 	}
 	maps.Copy(resolvers, aliasTargetResolvers(backendPlugins))
+	maps.Copy(resolvers, extra)
 	return resolvers
+}
+
+// NewObjectPolicyTargetResolver returns a resolver that reports a target missing when col has
+// no object under namespace/name. When the ref carries a sectionName and sectionNames is set,
+// the section must be one of the names it returns for the object; a nil sectionNames leaves
+// sectionName unchecked. kind names the target in the status message, which matches the one
+// the built-in resolvers produce. It is the building block for WithPolicyTargetResolver.
+func NewObjectPolicyTargetResolver[T controllers.Object](
+	col krt.Collection[T],
+	kind string,
+	sectionNames func(obj T) []string,
+) PolicyTargetResolver {
+	return objectTargetResolver(col, kind, nil, sectionNames)
 }
 
 // objectTargetResolver checks that the named object exists in col and, when set, that matches
@@ -113,7 +144,7 @@ func objectTargetResolver[T controllers.Object](
 	kind string,
 	matches func(obj T) bool,
 	sectionNames func(obj T) []string,
-) policyTargetResolver {
+) PolicyTargetResolver {
 	return func(kctx krt.HandlerContext, namespace, name, sectionName string) error {
 		obj := krt.FetchOne(kctx, col, krt.FilterKey(namespace+"/"+name))
 		if obj == nil || (matches != nil && !matches(*obj)) {
@@ -283,7 +314,7 @@ func buildPolicyTargetReport(policy ir.PolicyWrapper, problems []string) *report
 // the translator golden tests, which build status from report maps rather than running the
 // syncer.
 func GeneratePolicyTargetReports(commonCols *collections.CommonCollections, plugins sdk.Plugin) reports.ReportMap {
-	resolvers := newPolicyTargetResolvers(commonCols, plugins.ContributesBackends)
+	resolvers := newPolicyTargetResolvers(commonCols, plugins.ContributesBackends, nil)
 	out := reports.NewPolicyReportMap()
 	for _, plugin := range plugins.ContributesPolicies {
 		if plugin.Policies == nil {

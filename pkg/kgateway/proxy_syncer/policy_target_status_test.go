@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -55,6 +56,14 @@ func httpRouteRef(name, section string) ir.PolicyRef {
 	return ir.PolicyRef{Group: wellknown.HTTPRouteGVK.Group, Kind: wellknown.HTTPRouteGVK.Kind, Name: name, SectionName: section}
 }
 
+func tcpRouteRef(name, section string) ir.PolicyRef {
+	return ir.PolicyRef{Group: wellknown.TCPRouteGVK.Group, Kind: wellknown.TCPRouteGVK.Kind, Name: name, SectionName: section}
+}
+
+func tlsRouteRef(name string) ir.PolicyRef {
+	return ir.PolicyRef{Group: wellknown.TLSRouteGVK.Group, Kind: wellknown.TLSRouteGVK.Kind, Name: name}
+}
+
 func serviceRef(name string) ir.PolicyRef {
 	return ir.PolicyRef{Group: "", Kind: wellknown.ServiceGVK.Kind, Name: name}
 }
@@ -92,6 +101,13 @@ type policyTargetFixture struct {
 
 func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTargetFixture {
 	t.Helper()
+	return newPolicyTargetFixtureWithOptions(t, nil, policies...)
+}
+
+// newPolicyTargetFixtureWithOptions builds the fixture with the resolvers the given status
+// syncer options register, the way NewProxySyncer receives them.
+func newPolicyTargetFixtureWithOptions(t *testing.T, opts []StatusSyncerOption, policies ...ir.PolicyWrapper) policyTargetFixture {
+	t.Helper()
 	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
 
 	gateways := krt.NewStaticCollection(nil, []*gwv1.Gateway{{
@@ -103,6 +119,12 @@ func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTa
 		ObjectMeta: metav1.ObjectMeta{Name: "route-a", Namespace: policyTargetTestNS},
 		Spec:       gwv1.HTTPRouteSpec{Rules: []gwv1.HTTPRouteRule{{Name: &ruleName}}},
 	}}, krtopts.ToOptions("HTTPRoutes")...)
+	tcpRoutes := krt.NewStaticCollection(nil, []*gwv1a2.TCPRoute{{
+		ObjectMeta: metav1.ObjectMeta{Name: "tcp-a", Namespace: policyTargetTestNS},
+	}}, krtopts.ToOptions("TCPRoutes")...)
+	tlsRoutes := krt.NewStaticCollection(nil, []*gwv1a2.TLSRoute{{
+		ObjectMeta: metav1.ObjectMeta{Name: "tls-a", Namespace: policyTargetTestNS},
+	}}, krtopts.ToOptions("TLSRoutes")...)
 	services := krt.NewStaticCollection(nil, []*corev1.Service{{
 		ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: policyTargetTestNS},
 	}}, krtopts.ToOptions("Services")...)
@@ -128,13 +150,15 @@ func newPolicyTargetFixture(t *testing.T, policies ...ir.PolicyWrapper) policyTa
 		RawGateways:     gateways,
 		RawListenerSets: listenerSets,
 		RawHTTPRoutes:   routes,
+		RawTCPRoutes:    tcpRoutes,
+		RawTLSRoutes:    tlsRoutes,
 		Services:        services,
 	}, map[schema.GroupKind]sdk.BackendPlugin{
 		wellknown.ServiceEntryGVK.GroupKind(): {
 			Backends:   serviceEntryBackends,
 			AliasKinds: []schema.GroupKind{wellknown.HostnameGVK.GroupKind(), wellknown.ServiceEntryGVK.GroupKind()},
 		},
-	})
+	}, processStatusSyncerOptions(opts...).policyTargetResolvers)
 
 	policyCol := krt.NewStaticCollection(nil, policies, krtopts.ToOptions("Policies")...)
 	contributions := policyTargetStatusContributions(policyCol, resolvers, krtopts)
@@ -257,6 +281,72 @@ func TestPolicyTargetStatusContributionsAliasKinds(t *testing.T) {
 		"a host declared only by a ServiceEntry in another namespace is not a target of this policy")
 	require.Equal(t, "ServiceEntry default/se-typo not found",
 		acceptedCondition(t, byPolicy["missing-se"], missingServiceEntry).Message)
+}
+
+// TestPolicyTargetStatusContributionsTCPAndTLSRoutes pins the TCPRoute and TLSRoute resolvers.
+// Both kinds attach policies at the route level only, so a sectionName is not checked.
+func TestPolicyTargetStatusContributionsTCPAndTLSRoutes(t *testing.T) {
+	resolved := trafficPolicyWrapper("resolved", 1, tcpRouteRef("tcp-a", ""), tcpRouteRef("tcp-a", "any-rule"), tlsRouteRef("tls-a"))
+	missingTCP := trafficPolicyWrapper("missing-tcp", 1, tcpRouteRef("tcp-typo", ""))
+	missingTLS := trafficPolicyWrapper("missing-tls", 1, tlsRouteRef("tls-typo"))
+
+	f := newPolicyTargetFixture(t, resolved, missingTCP, missingTLS)
+
+	byPolicy := map[string]reports.StatusContribution{}
+	for _, c := range f.contributions.List() {
+		byPolicy[c.Target.Name] = c
+	}
+	require.NotContains(t, byPolicy, "resolved", "existing TCP and TLS routes resolve, with or without a sectionName")
+	require.Equal(t, "TCPRoute default/tcp-typo not found",
+		acceptedCondition(t, byPolicy["missing-tcp"], missingTCP).Message)
+	require.Equal(t, "TLSRoute default/tls-typo not found",
+		acceptedCondition(t, byPolicy["missing-tls"], missingTLS).Message)
+}
+
+// TestPolicyTargetStatusContributionsExtensionResolver pins WithPolicyTargetResolver: an
+// extension kind kgateway does not know is checked once registered, section names included,
+// and a registration for a built-in kind replaces the built-in resolver.
+func TestPolicyTargetStatusContributionsExtensionResolver(t *testing.T) {
+	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
+	extensionGK := schema.GroupKind{Group: "example.com", Kind: "ExtensionListenerSet"}
+	extensionListenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{{
+		ObjectMeta: metav1.ObjectMeta{Name: "els", Namespace: policyTargetTestNS},
+		Spec:       gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
+	}}, krtopts.ToOptions("ExtensionListenerSets")...)
+	extensionRef := func(name, section string) ir.PolicyRef {
+		return ir.PolicyRef{Group: extensionGK.Group, Kind: extensionGK.Kind, Name: name, SectionName: section}
+	}
+	opts := []StatusSyncerOption{
+		WithPolicyTargetResolver(extensionGK, NewObjectPolicyTargetResolver(extensionListenerSets, extensionGK.Kind,
+			func(ls *gwv1.ListenerSet) []string {
+				return namesOf(ls.Spec.Listeners, func(l gwv1.ListenerEntry) string { return string(l.Name) })
+			})),
+		// Replaces the built-in Service resolver: every Service ref now resolves.
+		WithPolicyTargetResolver(wellknown.ServiceGVK.GroupKind(),
+			func(krt.HandlerContext, string, string, string) error { return nil }),
+		// A nil resolver is ignored rather than registered.
+		WithPolicyTargetResolver(wellknown.GatewayGVK.GroupKind(), nil),
+	}
+
+	resolved := trafficPolicyWrapper("resolved", 1, extensionRef("els", ""), extensionRef("els", "http"), serviceRef("svc-missing"))
+	missing := trafficPolicyWrapper("missing", 1, extensionRef("els-typo", ""))
+	badSection := trafficPolicyWrapper("bad-section", 1, extensionRef("els", "https"))
+	missingGateway := trafficPolicyWrapper("missing-gateway", 1, gatewayRef("missing", ""))
+
+	f := newPolicyTargetFixtureWithOptions(t, opts, resolved, missing, badSection, missingGateway)
+
+	byPolicy := map[string]reports.StatusContribution{}
+	for _, c := range f.contributions.List() {
+		byPolicy[c.Target.Name] = c
+	}
+	require.NotContains(t, byPolicy, "resolved", "the extension target resolves, and the Service override accepts any name")
+	require.Equal(t, "ExtensionListenerSet default/els-typo not found",
+		acceptedCondition(t, byPolicy["missing"], missing).Message)
+	require.Equal(t, `sectionName "https" not found in ExtensionListenerSet default/els`,
+		acceptedCondition(t, byPolicy["bad-section"], badSection).Message)
+	require.Equal(t, "Gateway default/missing not found",
+		acceptedCondition(t, byPolicy["missing-gateway"], missingGateway).Message,
+		"a nil registration leaves the built-in Gateway resolver in place")
 }
 
 // TestPolicyTargetReportThroughBackendTLSPolicyBuilder pins ObservedGeneration on the
