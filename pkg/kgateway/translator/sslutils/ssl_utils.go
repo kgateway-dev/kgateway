@@ -119,7 +119,7 @@ func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
 	if !ok {
 		return "", ErrMissingCACertKey
 	}
-	return getCACertFromBytes([]byte(caCrt), cm.Name, cm.Namespace)
+	return getCACertFromBytes([]byte(caCrt), cm.Name, cm.Namespace, ErrInvalidCACertificate)
 }
 
 // GetCACertFromSecret validates and extracts the ca.crt string from an ir.Secret
@@ -129,11 +129,13 @@ func GetCACertFromSecret(secret *ir.Secret) (string, error) {
 		return "", ErrMissingCACertKey
 	}
 
-	return getCACertFromBytes(caCrtBytes, secret.Name, secret.Namespace)
+	return getCACertFromBytes(caCrtBytes, secret.Name, secret.Namespace, ErrInvalidCACertificateSecret)
 }
 
-// getCACertFromBytes validates and extracts the ca.crt string from certificate bytes
-func getCACertFromBytes(caCrtBytes []byte, name, namespace string) (string, error) {
+// getCACertFromBytes validates and extracts the ca.crt string from certificate bytes.
+// invalidErr builds the error for an unparseable certificate, so that it names
+// the kind of object the data came from.
+func getCACertFromBytes(caCrtBytes []byte, name, namespace string, invalidErr func(n, ns string, err error) error) (string, error) {
 	if len(caCrtBytes) == 0 {
 		return "", ErrMissingCACertKey
 	}
@@ -141,13 +143,13 @@ func getCACertFromBytes(caCrtBytes []byte, name, namespace string) (string, erro
 	// Validate CA certificate by trying to parse it
 	candidateCert, err := cert.ParseCertsPEM(caCrtBytes)
 	if err != nil {
-		return "", ErrInvalidCACertificate(name, namespace, err)
+		return "", invalidErr(name, namespace, err)
 	}
 
 	// Clean and encode the certificate to ensure proper formatting
 	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
 	if err != nil {
-		return "", ErrInvalidCACertificate(name, namespace, err)
+		return "", invalidErr(name, namespace, err)
 	}
 
 	return string(cleanedChainBytes), nil
