@@ -848,13 +848,19 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, map[schema.GroupKind]struct{}{
-			wellknown.BackendTLSPolicyGVK.GroupKind(): {},
-		})
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
 
-		// Merge gateway reports with backend policy reports
+		// Merge gateway reports with backend policy reports. A policy can appear in both
+		// (BackendTLSPolicy reports Gateway ancestors from translation and target ancestors
+		// from the backend path), so union the ancestors rather than replacing the report.
 		mergedReports := reportsMap
-		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
+		for key, backendReport := range backendPolicyReports.Policies {
+			if existing, ok := mergedReports.Policies[key]; ok && existing != nil && backendReport != nil {
+				maps.Copy(existing.Ancestors, backendReport.Ancestors)
+				continue
+			}
+			mergedReports.Policies[key] = backendReport
+		}
 
 		// Policies whose targetRefs do not resolve are reported by a third producer in the proxy
 		// syncer (see proxy_syncer/policy_target_status.go). A policy may have both a Gateway

@@ -1,0 +1,38 @@
+# A TCPRoute referencing a Static Backend. A Static Backend is a plain cluster and declares
+# no SupportedRouteKinds, so every route kind may reference it: the reference resolves to
+# the Backend's cluster and the route reports ResolvedRefs=True. This is the positive
+# counterpart of unsupported-backend-kind.yaml.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - backendRefs:
+    - name: static-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: static-backend
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: example.com
+      port: 8080

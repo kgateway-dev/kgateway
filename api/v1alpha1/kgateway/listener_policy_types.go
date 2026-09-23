@@ -803,9 +803,7 @@ type CELFilter struct {
 // A request will be logged if the runtime key is set and the request's random value is less than the percent_sampled value.
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
 type RuntimeFilter struct {
-	// The runtime key to look up in the runtime implementation. This key determines whether
-	// the access log is enabled. When the runtime key value is set, the filter checks this key
-	// at runtime to decide whether to log each request.
+	// RuntimeKey identifies the runtime setting used to decide whether to log each request.
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	RuntimeKey string `json:"runtimeKey"`
