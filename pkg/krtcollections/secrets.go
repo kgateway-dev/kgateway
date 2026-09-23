@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -22,17 +23,12 @@ type From struct {
 }
 
 type SecretIndex struct {
-	secrets     map[schema.GroupKind]krt.Collection[ir.Secret]
-	byNamespace map[schema.GroupKind]krt.Index[string, ir.Secret]
-	refgrants   *RefGrantIndex
+	secrets   map[schema.GroupKind]krt.Collection[ir.Secret]
+	refgrants *RefGrantIndex
 }
 
 func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refgrants *RefGrantIndex) *SecretIndex {
-	byNamespace := make(map[schema.GroupKind]krt.Index[string, ir.Secret], len(secrets))
-	for gk, col := range secrets {
-		byNamespace[gk] = krt.NewNamespaceIndex(col)
-	}
-	return &SecretIndex{secrets: secrets, byNamespace: byNamespace, refgrants: refgrants}
+	return &SecretIndex{secrets: secrets, refgrants: refgrants}
 }
 
 func (s *SecretIndex) HasSynced() bool {
@@ -130,11 +126,9 @@ func (e *SelectorNoMatchError) Error() string {
 }
 
 // GetSecretsBySelector retrieves the secrets matching matchLabels that from may
-// reference: those in from's namespace, and those in namespaces whose ReferenceGrants
-// permit it. Only those namespaces are searched, so a secret the referrer cannot
-// reference never influences the result.
-//
-// It returns a SelectorNoMatchError when no permitted secret matches.
+// reference: those in from's namespace, and those whose ReferenceGrants permit it.
+// It returns a SelectorNoMatchError when no permitted secret matches, whether or not
+// a secret the referrer may not reference matched.
 func (s *SecretIndex) GetSecretsBySelector(
 	kctx krt.HandlerContext,
 	from From,
@@ -163,26 +157,21 @@ func (s *SecretIndex) GetSecretsBySelector(
 		return true
 	})
 
-	grantingNamespaces, all := s.refgrants.GrantingNamespaces(kctx, from.GroupKind, from.Namespace, secretGK)
 	var allowedSecrets []ir.Secret
-	if all {
-		allowedSecrets = krt.Fetch(kctx, col, matches)
-	} else {
-		byNamespace := s.byNamespace[secretGK]
-		for _, ns := range append(grantingNamespaces, from.Namespace) {
-			for _, secret := range krt.Fetch(kctx, col, krt.FilterIndex(byNamespace, ns), matches) {
-				// A grant can be limited to named secrets, so a granting namespace
-				// does not by itself permit every secret in it.
-				if ns != from.Namespace && !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, secret.ObjectSource) {
-					continue
-				}
-				allowedSecrets = append(allowedSecrets, secret)
-			}
+	for _, secret := range krt.Fetch(kctx, col, matches) {
+		if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, secret.ObjectSource) {
+			continue
 		}
+		allowedSecrets = append(allowedSecrets, secret)
 	}
 
 	if len(allowedSecrets) == 0 {
-		return nil, &SelectorNoMatchError{From: from, To: secretGK, MatchLabels: matchLabels, AnyNamespace: all}
+		return nil, &SelectorNoMatchError{
+			From:         from,
+			To:           secretGK,
+			MatchLabels:  matchLabels,
+			AnyNamespace: s.refgrants.mode == apisettings.ReferenceGrantOff,
+		}
 	}
 	// Order by namespace/name so the translated config is stable across fetches.
 	slices.SortFunc(allowedSecrets, func(a, b ir.Secret) int {

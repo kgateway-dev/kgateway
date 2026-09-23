@@ -1113,22 +1113,9 @@ func (k refGrantIndexKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", k.RefGrantNs, k.FromNs, k.ToGK.Group, k.ToGK.Kind, k.ToName, k.FromGK.Group, k.FromGK.Kind)
 }
 
-// refGrantSourceKey identifies the grants that let one referrer reference one kind,
-// in whichever namespace they sit.
-type refGrantSourceKey struct {
-	ToGK   schema.GroupKind
-	FromGK schema.GroupKind
-	FromNs string
-}
-
-func (k refGrantSourceKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", k.FromNs, k.ToGK.Group, k.ToGK.Kind, k.FromGK.Group, k.FromGK.Kind)
-}
-
 type RefGrantIndex struct {
 	refgrants     krt.Collection[*gwv1b1.ReferenceGrant]
 	refGrantIndex krt.Index[refGrantIndexKey, *gwv1b1.ReferenceGrant]
-	bySource      krt.Index[refGrantSourceKey, *gwv1b1.ReferenceGrant]
 	mode          apisettings.ReferenceGrantMode
 }
 
@@ -1152,43 +1139,7 @@ func NewRefGrantIndex(refgrants krt.Collection[*gwv1b1.ReferenceGrant], mode api
 		}
 		return ret
 	})
-	bySource := krtpkg.UnnamedIndex(refgrants, func(p *gwv1b1.ReferenceGrant) []refGrantSourceKey {
-		ret := make([]refGrantSourceKey, 0, len(p.Spec.To)*len(p.Spec.From))
-		for _, from := range p.Spec.From {
-			for _, to := range p.Spec.To {
-				ret = append(ret, refGrantSourceKey{
-					ToGK:   schema.GroupKind{Group: emptyIfCore(string(to.Group)), Kind: string(to.Kind)},
-					FromGK: schema.GroupKind{Group: emptyIfCore(string(from.Group)), Kind: string(from.Kind)},
-					FromNs: string(from.Namespace),
-				})
-			}
-		}
-		return ret
-	})
-	return &RefGrantIndex{refgrants: refgrants, refGrantIndex: refGrantIndex, bySource: bySource, mode: mode}
-}
-
-// GrantingNamespaces returns the namespaces other than fromns holding a ReferenceGrant
-// that lets fromgk in fromns reference toGK, sorted. A grant may be limited to named
-// resources, so a returned namespace is a candidate; ReferenceAllowed decides for each
-// resource in it. all is true when ReferenceGrants are not enforced, meaning every
-// namespace is permitted.
-func (r *RefGrantIndex) GrantingNamespaces(kctx krt.HandlerContext, fromgk schema.GroupKind, fromns string, toGK schema.GroupKind) (namespaces []string, all bool) {
-	if r.mode == apisettings.ReferenceGrantOff {
-		return nil, true
-	}
-	key := refGrantSourceKey{
-		ToGK:   schema.GroupKind{Group: emptyIfCore(toGK.Group), Kind: toGK.Kind},
-		FromGK: schema.GroupKind{Group: emptyIfCore(fromgk.Group), Kind: fromgk.Kind},
-		FromNs: fromns,
-	}
-	seen := sets.New[string]()
-	for _, grant := range krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.bySource, key)) {
-		if grant.Namespace != fromns {
-			seen.Insert(grant.Namespace)
-		}
-	}
-	return sets.List(seen), false
+	return &RefGrantIndex{refgrants: refgrants, refGrantIndex: refGrantIndex, mode: mode}
 }
 
 func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.GroupKind, fromns string, to ir.ObjectSource) bool {
