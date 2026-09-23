@@ -10,13 +10,15 @@ type statusSyncerConfig struct {
 
 type StatusSyncerOption func(*statusSyncerConfig)
 
-// StatusRegistrationInputs exposes the keyed status pipeline to downstream resource
-// types. Registrations construct per-resource report reductions and writers during
-// controller setup; their event handlers are attached only while this replica is leader.
-type StatusRegistrationInputs = statussync.RegistrationInputs
-
-// StatusRegistration adds one resource-scoped status pipeline extension.
-type StatusRegistration func(StatusRegistrationInputs)
+// StatusRegistration adds one resource-scoped status pipeline extension. Registrations
+// construct per-resource report reductions and writers during controller setup; their event
+// handlers are attached only while this replica is leader.
+//
+// It takes statussync.RegistrationInputs under its own name rather than a local alias.
+// RegistrationInputs is deliberately one struct shared by both entry points -- its doc
+// comment explains why -- and re-spelling it per package undoes that in the reader's head:
+// someone who greps the local name finds a type with no fields.
+type StatusRegistration func(statussync.RegistrationInputs)
 
 func processStatusSyncerOptions(opts ...StatusSyncerOption) *statusSyncerConfig {
 	cfg := &statusSyncerConfig{}

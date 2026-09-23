@@ -2,11 +2,13 @@ package trafficpolicy
 
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/ratelimit/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -105,6 +107,12 @@ func toLocalRateLimitFilterConfig(t *kgateway.LocalRateLimitPolicy) *localrateli
 				Denominator: typev3.FractionalPercent_HUNDRED,
 			},
 		},
+	}
+
+	if ptr.Deref(t.ShareAcrossGateway, false) {
+		// Divides the token bucket evenly across the members of the proxy's local cluster,
+		// which kgateway populates with the Gateway's own replicas.
+		lrl.LocalClusterRateLimit = &ratelimitv3.LocalClusterRateLimit{}
 	}
 
 	return lrl

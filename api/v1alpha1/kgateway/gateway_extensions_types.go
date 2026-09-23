@@ -78,9 +78,10 @@ type JWT struct {
 	// ValidationMode configures how JWT validation behaves.
 	// If unset or empty, Strict mode is used (JWT is required).
 	// If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
-	// If using this mode, make sure to consider the security implications and
+	// If set to AllowMissingOrFailed, no request is ever rejected by the JWT filter.
+	// If using either of those modes, make sure to consider the security implications and
 	// consider using an `RBAC` policy to enforce authorization.
-	// +kubebuilder:validation:Enum=Strict;AllowMissing
+	// +kubebuilder:validation:Enum=Strict;AllowMissing;AllowMissingOrFailed
 	// +optional
 	ValidationMode *ValidationMode `json:"validationMode,omitempty"`
 
@@ -103,6 +104,16 @@ const (
 	// If a token exists, validate it.
 	// Warning: this allows requests without a JWT token.
 	ValidationModeAllowMissing ValidationMode = "AllowMissing"
+	// Validate tokens but never reject a request. Requests with a missing, expired,
+	// malformed, or otherwise invalid token are all allowed through.
+	// Every JWT is still verified, so a valid token still populates `claimsToHeaders`
+	// and the JWT dynamic metadata, and a verification failure is recorded in the
+	// dynamic metadata for observability. This is a non-enforcing mode,
+	// intended for evaluating a JWT policy against live traffic before enforcing it.
+	// Warning: this mode provides no authentication. A downstream `RBAC` policy that
+	// matches on JWT claims sees the same empty metadata for an invalid token as it does
+	// for a request with no token at all.
+	ValidationModeAllowMissingOrFailed ValidationMode = "AllowMissingOrFailed"
 )
 
 // GatewayExtensionType indicates the type of the GatewayExtension.
@@ -152,10 +163,8 @@ type ExtHttpService struct {
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
 
-	// PathPrefix specifies a prefix to the value of the authorization request's path header.
-	// This allows customizing the path at which the authorization server expects to receive requests.
-	// For example, if the authorization server expects requests at "/verify", set this to "/verify".
-	// If not specified, the original request path is used.
+	// PathPrefix is prepended to the authorization request path.
+	// If omitted, the original request path is used.
 	// +optional
 	PathPrefix string `json:"pathPrefix,omitempty"`
 

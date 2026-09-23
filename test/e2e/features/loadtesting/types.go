@@ -173,12 +173,10 @@ type VClusterMetrics struct {
 	APICallsPerSecond float64 `json:"apiCallsPerSecond"`
 }
 
-// ThresholdConfig consolidates all threshold and configuration values for a test scenario
-type ThresholdConfig struct {
-	SetupThreshold    time.Duration
-	TeardownThreshold time.Duration
-	BatchSize         int
-	GracePeriod       time.Duration
+// ScaleConfig controls the rate of resource creation: BatchSize at a time, pausing GracePeriod between batches.
+type ScaleConfig struct {
+	BatchSize   int
+	GracePeriod time.Duration
 }
 
 const (
@@ -189,19 +187,15 @@ const (
 
 var (
 	// BaselineConfig contains configuration values for baseline/smaller tests
-	BaselineConfig = ThresholdConfig{
-		SetupThreshold:    30 * time.Second,
-		TeardownThreshold: 30 * time.Second,
-		BatchSize:         100,
-		GracePeriod:       100 * time.Millisecond,
+	BaselineConfig = ScaleConfig{
+		BatchSize:   100,
+		GracePeriod: 100 * time.Millisecond,
 	}
 
 	// ProductionConfig contains configuration values for production/larger tests
-	ProductionConfig = ThresholdConfig{
-		SetupThreshold:    120 * time.Second,
-		TeardownThreshold: 120 * time.Second,
-		BatchSize:         500,
-		GracePeriod:       100 * time.Millisecond,
+	ProductionConfig = ScaleConfig{
+		BatchSize:   500,
+		GracePeriod: 100 * time.Millisecond,
 	}
 )
 
@@ -214,21 +208,11 @@ func getOptimalValue[T any](routeCount int, productionValue, baselineValue T) T 
 }
 
 // GetConfig returns the appropriate configuration based on route count
-func GetConfig(routeCount int) ThresholdConfig {
+func GetConfig(routeCount int) ScaleConfig {
 	return getOptimalValue(routeCount, ProductionConfig, BaselineConfig)
 }
 
 // GetOptimalBatchSize returns the optimal batch size based on route count
 func GetOptimalBatchSize(routeCount int) int {
 	return GetConfig(routeCount).BatchSize
-}
-
-// GetOptimalSetupThreshold returns the optimal setup threshold based on route count
-func GetOptimalSetupThreshold(routeCount int) time.Duration {
-	return GetConfig(routeCount).SetupThreshold
-}
-
-// GetOptimalTeardownThreshold returns the optimal teardown threshold based on route count
-func GetOptimalTeardownThreshold(routeCount int) time.Duration {
-	return GetConfig(routeCount).TeardownThreshold
 }

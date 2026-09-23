@@ -1,6 +1,7 @@
 Name|Version|License
 ---|---|---
-[cel.dev/expr](https://cel.dev/expr)|v0.25.1|Apache License 2.0
+[cel.dev/expr](https://cel.dev/expr)|v0.25.2|Apache License 2.0
+[KimMachineGun/automemlimit](https://github.com/KimMachineGun/automemlimit)|v1.0.0|MIT License
 [semver/v3](https://github.com/Masterminds/semver)|v3.5.0|MIT License
 [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)|v1.10.1|BSD 3-clause "New" or "Revised" License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.7.0|MIT License
@@ -11,7 +12,7 @@ Name|Version|License
 [service/sts](https://github.com/aws/aws-sdk-go-v2)|v1.42.1|Apache License 2.0
 [aws/smithy-go](https://github.com/aws/smithy-go)|v1.25.1|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20260202195803-dba9d589def2|Apache License 2.0
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.0|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.1-0.20260702184136-1cd1226616f5|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20260529185539-1175069dbb2c|Apache License 2.0
 [go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.37.1-0.20260529185539-1175069dbb2c|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
@@ -22,7 +23,7 @@ Name|Version|License
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [jwt/v5](https://github.com/golang-jwt/jwt)|v5.3.0|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
-[google/cel-go](https://github.com/google/cel-go)|v0.29.0|Apache License 2.0
+[google/cel-go](https://github.com/google/cel-go)|v0.30.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.7.0|BSD 3-clause "New" or "Revised" License
 [gorilla/websocket](https://github.com/gorilla/websocket)|v1.5.4-0.20250319132907-e064f32e3674|BSD 2-clause "Simplified" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
@@ -42,10 +43,10 @@ Name|Version|License
 [go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.28.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260218203240-3dfff04db8fa|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.22.0|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.23.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
-[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260427160629-7cedc36a6bc4|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.82.1|Apache License 2.0
+[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260526163538-3dc84a4a5aaa|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.83.2|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.12-0.20260120151049-f2248ac996af|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.21.3|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271|Apache License 2.0

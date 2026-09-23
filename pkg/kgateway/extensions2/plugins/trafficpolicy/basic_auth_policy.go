@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -140,14 +139,16 @@ func constructBasicAuth(
 	// Validate and filter users to only include SHA hashed passwords
 	validUsers, invalidUsers := validateAndFilterSHAUsers(htpasswdData)
 
+	// Report invalid users if any were found.
+	// Checked before the empty case because it names the entries that were dropped.
+	if len(invalidUsers) > 0 {
+		return fmt.Errorf("basic auth: dropped %d user(s), invalid hash format (only {SHA} is supported), malformed entry, or a username listed twice with different hashes: %v",
+			len(invalidUsers), invalidUsers)
+	}
+
 	// If there are no valid users after filtering, return an error
 	if len(validUsers) == 0 {
 		return errors.New("basic auth: no valid users with {SHA} hash format found")
-	}
-
-	// Report invalid users if any were found
-	if len(invalidUsers) > 0 {
-		err = fmt.Errorf("basic auth: dropped %d user(s) with invalid hash format (only {SHA} is supported) or duplicate usernames.", len(invalidUsers))
 	}
 
 	allUsers := strings.Join(validUsers, "\n")
@@ -167,7 +168,7 @@ func constructBasicAuth(
 		},
 	}
 
-	return err
+	return nil
 }
 
 // fetchHtpasswdFromSecret retrieves htpasswd data from a Kubernetes secret
@@ -220,13 +221,20 @@ func fetchHtpasswdFromSecret(
 	return strings.TrimSpace(string(data)), nil
 }
 
-// validateAndFilterSHAUsers validates htpasswd entries and filters out users with non-SHA hash formats.
-// Returns a slice of valid users, a slice of invalid usernames, and an error if validation fails.
+// validateAndFilterSHAUsers validates htpasswd entries and filters out users Envoy cannot accept.
 // Envoy only supports {SHA} hash format for basic auth.
+//
+// Returns the entries to emit and, for anything dropped, an identifier the caller can put in the
+// policy error: the username, or a line number where the entry is too malformed to have one.
+//
+// A username repeated with the identical hash is the same entry written twice, so it is collapsed
+// and not reported: that is what an htpasswd file concatenated with a copy of itself looks like.
+// A username repeated with a different hash is ambiguous, since only one of the two passwords can
+// be authoritative, so it is reported instead of resolved silently.
 func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invalidUsernames []string) {
 	lines := strings.Split(htpasswdData, "\n")
 	validUsers = make([]string, 0, len(lines))
-	validUsernames := sets.New[string]()
+	validEntries := make(map[string]string, len(lines))
 	invalidUsernames = make([]string, 0)
 
 	for i, line := range lines {
@@ -240,9 +248,9 @@ func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invali
 		// htpasswd format is "username:password_hash"
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
-			// Don't log the entire line to avoid leaking sensitive info
+			// Don't report the entire line to avoid leaking sensitive info
 			logger.Warn("malformed htpasswd entry, missing colon", "line", i+1)
-			invalidUsernames = append(invalidUsernames, line)
+			invalidUsernames = append(invalidUsernames, fmt.Sprintf("line %d", i+1))
 			continue
 		}
 
@@ -251,16 +259,24 @@ func validateAndFilterSHAUsers(htpasswdData string) (validUsers []string, invali
 
 		// 5=len("{SHA}"), 28=SHA1 base64 length. these validations are copied from envoy source code.
 		validHash := strings.HasPrefix(passwordHash, shaPrefix) && len(passwordHash) == (28+5)
-		isDuplicate := validUsernames.Has(username)
-
-		// Check if the password hash uses {SHA} format
-		if validHash && !isDuplicate {
-			validUsers = append(validUsers, line)
-			validUsernames.Insert(username)
-		} else {
-			logger.Warn("invalid basic auth user", "user", username, "isDuplicate", isDuplicate, "validHash", validHash)
+		if !validHash {
+			logger.Warn("invalid basic auth user", "user", username, "reason", "hash is not {SHA}")
 			invalidUsernames = append(invalidUsernames, username)
+			continue
 		}
+
+		if seenHash, seen := validEntries[username]; seen {
+			if seenHash == passwordHash {
+				logger.Debug("dropping duplicate basic auth user", "user", username)
+				continue
+			}
+			logger.Warn("invalid basic auth user", "user", username, "reason", "listed twice with different hashes")
+			invalidUsernames = append(invalidUsernames, username)
+			continue
+		}
+
+		validUsers = append(validUsers, line)
+		validEntries[username] = passwordHash
 	}
 
 	return validUsers, invalidUsernames

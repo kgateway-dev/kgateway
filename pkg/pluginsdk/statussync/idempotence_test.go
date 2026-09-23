@@ -8,8 +8,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
+
+// testRoute is the identity the harness writers are notionally registered under. Their
+// Desired builders ignore it, but CheckWriterIdempotent needs the resource a real writer
+// would have been handed.
+var testRoute = Resource{
+	GroupVersionKind: schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"},
+	NamespacedName:   types.NamespacedName{Namespace: "default", Name: "route"},
+}
 
 // applyRouteStatus is the ApplyStatusFn for an HTTPRoute: it models what the API server
 // stores after a status write.
@@ -24,7 +34,7 @@ func applyRouteStatus(current *gwv1.HTTPRoute, status gwv1.RouteStatus) *gwv1.HT
 func routeWriterWithDesired(desired func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool)) Writer[*gwv1.HTTPRoute, gwv1.RouteStatus] {
 	return Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name:      "httpRoute",
-		Desired:   desired,
+		Desired:   func(_ Resource, o *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) { return desired(o) },
 		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
 		Merge: func(current *gwv1.HTTPRoute, d gwv1.RouteStatus) gwv1.RouteStatus {
 			return gwv1.RouteStatus{Parents: MergeRouteParentStatuses(ourController, current.Status.Parents, d.Parents)}
@@ -74,7 +84,7 @@ func TestCheckWriterIdempotentAcceptsATimestampPreservingBuilder(t *testing.T) {
 	// once (the parent list is otherwise empty) and then settle.
 	current := routeWithParents()
 
-	require.NoError(t, CheckWriterIdempotent(writer, current, applyRouteStatus))
+	require.NoError(t, CheckWriterIdempotent(writer, testRoute, current, applyRouteStatus))
 }
 
 // The regression this harness exists for: a builder that stamps time.Now() unconditionally
@@ -89,7 +99,7 @@ func TestCheckWriterIdempotentRejectsRegeneratedTimestamps(t *testing.T) {
 		}}}, true
 	})
 
-	err := CheckWriterIdempotent(writer, routeWithParents(), applyRouteStatus)
+	err := CheckWriterIdempotent(writer, testRoute, routeWithParents(), applyRouteStatus)
 
 	require.ErrorContains(t, err, "not idempotent")
 }
@@ -100,7 +110,7 @@ func TestCheckWriterIdempotentRejectsRegeneratedTimestamps(t *testing.T) {
 func TestCheckWriterIdempotentRejectsUnstableForeignEntryOrder(t *testing.T) {
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name: "httpRoute",
-		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+		Desired: func(Resource, *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{routeParent(ourController, "gw")}}, true
 		},
 		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
@@ -117,7 +127,7 @@ func TestCheckWriterIdempotentRejectsUnstableForeignEntryOrder(t *testing.T) {
 		routeParent(otherController, "their-gw-b"),
 	)
 
-	err := CheckWriterIdempotent(writer, current, applyRouteStatus)
+	err := CheckWriterIdempotent(writer, testRoute, current, applyRouteStatus)
 
 	require.ErrorContains(t, err, "not idempotent")
 }
@@ -138,7 +148,7 @@ func TestCheckWriterIdempotentIgnoresWritersThatPublishNothing(t *testing.T) {
 	for name, writer := range tests {
 		t.Run(name, func(t *testing.T) {
 			current := routeWithParents(routeParent(ourController, "gw"))
-			require.NoError(t, CheckWriterIdempotent(writer, current, applyRouteStatus))
+			require.NoError(t, CheckWriterIdempotent(writer, testRoute, current, applyRouteStatus))
 		})
 	}
 }
@@ -150,7 +160,7 @@ func TestCheckWriterIdempotentRejectsAnApplyThatDropsTheStatus(t *testing.T) {
 		return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{routeParent(ourController, "gw")}}, true
 	})
 
-	err := CheckWriterIdempotent(writer, routeWithParents(), func(current *gwv1.HTTPRoute, _ gwv1.RouteStatus) *gwv1.HTTPRoute {
+	err := CheckWriterIdempotent(writer, testRoute, routeWithParents(), func(current *gwv1.HTTPRoute, _ gwv1.RouteStatus) *gwv1.HTTPRoute {
 		return current
 	})
 

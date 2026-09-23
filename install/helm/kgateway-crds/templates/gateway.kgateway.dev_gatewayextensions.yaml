@@ -385,10 +385,8 @@ spec:
                             ? has(self.port) : true'
                       pathPrefix:
                         description: |-
-                          PathPrefix specifies a prefix to the value of the authorization request's path header.
-                          This allows customizing the path at which the authorization server expects to receive requests.
-                          For example, if the authorization server expects requests at "/verify", set this to "/verify".
-                          If not specified, the original request path is used.
+                          PathPrefix is prepended to the authorization request path.
+                          If omitted, the original request path is used.
                         type: string
                       requestTimeout:
                         description: RequestTimeout is the timeout for the HTTP request.
@@ -941,13 +939,39 @@ spec:
                           maxItems: 32
                           minItems: 1
                           type: array
+                        cache:
+                          description: |-
+                            Cache enables an in-memory cache of successfully verified tokens, so that a token
+                            presented more than once does not pay for a repeated parse, JWKS lookup, and
+                            signature verification.
+                            Setting this field, even to an empty object, turns the cache on; leaving it unset
+                            leaves it off.
+                            Caching does not extend a token's validity: only verified tokens are cached, and
+                            every cache hit is re-checked against the token's time constraints and evicted if
+                            it has expired.
+                            The cache is per Envoy worker thread, so the effective number of cached tokens for
+                            the whole proxy is Size multiplied by the worker thread count.
+                          properties:
+                            maxTokenSize:
+                              description: |-
+                                MaxTokenSize is the maximum size of a single cached token in bytes.
+                                If this field is not set the default value 4096
+                                bytes is used. The maximum value for a token is inclusive.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                            size:
+                              description: |-
+                                Size is the number of verified tokens to cache, per Envoy worker thread.
+                                If unspecified, the Envoy default of 100 is used.
+                              format: int32
+                              minimum: 1
+                              type: integer
+                          type: object
                         claimsToHeaders:
                           description: |-
-                            ClaimsToHeaders is the list of claims to headers to be used for the JWT provider.
-                            Optionally set the claims from the JWT payload that you want to extract and add as headers
-                            to the request before the request is forwarded to the upstream destination.
-                            Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-                            This allows the JWT filter to correctly affect routing decisions.
+                            ClaimsToHeaders copies JWT claims into upstream request headers.
+                            Setting this clears Envoy's route cache so routing uses the updated headers.
                           items:
                             description: JWTClaimToHeader allows copying verified
                               claims to headers sent upstream
@@ -971,6 +995,23 @@ spec:
                           maxItems: 32
                           minItems: 1
                           type: array
+                        clockSkew:
+                          description: |-
+                            ClockSkew is the tolerance applied when verifying the time constraints of the JWT,
+                            i.e. the 'exp' and 'nbf' claims.
+                            Only whole seconds are supported, so the duration must not have a millisecond component.
+                            If unspecified, the Envoy default of 60s is used. A zero value is not accepted because
+                            Envoy interprets it as unset and falls back to that default.
+                          maxLength: 32
+                          type: string
+                          x-kubernetes-validations:
+                          - message: 'invalid duration value: only whole seconds are
+                              supported, e.g. 1h, 30s'
+                            rule: matches(self, '^([0-9]{1,5}(h|m|s)){1,3}$')
+                          - message: clockSkew must be at least 1s.
+                            rule: duration(self) >= duration('1s')
+                          - message: clockSkew must not exceed 87600h.
+                            rule: duration(self) <= duration('87600h')
                         forwardToken:
                           description: |-
                             ForwardToken configures if the JWT token is forwarded to the upstream backend.
@@ -1183,6 +1224,16 @@ spec:
                                       minimum: 1
                                       type: integer
                                   type: object
+                                timeout:
+                                  description: Timeout for fetching the remote JWKS.
+                                    If not specified, defaults to 5s.
+                                  maxLength: 32
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - message: invalid duration value
+                                    rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                                  - message: timeout must be at least 1ms.
+                                    rule: duration(self) >= duration('1ms')
                                 url:
                                   description: |-
                                     URL is the URL of the remote JWKS server, it must be a full FQDN with protocol, host and path.
@@ -1252,11 +1303,13 @@ spec:
                       ValidationMode configures how JWT validation behaves.
                       If unset or empty, Strict mode is used (JWT is required).
                       If set to AllowMissing, unauthenticated requests without a JWT are allowed through.
-                      If using this mode, make sure to consider the security implications and
+                      If set to AllowMissingOrFailed, no request is ever rejected by the JWT filter.
+                      If using either of those modes, make sure to consider the security implications and
                       consider using an `RBAC` policy to enforce authorization.
                     enum:
                     - Strict
                     - AllowMissing
+                    - AllowMissingOrFailed
                     type: string
                 type: object
               oauth2:
@@ -1573,11 +1626,8 @@ spec:
                             type: array
                           claimsToHeaders:
                             description: |-
-                              ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
-                              Optionally set the claims from the JWT payload that you want to extract and add as headers
-                              to the request before the request is forwarded to the upstream destination.
-                              Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-                              This allows the JWT filter to correctly affect routing decisions.
+                              ClaimsToHeaders copies JWT claims into upstream request headers.
+                              Setting this clears Envoy's route cache so routing uses the updated headers.
                             items:
                               description: JWTClaimToHeader allows copying verified
                                 claims to headers sent upstream
@@ -1622,11 +1672,8 @@ spec:
                             type: array
                           claimsToHeaders:
                             description: |-
-                              ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
-                              Optionally set the claims from the JWT payload that you want to extract and add as headers
-                              to the request before the request is forwarded to the upstream destination.
-                              Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-                              This allows the JWT filter to correctly affect routing decisions.
+                              ClaimsToHeaders copies JWT claims into upstream request headers.
+                              Setting this clears Envoy's route cache so routing uses the updated headers.
                             items:
                               description: JWTClaimToHeader allows copying verified
                                 claims to headers sent upstream

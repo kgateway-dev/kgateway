@@ -188,10 +188,17 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 		}
 
 	case kgateway.AwsAuthTypeAssumeRole:
-		// handle STS role chaining. The base credentials that sign the AssumeRole request are
-		// left unset so Envoy resolves them from the default provider chain (e.g. the gateway
-		// ServiceAccount's IRSA identity). The temporary credentials returned by STS are then
-		// used to sign requests to the backend.
+		// handle STS role chaining. The assume-role provider's nested credential_provider is
+		// left unset: Envoy then builds an inner *default* provider chain (environment,
+		// credentials file, container, instance profile, web identity) to sign the AssumeRole
+		// request, so the gateway's ambient identity (e.g. the ServiceAccount's IRSA or EKS Pod
+		// Identity credentials) is used. The temporary credentials returned by STS are then used
+		// to sign requests to the backend.
+		//
+		// Envoy < v1.39.0 never subscribes that inner chain to its async providers
+		// (envoyproxy/envoy#45643), so when the base credentials come from an async source such
+		// as IRSA the AssumeRole call is never issued and every request hangs. The Envoy image
+		// pinned in the Makefile must therefore be >= v1.39.0 for this auth type to work.
 		if auth.AssumeRole == nil {
 			return nil, fmt.Errorf("assumeRole is required for %q auth", kgateway.AwsAuthTypeAssumeRole)
 		}
@@ -199,6 +206,9 @@ func configureAWSAuth(auth *kgateway.AwsAuth, secret *ir.Secret, region string) 
 			AssumeRoleCredentialProvider: &envoy_aws_common_v3.AssumeRoleCredentialProvider{
 				RoleArn: auth.AssumeRole.RoleArn,
 			},
+			// Without a custom chain, Envoy treats this message as a set of modifiers to the
+			// default provider chain, which does not accept an assume-role provider
+			CustomCredentialProviderChain: true,
 		}
 
 	default:
@@ -366,23 +376,42 @@ type staticSecretDerivation struct {
 }
 
 // deriveStaticSecret derives the static secret from the given secret.
+//
+// Envoy's InlineCredentialProvider requires access_key_id and secret_access_key
+// to be non-empty (min_len: 1) and imposes no such constraint on session_token.
+// Enforcing the same rules here keeps a malformed Secret from producing a
+// cluster that Envoy rejects, which in the default validation mode discards the
+// entire CDS response. Returned errors name the Secret data key at fault and
+// never include the secret values themselves.
 func deriveStaticSecret(awsSecrets *ir.Secret) (*staticSecretDerivation, error) {
-	var errs []error
-	// validate that the secret has field in string format and has an access_key and secret_key
-	if awsSecrets.Data[wellknown.AccessKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.AccessKey]) {
-		// err is nil here but this is still safe
-		errs = append(errs, errors.New("access_key is not a valid string"))
+	errs := []error{
+		validateSecretDataKey(awsSecrets.Data, wellknown.AccessKey, true),
+		validateSecretDataKey(awsSecrets.Data, wellknown.SecretKey, true),
+		validateSecretDataKey(awsSecrets.Data, wellknown.SessionToken, false),
 	}
-	if awsSecrets.Data[wellknown.SecretKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.SecretKey]) {
-		errs = append(errs, errors.New("secret_key is not a valid string"))
-	}
-	// Session key is optional, but if it is present, it must be a valid string.
-	if awsSecrets.Data[wellknown.SessionToken] != nil && !utf8.Valid(awsSecrets.Data[wellknown.SessionToken]) {
-		errs = append(errs, errors.New("session_key is not a valid string"))
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
 	}
 	return &staticSecretDerivation{
 		access:  string(awsSecrets.Data[wellknown.AccessKey]),
 		session: string(awsSecrets.Data[wellknown.SessionToken]),
 		secret:  string(awsSecrets.Data[wellknown.SecretKey]),
-	}, errors.Join(errs...)
+	}, nil
+}
+
+// validateSecretDataKey checks the value stored under key in a Secret's data.
+// A required key must be present, non-empty and valid UTF-8; an optional key
+// may be absent or empty but must be valid UTF-8 when set.
+func validateSecretDataKey(data map[string][]byte, key string, required bool) error {
+	value, ok := data[key]
+	if !ok || len(value) == 0 {
+		if required {
+			return fmt.Errorf("secret data key %q is missing or empty", key)
+		}
+		return nil
+	}
+	if !utf8.Valid(value) {
+		return fmt.Errorf("secret data key %q is not a valid UTF-8 string", key)
+	}
+	return nil
 }

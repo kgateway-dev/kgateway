@@ -1,0 +1,41 @@
+# A TLSRoute referencing a Static Backend. See tcp-routing/static-backend.yaml; the TLS
+# passthrough path resolves an unrestricted Backend the same way.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: example-tls-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - example.com
+  rules:
+  - backendRefs:
+    - name: static-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tls
+    protocol: TLS
+    hostname: "example.com"
+    tls:
+      mode: Passthrough
+    port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: static-backend
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: example.com
+      port: 8443
