@@ -637,6 +637,59 @@ spec:
 `,
 		},
 		{
+			name: "ListenerPolicy: maxConnectionDuration rejects 0s",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-max-conn-duration
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      maxConnectionDuration: 0s
+`,
+			wantErrors: []string{"spec.default.httpSettings.maxConnectionDuration: Invalid value: .*: maxConnectionDuration must be at least 1s"},
+		},
+		{
+			name: "ListenerPolicy: maxConnectionDuration rejects sub-second values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-max-conn-duration
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      maxConnectionDuration: 999ms
+`,
+			wantErrors: []string{"spec.default.httpSettings.maxConnectionDuration: Invalid value: .*: maxConnectionDuration must be at least 1s"},
+		},
+		{
+			name: "ListenerPolicy: maxConnectionDuration accepts 1s",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: listener-policy-max-conn-duration
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: test-gateway
+  default:
+    httpSettings:
+      maxConnectionDuration: 1s
+`,
+		},
+		{
 			name: "DirectResponse: empty body not allowed",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

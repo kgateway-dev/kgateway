@@ -226,7 +226,8 @@ type CommonHttpProtocolOptions struct {
 
 	// MaxConnectionDuration is the maximum duration of a connection, measured from
 	// when the connection was established. When this duration is reached, Envoy starts
-	// the drain sequence. If unset, there is no maximum connection duration.
+	// the drain sequence. If unset, there is no maximum connection duration; setting
+	// this to 0 does not disable it, and instead closes each connection immediately.
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
 	// +optional
 	// +kubebuilder:validation:Type=string
