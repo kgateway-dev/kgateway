@@ -9,6 +9,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
@@ -22,7 +23,9 @@ import (
 // reportBackendTLSPolicies. Once route translation reports a Gateway ancestor, that Gateway
 // is the ancestor the Gateway API expects and the one existing tooling reads, so the target
 // ancestors are dropped rather than listed beside it. A routed policy therefore reports
-// exactly the ancestors it reported before target ancestors existed.
+// exactly the ancestors it reported before target ancestors existed. The StatusSummary
+// ancestor is not a target ancestor and is always kept: it carries targetRefs that do not
+// resolve, which a Gateway ancestor earned by another targetRef says nothing about.
 func BuildDesiredPolicyStatus(report *reports.PolicyReport, pol *gwv1.BackendTLSPolicy, controller string) *gwv1.PolicyStatus {
 	currentStatus := pol.Status
 	if report == nil {
@@ -46,7 +49,7 @@ func BuildDesiredPolicyStatus(report *reports.PolicyReport, pol *gwv1.BackendTLS
 	}
 
 	for parentKey, ancestorReport := range report.Ancestors {
-		if hasGatewayAncestor && !isGatewayAncestor(parentKey) {
+		if hasGatewayAncestor && !isGatewayAncestor(parentKey) && !isStatusSummaryAncestor(parentKey) {
 			continue
 		}
 
@@ -96,6 +99,12 @@ func BuildDesiredPolicyStatus(report *reports.PolicyReport, pol *gwv1.BackendTLS
 	})
 
 	return &status
+}
+
+// isStatusSummaryAncestor reports whether an ancestor is the policy's synthetic StatusSummary
+// entry (see pluginsdk/reporter.PolicyStatusSummaryAncestorRef).
+func isStatusSummaryAncestor(key reports.ParentRefKey) bool {
+	return reporter.IsPolicyStatusSummaryAncestor(key.Group, key.Kind, key.Namespace, key.Name)
 }
 
 // isGatewayAncestor reports whether an ancestor names a Gateway-side parent: the Gateway

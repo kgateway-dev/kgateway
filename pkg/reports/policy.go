@@ -62,10 +62,11 @@ func (r *ReportMap) PolicyReport(key reporter.PolicyKey) *PolicyReport {
 	return r.policy(key)
 }
 
-// MergePolicyReports folds the policy reports of src into r: a policy r has no report for is
-// copied, and one it already reports on gains src's ancestors, src winning per ancestor. This
-// is the ancestor merge the status reducer applies across contributions, for callers that
-// assemble report maps directly.
+// MergePolicyReports folds the policy reports of src into r. When r has no report for a
+// policy, src's report is copied in. When r already has one, src's ancestors are added to it,
+// and for an ancestor both reports carry, src's entry replaces r's. This is the ancestor merge
+// the status reducer applies across contributions, for callers that assemble report maps
+// directly.
 func (r *ReportMap) MergePolicyReports(src ReportMap) {
 	for key, report := range src.Policies {
 		if report == nil {

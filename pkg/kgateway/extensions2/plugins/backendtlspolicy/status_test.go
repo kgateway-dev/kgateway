@@ -205,6 +205,7 @@ func TestBuildDesiredPolicyStatusSuppressesTargetAncestors(t *testing.T) {
 	backendRef := ref(wellknown.BackendGVK.Group, wellknown.BackendGVK.Kind, "oauth-backend")
 	gatewayRef := ref(wellknown.GatewayGroup, wellknown.GatewayKind, "gw")
 	listenerSetRef := ref(wellknown.XListenerSetGroup, wellknown.XListenerSetKind, "ls")
+	summaryRef := pluginreporter.PolicyStatusSummaryAncestorRef()
 
 	build := func(t *testing.T, refs ...gwv1.ParentReference) []gwv1.PolicyAncestorStatus {
 		t.Helper()
@@ -255,6 +256,15 @@ func TestBuildDesiredPolicyStatusSuppressesTargetAncestors(t *testing.T) {
 		// unrouted targets reports only its Gateway ancestors.
 		got := build(t, serviceRef, backendRef, gatewayRef)
 		require.Equal(t, []string{"Gateway/gw"}, names(got))
+	})
+
+	t.Run("the StatusSummary ancestor survives a Gateway ancestor", func(t *testing.T) {
+		// One targetRef is routed and earns the Gateway ancestor; another names a missing
+		// Service and lands on StatusSummary. Dropping the summary would make the policy
+		// look healthy.
+		got := build(t, serviceRef, gatewayRef, summaryRef)
+		require.ElementsMatch(t, []string{"Gateway/gw", "StatusSummary/StatusSummary"}, names(got),
+			"a missing target stays visible beside the Gateway ancestor; only target ancestors are suppressed")
 	})
 }
 

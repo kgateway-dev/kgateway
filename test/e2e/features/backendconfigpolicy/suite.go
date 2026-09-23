@@ -377,12 +377,11 @@ func (s *testingSuite) assertTargetNotFound(policyName, policyNamespace, expecte
 
 		var accepted *metav1.Condition
 		for _, ancestor := range policy.Status.Ancestors {
-			if string(ancestor.ControllerName) != kgatewayControllerName ||
-				ancestor.AncestorRef.Kind == nil || string(*ancestor.AncestorRef.Kind) != reporter.PolicyStatusSummaryAncestorName ||
-				string(ancestor.AncestorRef.Name) != reporter.PolicyStatusSummaryAncestorName {
-				continue
+			if string(ancestor.ControllerName) == kgatewayControllerName &&
+				reporter.IsPolicyStatusSummaryAncestorRef(ancestor.AncestorRef) {
+				accepted = meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted))
+				break
 			}
-			accepted = meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted))
 		}
 		g.Expect(accepted).NotTo(gomega.BeNil(), "policy should report a StatusSummary ancestor")
 		g.Expect(accepted.Status).To(gomega.Equal(metav1.ConditionFalse))

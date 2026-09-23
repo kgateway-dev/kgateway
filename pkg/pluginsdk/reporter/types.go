@@ -182,3 +182,24 @@ func PolicyStatusSummaryAncestorRef() gwv1.ParentReference {
 		Name:  PolicyStatusSummaryAncestorName,
 	}
 }
+
+// IsPolicyStatusSummaryAncestor reports whether an ancestor, given as the fields of its ref,
+// is the one PolicyStatusSummaryAncestorRef describes.
+func IsPolicyStatusSummaryAncestor(group, kind, namespace, name string) bool {
+	return group == kgateway.GroupName &&
+		kind == PolicyStatusSummaryAncestorName &&
+		namespace == "" &&
+		name == PolicyStatusSummaryAncestorName
+}
+
+// IsPolicyStatusSummaryAncestorRef is IsPolicyStatusSummaryAncestor for a ParentReference.
+func IsPolicyStatusSummaryAncestorRef(ref gwv1.ParentReference) bool {
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	return IsPolicyStatusSummaryAncestor(
+		deref((*string)(ref.Group)), deref((*string)(ref.Kind)), deref((*string)(ref.Namespace)), string(ref.Name))
+}
