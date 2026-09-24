@@ -302,6 +302,53 @@ func TestFlipRelease_HeldFlipPublishesAtBudget(t *testing.T) {
 	assertSnapshotCoherent(t, released)
 }
 
+// Releasing a flip onto a cluster absent from CDS must also unblock later
+// route/listener/secret updates while that cluster remains missing.
+func TestFlipRelease_MissingClusterDoesNotHoldSubsequentUpdates(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	heldRouteVersion, flipWrap := flipHoldFixture(t, pt)
+	delete(flipWrap.snap.Resources[envoycachetypes.Cluster].Items, "cluster-new")
+	delete(flipWrap.snap.Resources[envoycachetypes.Endpoint].Items, "cluster-new")
+	flipWrap.missingEndpointsReferenced = nil
+	flipWrap.missingReferenced = []string{"cluster-new"}
+
+	pt.syncXds(context.Background(), flipWrap)
+	require.Equal(t, heldRouteVersion, servedSnapshot(t, pt).GetVersion(resourcev3.RouteType))
+
+	// Fire the release directly to exercise expiry without timing-dependent assertions.
+	pt.gate.mu.Lock()
+	pending := pt.gate.pendingFlips[publishGateTestClient]
+	if pending != nil {
+		pending.timer.Stop()
+	}
+	pt.gate.mu.Unlock()
+	require.NotNil(t, pending)
+	pt.gate.fireFlipRelease(context.Background(), pt.xdsCache, publishGateTestClient)
+	released := servedSnapshot(t, pt)
+	require.True(t, snapshotReferencesCluster(released, "cluster-new"))
+	require.NotContains(t, released.GetResources(resourcev3.ClusterType), "cluster-new")
+
+	for _, version := range []string{"update-1", "update-2"} {
+		updated := *flipWrap.snap
+		updated.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-new", "cluster-old")
+		for _, rt := range []envoycachetypes.ResponseType{envoycachetypes.Route, envoycachetypes.Listener, envoycachetypes.Secret} {
+			updated.Resources[rt].Version = version
+		}
+		flipWrap.snap = &updated
+		pt.syncXds(context.Background(), flipWrap)
+
+		published := servedSnapshot(t, pt)
+		for _, typeURL := range []resourcev3.Type{resourcev3.RouteType, resourcev3.ListenerType, resourcev3.SecretType} {
+			assert.Equal(t, version, published.GetVersion(typeURL), "subsequent %s update must publish immediately", typeURL)
+		}
+		assert.NotContains(t, published.GetResources(resourcev3.ClusterType), "cluster-new")
+		pt.gate.mu.Lock()
+		assert.Empty(t, pt.gate.pendingFlips, "a released missing cluster must not arm another hold")
+		pt.gate.mu.Unlock()
+	}
+}
+
 // A build that resolves the flip (endpoints derived, snapshot coherent)
 // cancels the pending release; the expired timer must not overwrite it.
 func TestFlipRelease_ResolvedFlipCancelsPending(t *testing.T) {
