@@ -56,7 +56,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	var errors []error
 
 	// Construct rustformation specific IR
-	if err := constructRustformation(policyCR, &outSpec); err != nil {
+	if err := constructRustformation(krtctx, policyCR, c.commoncol, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Construct extproc specific IR
