@@ -83,7 +83,6 @@ spec:
     kgateway.dev/min-tls-version: "1.2"
     kgateway.dev/max-tls-version: "1.3"
     kgateway.dev/signature-algorithms: "ecdsa_secp256r1_sha256"
-    kgateway.dev/verify-subject-alt-names: "extra-example2.com"
     kgateway.dev/verify-certificate-hash: "7D86C6654C8229364ECFE4D4964C69410090AE09E9B4D0C9B2AD7854175AD51D"
 ---
 apiVersion: v1

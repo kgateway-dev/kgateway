@@ -75,9 +75,6 @@ Clusters:
           - matcher:
               exact: example2.com
             sanType: DNS
-          - matcher:
-              exact: extra-example2.com
-            sanType: DNS
           trustedCa:
             inlineString: |
               -----BEGIN CERTIFICATE-----

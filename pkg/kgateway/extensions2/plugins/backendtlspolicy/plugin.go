@@ -22,6 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
@@ -49,6 +50,11 @@ var (
 	ErrInvalidValidationSpec = errors.New("invalid validation spec")
 
 	ErrInvalidTLSOptions = errors.New("invalid TLS options")
+
+	ErrVerifySubjectAltNamesNotSupported = fmt.Errorf(
+		"%s is not supported on BackendTLSPolicy: additional SANs would be OR'd with the required spec.validation identity check, weakening it",
+		annotations.VerifySubjectAltNames,
+	)
 )
 
 var (
@@ -331,6 +337,10 @@ func applyTLSExtensionOptions(
 		return nil
 	}
 
+	if _, ok := options[annotations.VerifySubjectAltNames]; ok {
+		return ErrVerifySubjectAltNamesNotSupported
+	}
+
 	extCfg := &ir.TLSConfig{}
 	if err := sslutils.ApplyTLSExtensionOptions(options, extCfg); err != nil {
 		return err
@@ -360,14 +370,6 @@ func applyTLSExtensionOptions(
 	}
 	if len(extCfg.VerifyCertificateHash) > 0 {
 		validationContext.VerifyCertificateHash = extCfg.VerifyCertificateHash
-	}
-	for _, san := range extCfg.VerifySubjectAltNames {
-		validationContext.MatchTypedSubjectAltNames = append(validationContext.MatchTypedSubjectAltNames, &envoytlsv3.SubjectAltNameMatcher{
-			SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
-			Matcher: &envoymatcher.StringMatcher{
-				MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
-			},
-		})
 	}
 
 	return nil
