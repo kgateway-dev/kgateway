@@ -51,6 +51,12 @@ type XdsSnapWrapper struct {
 	// EDS cluster without an endpoints row; kube Services always derive a
 	// row, even sliceless ones like ExternalName). A derived-but-empty CLA
 	// is the backend's known truth and is NOT listed (#14352). Sorted.
+	// referencedClusters is the dataplane-referenced cluster set of THIS
+	// build, carried so publication can tell a cluster this build newly names
+	// from one the published config was already using. Computed once per
+	// gateway rather than re-walked per publish.
+	// +noKrtEquals (a change reaches Equals through the route/listener versions it was derived from)
+	referencedClusters         map[string]struct{}
 	missingEndpointsReferenced []string
 }
 
