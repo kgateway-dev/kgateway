@@ -1,0 +1,17 @@
+# Exposes the controller's metrics endpoint so the suite can verify, after
+# every test, that no published per-client snapshot failed
+# Snapshot.Consistent() (see KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK in
+# common-recommendations.yaml). Mirrors the Service used by the metrics suite.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kgateway-metrics
+  namespace: kgateway-test
+spec:
+  selector:
+    app.kubernetes.io/name: kgateway
+  ports:
+    - protocol: TCP
+      port: 9092
+      targetPort: metrics
+      name: metrics
