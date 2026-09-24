@@ -33,7 +33,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: listener~8080
         upgradeConfigs:
         - upgradeType: CONNECT
         useRemoteAddress: true

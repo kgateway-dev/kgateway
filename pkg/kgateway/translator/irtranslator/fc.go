@@ -118,6 +118,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChai
 		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
 		reporter:          n.reporter,
+		listener:          l,         // policies attached to listener; also used to derive HCM stat_prefix
 		gateway:           n.gateway, // corresponds to Gateway API listener
 		policyAncestorRef: n.listener.PolicyAncestorRef,
 	}

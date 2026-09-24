@@ -23,7 +23,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https
-        statPrefix: http
+        statPrefix: https
         useRemoteAddress: true
     name: https
     transportSocket:
@@ -79,7 +79,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-with-hostname
-        statPrefix: http
+        statPrefix: https-with-hostname
         useRemoteAddress: true
     name: https-with-hostname
     transportSocket:
