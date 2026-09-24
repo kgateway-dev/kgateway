@@ -332,8 +332,8 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 // produce an inverted, unusable range.
 func normalizeTLSVersionRange(out *ir.TLSConfig) {
 	if out.MinTLSVersion != nil && out.MaxTLSVersion == nil {
-		max := envoytlsv3.TlsParameters_TLSv1_3
-		out.MaxTLSVersion = &max
+		maxTLSVersion := envoytlsv3.TlsParameters_TLSv1_3
+		out.MaxTLSVersion = &maxTLSVersion
 	}
 }
 
