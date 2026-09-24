@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -34,8 +35,8 @@ var xdsNacksTotal = metrics.NewCounter(
 
 // recordNackIfAny inspects a DiscoveryRequest and, when it carries an
 // ErrorDetail (the xDS NACK signal), logs the rejection and counts it. Called
-// on every stream request, before any initialization gating, so rejections
-// are observed even while the collection is still starting up.
+// after initialization, peer resolution, and successful stream processing. The
+// role must come from authenticated identity, or be empty when auth is disabled.
 func recordNackIfAny(role string, r *envoy_service_discovery_v3.DiscoveryRequest) {
 	errDetail := r.GetErrorDetail()
 	if errDetail == nil {
@@ -61,16 +62,31 @@ func recordNackIfAny(role string, r *envoy_service_discovery_v3.DiscoveryRequest
 	)
 }
 
-// shortTypeURL reduces "type.googleapis.com/envoy.config.route.v3.RouteConfiguration"
-// to "RouteConfiguration" to bound label cardinality.
+// shortTypeURL maps known resource URLs to short names and all other input
+// to a fixed label, bounding cardinality even for arbitrary client input.
 func shortTypeURL(typeURL string) string {
-	if idx := strings.LastIndex(typeURL, "."); idx >= 0 {
-		return typeURL[idx+1:]
+	switch typeURL {
+	case resourcev3.ClusterType:
+		return "Cluster"
+	case resourcev3.EndpointType:
+		return "ClusterLoadAssignment"
+	case resourcev3.RouteType:
+		return "RouteConfiguration"
+	case resourcev3.ScopedRouteType:
+		return "ScopedRouteConfiguration"
+	case resourcev3.VirtualHostType:
+		return "VirtualHost"
+	case resourcev3.ListenerType:
+		return "Listener"
+	case resourcev3.SecretType:
+		return "Secret"
+	case resourcev3.ExtensionConfigType:
+		return "TypedExtensionConfig"
+	case resourcev3.RuntimeType:
+		return "Runtime"
+	default:
+		return "other"
 	}
-	if typeURL == "" {
-		return "unknown"
-	}
-	return typeURL
 }
 
 // gatewayFromRole extracts the gateway name and namespace from a kgateway

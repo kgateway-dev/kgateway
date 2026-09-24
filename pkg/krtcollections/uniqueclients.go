@@ -444,12 +444,6 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 		}
 	}
 
-	// A request carrying ErrorDetail is a NACK: the client rejected the
-	// previous response for this type URL and keeps serving its
-	// last-accepted config. This is the only point where a rejection is
-	// visible to the control plane, so record it before any gating below.
-	recordNackIfAny(roleFromRequest(r), r)
-
 	c := x.collection.Load()
 	if c == nil {
 		return errors.New("kgateway not initialized")
@@ -464,7 +458,19 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 		return nil
 	}
 
-	return c.newStream(sid, r, peerInfo)
+	// Only authenticated identity may supply metric labels. Without auth,
+	// even a kgateway-shaped role is arbitrary client input; aggregate those
+	// NACKs under unknown identity to keep label cardinality bounded.
+	metricRole := ""
+	if x.xdsAuth {
+		metricRole = peerInfo.role
+	}
+	if err := c.newStream(sid, r, peerInfo); err != nil {
+		return err
+	}
+	recordNackIfAny(metricRole, r)
+
+	return nil
 }
 
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
