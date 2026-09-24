@@ -366,7 +366,7 @@ func applyTLSExtensionOptions(
 		common.TlsParams.TlsMaximumProtocolVersion = *extCfg.MaxTLSVersion
 	}
 	if len(extCfg.AlpnProtocols) > 0 {
-		common.AlpnProtocols = extCfg.AlpnProtocols
+		common.AlpnProtocols = sslutils.ResolveAlpnProtocols(extCfg.AlpnProtocols, nil)
 	}
 	if len(extCfg.VerifyCertificateHash) > 0 {
 		validationContext.VerifyCertificateHash = extCfg.VerifyCertificateHash

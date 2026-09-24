@@ -117,6 +117,21 @@ func TestBuildTranslateFunc_InvalidTLSOption(t *testing.T) {
 	assert.ErrorIs(t, err, ErrInvalidTLSOptions)
 }
 
+func TestBuildTranslateFunc_AllowEmptyAlpnProtocols(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		annotations.AlpnProtocols: annotations.AllowEmptyAlpnProtocols,
+	})
+
+	pol, err := translate(krt.TestingDummyContext{}, policy)
+	require.NoError(t, err)
+
+	tlsCtx := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, pol.transportSocket.GetTypedConfig().UnmarshalTo(tlsCtx))
+	assert.Empty(t, tlsCtx.GetCommonTlsContext().GetAlpnProtocols())
+}
+
 func TestBuildTranslateFunc_NoOptions(t *testing.T) {
 	translate := buildTranslateFunc(nil, nil)
 
