@@ -119,12 +119,16 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 
-	// A gap blocks the route flip only if the published config was not
-	// already using the cluster: a previously-referenced cluster that is
-	// missing gets carried forward, and one whose CLA row vanished publishes
-	// the synthesized empty (its truth).
+	// A gap does not block updates if the published config already references
+	// the cluster, even if it is still missing after a bounded release. Missing
+	// clusters available in published CDS can also be carried forward. A
+	// previously-referenced cluster whose CLA row vanished publishes the
+	// synthesized empty (its truth).
 	var flipBlocking []string
 	for _, name := range snapWrap.missingReferenced {
+		if _, wasReferenced := publishedRefs[name]; wasReferenced {
+			continue // already live, including a missing cluster published at budget expiry
+		}
 		if _, wasPublished := oldClusters[name]; wasPublished {
 			continue // carried forward below
 		}
