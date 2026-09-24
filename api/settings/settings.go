@@ -271,6 +271,16 @@ type Settings struct {
 	// when resource-type watches are open.
 	EnableOrderedAds bool `split_words:"true" default:"true"`
 
+	// XdsSuppressNackResend stops the control plane from re-sending an xDS
+	// response the proxy has just rejected. After a NACK the proxy is still on
+	// its previously accepted version, so the snapshot cache would otherwise
+	// answer every NACK with the same rejected response and the two sides spin
+	// at whatever rate the proxy can reject. With this enabled a NACK of the
+	// current snapshot version parks the proxy's watch until the snapshot
+	// changes; a NACK that arrives after the snapshot already changed is
+	// answered immediately. Rejections are still logged and counted.
+	XdsSuppressNackResend bool `split_words:"true" default:"true"`
+
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
