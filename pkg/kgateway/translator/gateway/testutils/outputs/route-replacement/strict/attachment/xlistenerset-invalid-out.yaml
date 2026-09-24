@@ -33,7 +33,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: listener~8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080
@@ -58,7 +58,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: gwtest/test-listenerset/https-8443
-        statPrefix: http
+        statPrefix: gwtest/test-listenerset/https-8443
         useRemoteAddress: true
     name: gwtest/test-listenerset/https-8443
   name: listener~8443
@@ -83,7 +83,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~9090
-        statPrefix: http
+        statPrefix: listener~9090
         useRemoteAddress: true
     name: listener~9090
   name: listener~9090

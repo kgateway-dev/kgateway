@@ -42,7 +42,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: listener~80
         serverHeaderTransformation: APPEND_IF_ABSENT
-        statPrefix: http
+        statPrefix: listener~80
         streamIdleTimeout: 30s
         useRemoteAddress: true
         xffNumTrustedHops: 2

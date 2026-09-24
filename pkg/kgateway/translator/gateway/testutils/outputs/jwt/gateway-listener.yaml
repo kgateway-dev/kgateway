@@ -101,7 +101,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: listener~80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -126,7 +126,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8081
-        statPrefix: http
+        statPrefix: listener~8081
         useRemoteAddress: true
     name: listener~8081
   name: listener~8081

@@ -47,7 +47,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~9090
-        statPrefix: http
+        statPrefix: listener~9090
         useRemoteAddress: true
     name: listener~9090
   name: listener~9090
