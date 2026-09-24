@@ -424,7 +424,7 @@ func TestFleetPumpPreservesEndpointSubscriptionOnACK(t *testing.T) {
 func TestFleetConvergence(t *testing.T) {
 	oldSettle, oldTimeout := fleetSettleMillis, fleetIterTimeout
 	fleetSettleMillis, fleetIterTimeout = 100, 2*time.Second
-	t.Cleanup(func() {
+	testutils.Cleanup(t, func() {
 		fleetSettleMillis, fleetIterTimeout = oldSettle, oldTimeout
 	})
 
