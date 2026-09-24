@@ -317,11 +317,24 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 		}
 	}
 
+	normalizeTLSVersionRange(out)
+
 	if err := validateTLSVersions(out); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
 	return errs
+}
+
+// normalizeTLSVersionRange defaults an unset maximum to the highest supported protocol when
+// only a minimum was configured. Without this, an explicit minimum alone leaves the maximum at
+// whatever Envoy's own implicit default is, which can be lower than the configured minimum and
+// produce an inverted, unusable range.
+func normalizeTLSVersionRange(out *ir.TLSConfig) {
+	if out.MinTLSVersion != nil && out.MaxTLSVersion == nil {
+		max := envoytlsv3.TlsParameters_TLSv1_3
+		out.MaxTLSVersion = &max
+	}
 }
 
 func validateTLSVersions(out *ir.TLSConfig) error {
