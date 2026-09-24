@@ -84,6 +84,27 @@ func TestBuildTranslateFunc_VerifySubjectAltNamesRejected(t *testing.T) {
 	assert.ErrorIs(t, err, ErrVerifySubjectAltNamesNotSupported)
 }
 
+func TestBuildTranslateFunc_MinTLSVersionAloneNormalizesMax(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	// A minimum alone must not leave the effective maximum below it (e.g. at Envoy's own
+	// implicit default), which would produce an inverted, unusable range.
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		annotations.MinTLSVersion: "1.3",
+	})
+
+	pol, err := translate(krt.TestingDummyContext{}, policy)
+	require.NoError(t, err)
+
+	tlsCtx := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, pol.transportSocket.GetTypedConfig().UnmarshalTo(tlsCtx))
+
+	tlsParams := tlsCtx.GetCommonTlsContext().GetTlsParams()
+	require.NotNil(t, tlsParams)
+	assert.Equal(t, envoytlsv3.TlsParameters_TLSv1_3, tlsParams.GetTlsMinimumProtocolVersion())
+	assert.Equal(t, envoytlsv3.TlsParameters_TLSv1_3, tlsParams.GetTlsMaximumProtocolVersion())
+}
+
 func TestBuildTranslateFunc_InvalidTLSOption(t *testing.T) {
 	translate := buildTranslateFunc(nil, nil)
 
