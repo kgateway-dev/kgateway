@@ -1,6 +1,7 @@
 # EP-13666: Mutable Envoy bootstrap config for managed gateway proxies
 
 - Issue: [#13666](https://github.com/kgateway-dev/kgateway/issues/13666)
+- Phase 0 implementation: [#14752](https://github.com/kgateway-dev/kgateway/pull/14752)
 
 ## Background
 
@@ -33,15 +34,16 @@ The current answer is a workaround: copy the generated bootstrap into a custom
 using a `deploymentOverlay` (`spec.kube.deploymentOverlay`). This works, but it
 forces the user to own a **complete, verbatim copy** of the generated bootstrap,
 including control-plane–managed fields (`node.cluster`, `node.metadata.role`, the
-`xds_cluster`, the xDS JWT SDS config, `dynamic_resources`).
+`xds_cluster`, the xDS JWT credential config, `dynamic_resources`).
 
 ### Relevant sources
 
 - Bootstrap template: `pkg/kgateway/helm/envoy/templates/configmap.yaml`
 - Wrapper that loads, transforms, and re-marshals the bootstrap proto:
-  `pkg/envoyinit/run.go` (already unmarshals into `envoy.config.bootstrap.v3.Bootstrap`,
-  mutates it, and re-marshals)
+  `pkg/envoyinit/run.go`
+- Phase 0 merge: `pkg/envoyinit/overlay.go` (`mergeBootstrapOverlay`, #14752)
 - API types: `api/v1alpha1/kgateway/gateway_parameters_types.go` (`EnvoyBootstrap`)
+- Controller settings: `api/settings/settings.go`
 - Overlay precedent (strategic merge patch with `$patch` directives):
   `api/v1alpha1/shared/overlay_types.go` (`KubernetesResourceOverlay`)
 
@@ -54,7 +56,7 @@ new static listener, a renamed cluster, a new managed filter — the user's copi
 validation, and no warning; the user must manually re-reconcile their copy on every
 upgrade, and a stale copy can break xDS connectivity or crash-loop the proxy.
 
-We want a first-class way to mutate the bootstrap that:
+We want a way to mutate the bootstrap that:
 
 1. lets the user express **only their delta**, not a full copy, and
 2. **continues to apply correctly when the base bootstrap meaningfully changes**
@@ -62,18 +64,23 @@ We want a first-class way to mutate the bootstrap that:
 
 ## Goals
 
-- Provide a `GatewayParameters` API to mutate the managed proxy's Envoy bootstrap
-  without copying the whole document.
-- Apply user mutations as a **structured patch against the Envoy `Bootstrap` proto,
-  after the base bootstrap is generated**, so the base can evolve across versions
-  without breaking user config.
+- **Phase 0:** unblock #13666 now with a small, unsupported-but-documented
+  mechanism: envoyinit merges a user-supplied partial bootstrap over the generated
+  one (#14752).
+- **Phase 1:** provide a `GatewayParameters` API to mutate the managed proxy's Envoy
+  bootstrap without copying the whole document, applied as a **structured patch
+  against the Envoy `Bootstrap` proto after the base bootstrap is generated**, so the
+  base can evolve across versions without breaking user config.
+- Ensure a user's value for a control-plane–managed field **never reaches the
+  bootstrap**, so a stale patch can never break xDS connectivity after an upgrade —
+  and do so without letting one such field take the rest of the patch down with it.
+- Let the operator choose, with a controller setting, whether a patch that touches a
+  managed field is pruned (default) or rejected.
+- Validate the merged bootstrap before rollout and report results on the `Gateway`'s
+  status, rather than crash-looping Envoy.
 - Satisfy [#14088](https://github.com/kgateway-dev/kgateway/issues/14088)
-  (`stats_config.histogram_bucket_settings`): expressible through the overlay
-  in Phase 1, and promoted to a curated, validated field in Phase 2 (see Phasing).
-- Protect control-plane–managed bootstrap fields from being mutated, so a
-  user's stale patch can never break xDS connectivity after an upgrade.
-- Validate the merged bootstrap before rollout and report results on status, rather
-  than crash-looping Envoy.
+  (`stats_config.histogram_bucket_settings`): expressible through the overlay in
+  Phases 0 and 1, and promoted to a curated, validated field in Phase 2.
 
 ## Non-Goals
 
@@ -83,37 +90,131 @@ We want a first-class way to mutate the bootstrap that:
 - Mutating dynamic (xDS-delivered) config such as listeners, routes, and clusters.
   Those are owned by the translation pipeline and configured via Gateway API and
   policy CRDs.
-- Letting users override control-plane–managed bootstrap fields (the xDS cluster,
-  node identity, ADS config, SDS token). These are explicitly denied.
+- Letting users override control-plane–managed bootstrap fields through the Phase 1
+  API (the xDS cluster, node identity, ADS config, admin address). Those values are
+  never honored there. Phase 0 deliberately does not protect them (see Phase 0).
 - Arbitrary text/templating of the bootstrap document (see Alternatives).
+- An admission webhook (see Write-time feedback).
 
 ## Implementation Details
 
 ### Design principle
 
-Apply mutations as a **proto-level patch onto the freshly generated `Bootstrap`,
-on every translation** — never as a textual or whole-document replacement. This is
-the same layering Envoy itself uses (`--config-path` + `--config-yaml`, which is a
-proto `MergeFrom`) and the same place the envoyinit wrapper already
-unmarshals / mutates / re-marshals the bootstrap. Because the patch targets stable
-proto field paths rather than line/character positions, it keeps working when the
-surrounding base config changes.
+Apply mutations as a **proto-level patch onto the freshly generated `Bootstrap`** —
+never as a textual or whole-document replacement. This is the same layering Envoy
+itself uses (`--config-path` + `--config-yaml`, which is a proto `MergeFrom`).
+Because the patch targets stable proto field paths rather than line/character
+positions, it keeps working when the surrounding base config changes.
+
+### Phasing
 
 ```mermaid
-flowchart TD
-    A[Generate base Bootstrap for current version] --> B[Apply curated typed fields]
-    B --> C[Apply overlay via proto MergeFrom / strategy]
-    C --> D[Reject if a managed field was mutated]
-    D --> E[Validate merged Bootstrap proto]
-    E --> F[Marshal and hand to Envoy]
-    D -->|violation| G[Set status condition, do not roll out]
-    E -->|invalid| G
+flowchart LR
+    P0["Phase 0<br/>envoyinit OVERLAY_CONF<br/>(#14752)"] --> P1["Phase 1<br/>GatewayParameters overlay<br/>+ controller merge<br/>+ guardrails + status"]
+    P1 --> P2["Phase 2<br/>curated typed fields<br/>on evidence"]
+    P2 --> P3["Phase 3<br/>Replace / JSONPatch"]
 ```
 
-### Configuration
+- **Phase 0 — envoyinit overlay (#14752).** Ships the merge function and a way to
+  use it today, with no API change and no guardrails.
+- **Phase 1 — API, controller-side merge, guardrails, status (the supported MVP).**
+  Reuses the Phase 0 merge function in the controller and adds the managed-field
+  guardrail, merged-result validation, status reporting, and automatic rollout.
+- **Phase 2 — promote curated fields on evidence.** Start generic, curate when a
+  given overlay shape recurs.
+- **Phase 3 — removal/replace strategies.** Only once a concrete need for
+  non-additive edits appears.
+
+Layer 2 of the Phase 1 API (the overlay) is strictly more general than Layer 1
+(curated fields): anything a curated field does, the overlay can already express. So
+we ship the overlay first and curate later.
+
+### Phase 0: envoyinit overlay
+
+PR #14752 teaches envoyinit to read an optional partial bootstrap from the file named
+by the `OVERLAY_CONF` environment variable on the proxy container, merge it over the
+kgateway-generated bootstrap with `mergeBootstrapOverlay`, and hand the result to
+Envoy. It needs no API change: the existing `podTemplate.extraVolumes`,
+`envoyContainer.extraVolumeMounts`, and `envoyContainer.env` fields deliver the file
+and the variable.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-gateway-bootstrap-overlay
+data:
+  overlay.yaml: |
+    layered_runtime:
+      layers:
+      - name: user_runtime
+        static_layer:
+          envoy.reloadable_features.no_extension_lookup_by_name: false
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: my-gateway
+spec:
+  kube:
+    podTemplate:
+      extraVolumes:
+      - name: bootstrap-overlay
+        configMap:
+          name: my-gateway-bootstrap-overlay
+    envoyContainer:
+      extraVolumeMounts:
+      - name: bootstrap-overlay
+        mountPath: /etc/envoy-overlay
+        readOnly: true
+      env:
+      - name: OVERLAY_CONF
+        value: /etc/envoy-overlay/overlay.yaml
+```
+
+Semantics (`pkg/envoyinit/overlay.go`, verified against a running proxy by
+`pkg/envoyinit/overlay_envoy_test.go`):
+
+- **The overlay wins conflicts.** Set scalars replace kgateway's values, messages
+  merge recursively, and repeated fields append (proto `Merge`). The overlay cannot
+  reset a field to its zero value.
+- **Runtime layers go before `admin_layer`**, not after it, so `/runtime_modify`
+  keeps winning (see Merge semantics). A user layer whose name duplicates a base layer
+  is an error.
+- **A bad overlay stops the proxy.** An unreadable file, an unknown field, or a
+  duplicate layer name makes envoyinit exit before starting Envoy; a merged bootstrap
+  Envoy rejects fails at Envoy startup. With a rolling update the old pods normally
+  keep serving and the rollout stalls, but the only signal is pod status and logs.
+
+What Phase 0 deliberately does **not** provide, and why it is documented as "you
+own the upgrade consequences":
+
+- **No managed-field protection.** An overlay can override `node`, the admin
+  address, or anything else. This matches the existing posture of `ExtraArgs`
+  (documented, not enforced). In the upgrade scenario described under Guardrails —
+  kgateway N+1 starts managing a field the user set under N — a Phase 0 override
+  keeps winning silently.
+- **No validation before rollout and no status.**
+- **No rollout on overlay edits.** envoyinit reads the file once at startup, so a
+  `ConfigMap` edit has no effect until pods restart, and pods can disagree until then.
+
+Phase 0 is the escape hatch by design, and stays one:
+
+- **Phase 0 does not honor the denylist.** It is the one documented way to override a
+  control-plane–managed field, for users who need to and accept the consequences.
+  `KGW_BOOTSTRAP_PATCH_DENIED_PATHS` does not reach envoyinit.
+- **Phase 0 is not deprecated when Phase 1 ships.** It remains the advanced escape
+  hatch. Because envoyinit applies it last, a Phase 0 overlay is merged over the
+  Phase 1 result and **bypasses Phase 1's guardrails**; the docs for both phases must
+  say so.
+
+### Phase 1: API, controller merge, guardrails
+
+#### Configuration
 
 Extend `EnvoyBootstrap` in `api/v1alpha1/kgateway/gateway_parameters_types.go` with
-a `patches` field, structured in two layers.
+a `patches` field, structured in two layers. Phase 1 ships Layer 2 only; Layer 1
+fields arrive in Phase 2.
 
 ```yaml
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -125,22 +226,17 @@ spec:
     envoyContainer:
       bootstrap:
         patches:
-          # Layer 1: curated, strongly-typed fields for common cases.
+          # Layer 1 (Phase 2): curated, strongly-typed fields for common cases.
           statsConfig:
             histogramBucketSettings:
               - match: { prefix: "cluster." }
                 buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
-            # statsFlushInterval, etc. promoted here as demand warrants.
 
-          # Layer 2: typed proto-merge escape hatch for everything else.
+          # Layer 2 (Phase 1): typed proto-merge escape hatch for everything else.
           overlay:
-            mergeStrategy: StructuredMerge   # default; proto MergeFrom semantics
+            mergeStrategy: StructuredMerge   # default, and the only value in Phase 1
             value:                           # a partial envoy.config.bootstrap.v3.Bootstrap
               stats_flush_interval: 10s
-              # Toggle an Envoy reloadable feature flag. These are plain runtime
-              # keys, so they are expressed as a layered_runtime static_layer —
-              # there is no dedicated "reloadable feature" field in the bootstrap
-              # schema.
               layered_runtime:
                 layers:
                   - name: user_runtime
@@ -148,14 +244,22 @@ spec:
                       envoy.reloadable_features.no_extension_lookup_by_name: false
 ```
 
+1. **Curated typed fields** (`statsConfig.histogramBucketSettings`,
+   `statsFlushInterval`, `dnsResolver`, ...). These give CRD validation,
+   documentation, and a stable contract. Issue #14088 is the first candidate for
+   promotion (Phase 2); until then it goes through the overlay.
+2. **A typed proto overlay** (`overlay.value`), stored with
+   `+kubebuilder:pruning:PreserveUnknownFields` and parsed by the controller as a
+   *partial* `envoy.config.bootstrap.v3.Bootstrap`. The API server does not validate
+   under `PreserveUnknownFields`, so typos and bad types are caught by the controller
+   and reported on status. Because it is keyed by proto field, it survives
+   base-template changes.
+
 #### Worked example: reloadable feature flags
 
-Toggling an Envoy reloadable feature is the most common near-term ask, so it is worth
-making explicit. There is **no flat "reloadable features" field** in the Envoy
-bootstrap — a feature flag like `envoy.reloadable_features.<name>` is just a runtime
-key, set through `layered_runtime.layers[].static_layer` as shown above.
-
-This interacts with the merge semantics in a way that must be understood:
+There is **no flat "reloadable features" field** in the Envoy bootstrap — a feature
+flag like `envoy.reloadable_features.<name>` is just a runtime key, set through
+`layered_runtime.layers[].static_layer` as shown above.
 
 - The generated base bootstrap **already defines** a `layered_runtime` with two
   layers — `static_layer` (holding e.g.
@@ -163,245 +267,324 @@ This interacts with the merge semantics in a way that must be understood:
   (`pkg/kgateway/helm/envoy/templates/configmap.yaml`).
 - Envoy resolves each runtime key from the last layer that sets it, and the
   `admin_layer` must stay last so `/runtime_modify` keeps overriding everything.
-  Plain proto `MergeFrom` would append the user's `layers` entry *after*
-  `admin_layer`, so a user key would silently beat `/runtime_modify`. `StructuredMerge`
-  therefore special-cases runtime layers: user layers are inserted immediately before
-  the first `admin_layer` in the base (or appended if there is none), giving
-  `static_layer`, then user layers, then `admin_layer`. A user layer overrides the
-  managed `static_layer` but not `/runtime_modify`.
-- Therefore: give the user layer a **distinct `name`** (e.g. `user_runtime`). Reusing
-  `static_layer` adds a second layer of the same name rather than editing the
-  managed one, and Envoy rejects the bootstrap (`Duplicate layer name: static_layer`,
-  `source/common/runtime/runtime_impl.cc`), so merged-result validation catches it.
-  A user who genuinely needs to replace the managed runtime wholesale uses
-  `mergeStrategy: Replace` on `layered_runtime` instead (deferred to Phase 3; see
-  Phasing) — and the denylist must *not* cover `layered_runtime`, so this path stays
-  open.
-
-Two layers, deliberately:
-
-1. **Curated typed fields** (`statsConfig.histogramBucketSettings`,
-   `statsFlushInterval`, `dnsResolver`, ...). These give CRD validation,
-   documentation, and a stable contract. Issue #14088 is the first candidate for
-   promotion here (Phase 2); until then it goes through the overlay. As new demand
-   appears, a field is promoted from the overlay into this curated set.
-
-2. **A typed proto overlay** (`overlay.value`), validated as a *partial*
-   `envoy.config.bootstrap.v3.Bootstrap` via
-   `+kubebuilder:pruning:PreserveUnknownFields` plus a proto-schema validation step
-   (the API server does not validate under `PreserveUnknownFields`; where this step
-   runs is an open question, see Open Questions). The user supplies only the
-   sub-message they care about; kgateway merges it onto the generated `Bootstrap`.
-   Because it is keyed by proto field, it survives base-template changes; because it
-   is validated against the real `Bootstrap` schema, typos and bad types are reported
-   on status rather than crash-looping Envoy.
-
-#### Phasing
-
-The two layers do not need to land together, and shouldn't. Layer 2 (the overlay) is
-strictly more general than Layer 1 (curated fields): anything a curated field does,
-the overlay can already express. So we ship the overlay first and curate later, as
-demand proves which fields deserve a first-class contract. This resolves the "where
-to curate" open question in favor of **start generic, curate on evidence**.
-
-- **Phase 1 — overlay + guardrails (the MVP).** `bootstrap.patches.overlay` with
-  `StructuredMerge`, the managed-field denylist, merged-result proto validation, and
-  status reporting. This alone satisfies the headline asks: reloadable feature flags
-  (worked example above), `stats_flush_interval`, extra runtime layers, and
-  `stats_config.histogram_bucket_settings` ([#14088](https://github.com/kgateway-dev/kgateway/issues/14088))
-  — all expressible as a partial `Bootstrap`. No curated field is required to be
-  *useful*; the guardrails are what make it *safe*, and they are non-negotiable for
-  Phase 1.
-- **Phase 2 — promote curated fields on evidence.** When a given overlay shape
-  recurs (starting with `statsConfig.histogramBucketSettings` for #14088), promote it
-  into a strongly-typed Layer 1 field for CRD validation, documentation, and a stable
-  contract. Promotion is backward-compatible: the curated field and the overlay
-  target the same proto path, with the curated field applied first and the overlay
-  layered on top.
-- **Phase 3 — removal/replace strategies.** Add `Replace` and (discouraged)
-  `JSONPatch` once a concrete need for non-additive edits appears. `StructuredMerge`
-  covers the additive majority, so this is deferred rather than built speculatively.
+  User layers are therefore inserted immediately before the first `admin_layer`,
+  giving `static_layer`, then user layers, then `admin_layer`. A user layer
+  overrides the managed `static_layer` but not `/runtime_modify`.
+- Give the user layer a **distinct `name`** (e.g. `user_runtime`). Envoy rejects
+  duplicate layer names (`Duplicate layer name: static_layer`,
+  `source/common/runtime/runtime_impl.cc`), and `mergeBootstrapOverlay` rejects them
+  earlier with a clearer message. `layered_runtime` is not on the denylist.
+- Envoy ignores runtime keys it does not know, so a flag that a later Envoy removes
+  never fails validation; it silently stops having an effect. The release notes of
+  the Envoy bump, not this mechanism, are the signal for that.
 
 #### Merge semantics
 
 Proto `MergeFrom` is additive: repeated fields append, singular fields overwrite,
 messages merge recursively. It cannot *remove* or wholesale-*replace* a repeated
-field, which users eventually need. We model `mergeStrategy` on the *vocabulary* of
-the existing `KubernetesResourceOverlay` (`api/v1alpha1/shared/overlay_types.go`),
-but note this is a **conceptual** borrow, not a code reuse. That overlay is
-implemented with Kubernetes strategic merge patch
-(`pkg/deployer/strategicpatch/strategicpatch.go`, via
-`k8s.io/apimachinery/pkg/util/strategicpatch`), which depends on
-`patchStrategy`/`patchMergeKey` struct tags on the target k8s API types and a typed
-`dataObj` passed to `StrategicMergePatch`. The Envoy `Bootstrap` proto carries none
-of that metadata, so the existing machinery cannot be pointed at the bootstrap; the
-strategies below are a fresh implementation over proto/JSON. Expose a per-overlay
-`mergeStrategy`:
+field. We model `mergeStrategy` on the *vocabulary* of the existing
+`KubernetesResourceOverlay` (`api/v1alpha1/shared/overlay_types.go`), but this is a
+**conceptual** borrow, not a code reuse: that overlay is implemented with Kubernetes
+strategic merge patch (`pkg/deployer/strategicpatch/strategicpatch.go`), which
+depends on `patchStrategy`/`patchMergeKey` struct tags the Envoy `Bootstrap` proto
+does not carry.
 
-- `StructuredMerge` (default) — proto `MergeFrom`; additive and safe. The one
-  exception is `layered_runtime.layers`, which are inserted before the
-  `admin_layer` rather than appended (see the reloadable-feature worked example).
-- `Replace` — replace a named sub-message/list wholesale (e.g. fully define
+- `StructuredMerge` (default; Phase 0 and 1) — `mergeBootstrapOverlay`: proto
+  `MergeFrom`, except that `layered_runtime.layers` are inserted before the
+  `admin_layer` rather than appended.
+- `Replace` (Phase 3) — replace a named sub-message/list wholesale (e.g. fully define
   `stats_config`), using `$patch: replace` semantics.
-- `JSONPatch` — RFC 6902 ops against the bootstrap, for surgical removals. This is
-  the one mode whose paths re-couple to base structure, so it is discouraged and
-  documented as such.
+- `JSONPatch` (Phase 3) — RFC 6902 ops against the bootstrap, for surgical removals.
+  This is the one mode whose paths re-couple to base structure, so it is discouraged
+  and documented as such.
 
-### Controllers
+A user static cluster whose name collides with a managed one cannot silently shadow
+it: `StructuredMerge` appends a second cluster of the same name, and Envoy rejects
+the bootstrap (`cluster manager: duplicate cluster 'xds_cluster'`,
+`source/common/upstream/cluster_manager_impl.cc`). The denylist below turns that
+failure for `xds_cluster` into a pruned, reported path.
 
-The merge is performed by the deployer/translation path that already produces the
-bootstrap. Concretely, two viable insertion points; this EP recommends the first:
+#### Pipeline
 
-1. **In the controller, before writing the bootstrap `ConfigMap`.** Today the
-   deployer does *not* build a `Bootstrap` proto here — it renders the bootstrap as
-   Helm text (`pkg/kgateway/helm/envoy/templates/configmap.yaml`). So this option
-   introduces a new step that does not exist today: parse the Helm-rendered
-   `envoy.yaml` into an `envoy.config.bootstrap.v3.Bootstrap`, apply curated fields,
-   apply the overlay, validate, then re-marshal back to `envoy.yaml`. The
-   unmarshal/mutate/re-marshal roundtrip is already proven safe in the envoyinit
-   wrapper (`pkg/envoyinit/run.go`), so this is mechanically sound — but it is new
-   integration, not a reuse of an existing proto build. (The existing
-   `pkg/xds/bootstrap` `ConfigBuilder` is *not* a drop-in base generator: it
-   synthesizes a bootstrap purely to validate translated xDS, and is not the
-   managed-proxy bootstrap.) This keeps all logic and status reporting in one place
-   and means the `ConfigMap` on the cluster is already the final config.
+Phase 1 moves the merge from envoyinit into the controller, before the bootstrap
+`ConfigMap` is written, so the `ConfigMap` on the cluster is already the final
+config and all logic and status reporting live in one place.
 
-2. **In the envoyinit wrapper** (`pkg/envoyinit/run.go`), which already round-trips
-   the bootstrap proto. The patch could be delivered as an env var / mounted file and
-   merged there. This is closer to Envoy's own `--config-yaml` model but moves
-   validation off the control plane and out of status reporting, so it is not
-   preferred.
+```mermaid
+flowchart TD
+    A[Render base bootstrap from Helm, parse to Bootstrap proto] --> B[Apply curated typed fields]
+    O[Parse user overlay to partial Bootstrap proto] --> P{Overlay touches a denied path?}
+    P -->|no| M
+    P -->|yes, PRUNE| S[Strip denied paths, record each one] --> M
+    P -->|yes, REJECT| H
+    B --> M[mergeBootstrapOverlay base + overlay]
+    M --> V[Validate merged Bootstrap with envoy --mode validate]
+    V -->|ok| W[Write ConfigMap, roll proxy, set status]
+    V -->|fail| H[Keep last-good ConfigMap, do not roll, set status]
+```
 
-#### Guardrails (the load-bearing part)
+Today the deployer does not build a `Bootstrap` proto; it renders the bootstrap as
+Helm text. Phase 1 adds a parse / mutate / re-marshal step, the same roundtrip
+envoyinit already performs (`pkg/envoyinit/run.go`). The existing `pkg/xds/bootstrap`
+`ConfigBuilder` is *not* a drop-in base generator: it synthesizes a bootstrap purely
+to validate translated xDS.
 
-- **Reject mutation of control-plane–managed fields.** Maintain a denylist of proto
-  paths the control plane owns: `node`, `dynamic_resources.ads_config`, the
-  `xds_cluster` static cluster, the admin address, and the xDS JWT SDS cluster (all
-  confirmed present in the generated bootstrap,
-  `pkg/kgateway/helm/envoy/templates/configmap.yaml`). A patch touching any of these
-  is rejected with a clear status condition. This is the property that stops a stale
-  user patch from breaking xDS after an upgrade.
+#### Guardrails
 
-  Note this is a **new, enforced** guardrail with no existing enforcement precedent.
-  The closest analogue, `ExtraArgs`, only *documents* that `--service-node`,
-  `--log-level`, `--component-log-level`, and `--disable-hot-restart` "must not be
-  set here" (a doc comment on the field, `gateway_parameters_types.go`); nothing in
-  code rejects them, and that same comment points users to `DeploymentOverlay` to
-  override those values if desired. So the existing project posture is
-  *document-and-allow-override-via-escape-hatch*, not enforce. Choosing enforcement
-  here is a deliberate departure justified by the upgrade-safety goal, not an
-  extension of precedent — see Open Questions on denylist strictness.
-- **Validate the merged result, not just the patch.** Run the combined `Bootstrap`
-  through Envoy's proto validation before rollout. A reusable validator already
-  exists — `pkg/validator` (binary/docker/caching, running `envoy --mode validate`
-  over an `envoy.config.bootstrap.v3.Bootstrap`) — but today it is wired only into
-  the **translator** to validate dynamic xDS (`proxy_syncer.go` →
-  `NewCombinedTranslator(..., validator)`), not the deployer's static bootstrap, and
-  the envoyinit wrapper does **not** itself validate (it only roundtrips the proto).
-  Reusing this validator on the bootstrap path is therefore new wiring. Caveat: the
-  docker-based validator depends on pulling/running an Envoy image, which is fragile
-  in network-restricted CI/dev environments; prefer the binary validator where the
-  Envoy binary is available. Surface failures on status rather than rolling out a
-  crash-looping proxy.
+##### Managed-field denylist
 
-### Deployer
+The controller maintains a denylist of proto paths the control plane owns, all
+present in the generated bootstrap (`pkg/kgateway/helm/envoy/templates/configmap.yaml`):
 
-- The bootstrap `ConfigMap` rendering gains the merge step described above.
-- No new volumes or mounts are required; the existing `envoy-config` volume continues
-  to carry the (now merged) bootstrap.
+- `node`
+- `dynamic_resources`
+- `admin.address`
+- `static_resources.clusters[name=xds_cluster]` (which also carries the xDS JWT
+  credential injector)
+
+Paths are matched on the **parsed proto** (field descriptors, with list entries
+identified by key), never on raw YAML keys, because the proto JSON mapping accepts
+both `dynamic_resources` and `dynamicResources`.
+
+What happens to a patch that touches a denied path is an operator choice, set by a
+new controller setting in `api/settings/settings.go`, modeled on `ValidationMode`:
+
+```go
+// BootstrapPatchDeniedPaths determines what the controller does with a
+// GatewayParameters bootstrap overlay that sets a control-plane-managed path.
+// Supported values:
+// - "PRUNE" (default): drop each denied path from the overlay before merging,
+//   apply the rest, and report each dropped path on status.
+// - "REJECT": apply none of the overlay and report the denied paths on status.
+BootstrapPatchDeniedPaths BootstrapPatchDeniedPathsMode `split_words:"true" default:"PRUNE"`
+```
+
+That is `KGW_BOOTSTRAP_PATCH_DENIED_PATHS=PRUNE|REJECT`.
+
+**`PRUNE` is the default** because it is the only mode that stays safe across an
+unattended upgrade. The denylist is small but not fixed forever: if kgateway N+1
+starts generating a field that a user set legitimately under N, that path joins the
+denylist, and a patch that was valid when written now touches it. There is no way to
+keep honoring the override — honoring it *is* the breakage — so a deprecation window
+is not available either. The only question is what happens to the rest of the patch.
+Under `PRUNE`, the stale path is dropped, kgateway's generated value is used (by
+construction the value that works), the user's unrelated entries (such as the
+reloadable feature flag they are relying on during that very Envoy bump) still
+apply, and the proxy rolls cleanly.
+
+Pruning happens *before* the merge, so the managed fields are protected by
+construction: the user's value never enters the merge, and there is no post-hoc
+"did it survive?" check to get wrong.
+
+`REJECT` suits operators who would rather have patch authors fix mistakes than have
+them silently dropped. It accepts the upgrade hazard above knowingly: on an upgrade
+that grows the denylist, the entire overlay stops applying to affected Gateways,
+which then follow the invalid-merge fallback. The docs must say this plainly.
+
+The operator (usually a platform team) owns this choice rather than the
+`GatewayParameters` author, because the author is the person most tempted to set a
+managed field; a per-resource switch would let them opt out of the protection.
+
+This is a **new, enforced** guardrail. The closest analogue, `ExtraArgs`, only
+*documents* flags that "must not be set here" and points to `DeploymentOverlay` to
+override them. Enforcing here is a deliberate departure justified by the
+upgrade-safety goal. Phase 0 keeps the documented posture for users who need to
+override a managed field anyway.
+
+##### Denylist growth is a breaking change
+
+Pruning makes denylist growth survivable, not safe: once a field becomes
+control-plane-managed, no behavior preserves the user's intent. So:
+
+- The denylist is an **enumerated, effectively frozen set**. A field kgateway merely
+  *prefers* to own does not belong on it.
+- Adding a path is treated as a breaking change and carries a release-note
+  obligation.
+- The per-path metric (see Reporting) lets a platform team find affected Gateways
+  *before* a version bump.
+
+##### Validate the merged result
+
+Run the combined `Bootstrap` through `envoy --mode validate` before rollout. A
+reusable validator exists — `pkg/validator` (binary / docker / caching) — but today
+it is wired only into the translator (`proxy_syncer.go` ->
+`NewCombinedTranslator(..., validator)`), so reusing it on the bootstrap path is new
+wiring. Prefer the binary validator where the Envoy binary is available; the docker
+validator is fragile in network-restricted environments. `--mode validate` builds
+both the runtime and the cluster manager, so it catches duplicate layer and cluster
+names.
+
+##### Invalid-merge fallback
+
+When the overlay cannot be parsed, the merged bootstrap fails validation, or
+`REJECT` refuses the overlay, the controller keeps the last-good bootstrap
+`ConfigMap`, does not roll the proxy, and sets status. See Open Questions for the
+upgrade and first-creation cases.
+
+#### Deployer
+
+- The bootstrap `ConfigMap` rendering gains the pipeline above.
+- No new volumes or mounts; the existing `envoy-config` volume carries the merged
+  bootstrap.
 - A change to `bootstrap.patches` triggers the same reconcile/rollout the deployer
   already performs for other `GatewayParameters` changes.
 
+#### Reporting
+
+Status goes on the **`Gateway`**, not `GatewayParameters`:
+`GatewayParametersStatus` is empty today, one `GatewayParameters` can serve many
+Gateways, and the merged result is per Gateway.
+
+Add a `BootstrapPatchApplied` condition:
+
+| Status | Reason | When |
+| --- | --- | --- |
+| `True` | `Applied` | Whole overlay applied. |
+| `True` | `PathsIgnored` | `PRUNE` dropped one or more denied paths; the rest applied. The message lists each dropped path. |
+| `False` | `PathsDenied` | `REJECT` refused an overlay that touched denied paths. The message lists them. |
+| `False` | `InvalidOverlay` | The overlay does not parse as a partial `Bootstrap`. |
+| `False` | `ValidationFailed` | The merged bootstrap failed `envoy --mode validate`. |
+
+`True` with `PathsIgnored` is deliberate: the patch did apply, and a routine ignored
+path must not read as a broken Gateway to anyone alerting on condition status.
+`False` is reserved for cases where the overlay could not be rolled out at all.
+
+Also emit a `Warning` event for each dropped or denied path, and a metric labeled by
+path (and Gateway). The denylist is small and enumerable, so cardinality is bounded.
+
+The honest cost of `PRUNE` as default: a fresh mistake is reported rather than
+refused, so someone who does not check status can believe a setting took effect when
+it did not. The event, the metric, and the optional CEL rules below mitigate it.
+
+#### Write-time feedback
+
+Enforcement stays in the controller, which is the only place that can validate
+against the *current* base bootstrap (it changes on upgrade) and run
+`envoy --mode validate`. kgateway has no admission webhooks today and this EP does
+not add one.
+
+As a convenience, the CRD may add `x-kubernetes-validations` (CEL) rules that
+reject denylist paths at write time. CEL sees only the properties a
+`PreserveUnknownFields` object declares: a rule naming an undeclared field fails
+CRD creation (`compilation failed: undefined field 'node'`), and undeclared fields
+are stored but invisible to rules. So each denied path must be declared as a schema
+property alongside `PreserveUnknownFields`, in both snake_case and lowerCamelCase.
+Keyed list entries work too, by declaring the list with partially typed items
+(`type: object`, `PreserveUnknownFields`, and a `name: string` property):
+
+```yaml
+x-kubernetes-validations:
+- rule: "!has(self.node) && !has(self.dynamic_resources) && !has(self.dynamicResources)"
+  message: node and dynamic_resources are managed by kgateway
+- rule: >-
+    !has(self.static_resources) || !has(self.static_resources.clusters) ||
+    !self.static_resources.clusters.exists(c, has(c.name) && c.name == 'xds_cluster')
+  message: static cluster xds_cluster is managed by kgateway
+```
+
+This was checked against envtest API servers v1.31.0 and v1.35.0. The controller
+pins `k8s.io/apiserver` v0.35.3, whose `pkg/cel/common/schemas.go` documents the
+same behavior. Declaring properties does not prune anything: an allowed overlay
+round-trips with its unknown fields intact. A gap in CEL coverage is never a safety
+gap, because the controller enforces regardless.
+
+These rules refuse patches that are illegal *today*, which is the right answer at
+write time under either `PRUNE` or `REJECT`.
+
+### Phase 2: curated fields
+
+When a given overlay shape recurs (starting with
+`statsConfig.histogramBucketSettings` for #14088), promote it into a strongly-typed
+Layer 1 field for CRD validation, documentation, and a stable contract. Promotion is
+backward-compatible: the curated field and the overlay target the same proto path,
+with the curated field applied first and the overlay layered on top. A curated
+`staticResources.clusters` field, if demand warrants, can reject collisions with
+managed cluster names up front with a clearer message.
+
+### Phase 3: removal and replace strategies
+
+Add `Replace` and (discouraged) `JSONPatch` once a concrete need for non-additive
+edits appears. `StructuredMerge` covers the additive majority. Denied paths apply
+equally to these strategies.
+
 ### Translator and Proxy Syncer
 
-No changes to xDS translation. This EP only affects the static bootstrap; dynamic
-resources continue to be delivered by the existing translation pipeline.
-
-### Reporting
-
-Add a status condition on the `Gateway` / `GatewayParameters` reflecting bootstrap
-patch application: `Applied`, or `Rejected` with a reason (managed-field violation,
-proto validation failure, unknown field). This makes an invalid or drifting overlay
-visible without reading Envoy logs.
+No changes to xDS translation. This EP only affects the static bootstrap.
 
 ### Test Plan
 
-- **Unit:** merge logic per `mergeStrategy`; denylist enforcement for each managed
-  path; partial-`Bootstrap` proto validation (valid, unknown-field, wrong-type);
-  curated `histogramBucketSettings` rendering.
-- **Translator/golden:** `GatewayParameters` inputs with curated fields and overlays
-  produce the expected merged bootstrap; a base-bootstrap change does not disturb the
-  user delta (regression guard for the core "survives version change" goal).
-- **e2e:** apply `bootstrap.patches.statsConfig.histogramBucketSettings`, then assert
-  the running Envoy reports the custom buckets via the admin `/config_dump`
-  `BootstrapConfigDump`. This is a **new** e2e suite: there is no existing
-  `BootstrapConfigDump`/`/config_dump` assertion in the test tree, and no
-  `CustomEnvoyBootstrap` suite exists. The nearest existing artifact is a deployer
-  Helm golden-test fixture (`envoy-configs-and-overlays` in
-  `test/deployer/internal_helm_test.go`), which validates rendered output but does
-  not exercise a running proxy. Add a negative e2e for a denied managed-field patch
-  surfacing a `Rejected` status.
+- **Phase 0 (in #14752):** unit tests for `mergeBootstrapOverlay` (layer placement,
+  duplicate layer names, scalar/message/list semantics) and `applyOverlayFile`;
+  docker tests that run the envoy-wrapper image with the deployer-rendered bootstrap
+  and assert, through the admin API, the running runtime layers, precedence,
+  `/runtime_modify` still winning, and fail-fast on a bad overlay.
+- **Phase 1 unit:** denied-path matching on the parsed proto (snake_case and
+  lowerCamelCase, keyed list entries); `PRUNE` strips exactly the denied paths and
+  leaves the rest; `REJECT` applies nothing; the settings decoder accepts only
+  `PRUNE`/`REJECT`; each status reason.
+- **Phase 1 golden:** `GatewayParameters` inputs with overlays produce the expected
+  merged bootstrap; a base-bootstrap change does not disturb the user delta
+  (regression guard for "survives version change"); an overlay touching a denied path
+  under each mode.
+- **Phase 1 upgrade regression:** simulate a denylist addition against a stored
+  overlay that sets that path plus a runtime layer; under `PRUNE` the runtime layer
+  still applies and status is `True`/`PathsIgnored`.
+- **Phase 1 e2e:** a new suite (there is no existing `/config_dump`
+  `BootstrapConfigDump` assertion in the tree) that applies an overlay and asserts
+  the running Envoy's bootstrap, plus a negative case for a denied path surfacing
+  `PathsIgnored` (default) and `PathsDenied` (with `REJECT`).
 
 ## Alternatives
 
 - **Status quo: clone `ConfigMap` + `deploymentOverlay`.** Works today but requires a
-  verbatim full copy of the generated bootstrap and silently drifts on upgrade. This
-  EP's whole motivation is to remove that fragility. The mechanism stays available for
-  `Deployment`-level needs.
-- **`--config-yaml` via `envoyContainer.extraArgs`.** Envoy's overlay flag is the
-  right idea, but the envoyinit wrapper already invokes Envoy with one
-  `--config-yaml <generated bootstrap>`; a second `--config-yaml` from `extraArgs`
-  collides (the flag is single-valued and errors when repeated). A controlled,
-  in-process proto merge avoids this entirely.
+  verbatim full copy of the generated bootstrap and silently drifts on upgrade.
+- **Stop at Phase 0.** Solves the headline ask with little code, but leaves managed
+  fields unprotected, has no status, and does not roll on edits. Adequate as an
+  escape hatch, not as the supported API.
+- **`--config-yaml` via `envoyContainer.extraArgs`.** The envoyinit wrapper already
+  invokes Envoy with one `--config-yaml <generated bootstrap>`; a second one collides
+  (`(--config-yaml) -- Argument already set!`).
 - **`-c <overlay>` (`--config-path`) via `envoyContainer.extraArgs`.** Works today
-  with no code change: mount the partial bootstrap with a `deploymentOverlay` and
-  pass `-c` to it. Envoy loads `--config-path` first and merges the wrapper's
-  `--config-yaml` over it, so **kgateway's bootstrap wins every conflict**, and a
-  stale user file can never override a managed field. The cost is the flip side:
-  the user cannot override anything kgateway sets (e.g. the `static_layer` key
-  `envoy.restart_features.use_eds_cache_for_ads`), their runtime layers land
-  *before* `static_layer`, and repeated fields are concatenated with the user's
-  entries first. That covers adding a reloadable-feature flag kgateway does not set,
-  but not overriding one it does. Verified against a running proxy in
-  [#14752](https://github.com/kgateway-dev/kgateway/pull/14752)
-  (`TestEnvoyExtraArgsConfigPathMergesUnderBootstrap`). Like the status quo, it has
-  no validation before rollout and no status reporting, and editing the file does
-  not roll the proxy.
-- **A single opaque "full bootstrap replacement" field.** Rejected: it reintroduces
-  the verbatim-copy problem and the managed-field hazard, just inside the CRD instead
-  of a `ConfigMap`.
-- **String templating of the bootstrap.** Rejected: text-level patches re-couple to
-  line/character structure and break on base changes — exactly what we are trying to
-  avoid.
+  with no code change. Envoy loads `--config-path` first and merges the wrapper's
+  `--config-yaml` over it, so **kgateway's bootstrap wins every conflict** and a stale
+  user file can never override a managed field. The flip side: the user cannot
+  override anything kgateway sets (e.g. the `static_layer` key
+  `envoy.restart_features.use_eds_cache_for_ads`), their runtime layers land *before*
+  `static_layer`, and their repeated-field entries come first. It covers adding a
+  reloadable-feature flag kgateway does not set, but not overriding one it does.
+  Verified in #14752 (`TestEnvoyExtraArgsConfigPathMergesUnderBootstrap`). Like
+  Phase 0, it has no validation before rollout, no status, and no rollout on edits.
+- **Always reject a patch that touches a denied path.** The original draft of this
+  EP. Clearest feedback for fresh mistakes, but an upgrade that grows the denylist
+  takes out the user's unrelated, load-bearing entries unattended. Kept as the
+  `REJECT` mode rather than the default.
+- **Per-`GatewayParameters` prune/reject switch.** Puts the choice with the patch
+  author, the person the guardrail protects against. Rejected in favor of the
+  controller setting.
+- **Allowlist of top-level fields** (`stats_config`, `layered_runtime`,
+  `stats_flush_interval`, `typed_dns_resolver_config`, `static_resources.clusters`).
+  A typed, pruned schema would let CEL carry real enforcement weight, but it blunts
+  the emergency/security-response use case that motivates the EP, and
+  controller-side enforcement does not need it.
+- **Admission webhook.** Immediate feedback, but a new moving part kgateway does not
+  have today, and it still cannot validate against a future base bootstrap. The
+  optional CEL rules provide the easy cases without it.
+- **A single opaque "full bootstrap replacement" field.** Reintroduces the
+  verbatim-copy problem and the managed-field hazard inside the CRD.
+- **String templating of the bootstrap.** Text-level patches re-couple to
+  line/character structure and break on base changes.
 
 ## Open Questions
 
-- **Enforce vs. document.** Should managed fields be *enforced* (reject the patch,
-  set `Rejected` status) or merely *documented* as unsupported, mirroring the
-  existing `ExtraArgs` posture (doc comment + "use `DeploymentOverlay` to override")?
-  Enforcement is what delivers the upgrade-safety goal, but it diverges from the
-  project's current document-and-allow-override convention and removes an escape
-  hatch power users currently rely on. This EP recommends enforcement for the
-  control-plane-owned xDS/identity paths specifically (where a stale override is
-  catastrophic), and leaning toward documentation for merely-discouraged paths.
-- **Denylist vs. allowlist.** If we enforce, is a curated denylist of managed proto
-  paths sufficient, or should the overlay be restricted to an allowlist of known-safe
-  top-level fields (`stats_config`, `layered_runtime`, `stats_flush_interval`,
-  `typed_dns_resolver_config`, additional `static_resources.clusters`)? An allowlist
-  is safer but less flexible.
-- **Where to validate.** Admission webhook vs. controller-time validation with status
-  reporting. Webhook gives immediate feedback but adds a moving part; controller-time
-  fits the existing status model.
-- **Custom static clusters.** *Resolved by Phasing:* #13666 calls out "custom
-  options in the bootstrap config" generally; user-defined static clusters (e.g. an
-  `aws_sts_cluster` for an external integration) are a representative example. These
-  go through the Layer 2 overlay in Phase 1 (appended to `static_resources.clusters`
-  via `StructuredMerge`), and are promoted to a curated `staticResources.clusters`
-  field in Phase 2 only if demand warrants — at which point curation can add conflict
-  detection against managed cluster names (`xds_cluster`, the local cluster). A user
-  cluster whose name collides with a managed one cannot silently shadow it:
-  `StructuredMerge` appends a second cluster of the same name, and Envoy rejects the
-  bootstrap (`cluster manager: duplicate cluster 'xds_cluster'`,
-  `source/common/upstream/cluster_manager_impl.cc`). Merged-result validation
-  therefore catches the collision, and no dedicated Phase 1 check is needed; Phase 2
-  curation can report it earlier with a clearer message.
+- **Invalid-merge fallback across an upgrade and on first creation.** "Keep last-good
+  `ConfigMap`, do not roll" is well defined for an edit to an existing Gateway. After
+  a kgateway upgrade, last-good was rendered by the previous version; keeping it means
+  running an old bootstrap under the new control plane, and holding the `Deployment`
+  too blocks that Gateway's upgrade. A new Gateway has no last-good at all. The
+  alternative is failing open (roll the generated bootstrap without the overlay and
+  set `False`), which proceeds but drops load-bearing settings. Which applies in each
+  case?
+- **CEL coverage.** Every current denylist path, including the keyed
+  `static_resources.clusters[name=xds_cluster]`, can be expressed (see Write-time
+  feedback). Should the schema cover all of them, or only the top-level ones? Each
+  declared path is one more place a denylist change must be mirrored.
