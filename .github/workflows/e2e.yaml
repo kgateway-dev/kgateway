@@ -67,7 +67,7 @@ jobs:
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$|^TestKgateway$$/^XdsStarvation$$'
+            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^AttachedRoutes$$|^TestKgateway$$/^XdsIdentityRace$$|^TestKgateway$$/^XdsStarvation$$'
             localstack: 'false'
           # May 29, 2026: ~5 minutes
           - cluster-name: 'cluster-eight'
