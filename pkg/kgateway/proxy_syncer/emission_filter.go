@@ -35,14 +35,20 @@ func filterClustersToEmitted(
 	clusters envoycache.Resources,
 	clusterVersions map[string]uint64,
 ) (envoycache.Resources, map[string]uint64, bool) {
-	if !scoping.ScopesClusters() || !emitted.Filterable() {
+	claims := scoping.Claims()
+	if !scoping.ScopesClusters() || !emitted.Filterable(claims) {
 		return clusters, clusterVersions, false
 	}
 
 	retained := make(map[string]envoycachetypes.ResourceWithTTL, len(clusters.Items))
 	retainedVersions := make(map[string]uint64, len(clusterVersions))
 	for name, item := range clusters.Items {
-		if _, referenced := emitted.Names[name]; !referenced {
+		_, referenced := emitted.Names[name]
+		// A claimed cluster is kept even when nothing names it: that is the
+		// whole point of a claim, and it covers the plugin's own placeholder
+		// cluster, which stops being named the moment its feature is doing its
+		// job and would otherwise be the first thing pruned.
+		if !referenced && !claims.claims(name) {
 			continue
 		}
 		retained[name] = item
