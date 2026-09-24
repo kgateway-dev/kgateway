@@ -522,9 +522,11 @@ func (s *XdsFleetSuite) TestXdsFleet() {
 		s.survivedGateways = connected
 	}
 
-	s.runFleetPhase("EdsChurn", func(i int) { s.churnEndpointSlice(i) })
-	s.runFleetPhase("BaseChurn", func(i int) { s.churnInlineBackend(i) })
-	s.runFleetPhase("StreamReconnect", func(i int) { s.reconnectOneGateway(i) })
+	s.runFleetPhase("EdsChurn", func(i int) { s.churnEndpointSlice(i) }, true)
+	s.runFleetPhase("BaseChurn", func(i int) { s.churnInlineBackend(i) }, true)
+	// Reopened streams must be served (checked by reconnectOneGateway), but
+	// serving a cached snapshot does not require a new transform.
+	s.runFleetPhase("StreamReconnect", func(i int) { s.reconnectOneGateway(i) }, false)
 }
 
 // clientsPerGateway is how many unique clients one Gateway's replicas produce.
@@ -540,7 +542,7 @@ func (s *XdsFleetSuite) clientsPerGateway() int {
 	return 1
 }
 
-func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
+func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int), requireTransform bool) {
 	s.T().Logf("=== fleet phase %s at %d clients", name, fleetGateways*s.clientsPerGateway())
 	s.Require().True(s.waitQuiet(time.Duration(fleetSettleMillis)*time.Millisecond, fleetWaveTimeout),
 		"controller must go quiet before phase %s", name)
@@ -553,7 +555,7 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int)) {
 		t0 := time.Now()
 		tBefore := s.scrape().Transforms
 		mutate(i)
-		last, ok := s.waitConverged(tBefore)
+		last, ok := s.waitConverged(tBefore, requireTransform)
 		if !ok {
 			timedOut++
 			s.T().Logf("phase %s iteration %d did not converge in %s", name, i, fleetIterTimeout)
@@ -1361,10 +1363,11 @@ func (s *XdsFleetSuite) controllerRestarts() int32 {
 	return total
 }
 
-func (s *XdsFleetSuite) waitConverged(before float64) (time.Time, bool) {
+func (s *XdsFleetSuite) waitConverged(before float64, requireTransform bool) (time.Time, bool) {
 	settle := time.Duration(fleetSettleMillis) * time.Millisecond
 	deadline := time.Now().Add(fleetIterTimeout)
 	last := time.Time{}
+	transformed := false
 	seen := before
 	for time.Now().Before(deadline) {
 		time.Sleep(250 * time.Millisecond)
@@ -1379,8 +1382,14 @@ func (s *XdsFleetSuite) waitConverged(before float64) (time.Time, bool) {
 		cur := sample.Transforms
 		if cur > seen {
 			seen = cur
+			transformed = true
 			last = time.Now()
 			continue
+		}
+		// Start (or restart after a failed scrape) the quiet window only once
+		// the phase's progress requirement has been met.
+		if last.IsZero() && (!requireTransform || transformed) {
+			last = time.Now()
 		}
 		if !last.IsZero() && time.Since(last) >= settle {
 			return last, true

@@ -137,7 +137,7 @@ func TestBenchConvergenceRequiresQuietWindow(t *testing.T) {
 	defer server.Close()
 	fleet := &XdsFleetSuite{metricsURL: server.URL}
 	fleet.SetT(t)
-	_, ok := fleet.waitConverged(0)
+	_, ok := fleet.waitConverged(0, true)
 	assert.False(t, ok, "a transform without a full quiet window must time out")
 	cost := &XdsCostSuite{metricsURL: server.URL}
 	cost.SetT(t)
@@ -279,7 +279,7 @@ func TestFleetCrashEmitsVerdictWithUnavailableMetrics(t *testing.T) {
 	fleet.SetT(t)
 	fleet.TestXdsFleet()
 	assert.False(t, fleet.waitServed(nil, time.Second), "a restart must prevent readiness even if all streams are ready")
-	_, converged := fleet.waitConverged(0)
+	_, converged := fleet.waitConverged(0, true)
 	assert.False(t, converged, "a restart must stop convergence polling")
 	data, err := os.ReadFile(outputPath)
 	require.NoError(t, err)
@@ -419,4 +419,44 @@ func TestFleetPumpPreservesEndpointSubscriptionOnACK(t *testing.T) {
 	assert.Equal(t, "eds-nonce", stream.sent[2].ResponseNonce)
 	assert.Equal(t, "rds-nonce", stream.sent[3].ResponseNonce)
 	assert.EqualValues(t, 3, c.acks.Load())
+}
+
+func TestFleetConvergence(t *testing.T) {
+	oldSettle, oldTimeout := fleetSettleMillis, fleetIterTimeout
+	fleetSettleMillis, fleetIterTimeout = 100, 2*time.Second
+	t.Cleanup(func() {
+		fleetSettleMillis, fleetIterTimeout = oldSettle, oldTimeout
+	})
+
+	for _, tc := range []struct {
+		name             string
+		requireTransform bool
+		values           []int // A negative value represents an unavailable metrics endpoint.
+		want             bool
+	}{
+		{name: "cached reconnect", values: []int{10}, want: true},
+		{name: "churn requires a transform", requireTransform: true, values: []int{10}},
+		{name: "churn transforms", requireTransform: true, values: []int{11}, want: true},
+		{name: "scrape failure after transform", requireTransform: true, values: []int{11, -1, 11}, want: true},
+		{name: "unavailable metrics", values: []int{-1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				value := tc.values[min(calls, len(tc.values)-1)]
+				calls++
+				if value < 0 {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					return
+				}
+				fmt.Fprintf(w, "# TYPE kgateway_xds_snapshot_transforms_total counter\nkgateway_xds_snapshot_transforms_total %d\n", value)
+			}))
+			defer server.Close()
+			s := &XdsFleetSuite{metricsURL: server.URL}
+			_, got := s.waitConverged(10, tc.requireTransform)
+			if got != tc.want {
+				t.Fatalf("converged = %v, want %v", got, tc.want)
+			}
+		})
+	}
 }
