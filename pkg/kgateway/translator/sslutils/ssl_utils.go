@@ -348,3 +348,17 @@ func validateTLSVersions(out *ir.TLSConfig) error {
 	}
 	return nil
 }
+
+// ResolveAlpnProtocols converts a TLSConfig's configured ALPN protocols into the list Envoy
+// should be given: defaultProtocols when none were requested, an explicit empty list when the
+// AllowEmptyAlpnProtocols sentinel was requested, or the requested list otherwise.
+func ResolveAlpnProtocols(configured []string, defaultProtocols []string) []string {
+	switch {
+	case len(configured) == 0:
+		return defaultProtocols
+	case len(configured) == 1 && configured[0] == string(annotations.AllowEmptyAlpnProtocols):
+		return []string{}
+	default:
+		return configured
+	}
+}

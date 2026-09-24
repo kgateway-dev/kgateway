@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -517,12 +517,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		return nil
 	}
 
-	alpnProtocols := tlsConfig.AlpnProtocols
-	if len(alpnProtocols) == 0 {
-		alpnProtocols = defaultDownstreamAlpnProtocols
-	} else if len(alpnProtocols) == 1 && alpnProtocols[0] == string(annotations.AllowEmptyAlpnProtocols) {
-		alpnProtocols = []string{}
-	}
+	alpnProtocols := sslutils.ResolveAlpnProtocols(tlsConfig.AlpnProtocols, defaultDownstreamAlpnProtocols)
 
 	common := &envoytlsv3.CommonTlsContext{
 		// default params
