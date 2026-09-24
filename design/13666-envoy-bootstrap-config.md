@@ -167,10 +167,12 @@ This interacts with the merge semantics in a way that must be understood:
   layer correctly overrides earlier values — this is the desired behavior.
 - Therefore: give the user layer a **distinct `name`** (e.g. `user_runtime`). Reusing
   `static_layer` appends a second layer of the same name rather than editing the
-  managed one, which is confusing and unnecessary. A user who genuinely needs to
-  replace the managed runtime wholesale uses `mergeStrategy: Replace` on
-  `layered_runtime` instead (deferred to Phase 3; see Phasing) — and the denylist
-  must *not* cover `layered_runtime`, so this path stays open.
+  managed one, and Envoy rejects the bootstrap (`Duplicate layer name: static_layer`,
+  `source/common/runtime/runtime_impl.cc`), so merged-result validation catches it.
+  A user who genuinely needs to replace the managed runtime wholesale uses
+  `mergeStrategy: Replace` on `layered_runtime` instead (deferred to Phase 3; see
+  Phasing) — and the denylist must *not* cover `layered_runtime`, so this path stays
+  open.
 
 Two layers, deliberately:
 
@@ -376,9 +378,10 @@ visible without reading Envoy logs.
   go through the Layer 2 overlay in Phase 1 (appended to `static_resources.clusters`
   via `StructuredMerge`), and are promoted to a curated `staticResources.clusters`
   field in Phase 2 only if demand warrants — at which point curation can add conflict
-  detection against managed cluster names (`xds_cluster`, the local cluster). The one
-  open sub-question is whether Phase 1 should additionally *reject* a user cluster
-  whose name collides with a managed one, or merely document the hazard; given the
-  denylist already protects the managed `xds_cluster` definition itself, a name
-  collision is a footgun rather than an xDS-breaking event, so documentation is
-  likely sufficient until Phase 2.
+  detection against managed cluster names (`xds_cluster`, the local cluster). A user
+  cluster whose name collides with a managed one cannot silently shadow it:
+  `StructuredMerge` appends a second cluster of the same name, and Envoy rejects the
+  bootstrap (`cluster manager: duplicate cluster 'xds_cluster'`,
+  `source/common/upstream/cluster_manager_impl.cc`). Merged-result validation
+  therefore catches the collision, and no dedicated Phase 1 check is needed; Phase 2
+  curation can report it earlier with a clearer message.
