@@ -42,7 +42,6 @@ func TestBuildTranslateFunc_AppliesTLSExtensionOptions(t *testing.T) {
 		annotations.MinTLSVersion:         "1.2",
 		annotations.MaxTLSVersion:         "1.3",
 		annotations.AlpnProtocols:         "h2,http/1.1",
-		annotations.VerifySubjectAltNames: "extra.example.com",
 		annotations.VerifyCertificateHash: "7D86C6654C8229364ECFE4D4964C69410090AE09E9B4D0C9B2AD7854175AD51D",
 	})
 
@@ -65,10 +64,24 @@ func TestBuildTranslateFunc_AppliesTLSExtensionOptions(t *testing.T) {
 	require.NotNil(t, validationCtx)
 	assert.Equal(t, []string{"7D86C6654C8229364ECFE4D4964C69410090AE09E9B4D0C9B2AD7854175AD51D"}, validationCtx.GetVerifyCertificateHash())
 
-	// One SAN matcher from spec.Validation.Hostname, one from the verify-subject-alt-names option.
-	require.Len(t, validationCtx.GetMatchTypedSubjectAltNames(), 2)
+	// Only the mandatory SAN matcher from spec.Validation.Hostname: verify-subject-alt-names is
+	// rejected for BackendTLSPolicy, so it can never widen this set.
+	require.Len(t, validationCtx.GetMatchTypedSubjectAltNames(), 1)
 	assert.Equal(t, "example.com", validationCtx.GetMatchTypedSubjectAltNames()[0].GetMatcher().GetExact())
-	assert.Equal(t, "extra.example.com", validationCtx.GetMatchTypedSubjectAltNames()[1].GetMatcher().GetExact())
+}
+
+func TestBuildTranslateFunc_VerifySubjectAltNamesRejected(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	// verify-subject-alt-names would OR extra SANs into the match set, letting a certificate
+	// that lacks the required hostname still pass validation, so it must be rejected outright.
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		annotations.VerifySubjectAltNames: "extra.example.com",
+	})
+
+	_, err := translate(krt.TestingDummyContext{}, policy)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrVerifySubjectAltNamesNotSupported)
 }
 
 func TestBuildTranslateFunc_InvalidTLSOption(t *testing.T) {
