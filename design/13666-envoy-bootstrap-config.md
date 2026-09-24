@@ -161,12 +161,16 @@ This interacts with the merge semantics in a way that must be understood:
   layers — `static_layer` (holding e.g.
   `envoy.restart_features.use_eds_cache_for_ads: true`) and `admin_layer`
   (`pkg/kgateway/helm/envoy/templates/configmap.yaml`).
-- Under the default `StructuredMerge` (proto `MergeFrom`), the user's `layers` entry
-  is **appended** to the base list, not merged into the existing `static_layer`.
-  Envoy evaluates layers in order with later layers winning, so an appended user
-  layer correctly overrides earlier values — this is the desired behavior.
+- Envoy resolves each runtime key from the last layer that sets it, and the
+  `admin_layer` must stay last so `/runtime_modify` keeps overriding everything.
+  Plain proto `MergeFrom` would append the user's `layers` entry *after*
+  `admin_layer`, so a user key would silently beat `/runtime_modify`. `StructuredMerge`
+  therefore special-cases runtime layers: user layers are inserted immediately before
+  the first `admin_layer` in the base (or appended if there is none), giving
+  `static_layer`, then user layers, then `admin_layer`. A user layer overrides the
+  managed `static_layer` but not `/runtime_modify`.
 - Therefore: give the user layer a **distinct `name`** (e.g. `user_runtime`). Reusing
-  `static_layer` appends a second layer of the same name rather than editing the
+  `static_layer` adds a second layer of the same name rather than editing the
   managed one, and Envoy rejects the bootstrap (`Duplicate layer name: static_layer`,
   `source/common/runtime/runtime_impl.cc`), so merged-result validation catches it.
   A user who genuinely needs to replace the managed runtime wholesale uses
@@ -234,7 +238,9 @@ of that metadata, so the existing machinery cannot be pointed at the bootstrap; 
 strategies below are a fresh implementation over proto/JSON. Expose a per-overlay
 `mergeStrategy`:
 
-- `StructuredMerge` (default) — proto `MergeFrom`; additive and safe.
+- `StructuredMerge` (default) — proto `MergeFrom`; additive and safe. The one
+  exception is `layered_runtime.layers`, which are inserted before the
+  `admin_layer` rather than appended (see the reloadable-feature worked example).
 - `Replace` — replace a named sub-message/list wholesale (e.g. fully define
   `stats_config`), using `$patch: replace` semantics.
 - `JSONPatch` — RFC 6902 ops against the bootstrap, for surgical removals. This is
@@ -347,6 +353,20 @@ visible without reading Envoy logs.
   `--config-yaml <generated bootstrap>`; a second `--config-yaml` from `extraArgs`
   collides (the flag is single-valued and errors when repeated). A controlled,
   in-process proto merge avoids this entirely.
+- **`-c <overlay>` (`--config-path`) via `envoyContainer.extraArgs`.** Works today
+  with no code change: mount the partial bootstrap with a `deploymentOverlay` and
+  pass `-c` to it. Envoy loads `--config-path` first and merges the wrapper's
+  `--config-yaml` over it, so **kgateway's bootstrap wins every conflict**, and a
+  stale user file can never override a managed field. The cost is the flip side:
+  the user cannot override anything kgateway sets (e.g. the `static_layer` key
+  `envoy.restart_features.use_eds_cache_for_ads`), their runtime layers land
+  *before* `static_layer`, and repeated fields are concatenated with the user's
+  entries first. That covers adding a reloadable-feature flag kgateway does not set,
+  but not overriding one it does. Verified against a running proxy in
+  [#14752](https://github.com/kgateway-dev/kgateway/pull/14752)
+  (`TestEnvoyExtraArgsConfigPathMergesUnderBootstrap`). Like the status quo, it has
+  no validation before rollout and no status reporting, and editing the file does
+  not roll the proxy.
 - **A single opaque "full bootstrap replacement" field.** Rejected: it reintroduces
   the verbatim-copy problem and the managed-field hazard, just inside the CRD instead
   of a `ConfigMap`.
