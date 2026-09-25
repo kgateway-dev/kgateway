@@ -22,6 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
@@ -47,6 +48,13 @@ var (
 	ErrParsingTLSConfig = errors.New("TLS config parse error")
 
 	ErrInvalidValidationSpec = errors.New("invalid validation spec")
+
+	ErrInvalidTLSOptions = errors.New("invalid TLS options")
+
+	ErrVerifySubjectAltNamesNotSupported = fmt.Errorf(
+		"%s is not supported on BackendTLSPolicy: additional SANs would be OR'd with the required spec.validation identity check, weakening it",
+		annotations.VerifySubjectAltNames,
+	)
 )
 
 var (
@@ -295,6 +303,12 @@ func buildTranslateFunc(
 			return &policyIr, ErrInvalidValidationSpec
 		}
 
+		if err := applyTLSExtensionOptions(spec.Options, tlsContextDefault, validationContext); err != nil {
+			perr := fmt.Errorf("%w: %w", ErrInvalidTLSOptions, err)
+			logger.Error("error applying TLS extension options", "error", perr, "policy_name", policyCR.Name)
+			return &policyIr, perr
+		}
+
 		typedConfig, err := utils.MessageToAny(tlsContextDefault)
 		if err != nil {
 			logger.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
@@ -309,6 +323,42 @@ func buildTranslateFunc(
 
 		return &policyIr, nil
 	}
+}
+
+// applyTLSExtensionOptions applies the same kgateway.dev/* TLS extension annotations supported
+// on a Gateway listener to the UpstreamTlsContext generated for a BackendTLSPolicy.
+// validationContext must be the same CertificateValidationContext already embedded in tlsContext.
+func applyTLSExtensionOptions(
+	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
+	tlsContext *envoytlsv3.UpstreamTlsContext,
+	validationContext *envoytlsv3.CertificateValidationContext,
+) error {
+	if len(options) == 0 {
+		return nil
+	}
+
+	if _, ok := options[annotations.VerifySubjectAltNames]; ok {
+		return ErrVerifySubjectAltNamesNotSupported
+	}
+
+	extCfg := &ir.TLSConfig{}
+	if err := sslutils.ApplyTLSExtensionOptions(options, extCfg); err != nil {
+		return err
+	}
+
+	common := tlsContext.CommonTlsContext
+	if common.TlsParams == nil {
+		common.TlsParams = &envoytlsv3.TlsParameters{}
+	}
+	sslutils.ApplyTLSParameters(common.TlsParams, extCfg)
+	if len(extCfg.AlpnProtocols) > 0 {
+		common.AlpnProtocols = sslutils.ResolveAlpnProtocols(extCfg.AlpnProtocols, nil)
+	}
+	if len(extCfg.VerifyCertificateHash) > 0 {
+		validationContext.VerifyCertificateHash = extCfg.VerifyCertificateHash
+	}
+
+	return nil
 }
 
 func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {

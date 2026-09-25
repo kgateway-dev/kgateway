@@ -317,11 +317,44 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 		}
 	}
 
+	normalizeTLSVersionRange(out)
+
 	if err := validateTLSVersions(out); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
 	return errs
+}
+
+// normalizeTLSVersionRange defaults an unset maximum to the highest supported protocol when
+// only a minimum was configured. Without this, an explicit minimum alone leaves the maximum at
+// whatever Envoy's own implicit default is, which can be lower than the configured minimum and
+// produce an inverted, unusable range.
+func normalizeTLSVersionRange(out *ir.TLSConfig) {
+	if out.MinTLSVersion != nil && out.MaxTLSVersion == nil {
+		maxTLSVersion := envoytlsv3.TlsParameters_TLSv1_3
+		out.MaxTLSVersion = &maxTLSVersion
+	}
+}
+
+// ApplyTLSParameters copies TLS settings from cfg to params. The downstream listener path and
+// the upstream BackendTLSPolicy path both call this function.
+func ApplyTLSParameters(params *envoytlsv3.TlsParameters, cfg *ir.TLSConfig) {
+	if len(cfg.CipherSuites) > 0 {
+		params.CipherSuites = cfg.CipherSuites
+	}
+	if len(cfg.EcdhCurves) > 0 {
+		params.EcdhCurves = cfg.EcdhCurves
+	}
+	if len(cfg.SignatureAlgorithms) > 0 {
+		params.SignatureAlgorithms = cfg.SignatureAlgorithms
+	}
+	if cfg.MinTLSVersion != nil {
+		params.TlsMinimumProtocolVersion = *cfg.MinTLSVersion
+	}
+	if cfg.MaxTLSVersion != nil {
+		params.TlsMaximumProtocolVersion = *cfg.MaxTLSVersion
+	}
 }
 
 func validateTLSVersions(out *ir.TLSConfig) error {
@@ -334,4 +367,18 @@ func validateTLSVersions(out *ir.TLSConfig) error {
 		}
 	}
 	return nil
+}
+
+// ResolveAlpnProtocols converts a TLSConfig's configured ALPN protocols into the list Envoy
+// should be given: defaultProtocols when none were requested, an explicit empty list when the
+// AllowEmptyAlpnProtocols sentinel was requested, or the requested list otherwise.
+func ResolveAlpnProtocols(configured []string, defaultProtocols []string) []string {
+	switch {
+	case len(configured) == 0:
+		return defaultProtocols
+	case len(configured) == 1 && configured[0] == string(annotations.AllowEmptyAlpnProtocols):
+		return []string{}
+	default:
+		return configured
+	}
 }
