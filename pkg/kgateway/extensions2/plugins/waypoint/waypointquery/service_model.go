@@ -19,6 +19,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/serviceentry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/backendaddress"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -232,7 +233,7 @@ func fqdn(name, ns string) string {
 }
 
 func FromService(svc *corev1.Service) Service {
-	addrs := serviceentry.ServiceAddresses(svc)
+	addrs := backendaddress.ServiceAddresses(svc)
 
 	return Service{
 		Object:    svc,
@@ -257,7 +258,7 @@ func FromService(svc *corev1.Service) Service {
 }
 
 func FromServiceEntry(se *networkingclient.ServiceEntry, aliases []ir.ObjectSource) Service {
-	addrs := serviceentry.ServiceEntryAddresses(se)
+	addrs := backendaddress.ServiceEntryAddresses(se)
 
 	return Service{
 		Object:    se,
@@ -280,9 +281,9 @@ func BackendAddresses(ir ir.BackendObjectIR) []string {
 	var addresses []string
 	switch ir.Obj.(type) {
 	case *corev1.Service:
-		addresses = serviceentry.ServiceAddresses(ir.Obj.(*corev1.Service))
+		addresses = backendaddress.ServiceAddresses(ir.Obj.(*corev1.Service))
 	case *networkingclient.ServiceEntry:
-		addresses = serviceentry.ServiceEntryAddresses(ir.Obj.(*networkingclient.ServiceEntry))
+		addresses = backendaddress.ServiceEntryAddresses(ir.Obj.(*networkingclient.ServiceEntry))
 	}
 	return addresses
 }

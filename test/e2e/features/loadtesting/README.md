@@ -205,6 +205,170 @@ load-test action runs it once per load-test cluster, after the standard and
 strict AttachedRoutes runs. Run it locally with
 `make run-load-tests-strict-churn`.
 
+### XdsCost Benchmark (per-client xDS control-plane cost)
+
+`xdscost_suite.go` is StrictChurn's measurement sibling. StrictChurn asks "did
+the fleet stay served under churn"; XdsCost asks "what did each kind of change
+cost the controller", which is the question that separates competing per-client
+CDS topologies. It has no performance pass/fail thresholds and is meant to be
+run twice against two builds and diffed. Every mutation must converge; a
+timeout invalidates the measurement and fails the suite.
+
+It measures the controller from the outside, scraping the controller's own
+`/metrics` (port 9092) before and after each change. `pkg/metrics` registers the
+Go and process collectors, so `process_cpu_seconds_total`,
+`go_memstats_alloc_bytes_total`, `go_memstats_heap_inuse_bytes` and
+`process_resident_memory_bytes` are measurements of the real running binary.
+
+Three phases, one per event the topologies price differently:
+
+- **EdsChurn** rewrites one simulated Service's EndpointSlice. Those are EDS
+  clusters, so the endpoints flow through the separate per-client EDS pipeline
+  and never reach the cluster base. This is the control phase: it should cost
+  about the same on any CDS topology, and it shows how much of an
+  endpoint-churn bill is actually CDS.
+- **BaseChurn** edits one static `Backend`'s host. A static Backend becomes a
+  STATIC cluster with an inline `ClusterLoadAssignment`, so its endpoints are
+  folded into the cluster's base version: the edit is a base change and every
+  connected client's CDS payload is rebuilt. This is the frequent event wherever
+  endpoints live in the backend object rather than in EndpointSlices
+  (ServiceEntry with inline endpoints, DNS and static Backends).
+- **Reconnect** deletes one gateway's Envoy pod, so the replacement arrives as a
+  new xDS client.
+
+Client fan-out is the number of **Gateways**, not Envoy replicas: a
+`UniquelyConnectedClient` is keyed by role, namespace, labels and locality, so on
+a single-node cluster every replica of one Gateway collapses into one client.
+
+Each phase reports, per change: controller CPU milliseconds, megabytes
+allocated, xDS syncs and snapshot transforms, and convergence latency measured
+to the last observed snapshot transform for that change. Each phase emits an
+`xds_cost_result` JSON line and the run emits `xds_cost_summary`, so two builds are compared by
+diffing output. On a build that carries them, the sparse-CDS deferral metrics
+(`kgateway_xds_snapshot_cluster_deferrals_total`) are picked up automatically and
+reported per change; on a build without them they read zero.
+
+```bash
+# Requires an existing cluster with kgateway installed.
+KGW_BENCH_LABEL=my-build make run-xds-cost-bench
+
+# Scale the fleet and pick the validation mode.
+KGW_BENCH_LABEL=my-build \
+KGW_BENCH_GATEWAYS=8 \
+KGW_BENCH_STATIC_BACKENDS=300 \
+KGW_BENCH_EDS_ROUTES=200 \
+KGW_BENCH_ITERATIONS=15 \
+KGW_BENCH_VALIDATION=STRICT \
+KGW_BENCH_OUT=/tmp/xdscost.jsonl \
+  make run-xds-cost-bench
+```
+
+Like StrictChurn it mutates the controller deployment (it pins
+`KGW_VALIDATION_MODE` for the run and restores it on teardown), so it is
+hard-gated behind `KGW_ENABLE_XDS_COST=true`, which the make target sets.
+
+### XdsFleet Benchmark (fleet-scale capacity ladder)
+
+`xdsfleet_suite.go` is XdsCost at production fan-out. XdsCost prices individual
+changes on a fleet a laptop can host; XdsFleet answers the different question of
+**how many clients the controller survives** at a realistic shape — thousands of
+Services and hundreds of Gateways — which is what separates designs that only
+look different in a microbenchmark.
+
+Getting there needs two substitutions, because 800 Gateways with two proxies
+each is 1600 Envoy pods that no single machine can run:
+
+- **Gateways are real, their proxies are not.** A `GatewayParameters` pins the
+  proxy Deployment to zero replicas, so the control plane does the full
+  translation for every Gateway without any Envoy running.
+- **xDS streams are synthetic.** The suite opens gRPC ADS streams carrying each
+  Gateway's role in node metadata. This requires `KGW_XDS_AUTH=false`, which the
+  suite sets: with auth on, the server takes identity from a ServiceAccount JWT
+  on the gRPC metadata and a stream without a real pod's token is rejected.
+  Identity then comes from the node metadata role, which changes how the role is
+  derived but not what is translated for it. The suite also temporarily sets
+  `KGW_XDS_TLS=false` for its plaintext connection. Streams subscribe to CDS,
+  LDS, RDS, and the EDS names advertised by CDS, including the local cluster
+  when pod locality is enabled.
+
+With pod-locality xDS on — the default, and how the suite runs unless
+`KGW_FLEET_POD_LOCALITY=false` — every stream must resolve to a real Pod object,
+so the suite creates fake Nodes across `KGW_FLEET_ZONES` and binds a fake Pod per
+stream. That also makes client identity **per-pod**: `HashLabels` hashes every
+augmented label including `kubernetes.io/hostname`, so two proxies of one Gateway
+on different nodes are two clients. Client count is
+`gateways × min(replicas, zones × 2)`. With
+`KGW_FLEET_IDENTITY_INCLUDE_NODE=false` on a build supporting that setting,
+replicas collapse by zone and the count is `gateways × min(replicas, zones)`.
+
+The controller is capped at `KGW_FLEET_MEMORY_LIMIT` (8Gi by default) so that
+running out of memory is a clean container restart, which the suite detects via
+`restartCount` and reports as `xds_fleet_verdict` with the client count that
+killed it. Each wave emits `xds_fleet_wave` with heap, RSS, CPU, allocations,
+resource count and transforms, so two builds are compared by diffing the ladder.
+
+```bash
+# Requires an existing cluster with kgateway installed.
+# Production shape: 400 Gateways x 2 proxies, 50 Gateways per wave.
+KGW_BENCH_LABEL=my-build \
+KGW_FLEET_SERVICES=6000 \
+KGW_FLEET_GATEWAYS=400 \
+KGW_FLEET_INLINE_BACKENDS=20 \
+KGW_FLEET_STREAMS_PER_GATEWAY=2 \
+KGW_FLEET_ZONES=3 \
+KGW_FLEET_POD_LOCALITY=true \
+KGW_FLEET_WAVES=8 \
+KGW_FLEET_MEMORY_LIMIT=8Gi \
+KGW_BENCH_OUT=/tmp/xdsfleet.jsonl \
+  make run-xds-fleet-bench
+
+# A/B one setting without touching this file: comma-separated KEY=VALUE
+# controller environment, snapshotted and restored like the rest.
+KGW_FLEET_EXTRA_ENV="KGW_XDS_SHARE_IDENTICAL_RESOURCES=false" make run-xds-fleet-bench
+```
+
+Comparing builds is the normal use, and `hack/xds-fleet-ab.sh` does the whole
+ladder over several arms: it drains the fleet between arms, installs each arm's
+chart and image, and prints the arms side by side at the end. An arm is
+`<label>:<chart-dir>:<image-tag>[:<KEY=VALUE,...>]`, so one PR against its own
+base is:
+
+```bash
+hack/xds-fleet-ab.sh /tmp/ab.jsonl \
+  base:/path/to/base/install/helm/kgateway:base-ci1 \
+  mypr:/path/to/pr/install/helm/kgateway:pr-ci1
+```
+
+**Read the ladder, not a single heap number.** Heap flattens against the cap, so
+two builds can report the same heap while one is comfortable and the other is
+about to die. The client count each build survives is the number that
+discriminates; wave granularity (`KGW_FLEET_GATEWAYS / KGW_FLEET_WAVES`) sets how
+precisely you can locate it.
+
+**Resources per client is `425 + services`** in every run measured so far: every
+Service becomes a cluster and an endpoint assignment in every client's snapshot
+regardless of what that Gateway routes to. Varying `KGW_FLEET_SERVICES` while
+holding the Gateway count fixed is therefore the cheapest way to measure what
+scoping discovery to referenced backends would be worth, without building it.
+
+Four things cost real time when working on this suite:
+
+- `kgateway_xds_snapshot_syncs_total` only advances for resource kinds the
+  metrics layer start-times, so it stays flat for Backend and EndpointSlice
+  edits. Use `kgateway_xds_snapshot_transforms_total` as the convergence signal.
+- The `xds_snapshot` metrics are label-vecs and are absent entirely until a
+  Gateway exists.
+- `go test` caches a successful run and replays it under different environment
+  variables. The make targets pass `-count=1`; keep it.
+- `kubectl port-forward` refuses new connections past roughly 60, which is why
+  the suite batches 100 gRPC streams per connection.
+
+Teardown force-deletes the fake pods (`--grace-period=0`) and deletes the
+per-run fake Nodes. Both matter: pods bound to fake Nodes have no kubelet to
+confirm deletion, so the namespace otherwise hangs in `Terminating` and poisons
+the next run, and Nodes are cluster-scoped, so leaked ones silently reuse stale
+zone labels and invalidate a locality experiment.
+
 ## Framework Architecture
 
 ### Components
@@ -251,3 +415,39 @@ This test follows a specific methodology inspired by gateway-api-bench and imple
 - **Real Traffic Validation**: Uses curl probing instead of unreliable metrics
 - **Status Propagation**: Tests how quickly gateway status reflects route changes
 - **Realistic Load**: Tests performance under production-like conditions with simulated backends
+
+### Automatic xDS benchmark runs
+
+Nightly load testing runs XdsCost and XdsFleet after AttachedRoutes and
+StrictChurn. Staged releases run them after AttachedRoutes automatically;
+the release load-test job is advisory and is not a dependency of publication.
+There is no longer a release dispatch opt-in for load testing. Nightly runs
+use the benchmark action from the checked-out branch, so LTS branches gain
+this coverage when the change is backported.
+
+Both paths call `make run-xds-bench-ci` against the installation already
+prepared by their workflow. The shared STANDARD-validation profile uses:
+
+- XdsCost: 3 Gateways, 30 static backends, 30 requested EDS routes (40 simulated Services), and 3 iterations.
+- XdsFleet: 500 Services, 24 Gateways with 2 streams each, 10 inline backends,
+  4 waves, pod locality and endpoint pods disabled (24 unique clients), a 2Gi
+  controller memory limit, and 3 churn iterations. Fake Nodes are excluded
+  from this shared CI profile because they can destabilize kind networking.
+  Run locality experiments on a dedicated benchmark cluster.
+
+Each benchmark has a 20-minute Go timeout. The load-test jobs allow 120
+minutes for setup, existing load tests, and benchmarks. This is a bounded
+regression workload, not a measurement of production fleet capacity; its
+runtime on hosted CI runners still needs to be observed.
+
+The runner attempts both benchmarks sequentially, retains failures, and
+rejects fleet failure verdicts, missing phases, incomplete waves, and waves
+that were not served or settled, and phases with timed-out iterations. Benchmark failures mark the load-test job
+failed while release publication remains independent.
+
+Logs, original prefixed records, and normalized JSONL (objects with
+`event` and `data` fields) are saved under `_output/xds-bench/` and uploaded
+even when the benchmark step fails. Each invocation truncates its own
+record files so an earlier run cannot satisfy the completion checks.
+For a local run, use `make run-xds-bench-ci` with the usual `CLUSTER_NAME`
+and `INSTALL_NAMESPACE` settings; Go, jq, and an installed cluster are required.

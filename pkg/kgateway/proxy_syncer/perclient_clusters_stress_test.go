@@ -3,10 +3,12 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -59,6 +61,69 @@ func (s *stressUccSource) del(rn string) {
 	delete(s.clients, rn)
 	s.mu.Unlock()
 	s.trigger.TriggerRecomputation()
+}
+
+// A stable client must retain a complete CDS view while unrelated clients
+// continuously connect, disconnect, and flip KnowsLocalCluster — an in-place
+// identity change that fails UniquelyConnectedClient.Equals without changing the
+// KRT key. Its row depends only on the base collection, so none of that churn
+// should so much as rerun its transform. This asserts availability during churn,
+// not merely eventual recovery after the input settles.
+func TestPerClientClusters_UnrelatedTriggerChurnNeverWithholdsStableClient(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	stable := clustersTestClient("role-stable")
+	src, uccs := newStressUccSource(krtopts, []ir.UniquelyConnectedClient{stable})
+
+	backendNames := []string{"b1", "b2", "b3", "b4", "b5"}
+	backends := make([]*ir.BackendObjectIR, 0, len(backendNames))
+	for _, name := range backendNames {
+		backends = append(backends, clustersTestBackend(name))
+	}
+	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
+	eventuallyClusterCount(t, clusters, stable, len(backendNames))
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	for g := range 6 {
+		wg.Add(1)
+		go func(g int) {
+			defer wg.Done()
+			client := clustersTestClient(fmt.Sprintf("role-churn-%d", g))
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				src.add(client)
+				client.KnowsLocalCluster = !client.KnowsLocalCluster
+				src.add(client)
+				src.del(client.ResourceName())
+			}
+		}(g)
+	}
+
+	deadline := time.Now().Add(time.Second)
+	var samples int
+	var observed int
+	for time.Now().Before(deadline) {
+		observed = len(clusterNamesForClient(clusters, stable))
+		samples++
+		if observed != len(backendNames) {
+			break
+		}
+		runtime.Gosched()
+	}
+	close(stop)
+	wg.Wait()
+
+	require.Equal(t, len(backendNames), observed,
+		"unrelated client churn withheld the stable client's CDS view after %d samples", samples)
+	require.Greater(t, samples, 1, "test did not sample the stable client during churn")
 }
 
 // A stable client whose Envoy "blips" (delete + re-add of the SAME client)
@@ -117,15 +182,19 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 		}(g)
 	}
 
-	// Churn a backend so per-client rows recompute during client blips.
+	// Churn a backend so per-client rows recompute during client blips. Alternate
+	// a translated field so each update is a real base change rather than one the
+	// base row's Equals absorbs.
+	var lastProtocol string
 	wg.Go(func() {
-		for {
+		for i := 0; ; i++ {
 			select {
 			case <-stop:
 				return
 			default:
 			}
-			finalBackends.UpdateObject(clustersTestBackend("b5"))
+			lastProtocol = fmt.Sprintf("v%d", i%2)
+			finalBackends.UpdateObject(clustersTestBackendWithProtocol("b5", lastProtocol))
 		}
 	})
 
@@ -133,7 +202,12 @@ func TestPerClientClusters_TriggerDrivenChurnNeverStrands(t *testing.T) {
 	close(stop)
 	wg.Wait()
 
-	// Ensure the stable client is present as the final state, then require recovery.
+	// Ensure the stable client is present as the final state, then require
+	// recovery, including the last backend update in its stored payload.
 	src.add(stable)
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
+	require.Eventually(t, func() bool {
+		c := storedClustersForClient(clusters, stable)[clustersTestBackend("b5").ClusterName()]
+		return c != nil && c.GetAltStatName() == lastProtocol
+	}, 5*time.Second, 10*time.Millisecond, "the stable client's payload must carry the last backend update")
 }

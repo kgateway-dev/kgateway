@@ -198,5 +198,5 @@ func TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster(t *testing.
 	}).Should(gomega.HaveLen(1), "only the gateway whose CDS carries the aggregate cluster gets the CLA")
 
 	g.Expect(got[0].Client.ResourceName()).To(gomega.Equal(clientA.ResourceName()))
-	g.Expect(got[0].Endpoints.GetClusterName()).To(gomega.Equal(clusterName))
+	g.Expect(got[0].Endpoints.Clone().GetClusterName()).To(gomega.Equal(clusterName))
 }

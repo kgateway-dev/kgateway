@@ -2,6 +2,8 @@ package waypoint
 
 import (
 	"context"
+	"hash/fnv"
+	"io"
 	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -68,13 +70,35 @@ func NewPlugin(
 			// TODO: Currently endpoints are still being added to an EDS CLA out of this plugin.
 			// Contributing a PerClientProcessEndpoints function can return an empty CLA but
 			// it is still redundant.
-			VirtualWaypointGK: {
-				PerClientProcessBackend: pcp.processBackend,
-			},
+			VirtualWaypointGK: pcp.policyPlugin(),
 		}
 	}
 
 	return plugin
+}
+
+// policyPlugin is the registration NewPlugin contributes when ingress-use-waypoint
+// is enabled. Tests check the overlay against the inputs hash registered beside
+// it, so both come from here.
+func (t *PerClientProcessor) policyPlugin() sdk.PolicyPlugin {
+	return sdk.PolicyPlugin{
+		Name:                    "waypoint",
+		PerClientClusterOverlay: t.clusterOverlay,
+		OverlayInputsHash:       t.overlayInputsHash,
+	}
+}
+
+// overlayInputsHash covers the waypoint label inputs, lookup name and namespace,
+// and the resolved addresses and port inlined into STATIC clusters. Waypoint
+// attachments are fetched through KRT and tracked separately.
+func (t *PerClientProcessor) overlayInputsHash(in ir.BackendObjectIR) uint64 {
+	hasher := fnv.New64a()
+	IngressUseWaypointInputsHash(hasher, in)
+	if in.Obj != nil {
+		utils.HashStringField(hasher, in.Obj.GetName())
+	}
+	IngressUseWaypointClusterInputsHash(hasher, in)
+	return hasher.Sum64()
 }
 
 type PerClientProcessor struct {
@@ -83,19 +107,19 @@ type PerClientProcessor struct {
 	waypointGatewayClassName string
 }
 
-func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+func (t *PerClientProcessor) clusterOverlay(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 	// Cheap UCC-only filter first: if the ucc doesn't have the
 	// ambient.istio.io/redirection=enabled annotation, nothing this plugin does
 	// can affect the output. Skipping here avoids the expensive Gateway
 	// FetchOne below for the dominant case (most UCCs are not ambient).
 	if val, ok := ucc.Labels[istioannot.AmbientRedirection.Name]; !ok || val != "enabled" {
-		return
+		return nil
 	}
 
 	// Cheap backend filter next: skip backends (and their namespaces/aliases)
 	// that aren't opted in to ingress-use-waypoint.
 	if !HasIngressUseWaypointLabel(kctx, t.commonCols, in) {
-		return
+		return nil
 	}
 
 	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
@@ -113,7 +137,7 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))
 	if gwir == nil || gwir.Obj == nil || string(gwir.Obj.Spec.GatewayClassName) == t.waypointGatewayClassName {
 		// no op
-		return
+		return nil
 	}
 
 	// Verify that the service is indeed attached to a waypoint by querying the reverse
@@ -121,11 +145,27 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 	waypointForService := t.waypointQueries.GetServiceWaypoint(kctx, ctx, in.Obj)
 	if waypointForService == nil {
 		// no op
-		return
+		return nil
 	}
 
 	// All preliminary checks passed, apply ingress-use-waypoint cluster changes
-	ApplyIngressUseWaypointCluster(in, out, &t.commonCols.Settings)
+	return &sdk.ClusterOverlay{
+		Mutate: func(out *envoyclusterv3.Cluster) {
+			ApplyIngressUseWaypointCluster(in, out, &t.commonCols.Settings)
+		},
+	}
+}
+
+// IngressUseWaypointClusterInputsHash hashes the backend fields read by
+// ApplyIngressUseWaypointCluster: the resolved addresses and the port. The DNS
+// lookup family comes from settings, which are fixed for a plugin instance.
+// Overlays that call ApplyIngressUseWaypointCluster must include this hash in
+// their OverlayInputsHash.
+func IngressUseWaypointClusterInputsHash(hasher io.Writer, in ir.BackendObjectIR) {
+	for _, addr := range waypointquery.BackendAddresses(in) {
+		utils.HashStringField(hasher, addr)
+	}
+	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
 }
 
 // ApplyIngressUseWaypointCluster mutates out to configure a STATIC cluster with inlined
@@ -134,7 +174,8 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 // out.EdsClusterConfig, and overwrites out.LoadAssignment with a new ClusterLoadAssignment
 // built from the backend's resolved addresses. Addresses are sorted based on DNS lookup
 // family setting, with the primary address in Address and additional addresses in
-// AdditionalAddresses.
+// AdditionalAddresses. Keep its backend inputs in sync with
+// IngressUseWaypointClusterInputsHash.
 func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.Cluster, settings *apisettings.Settings) {
 	addresses := waypointquery.BackendAddresses(in)
 
@@ -150,6 +191,12 @@ func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.C
 		Type: envoyclusterv3.Cluster_STATIC,
 	}
 	out.EdsClusterConfig = nil
+	// The redirect uses a service VIP, not the backend's locality-weighted
+	// endpoints. Drop any locality mode inherited from an earlier policy while
+	// preserving unrelated CommonLbConfig settings.
+	if out.CommonLbConfig != nil {
+		out.CommonLbConfig.LocalityConfigSpecifier = nil
+	}
 	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
 		ClusterName: out.GetName(),
 		Endpoints:   make([]*envoyendpointv3.LocalityLbEndpoints, 0, 1),
@@ -268,7 +315,22 @@ func sortAddressesByDnsLookupFamily(addresses []string, settings *apisettings.Se
 	return sortedAddresses
 }
 
-// HasIngressUseWaypointLabel checks if the backend or any relevant namespace/alias has the ingress-use-waypoint label.
+// IngressUseWaypointInputsHash hashes the backend fields read by
+// HasIngressUseWaypointLabel: its label, namespace, and alias namespaces.
+// Namespace labels are fetched through KRT. Overlays that call
+// HasIngressUseWaypointLabel must include this hash in their OverlayInputsHash.
+func IngressUseWaypointInputsHash(hasher io.Writer, in ir.BackendObjectIR) {
+	if in.Obj != nil {
+		utils.HashStringField(hasher, in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel])
+		utils.HashStringField(hasher, in.Obj.GetNamespace())
+	}
+	for _, alias := range in.Aliases {
+		utils.HashStringField(hasher, alias.GetNamespace())
+	}
+}
+
+// HasIngressUseWaypointLabel checks the backend and namespace/alias labels.
+// Keep its inputs in sync with IngressUseWaypointInputsHash.
 func HasIngressUseWaypointLabel(kctx krt.HandlerContext, commonCols *collections.CommonCollections, in ir.BackendObjectIR) bool {
 	// Check the backend's own label first
 	if val, ok := in.Obj.GetLabels()[wellknown.IngressUseWaypointLabel]; ok && val == "true" {

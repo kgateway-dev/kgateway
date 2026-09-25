@@ -18,29 +18,9 @@ import (
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-type clustersWithErrors struct {
-	// +noKrtEquals
-	clusters envoycache.Resources
-	// +noKrtEquals
-	erroredClusters     []string
-	erroredClustersHash uint64
-	clustersHash        uint64
-	resourceName        string
-}
-
 type endpointsWithUccName struct {
 	endpoints    envoycache.Resources
 	resourceName string
-}
-
-func (c clustersWithErrors) ResourceName() string {
-	return c.resourceName
-}
-
-var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
-
-func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
-	return c.clustersHash == k.clustersHash && c.erroredClustersHash == k.erroredClustersHash && c.resourceName == k.resourceName
 }
 
 func (c endpointsWithUccName) ResourceName() string {
@@ -53,6 +33,20 @@ func (c endpointsWithUccName) Equals(k endpointsWithUccName) bool {
 	return c.endpoints.Version == k.endpoints.Version && c.resourceName == k.resourceName
 }
 
+// snapshotPerClient assembles the complete xDS snapshot each connected client should
+// receive, joining the per-Gateway listener/route translation with that client's own
+// clusters and endpoints. It is the last stage of translation: every subsequent stage
+// just ships what this produces.
+//
+// It publishes only complete snapshots. When a client's per-client inputs have not
+// caught up with the event being processed, it returns nil rather than a partial
+// snapshot; the subscriber treats that as "keep serving what Envoy already has".
+// Retaining the last coherent config is always preferable to publishing an
+// incoherent one, which Envoy would apply — dropping routes or endpoints that are
+// still valid.
+//
+// extraEndpointCollections are additional per-client endpoint sources merged into the
+// same EDS payload, currently the gateway's own local cluster.
 func snapshotPerClient(
 	krtopts krtutil.KrtOptions,
 	uccCol krt.Collection[ir.UniquelyConnectedClient],
@@ -61,45 +55,8 @@ func snapshotPerClient(
 	clusters PerClientEnvoyClusters,
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
-	clusterSnapshot := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
-		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
-		if len(clustersForUcc) == 0 {
-			logger.Info("no perclient clusters; defer building snapshot", "client", ucc.ResourceName())
-			return nil
-		}
-		logger.Debug("found perclient clusters", "client", ucc.ResourceName(), "clusters", len(clustersForUcc))
-
-		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc))
-		var (
-			clustersHash        uint64
-			erroredClustersHash uint64
-			erroredClusters     []string
-		)
-		for _, c := range clustersForUcc {
-			if c.Error != nil {
-				erroredClusters = append(erroredClusters, c.Name)
-				// For errored clusters, we don't want to include the cluster version
-				// in the hash. The cluster version is the hash of the proto. because this cluster
-				// won't be sent to envoy anyway, there's no point trigger updates if it changes from
-				// one error state to a different error state.
-				erroredClustersHash ^= utils.HashString(c.Name)
-				continue
-			}
-			clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
-			clustersHash ^= c.ClusterVersion
-		}
-		clustersVersion := strconv.FormatUint(clustersHash, 10)
-
-		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
-
-		return &clustersWithErrors{
-			clusters:            clusterResources,
-			erroredClusters:     erroredClusters,
-			clustersHash:        clustersHash,
-			erroredClustersHash: erroredClustersHash,
-			resourceName:        ucc.ResourceName(),
-		}
-	}, krtopts.ToOptions("ClusterResources")...)
+	// PerClientEnvoyClusters stores each client's assembled CDS payload (shared bases plus the client's overlays).
+	clusterSnapshot := clusters.perClient
 
 	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
@@ -109,7 +66,9 @@ func snapshotPerClient(
 		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
 		var endpointsHash uint64
 		for _, ep := range endpointsForUcc {
-			endpointsProto = append(endpointsProto, envoycachetypes.ResourceWithTTL{Resource: ep.Endpoints})
+			// ResourceWithTTL is the only exit for the interned CLA; it runs
+			// the mutation tripwire when armed. See package sharedproto.
+			endpointsProto = append(endpointsProto, ep.Endpoints.ResourceWithTTL())
 			endpointsHash ^= ep.EndpointsHash
 		}
 
@@ -151,7 +110,7 @@ func snapshotPerClient(
 		// pkg/krtcollections/uniqueclients.go keeps a client's first watch
 		// from observing that convergence window.
 		if clustersForUcc == nil || clientEndpointResources == nil {
-			logger.Info("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
+			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
 		}
 
@@ -272,6 +231,10 @@ func snapshotPerClient(
 				}.toMetricsLabels()...)
 		}
 	})
+
+	// Track connected clients without snapshot rows, including those still
+	// waiting for their first snapshot.
+	newSnapshotDeferralTracker().register(uccCol, xdsSnapshotsForUcc)
 
 	return xdsSnapshotsForUcc
 }

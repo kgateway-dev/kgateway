@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -158,7 +159,7 @@ func NewPerClientUdpAggregateEndpoints(
 			cla := buildUdpAggregateLoadAssignment(kctx, *agg, backendEndpoints, epByBackend)
 			ret = append(ret, UccWithEndpoints{
 				Client:        ucc,
-				Endpoints:     cla,
+				Endpoints:     sharedproto.Wrap(cla),
 				EndpointsHash: hashUdpAggregateLoadAssignment(cla),
 				endpointsName: c.clusterName,
 				resourceName:  uccEndpointsResourceName(ucc, c.clusterName),

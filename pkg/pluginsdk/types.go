@@ -34,14 +34,17 @@ type (
 	// copy-on-write API. Read-only source state is exposed through accessors;
 	// endpoint rewrites build a replacement set and clone only modified protos.
 	// The returned hash must capture effects not already represented by the
-	// replacement endpoint set's LbEpsEqualityHash.
+	// replacement endpoint set's LbEpsEqualityHash or the framework's
+	// load-balancing-context hash.
 	EndpointEditorPlugin func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniquelyConnectedClient,
 		out EndpointInputsEditor,
 	) uint64
-	// EndpointPlugin is the legacy mutable endpoint hook.
+	// EndpointPlugin is the legacy mutable endpoint hook. Its returned hash must
+	// capture every per-client effect not reflected by the resolved endpoint or
+	// load-balancing-context hashes because those hashes key CLA interning.
 	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
 	// mutable nested state before invoking this hook.
 	EndpointPlugin func(
@@ -52,10 +55,83 @@ type (
 	) uint64
 )
 
-// TODO: consider changing PerClientProcessBackend to look like this:
-// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR)
-// so that it only attaches the policy to the backend, and doesn't modify the backend (except for attached policies) or the cluster itself.
-// leaving as is for now as this requires better understanding of how krt would handle this.
+// ClusterOverlay carries per-client cluster mutations. Returning nil from a
+// PerClientClusterOverlay means the client/backend pair needs no mutation.
+// Mutate receives a fresh clone and must not retain it after returning. When
+// every applicable overlay leaves the clone equal to the shared base, the pair
+// keeps using the base, so Mutate may leave the cluster unchanged when the
+// decision depends on the cluster itself. Prefer returning nil whenever the
+// decision can be made without the cluster: that skips the clone and the
+// comparison.
+type ClusterOverlay struct {
+	Mutate func(out *envoyclusterv3.Cluster)
+}
+
+// PerClientClusterOverlay decides whether a client/backend pair needs a
+// mutation on top of the shared base cluster, and returns it if so. Returning
+// nil is the common case and keeps the pair on the shared base with nothing
+// allocated for it.
+//
+// Applicable overlays mutate the same clone in (Group, Kind) order for stable
+// proto content. This ordering does not define policy precedence. Each overlay
+// must write only its owned fields and must not depend on another overlay's
+// mutations. The framework does not enforce field ownership.
+// So do not write an overlay that depends on running before or after another,
+// or that expects to observe another's mutation. Confine each overlay to the
+// fields it owns. The overlays satisfy that today -- destrule writes
+// outlier detection, locality LB config and TCP keepalive; waypoint rewrites
+// the discovery type and load assignment -- but the framework does not enforce
+// it. Waypoint owns the discovery-type transition and clears any inherited
+// locality mode when replacing backend endpoints with a service VIP; that
+// redirect cannot use the backend endpoints' locality weights.
+//
+// Fetches through kctx register KRT dependencies. All fields read from in must
+// be covered by the accompanying OverlayInputsHash; otherwise KRT can retain
+// a base row whose backend inputs are stale.
+type PerClientClusterOverlay func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	in ir.BackendObjectIR,
+) *ClusterOverlay
+
+// OverlayInputsHash hashes every BackendObjectIR field whose change can affect
+// the accompanying per-client cluster hook. KRT retains equal base rows, so
+// omitting an input can leave clients using stale backend state.
+//
+// Inputs fetched through krt.Fetch are tracked separately. Extra hash inputs
+// are safe but cause unnecessary client recomputation.
+//
+// Register it beside PerClientClusterOverlay or PerClientProcessBackend. Hooks
+// without this declaration fall back to comparing backend IR and backing-object
+// version, rerunning clients on every object write. Hooks may apply globally,
+// so the framework cannot infer their applicability from policy attachments.
+// Declaring inputs avoids that fanout without migrating the mutation hook.
+// Use pkg/pluginsdk/overlaytest to check the declaration against the hook.
+type OverlayInputsHash func(in ir.BackendObjectIR) uint64
+
+// ProcessBaseCluster is a client-independent cluster mutation that runs for
+// every backend, whether or not a policy is attached to it. It runs during
+// base translation, after every ProcessBackend hook (so it sees the transport
+// sockets and other fields those policies set, and may wrap them) and before
+// any PerClientClusterOverlay. Hooks from different plugins run in
+// (Group, Kind) order.
+//
+// Use it instead of a PerClientClusterOverlay that would return the same
+// mutation for every client: the result lands once on the shared base rather
+// than on a clone per client. The base is re-translated whenever the backend
+// IR changes, so no input declaration is needed for fields read from in.
+// Fetches through kctx register dependencies of the base translation.
+type ProcessBaseCluster func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	in ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+)
+
+// PerClientProcessBackend is the legacy eager cluster mutation hook.
+// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
+// applicable to every client because they cannot report a no-op cheaply.
 type PerClientProcessBackend func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -68,16 +144,45 @@ type PerClientProcessBackend func(
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
+// AttachedPolicyEndpointsMayApply is a PerClientEndpointsMayApply for plugins
+// whose endpoint hook reads only policies of gk attached to the backend (via
+// EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
+// to act on for any client.
+func AttachedPolicyEndpointsMayApply(gk schema.GroupKind) func(krt.HandlerContext, ir.BackendObjectIR) bool {
+	return func(_ krt.HandlerContext, backend ir.BackendObjectIR) bool {
+		return len(backend.AttachedPolicies.Policies[gk]) > 0
+	}
+}
+
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
-	ProcessBackend          ProcessBackend
+	ProcessBackend ProcessBackend
+	// ProcessBaseCluster runs for every backend after all ProcessBackend
+	// hooks; see ProcessBaseCluster.
+	ProcessBaseCluster      ProcessBaseCluster
+	PerClientClusterOverlay PerClientClusterOverlay
+	// OverlayInputsHash declares the backend fields the per-client hook reads.
+	// Required for efficient change detection with either hook; absent a
+	// declaration, consumers compare backend IR and backing-object version.
+	OverlayInputsHash OverlayInputsHash
+	// Deprecated: use PerClientClusterOverlay.
 	PerClientProcessBackend PerClientProcessBackend
 	PerClientEditEndpoints  EndpointEditorPlugin
 	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
+	// PerClientEndpointsMayApply reports whether the endpoint hook can contribute
+	// to this backend for any client. False skips the hook: it must return zero
+	// and leave inputs unchanged for every client. Nil assumes it may apply.
+	//
+	// If all hooks rule the backend out and prioritization is client-independent,
+	// the framework builds its inline CLA on the shared base. Hooks that only
+	// read their own attached policies can use AttachedPolicyEndpointsMayApply.
+	// Fetch through the supplied base-translation HandlerContext to register
+	// dependencies that invalidate this decision.
+	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
@@ -91,10 +196,6 @@ type PolicyPlugin struct {
 	// from the provided report collection and registers it, along with a status writer
 	// for its GVK. Plugins that do not report status may leave this unset.
 	RegisterPolicyStatus func(inputs PolicyStatusInputs)
-
-	// PolicyStatusFromGatewayReports indicates that policy status should be reported from the
-	// Gateway translation report path rather than the backend-only report path.
-	PolicyStatusFromGatewayReports bool
 }
 
 type BackendPlugin struct {

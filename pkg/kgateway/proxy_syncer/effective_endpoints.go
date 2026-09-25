@@ -44,6 +44,9 @@ func newFinalBackendEndpoints(
 	}, krtopts.ToOptions("FinalBackendEndpoints")...)
 }
 
+// backendEndpointVersionHash hashes attached policies so policy-only endpoint
+// changes invalidate KRT rows. It returns zero for no policies, which callers
+// treat as "contributes nothing".
 func backendEndpointVersionHash(backend *ir.BackendObjectIR) uint64 {
 	if backend == nil || len(backend.AttachedPolicies.Policies) == 0 {
 		return 0
