@@ -446,8 +446,8 @@ func NewPerClientEnvoyClusters(
 	// Base clusters: one entry per backend, computed once and shared across all
 	// UCCs. Anything that does not depend on the UCC lives here:
 	// initializeCluster, InitEnvoyBackend, DNS lookup family, non-per-client
-	// ProcessBackend hooks, gateway client certificate injection, and strict-mode
-	// validation.
+	// ProcessBackend and ProcessBaseCluster hooks, gateway client certificate
+	// injection, and strict-mode validation.
 	base := krt.NewCollection(finalBackends, func(kctx krt.HandlerContext, backendObj *ir.BackendObjectIR) *baseEnvoyCluster {
 		baseRes := translator.TranslateBackendBase(kctx, ctx, backendObj)
 		name := baseRes.Cluster.GetName()

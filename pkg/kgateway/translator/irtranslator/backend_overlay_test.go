@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -12,6 +13,7 @@ import (
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -109,6 +111,93 @@ func TestApplyPerClient_DoesNotMutateBase(t *testing.T) {
 	declined, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, other, backend, base)
 	require.NoError(t, err)
 	assert.Nil(t, declined, "non-matching client must take the fast path and share the base")
+}
+
+// TestApplyPerClient_NoOpOverlaySharesBase: an overlay that applies but whose
+// Mutate leaves the cluster as it found it must not cost the client a cluster of
+// its own. The EDS base carries the defaulted locality mode, which ApplyPerClient
+// removes before the overlays and restores after them, so this also pins that
+// the round trip compares equal.
+func TestApplyPerClient_NoOpOverlaySharesBase(t *testing.T) {
+	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
+	mutated := 0
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+					mutated++
+					// Work that is only needed when the cluster lacks it.
+					if out.GetConnectTimeout() == nil {
+						out.ConnectTimeout = durationpb.New(time.Second)
+					}
+				}}
+			},
+		},
+	})
+	// A kgateway-managed EDS cluster, which is what defaultLocalityConfig
+	// defaults the locality mode on.
+	bt.ContributedBackends[schema.GroupKind{Group: "group", Kind: "kind"}] = ir.BackendInit{
+		InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+			out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+			out.EdsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{}
+			return nil
+		},
+	}
+	backend := overlayBackend()
+	ctx := context.Background()
+
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	require.NoError(t, base.Error)
+	require.True(t, base.DefaultedLocalityConfig, "the EDS base must carry the defaulted locality mode this test round-trips")
+	require.NotNil(t, base.Cluster.GetConnectTimeout(), "the base must already have what the overlay would add")
+
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ir.UniquelyConnectedClient{}, backend, base)
+	require.NoError(t, err)
+	assert.Equal(t, 1, mutated, "the overlay applied")
+	assert.Nil(t, perClient, "an overlay that changed nothing must leave the client on the shared base")
+}
+
+// TestTranslateBackendBase_BaseClusterHooks: ProcessBaseCluster hooks run on
+// the shared base for a backend nothing is attached to, after the attached
+// policies' ProcessBackend hooks, and in (Group, Kind) order.
+func TestTranslateBackendBase_BaseClusterHooks(t *testing.T) {
+	var order []string
+	var sawSocket bool
+	recorder := func(name string) sdk.ProcessBaseCluster {
+		return func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+			order = append(order, name)
+			sawSocket = out.GetTransportSocket() != nil
+		}
+	}
+	attachedGK := schema.GroupKind{Group: "z", Kind: "Attached"}
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "b", Kind: "Hook"}: {ProcessBaseCluster: recorder("b")},
+		{Group: "a", Kind: "Hook"}: {ProcessBaseCluster: recorder("a")},
+		attachedGK: {
+			ProcessBackend: func(_ context.Context, _ ir.PolicyIR, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
+				order = append(order, "attached")
+				out.TransportSocket = &envoycorev3.TransportSocket{Name: "attached"}
+			},
+		},
+	})
+	backend := overlayBackend()
+	backend.AttachedPolicies.Policies[attachedGK] = []ir.PolicyAtt{{GroupKind: attachedGK}}
+
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), backend)
+	require.NoError(t, base.Error)
+	assert.Equal(t, []string{"attached", "a", "b"}, order)
+	assert.True(t, sawSocket, "base cluster hooks must see what ProcessBackend set")
+
+	// No attachment: base cluster hooks still run.
+	order = nil
+	unattached := overlayBackend()
+	base = bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), unattached)
+	require.NoError(t, base.Error)
+	assert.Equal(t, []string{"a", "b"}, order)
+
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, unattached, base)
+	require.NoError(t, err)
+	assert.Nil(t, perClient, "a base cluster hook alone must not cost any client a cluster of its own")
 }
 
 // TestApplyPerClient_BaseErrorIsNoOp: when the base is errored there is no

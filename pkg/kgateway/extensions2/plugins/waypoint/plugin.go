@@ -97,10 +97,7 @@ func (t *PerClientProcessor) overlayInputsHash(in ir.BackendObjectIR) uint64 {
 	if in.Obj != nil {
 		utils.HashStringField(hasher, in.Obj.GetName())
 	}
-	for _, addr := range waypointquery.BackendAddresses(in) {
-		utils.HashStringField(hasher, addr)
-	}
-	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
+	IngressUseWaypointClusterInputsHash(hasher, in)
 	return hasher.Sum64()
 }
 
@@ -159,13 +156,26 @@ func (t *PerClientProcessor) clusterOverlay(kctx krt.HandlerContext, ctx context
 	}
 }
 
+// IngressUseWaypointClusterInputsHash hashes the backend fields read by
+// ApplyIngressUseWaypointCluster: the resolved addresses and the port. The DNS
+// lookup family comes from settings, which are fixed for a plugin instance.
+// Overlays that call ApplyIngressUseWaypointCluster must include this hash in
+// their OverlayInputsHash.
+func IngressUseWaypointClusterInputsHash(hasher io.Writer, in ir.BackendObjectIR) {
+	for _, addr := range waypointquery.BackendAddresses(in) {
+		utils.HashStringField(hasher, addr)
+	}
+	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
+}
+
 // ApplyIngressUseWaypointCluster mutates out to configure a STATIC cluster with inlined
 // addresses for the destination service so traffic from the ingress is redirected to the
 // waypoint by the ztunnel. It forces out.ClusterDiscoveryType to STATIC, clears
 // out.EdsClusterConfig, and overwrites out.LoadAssignment with a new ClusterLoadAssignment
 // built from the backend's resolved addresses. Addresses are sorted based on DNS lookup
 // family setting, with the primary address in Address and additional addresses in
-// AdditionalAddresses.
+// AdditionalAddresses. Keep its backend inputs in sync with
+// IngressUseWaypointClusterInputsHash.
 func ApplyIngressUseWaypointCluster(in ir.BackendObjectIR, out *envoyclusterv3.Cluster, settings *apisettings.Settings) {
 	addresses := waypointquery.BackendAddresses(in)
 

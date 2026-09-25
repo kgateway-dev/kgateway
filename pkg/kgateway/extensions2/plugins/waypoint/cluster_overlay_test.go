@@ -2,6 +2,7 @@ package waypoint
 
 import (
 	"context"
+	"hash/fnv"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -18,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/overlaytest"
@@ -171,6 +173,54 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 			}},
 			overlaytest.SetLabel(t, "app", "svc"),
 			overlaytest.SetAnnotation(t, "meta.helm.sh/release-name", "x"),
+			overlaytest.SetResourceVersion(t, "2"),
+		},
+	})
+}
+
+// TestIngressUseWaypointClusterInputsHash_CoversApply checks the exported
+// helper against the exported mutation it describes. Out-of-tree overlays call
+// ApplyIngressUseWaypointCluster under their own gates and declare its inputs
+// with this helper, so the helper alone must cover every backend field the
+// mutation reads. The overlay here applies unconditionally so that only the
+// mutation's own reads are under test.
+func TestIngressUseWaypointClusterInputsHash_CoversApply(t *testing.T) {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1"},
+		Spec:       corev1.ServiceSpec{ClusterIP: "10.0.0.1", ClusterIPs: []string{"10.0.0.1"}},
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	backend.Obj = service
+
+	settings := &apisettings.Settings{DnsLookupFamily: apisettings.DnsLookupFamilyV4Preferred}
+	overlaytest.AssertInputsHashCoversOverlay(t, overlaytest.Case{
+		Plugin: sdk.PolicyPlugin{
+			Name: "apply-only",
+			PerClientClusterOverlay: func(_ krt.HandlerContext, _ context.Context, _ ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{Mutate: func(out *envoyclusterv3.Cluster) {
+					ApplyIngressUseWaypointCluster(in, out, settings)
+				}}
+			},
+			OverlayInputsHash: func(in ir.BackendObjectIR) uint64 {
+				hasher := fnv.New64a()
+				IngressUseWaypointClusterInputsHash(hasher, in)
+				return hasher.Sum64()
+			},
+		},
+		Backend: backend,
+		Clients: []ir.UniquelyConnectedClient{ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})},
+		Mutations: []overlaytest.Mutation{
+			{Name: "dual-stack clusterIPs", Apply: func(b *ir.BackendObjectIR) {
+				svc := overlaytest.CloneObject(t, b.Obj).(*corev1.Service)
+				svc.Spec.ClusterIPs = []string{"10.0.0.1", "2001:db8::1"}
+				b.Obj = svc
+			}},
+			{Name: "port", Apply: func(b *ir.BackendObjectIR) {
+				rebuilt := ir.NewBackendObjectIR(b.GetObjectSource(), 8080, "", "")
+				rebuilt.Obj = b.Obj
+				*b = rebuilt
+			}},
+			overlaytest.SetLabel(t, "app", "svc"),
 			overlaytest.SetResourceVersion(t, "2"),
 		},
 	})

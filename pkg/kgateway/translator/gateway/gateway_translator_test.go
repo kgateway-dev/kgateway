@@ -4083,6 +4083,10 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "basic_parentref_match.yaml")
 	})
 
+	t.Run("Child matches same-namespace parent via parentRefs without namespace", func(t *testing.T) {
+		test(t, "basic_parentref_match_same_namespace.yaml")
+	})
+
 	t.Run("Child doesn't match parent via parentRefs", func(t *testing.T) {
 		test(t, "basic_parentref_mismatch.yaml")
 	})

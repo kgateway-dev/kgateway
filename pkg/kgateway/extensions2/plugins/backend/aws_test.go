@@ -6,6 +6,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
+	envoy_lambda_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -127,7 +128,7 @@ func TestBuildLambdaARNFallsBackToDeprecatedBackendAccountID(t *testing.T) {
 func TestBuildTranslateFuncFailsClosedForLambdaEndpointWithoutPort(t *testing.T) {
 	translate := buildTranslateFunc(nil, nil, true)
 
-	backendIR := translate(krt.TestingDummyContext{}, newLambdaBackend("lambda-backend", "https://lambda.us-east-1.amazonaws.com"))
+	backendIR := translate(krt.TestingDummyContext{}, newLambdaBackend("us-east-1", "https://lambda.us-east-1.amazonaws.com"))
 
 	require.NotEmpty(t, backendIR.errors)
 	assert.ErrorContains(t, backendIR.errors[0], "failed to parse port")
@@ -135,7 +136,7 @@ func TestBuildTranslateFuncFailsClosedForLambdaEndpointWithoutPort(t *testing.T)
 }
 
 func TestBackendIrEqualsDetectsLambdaErrorOnlyChanges(t *testing.T) {
-	backend := newLambdaBackend("example-aws-backend", "https://lambda.us-east-1.amazonaws.com:443")
+	backend := newLambdaBackend("us-east-1", "https://lambda.us-east-1.amazonaws.com:443")
 	backend.ObjectMeta = metav1.ObjectMeta{
 		Name:      "example-aws-backend",
 		Namespace: "kgateway-base",
@@ -167,19 +168,56 @@ func TestBackendIrEqualsDetectsLambdaErrorOnlyChanges(t *testing.T) {
 	assert.False(t, invalidSecretIR.Equals(missingSecretIR), "backend IR equality should remain symmetric")
 }
 
-func newLambdaBackend(name, endpointURL string) *kgateway.Backend {
+// newLambdaBackend builds a Lambda Backend in the given region. An empty
+// endpointURL leaves the default AWS endpoint in place.
+func newLambdaBackend(region, endpointURL string) *kgateway.Backend {
+	lambda := &kgateway.AwsLambda{
+		FunctionName: "hello-function",
+		Qualifier:    "live",
+	}
+	if endpointURL != "" {
+		lambda.EndpointURL = &endpointURL
+	}
 	return &kgateway.Backend{
 		Spec: kgateway.BackendSpec{
 			Aws: &kgateway.AwsBackend{
-				Region:    "us-east-1",
+				Region:    region,
 				AccountId: "111111111111",
-				Lambda: &kgateway.AwsLambda{
-					FunctionName: "hello-function",
-					Qualifier:    "live",
-					EndpointURL:  &endpointURL,
-				},
+				Lambda:    lambda,
 			},
 		},
+	}
+}
+
+func TestLambdaFiltersRewriteHostToTheLambdaEndpoint(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		want     string
+	}{
+		{name: "default endpoint", want: "lambda.us-east-2.amazonaws.com"},
+		{name: "custom HTTP port", endpoint: "http://localstack:4566", want: "localstack:4566"},
+		{name: "custom HTTPS port", endpoint: "https://localstack:4566", want: "localstack:4566"},
+		{name: "default HTTP port", endpoint: "http://localstack:80", want: "localstack"},
+		{name: "default HTTPS port", endpoint: "https://localstack:443", want: "localstack"},
+		{name: "HTTP on port 443", endpoint: "http://localstack:443", want: "localstack:443"},
+		{name: "HTTPS on port 80", endpoint: "https://localstack:80", want: "localstack:80"},
+		{name: "IPv6 custom port", endpoint: "http://[::1]:4566", want: "[::1]:4566"},
+		{name: "IPv6 default port", endpoint: "http://[::1]:80", want: "[::1]"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := newLambdaBackend("us-east-2", tt.endpoint)
+			backendIR := buildTranslateFunc(nil, nil, true)(krt.TestingDummyContext{}, backend)
+			require.Empty(t, backendIR.errors)
+			require.NotNil(t, backendIR.awsIr)
+
+			var lambdaConfig envoy_lambda_v3.Config
+			err := anypb.UnmarshalTo(backendIR.awsIr.lambdaIr.lambdaFilters.lambdaConfigAny, &lambdaConfig, proto.UnmarshalOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, lambdaConfig.GetHostRewrite())
+		})
 	}
 }
 
