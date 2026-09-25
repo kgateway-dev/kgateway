@@ -194,7 +194,7 @@ func TestUniqueClients(t *testing.T) {
 				pods.WaitUntilSynced(context.Background().Done())
 			}
 
-			cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+			cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 			ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 			ucc.WaitUntilSynced(context.Background().Done())
 
@@ -285,7 +285,7 @@ func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
 	nodes.WaitUntilSynced(context.Background().Done())
 	pods.WaitUntilSynced(context.Background().Done())
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 	uccCol.WaitUntilSynced(context.Background().Done())
 
@@ -355,7 +355,7 @@ func TestUniqueClientsLocalClusterCapabilityGatingSharedBucket(t *testing.T) {
 		}
 	}
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	var pods krt.Collection[LocalityPod] // nil: pod-locality tracking disabled, so all streams for this role share one bucket
 	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 	uccCol.WaitUntilSynced(context.Background().Done())
@@ -462,7 +462,7 @@ func TestUniqueClientsFollowUpWithReusedAugmentedNode(t *testing.T) {
 		AugmentedLabels: labels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	ucc.WaitUntilSynced(ctx.Done())
 
@@ -515,7 +515,7 @@ func TestUniqueClientsReidentifyOnPodChange(t *testing.T) {
 		AugmentedLabels: staleLabels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	ucc.WaitUntilSynced(ctx.Done())
 
@@ -584,7 +584,7 @@ func TestUniqueClientsKeepIdentityWhenPodLookupFails(t *testing.T) {
 		AugmentedLabels: labels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	ucc.WaitUntilSynced(ctx.Done())
 
@@ -646,7 +646,7 @@ func TestUniqueClientsLocalClusterGatingSurvivesIdentityReDerivation(t *testing.
 		AugmentedLabels: labels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	uccCol := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	uccCol.WaitUntilSynced(ctx.Done())
 

@@ -36,7 +36,7 @@ func TestFirstConnectDelayGatesFirstRequestPerStream(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(delay))
 	g := NewWithT(t)
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, nil)
 	ucc.WaitUntilSynced(context.Background().Done())
 
