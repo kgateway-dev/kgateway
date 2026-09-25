@@ -93,12 +93,10 @@ func newUdpAggregateCollection(
 	}, krtopts.ToOptions("UdpAggregates")...)
 }
 
-// acceptedUdpAggregate names one synthetic UDP aggregate cluster that a gateway's CDS actually
-// emitted, paired with that gateway's snapshot key (the client role). It is the authoritative
-// signal that the cluster exists for that gateway. The CLA is emitted only where the cluster is,
-// keeping CDS and EDS in lockstep: a rejected route (multiple rules, conflict loser) emits no
-// cluster and so gets no CLA, and a gateway that does not carry the route gets neither. Both are
-// the withhold in issue #14471.
+// acceptedUdpAggregate names one aggregate cluster a gateway's CDS actually emitted, keyed by that
+// gateway's snapshot role. The CLA is emitted only where the cluster is, so CDS and EDS stay in
+// lockstep. A rejected route or a gateway that does not carry the route gets neither, avoiding the
+// withhold in issue #14471.
 type acceptedUdpAggregate struct {
 	role        string
 	clusterName string
@@ -130,9 +128,8 @@ func newAcceptedUdpAggregateCollection(
 }
 
 // NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. A
-// client receives an aggregate CLA only when its gateway's CDS carries the matching cluster (from
-// newAcceptedUdpAggregateCollection). The endpoint set itself is client-independent, the weighted
-// union of the member backends' endpoints.
+// client receives one only when its gateway's CDS carries the matching cluster. The endpoint set is
+// client-independent, the weighted union of the member backends' endpoints.
 func NewPerClientUdpAggregateEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -220,9 +217,8 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 				count += len(eps)
 			}
 		}
-		// A valid backend with no ready endpoints (all pods down, mid-rollout) contributes nothing,
-		// so its weight redistributes across the healthy members. This differs from an invalid
-		// backend, whose weight is dropped to the blackhole (dropWeight) rather than redistributed.
+		// A valid backend with no ready endpoints contributes nothing, so its weight redistributes
+		// across the healthy members. An invalid backend's weight is dropped to the blackhole instead.
 		if count == 0 {
 			continue
 		}

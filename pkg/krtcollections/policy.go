@@ -506,10 +506,9 @@ type listenerPortProtocol struct {
 	protocol gwv1.ProtocolType
 }
 
-// resolveDeployerPorts returns every exposed port and the subset that render as UDP. A port renders
-// UDP only when its first (highest-precedence) listener is UDP, because the translator keeps that
-// listener and rejects a same-port listener of a different protocol. Entries must be in precedence
-// order, gateway listeners before listener-set listeners.
+// resolveDeployerPorts returns every exposed port and the subset that render as UDP. A port is UDP
+// only when its first (highest-precedence) listener is UDP, matching how the translator keeps that
+// listener and rejects a same-port one of another protocol. Entries must be in precedence order.
 func resolveDeployerPorts(entries []listenerPortProtocol) (ports, udpPorts sets.Set[int32]) {
 	ports = sets.New[int32]()
 	winner := map[int32]gwv1.ProtocolType{}
@@ -528,9 +527,8 @@ func resolveDeployerPorts(entries []listenerPortProtocol) (ports, udpPorts sets.
 	return ports, udpPorts
 }
 
-// sortListenerSetsByPrecedence orders listener sets by GEP-1713 listener precedence, oldest by
-// creation timestamp first, then alphabetically by "{namespace}/{name}". The Envoy and deployer
-// transforms both rely on this order so they resolve a same-port protocol conflict the same way.
+// sortListenerSetsByPrecedence orders listener sets by GEP-1713 precedence, oldest creation
+// timestamp then "{namespace}/{name}", so the Envoy and deployer transforms agree on the winner.
 // Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
 func sortListenerSetsByPrecedence(listenerSets []*gwv1.ListenerSet) {
 	slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
@@ -551,9 +549,8 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
 			return nil
 		}
-		// A port renders UDP only when its first (highest-precedence) listener is UDP: the translator
-		// keeps that listener and rejects a same-port listener of a different protocol, so the Service
-		// must match the winner. Gateway listeners outrank listener-set listeners, so list them first.
+		// Feed listeners to resolveDeployerPorts in precedence order. Gateway listeners outrank
+		// listener-set listeners, so list them first.
 		entries := make([]listenerPortProtocol, 0, len(gw.Spec.Listeners))
 		for _, l := range gw.Spec.Listeners {
 			entries = append(entries, listenerPortProtocol{port: l.Port, protocol: l.Protocol})
@@ -565,8 +562,7 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
-		// Match the Envoy transform's precedence so a port contended by listener sets renders the
-		// same winning protocol the translator keeps.
+		// Sort by the same precedence the Envoy transform uses so contended ports agree.
 		sortListenerSetsByPrecedence(listenerSets)
 
 		for _, ls := range listenerSets {
