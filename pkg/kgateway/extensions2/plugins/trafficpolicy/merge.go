@@ -121,6 +121,7 @@ func MergeTrafficPolicies(
 		mergeExtAuth,
 		mergeLocalRateLimit,
 		mergeGlobalRateLimit,
+		mergeRateLimitQuota,
 		mergeCORS,
 		mergeCSRF,
 		mergeHeaderModifiers,
@@ -531,6 +532,21 @@ func mergeGlobalRateLimit(
 		Set: func(spec *trafficPolicySpecIr, val *globalRateLimitIR) { spec.globalRateLimit = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rateLimit.global")
+}
+
+func mergeRateLimitQuota(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[rateLimitQuotaIR]{
+		Get: func(spec *trafficPolicySpecIr) *rateLimitQuotaIR { return spec.rateLimitQuota },
+		Set: func(spec *trafficPolicySpecIr, val *rateLimitQuotaIR) { spec.rateLimitQuota = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "rateLimit.quota")
 }
 
 func mergeCORS(
