@@ -147,6 +147,29 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			// Envoy rejects a cluster whose trusted CA does not parse, so the
+			// policy must report the error instead of passing it through.
+			name: "invalid ca.crt in secret",
+			tlsConfig: &kgateway.TLS{
+				SecretRef: &corev1.LocalObjectReference{
+					Name: "invalid-ca-secret",
+				},
+			},
+			secret: &ir.Secret{
+				ObjectSource: ir.ObjectSource{
+					Group:     "",
+					Kind:      "Secret",
+					Namespace: "default",
+					Name:      "invalid-ca-secret",
+				},
+				Obj: &corev1.Secret{},
+				Data: map[string][]byte{
+					"ca.crt": []byte("not a PEM certificate"),
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "file-based TLS config",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
