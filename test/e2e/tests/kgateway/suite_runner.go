@@ -43,6 +43,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/httproute"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/tcproute"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/tlsroute"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/services/udproute"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/session_persistence"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/timeoutretry"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/tracing"
@@ -66,6 +67,7 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("SessionPersistence", session_persistence.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("UDPRouteServices", udproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TLSRouteServices", tlsroute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("GRPCRouteServices", grpcroute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Transforms", transformation.NewTestingSuite)
