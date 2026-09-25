@@ -31,8 +31,14 @@ import (
 
 func routeConfigurationFromBootstrap(t *testing.T, config *envoybootstrapv3.Bootstrap) *envoyroutev3.RouteConfiguration {
 	t.Helper()
+	listeners := config.GetStaticResources().GetListeners()
+	require.Len(t, listeners, 1)
+	filterChains := listeners[0].GetFilterChains()
+	require.Len(t, filterChains, 1)
+	filters := filterChains[0].GetFilters()
+	require.NotEmpty(t, filters)
 	hcm := &envoyhcm.HttpConnectionManager{}
-	require.NoError(t, config.GetStaticResources().GetListeners()[0].GetFilterChains()[0].GetFilters()[0].GetTypedConfig().UnmarshalTo(hcm))
+	require.NoError(t, filters[0].GetTypedConfig().UnmarshalTo(hcm))
 	return hcm.GetRouteConfig()
 }
 
@@ -40,6 +46,45 @@ func scopeTestVirtualHosts() []*ir.VirtualHost {
 	return []*ir.VirtualHost{
 		{Name: "one", Hostname: "one.example.com", Rules: []ir.HttpRouteRuleMatchIR{testRouteIR(0, "/one", "shared-cluster")}},
 		{Name: "two", Hostname: "two.example.com", Rules: []ir.HttpRouteRuleMatchIR{testRouteIR(0, "/two", "shared-cluster")}},
+	}
+}
+
+func TestRouteConfigPolicyErrorValidatesFallback(t *testing.T) {
+	for _, invalidSharedSettings := range []bool{false, true} {
+		t.Run("invalid shared settings="+strconv.FormatBool(invalidSharedSettings), func(t *testing.T) {
+			calls := 0
+			v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
+				calls++
+				cfg := routeConfigurationFromBootstrap(t, b)
+				require.Len(t, cfg.VirtualHosts, 1, "discarded virtual hosts must not be validated")
+				require.Len(t, cfg.VirtualHosts[0].Routes, 1)
+				assert.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[0].GetDirectResponse().GetStatus(), "validate only the fallback")
+				if invalidSharedSettings && len(cfg.ResponseHeadersToAdd) > 0 {
+					return errors.New("invalid shared response header")
+				}
+				return nil
+			}}
+			h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+			h.routeConfigName = "test-config"
+			attachRouteConfigPass(h, routeConfigPassFunc{apply: func(cfg *envoyroutev3.RouteConfiguration) {
+				cfg.ResponseHeadersToAdd = []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "x-test", Value: "shared"}}}
+			}})
+			for gk, policies := range h.attachedPolicies.Policies {
+				h.attachedPolicies.Policies[gk] = append(policies, ir.PolicyAtt{GroupKind: gk, Errors: []error{errors.New("invalid policy")}})
+			}
+			cfg := h.ComputeRouteConfiguration(t.Context(), scopeTestVirtualHosts())
+			assert.Equal(t, "test-config", cfg.Name)
+			require.Len(t, cfg.VirtualHosts, 1)
+			require.Len(t, cfg.VirtualHosts[0].Routes, 1)
+			assert.EqualValues(t, 500, cfg.VirtualHosts[0].Routes[0].GetDirectResponse().GetStatus())
+			if invalidSharedSettings {
+				assert.Empty(t, cfg.ResponseHeadersToAdd, "invalid shared settings must not survive fallback")
+				assert.Equal(t, 2, calls)
+			} else {
+				assert.Len(t, cfg.ResponseHeadersToAdd, 1, "valid shared settings should survive fallback")
+				assert.Equal(t, 1, calls, "validate the fallback once without isolating discarded routes")
+			}
+		})
 	}
 }
 

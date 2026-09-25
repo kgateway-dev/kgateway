@@ -110,7 +110,6 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 	}
 	validationCtx := newRouteValidationContext(computedVhosts)
 	if len(errs) > 0 {
-		h.validateRouteConfiguration(ctx, cfg, validationCtx)
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
 		// attached to the RC (via Gateway or HTTPS listener), we need to replace the entire
 		// RC with a synthetic vhost that returns a 500 error for all traffic.
@@ -118,6 +117,9 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		h.logger.Error("error applying route config plugins", "error", joined)
 		incRouteReplacementMetric(h.gw, joined)
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
+		// Validate the fallback that will be returned, including retained shared
+		// settings, without isolating or reporting routes that were discarded.
+		h.validateRouteConfiguration(ctx, cfg, validationCtx)
 		return cfg
 	}
 	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
