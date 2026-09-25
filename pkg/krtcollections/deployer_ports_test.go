@@ -2,8 +2,10 @@ package krtcollections
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -56,4 +58,27 @@ func TestResolveDeployerPorts(t *testing.T) {
 			assert.ElementsMatch(t, tc.wantUDPPorts, udpPorts.UnsortedList())
 		})
 	}
+}
+
+// TestSortListenerSetsByPrecedence guards the order the deployer and Envoy transforms both rely on
+// to resolve a same-port protocol conflict, oldest by creation timestamp then by namespace/name.
+func TestSortListenerSetsByPrecedence(t *testing.T) {
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	mk := func(name string, created time.Time) *gwv1.ListenerSet {
+		return &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{
+			Namespace:         "ns",
+			Name:              name,
+			CreationTimestamp: metav1.NewTime(created),
+		}}
+	}
+
+	// Oldest first by creation timestamp.
+	sets := []*gwv1.ListenerSet{mk("newer", base.Add(time.Hour)), mk("older", base)}
+	sortListenerSetsByPrecedence(sets)
+	assert.Equal(t, []string{"older", "newer"}, []string{sets[0].Name, sets[1].Name})
+
+	// Equal timestamps fall back to "{namespace}/{name}" order.
+	tied := []*gwv1.ListenerSet{mk("b", base), mk("a", base)}
+	sortListenerSetsByPrecedence(tied)
+	assert.Equal(t, []string{"a", "b"}, []string{tied[0].Name, tied[1].Name})
 }

@@ -528,6 +528,22 @@ func resolveDeployerPorts(entries []listenerPortProtocol) (ports, udpPorts sets.
 	return ports, udpPorts
 }
 
+// sortListenerSetsByPrecedence orders listener sets by GEP-1713 listener precedence, oldest by
+// creation timestamp first, then alphabetically by "{namespace}/{name}". The Envoy and deployer
+// transforms both rely on this order so they resolve a same-port protocol conflict the same way.
+// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
+func sortListenerSetsByPrecedence(listenerSets []*gwv1.ListenerSet) {
+	slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
+		if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
+			return cmp
+		}
+		nnsString := func(ls *gwv1.ListenerSet) string {
+			return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
+		}
+		return strings.Compare(nnsString(a), nnsString(b))
+	})
+}
+
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 		// only care about gateways that use a class controlled by us
@@ -549,6 +565,9 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
+		// Match the Envoy transform's precedence so a port contended by listener sets renders the
+		// same winning protocol the translator keeps.
+		sortListenerSetsByPrecedence(listenerSets)
 
 		for _, ls := range listenerSets {
 			for _, l := range ls.Spec.Listeners {
@@ -629,21 +648,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			Namespace: gw.GetNamespace(),
 		}))
 
-		// Sort by listener precedence
-		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
-		// - ListenerSet ordered by creation time (oldest first)
-		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
-			// primary sort: creation timestamp (oldest first)
-			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
-				return cmp
-			}
-			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls *gwv1.ListenerSet) string {
-				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
-			}
-			return strings.Compare(nnsString(a), nnsString(b))
-		})
+		sortListenerSetsByPrecedence(listenerSets)
 
 		// Start the resource sync metrics for all ListenerSets before they are processed,
 		// so they do not have staggered start times.
