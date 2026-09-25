@@ -411,6 +411,35 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	return h
 }
 
+// listenerPortProtocol is one listener's port and protocol, used to decide the protocol the
+// deployer renders for a Service port.
+type listenerPortProtocol struct {
+	port     int32
+	protocol gwv1.ProtocolType
+}
+
+// resolveDeployerPorts returns every exposed port and the subset that render as UDP. A port renders
+// UDP only when its first (highest-precedence) listener is UDP, because the translator keeps that
+// listener and rejects a same-port listener of a different protocol. Entries must be in precedence
+// order, gateway listeners before listener-set listeners.
+func resolveDeployerPorts(entries []listenerPortProtocol) (ports, udpPorts sets.Set[int32]) {
+	ports = sets.New[int32]()
+	winner := map[int32]gwv1.ProtocolType{}
+	for _, e := range entries {
+		ports.Insert(e.port)
+		if _, seen := winner[e.port]; !seen {
+			winner[e.port] = e.protocol
+		}
+	}
+	udpPorts = sets.New[int32]()
+	for port, protocol := range winner {
+		if protocol == gwv1.UDPProtocolType {
+			udpPorts.Insert(port)
+		}
+	}
+	return ports, udpPorts
+}
+
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 		// only care about gateways that use a class controlled by us
@@ -418,13 +447,12 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
 			return nil
 		}
-		ports := sets.New[int32]()
-		udpPorts := sets.New[int32]()
+		// A port renders UDP only when its first (highest-precedence) listener is UDP: the translator
+		// keeps that listener and rejects a same-port listener of a different protocol, so the Service
+		// must match the winner. Gateway listeners outrank listener-set listeners, so list them first.
+		entries := make([]listenerPortProtocol, 0, len(gw.Spec.Listeners))
 		for _, l := range gw.Spec.Listeners {
-			ports.Insert(l.Port)
-			if l.Protocol == gwv1.UDPProtocolType {
-				udpPorts.Insert(l.Port)
-			}
+			entries = append(entries, listenerPortProtocol{port: l.Port, protocol: l.Protocol})
 		}
 
 		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
@@ -441,12 +469,11 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 				if portErr != nil {
 					continue
 				}
-				ports.Insert(port)
-				if l.Protocol == gwv1.UDPProtocolType {
-					udpPorts.Insert(port)
-				}
+				entries = append(entries, listenerPortProtocol{port: port, protocol: l.Protocol})
 			}
 		}
+
+		ports, udpPorts := resolveDeployerPorts(entries)
 		ir := &ir.GatewayForDeployer{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.GroupVersion.Group,
