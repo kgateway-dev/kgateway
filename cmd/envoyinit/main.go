@@ -13,7 +13,8 @@ import (
 func main() {
 	envoyExecutable := envoyinit.GetEnvoyExecutable()
 	inputPath := envoyinit.GetInputConfigPath()
+	overlayPath := envoyinit.GetOverlayConfigPath()
 	outputPath := envoyinit.GetOutputConfigPath()
 
-	envoyinit.RunEnvoy(envoyExecutable, inputPath, outputPath)
+	envoyinit.RunEnvoy(envoyExecutable, inputPath, overlayPath, outputPath)
 }
