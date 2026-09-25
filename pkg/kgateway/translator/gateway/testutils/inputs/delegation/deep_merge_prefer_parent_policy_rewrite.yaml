@@ -1,0 +1,73 @@
+# Parent and child each have a TrafficPolicy setting urlRewrite.pathRegex with a distinct
+# substitution, and the parent carries inherited-policy-priority: DeepMergePreferParent.
+# This demonstrates that for this TrafficPolicy field, the DeepMerge* strategies pick a
+# fixed winner regardless of the PreferParent/PreferChild half of the annotation: the
+# emitted route ends up with the child's rewrite even though the annotation name says
+# "PreferParent".
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: parent-route
+  namespace: infra
+  annotations:
+    kgateway.dev/inherited-policy-priority: DeepMergePreferParent
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: child-route
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/pets
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: parent-rewrite
+  namespace: infra
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: parent-route
+  urlRewrite:
+    pathRegex:
+      pattern: ".*"
+      substitution: /from-parent
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: child-rewrite
+  namespace: a
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: child-route
+  urlRewrite:
+    pathRegex:
+      pattern: ".*"
+      substitution: /from-child
