@@ -535,6 +535,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy API Key Authentication with SecretSelector matchExpressions", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/api-key-auth-selector-matchexpressions.yaml"},
+			outputFile: "traffic-policy/api-key-auth-selector-matchexpressions.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with fail open rate limiting", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/fail-open"},
