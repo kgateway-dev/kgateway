@@ -75,6 +75,37 @@ func ToEnvoyGrpc(in kgateway.CommonGrpcService, backend *ir.BackendObjectIR) (*e
 	return grpcService, nil
 }
 
+func ToEnvoyHttp(in kgateway.CommonHttpService, backend *ir.BackendObjectIR) (*envoycorev3.HttpService, error) {
+	// HttpUri.Timeout is required by Envoy's proto validation, so fall back to the same
+	// default used for ext_authz/ext_proc HTTP services when the user hasn't set one.
+	timeout := kgateway.HTTPDefaultTimeout
+	if in.Timeout != nil {
+		timeout = in.Timeout.Duration
+	}
+
+	httpService := &envoycorev3.HttpService{
+		HttpUri: &envoycorev3.HttpUri{
+			Uri: backend.ClusterName(),
+			HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
+				Cluster: backend.ClusterName(),
+			},
+			Timeout: utils.DurationToProto(timeout),
+		},
+	}
+	if in.RequestHeadersToAdd != nil {
+		httpService.RequestHeadersToAdd = make([]*envoycorev3.HeaderValueOption, len(in.RequestHeadersToAdd))
+		for i, header := range in.RequestHeadersToAdd {
+			httpService.RequestHeadersToAdd[i] = &envoycorev3.HeaderValueOption{
+				Header: &envoycorev3.HeaderValue{
+					Key:   header.Key,
+					Value: ptr.Deref(header.Value, ""),
+				},
+			}
+		}
+	}
+	return httpService, nil
+}
+
 // convertAccessLogFilter translates filtering logic to Envoy filter
 func convertAccessLogFilter(filter *kgateway.AccessLogFilter) (*envoyaccesslogv3.AccessLogFilter, error) {
 	var (
