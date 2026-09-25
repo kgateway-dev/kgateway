@@ -94,7 +94,7 @@ func TestMergeUdpAggregateLoadAssignment_WeightsRespectReplicaCount(t *testing.T
 func TestMergeUdpAggregateLoadAssignment_SkipsEmptyAndZeroWeight(t *testing.T) {
 	members := []udpMemberEndpoints{
 		{weight: 100, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
-		{weight: 50, efbs: nil}, // invalid/no endpoints: contributes nothing
+		{weight: 50, efbs: nil}, // valid backend with no ready endpoints, contributes nothing
 	}
 	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 	require.Len(t, cla.GetEndpoints(), 1)
@@ -199,4 +199,26 @@ func TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster(t *testing.
 
 	g.Expect(got[0].Client.ResourceName()).To(gomega.Equal(clientA.ResourceName()))
 	g.Expect(got[0].Endpoints.Clone().GetClusterName()).To(gomega.Equal(clusterName))
+}
+
+// TestMergeUdpAggregateLoadAssignment_ZeroEndpointBackendRedistributes asserts a valid backend with
+// no ready endpoints has its weight redistributed to the healthy members, not dropped to a
+// blackhole (which is reserved for invalid backends via dropWeight).
+func TestMergeUdpAggregateLoadAssignment_ZeroEndpointBackendRedistributes(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 80, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+		{weight: 20, efbs: nil}, // valid backend, no ready endpoints
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+
+	// Only the healthy backend is present, so it takes all traffic. The zero-endpoint backend's
+	// weight is not represented, redistributed rather than dropped.
+	require.Len(t, cla.GetEndpoints(), 1)
+	w, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok)
+	assert.Equal(t, uint32(80000), w)
+
+	// No blackhole endpoint, the missing weight is not dropped.
+	_, hasBlackhole := endpointWeight(cla, udpBlackholeAddr)
+	assert.False(t, hasBlackhole, "a valid zero-endpoint backend must not create a blackhole drop")
 }

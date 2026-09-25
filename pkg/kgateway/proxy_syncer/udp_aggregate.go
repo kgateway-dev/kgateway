@@ -220,6 +220,9 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 				count += len(eps)
 			}
 		}
+		// A valid backend with no ready endpoints (all pods down, mid-rollout) contributes nothing,
+		// so its weight redistributes across the healthy members. This differs from an invalid
+		// backend, whose weight is dropped to the blackhole (dropWeight) rather than redistributed.
 		if count == 0 {
 			continue
 		}
