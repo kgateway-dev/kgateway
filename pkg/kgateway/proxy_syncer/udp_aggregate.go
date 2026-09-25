@@ -5,7 +5,9 @@ import (
 	"hash/fnv"
 	"slices"
 	"strconv"
+	"strings"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"google.golang.org/protobuf/proto"
@@ -60,11 +62,10 @@ func newUdpAggregateCollection(
 	udpRoutes krt.Collection[ir.UdpRouteIR],
 ) krt.Collection[udpAggregate] {
 	return krt.NewCollection(udpRoutes, func(_ krt.HandlerContext, r ir.UdpRouteIR) *udpAggregate {
-		// Must mirror translateUdpFilterChain's rule that more than one backendRef means a
-		// synthetic cluster. The listener emits the CDS cluster for exactly the multi-backend
-		// routes, and every CDS cluster needs a CLA or Envoy withholds the client's whole EDS
-		// response (issue #14471). Members may be empty when all backends are invalid or
-		// zero-weight, a valid empty CLA that drops.
+		// A multi-backend route uses a synthetic aggregate cluster; a single-backend route targets
+		// its backend directly. The descriptor only supplies the members. Whether a CLA is emitted
+		// for it is gated by the cluster the gateway's CDS actually carries (see
+		// newAcceptedUdpAggregateCollection), so a rejected route's descriptor is simply never used.
 		if len(r.Backends) <= 1 {
 			return nil
 		}
@@ -91,32 +92,76 @@ func newUdpAggregateCollection(
 	}, krtopts.ToOptions("UdpAggregates")...)
 }
 
-// NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. The
-// endpoint set is client-independent, so kgateway builds the CLA once and emits it to every client,
-// keeping the CLA present whenever the synthetic CDS cluster is and avoiding the withheld EDS in
-// issue #14471.
+// acceptedUdpAggregate names one synthetic UDP aggregate cluster that a gateway's CDS actually
+// emitted, paired with that gateway's snapshot key (the client role). It is the authoritative
+// signal that the cluster exists for that gateway. The CLA is emitted only where the cluster is,
+// keeping CDS and EDS in lockstep: a rejected route (multiple rules, conflict loser) emits no
+// cluster and so gets no CLA, and a gateway that does not carry the route gets neither. Both are
+// the withhold in issue #14471.
+type acceptedUdpAggregate struct {
+	role        string
+	clusterName string
+}
+
+func (a acceptedUdpAggregate) ResourceName() string { return a.role + "/" + a.clusterName }
+
+func (a acceptedUdpAggregate) Equals(o acceptedUdpAggregate) bool {
+	return a.role == o.role && a.clusterName == o.clusterName
+}
+
+// newAcceptedUdpAggregateCollection reads the aggregate clusters each gateway emitted in its CDS,
+// so the CLA can be scoped to exactly those gateways' clients.
+func newAcceptedUdpAggregateCollection(
+	krtopts krtutil.KrtOptions,
+	mostXdsSnapshots krt.Collection[GatewayXdsResources],
+) krt.Collection[acceptedUdpAggregate] {
+	return krt.NewManyCollection(mostXdsSnapshots, func(_ krt.HandlerContext, snap GatewayXdsResources) []acceptedUdpAggregate {
+		var out []acceptedUdpAggregate
+		for _, c := range snap.Clusters {
+			cluster, ok := c.Resource.(*envoyclusterv3.Cluster)
+			if !ok || !strings.HasPrefix(cluster.GetName(), ir.UdpAggregateClusterPrefix) {
+				continue
+			}
+			out = append(out, acceptedUdpAggregate{role: snap.ResourceName(), clusterName: cluster.GetName()})
+		}
+		return out
+	}, krtopts.ToOptions("AcceptedUdpAggregates")...)
+}
+
+// NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. A
+// client receives an aggregate CLA only when its gateway's CDS carries the matching cluster (from
+// newAcceptedUdpAggregateCollection). The endpoint set itself is client-independent, the weighted
+// union of the member backends' endpoints.
 func NewPerClientUdpAggregateEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 	aggregates krt.Collection[udpAggregate],
+	mostXdsSnapshots krt.Collection[GatewayXdsResources],
 	backendEndpoints krt.Collection[ir.EndpointsForBackend],
 ) PerClientEnvoyEndpoints {
 	epByBackend := krtpkg.UnnamedIndex(backendEndpoints, func(e ir.EndpointsForBackend) []string {
 		return []string{e.UpstreamResourceName}
 	})
+	accepted := newAcceptedUdpAggregateCollection(krtopts, mostXdsSnapshots)
+	acceptedByRole := krtpkg.UnnamedIndex(accepted, func(a acceptedUdpAggregate) []string {
+		return []string{a.role}
+	})
 
-	endpoints := krt.NewManyCollection(aggregates, func(kctx krt.HandlerContext, agg udpAggregate) []UccWithEndpoints {
-		cla := buildUdpAggregateLoadAssignment(kctx, agg, backendEndpoints, epByBackend)
-		hash := hashUdpAggregateLoadAssignment(cla)
-		clients := krt.Fetch(kctx, uccs)
-		ret := make([]UccWithEndpoints, 0, len(clients))
-		for _, ucc := range clients {
+	endpoints := krt.NewManyCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []UccWithEndpoints {
+		clusters := krt.Fetch(kctx, accepted, krt.FilterIndex(acceptedByRole, ucc.Role))
+		ret := make([]UccWithEndpoints, 0, len(clusters))
+		for _, c := range clusters {
+			agg := krt.FetchOne(kctx, aggregates, krt.FilterKey(c.clusterName))
+			if agg == nil {
+				continue
+			}
+			cla := buildUdpAggregateLoadAssignment(kctx, *agg, backendEndpoints, epByBackend)
 			ret = append(ret, UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
-				EndpointsHash: hash,
-				endpointsName: agg.clusterName,
-				resourceName:  uccEndpointsResourceName(ucc, agg.clusterName),
+				EndpointsHash: hashUdpAggregateLoadAssignment(cla),
+				endpointsName: c.clusterName,
+				resourceName:  uccEndpointsResourceName(ucc, c.clusterName),
 			})
 		}
 		return ret

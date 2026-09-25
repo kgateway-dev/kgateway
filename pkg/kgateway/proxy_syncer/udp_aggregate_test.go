@@ -3,12 +3,20 @@ package proxy_syncer
 import (
 	"testing"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 func udpTestEndpoint(addr string) ir.EndpointWithMd {
@@ -146,4 +154,49 @@ func TestMergeUdpAggregateLoadAssignment_DropWeightBlackhole(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
+}
+
+// TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster guards both #14471 directions:
+// the aggregate CLA is emitted only to clients of a gateway whose CDS carries the matching cluster.
+// A client of a gateway without the cluster (an unaccepted route, or simply a different gateway)
+// receives no CLA, even though the aggregate descriptor exists.
+func TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	clusterName := ir.UdpAggregateClusterName("ns", "route")
+	roleA := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw-a")
+	roleB := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw-b")
+	clientA := ir.NewUniquelyConnectedClient(roleA, "ns", map[string]string{wellknown.GatewayNameLabel: "gw-a"}, ir.PodLocality{})
+	clientB := ir.NewUniquelyConnectedClient(roleB, "ns", map[string]string{wellknown.GatewayNameLabel: "gw-b"}, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{clientA, clientB})
+
+	// gw-a's CDS carries the aggregate cluster; gw-b's does not.
+	snapshots := krt.NewStaticCollection(nil, []GatewayXdsResources{
+		{
+			NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw-a"},
+			Clusters:       []envoycachetypes.ResourceWithTTL{{Resource: &envoyclusterv3.Cluster{Name: clusterName}}},
+		},
+		{
+			NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw-b"},
+			Clusters:       []envoycachetypes.ResourceWithTTL{{Resource: &envoyclusterv3.Cluster{Name: "kube_ns_backend_80"}}},
+		},
+	})
+
+	aggregates := krt.NewStaticCollection(nil, []udpAggregate{
+		{clusterName: clusterName, members: []udpAggregateMember{{backendResourceName: "be1", weight: 100}}},
+	})
+	backendEndpoints := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{
+		{UpstreamResourceName: "be1", LbEps: ir.LocalityLbMap{ir.PodLocality{}: {udpTestEndpoint("10.0.0.1")}}},
+	})
+
+	eps := NewPerClientUdpAggregateEndpoints(krtutil.KrtOptions{}, uccs, aggregates, snapshots, backendEndpoints)
+
+	var got []UccWithEndpoints
+	g.Eventually(func() []UccWithEndpoints {
+		got = eps.endpoints.List()
+		return got
+	}).Should(gomega.HaveLen(1), "only the gateway whose CDS carries the aggregate cluster gets the CLA")
+
+	g.Expect(got[0].Client.ResourceName()).To(gomega.Equal(clientA.ResourceName()))
+	g.Expect(got[0].Endpoints.GetClusterName()).To(gomega.Equal(clusterName))
 }

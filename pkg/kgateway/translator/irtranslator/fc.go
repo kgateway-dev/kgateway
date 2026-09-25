@@ -477,8 +477,8 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 // Unlike TCP, Envoy's udp_proxy is a listener filter (not a network filter in a filter chain)
 // and routes to a single cluster. The plain `cluster` route specifier is deprecated, so the
 // non-deprecated `matcher` form is used with a match-all action targeting the backend cluster.
-// udp_proxy has no weighted-cluster equivalent, so multi-backend UDPRoutes are rejected during
-// listener translation and only a single backend reaches here.
+// udp_proxy has no weighted-cluster equivalent, so a multi-backend route targets a synthetic
+// aggregate cluster (AggregateClusterName) whose endpoints are the weighted union of its backends.
 func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3.ListenerFilter {
 	if h.reporter != nil {
 		for _, backend := range l.BackendRefs {
