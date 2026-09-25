@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 func routeConfigurationFromBootstrap(t *testing.T, config *envoybootstrapv3.Bootstrap) *envoyroutev3.RouteConfiguration {
@@ -90,11 +91,10 @@ func TestRouteConfigPolicyErrorValidatesFallback(t *testing.T) {
 
 func TestFinalRouteConfigurationPreservesScopeSettings(t *testing.T) {
 	calls := 0
-	var validated *envoyroutev3.RouteConfiguration
+	var validated []*envoyroutev3.RouteConfiguration
 	v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
 		calls++
-		validated = routeConfigurationFromBootstrap(t, b)
-		require.Len(t, b.GetStaticResources().GetClusters(), 1, "cluster stubs must be deduplicated across virtual hosts")
+		validated = append(validated, routeConfigurationFromBootstrap(t, b))
 		return nil
 	}}
 	h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
@@ -115,8 +115,11 @@ func TestFinalRouteConfigurationPreservesScopeSettings(t *testing.T) {
 		}
 	}})
 	cfg := h.ComputeRouteConfiguration(context.Background(), scopeTestVirtualHosts())
-	require.Equal(t, 1, calls, "successful strict validation should batch the complete configuration")
-	assert.True(t, proto.Equal(cfg, validated), "validation must see the final virtual hosts, routes, headers and inherited configs")
+	require.Equal(t, 3, calls, "validate shared settings and each virtual host separately")
+	for i, vh := range cfg.VirtualHosts {
+		expected := (routeValidationScope{config: cfg, vhost: vh}).configuration(vh.Routes)
+		assert.True(t, proto.Equal(expected, validated[i+1]), "validation must retain final routes and inherited settings")
+	}
 }
 
 func TestFinalRouteConfigurationIsolatesScopeFailures(t *testing.T) {
@@ -416,7 +419,8 @@ func TestCheapRouteFailuresRemainBatched(t *testing.T) {
 			v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
 				calls++
 				routes := routesFromValidationBootstrap(t, b)
-				require.Len(t, routes, 2*count-1, "drop only the malformed matcher before invoking Envoy")
+				require.LessOrEqual(t, calls, 3)
+				require.Len(t, routes, []int{2, count, count - 1}[calls-1], "validate shared settings, then each repaired virtual host")
 				for _, route := range routes {
 					require.NoError(t, validateRoutePreEnvoy(route, apisettings.ValidationStrict), "every cheap failure must be repaired before batch validation")
 				}
@@ -435,7 +439,7 @@ func TestCheapRouteFailuresRemainBatched(t *testing.T) {
 				cfg.VirtualHosts[1].Routes[0].Match = &envoyroutev3.RouteMatch{PathSpecifier: &envoyroutev3.RouteMatch_SafeRegex{SafeRegex: &matcherv3.RegexMatcher{Regex: "["}}}
 			}})
 			cfg := h.ComputeRouteConfiguration(t.Context(), inputs)
-			require.Equal(t, 1, calls, "cheap failures must not cause one Envoy invocation per healthy route")
+			require.Equal(t, 3, calls, "cheap failures must not cause one Envoy invocation per healthy route")
 			require.Len(t, cfg.VirtualHosts, 2)
 			require.Len(t, cfg.VirtualHosts[0].Routes, count)
 			require.Len(t, cfg.VirtualHosts[1].Routes, count-1)
@@ -477,5 +481,59 @@ func TestCheapRouteDropPreservesSourceAttribution(t *testing.T) {
 		require.NotNil(t, condition)
 		assert.Equal(t, string(reportssdk.RouteRuleDroppedReason), condition.Reason, "the appended clone must not overwrite the original route's dropped status")
 		assert.Contains(t, condition.Message, "Dropped Rule (7)")
+	}
+}
+
+func TestRouteValidationCacheReusesUnchangedVirtualHosts(t *testing.T) {
+	var validated []*envoyroutev3.RouteConfiguration
+	inner := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
+		validated = append(validated, routeConfigurationFromBootstrap(t, b))
+		return nil
+	}}
+	h := testHTTPRouteTranslator(validator.NewCaching(inner, 100), apisettings.ValidationStrict)
+	inputs := scopeTestVirtualHosts()
+	h.ComputeRouteConfiguration(t.Context(), inputs)
+	require.Len(t, validated, 3)
+	validated = nil
+	inputs[0].Rules[0].Backends[0].Backend.ClusterName = "changed-cluster"
+	h.ComputeRouteConfiguration(t.Context(), inputs)
+	require.Len(t, validated, 1, "route edits should miss only the affected virtual host's cache entry")
+	require.Len(t, validated[0].VirtualHosts, 1)
+	assert.Equal(t, "one", validated[0].VirtualHosts[0].Name)
+	validated = nil
+	attachRouteConfigPass(h, routeConfigPassFunc{apply: func(cfg *envoyroutev3.RouteConfiguration) {
+		cfg.ResponseHeadersToAdd = []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "x-new", Value: "shared"}}}
+	}})
+	h.ComputeRouteConfiguration(t.Context(), inputs)
+	require.Len(t, validated, 3, "shared settings changes must invalidate all dependent scopes")
+}
+
+func TestRouteValidationScopeDoesNotMutateSource(t *testing.T) {
+	cfg := &envoyroutev3.RouteConfiguration{VirtualHosts: []*envoyroutev3.VirtualHost{{
+		Name: "source", Domains: []string{"example.com"}, Routes: []*envoyroutev3.Route{newRouteWithPrefix("/original")},
+	}}}
+	before := proto.CloneOf(cfg)
+	scope := routeValidationScope{config: cfg, vhost: cfg.VirtualHosts[0]}
+	isolated := scope.configuration([]*envoyroutev3.Route{newRouteWithPrefix("/isolated")})
+	isolated.VirtualHosts[0].Domains[0] = "changed.example.com"
+	assert.True(t, proto.Equal(before, cfg), "isolating routes must not mutate or alias inherited source settings")
+}
+
+func BenchmarkRouteValidationScopeConfiguration(b *testing.B) {
+	for _, count := range []int{1, 5000} {
+		b.Run(strconv.Itoa(count), func(b *testing.B) {
+			vh := &envoyroutev3.VirtualHost{Name: "vhost", Domains: []string{"example.com"}}
+			for range count {
+				vh.Routes = append(vh.Routes, newRouteWithPrefix("/"))
+			}
+			cfg := &envoyroutev3.RouteConfiguration{VirtualHosts: []*envoyroutev3.VirtualHost{vh}}
+			scope := routeValidationScope{config: cfg, vhost: vh}
+			selected := vh.Routes[:1]
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				scope.configuration(selected)
+			}
+		})
 	}
 }

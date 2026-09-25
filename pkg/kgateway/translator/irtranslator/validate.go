@@ -12,6 +12,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
@@ -274,11 +275,27 @@ type routeValidationScope struct {
 }
 
 func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoyroutev3.RouteConfiguration {
-	config := proto.CloneOf(s.config)
-	vhost := proto.CloneOf(s.vhost)
+	config := cloneWithoutField(s.config, "virtual_hosts")
+	vhost := cloneWithoutField(s.vhost, "routes")
 	vhost.Routes = routes
 	config.VirtualHosts = []*envoyroutev3.VirtualHost{vhost}
 	return config
+}
+
+// cloneWithoutField excludes children before cloning, so isolating one route
+// does not copy every sibling. Build a separate message rather than modifying
+// the source or copying protobuf's internal synchronization state.
+func cloneWithoutField[T proto.Message](src T, excluded protoreflect.Name) T {
+	message := src.ProtoReflect()
+	shallow := message.New()
+	message.Range(func(field protoreflect.FieldDescriptor, value protoreflect.Value) bool {
+		if field.Name() != excluded {
+			shallow.Set(field, value)
+		}
+		return true
+	})
+	shallow.SetUnknown(message.GetUnknown())
+	return proto.CloneOf(shallow.Interface().(T))
 }
 
 func (s routeValidationScope) validate(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {

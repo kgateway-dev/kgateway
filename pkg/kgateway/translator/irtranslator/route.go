@@ -517,6 +517,25 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 	if h.validationLevel != apisettings.ValidationStrict {
 		return
 	}
+	if len(cfg.VirtualHosts) > 1 {
+		// Validate shared settings and cross-vhost domain conflicts without route
+		// contents in the cache key. Route-only changes then invalidate just the
+		// affected vhost's validation, while retaining its inherited settings.
+		shared := cloneWithoutField(cfg, "virtual_hosts")
+		for _, vhost := range cfg.VirtualHosts {
+			neutral := setFallBackConfig(vhost.GetName(), "*")
+			neutral.Domains = vhost.GetDomains()
+			shared.VirtualHosts = append(shared.VirtualHosts, neutral)
+		}
+		if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
+			h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+			return
+		}
+		for i, vhost := range cfg.VirtualHosts {
+			cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, cfg, vhost, contexts[i])
+		}
+		return
+	}
 	// Repair all lightweight failures before invoking Envoy. Even a large batch
 	// with malformed rewrites or generated matchers needs only one invocation
 	// when the repaired configuration is valid.
@@ -524,7 +543,7 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 		return
 	}
 	// Check shared fields before attributing a failure to individual routes.
-	shared := proto.CloneOf(cfg)
+	shared := cloneWithoutField(cfg, "virtual_hosts")
 	shared.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("validation", "*")}
 	if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
 		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
