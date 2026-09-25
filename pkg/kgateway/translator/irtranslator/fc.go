@@ -532,21 +532,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoycorev3.TransportSocket {
 		})
 	}
 
-	if tlsConfig.MinTLSVersion != nil {
-		common.TlsParams.TlsMinimumProtocolVersion = *tlsConfig.MinTLSVersion
-	}
-	if tlsConfig.MaxTLSVersion != nil {
-		common.TlsParams.TlsMaximumProtocolVersion = *tlsConfig.MaxTLSVersion
-	}
-	if len(tlsConfig.CipherSuites) > 0 {
-		common.TlsParams.CipherSuites = tlsConfig.CipherSuites
-	}
-	if len(tlsConfig.EcdhCurves) > 0 {
-		common.TlsParams.EcdhCurves = tlsConfig.EcdhCurves
-	}
-	if len(tlsConfig.SignatureAlgorithms) > 0 {
-		common.TlsParams.SignatureAlgorithms = tlsConfig.SignatureAlgorithms
-	}
+	sslutils.ApplyTLSParameters(common.TlsParams, tlsConfig)
 
 	// TODO: add verify subject alt names (validation context) https://github.com/kgateway-dev/kgateway/issues/12955
 

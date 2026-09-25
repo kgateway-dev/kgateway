@@ -337,6 +337,26 @@ func normalizeTLSVersionRange(out *ir.TLSConfig) {
 	}
 }
 
+// ApplyTLSParameters copies TLS settings from cfg to params. The downstream listener path and
+// the upstream BackendTLSPolicy path both call this function.
+func ApplyTLSParameters(params *envoytlsv3.TlsParameters, cfg *ir.TLSConfig) {
+	if len(cfg.CipherSuites) > 0 {
+		params.CipherSuites = cfg.CipherSuites
+	}
+	if len(cfg.EcdhCurves) > 0 {
+		params.EcdhCurves = cfg.EcdhCurves
+	}
+	if len(cfg.SignatureAlgorithms) > 0 {
+		params.SignatureAlgorithms = cfg.SignatureAlgorithms
+	}
+	if cfg.MinTLSVersion != nil {
+		params.TlsMinimumProtocolVersion = *cfg.MinTLSVersion
+	}
+	if cfg.MaxTLSVersion != nil {
+		params.TlsMaximumProtocolVersion = *cfg.MaxTLSVersion
+	}
+}
+
 func validateTLSVersions(out *ir.TLSConfig) error {
 	if out.MinTLSVersion != nil && out.MaxTLSVersion != nil {
 		if *out.MaxTLSVersion < *out.MinTLSVersion {

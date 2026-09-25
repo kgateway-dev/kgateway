@@ -350,21 +350,7 @@ func applyTLSExtensionOptions(
 	if common.TlsParams == nil {
 		common.TlsParams = &envoytlsv3.TlsParameters{}
 	}
-	if len(extCfg.CipherSuites) > 0 {
-		common.TlsParams.CipherSuites = extCfg.CipherSuites
-	}
-	if len(extCfg.EcdhCurves) > 0 {
-		common.TlsParams.EcdhCurves = extCfg.EcdhCurves
-	}
-	if len(extCfg.SignatureAlgorithms) > 0 {
-		common.TlsParams.SignatureAlgorithms = extCfg.SignatureAlgorithms
-	}
-	if extCfg.MinTLSVersion != nil {
-		common.TlsParams.TlsMinimumProtocolVersion = *extCfg.MinTLSVersion
-	}
-	if extCfg.MaxTLSVersion != nil {
-		common.TlsParams.TlsMaximumProtocolVersion = *extCfg.MaxTLSVersion
-	}
+	sslutils.ApplyTLSParameters(common.TlsParams, extCfg)
 	if len(extCfg.AlpnProtocols) > 0 {
 		common.AlpnProtocols = sslutils.ResolveAlpnProtocols(extCfg.AlpnProtocols, nil)
 	}
