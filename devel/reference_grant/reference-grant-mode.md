@@ -161,7 +161,8 @@ mode is `Strict` and the target namespace differs from the source namespace:
 FetchGatewayExtension()                pkg/.../trafficpolicy/constructor.go
   if mode == Strict:
     RefGrants.ReferenceAllowed(
-      from: TrafficPolicy GK, fromNs,
+      from: TrafficPolicy GK (or the kind set via
+            WithSourceGroupKind), fromNs,
       to:   GatewayExtension GK, targetNs, name
     )
     -> ErrMissingReferenceGrant if denied
@@ -181,8 +182,8 @@ invalidation is needed.
 | `api/settings/settings.go` | `ReferenceGrantMode` type and `Settings.ReferenceGrantMode` field |
 | `pkg/krtcollections/policy.go` | `RefGrantIndex`, `NewRefGrantIndex`, `ReferenceAllowed` |
 | `pkg/pluginsdk/collections/collections.go` | Wires mode from settings into `NewRefGrantIndex` |
-| `pkg/kgateway/extensions2/plugins/trafficpolicy/constructor.go` | `FetchGatewayExtension` — Strict-mode ExtensionRef check |
-| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed` |
+| `pkg/kgateway/extensions2/plugins/trafficpolicy/constructor.go` | `FetchGatewayExtension` — Strict-mode ExtensionRef check; `WithSourceGroupKind` |
+| `pkg/krtcollections/secrets.go` | SecretRef enforcement via `GetSecret` -> `ReferenceAllowed`; `From` |
 
 ## Tests
 

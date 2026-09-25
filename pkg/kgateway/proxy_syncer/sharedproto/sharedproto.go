@@ -1,0 +1,257 @@
+// Package sharedproto makes the xDS protos that kgateway shares across
+// per-client snapshots immutable by construction. The base+overlay split
+// aliases Cluster and ClusterLoadAssignment protos across clients (shared
+// bases, interned per-client deltas, interned CLAs); a post-creation mutation
+// corrupts every sibling client's snapshot plus the copy stored in KRT, and is
+// invisible to KRT equality because version hashes are computed at store time.
+//
+// Shared[M] holds the proto in an unexported field of this package, so consumer
+// code in proxy_syncer cannot reach the pointer by accident. There are three
+// ways out, each named for what it permits:
+//
+//   - ResourceWithTTL hands it to the envoycache snapshot, the one legitimate
+//     sink, verifying the tripwire on the way.
+//   - Clone is the one legitimate mutation path.
+//   - BorrowForRead lends the pointer to code that only reads it, for callers
+//     that would otherwise clone just to satisfy a *M parameter.
+//
+// The remaining seam is deliberate and greppable: a caller can type-assert
+// ResourceWithTTL().Resource back to the concrete proto, but cannot do so by
+// accident.
+package sharedproto
+
+import (
+	"fmt"
+	"time"
+
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+)
+
+// AssertImmutability arms the mutation tripwire: Wrap captures each proto's
+// content hash at wrap time and ResourceWithTTL re-hashes at snapshot-assembly
+// time, panicking on drift. Off by default in production — the re-hash is a
+// full deterministic marshal per resource per snapshot rebuild, which is
+// exactly the cost the interning exists to avoid.
+//
+// Enabled in CI three ways: the proxy_syncer package tests force it on
+// in-process (TestMain), the e2e framework sets ASSERT_SHARED_PROTO_IMMUTABILITY
+// on the deployed controller via test/e2e/tests/manifests/test-assertions.yaml,
+// and the conformance action sets it on both of its helm install branches. A trip
+// in a cluster surfaces as a controller panic/restart; the message is in the
+// previous container's logs (kubectl logs --previous).
+var AssertImmutability = envutils.IsEnvTruthy("ASSERT_SHARED_PROTO_IMMUTABILITY")
+
+// Shared wraps a proto that is aliased across per-client xDS snapshots.
+// The zero value is an empty wrapper: IsNil reports true and verification is
+// disabled, which is what rows built without a proto
+// (e.g. status-only views and test fixtures) get for free.
+type Shared[M proto.Message] struct {
+	msg    M
+	ttl    time.Duration
+	hasTTL bool
+	// hash is the content hash captured at wrap time when AssertImmutability
+	// was set. Every uint64 value, including zero, is a valid captured hash.
+	hash     uint64
+	captured bool
+}
+
+// Interner shares immutable protos with equal content. The caller supplies a
+// hash used to select candidates; equal hashes are only a bucket lookup, never
+// proof of equality. This keeps 64-bit hash collisions from making distinct
+// xDS resources alias the same proto.
+//
+// The zero value is ready to use. Intern takes ownership of msg only when it
+// returns a newly wrapped value; when an equal value was already interned, msg
+// is discarded and the existing wrapper is returned.
+type Interner[M proto.Message] struct {
+	// Equal decides content equality within a bucket. Nil means proto.Equal,
+	// which walks every nested field even when two candidates share the same
+	// nested pointers (the pinned protobuf-go short-circuits on identity only
+	// at the root). A caller whose values alias their sub-messages, as the CLA
+	// interner's do through the endpoint IR, can supply an identity-aware
+	// comparison; it MUST agree with proto.Equal on every pair it is given,
+	// because a false positive here aliases distinct xDS resources.
+	Equal  func(a, b M) bool
+	byHash map[uint64][]Shared[M]
+}
+
+// Intern returns the existing shared proto whose content equals msg, or wraps
+// and records msg when its bucket contains no equal proto. bucketHash need not
+// be the proto's content hash; Wrap captures the correct tripwire hash when
+// immutability assertions are enabled.
+func (i *Interner[M]) Intern(msg M, bucketHash uint64) Shared[M] {
+	return i.intern(msg, bucketHash, Wrap[M])
+}
+
+// InternPrehashed is Intern for callers whose bucket hash is utils.HashProto(msg).
+// It reuses that hash when arming the immutability tripwire.
+func (i *Interner[M]) InternPrehashed(msg M, contentHash uint64) Shared[M] {
+	return i.intern(msg, contentHash, func(msg M) Shared[M] {
+		return WrapPrehashed(msg, contentHash)
+	})
+}
+
+func (i *Interner[M]) intern(msg M, bucketHash uint64, wrap func(M) Shared[M]) Shared[M] {
+	equal := i.Equal
+	if equal == nil {
+		equal = func(a, b M) bool { return proto.Equal(a, b) }
+	}
+	for _, existing := range i.byHash[bucketHash] {
+		if equal(existing.msg, msg) {
+			return existing
+		}
+	}
+	shared := wrap(msg)
+	i.record(bucketHash, shared)
+	return shared
+}
+
+// Adopt records an already-shared proto as an interning candidate, so an
+// interner can be primed with what an earlier generation handed out instead of
+// starting empty.
+//
+// This is what lets interning survive a recomputation. An interner that starts
+// empty every time only shares among the values built in that one pass, which
+// is worth nothing when the values that need to agree were built in *different*
+// passes — and that is the normal case for anything keyed off a collection that
+// grows an entry at a time, because the store keeps the older object whenever
+// equality says nothing changed.
+//
+// Adopt does not re-verify: the caller is asserting this proto is already a
+// legitimate shared value for this bucket. Intern still proves equality before
+// handing an adopted proto to anyone, so a wrong bucket costs a miss, not a
+// wrong result. Adopting the same instance twice is a no-op.
+func (i *Interner[M]) Adopt(shared Shared[M], bucketHash uint64) {
+	if shared.IsNil() {
+		return
+	}
+	for _, existing := range i.byHash[bucketHash] {
+		if any(existing.msg) == any(shared.msg) {
+			return
+		}
+	}
+	i.record(bucketHash, shared)
+}
+
+func (i *Interner[M]) record(bucketHash uint64, shared Shared[M]) {
+	if i.byHash == nil {
+		i.byHash = make(map[uint64][]Shared[M])
+	}
+	i.byHash[bucketHash] = append(i.byHash[bucketHash], shared)
+}
+
+// Wrap takes ownership of msg as a shared, read-only proto. The caller must
+// not retain or mutate msg after wrapping; hand out copies via Clone.
+func Wrap[M proto.Message](msg M) Shared[M] {
+	var hash uint64
+	if AssertImmutability {
+		hash = utils.HashProto(msg)
+	}
+	return Shared[M]{msg: msg, hash: hash, captured: AssertImmutability}
+}
+
+// WrapPrehashed is Wrap for producers that already computed the proto's
+// utils.HashProto content hash (e.g. for versioning), making capture free.
+// Zero is a valid content hash and does not opt out of verification.
+func WrapPrehashed[M proto.Message](msg M, contentHash uint64) Shared[M] {
+	if !AssertImmutability {
+		contentHash = 0
+	}
+	return Shared[M]{msg: msg, hash: contentHash, captured: AssertImmutability}
+}
+
+// WithTTL returns a wrapper with a per-resource TTL, sharing the same immutable
+// proto. Existing constructors leave TTL absent; an explicit zero is preserved.
+// TTL is stored by value so snapshot consumers cannot mutate this wrapper's
+// metadata through ResourceWithTTL's duration pointer.
+func (s Shared[M]) WithTTL(ttl time.Duration) Shared[M] {
+	s.ttl, s.hasTTL = ttl, true
+	return s
+}
+
+// IsNil reports whether the wrapper carries no proto (zero value or wrapped
+// nil pointer).
+func (s Shared[M]) IsNil() bool {
+	return any(s.msg) == nil || !s.msg.ProtoReflect().IsValid()
+}
+
+// Clone returns a deep copy the caller owns and may mutate. This is the only
+// way to derive a mutable proto from a shared one. An empty wrapper clones to
+// the zero value of M.
+func (s Shared[M]) Clone() M {
+	if s.IsNil() {
+		var zero M
+		return zero
+	}
+	return proto.Clone(s.msg).(M)
+}
+
+// BorrowForRead lends the shared proto to a caller that only reads it. The
+// borrower MUST NOT mutate it, transitively or otherwise, and MUST NOT retain
+// it past the call it was borrowed for; use Clone for anything else.
+//
+// This exists so that read-only code taking a plain *M does not have to be
+// handed a defensive copy. Cloning to satisfy a signature is not free: the
+// clone is a full deep copy of a proto that is often only read and discarded,
+// which on the per-client cluster path is a per-backend cost paid on every
+// recompute, dominated by the case where nothing is mutated at all.
+//
+// A mutation through a borrow is not silent: the borrowed proto is the same one
+// ResourceWithTTL publishes, so the tripwire catches it wherever
+// AssertImmutability is armed (see the note there for where that is).
+func (s Shared[M]) BorrowForRead() M {
+	return s.msg
+}
+
+// ResourceWithTTL hands the shared proto to the envoycache snapshot — the one
+// legitimate sink for the raw pointer. When AssertImmutability is armed it
+// first re-hashes the proto and panics if it no longer matches its wrap-time
+// hash, naming the resource.
+func (s Shared[M]) ResourceWithTTL() envoycachetypes.ResourceWithTTL {
+	if AssertImmutability && s.captured && !s.IsNil() {
+		if got := utils.HashProto(s.msg); got != s.hash {
+			panic(fmt.Sprintf(
+				"shared proto %q (%s) was mutated after creation (hash %d at wrap, %d now): "+
+					"protos wrapped in sharedproto.Shared are aliased across client snapshots and MUST NOT be mutated — use Clone",
+				resourceLabel(s.msg), s.msg.ProtoReflect().Descriptor().FullName(), s.hash, got))
+		}
+	}
+	resource := envoycachetypes.ResourceWithTTL{Resource: s.msg}
+	if s.hasTTL {
+		ttl := s.ttl
+		resource.TTL = &ttl
+	}
+	return resource
+}
+
+// Same reports whether two wrappers alias the same underlying proto instance.
+// Intended for tests asserting interning/sharing behavior.
+func Same[M proto.Message](a, b Shared[M]) bool {
+	return any(a.msg) == any(b.msg)
+}
+
+// Is reports whether the wrapper aliases exactly msg. Intended for tests that
+// hold the raw proto they handed to Wrap.
+func (s Shared[M]) Is(msg M) bool {
+	return any(s.msg) == any(msg)
+}
+
+// resourceLabel best-effort names a resource for the tripwire panic message.
+func resourceLabel(m proto.Message) string {
+	switch v := any(m).(type) {
+	case interface{ GetName() string }:
+		if n := v.GetName(); n != "" {
+			return n
+		}
+	}
+	if v, ok := any(m).(interface{ GetClusterName() string }); ok {
+		if n := v.GetClusterName(); n != "" {
+			return n
+		}
+	}
+	return "<unnamed>"
+}

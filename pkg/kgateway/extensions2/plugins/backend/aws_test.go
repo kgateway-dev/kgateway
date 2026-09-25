@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"strings"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -180,4 +181,101 @@ func newLambdaBackend(name, endpointURL string) *kgateway.Backend {
 			},
 		},
 	}
+}
+
+// TestDeriveStaticSecret pins the input validation that keeps a malformed
+// Secret from producing an InlineCredentialProvider Envoy rejects (its
+// access_key_id and secret_access_key carry min_len: 1). See issue #14736.
+func TestDeriveStaticSecret(t *testing.T) {
+	valid := func() map[string][]byte {
+		return map[string][]byte{
+			wellknown.AccessKey:    []byte("access"),
+			wellknown.SecretKey:    []byte("secret"),
+			wellknown.SessionToken: []byte("session"),
+		}
+	}
+	tests := []struct {
+		name     string
+		mutate   func(map[string][]byte)
+		wantErrs []string
+		want     *staticSecretDerivation
+	}{
+		{
+			name:   "all keys present",
+			mutate: func(map[string][]byte) {},
+			want:   &staticSecretDerivation{access: "access", secret: "secret", session: "session"},
+		},
+		{
+			name:   "session token absent is allowed",
+			mutate: func(d map[string][]byte) { delete(d, wellknown.SessionToken) },
+			want:   &staticSecretDerivation{access: "access", secret: "secret"},
+		},
+		{
+			name:   "session token empty is allowed",
+			mutate: func(d map[string][]byte) { d[wellknown.SessionToken] = []byte{} },
+			want:   &staticSecretDerivation{access: "access", secret: "secret"},
+		},
+		{
+			name:     "empty access key is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.AccessKey] = []byte("") },
+			wantErrs: []string{`secret data key "accessKey" is missing or empty`},
+		},
+		{
+			name:     "empty secret key is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.SecretKey] = []byte{} },
+			wantErrs: []string{`secret data key "secretKey" is missing or empty`},
+		},
+		{
+			name: "missing access and secret keys are both reported",
+			mutate: func(d map[string][]byte) {
+				delete(d, wellknown.AccessKey)
+				delete(d, wellknown.SecretKey)
+			},
+			wantErrs: []string{
+				`secret data key "accessKey" is missing or empty`,
+				`secret data key "secretKey" is missing or empty`,
+			},
+		},
+		{
+			name:     "invalid utf-8 access key is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.AccessKey] = []byte{0xff, 0xfe} },
+			wantErrs: []string{`secret data key "accessKey" is not a valid UTF-8 string`},
+		},
+		{
+			name:     "invalid utf-8 session token is rejected",
+			mutate:   func(d map[string][]byte) { d[wellknown.SessionToken] = []byte{0xff} },
+			wantErrs: []string{`secret data key "sessionToken" is not a valid UTF-8 string`},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := valid()
+			tt.mutate(data)
+			got, err := deriveStaticSecret(&ir.Secret{Data: data})
+			if len(tt.wantErrs) == 0 {
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+				return
+			}
+			require.Error(t, err)
+			assert.Nil(t, got, "no credentials should be returned alongside a validation error")
+			assert.Equal(t, tt.wantErrs, strings.Split(err.Error(), "\n"))
+		})
+	}
+}
+
+// TestConfigureAWSAuthSecretEmptyAccessKey covers the end-to-end path from
+// issue #14736: an empty accessKey must fail translation rather than be copied
+// into an InlineCredentialProvider that Envoy rejects.
+func TestConfigureAWSAuthSecretEmptyAccessKey(t *testing.T) {
+	secret := &ir.Secret{Data: map[string][]byte{
+		wellknown.AccessKey: []byte(""),
+		wellknown.SecretKey: []byte("secret"),
+	}}
+	auth := &kgateway.AwsAuth{
+		Type:      kgateway.AwsAuthTypeSecret,
+		SecretRef: &corev1.LocalObjectReference{Name: "aws-creds"},
+	}
+	_, err := configureAWSAuth(auth, secret, "us-east-1")
+	require.EqualError(t, err, `failed to derive static secret: secret data key "accessKey" is missing or empty`)
 }

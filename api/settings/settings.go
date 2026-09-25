@@ -282,18 +282,20 @@ type Settings struct {
 	// - "STRICT": Builds on STANDARD by running targeted validation
 	ValidationMode ValidationMode `split_words:"true" default:"STANDARD"`
 
-	// ValidatorMode selects the strict-validation execution strategy. Has no effect
-	// when ValidationMode is "STANDARD". Supported values:
-	// - "BINARY": fork envoy --mode validate per call (the pre-cache behavior).
-	// - "CACHE": wrap BINARY with an LRU result cache keyed on bootstrap content
-	//   hash (default). A validation verdict is a pure function of the config
-	//   bytes, so memoization cannot change outcomes, only skip redundant envoy
-	//   invocations; transient failures are never cached.
+	// ValidatorMode selects how strict validation executes unseen bootstraps.
+	// Has no effect when ValidationMode is "STANDARD". Supported values:
+	// - "BINARY": run envoy --mode validate for each submitted bootstrap.
+	// - "CACHE": cache BINARY results in an LRU keyed by bootstrap content (default).
+	//   Transient failures are not cached.
+	//
+	// In both modes, backend translation caches cluster verdicts by content before
+	// building a bootstrap. Identical clusters therefore reuse a verdict in BINARY
+	// mode too.
 	ValidatorMode ValidatorMode `split_words:"true" default:"CACHE"`
 
-	// ValidatorCacheSize is the LRU capacity used by the CACHE validator mode.
-	// Ignored when ValidatorMode is BINARY. A value <= 0 (the default) selects the
-	// implementation default, validator.DefaultCacheSize.
+	// ValidatorCacheSize sets the LRU capacity of the CACHE mode's bootstrap cache
+	// and the translator's cluster verdict cache in every ValidatorMode.
+	// A value <= 0 selects validator.DefaultCacheSize.
 	ValidatorCacheSize int `split_words:"true"`
 
 	// EnableBuiltinDefaultMetrics enables the default builtin controller-runtime metrics and go runtime metrics.

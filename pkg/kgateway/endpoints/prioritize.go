@@ -1,6 +1,7 @@
 package endpoints
 
 import (
+	"hash/fnv"
 	"log/slog"
 	"slices"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	istioslices "istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -30,18 +32,65 @@ func PrioritizeEndpoints(
 	ucc ir.UniquelyConnectedClient,
 	inputs EndpointsInputs,
 ) *envoyendpointv3.ClusterLoadAssignment {
-	lbInfo := LoadBalancingInfo{
-		PodLabels:   ucc.Labels,
-		PodLocality: ucc.Locality,
-	}
-
-	if inputs.PriorityInfo == nil {
-		lbInfo.PriorityInfo = priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
-	} else {
-		lbInfo.PriorityInfo = inputs.PriorityInfo
-	}
-
+	lbInfo := loadBalancingInfoFor(ucc, inputs)
 	return prioritizeWithLbInfo(logger, inputs.EndpointsForBackend, lbInfo)
+}
+
+// ResolvedPriorityInfo returns the priority configuration PrioritizeEndpoints
+// will apply to inputs: an explicit PriorityInfo set by an endpoint plugin, or
+// else the one implied by the backend's traffic distribution. Nil means the
+// endpoints are emitted without any client-relative ordering.
+func ResolvedPriorityInfo(inputs EndpointsInputs) *PriorityInfo {
+	if inputs.PriorityInfo != nil {
+		return inputs.PriorityInfo
+	}
+	return priorityInfoFromTrafficDistribution(inputs.EndpointsForBackend.TrafficDistribution)
+}
+
+// DependsOnClient reports whether PrioritizeEndpoints would read anything from
+// the client for inputs. The client's labels and locality are consulted only
+// through PriorityInfo (see prioritizeWithLbInfo and getEndpoints), so with no
+// resolved priority the same ClusterLoadAssignment is produced for every
+// client and can be built once. Any new client-dependent input added to
+// prioritization must be reflected here, or a shared CLA would silently serve
+// clients it was not built for.
+func DependsOnClient(inputs EndpointsInputs) bool {
+	return ResolvedPriorityInfo(inputs) != nil
+}
+
+// LoadBalancingContextHash returns a hash of the client inputs
+// that influence PrioritizeEndpoints' output. Callers may use it to bucket CLAs
+// for interning, but must confirm content equality because the 64-bit hash can
+// collide.
+//
+// IMPORTANT: this must mirror the UCC-dependent branches of prioritizeWithLbInfo
+// /getEndpoints. When FailoverPriority is set, only the resolved priority-label
+// values matter (locality is ignored); otherwise only PodLocality matters. Any
+// new UCC-dependent input added to prioritization MUST be reflected here, or
+// distinct CLAs will be silently aliased.
+func LoadBalancingContextHash(ucc ir.UniquelyConnectedClient, inputs EndpointsInputs) uint64 {
+	lbInfo := loadBalancingInfoFor(ucc, inputs)
+	if lbInfo.PriorityInfo == nil {
+		return 0
+	}
+
+	hasher := fnv.New64a()
+	if lbInfo.PriorityInfo.FailoverPriority != nil {
+		for _, label := range lbInfo.PriorityInfo.FailoverPriority.priorityLabels {
+			utils.HashStringField(hasher, label)
+			valueForProxy, ok := lbInfo.PriorityInfo.FailoverPriority.priorityLabelOverrides[label]
+			if !ok {
+				valueForProxy = lbInfo.PodLabels[label]
+			}
+			utils.HashStringField(hasher, valueForProxy)
+		}
+		return hasher.Sum64()
+	}
+
+	utils.HashStringField(hasher, lbInfo.PodLocality.Region)
+	utils.HashStringField(hasher, lbInfo.PodLocality.Zone)
+	utils.HashStringField(hasher, lbInfo.PodLocality.Subzone)
+	return hasher.Sum64()
 }
 
 type LoadBalancingInfo struct {
@@ -54,6 +103,14 @@ type LoadBalancingInfo struct {
 
 	// dest rule info:
 	PriorityInfo *PriorityInfo
+}
+
+func loadBalancingInfoFor(ucc ir.UniquelyConnectedClient, inputs EndpointsInputs) LoadBalancingInfo {
+	return LoadBalancingInfo{
+		PodLabels:    ucc.Labels,
+		PodLocality:  ucc.Locality,
+		PriorityInfo: ResolvedPriorityInfo(inputs),
+	}
 }
 
 type PriorityInfo struct {
