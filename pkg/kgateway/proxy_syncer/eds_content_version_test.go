@@ -49,7 +49,7 @@ func TestCarriedEndpointVersionMatchesDirectPublication(t *testing.T) {
 	for _, upstreamVersion := range []string{"input-1", "input-2"} {
 		next := &envoycache.Snapshot{}
 		next.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL(upstreamVersion, nil)
-		carried, _ := resolveDeferredPerCluster(XdsSnapWrapper{snap: next, missingReferenced: []string{"a"}}, prior, false)
+		carried, _ := resolveDeferredPerCluster(XdsSnapWrapper{snap: next, missingReferenced: []string{"a"}}, prior, false, nil)
 		g.Expect(carried.Resources[envoycachetypes.Endpoint].Items).To(gomega.HaveKey("a"))
 		g.Expect(carried.Resources[envoycachetypes.Endpoint].Version).To(gomega.Equal(prior.Resources[envoycachetypes.Endpoint].Version),
 			"the same published assignment and cluster must have the same version whether derived or carried")
