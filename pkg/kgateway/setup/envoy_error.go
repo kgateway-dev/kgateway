@@ -1,13 +1,17 @@
 package setup
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"sync"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	"istio.io/istio/pkg/security"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
@@ -27,13 +31,13 @@ var (
 		metrics.CounterOpts{
 			Subsystem: envoyXdsSubsystem,
 			Name:      "rejects_total",
-			Help:      "Total number of xDS responses rejected by envoy proxy",
+			Help:      "Total xDS rejection episodes by stream and resource type; repeated NACKs count once until a request without an error",
 		}, []string{gwNamespaceLabel, gwNameLabel, typeURLLabel})
 	xdsRejectsCurrent = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: envoyXdsSubsystem,
 			Name:      "rejects_active",
-			Help:      "Number of xDS responses currently rejected by envoy proxy",
+			Help:      "Number of connected stream and resource type pairs with unresolved xDS rejections",
 		}, []string{gwNamespaceLabel, gwNameLabel, typeURLLabel})
 )
 
@@ -55,17 +59,39 @@ func newResourceState() resourceState {
 
 type logNackCallback struct {
 	xdsserver.CallbackFuncs
-	streamState map[int64]resourceState
+	streamState    map[int64]resourceState
+	streamIdentity map[int64]resourceKey
+	xdsAuth        bool
 
 	lock sync.Mutex
 }
 
 var _ xdsserver.Callbacks = (*logNackCallback)(nil)
 
-func newLogNackCallback() *logNackCallback {
+func newLogNackCallback(xdsAuth bool) *logNackCallback {
 	return &logNackCallback{
-		streamState: make(map[int64]resourceState),
+		streamState:    make(map[int64]resourceState),
+		streamIdentity: make(map[int64]resourceKey),
+		xdsAuth:        xdsAuth,
 	}
+}
+
+// OnStreamOpen pins metric identity to the authenticated peer. Unauthenticated
+// clients share unknown labels rather than creating series from node metadata.
+func (l *logNackCallback) OnStreamOpen(ctx context.Context, streamID int64, _ string) error {
+	key := resourceKey{Namespace: "unknown", Name: "unknown"}
+	if l.xdsAuth {
+		caller, ok := ctx.Value(xds.PeerCtxKey).(*security.Caller)
+		if !ok || caller == nil {
+			return fmt.Errorf("missing authenticated xDS peer for stream %d", streamID)
+		}
+		key.Namespace = caller.KubernetesInfo.PodNamespace
+		key.Name = caller.KubernetesInfo.PodServiceAccount
+	}
+	l.lock.Lock()
+	l.streamIdentity[streamID] = key
+	l.lock.Unlock()
+	return nil
 }
 
 // OnStreamClosed implements server.Callbacks.
@@ -73,6 +99,7 @@ func (l *logNackCallback) OnStreamClosed(streamID int64, node *envoycorev3.Node)
 	l.lock.Lock()
 	streamState := l.streamState[streamID]
 	delete(l.streamState, streamID)
+	delete(l.streamIdentity, streamID)
 	l.lock.Unlock()
 
 	for k := range streamState.errors {
@@ -82,26 +109,13 @@ func (l *logNackCallback) OnStreamClosed(streamID int64, node *envoycorev3.Node)
 
 // OnStreamRequest implements server.Callbacks.
 func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.DiscoveryRequest) error {
-	// get gateway and typeURL from request
-	role := req.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
-	parts := strings.SplitN(role, xds.KeyDelimiter, 3)
-	if len(parts) != 3 {
+	l.lock.Lock()
+	key, ok := l.streamIdentity[streamID]
+	l.lock.Unlock()
+	if !ok {
 		return nil
 	}
-	namespace := parts[1]
-	name := parts[2]
-
-	// note, with locality, name will include name~hash~ns
-	if localityParts := strings.SplitN(name, xds.KeyDelimiter, 3); len(localityParts) == 3 {
-		name = localityParts[0]
-	}
-
-	typeUrl := req.GetTypeUrl()
-	key := resourceKey{
-		Namespace:       namespace,
-		Name:            name,
-		ResourceTypeUrl: strings.TrimPrefix(typeUrl, "type.googleapis.com/"),
-	}
+	key.ResourceTypeUrl = rejectionTypeURL(req.GetTypeUrl())
 
 	if req.ErrorDetail != nil {
 		if !l.handleError(streamID, key) {
@@ -167,5 +181,18 @@ func toLabels(key resourceKey) []metrics.Label {
 			Name:  typeURLLabel,
 			Value: key.ResourceTypeUrl,
 		},
+	}
+}
+
+// rejectionTypeURL preserves existing labels for known types and bounds all
+// other client-supplied type URLs to a single series.
+func rejectionTypeURL(typeURL string) string {
+	switch typeURL {
+	case resourcev3.ClusterType, resourcev3.EndpointType, resourcev3.RouteType,
+		resourcev3.ScopedRouteType, resourcev3.VirtualHostType, resourcev3.ListenerType,
+		resourcev3.SecretType, resourcev3.ExtensionConfigType, resourcev3.RuntimeType:
+		return strings.TrimPrefix(typeURL, "type.googleapis.com/")
+	default:
+		return "other"
 	}
 }
