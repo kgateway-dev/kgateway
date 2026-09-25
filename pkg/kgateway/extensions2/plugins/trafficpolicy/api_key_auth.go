@@ -116,12 +116,14 @@ func constructAPIKeyAuth(
 			from,
 			secretGK,
 			ak.SecretSelector.MatchLabels,
+			ak.SecretSelector.MatchExpressions,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to get secrets by selector: %w", err)
 		}
 		if len(secrets) == 0 {
-			return fmt.Errorf("no secrets found matching selector %v in namespace %s", ak.SecretSelector.MatchLabels, policy.Namespace)
+			return fmt.Errorf("no secrets found matching selector (matchLabels: %v, matchExpressions: %v) in namespace %s",
+				ak.SecretSelector.MatchLabels, ak.SecretSelector.MatchExpressions, policy.Namespace)
 		}
 	} else {
 		// We shouldn't get here because the spec validation should catch this

@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -98,10 +100,19 @@ func (s *SecretIndex) GetSecretsBySelector(
 	from From,
 	secretGK schema.GroupKind,
 	matchLabels map[string]string,
+	matchExpressions []metav1.LabelSelectorRequirement,
 ) ([]ir.Secret, error) {
 	col := s.secrets[secretGK]
 	if col == nil {
 		return nil, ErrUnknownBackendKind
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+		MatchLabels:      matchLabels,
+		MatchExpressions: matchExpressions,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid secret selector: %w", err)
 	}
 
 	// First, fetch all secrets matching the label selector
@@ -115,15 +126,9 @@ func (s *SecretIndex) GetSecretsBySelector(
 			}
 			objLabels := secret.Obj.GetLabels()
 			if objLabels == nil {
-				return false
+				objLabels = map[string]string{}
 			}
-			// Check if all matchLabels are present and match
-			for key, value := range matchLabels {
-				if objLabels[key] != value {
-					return false
-				}
-			}
-			return true
+			return selector.Matches(labels.Set(objLabels))
 		}),
 	)
 
