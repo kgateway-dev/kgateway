@@ -36,8 +36,15 @@ data:
     }
     http {
       server {
+          # Both families are listed explicitly: a bare `listen 80` binds
+          # 0.0.0.0 only, so in an IPv6-only cluster the pod has no address
+          # nginx is listening on and every upstream connect is refused.
+          # nginx defaults [::] listeners to ipv6only=on, so neither line
+          # subsumes the other.
           listen              80;
+          listen              [::]:80;
           listen              443 ssl;
+          listen              [::]:443 ssl;
           server_name         localhost;
           ssl_certificate     /etc/nginx/localhost.crt;
           ssl_certificate_key /etc/nginx/localhost.key;

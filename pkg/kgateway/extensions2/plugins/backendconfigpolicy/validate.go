@@ -67,5 +67,6 @@ func requiresDnsClusterValidation(policyIR *BackendConfigPolicyIR) bool {
 	return (policyIR.loadBalancerConfig != nil && policyIR.loadBalancerConfig.useHostnameForHashing) ||
 		policyIR.dnsRefreshRate != nil ||
 		policyIR.dnsJitter != nil ||
-		policyIR.respectDnsTtl != nil
+		policyIR.respectDnsTtl != nil ||
+		policyIR.dnsLookupFamily != nil
 }

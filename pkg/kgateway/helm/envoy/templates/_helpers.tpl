@@ -129,3 +129,24 @@ Return a container image value as a string
 {{- end -}}
 {{ $image }}
 {{- end -}}
+
+{{/*
+Wildcard socket_address fields for the proxy's own listeners (readiness, stats).
+
+These mirror the bind family the control plane uses for data-plane listeners
+(derived from the KGW_LISTENER_BIND_IPV6 setting). An IPv4 wildcard leaves the
+readiness listener unreachable on the pod's address in an IPv6-only cluster, so
+the kubelet probe never succeeds and the proxy never becomes Ready.
+
+Usage: include "kgateway.gateway.wildcardSocketAddress" (dict "bindIpv6" $gateway.bindIpv6 "port" 8082)
+*/}}
+{{- define "kgateway.gateway.wildcardSocketAddress" -}}
+{{- if .bindIpv6 -}}
+address: "::"
+ipv4_compat: true
+port_value: {{ .port }}
+{{- else -}}
+address: 0.0.0.0
+port_value: {{ .port }}
+{{- end -}}
+{{- end -}}
