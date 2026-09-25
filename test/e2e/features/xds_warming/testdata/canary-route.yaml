@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xds-warming-canary
+  namespace: kgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "xds-warming-canary.example.com"
+  rules:
+    - backendRefs:
+        - name: warming-old
+          port: 8080
