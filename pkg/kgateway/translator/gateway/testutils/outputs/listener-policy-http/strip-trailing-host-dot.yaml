@@ -33,7 +33,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: listener~80
         stripTrailingHostDot: true
         useRemoteAddress: true
     name: listener~80

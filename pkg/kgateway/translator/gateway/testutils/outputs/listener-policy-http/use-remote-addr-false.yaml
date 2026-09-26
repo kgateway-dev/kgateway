@@ -37,7 +37,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: listener~80
         useRemoteAddress: false
     name: listener~80
   metadata:

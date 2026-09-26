@@ -101,7 +101,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tls1
-        statPrefix: http
+        statPrefix: tls1
         useRemoteAddress: true
     name: tls1
     transportSocket:
@@ -170,7 +170,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tls2
-        statPrefix: http
+        statPrefix: tls2
         useRemoteAddress: true
     name: tls2
     transportSocket:
@@ -284,7 +284,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: listener~80
         useRemoteAddress: true
     name: listener~80
   metadata:

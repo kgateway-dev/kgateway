@@ -2,6 +2,7 @@ package irtranslator
 
 import (
 	"fmt"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -31,6 +32,14 @@ const (
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
+
+// sanitizeStatPrefix replaces "." with "_" in a stat prefix. Envoy uses "." as
+// the stats-tree separator, so a stat_prefix containing a "." (e.g. a
+// FilterChainName derived from a namespace/name pair) would otherwise be
+// split into unexpected stat tree segments.
+func sanitizeStatPrefix(statPrefix string) string {
+	return strings.ReplaceAll(statPrefix, ".", "_")
+}
 
 type filterChainTranslator struct {
 	listener        ir.ListenerIR
@@ -118,6 +127,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChai
 		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
 		reporter:          n.reporter,
+		listener:          l,         // policies attached to listener; also used to derive HCM stat_prefix
 		gateway:           n.gateway, // corresponds to Gateway API listener
 		policyAncestorRef: n.listener.PolicyAncestorRef,
 	}
@@ -254,6 +264,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	if statPrefix == "" {
 		statPrefix = DefaultHttpStatPrefix
 	}
+	statPrefix = sanitizeStatPrefix(statPrefix)
 
 	return &envoyhttp.HttpConnectionManager{
 		CodecType:        envoyhttp.HttpConnectionManager_AUTO,
@@ -433,7 +444,7 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
-		StatPrefix: l.FilterChainName,
+		StatPrefix: sanitizeStatPrefix(l.FilterChainName),
 	}
 	if h.reporter != nil {
 		for _, backend := range l.BackendRefs {

@@ -46,7 +46,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: ls-2-ns/ls-2/tls-ls2
-        statPrefix: http
+        statPrefix: ls-2-ns/ls-2/tls-ls2
         useRemoteAddress: true
     name: ls-2-ns/ls-2/tls-ls2
     transportSocket:
@@ -81,7 +81,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tls-gw
-        statPrefix: http
+        statPrefix: tls-gw
         useRemoteAddress: true
     name: tls-gw
     transportSocket:
@@ -124,7 +124,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: listener~80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -149,7 +149,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: listener~8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080
@@ -174,7 +174,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~9090
-        statPrefix: http
+        statPrefix: listener~9090
         useRemoteAddress: true
     name: listener~9090
   name: listener~9090
