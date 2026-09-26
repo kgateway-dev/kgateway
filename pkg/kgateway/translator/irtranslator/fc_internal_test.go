@@ -10,6 +10,33 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
+func TestSanitizeStatPrefix(t *testing.T) {
+	require.Equal(t, "http", sanitizeStatPrefix("http"))
+	require.Equal(t, "listener~8080-default_example-tcp-route-rule-0", sanitizeStatPrefix("listener~8080-default.example-tcp-route-rule-0"))
+	require.Equal(t, "a_b_c", sanitizeStatPrefix("a.b.c"))
+	require.Equal(t, "", sanitizeStatPrefix(""))
+}
+
+func TestInitializeHCMStatPrefixReplacesDots(t *testing.T) {
+	h := &hcmNetworkFilterTranslator{
+		listener: ir.HttpFilterChainIR{
+			FilterChainCommon: ir.FilterChainCommon{
+				FilterChainName: "listener~8080-default.example-httproute-rule-0",
+			},
+		},
+	}
+
+	hcm := h.initializeHCM()
+	require.Equal(t, "listener~8080-default_example-httproute-rule-0", hcm.GetStatPrefix())
+}
+
+func TestInitializeHCMStatPrefixDefaultsToHttp(t *testing.T) {
+	h := &hcmNetworkFilterTranslator{}
+
+	hcm := h.initializeHCM()
+	require.Equal(t, DefaultHttpStatPrefix, hcm.GetStatPrefix())
+}
+
 func TestFilterChainInfoDefaultAlpn(t *testing.T) {
 	info := &FilterChainInfo{
 		TLS: &ir.TLSConfig{
