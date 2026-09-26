@@ -7,7 +7,6 @@ import (
 	cncfmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoyrbacv3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	envoyauthz "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
-	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -129,7 +128,7 @@ func TestTranslateRBAC(t *testing.T) {
 				require.NotNil(t, got.Rbac.Matcher, "Expected Matcher field in actual result")
 
 				// Create CEL environment for validation
-				env, err := cel.NewEnv()
+				env, err := newRBACCELValidationEnv()
 				require.NoError(t, err, "Failed to create CEL environment")
 
 				// Validate CEL expressions for all expected rules
@@ -144,6 +143,51 @@ func TestTranslateRBAC(t *testing.T) {
 					}
 				}
 			}
+		})
+	}
+}
+
+func TestParseCELExpression(t *testing.T) {
+	env, err := newRBACCELValidationEnv()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		expr    shared.CELExpression
+		wantErr string
+	}{
+		{
+			name: "accepts request header expression",
+			expr: "request.headers['x-foo'] == 'bar'",
+		},
+		{
+			name: "accepts JWT metadata expression",
+			expr: "metadata.filter_metadata['envoy.filters.http.jwt_authn']['payload']['email'] == 'dev2@kgateway.io'",
+		},
+		{
+			name: "accepts standard string function",
+			expr: "source.address.startsWith('10.')",
+		},
+		{
+			name:    "rejects unsupported split function",
+			expr:    "'admin' in metadata.filter_metadata['envoy.filters.http.jwt_authn']['payload']['scope'].split(' ')",
+			wantErr: "undeclared reference to 'split'",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed, err := parseCELExpression(env, tt.expr)
+
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, parsed)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.NotNil(t, parsed)
 		})
 	}
 }
