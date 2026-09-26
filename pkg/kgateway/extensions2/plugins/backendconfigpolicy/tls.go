@@ -3,6 +3,8 @@ package backendconfigpolicy
 import (
 	"errors"
 	"fmt"
+	"net"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -276,7 +278,7 @@ func verifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAlt
 	var matchSanList []*envoytlsv3.SubjectAltNameMatcher
 	for _, san := range sanList {
 		matchSan := &envoytlsv3.SubjectAltNameMatcher{
-			SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+			SanType: sanTypeOf(san),
 			Matcher: &envoymatcher.StringMatcher{
 				MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: san},
 			},
@@ -284,4 +286,21 @@ func verifySanListToTypedMatchSanList(sanList []string) []*envoytlsv3.SubjectAlt
 		matchSanList = append(matchSanList, matchSan)
 	}
 	return matchSanList
+}
+
+// sanTypeOf picks the SAN type to match a verifySubjectAltNames entry against.
+// Typed matchers only compare against a single SAN type, so a DNS-only matcher
+// never matches a certificate that carries its identity as a URI (such as a
+// SPIFFE ID), an IP address or an email address.
+func sanTypeOf(san string) envoytlsv3.SubjectAltNameMatcher_SanType {
+	switch {
+	case net.ParseIP(san) != nil:
+		return envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS
+	case strings.Contains(san, ":"):
+		return envoytlsv3.SubjectAltNameMatcher_URI
+	case strings.Contains(san, "@"):
+		return envoytlsv3.SubjectAltNameMatcher_EMAIL
+	default:
+		return envoytlsv3.SubjectAltNameMatcher_DNS
+	}
 }
