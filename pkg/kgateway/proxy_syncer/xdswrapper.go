@@ -32,6 +32,10 @@ type XdsSnapWrapper struct {
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
+	// edsVersion holds the digests the EDS version was folded from, so the
+	// carry path can fold in what it carries (see resolveDeferredPerCluster).
+	// +noKrtEquals folded into the EDS version, which Equals compares
+	edsVersion edsVersionInputs
 	// deferred marks a snapshot built while some referenced cluster was not
 	// ready (see snapshotPerClient's guards). syncXds resolves it per cluster
 	// against the currently-published snapshot: previously-published clusters

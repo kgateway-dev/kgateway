@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
-	"maps"
 	"slices"
 	"strconv"
 
@@ -164,9 +163,10 @@ type clustersWithErrors struct {
 	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
-	// clusterVersions retains each published cluster digest for EDS versioning.
-	clusterVersions map[string]uint64
-	clustersHash    uint64
+	clustersHash        uint64
+	// edsClustersDigest folds the published EDS clusters' versions for EDS
+	// versioning; see edsVersionInputs.
+	edsClustersDigest uint64
 	// perClientErrors are the rows whose Error was produced for this client
 	// alone, sorted by cluster name; the status projection reads them. Base
 	// errors are attributed from the base rows instead, once rather than once
@@ -183,7 +183,7 @@ var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
 
 func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 	return c.clustersHash == k.clustersHash &&
-		maps.Equal(c.clusterVersions, k.clusterVersions) &&
+		c.edsClustersDigest == k.edsClustersDigest &&
 		c.erroredClustersHash == k.erroredClustersHash &&
 		c.resourceName == k.resourceName &&
 		slices.EqualFunc(c.perClientErrors, k.perClientErrors, uccWithCluster.Equals)
@@ -339,9 +339,9 @@ func clustersForClient(
 // the status projection.
 func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithCluster) *clustersWithErrors {
 	clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(rows))
-	clusterVersions := make(map[string]uint64, len(rows))
 	var (
 		clustersHash        uint64
+		edsClustersDigest   uint64
 		erroredClustersHash uint64
 		erroredClusters     []string
 		perClientErrors     []uccWithCluster
@@ -361,9 +361,12 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		}
 		// ResourceWithTTL is the only exit for the shared proto; it runs the
 		// mutation tripwire when armed. See package sharedproto.
-		clustersProto = append(clustersProto, c.Cluster.ResourceWithTTL())
+		resource := c.Cluster.ResourceWithTTL()
+		clustersProto = append(clustersProto, resource)
 		clustersHash ^= c.ClusterVersion
-		clusterVersions[c.Name] = c.ClusterVersion
+		if _, eds := endpointResourceNameForCluster(resource); eds {
+			edsClustersDigest ^= edsEntryDigest(c.Name, c.ClusterVersion)
+		}
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
 	// Base rows arrive in map order; sort so Equals compares like with like.
@@ -373,7 +376,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
-		clusterVersions:     clusterVersions,
+		edsClustersDigest:   edsClustersDigest,
 		erroredClustersHash: erroredClustersHash,
 		perClientErrors:     perClientErrors,
 		resourceName:        ucc.ResourceName(),
