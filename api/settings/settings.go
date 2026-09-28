@@ -355,7 +355,8 @@ type Settings struct {
 	//     but publish at expiry when the only gaps are clusters whose
 	//     endpoints were never derived (by then that is translation backlog
 	//     or a plugin gap with no convergence guarantee, and withholding
-	//     longer would freeze the client's config indefinitely).
+	//     longer would freeze the client's config indefinitely); the client
+	//     keeps the endpoints it holds for those clusters.
 	//   - flip release: a route flip held because it targets a
 	//     newly-referenced cluster with no derived endpoints is published at
 	//     expiry, so a reference that never becomes ready cannot pin the
@@ -367,15 +368,17 @@ type Settings struct {
 	// disables all bounds: clients wait for coherence with no deadline.
 	PerClientPublishBudget time.Duration `split_words:"true" default:"15s"`
 
-	// XdsSnapshotConsistencyCheck runs go-control-plane's Snapshot.Consistent()
-	// on every per-client xDS snapshot immediately before it is published,
+	// XdsSnapshotConsistencyCheck checks every per-client xDS snapshot
+	// immediately before it is published for an EDS or RDS resource that no
+	// CDS or LDS resource of the same snapshot references (go-control-plane
+	// withholds an ADS response that carries an unrequested resource),
 	// recording violations in the
 	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total counter and
 	// the error log. The snapshot is still published either way: the check is
 	// an invariant monitor for test and CI environments (any increment is a
 	// kgateway bug worth reporting), never a gate — withholding on
 	// inconsistency would reintroduce the unbounded withholds the publication
-	// engine removed. Off by default; enabled in e2e and conformance runs.
+	// engine removed. Off by default.
 	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.

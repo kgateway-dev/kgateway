@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -47,23 +48,23 @@ func deferredWrapperV(version string) XdsSnapWrapper {
 	return XdsSnapWrapper{
 		snap:              snap,
 		proxyKey:          publishGateTestClient,
-		deferred:          true,
 		missingReferenced: []string{"cluster-missing"},
 	}
 }
 
 // deferredMissingEndpointsWrapperV builds a deferred wrapper whose only gap is
-// a referenced cluster with no derived CLA — the steady-state shape of an
-// ExternalName backend (#14352): every referenced cluster is present in CDS,
-// but one's ClusterLoadAssignment was never derived (a synthesized empty
-// stands in).
+// a referenced cluster with no derived CLA — the steady-state shape of an EDS
+// cluster whose plugin has no endpoints source, such as an AWS EC2 Backend with
+// discovery disabled (#14352): every referenced cluster is present in CDS, but
+// one's ClusterLoadAssignment was never derived (a synthesized empty stands
+// in). A Service without EndpointSlices, ExternalName included, derives an
+// empty CLA instead and is not a gap at all.
 func deferredMissingEndpointsWrapperV(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
 	return XdsSnapWrapper{
 		snap:                       snap,
 		proxyKey:                   publishGateTestClient,
-		deferred:                   true,
 		missingEndpointsReferenced: []string{"cluster-underived"},
 	}
 }
@@ -138,9 +139,9 @@ func TestFirstPublish_PriorXDSVersionClientStaysWithheld(t *testing.T) {
 }
 
 // A warm client whose only gaps are clusters with no derived CLA publishes at
-// budget expiry: that gap is the backends' steady state (ExternalName —
-// #14352), and withholding would freeze the client's config indefinitely
-// after a controller restart.
+// budget expiry: that gap has no convergence guarantee (#14352), and
+// withholding would freeze the client's config indefinitely after a
+// controller restart.
 func TestFirstPublish_WarmClientPublishesEndpointTruthAtBudget(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, 50*time.Millisecond)
 
@@ -243,7 +244,7 @@ func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string
 	published.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-old", []envoycachetypes.ResourceWithTTL{
 		oldCLA.Endpoints.ResourceWithTTL(),
 	})
-	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, publishGateTestClient, published))
+	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
 
 	// The flip: routes now target cluster-new, whose CLA was never derived.
 	newCluster := edsClusterForClient(newTestUcc(publishGateTestClient), "cluster-new", 3)
@@ -261,7 +262,6 @@ func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string
 	flipWrap = XdsSnapWrapper{
 		snap:     flipSnap,
 		proxyKey: publishGateTestClient,
-		deferred: true,
 		// cluster-new's CLA was never derived: the empty CLA in the snapshot
 		// mirrors the synthesized placeholder the transform would emit.
 		missingEndpointsReferenced: []string{"cluster-new"},
@@ -324,7 +324,7 @@ func TestFlipRelease_MissingClusterDoesNotHoldSubsequentUpdates(t *testing.T) {
 	}
 	pt.gate.mu.Unlock()
 	require.NotNil(t, pending)
-	pt.gate.fireFlipRelease(context.Background(), pt.xdsCache, publishGateTestClient)
+	pt.gate.fireFlipRelease(context.Background(), pt.xdsCache, publishGateTestClient, pending)
 	released := servedSnapshot(t, pt)
 	require.True(t, snapshotReferencesCluster(released, "cluster-new"))
 	require.NotContains(t, released.GetResources(resourcev3.ClusterType), "cluster-new")
@@ -359,7 +359,6 @@ func TestFlipRelease_ResolvedFlipCancelsPending(t *testing.T) {
 
 	// The gap resolves before expiry: the same flip arrives coherent.
 	resolved := flipWrap
-	resolved.deferred = false
 	resolved.missingEndpointsReferenced = nil
 	resolvedSnap := &envoycache.Snapshot{}
 	*resolvedSnap = *flipWrap.snap
@@ -401,4 +400,146 @@ func TestFlipRelease_BudgetZeroDisablesBound(t *testing.T) {
 		return servedSnapshot(t, pt).GetVersion(resourcev3.RouteType) != heldRouteVersion
 	}, 250*time.Millisecond, 20*time.Millisecond,
 		"with the bound disabled, a held flip must never release on a timer")
+}
+
+// --- connection scope, stale timers, synthesized CLAs ---
+
+// A client that left and came back is not resolved against the snapshot the
+// gate published before it left: the entry may predate what the client runs.
+// It is withheld as a first publish instead, and that bound still fires even
+// though the cache still holds the old entry.
+func TestFirstPublish_ReconnectIgnoresEntryFromPreviousConnection(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, 100*time.Millisecond)
+	ctx := context.Background()
+
+	previous := coherentWrapperV("v0")
+	previous.snap.Resources[envoycachetypes.Cluster] = envoycache.NewResources("cds-v0", nil)
+	pt.syncXds(ctx, previous)
+	pt.gate.clientDeparted(publishGateTestClient)
+
+	next := deferredWrapperV("v1")
+	next.snap.Resources[envoycachetypes.Cluster] = envoycache.NewResources("cds-v1", nil)
+	pt.syncXds(ctx, next)
+
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "cds-v0", served.GetVersion(resourcev3.ClusterType),
+		"a deferred snapshot must not be resolved against the previous connection's entry")
+	require.Eventually(t, func() bool {
+		return servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType) == "v1"
+	}, 2*time.Second, 5*time.Millisecond,
+		"the bounded first publish must fire although the cache holds the previous connection's entry")
+}
+
+// A first-publish timer whose callback waited on the gate lock while its
+// episode ended and a new one began must not publish the new episode early.
+func TestFirstPublish_StaleTimerDoesNotPublishLaterEpisode(t *testing.T) {
+	budget := 300 * time.Millisecond
+	pt := newPublishGateTestTranslator(t, false, budget)
+	ctx := context.Background()
+	pt.syncXds(ctx, deferredWrapperV("v1"))
+
+	pt.gate.mu.Lock()
+	time.Sleep(budget + 100*time.Millisecond) // the first timer fired and waits on the lock
+	delete(pt.gate.pending, publishGateTestClient)
+	pt.gate.offerColdLocked(ctx, pt.xdsCache, deferredWrapperV("v2"))
+	pt.gate.mu.Unlock()
+
+	require.Never(t, func() bool {
+		_, ok := publishedListenerVersion(t, pt)
+		return ok
+	}, budget/2, 10*time.Millisecond, "the earlier episode's timer must not publish the later episode")
+	require.Eventually(t, func() bool {
+		v, ok := publishedListenerVersion(t, pt)
+		return ok && v == "v2"
+	}, 2*time.Second, 5*time.Millisecond, "the later episode publishes at its own budget")
+}
+
+// A flip-release timer whose callback waited on the gate lock while its
+// episode ended and a new hold began must not release the new hold early.
+func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
+	budget := 300 * time.Millisecond
+	pt := newPublishGateTestTranslator(t, false, budget)
+	_, flipWrap := flipHoldFixture(t, pt)
+	ctx := context.Background()
+	published := servedSnapshot(t, pt)
+	pt.syncXds(ctx, flipWrap)
+
+	pt.gate.mu.Lock()
+	time.Sleep(budget + 100*time.Millisecond) // the first release timer fired and waits on the lock
+	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil))
+	current := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
+	require.NotNil(t, current)
+	held, blocking := resolveDeferredPerCluster(flipWrap, current, true)
+	require.NotEmpty(t, blocking)
+	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking))
+	pt.gate.mu.Unlock()
+
+	require.Never(t, func() bool {
+		return snapshotReferencesCluster(servedSnapshot(t, pt), "cluster-new")
+	}, budget/2, 10*time.Millisecond, "the earlier episode's timer must not release the later hold")
+	require.Eventually(t, func() bool {
+		return snapshotReferencesCluster(servedSnapshot(t, pt), "cluster-new")
+	}, 2*time.Second, 5*time.Millisecond, "the later hold releases at its own budget")
+}
+
+func TestSettleSynthesizedEndpoints(t *testing.T) {
+	ucc := newTestUcc(publishGateTestClient)
+	edsClusters := func(names ...string) envoycache.Resources {
+		items := make([]envoycachetypes.ResourceWithTTL, 0, len(names))
+		for _, name := range names {
+			items = append(items, edsClusterForClient(ucc, name, 1).Cluster.ResourceWithTTL())
+		}
+		return envoycache.NewResourcesWithTTL("cds", items)
+	}
+	placeholder := func(name string) envoycachetypes.ResourceWithTTL {
+		return envoycachetypes.ResourceWithTTL{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: name}}
+	}
+	live := func(name string) envoycachetypes.ResourceWithTTL {
+		return endpointsForClient(ucc, name, 1).Endpoints.ResourceWithTTL()
+	}
+
+	// cluster-known had endpoints published; cluster-left-out was published
+	// without a CLA; cluster-new was never published; cluster-derived has a
+	// derived (empty) CLA, which is truth and is never settled.
+	build := &envoycache.Snapshot{}
+	build.Resources[envoycachetypes.Cluster] = edsClusters("cluster-known", "cluster-left-out", "cluster-new", "cluster-derived")
+	build.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds", []envoycachetypes.ResourceWithTTL{
+		placeholder("cluster-known"), placeholder("cluster-left-out"), placeholder("cluster-new"), placeholder("cluster-derived"),
+	})
+	synthesized := []string{"cluster-known", "cluster-left-out", "cluster-new"}
+	published := &envoycache.Snapshot{}
+	published.Resources[envoycachetypes.Cluster] = edsClusters("cluster-known", "cluster-left-out", "cluster-derived")
+	published.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-published", []envoycachetypes.ResourceWithTTL{
+		live("cluster-known"), live("cluster-derived"),
+	})
+
+	// served maps each CLA name in the settled snapshot to its endpoint count.
+	served := func(snap *envoycache.Snapshot) map[string]int {
+		out := map[string]int{}
+		for name := range snap.Resources[envoycachetypes.Endpoint].Items {
+			out[name], _ = endpointCount(snap, name)
+		}
+		return out
+	}
+
+	t.Run("published on this connection", func(t *testing.T) {
+		settled := settleSynthesizedEndpoints(build, synthesized, published, false)
+		assert.Equal(t, map[string]int{"cluster-known": 1, "cluster-new": 0, "cluster-derived": 0}, served(settled),
+			"known endpoints are republished, a cluster published without a CLA is left alone, a new cluster gets its empty CLA, derived truth is untouched")
+		assert.NotEqual(t, build.GetVersion(resourcev3.EndpointType), settled.GetVersion(resourcev3.EndpointType))
+		assert.Len(t, build.Resources[envoycachetypes.Endpoint].Items, 4, "the built snapshot must not be mutated")
+		assert.NoError(t, snapshotConsistencyError(publishGateTestClient, settled))
+	})
+	t.Run("first publish to a warm client", func(t *testing.T) {
+		settled := settleSynthesizedEndpoints(build, synthesized, nil, true)
+		assert.Equal(t, map[string]int{"cluster-derived": 0}, served(settled),
+			"a warm client may hold endpoints from an earlier stream, so synthesized CLAs are left out")
+	})
+	t.Run("first publish to a cold client", func(t *testing.T) {
+		assert.Same(t, build, settleSynthesizedEndpoints(build, synthesized, nil, false),
+			"a cold client holds nothing, so synthesized CLAs publish as-is")
+	})
+	t.Run("nothing synthesized", func(t *testing.T) {
+		assert.Same(t, build, settleSynthesizedEndpoints(build, nil, published, true))
+	})
 }

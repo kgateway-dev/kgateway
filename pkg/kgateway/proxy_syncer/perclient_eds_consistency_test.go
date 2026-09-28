@@ -45,7 +45,7 @@ func TestFilterEndpointResourcesForClusters_SynthesizesEmptyCLAForEDSClusterWith
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "stale-gone"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
 
 	g.Expect(out.Items).To(gomega.HaveKey("eds-x"), "EDS cluster without a CLA must get a synthesized assignment")
 	g.Expect(out.Items).ToNot(gomega.HaveKey("stale-gone"), "CLA for a cluster absent from CDS must be dropped")

@@ -165,11 +165,12 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient]
 
 // XDSClientState exposes per-client connection state derived from the xDS
-// callbacks. HasPriorXDSVersion reports whether the client's initial request
-// on its current stream carried a prior accepted version/nonce — i.e. the
-// Envoy may already be serving config accepted from a previous stream even
-// though this controller has no local snapshot for it (reconnect, controller
-// restart).
+// callbacks. HasPriorXDSVersion reports whether a stream of the client opened
+// a resource type with a version it had accepted before (an empty nonce with a
+// non-empty version) — i.e. the Envoy may already be serving config accepted
+// on a previous stream even though this controller has not published to it
+// (reconnect, controller restart). The mark belongs to the resource name, so
+// it covers every stream sharing it, and lasts until the last of them closes.
 type XDSClientState interface {
 	HasPriorXDSVersion(resourceName string) bool
 }

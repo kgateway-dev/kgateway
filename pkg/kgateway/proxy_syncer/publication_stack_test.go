@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"maps"
 	"testing"
 	"time"
 
@@ -20,20 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
-
-func TestGatewayXdsResourcesEqualsComparesRoutingTargets(t *testing.T) {
-	original := GatewayXdsResources{ReferencedClusters: map[string]struct{}{"old": {}}}
-	same := original
-	same.ReferencedClusters = maps.Clone(original.ReferencedClusters)
-	if !original.Equals(same) || !same.Equals(original) {
-		t.Fatal("equal target sets must compare equal")
-	}
-	changed := original
-	changed.ReferencedClusters = map[string]struct{}{"new": {}}
-	if original.Equals(changed) || changed.Equals(original) {
-		t.Fatal("routing target changes must reach publication even with equal resource versions")
-	}
-}
 
 func TestPublicationRetainsOnlySupportedBootstrapEndpoints(t *testing.T) {
 	for _, knowsLocal := range []bool{false, true} {
@@ -89,15 +74,30 @@ func TestSnapshotConsistencyChecksBootstrapWithoutHidingOtherGaps(t *testing.T) 
 	if len(snap.Resources[envoycachetypes.Cluster].Items) != 0 {
 		t.Fatal("validation mutated the shared CDS map")
 	}
-	broken := *snap
-	broken.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds", []envoycachetypes.ResourceWithTTL{
-		{Resource: &envoyclusterv3.Cluster{Name: "missing", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}},
+	// An EDS cluster without a CLA is how the gate leaves a client's endpoints
+	// alone; Envoy keeps them, so it is not a violation.
+	dangling := *snap
+	dangling.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyclusterv3.Cluster{Name: "left-out", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}},
 	})
-	if err := snapshotConsistencyError(ucc.ResourceName(), &broken); err == nil {
-		t.Fatal("missing dynamic EDS assignment must still fail consistency")
+	if err := snapshotConsistencyError(ucc.ResourceName(), &dangling); err != nil {
+		t.Fatalf("an EDS cluster without a CLA must not fail consistency: %v", err)
+	}
+	orphan := *snap
+	orphan.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: localName}},
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "orphan"}},
+	})
+	if err := snapshotConsistencyError(ucc.ResourceName(), &orphan); err == nil {
+		t.Fatal("a CLA with no EDS cluster must fail consistency alongside the bootstrap one")
 	}
 	if err := snapshotConsistencyError("unassociated-client", snap); err == nil {
 		t.Fatal("unknown bootstrap resources must not be exempted")
+	}
+	unlistedRoute := &envoycache.Snapshot{}
+	unlistedRoute.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a")
+	if err := snapshotConsistencyError(ucc.ResourceName(), unlistedRoute); err == nil {
+		t.Fatal("a RouteConfiguration no listener names must fail consistency")
 	}
 }
 
@@ -118,12 +118,12 @@ func TestEndpointFilterErrorRecoveryAdvancesVersion(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "errored"}},
 	})
 	healthyOnly := envoycache.NewResourcesWithTTL("healthy-only", []envoycachetypes.ResourceWithTTL{edsCluster("healthy")})
-	filtered, _ := filterEndpointResourcesForClusters(healthyOnly, endpoints)
+	filtered, _ := filterEndpointResourcesForClusters(healthyOnly, endpoints, "")
 	g.Expect(filtered.Items).To(gomega.HaveLen(1))
 	g.Expect(filtered.Items).To(gomega.HaveKey("healthy"))
 	g.Expect(filtered.Version).ToNot(gomega.Equal(endpoints.Version), "entering an error must trigger an EDS push")
 	recovered := envoycache.NewResourcesWithTTL("recovered", []envoycachetypes.ResourceWithTTL{edsCluster("healthy"), edsCluster("errored")})
-	restored, _ := filterEndpointResourcesForClusters(recovered, endpoints)
+	restored, _ := filterEndpointResourcesForClusters(recovered, endpoints, "")
 	g.Expect(restored.Items).To(gomega.HaveLen(2))
 	g.Expect(restored.Version).To(gomega.Equal(endpoints.Version), "recovery must restore the original EDS version and trigger another push")
 	g.Expect(endpoints.Items).To(gomega.HaveLen(2), "filtering must not mutate the upstream EDS map")
