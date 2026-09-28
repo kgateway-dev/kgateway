@@ -127,7 +127,7 @@ func TestPublicationMetrics_DeferredWithheld(t *testing.T) {
 }
 
 // With KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK enabled, publishing a snapshot that
-// violates Snapshot.Consistent() (here: an orphan CLA with no CDS cluster)
+// fails the consistency check (here: an orphan CLA with no CDS cluster)
 // increments inconsistent_snapshots_total — and still publishes (the check
 // records, never withholds). Uses a plain cache: the package's oracle cache
 // would rightly fail the test on this publish.

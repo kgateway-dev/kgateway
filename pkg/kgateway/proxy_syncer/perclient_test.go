@@ -1993,7 +1993,7 @@ func eventuallyDeferredWrapper(t *testing.T, snapshots krt.Collection[XdsSnapWra
 			return false
 		}
 		wrap = list[0]
-		return wrap.deferred
+		return wrap.deferred()
 	}, time.Second, 20*time.Millisecond).Should(gomega.BeTrue(),
 		"expected a single wrapper marked deferred")
 	return wrap
@@ -2010,7 +2010,7 @@ func eventuallyCoherentWrapper(t *testing.T, snapshots krt.Collection[XdsSnapWra
 			return false
 		}
 		wrap = list[0]
-		return !wrap.deferred
+		return !wrap.deferred()
 	}, time.Second, 20*time.Millisecond).Should(gomega.BeTrue(),
 		"expected a single coherent (non-deferred) wrapper")
 	return wrap

@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -193,7 +194,7 @@ func NewProxySyncer(
 	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 	validator validator.Validator,
-	xdsClientState priorXDSVersionReader,
+	xdsClientState krtcollections.XDSClientState,
 	opts ...StatusSyncerOption,
 ) *ProxySyncer {
 	optCfg := processStatusSyncerOptions(opts...)
@@ -209,31 +210,23 @@ func NewProxySyncer(
 	}
 }
 
-// priorXDSVersionReader reports whether a client's initial request on its
-// current stream carried a prior accepted xDS version — i.e. the Envoy may
-// already be serving config from a previous stream even though this
-// controller has no local snapshot for it (reconnect, controller restart).
-// Satisfied by krtcollections.XDSClientState.
-type priorXDSVersionReader interface {
-	HasPriorXDSVersion(resourceName string) bool
-}
-
 type ProxyTranslator struct {
-	xdsCache       envoycache.SnapshotCache
-	xdsClientState priorXDSVersionReader
+	xdsCache envoycache.SnapshotCache
 	// gate bounds how long publication may be withheld from a client while
-	// its referenced clusters are unready — the first publish for a
-	// never-published client and the release of a held route flip (see
-	// publish_gate.go). Pointer so the state is shared across ProxyTranslator
-	// copies.
+	// its referenced clusters are unready — the first publish on a client's
+	// connection and the release of a held route flip (see publish_gate.go).
+	// Pointer so the state is shared across ProxyTranslator copies.
 	gate *publishGate
 }
 
-func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState priorXDSVersionReader, publishBudget time.Duration, checkSnapshotConsistency bool) ProxyTranslator {
+// NewProxyTranslator builds the translator that publishes per-client
+// snapshots. xdsClientState, when non-nil, tells warm clients (ones that
+// reported a prior accepted xDS version) from cold ones; a nil value treats
+// every client as cold.
+func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState krtcollections.XDSClientState, publishBudget time.Duration, checkSnapshotConsistency bool) ProxyTranslator {
 	return ProxyTranslator{
-		xdsCache:       xdsCache,
-		xdsClientState: xdsClientState,
-		gate:           newPublishGate(publishBudget, checkSnapshotConsistency),
+		xdsCache: xdsCache,
+		gate:     newPublishGate(publishBudget, checkSnapshotConsistency, xdsClientState),
 	}
 }
 
@@ -419,7 +412,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// client departed or a transform-level input briefly
 				// vanished; cancel any pending bounded first publish or flip
 				// release so a timer cannot fire for a client that is gone (a
-				// live client re-arms it with its next deferred wrapper).
+				// live client re-arms it with its next deferred wrapper), and
+				// stop treating the cached entry as what the client runs: a
+				// client that returns resolves against nothing until the gate
+				// publishes to it again.
 				//
 				// Known leak: the SnapshotCache entry for a departed UCC is
 				// never cleared and accumulates over the controller's

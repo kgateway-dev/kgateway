@@ -89,15 +89,30 @@ func TestSnapshotConsistencyChecksBootstrapWithoutHidingOtherGaps(t *testing.T) 
 	if len(snap.Resources[envoycachetypes.Cluster].Items) != 0 {
 		t.Fatal("validation mutated the shared CDS map")
 	}
-	broken := *snap
-	broken.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds", []envoycachetypes.ResourceWithTTL{
-		{Resource: &envoyclusterv3.Cluster{Name: "missing", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}},
+	// An EDS cluster without a CLA is how the gate leaves a client's endpoints
+	// alone; Envoy keeps them, so it is not a violation.
+	dangling := *snap
+	dangling.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyclusterv3.Cluster{Name: "left-out", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}},
 	})
-	if err := snapshotConsistencyError(ucc.ResourceName(), &broken); err == nil {
-		t.Fatal("missing dynamic EDS assignment must still fail consistency")
+	if err := snapshotConsistencyError(ucc.ResourceName(), &dangling); err != nil {
+		t.Fatalf("an EDS cluster without a CLA must not fail consistency: %v", err)
+	}
+	orphan := *snap
+	orphan.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: localName}},
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "orphan"}},
+	})
+	if err := snapshotConsistencyError(ucc.ResourceName(), &orphan); err == nil {
+		t.Fatal("a CLA with no EDS cluster must fail consistency alongside the bootstrap one")
 	}
 	if err := snapshotConsistencyError("unassociated-client", snap); err == nil {
 		t.Fatal("unknown bootstrap resources must not be exempted")
+	}
+	unlistedRoute := &envoycache.Snapshot{}
+	unlistedRoute.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a")
+	if err := snapshotConsistencyError(ucc.ResourceName(), unlistedRoute); err == nil {
+		t.Fatal("a RouteConfiguration no listener names must fail consistency")
 	}
 }
 

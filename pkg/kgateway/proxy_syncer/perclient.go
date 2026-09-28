@@ -84,8 +84,9 @@ func snapshotPerClient(
 
 		// Annotate missing routing targets and underived CLAs for the bounded
 		// publication gate. A derived empty CLA is backend truth, not a gap.
-		// Keep the complete client-keyed CDS row; a nil row means its transform
-		// has not run yet, whereas an empty row is a valid zero-backend result.
+		// A nil row means its transform has not run yet (the cluster transform
+		// also returns nil while no backend exists), so there is nothing to
+		// publish.
 		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
@@ -127,9 +128,9 @@ func snapshotPerClient(
 			clustersForUcc.erroredClusters,
 		)
 
-		snap.deferred = len(missingClusters) > 0 || len(missingEndpointClusters) > 0
 		snap.missingReferenced = missingClusters
 		snap.missingEndpointsReferenced = missingEndpointClusters
+		snap.synthesizedEndpoints = slices.Sorted(maps.Keys(synthesizedEndpoints))
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
@@ -140,8 +141,8 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Secret] = listenerRouteSnapshot.Secrets
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
-		if snap.deferred {
-			logger.Info(
+		if snap.deferred() {
+			logger.Debug(
 				"snapshot has unready referenced clusters; syncXds will resolve per cluster",
 				"client", ucc.ResourceName(),
 				"missing_clusters", missingClusters,
@@ -480,11 +481,11 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 //
 // The second return value is the set of endpoint resource names that were
 // synthesized. Referenced clusters backed by a synthesized CLA mark the
-// wrapper deferred (classifyReferencedEndpointResources) so a route flip
+// wrapper deferred (findMissingReferencedEndpointResources) so a route flip
 // does not land on a cluster whose endpoints simply have not been derived
-// yet; synthesized empties still reach Envoy for clusters no route targets,
-// and on the bounded publish paths (publishGate), where active-with-no-hosts
-// is the correct interim state.
+// yet. The publish gate decides which synthesized CLAs reach the client
+// (settleSynthesizedEndpoints), because an empty CLA would replace
+// endpoints the client already holds.
 func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints envoycache.Resources, bootstrapEndpoints ...string) (envoycache.Resources, map[string]struct{}) {
 	requiredEndpointNames := make(map[string]struct{})
 	for _, item := range clusters.Items {
