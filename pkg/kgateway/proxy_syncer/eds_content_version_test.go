@@ -70,3 +70,16 @@ func TestFilteredEndpointVersionMatchesDirectSet(t *testing.T) {
 	direct := versionEndpointResources(envoycache.NewResourcesWithTTL("another-input", []envoycachetypes.ResourceWithTTL{{Resource: a}}), nil, digests)
 	g.Expect(filtered.Version).To(gomega.Equal(direct.Version), "an excluded assignment cannot affect the final version")
 }
+
+func TestFilteredEndpointVersionReusesContentHashes(t *testing.T) {
+	g := gomega.NewWithT(t)
+	a := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "a"}
+	b := &envoyendpointv3.ClusterLoadAssignment{ClusterName: "b"}
+	all := envoycache.NewResourcesWithTTL("input", []envoycachetypes.ResourceWithTTL{{Resource: a}, {Resource: b}})
+	clusters := envoycache.NewResourcesWithTTL("cds", []envoycachetypes.ResourceWithTTL{{Resource: &envoyclusterv3.Cluster{
+		Name: "a", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS},
+	}}})
+	filtered, _ := filterEndpointsForClusters(clusters, all, map[string]uint64{"a": 42})
+	g.Expect(filtered.Version).To(gomega.Equal(endpointSetVersion(map[string]uint64{"a": 42}, nil, nil)),
+		"a filtered set must be versioned from the known content digest, not by re-marshaling the assignment")
+}

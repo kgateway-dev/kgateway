@@ -120,7 +120,8 @@ func snapshotPerClient(
 		if ucc.KnowsLocalCluster {
 			bootstrapEndpoint, _, _ = ucc.LocalClusterInfo()
 		}
-		endpointRes, synthesizedEndpoints := filterEndpointResourcesForClusters(clusterResources, clientEndpointResources.endpoints, bootstrapEndpoint)
+		endpointRes, synthesizedEndpoints := filterEndpointsForClusters(clusterResources, clientEndpointResources.endpoints,
+			clientEndpointResources.contentHashes, bootstrapEndpoint)
 		endpointRes = versionEndpointResources(endpointRes, clientEndpointResources.contentHashes,
 			endpointClusterDigests(clusterResources, clustersForUcc.clusterVersions))
 		// Post-synthesis every EDS cluster has a CLA; the synthesized set
@@ -302,7 +303,7 @@ func findMissingReferencedClusters(
 // findMissingReferencedEndpointResources reports the referenced EDS clusters
 // whose ClusterLoadAssignment was not derived by the per-client endpoints
 // collection — i.e. their CLA in the snapshot is a synthesized empty
-// placeholder (see filterEndpointResourcesForClusters). Whether such a
+// placeholder (see filterEndpointsForClusters). Whether such a
 // backend has endpoints is UNKNOWN — per-client derivation lag for kube
 // Services (whose endpoints transform emits a row for every resolvable
 // port, even sliceless ones like ExternalName), or a plugin that
@@ -472,7 +473,7 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 	collectProtoClusterReferences(msg.Interface(), referencedClusters)
 }
 
-// filterEndpointResourcesForClusters returns the EDS resource set that exactly
+// filterEndpointsForClusters returns the EDS resource set that exactly
 // matches the EDS clusters in the same CDS snapshot: it drops CLAs for STATIC
 // clusters and for EDS clusters no longer in CDS (Envoy requests EDS resources
 // from CDS, so a stale CLA can make the ADS cache refuse named EDS responses),
@@ -491,7 +492,16 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 // yet; synthesized empties still reach Envoy for clusters no route targets,
 // and on the bounded publish paths (publishGate), where active-with-no-hosts
 // is the correct interim state.
-func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints envoycache.Resources, bootstrapEndpoints ...string) (envoycache.Resources, map[string]struct{}) {
+//
+// contentHashes supplies the assignments' content digests for versioning a
+// filtered set, so only assignments missing from it (synthesized empties) are
+// marshaled; nil digests every assignment from its proto.
+func filterEndpointsForClusters(
+	clusters envoycache.Resources,
+	endpoints envoycache.Resources,
+	contentHashes map[string]uint64,
+	bootstrapEndpoints ...string,
+) (envoycache.Resources, map[string]struct{}) {
 	requiredEndpointNames := make(map[string]struct{})
 	for _, item := range clusters.Items {
 		if endpointName, requiresEndpointResource := endpointResourceNameForCluster(item); requiresEndpointResource {
@@ -530,7 +540,7 @@ func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints
 	if len(synthesized) == 0 && len(filteredEndpoints) == len(endpoints.Items) {
 		return endpoints, nil
 	}
-	return envoycache.NewResourcesWithTTL(endpointSetVersion(nil, filteredEndpoints, nil), filteredEndpoints), synthesized
+	return envoycache.NewResourcesWithTTL(endpointSetVersion(contentHashes, filteredEndpoints, nil), filteredEndpoints), synthesized
 }
 
 // endpointSetVersion folds an endpoint resource set into its version string:

@@ -68,7 +68,7 @@ func (s *ProxyTranslator) syncXds(
 
 	// The snapshot is EDS-consistent by construction: snapshotPerClient drops
 	// CLAs for clusters absent from CDS and synthesizes empty assignments for
-	// EDS clusters that have no CLA yet (see filterEndpointResourcesForClusters),
+	// EDS clusters that have no CLA yet (see filterEndpointsForClusters),
 	// and the per-cluster resolution only carries cluster/CLA pairs — so we do
 	// not rely on a post-hoc MakeConsistent() pass, which would also have
 	// mutated the snapshot shared with the krt cache. Publication goes

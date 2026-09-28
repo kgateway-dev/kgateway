@@ -2119,3 +2119,9 @@ func TestEndpointSetVersionFollowsClusterVersion(t *testing.T) {
 	g.Expect(endpointSetVersion(content, nil, nil)).ToNot(gomega.Equal(before),
 		"absent cluster digests are a distinct state from digest 1")
 }
+
+// filterEndpointResourcesForClusters is filterEndpointsForClusters without
+// precomputed content digests.
+func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints envoycache.Resources) (envoycache.Resources, map[string]struct{}) {
+	return filterEndpointsForClusters(clusters, endpoints, nil)
+}

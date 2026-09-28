@@ -79,22 +79,32 @@ type claRetainer struct {
 }
 
 // retainedCLA is one interned CLA together with the bucket it was interned
-// under, which is what makes it findable again next pass.
+// under, which is what makes it findable again next pass, and its content
+// digest, so a later pass that reuses the proto need not marshal it again.
 type retainedCLA struct {
-	hash uint64
-	cla  sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
+	hash    uint64
+	content uint64
+	cla     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 }
 
 func newCLARetainer() *claRetainer {
 	return &claRetainer{byBackend: make(map[string][]retainedCLA)}
 }
 
-// seed primes interner with the CLAs backend's rows are already holding.
-func (r *claRetainer) seed(backend string, interner *sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]) {
+// seed primes interner with the CLAs backend's rows are already holding, and
+// contentHashes, when non-nil, with their content digests.
+func (r *claRetainer) seed(
+	backend string,
+	interner *sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment],
+	contentHashes map[sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]]uint64,
+) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, retained := range r.byBackend[backend] {
 		interner.Adopt(retained.cla, retained.hash)
+		if contentHashes != nil {
+			contentHashes[retained.cla] = retained.content
+		}
 	}
 }
 
@@ -112,7 +122,7 @@ func (r *claRetainer) keep(backend string, rows []UccWithEndpoints) {
 		}) {
 			continue
 		}
-		retained = append(retained, retainedCLA{hash: row.EndpointsHash, cla: row.Endpoints})
+		retained = append(retained, retainedCLA{hash: row.EndpointsHash, content: row.ContentHash, cla: row.Endpoints})
 	}
 
 	r.mu.Lock()
@@ -187,17 +197,26 @@ func NewPerClientEnvoyEndpoints(
 		// Hashes select candidates; clusterLoadAssignmentsEqual confirms content
 		// and skips traversal of shared LbEndpoint pointers.
 		claInterner := sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]{Equal: clusterLoadAssignmentsEqual}
-		retainer.seed(epName, &claInterner)
+		// Content digests are a full deterministic marshal, so take one per
+		// distinct interned CLA rather than one per client: a candidate that
+		// interns into an existing proto inherits that proto's digest.
+		contentHashes := make(map[sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]]uint64)
+		retainer.seed(epName, &claInterner, contentHashes)
 		for _, ucc := range uccs {
 			resolved := resolveEndpoints(kctx, ucc, ep)
 			endpointsHash := combineEndpointHash(resolved.Inputs.EndpointsForBackend.LbEpsEqualityHash, resolved.AdditionalHash, resolved.LoadBalancingHash)
 			candidate := buildClusterLoadAssignment(ucc, resolved)
 			cla := claInterner.Intern(candidate, endpointsHash)
+			contentHash, ok := contentHashes[cla]
+			if !ok {
+				contentHash = contentHashOf(cla.BorrowForRead())
+				contentHashes[cla] = contentHash
+			}
 			u := UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     cla,
 				EndpointsHash: endpointsHash,
-				ContentHash:   contentHashOf(candidate),
+				ContentHash:   contentHash,
 				endpointsName: epName,
 				resourceName:  uccEndpointsResourceName(ucc, epName),
 			}
