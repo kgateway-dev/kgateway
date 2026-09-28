@@ -266,7 +266,7 @@ func TestCLARetainerSeedsInternerWithLiveGeneration(t *testing.T) {
 	r.keep("backend", []UccWithEndpoints{{EndpointsHash: 7, Endpoints: original}})
 
 	var interner sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]
-	r.seed("backend", &interner)
+	r.seed("backend", &interner, nil)
 
 	rebuilt := interner.Intern(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "shared"}, 7)
 	require.True(t, sharedproto.Same(original, rebuilt),
@@ -279,7 +279,7 @@ func TestCLARetainerSeedsInternerWithLiveGeneration(t *testing.T) {
 
 	// A backend with nothing retained seeds nothing.
 	var empty sharedproto.Interner[*envoyendpointv3.ClusterLoadAssignment]
-	r.seed("absent", &empty)
+	r.seed("absent", &empty, nil)
 	fresh := empty.Intern(&envoyendpointv3.ClusterLoadAssignment{ClusterName: "shared"}, 7)
 	require.False(t, sharedproto.Same(original, fresh))
 }

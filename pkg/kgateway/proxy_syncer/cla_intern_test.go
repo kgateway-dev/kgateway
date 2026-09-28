@@ -116,6 +116,12 @@ func TestNewPerClientEnvoyEndpointsSharesClaAcrossEquivalentContexts(t *testing.
 		"distinct contexts must not share a CLA proto")
 	require.False(t, proto.Equal(fetchedA[0].Endpoints.Clone(), fetchedC[0].Endpoints.Clone()),
 		"a client in another zone must be built a different CLA, not merely a different proto instance")
+	// Content digests describe each row's published proto, including rows that
+	// interned into another client's proto and inherited its digest.
+	for _, row := range []UccWithEndpoints{fetchedA[0], fetchedB[0], fetchedC[0]} {
+		require.Equal(t, contentHashOf(row.Endpoints.BorrowForRead()), row.ContentHash)
+	}
+	require.NotEqual(t, fetchedA[0].ContentHash, fetchedC[0].ContentHash)
 	// Every client is built so the interner can confirm content equality instead
 	// of trusting the 64-bit input hash; equal results are then shared in memory.
 	require.EqualValues(t, 3, buildCalls.Load())

@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"hash/fnv"
 	"maps"
 	"slices"
 	"strconv"
@@ -27,7 +26,13 @@ import (
 
 type endpointsWithUccName struct {
 	endpoints envoycache.Resources
+	// digest is the EDS set digest of endpoints (see edsEntryDigest);
+	// endpoints.Version is its decimal form.
 	// +noKrtEquals folded into endpoints.Version
+	digest uint64
+	// contentHashes holds each assignment's content digest by name, so a
+	// filtered subset can be digested without marshaling it.
+	// +noKrtEquals folded into endpoints.Version through digest
 	contentHashes map[string]uint64
 	resourceName  string
 }
@@ -67,9 +72,16 @@ func snapshotPerClient(
 			contentHashes[ep.Endpoints.BorrowForRead().GetClusterName()] = ep.ContentHash
 		}
 
-		endpointResources := envoycache.NewResourcesWithTTL(endpointSetVersion(contentHashes, nil, nil), endpointsProto)
+		// Digest the map rather than the rows so a duplicate name is counted
+		// once, matching the resource map NewResourcesWithTTL builds.
+		var digest uint64
+		for name, contentHash := range contentHashes {
+			digest ^= edsEntryDigest(name, contentHash)
+		}
+		endpointResources := envoycache.NewResourcesWithTTL(strconv.FormatUint(digest, 10), endpointsProto)
 		return &endpointsWithUccName{
 			endpoints:     endpointResources,
+			digest:        digest,
 			contentHashes: contentHashes,
 			resourceName:  ucc.ResourceName(),
 		}
@@ -120,9 +132,17 @@ func snapshotPerClient(
 		if ucc.KnowsLocalCluster {
 			bootstrapEndpoint, _, _ = ucc.LocalClusterInfo()
 		}
-		endpointRes, synthesizedEndpoints := filterEndpointResourcesForClusters(clusterResources, clientEndpointResources.endpoints, bootstrapEndpoint)
-		endpointRes = versionEndpointResources(endpointRes, clientEndpointResources.contentHashes,
-			endpointClusterDigests(clusterResources, clustersForUcc.clusterVersions))
+		endpointRes, synthesizedEndpoints, endpointsDigest := filterEndpointsForClusters(
+			clusterResources, clientEndpointResources.endpoints,
+			clientEndpointResources.contentHashes, clientEndpointResources.digest, bootstrapEndpoint)
+		edsVersion := edsVersionInputs{
+			endpoints:     endpointsDigest,
+			clusters:      clustersForUcc.edsClustersDigest,
+			extraClusters: listenerRouteSnapshot.ClustersHash,
+		}
+		// Items is shared, never mutated: the unfiltered case already hands
+		// the KRT row's map to the snapshot.
+		endpointRes = envoycache.Resources{Version: edsVersion.version(), Items: endpointRes.Items}
 		// Post-synthesis every EDS cluster has a CLA; the synthesized set
 		// identifies exactly the referenced clusters whose CLA was not
 		// derived (a derived-but-empty CLA is truth, not a gap).
@@ -137,6 +157,7 @@ func snapshotPerClient(
 		snap.missingReferenced = missingClusters
 		snap.missingEndpointsReferenced = missingEndpointClusters
 		snap.erroredClusters = clustersForUcc.erroredClusters
+		snap.edsVersion = edsVersion
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
@@ -302,7 +323,7 @@ func findMissingReferencedClusters(
 // findMissingReferencedEndpointResources reports the referenced EDS clusters
 // whose ClusterLoadAssignment was not derived by the per-client endpoints
 // collection — i.e. their CLA in the snapshot is a synthesized empty
-// placeholder (see filterEndpointResourcesForClusters). Whether such a
+// placeholder (see filterEndpointsForClusters). Whether such a
 // backend has endpoints is UNKNOWN — per-client derivation lag for kube
 // Services (whose endpoints transform emits a row for every resolvable
 // port, even sliceless ones like ExternalName), or a plugin that
@@ -472,7 +493,7 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 	collectProtoClusterReferences(msg.Interface(), referencedClusters)
 }
 
-// filterEndpointResourcesForClusters returns the EDS resource set that exactly
+// filterEndpointsForClusters returns the EDS resource set that exactly
 // matches the EDS clusters in the same CDS snapshot: it drops CLAs for STATIC
 // clusters and for EDS clusters no longer in CDS (Envoy requests EDS resources
 // from CDS, so a stale CLA can make the ADS cache refuse named EDS responses),
@@ -491,7 +512,19 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 // yet; synthesized empties still reach Envoy for clusters no route targets,
 // and on the bounded publish paths (publishGate), where active-with-no-hosts
 // is the correct interim state.
-func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints envoycache.Resources, bootstrapEndpoints ...string) (envoycache.Resources, map[string]struct{}) {
+//
+// digest and contentHashes are the input set's EDS digest and per-assignment
+// content digests. The third return value is the digest of the result: digest
+// itself when nothing was filtered, else a fold over the result that reads
+// each assignment's content digest from contentHashes and marshals only those
+// it lacks (synthesized empties, or every item when contentHashes is nil).
+func filterEndpointsForClusters(
+	clusters envoycache.Resources,
+	endpoints envoycache.Resources,
+	contentHashes map[string]uint64,
+	digest uint64,
+	bootstrapEndpoints ...string,
+) (envoycache.Resources, map[string]struct{}, uint64) {
 	requiredEndpointNames := make(map[string]struct{})
 	for _, item := range clusters.Items {
 		if endpointName, requiresEndpointResource := endpointResourceNameForCluster(item); requiresEndpointResource {
@@ -528,82 +561,74 @@ func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints
 		synthesized[name] = struct{}{}
 	}
 	if len(synthesized) == 0 && len(filteredEndpoints) == len(endpoints.Items) {
-		return endpoints, nil
+		return endpoints, nil, digest
 	}
-	return envoycache.NewResourcesWithTTL(endpointSetVersion(nil, filteredEndpoints, nil), filteredEndpoints), synthesized
-}
-
-// endpointSetVersion folds an endpoint resource set into its version string:
-// for each assignment, its name, its content digest, and the version digest of
-// its cluster (zero when the cluster is not in clusterDigests, as for the
-// bootstrap-defined local cluster). With items nil the fold covers every entry
-// of contentHashes; otherwise only the items' names, so a filtered subset is
-// versioned by what it holds. Names are folded in sorted order, so the result
-// is independent of iteration order and two assignments with equal digests do
-// not cancel each other as an XOR fold would. An item whose digest is missing
-// from contentHashes (a row built without one) is digested from its proto.
-func endpointSetVersion(contentHashes map[string]uint64, items []envoycachetypes.ResourceWithTTL, clusterDigests map[string]uint64) string {
-	digests := contentHashes
-	if items != nil {
-		digests = make(map[string]uint64, len(items))
-		for _, item := range items {
-			name := envoycache.GetResourceName(item.Resource)
-			digest, ok := contentHashes[name]
-			if !ok {
-				digest = utils.HashProto(item.Resource)
-			}
-			digests[name] = digest
-		}
-	}
-	names := make([]string, 0, len(digests))
-	for name := range digests {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-	hasher := fnv.New64a()
-	for _, name := range names {
-		utils.HashStringField(hasher, name)
-		utils.HashUint64(hasher, digests[name])
-		utils.HashUint64(hasher, clusterDigests[name])
-	}
-	return strconv.FormatUint(hasher.Sum64(), 10)
-}
-
-// versionEndpointResources returns res with its version recomputed from the
-// assignments it holds and the clusters they belong to.
-func versionEndpointResources(res envoycache.Resources, contentHashes, clusterDigests map[string]uint64) envoycache.Resources {
-	items := make([]envoycachetypes.ResourceWithTTL, 0, len(res.Items))
-	for _, item := range res.Items {
-		items = append(items, item)
-	}
-	return envoycache.NewResourcesWithTTL(endpointSetVersion(contentHashes, items, clusterDigests), items)
-}
-
-// endpointClusterDigests maps CDS versions to EDS resource names, including
-// service_name aliases. Multiple clusters using one assignment all contribute;
-// bootstrap assignments without a dynamic CDS entry retain a zero digest.
-func endpointClusterDigests(clusters envoycache.Resources, versions map[string]uint64) map[string]uint64 {
-	names := make([]string, 0, len(clusters.Items))
-	for name := range clusters.Items {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-	digests := make(map[string]uint64)
-	for _, name := range names {
-		item := clusters.Items[name]
-		endpointName, required := endpointResourceNameForCluster(item)
-		if !required {
-			continue
-		}
-		digest, ok := versions[name]
+	var filteredDigest uint64
+	for _, item := range filteredEndpoints {
+		name := envoycache.GetResourceName(item.Resource)
+		contentHash, ok := contentHashes[name]
 		if !ok {
-			digest = utils.HashProto(item.Resource)
+			contentHash = utils.HashProto(item.Resource)
 		}
-		hasher := fnv.New64a()
-		utils.HashUint64(hasher, digests[endpointName])
-		utils.HashStringField(hasher, name)
-		utils.HashUint64(hasher, digest)
-		digests[endpointName] = hasher.Sum64()
+		filteredDigest ^= edsEntryDigest(name, contentHash)
 	}
-	return digests
+	return envoycache.NewResourcesWithTTL(strconv.FormatUint(filteredDigest, 10), filteredEndpoints), synthesized, filteredDigest
+}
+
+// edsVersionInputs are the digests a client's EDS version is folded from. The
+// version must move when a published assignment changes, and also when a
+// published EDS cluster changes with its assignment unchanged: Envoy re-warms
+// the rebuilt cluster and asks for its endpoints at the version it last
+// accepted, and the cache answers only a different version, so an unmoved
+// version leaves the cluster warming until the initial-fetch timeout.
+//
+// Filtering makes the published assignments exactly the EDS clusters' endpoint
+// names (plus bootstrap names), and a SotW EDS response always carries every
+// subscribed assignment, so a set-level cluster digest pushes exactly when a
+// per-assignment association would. The inputs are kept on the snapshot
+// wrapper so the carry path can extend them with what it carries.
+type edsVersionInputs struct {
+	// endpoints folds edsEntryDigest(name, content digest) over the
+	// published assignments.
+	endpoints uint64
+	// clusters folds edsEntryDigest(name, ClusterVersion) over the client's
+	// published EDS clusters. ClusterVersion is the proto's content hash, so
+	// it covers eds_cluster_config.service_name aliases.
+	clusters uint64
+	// extraClusters is the gateway translation's ClustersHash. Those clusters
+	// are few and rarely change, so they are folded whole, EDS or not.
+	extraClusters uint64
+}
+
+func (v edsVersionInputs) version() string {
+	return strconv.FormatUint(combineEndpointHash(v.endpoints, v.clusters, v.extraClusters), 10)
+}
+
+// edsEntryDigest mixes one named entry into a value for an XOR-folded set
+// digest. XOR keeps the fold independent of map order without sorting, and
+// mixing in the name keeps two entries with equal digests from cancelling:
+// they cancel only if two distinct names collide in 64 bits. It is FNV-1a over
+// the name and the digest's bytes, then the SplitMix64 finalizer so that
+// single-bit input differences spread before they are XORed together. It does
+// not allocate.
+func edsEntryDigest(name string, digest uint64) uint64 {
+	const (
+		offset64 = 14695981039346656037
+		prime64  = 1099511628211
+	)
+	h := uint64(offset64)
+	for i := 0; i < len(name); i++ {
+		h ^= uint64(name[i])
+		h *= prime64
+	}
+	for i := range 8 {
+		h ^= (digest >> (8 * i)) & 0xff
+		h *= prime64
+	}
+	h ^= h >> 30
+	h *= 0xbf58476d1ce4e5b9
+	h ^= h >> 27
+	h *= 0x94d049bb133111eb
+	h ^= h >> 31
+	return h
 }
