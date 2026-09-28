@@ -184,7 +184,6 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	erroredSet := stringSet(snapWrap.erroredClusters)
 	var carried []string
 	var carryHash uint64
-	edsVersion := snapWrap.edsVersion
 	clusterItems := newClusters.Items
 	endpointItems := newEndpoints.Items
 	for name := range carryRefs {
@@ -221,24 +220,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		// an identical version string around a vanish/return/vanish cycle
 		// whose carried protos differ, and a client reconnecting with that
 		// version as last-accepted would never be resent the newer content.
-		clusterHash := utils.HashProto(old.Resource)
-		carryHash ^= utils.HashString(name) ^ clusterHash
+		carryHash ^= utils.HashString(name) ^ utils.HashProto(old.Resource)
 		claName, requiresEndpointResource := endpointResourceNameForCluster(old)
 		if !requiresEndpointResource {
 			continue
 		}
-		// Fold the carried pair into the EDS digests the way direct
-		// publication would have: a published cluster's ClusterVersion and an
-		// assignment's content digest are both utils.HashProto of the proto.
-		edsVersion.clusters ^= edsEntryDigest(name, clusterHash)
 		if oldCla, ok := oldEndpoints[claName]; ok {
-			if replaced, ok := endpointItems[claName]; ok {
-				edsVersion.endpoints ^= edsEntryDigest(claName, utils.HashProto(replaced.Resource))
-			}
 			endpointItems[claName] = oldCla
-			claHash := utils.HashProto(oldCla.Resource)
-			carryHash ^= claHash
-			edsVersion.endpoints ^= edsEntryDigest(claName, claHash)
+			carryHash ^= utils.HashProto(oldCla.Resource)
 		}
 	}
 	if len(carried) > 0 {
@@ -248,9 +237,11 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			Items:   clusterItems,
 		}
 		composed.Resources[envoycachetypes.Endpoint] = envoycache.Resources{
-			Version: edsVersion.version(),
-			Items:   endpointItems,
+			Items: endpointItems,
 		}
+		composed.Resources[envoycachetypes.Endpoint] = versionEndpointResources(
+			composed.Resources[envoycachetypes.Endpoint], nil,
+			endpointClusterDigests(composed.Resources[envoycachetypes.Cluster], nil))
 		logger.Info("carried forward previously-published clusters",
 			"proxy_key", snapWrap.proxyKey,
 			"carried", carried,
