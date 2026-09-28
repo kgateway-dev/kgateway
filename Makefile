@@ -130,9 +130,6 @@ $(BUG_REPORT_DIR):
 # Static base image for dummy-idp, which is built with CGO_ENABLED=0.
 export DUMMY_IDP_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
 
-# Static base image for the e2e extproc-server, which is built with CGO_ENABLED=0.
-export EXTPROC_SERVER_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
-
 # Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
 # to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
@@ -962,7 +959,6 @@ $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server: $(EXTPROC_SERVER_DIR)/Do
 $(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH) $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server
 	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTPROC_SERVER_OUTPUT_DIR) -f $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(EXTPROC_SERVER_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
 	@touch $@
 

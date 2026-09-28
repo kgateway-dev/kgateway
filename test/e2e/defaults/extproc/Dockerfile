@@ -1,6 +1,4 @@
-ARG BASE_IMAGE=cgr.dev/chainguard/static:latest
-
-FROM $BASE_IMAGE
+FROM cgr.dev/chainguard/static:latest
 
 ARG GOARCH=amd64
 
