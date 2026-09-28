@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"maps"
 	"testing"
 	"time"
 
@@ -20,20 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
-
-func TestGatewayXdsResourcesEqualsComparesRoutingTargets(t *testing.T) {
-	original := GatewayXdsResources{ReferencedClusters: map[string]struct{}{"old": {}}}
-	same := original
-	same.ReferencedClusters = maps.Clone(original.ReferencedClusters)
-	if !original.Equals(same) || !same.Equals(original) {
-		t.Fatal("equal target sets must compare equal")
-	}
-	changed := original
-	changed.ReferencedClusters = map[string]struct{}{"new": {}}
-	if original.Equals(changed) || changed.Equals(original) {
-		t.Fatal("routing target changes must reach publication even with equal resource versions")
-	}
-}
 
 func TestPublicationRetainsOnlySupportedBootstrapEndpoints(t *testing.T) {
 	for _, knowsLocal := range []bool{false, true} {

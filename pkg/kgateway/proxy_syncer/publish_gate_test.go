@@ -53,10 +53,12 @@ func deferredWrapperV(version string) XdsSnapWrapper {
 }
 
 // deferredMissingEndpointsWrapperV builds a deferred wrapper whose only gap is
-// a referenced cluster with no derived CLA — the steady-state shape of an
-// ExternalName backend (#14352): every referenced cluster is present in CDS,
-// but one's ClusterLoadAssignment was never derived (a synthesized empty
-// stands in).
+// a referenced cluster with no derived CLA — the steady-state shape of an EDS
+// cluster whose plugin has no endpoints source, such as an AWS EC2 Backend with
+// discovery disabled (#14352): every referenced cluster is present in CDS, but
+// one's ClusterLoadAssignment was never derived (a synthesized empty stands
+// in). A Service without EndpointSlices, ExternalName included, derives an
+// empty CLA instead and is not a gap at all.
 func deferredMissingEndpointsWrapperV(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
@@ -137,9 +139,9 @@ func TestFirstPublish_PriorXDSVersionClientStaysWithheld(t *testing.T) {
 }
 
 // A warm client whose only gaps are clusters with no derived CLA publishes at
-// budget expiry: that gap is the backends' steady state (ExternalName —
-// #14352), and withholding would freeze the client's config indefinitely
-// after a controller restart.
+// budget expiry: that gap has no convergence guarantee (#14352), and
+// withholding would freeze the client's config indefinitely after a
+// controller restart.
 func TestFirstPublish_WarmClientPublishesEndpointTruthAtBudget(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, 50*time.Millisecond)
 

@@ -3,7 +3,6 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 	"strconv"
 	"sync/atomic"
@@ -87,7 +86,9 @@ type GatewayXdsResources struct {
 	// Listeners are items in the LDS response payload.
 	Listeners envoycache.Resources
 
-	// ReferencedClusters contains dataplane targets scanned from Routes and Listeners.
+	// ReferencedClusters are the routing targets of Routes and Listeners (see
+	// collectReferencedClusters).
+	// +noKrtEquals derived from Routes and Listeners, whose content-hash versions Equals compares
 	ReferencedClusters map[string]struct{}
 
 	// Secrets are items in the SDS response payload.
@@ -103,7 +104,7 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version &&
 		r.Listeners.Version == in.Listeners.Version &&
-		r.Secrets.Version == in.Secrets.Version && maps.Equal(r.ReferencedClusters, in.ReferencedClusters)
+		r.Secrets.Version == in.Secrets.Version
 }
 
 // GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
