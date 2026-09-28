@@ -3,6 +3,8 @@ package proxy_syncer
 import (
 	"context"
 	"errors"
+	"maps"
+	"slices"
 	"testing"
 	"time"
 
@@ -13,9 +15,9 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoygrpcaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-	envoyextauthzv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoydiscoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -136,7 +138,7 @@ func TestFilterEndpointResourcesForClusters_FiltersStaticClusterCLAs(t *testing.
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-cluster"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 endpoint resource, got %d", len(out.Items))
@@ -161,7 +163,7 @@ func TestFilterEndpointResourcesForClusters_ReturnsOriginalWhenNoFiltering(t *te
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-only"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 endpoint resource, got %d", len(out.Items))
@@ -182,7 +184,7 @@ func TestFilterEndpointResourcesForClusters_EmptyClustersAndEndpoints(t *testing
 	emptyClusters := envoycache.NewResourcesWithTTL("v1", nil)
 	emptyEndpoints := envoycache.NewResourcesWithTTL("v1", nil)
 
-	out, _ := filterEndpointResourcesForClusters(emptyClusters, emptyEndpoints)
+	out, _ := filterEndpointResourcesForClusters(emptyClusters, emptyEndpoints, "")
 
 	if len(out.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(out.Items))
@@ -195,7 +197,7 @@ func TestFilterEndpointResourcesForClusters_EmptyClustersNonEmptyEndpoints(t *te
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "any"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(emptyClusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(emptyClusters, endpoints, "")
 
 	if len(out.Items) != 0 {
 		t.Fatalf("expected no endpoint resources when no EDS clusters are emitted, got %d", len(out.Items))
@@ -208,7 +210,7 @@ func TestFilterEndpointResourcesForClusters_EmptyEndpoints(t *testing.T) {
 	})
 	emptyEndpoints := envoycache.NewResourcesWithTTL("v1", nil)
 
-	out, _ := filterEndpointResourcesForClusters(clusters, emptyEndpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, emptyEndpoints, "")
 
 	if len(out.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(out.Items))
@@ -230,7 +232,7 @@ func TestFilterEndpointResourcesForClusters_MixedStaticAndNonStatic(t *testing.T
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-b"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
 
 	if len(out.Items) != 2 {
 		t.Fatalf("expected 2 endpoint resources (eds-a, eds-b), got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -258,7 +260,7 @@ func TestFilterEndpointResourcesForClusters_FiltersStaleClusterLoadAssignments(t
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "cluster-b"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected only the CLA required by CDS, got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -291,7 +293,7 @@ func TestFilterEndpointResourcesForClusters_UsesEDSServiceName(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "service-a"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints)
+	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected only the service-name CLA required by CDS, got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -1331,12 +1333,10 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 // TestCollectReferencedClusters_ExcludesAncillaryReferences verifies that
 // cluster names reachable only through ancillary / control-plane
 // typed_config (access-log GrpcService, JWT jwks HttpUri, etc.) are
-// deliberately NOT treated as gated dataplane targets. The plugin that
-// emits these filters is responsible for also emitting the referenced
-// cluster in the same per-gateway snapshot's ExtraClusters, so there is
-// no reconnect race between them. Gating on ancillary references would
-// starve the gateway forever on a plugin bug — which is not what this
-// readiness guard is for.
+// deliberately NOT treated as gated dataplane targets. Those clusters are
+// ordinary backends that can lag like any other, but holding every route
+// update of the gateway behind one side service is not what this readiness
+// guard is for.
 func TestCollectReferencedClusters_ExcludesAncillaryReferences(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -1411,59 +1411,6 @@ func TestCollectReferencedClusters_ExcludesAncillaryReferences(t *testing.T) {
 		"ancillary access-log cluster must not be treated as a gated dataplane target")
 	g.Expect(referenced).ToNot(gomega.HaveKey("jwks-cluster"),
 		"ancillary JWT jwks cluster must not be treated as a gated dataplane target")
-}
-
-// TestFindMissingReferencedClusters_HandlesScalarValueMaps verifies that the
-// protoreflect walker does not panic when it encounters a proto field of type
-// map<string, scalar> (e.g. map<string, string>). Without the IsMap/IsList
-// guard on the fall-through branch, such fields fall through to a code path
-// that calls v.Message() on a Map-kind Value and panics with
-// "type mismatch: cannot convert map to message".
-func TestFindMissingReferencedClusters_HandlesScalarValueMaps(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	hcm := &envoyhttpv3.HttpConnectionManager{
-		HttpFilters: []*envoyhttpv3.HttpFilter{
-			{
-				Name: "envoy.filters.http.ext_authz",
-				ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{
-					TypedConfig: mustMessageToAny(t, &envoyextauthzv3.ExtAuthzPerRoute{
-						Override: &envoyextauthzv3.ExtAuthzPerRoute_CheckSettings{
-							CheckSettings: &envoyextauthzv3.CheckSettings{
-								ContextExtensions: map[string]string{
-									"key1": "value1",
-									"key2": "value2",
-								},
-							},
-						},
-					}),
-				},
-			},
-		},
-	}
-
-	listeners := sliceToResources([]*envoylistenerv3.Listener{
-		{
-			Name: "listener",
-			FilterChains: []*envoylistenerv3.FilterChain{
-				{
-					Filters: []*envoylistenerv3.Filter{
-						{
-							Name: envoywellknown.HTTPConnectionManager,
-							ConfigType: &envoylistenerv3.Filter_TypedConfig{
-								TypedConfig: mustMessageToAny(t, hcm),
-							},
-						},
-					},
-				},
-			},
-		},
-	})
-
-	g.Expect(func() {
-		referenced := collectReferencedClusters(envoycache.Resources{}, listeners)
-		findMissingReferencedClusters(referenced, nil, nil)
-	}).ToNot(gomega.Panic())
 }
 
 // TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef verifies that
@@ -2052,5 +1999,141 @@ func assertSnapshotCoherent(t *testing.T, snap *envoycache.Snapshot) {
 		if _, ok := clusters[name]; !ok {
 			t.Fatalf("route/listener references cluster %q absent from CDS", name)
 		}
+	}
+}
+
+// TestCollectReferencedClusters_ListenerTargets covers the listener side of the
+// walk: TCP proxies in filter chains and in the default filter chain, and route
+// configurations inlined in an HTTP connection manager. A manager using RDS
+// contributes through the route configurations, not the listener.
+func TestCollectReferencedClusters_ListenerTargets(t *testing.T) {
+	g := gomega.NewWithT(t)
+	tcpFilter := func(tcp *envoytcpv3.TcpProxy) *envoylistenerv3.Filter {
+		return &envoylistenerv3.Filter{
+			Name:       envoywellknown.TCPProxy,
+			ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustMessageToAny(t, tcp)},
+		}
+	}
+	inline := &envoyhttpv3.HttpConnectionManager{
+		RouteSpecifier: &envoyhttpv3.HttpConnectionManager_RouteConfig{
+			RouteConfig: routeResourcesForClusters("inline-target").Items["route-config"].Resource.(*envoyroutev3.RouteConfiguration),
+		},
+	}
+	listeners := sliceToResources([]*envoylistenerv3.Listener{
+		{
+			Name: "tcp",
+			FilterChains: []*envoylistenerv3.FilterChain{{
+				Filters: []*envoylistenerv3.Filter{tcpFilter(&envoytcpv3.TcpProxy{
+					StatPrefix:       "tcp",
+					ClusterSpecifier: &envoytcpv3.TcpProxy_Cluster{Cluster: "tcp-target"},
+				})},
+			}},
+			DefaultFilterChain: &envoylistenerv3.FilterChain{
+				Filters: []*envoylistenerv3.Filter{tcpFilter(&envoytcpv3.TcpProxy{
+					StatPrefix: "weighted",
+					ClusterSpecifier: &envoytcpv3.TcpProxy_WeightedClusters{WeightedClusters: &envoytcpv3.TcpProxy_WeightedCluster{
+						Clusters: []*envoytcpv3.TcpProxy_WeightedCluster_ClusterWeight{{Name: "weighted-a", Weight: 1}, {Name: "weighted-b", Weight: 1}},
+					}},
+				})},
+			},
+		},
+		{
+			Name: "http-inline",
+			FilterChains: []*envoylistenerv3.FilterChain{{
+				Filters: []*envoylistenerv3.Filter{{
+					Name:       envoywellknown.HTTPConnectionManager,
+					ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustMessageToAny(t, inline)},
+				}},
+			}},
+		},
+		httpListenerWithRDS(t, "http-rds", "route-config"),
+	})
+
+	referenced := collectReferencedClusters(weightedRouteResourcesForClusters("rds-a", "rds-b"), listeners)
+	g.Expect(referenced).To(gomega.Equal(map[string]struct{}{
+		"tcp-target": {}, "weighted-a": {}, "weighted-b": {}, "inline-target": {}, "rds-a": {}, "rds-b": {},
+	}))
+}
+
+// The EDS version is the input's whenever nothing is dropped or synthesized, and
+// otherwise changes with the dropped and synthesized names, so a client is
+// pushed every change in what is published without hashing any CLA.
+func TestFilterEndpointResourcesForClusters_VersionTracksPublishedSet(t *testing.T) {
+	g := gomega.NewWithT(t)
+	edsCluster := func(name string) envoycachetypes.ResourceWithTTL {
+		return envoycachetypes.ResourceWithTTL{Resource: &envoyclusterv3.Cluster{Name: name, ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}}
+	}
+	endpoints := envoycache.NewResourcesWithTTL("input", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "a"}},
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "b"}},
+	})
+	versionFor := func(clusters ...string) string {
+		items := make([]envoycachetypes.ResourceWithTTL, 0, len(clusters))
+		for _, name := range clusters {
+			items = append(items, edsCluster(name))
+		}
+		out, _ := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", items), endpoints, "")
+		return out.Version
+	}
+
+	g.Expect(versionFor("a", "b")).To(gomega.Equal("input"), "nothing filtered: the input version is kept")
+	dropB, dropA, synthesizeC := versionFor("a"), versionFor("b"), versionFor("a", "b", "c")
+	g.Expect([]string{dropB, dropA, synthesizeC}).ToNot(gomega.ContainElement("input"))
+	g.Expect(dropB).ToNot(gomega.Equal(dropA), "dropping a different CLA must change the version")
+	g.Expect(synthesizeC).ToNot(gomega.Equal(dropB))
+	g.Expect(versionFor("a")).To(gomega.Equal(dropB), "the version is deterministic")
+}
+
+// The filter publishes exactly one CLA per EDS cluster (plus the bootstrap
+// one), whichever path it takes: the allocation-free check for the common case
+// must agree with the general path, including in the cases it hands over.
+func TestFilterEndpointResourcesForClusters_PublishesRequiredSet(t *testing.T) {
+	eds := func(name, serviceName string) envoycachetypes.ResourceWithTTL {
+		c := &envoyclusterv3.Cluster{Name: name, ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}
+		if serviceName != "" {
+			c.EdsClusterConfig = &envoyclusterv3.Cluster_EdsClusterConfig{ServiceName: serviceName}
+		}
+		return envoycachetypes.ResourceWithTTL{Resource: c}
+	}
+	static := func(name string) envoycachetypes.ResourceWithTTL {
+		return envoycachetypes.ResourceWithTTL{Resource: &envoyclusterv3.Cluster{Name: name, ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}}}
+	}
+	assignments := func(names ...string) envoycache.Resources {
+		items := make([]envoycachetypes.ResourceWithTTL, 0, len(names))
+		for _, name := range names {
+			items = append(items, envoycachetypes.ResourceWithTTL{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: name}})
+		}
+		return envoycache.NewResourcesWithTTL("input", items)
+	}
+	for _, tc := range []struct {
+		name            string
+		clusters        []envoycachetypes.ResourceWithTTL
+		endpoints       envoycache.Resources
+		bootstrap       string
+		wantPublished   []string
+		wantSynthesized []string
+	}{
+		{name: "matching", clusters: []envoycachetypes.ResourceWithTTL{eds("a", ""), eds("b", "")}, endpoints: assignments("a", "b"), wantPublished: []string{"a", "b"}},
+		{name: "empty", endpoints: assignments()},
+		{name: "bootstrap present", clusters: []envoycachetypes.ResourceWithTTL{eds("a", "")}, endpoints: assignments("a", "local"), bootstrap: "local", wantPublished: []string{"a", "local"}},
+		{name: "bootstrap absent", clusters: []envoycachetypes.ResourceWithTTL{eds("a", "")}, endpoints: assignments("a"), bootstrap: "local", wantPublished: []string{"a", "local"}, wantSynthesized: []string{"local"}},
+		{name: "bootstrap not subscribed", clusters: []envoycachetypes.ResourceWithTTL{eds("a", "")}, endpoints: assignments("a", "local"), wantPublished: []string{"a"}},
+		{name: "static cluster CLA", clusters: []envoycachetypes.ResourceWithTTL{eds("a", ""), static("s")}, endpoints: assignments("a", "s"), wantPublished: []string{"a"}},
+		{name: "missing CLA", clusters: []envoycachetypes.ResourceWithTTL{eds("a", ""), eds("b", "")}, endpoints: assignments("a"), wantPublished: []string{"a", "b"}, wantSynthesized: []string{"b"}},
+		{name: "extra CLA with as many items", clusters: []envoycachetypes.ResourceWithTTL{eds("a", ""), eds("b", "")}, endpoints: assignments("a", "orphan"), wantPublished: []string{"a", "b"}, wantSynthesized: []string{"b"}},
+		{name: "service name alias", clusters: []envoycachetypes.ResourceWithTTL{eds("a", "svc-a")}, endpoints: assignments("svc-a"), wantPublished: []string{"svc-a"}},
+		{name: "unnamed CLA", clusters: []envoycachetypes.ResourceWithTTL{eds("a", "")}, endpoints: assignments(""), wantPublished: []string{"a"}, wantSynthesized: []string{"a"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g := gomega.NewWithT(t)
+			out, synthesized := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", tc.clusters), tc.endpoints, tc.bootstrap)
+			g.Expect(slices.Sorted(maps.Keys(out.Items))).To(gomega.Equal(tc.wantPublished))
+			g.Expect(slices.Sorted(maps.Keys(synthesized))).To(gomega.Equal(tc.wantSynthesized))
+			if len(tc.wantSynthesized) == 0 && len(tc.wantPublished) == len(tc.endpoints.Items) {
+				g.Expect(out.Version).To(gomega.Equal(tc.endpoints.Version), "an unfiltered set keeps the input version")
+			} else {
+				g.Expect(out.Version).ToNot(gomega.Equal(tc.endpoints.Version))
+			}
+		})
 	}
 }
