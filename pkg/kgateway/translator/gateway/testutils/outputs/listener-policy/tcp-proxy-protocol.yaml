@@ -23,7 +23,7 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: kube_default_tcp-svc_8000
-        statPrefix: listener~8000-default.example-tcp-route-rule-0
+        statPrefix: listener~8000-default_example-tcp-route-rule-0
     name: listener~8000-default.example-tcp-route-rule-0
   listenerFilters:
   - name: envoy.filters.listener.proxy_protocol

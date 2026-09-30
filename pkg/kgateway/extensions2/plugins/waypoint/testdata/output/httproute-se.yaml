@@ -64,7 +64,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: fc_http_5000_se-a_infra
-        statPrefix: http
+        statPrefix: fc_http_5000_se-a_infra
         useRemoteAddress: true
     name: fc_http_5000_se-a_infra
   - filterChainMatch:
@@ -97,7 +97,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: fc_http_9000_se-b_infra
-        statPrefix: http
+        statPrefix: fc_http_9000_se-b_infra
         useRemoteAddress: true
     name: fc_http_9000_se-b_infra
   listenerFilters:

@@ -26,7 +26,7 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: kube_default_example-tls-svc_443
-        statPrefix: listener~8444-default.example-tls-route-rule-0
+        statPrefix: listener~8444-default_example-tls-route-rule-0
     name: listener~8444-default.example-tls-route-rule-0
     transportSocket:
       name: envoy.transport_sockets.tls
