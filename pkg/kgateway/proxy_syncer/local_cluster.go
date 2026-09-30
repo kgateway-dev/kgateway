@@ -74,6 +74,7 @@ func NewPerClientLocalClusterEndpoints(
 			Client:        ucc,
 			Endpoints:     sharedproto.Wrap(cla),
 			EndpointsHash: hashLocalClusterLoadAssignment(cla),
+			ContentHash:   contentHashOf(cla),
 			endpointsName: localClusterName,
 			resourceName:  uccEndpointsResourceName(ucc, localClusterName),
 		}
