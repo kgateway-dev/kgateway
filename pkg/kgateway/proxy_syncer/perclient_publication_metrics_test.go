@@ -136,7 +136,7 @@ func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	pt := NewProxyTranslator(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), nil, 0, true)
+	pt := NewProxyTranslator(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), nil, 0, true, clusterScoping{})
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("e1", []envoycachetypes.ResourceWithTTL{
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "orphan"}},
