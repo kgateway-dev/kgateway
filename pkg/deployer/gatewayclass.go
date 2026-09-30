@@ -45,9 +45,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 			features.TLSRouteModeMixedFeature,
 		)
 	}
-	for _, feature := range features.UDPRouteFeatures.UnsortedList() {
-		exemptFeatures.Insert(feature)
-	}
 
 	return getSupportedFeatures(exemptFeatures)
 }

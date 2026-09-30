@@ -520,6 +520,23 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					namesOld = append(namesOld, string(pr.Name))
 				}
 			}
+		case *gwv1.UDPRoute:
+			resourceType = "UDPRoute"
+			resourceName = obj.Name
+			namespace = obj.Namespace
+			names = make([]string, 0, len(obj.Spec.ParentRefs))
+			for _, pr := range obj.Spec.ParentRefs {
+				names = append(names, string(pr.Name))
+			}
+
+			if clientObjectOld != nil {
+				oldObj := clientObjectOld.(*gwv1.UDPRoute)
+				namespaceOld = oldObj.Namespace
+				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
+				for _, pr := range oldObj.Spec.ParentRefs {
+					namesOld = append(namesOld, string(pr.Name))
+				}
+			}
 		case *gwv1.GRPCRoute:
 			resourceType = "GRPCRoute"
 			resourceName = obj.Name

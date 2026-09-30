@@ -62,6 +62,10 @@ type CommonCollections struct {
 	RawGRPCRoutes   krt.Collection[*gwv1.GRPCRoute]
 	RawTCPRoutes    krt.Collection[*gwv1a2.TCPRoute]
 	RawTLSRoutes    krt.Collection[*gwv1a2.TLSRoute]
+	RawUDPRoutes    krt.Collection[*gwv1.UDPRoute]
+	// ResolvedUDPRoutes carries UDPRoutes with backends already resolved, used to build the
+	// weighted synthetic clusters for multi-backend UDPRoutes.
+	ResolvedUDPRoutes krt.Collection[ir.UdpRouteIR]
 
 	// tcpRouteWriteGVRs and tlsRouteWriteGVRs identify the served API versions status
 	// writes may go through, most preferred first, resolved from CRD discovery at startup.

@@ -155,7 +155,8 @@ Statuses:
     default/foo-listenerset:
       conditions:
       - lastTransitionTime: null
-        message: ""
+        message: 'Some listeners are not programmed: udp-9091: invalid port 9091 in
+          listener: port is reserved'
         reason: ListenersNotValid
         status: "True"
         type: Accepted
@@ -196,23 +197,26 @@ Statuses:
       - attachedRoutes: 0
         conditions:
         - lastTransitionTime: null
-          message: Protocol UDP is unsupported.
-          reason: UnsupportedProtocol
+          message: 'invalid port 9091 in listener: port is reserved'
+          reason: Invalid
+          status: "True"
+          type: Conflicted
+        - lastTransitionTime: null
+          message: 'invalid port 9091 in listener: port is reserved'
+          reason: Invalid
           status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Successfully verified that Listener has no conflicts
-          reason: NoConflicts
+          message: 'invalid port 9091 in listener: port is reserved'
+          reason: Invalid
           status: "False"
-          type: Conflicted
+          type: Programmed
         - lastTransitionTime: null
           message: Successfully resolved all references
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Successfully programmed Listener
-          reason: Programmed
-          status: "True"
-          type: Programmed
         name: udp-9091
+        supportedKinds:
+        - group: gateway.networking.k8s.io
+          kind: UDPRoute
