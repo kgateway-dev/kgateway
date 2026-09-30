@@ -74,6 +74,12 @@ Clusters:
           - matcher:
               exact: api.example.com
             sanType: DNS
+          - matcher:
+              exact: spiffe://example.org/ns/default/sa/backend
+            sanType: URI
+          - matcher:
+              exact: 10.0.0.1
+            sanType: IP_ADDRESS
           trustedCa:
             inlineString: |
               -----BEGIN CERTIFICATE-----
