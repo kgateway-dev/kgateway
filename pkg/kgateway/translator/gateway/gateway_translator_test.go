@@ -3996,6 +3996,12 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
+			name:      "BackendConfigPolicy Invalid CA Certificate",
+			category:  "backendconfigpolicy",
+			inputFile: "invalid-ca-cert.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
+		{
 			name:      "BackendConfigPolicy Invalid Cipher Suites",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-cipher-suites.yaml",
