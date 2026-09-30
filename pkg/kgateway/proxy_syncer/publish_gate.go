@@ -99,6 +99,11 @@ type publishGate struct {
 	// once at construction.
 	dereferenceGrace time.Duration
 
+	// referenceAhead is how long a route update onto a newly-emitted cluster is
+	// held so the cluster lands first; 0 disables the hold. Only non-zero when CDS
+	// is scoped. Written once at construction.
+	referenceAhead time.Duration
+
 	mu           sync.Mutex
 	pending      map[string]*pendingFirstPublish
 	pendingFlips map[string]*pendingFlipRelease
@@ -130,6 +135,7 @@ func newPublishGate(budget time.Duration, checkConsistency bool, scoping cluster
 		budget:           budget,
 		checkConsistency: checkConsistency,
 		dereferenceGrace: scoping.DereferenceGrace(),
+		referenceAhead:   scoping.ReferenceAhead(),
 		pending:          make(map[string]*pendingFirstPublish),
 		pendingFlips:     make(map[string]*pendingFlipRelease),
 		dereferenced:     make(map[string]*dereferenceState),
@@ -221,7 +227,7 @@ func (g *publishGate) resolveDeferred(
 	if len(heldBlocking) > 0 {
 		// The held snapshot still publishes (CDS/EDS keep flowing); the
 		// gate additionally arms the flip-release bound for the episode.
-		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, false)
 	} else {
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved)
 	}
@@ -342,23 +348,35 @@ func (g *publishGate) publishHeldLocked(
 	snapWrap XdsSnapWrapper,
 	held *envoycache.Snapshot,
 	blocking []string,
+	referenceAheadOnly bool,
 ) error {
 	proxyKey := snapWrap.proxyKey
 	if err := g.setSnapshot(ctx, cache, proxyKey, held); err != nil {
 		return err
 	}
-	if g.budget <= 0 {
+	// A reference-ahead hold releases on its own short window rather than the
+	// publish budget. The budget is a safety bound on a reference that may never
+	// become ready; this hold is waiting on delivery of a cluster that is
+	// already built, which takes a round trip, not a backend coming up. Pacing
+	// it at the budget would charge every retarget onto a new destination the
+	// full unready-backend deadline.
+	release := g.budget
+	if referenceAheadOnly && g.referenceAhead > 0 && (g.budget <= 0 || g.referenceAhead < g.budget) {
+		release = g.referenceAhead
+	}
+	if release <= 0 {
 		return nil // bound disabled: hold until the flip resolves
 	}
 	pf := g.pendingFlips[proxyKey]
 	if pf == nil {
 		pf = &pendingFlipRelease{}
 		g.pendingFlips[proxyKey] = pf
-		pf.timer = time.AfterFunc(g.budget, func() {
+		pf.timer = time.AfterFunc(release, func() {
 			g.fireFlipRelease(ctx, cache, proxyKey)
 		})
-		logger.Info("holding route flip; will release at budget expiry if still unready",
-			"proxy_key", proxyKey, "budget", g.budget, "flip_blocking", blocking)
+		logger.Info("holding route flip; will release at expiry if still unready",
+			"proxy_key", proxyKey, "release_in", release,
+			"reference_ahead_only", referenceAheadOnly, "flip_blocking", blocking)
 	}
 	pf.wrap = snapWrap
 	pf.blocking = blocking
