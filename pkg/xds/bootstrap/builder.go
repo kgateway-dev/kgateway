@@ -41,6 +41,7 @@ yitqAQ59a80qeeQ8i3nAI5clnJtfDYwZV6gIO72hygBWWE5FMjWzGPCE
 
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
+	routeConfig   *envoyroutev3.RouteConfiguration
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
@@ -64,6 +65,13 @@ func (b *ConfigBuilder) AddFilterConfig(name string, config proto.Message) {
 // AddRoute adds a route to the builder.
 func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
 	b.routes = append(b.routes, route)
+}
+
+// SetRouteConfiguration supplies the complete configuration to validate, preserving
+// virtual-host and route-configuration fields. It takes precedence over AddRoute
+// and AddFilterConfig, which build a synthetic virtual host for partial validation.
+func (b *ConfigBuilder) SetRouteConfiguration(config *envoyroutev3.RouteConfiguration) {
+	b.routeConfig = config
 }
 
 // AddCluster adds a cluster to the builder.
@@ -149,13 +157,15 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	if len(b.routes) > 0 {
 		vhost.Routes = b.routes
 	}
+	routeConfig := b.routeConfig
+	if routeConfig == nil {
+		routeConfig = &envoyroutev3.RouteConfiguration{VirtualHosts: []*envoyroutev3.VirtualHost{vhost}}
+	}
 
 	hcm := &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 		StatPrefix: "placeholder",
 		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoyroutev3.RouteConfiguration{
-				VirtualHosts: []*envoyroutev3.VirtualHost{vhost},
-			},
+			RouteConfig: routeConfig,
 		},
 	}
 
