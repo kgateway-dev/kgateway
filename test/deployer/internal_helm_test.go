@@ -158,6 +158,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"envoy bootstrap local cluster should use EDS for multi-zone locality distribution")
 				assert.Contains(t, outputYaml, "eds_cluster_config:",
 					"envoy bootstrap local cluster should request endpoints over ADS")
+				assert.NotContains(t, outputYaml, "overload_manager:",
+					"envoy bootstrap should not configure a downstream connection limit unless opted in")
 			},
 		},
 		{
@@ -236,6 +238,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		{
 			Name:      "envoy dns resolver disable",
 			InputFile: "envoy-dns-resolver-zero",
+		},
+		{
+			Name:      "envoy max downstream connections override",
+			InputFile: "envoy-max-downstream-connections",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.resource_monitors.global_downstream_max_connections",
+					"bootstrap should configure the global downstream max connections resource monitor")
+				assert.Contains(t, outputYaml, "max_active_downstream_connections: 5000",
+					"maxDownstreamConnections from GatewayParameters should be rendered")
+			},
 		},
 		{
 			Name:      "envoy readiness listener proxy protocol",

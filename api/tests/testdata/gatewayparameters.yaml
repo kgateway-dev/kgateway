@@ -1,0 +1,31 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: max-downstream-connections-valid
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        maxDownstreamConnections: 1
+---
+_err: should be greater than or equal to 1
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: max-downstream-connections-zero
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        maxDownstreamConnections: 0
+---
+_err: should be greater than or equal to 1
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: max-downstream-connections-negative
+spec:
+  kube:
+    envoyContainer:
+      bootstrap:
+        maxDownstreamConnections: -1

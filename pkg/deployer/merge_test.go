@@ -675,3 +675,45 @@ func TestDeepMergeSecurityContextWindowsOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestDeepMergeEnvoyBootstrapMaxDownstreamConnections(t *testing.T) {
+	tests := []struct {
+		name string
+		dst  *kgateway.EnvoyBootstrap
+		src  *kgateway.EnvoyBootstrap
+		want *int64
+	}{
+		{
+			name: "nil src keeps dst",
+			dst:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(10000))},
+			src:  &kgateway.EnvoyBootstrap{},
+			want: new(int64(10000)),
+		},
+		{
+			name: "src overrides dst",
+			dst:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(10000))},
+			src:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(5000))},
+			want: new(int64(5000)),
+		},
+		{
+			name: "src populates empty dst",
+			dst:  &kgateway.EnvoyBootstrap{},
+			src:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(5000))},
+			want: new(int64(5000)),
+		},
+		{
+			name: "both unset stays unset",
+			dst:  &kgateway.EnvoyBootstrap{},
+			src:  &kgateway.EnvoyBootstrap{},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deepMergeEnvoyBootstrap(tt.dst, tt.src)
+			assert.Equal(t, tt.want, got.GetMaxDownstreamConnections(),
+				"maxDownstreamConnections should follow src-wins-when-set semantics")
+		})
+	}
+}
