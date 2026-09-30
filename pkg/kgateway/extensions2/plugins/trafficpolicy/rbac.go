@@ -152,8 +152,9 @@ func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1al
 		TypedConfig: celMatchInput,
 	}
 
-	// Create parsed expression
-	env, err := cel.NewEnv()
+	// Validate against the Envoy HTTP CEL attributes exposed by the matcher.
+	// Keep these attributes dynamic because their exact runtime shape is owned by Envoy.
+	env, err := newRBACCELValidationEnv()
 	if err != nil {
 		logger.Error("failed to create CEL environment", "err", err.Error())
 		return nil, err
@@ -164,7 +165,7 @@ func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1al
 		// Single expression - use SinglePredicate
 		celDevParsed, err := parseCELExpression(env, celExprs[0])
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse CEL expression: %w", err)
+			return nil, fmt.Errorf("failed to validate CEL expression: %w", err)
 		}
 
 		matcher := &cncfmatcherv3.CelMatcher{
@@ -198,7 +199,7 @@ func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1al
 		for _, celExpr := range celExprs {
 			celDevParsed, err := parseCELExpression(env, celExpr)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse CEL expression: %w", err)
+				return nil, fmt.Errorf("failed to validate CEL expression: %w", err)
 			}
 
 			matcher := &cncfmatcherv3.CelMatcher{
@@ -251,6 +252,16 @@ func createCELMatcher(celExprs []sharedv1alpha1.CELExpression, action sharedv1al
 		Predicate: predicate,
 		OnMatch:   onMatchAction,
 	}, nil
+}
+
+func newRBACCELValidationEnv() (*cel.Env, error) {
+	return cel.NewEnv(
+		cel.Variable("request", cel.DynType),
+		cel.Variable("source", cel.DynType),
+		cel.Variable("destination", cel.DynType),
+		cel.Variable("connection", cel.DynType),
+		cel.Variable("metadata", cel.DynType),
+	)
 }
 
 func createMatchAction(action envoyrbacv3.RBAC_Action) *cncfmatcherv3.Matcher_OnMatch {
@@ -306,10 +317,10 @@ func parseCELExpression(env *cel.Env, celExpr sharedv1alpha1.CELExpression) (*ex
 		return nil, errors.New("CEL environment is nil")
 	}
 
-	ast, iss := env.Parse(string(celExpr))
+	ast, iss := env.Compile(string(celExpr))
 	if iss.Err() != nil {
-		logger.Error("parse error", "err", iss.Err())
-		return nil, iss.Err()
+		logger.Error("invalid RBAC CEL expression", "err", iss.Err())
+		return nil, fmt.Errorf("invalid RBAC CEL expression %q: %w", celExpr, iss.Err())
 	}
 
 	parsedExpr, err := cel.AstToParsedExpr(ast)
