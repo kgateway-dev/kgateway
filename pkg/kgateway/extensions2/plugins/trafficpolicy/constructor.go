@@ -104,7 +104,9 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 		errors = append(errors, err)
 	}
 	// Construct local rate limit specific IR
-	constructLocalRateLimit(policyCR, &outSpec)
+	if err := constructLocalRateLimit(policyCR, &outSpec); err != nil {
+		errors = append(errors, err)
+	}
 	// Construct global rate limit specific IR
 	if err := constructGlobalRateLimit(krtctx, policyCR, c.FetchGatewayExtension, &outSpec); err != nil {
 		errors = append(errors, err)

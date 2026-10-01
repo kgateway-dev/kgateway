@@ -476,6 +476,7 @@ type RateLimit struct {
 
 // LocalRateLimitPolicy configures local rate limiting using a token bucket.
 // +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"
+// +kubebuilder:validation:XValidation:rule="!has(self.descriptors) || has(self.tokenBucket)",message="descriptors require tokenBucket to be set"
 type LocalRateLimitPolicy struct {
 	// TokenBucket configures the local rate limiter's token bucket.
 	// +optional
@@ -504,6 +505,43 @@ type LocalRateLimitPolicy struct {
 	// Defaults to false.
 	// +optional
 	ShareAcrossGateway *bool `json:"shareAcrossGateway,omitempty"`
+
+	// Descriptors define additional rate limit buckets selected from request attributes.
+	// A request descriptor must match all entries in the configured order to use the
+	// descriptor's token bucket. If no descriptor matches, the default TokenBucket is used.
+	//
+	// Header, RemoteAddress, and Path entries create a separate dynamic token bucket for
+	// each distinct value observed at runtime. Generic entries use their configured static
+	// key and value.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	Descriptors []LocalRateLimitDescriptor `json:"descriptors,omitempty"`
+
+	// AlwaysConsumeDefaultTokenBucket determines whether the default TokenBucket is also
+	// consumed when a descriptor matches. It defaults to true. When false, the default
+	// TokenBucket is only consumed when no descriptor matches.
+	// +optional
+	AlwaysConsumeDefaultTokenBucket *bool `json:"alwaysConsumeDefaultTokenBucket,omitempty"`
+
+	// MaxDynamicDescriptors is the maximum number of dynamic token buckets kept in the
+	// least-recently-used cache for each wildcard descriptor. It defaults to 20.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxDynamicDescriptors *int32 `json:"maxDynamicDescriptors,omitempty"`
+}
+
+// LocalRateLimitDescriptor defines a request descriptor and the local token bucket
+// to use when all descriptor entries match.
+type LocalRateLimitDescriptor struct {
+	// Entries are the individual components that make up this descriptor.
+	// Entries are matched in the configured order.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	Entries []RateLimitDescriptorEntry `json:"entries"`
+
+	// TokenBucket is the rate limit applied to requests matching this descriptor.
+	// +required
+	TokenBucket TokenBucket `json:"tokenBucket"`
 }
 
 // TokenBucket configures the burst capacity and refill rate of a token bucket.
@@ -574,7 +612,7 @@ const (
 	RateLimitDescriptorEntryTypePath RateLimitDescriptorEntryType = "Path"
 )
 
-// RateLimitDescriptorEntry defines a single entry in a rate limit descriptor.
+// RateLimitDescriptorEntry defines a single entry used to generate a rate limit descriptor.
 // Only one entry type may be specified.
 // +kubebuilder:validation:XValidation:message="exactly one entry type must be specified",rule="(has(self.type) && (self.type == 'Generic' && has(self.generic) && !has(self.header)) || (self.type == 'Header' && has(self.header) && !has(self.generic)) || (self.type == 'RemoteAddress' && !has(self.generic) && !has(self.header)) || (self.type == 'Path' && !has(self.generic) && !has(self.header)))"
 type RateLimitDescriptorEntry struct {
