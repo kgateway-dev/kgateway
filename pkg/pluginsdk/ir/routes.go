@@ -26,14 +26,16 @@ var _ Route = &HttpRouteIR{}
 type HttpRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject metav1.Object
-	// +krtEqualsTodo compare parent refs when determining equality
+	// Verbatim copy of SourceObject's spec.parentRefs, so the versionEquals(SourceObject)
+	// check in Equals (generation, labels, annotations, UID) already observes any change.
+	// +noKrtEquals
 	ParentRefs []gwv1.ParentReference
 
-	// +krtEqualsTodo ensure hostname list differences are observed
+	// Verbatim copy of SourceObject's spec.hostnames; see ParentRefs above.
+	// +noKrtEquals
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
-	// +krtEqualsTodo include rule array comparisons (beyond versionEquals) or annotate why not
-	Rules []HttpRouteRuleIR
+	Rules            []HttpRouteRuleIR
 
 	// PrecedenceWeight specifies the weight of this route relative to other route.
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
@@ -75,27 +77,29 @@ func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
-		c.rulesEqual(in) &&
+		rulesEqual(c.Rules, in.Rules) &&
 		c.PrecedenceWeight == in.PrecedenceWeight &&
 		c.DelegationInheritParentMatcher == in.DelegationInheritParentMatcher
 }
 
-func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
-	// we don't need to check the rules themselves as this is covered by versionEquals.
-	// we do need to check backends and policies
-	// we also need to check the error on rule
-	if len(c.Rules) != len(in.Rules) {
+// rulesEqual compares the parts of the route rules that are not already covered by the
+// versionEquals(SourceObject) check in Equals. Fields copied straight out of the route spec
+// (Matches, Name, ...) change only when the source object's generation changes, so what is
+// left to compare here is everything resolved from *other* objects: attached policies,
+// extensionRef policies, resolved backends, and the per-rule resolution error.
+func rulesEqual(a, b []HttpRouteRuleIR) bool {
+	if len(a) != len(b) {
 		return false
 	}
-	for i, rule := range c.Rules {
-		if !rule.AttachedPolicies.Equals(in.Rules[i].AttachedPolicies) {
+	for i, rule := range a {
+		if !rule.AttachedPolicies.Equals(b[i].AttachedPolicies) {
 			return false
 		}
-		if !rule.ExtensionRefs.Equals(in.Rules[i].ExtensionRefs) {
+		if !rule.ExtensionRefs.Equals(b[i].ExtensionRefs) {
 			return false
 		}
 		backendsa := rule.Backends
-		backendsb := in.Rules[i].Backends
+		backendsb := b[i].Backends
 		if len(backendsa) != len(backendsb) {
 			return false
 		}
@@ -105,7 +109,7 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 			}
 		}
 		e1 := rule.Err
-		e2 := in.Rules[i].Err
+		e2 := b[i].Err
 		if e1 == nil && e2 != nil {
 			return false
 		}
@@ -124,7 +128,9 @@ var _ Route = &HttpRouteIR{}
 type TcpRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject *gwv1a2.TCPRoute
-	// +krtEqualsTodo include parent references when computing equality
+	// Verbatim copy of SourceObject's spec.parentRefs, so the versionEquals(SourceObject)
+	// check in Equals already observes any change.
+	// +noKrtEquals
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
@@ -167,10 +173,13 @@ var _ Route = &TcpRouteIR{}
 type TlsRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject *gwv1a2.TLSRoute
-	// +krtEqualsTodo include parent references when computing equality
+	// Verbatim copy of SourceObject's spec.parentRefs, so the versionEquals(SourceObject)
+	// check in Equals already observes any change.
+	// +noKrtEquals
 	ParentRefs []gwv1.ParentReference
 
-	// +krtEqualsTodo ensure hostname list differences are observed
+	// Verbatim copy of SourceObject's spec.hostnames; see ParentRefs above.
+	// +noKrtEquals
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR

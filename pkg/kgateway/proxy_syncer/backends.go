@@ -99,8 +99,14 @@ type uccWithCluster struct {
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	Name           string
-	Error          error
+	// Name is the translated cluster's name. It is part of ResourceName, so it cannot change
+	// without changing the KRT key, but it is compared anyway: it names the CDS resource, and
+	// an Equals that ignores it would be wrong if this type were ever re-keyed.
+	Name string
+	// Error is the translation error for this backend/client pair, if any. Compared by message
+	// in Equals because all errored clusters share one blackhole proto, so ClusterVersion can't
+	// tell error states apart.
+	Error error
 	// PerClientError reports that Error was produced for this client alone (a
 	// strict-mode validation failure of an overlaid cluster) rather than by the
 	// shared base translation. Status attributes base errors once, from the base
@@ -125,8 +131,8 @@ func (c uccWithCluster) ResourceName() string {
 
 func (c uccWithCluster) Equals(in uccWithCluster) bool {
 	return c.Client.Equals(in.Client) &&
-		c.ClusterVersion == in.ClusterVersion &&
 		c.Name == in.Name &&
+		c.ClusterVersion == in.ClusterVersion &&
 		c.PerClientError == in.PerClientError &&
 		c.BackendSource == in.BackendSource &&
 		c.BackendGeneration == in.BackendGeneration &&

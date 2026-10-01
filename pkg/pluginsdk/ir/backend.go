@@ -446,7 +446,11 @@ type Secret struct {
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
 
-	// +krtEqualsTodo evaluate secret data equality handling
+	// Verbatim copy of the source Secret's data. Secrets carry no generation, so
+	// versionEquals(Obj) compares resourceVersion, which the API server bumps on every write
+	// to the data. Comparing the byte maps here would only duplicate that, and would mean
+	// walking key material on every comparison.
+	// +noKrtEquals
 	Data map[string][]byte
 }
 

@@ -298,7 +298,11 @@ type PolicyWrapper struct {
 	PolicyIR PolicyIR
 
 	// Where to attach the policy. This usually comes from the policy CRD.
-	// +krtEqualsTodo ensure target refs differences are surfaced in equality
+	// Every producer derives this from the policy object itself - spec.targetRefs and
+	// spec.targetSelectors for the built-in plugins, an annotation in examples/plugin - and
+	// versionEquals(Policy) compares generation, labels and annotations, so it observes any
+	// change a producer could have derived this from.
+	// +noKrtEquals
 	TargetRefs []PolicyRef
 
 	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).

@@ -178,8 +178,10 @@ var _ json.Marshaler = LocalityLbMap{}
 
 type EndpointsForBackend struct {
 	// preserve the labels from the original backend object
-	// for use in endpoints plugins
-	// +krtEqualsTodo include backend labels in equality or confirm omission
+	// for use in endpoints plugins.
+	// NewEndpointsForBackend folds these labels into upstreamHash, which is compared in
+	// Equals, so a label change is observed without walking the map here.
+	// +noKrtEquals
 	BackendLabels map[string]string
 
 	// AttachedPolicies carries the policy attachment view already resolved for
@@ -188,7 +190,14 @@ type EndpointsForBackend struct {
 	// +noKrtEquals
 	AttachedPolicies AttachedPolicies
 
-	// +krtEqualsTodo compare load-balanced endpoint map
+	// LbEps is summarized by epsEqualityHash, which Add() maintains and Equals compares:
+	// every endpoint contributes its locality, metadata labels and LbEndpoint proto to that
+	// hash. Comparing the map directly would mean a proto compare per endpoint on a path that
+	// runs for every backend on every endpoint update.
+	// Note the hash XORs per-endpoint hashes, so it is deliberately order-insensitive; the
+	// flip side is that a pair of byte-identical endpoints in one locality cancels out.
+	// Distinct pods cannot produce identical LbEndpoints, so that is not reachable today.
+	// +noKrtEquals
 	LbEps                LocalityLbMap
 	ClusterName          string
 	UpstreamResourceName string
@@ -237,9 +246,9 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte{0})
 	h.Write([]byte(objSrc.Namespace))
 	// Fold the labels in through HashLabels, which XORs a per-label hash and is therefore
-	// order-independent. Writing the label pairs straight into this hasher makes the result
-	// depend on Go's randomized map iteration order, so two identical backends hash
-	// differently and every recomputation of this collection looks like a change.
+	// order-independent. Writing the label pairs straight into this hasher would make the
+	// result depend on Go's randomized map iteration order, so two identical backends would
+	// hash differently and every recomputation of this collection would look like a change.
 	h.Write([]byte{0})
 	utils.HashUint64(h, utils.HashLabels(labels))
 	h.Write([]byte{0})

@@ -25,13 +25,14 @@ type UccWithEndpoints struct {
 	// content, plugin contributions, and load-balancing context into a 64-bit hash.
 	// KRT equality and EDS versioning assume no collisions; a collision across row
 	// revisions can leave stale endpoints. Interning separately confirms content equality.
-	// +noKrtEquals EndpointsHash is a 64-bit content hash standing in for the proto; collision-freedom is assumed, see above
+	// +noKrtEquals
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
 	endpointsName string
 	// resourceName caches the key used by KRT, avoiding an allocation
 	// per lookup for each client/backend pair.
-	// +noKrtEquals derived from Client and endpointsName, both of which are compared
+	// Derived from Client and endpointsName, both of which are compared.
+	// +noKrtEquals
 	resourceName string
 }
 
