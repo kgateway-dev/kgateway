@@ -7,6 +7,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -14,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
@@ -62,6 +64,37 @@ func (s *testingSuite) TestTrafficPolicyClearStaleStatus() {
 	s.assertAncestorStatuses("other-gw", map[string]bool{
 		otherControllerName: true,
 	})
+
+	// The missing target is reported on the policy's StatusSummary ancestor instead
+	s.assertTargetNotFound("example-policy", "Gateway default/missing-gw not found")
+
+	// Pointing the targetRef back at the Gateway retracts the StatusSummary entry and restores
+	// the Gateway ancestor, still without touching the other controller's ancestor
+	s.ApplyManifests(&base.TestCase{Manifests: []string{policyWithGwManifest}})
+	s.assertNoStatusSummary("example-policy")
+	s.assertAncestorStatuses("gw", map[string]bool{
+		kgatewayControllerName: true,
+	})
+	s.assertAncestorStatuses("other-gw", map[string]bool{
+		otherControllerName: true,
+	})
+}
+
+// TestTrafficPolicyPartialTargetNotFound verifies that a policy with one valid and one missing
+// targetRef keeps its healthy Gateway ancestor and additionally reports the missing target,
+// rather than looking fully healthy.
+func (s *testingSuite) TestTrafficPolicyPartialTargetNotFound() {
+	s.assertPolicyAncestorStatuses("multi-target-policy", "gw", map[string]bool{
+		wellknown.DefaultGatewayControllerName: true,
+	})
+	s.assertTargetNotFound("multi-target-policy", "HTTPRoute default/route-b-typo not found")
+
+	// Fixing the typo retracts the StatusSummary entry; the Gateway ancestor stays
+	s.ApplyManifests(&base.TestCase{Manifests: []string{policyWithGwAndFixedRoute}})
+	s.assertNoStatusSummary("multi-target-policy")
+	s.assertPolicyAncestorStatuses("multi-target-policy", "gw", map[string]bool{
+		wellknown.DefaultGatewayControllerName: true,
+	})
 }
 
 func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, controllerName string) {
@@ -97,12 +130,16 @@ func (s *testingSuite) addAncestorStatus(policyName, policyNamespace, gwName, co
 }
 
 func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedControllers map[string]bool) {
+	s.assertPolicyAncestorStatuses("example-policy", ancestorName, expectedControllers)
+}
+
+func (s *testingSuite) assertPolicyAncestorStatuses(policyName, ancestorName string, expectedControllers map[string]bool) {
 	currentTimeout, pollingInterval := helpers.GetTimeouts()
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		policy := &kgateway.TrafficPolicy{}
 		err := s.TestInstallation.ClusterContext.Client.Get(
 			s.Ctx,
-			types.NamespacedName{Name: "example-policy", Namespace: "default"},
+			types.NamespacedName{Name: policyName, Namespace: "default"},
 			policy,
 		)
 		g.Expect(err).NotTo(gomega.HaveOccurred())
@@ -122,5 +159,53 @@ func (s *testingSuite) assertAncestorStatuses(ancestorName string, expectedContr
 				g.Expect(exists).To(gomega.BeFalse(), "Expected controller %s to not exist in status", controller)
 			}
 		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// assertNoStatusSummary verifies the policy no longer carries a kgateway StatusSummary ancestor.
+func (s *testingSuite) assertNoStatusSummary(policyName string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		for _, ancestor := range policy.Status.Ancestors {
+			g.Expect(string(ancestor.ControllerName) == wellknown.DefaultGatewayControllerName &&
+				reporter.IsPolicyStatusSummaryAncestorRef(ancestor.AncestorRef)).To(gomega.BeFalse(),
+				"policy should no longer report a StatusSummary ancestor: %+v", ancestor)
+		}
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
+}
+
+// assertTargetNotFound verifies the policy reports the given unresolved target on its
+// StatusSummary ancestor with Accepted=False/TargetNotFound.
+func (s *testingSuite) assertTargetNotFound(policyName, expectedMessage string) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts()
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		policy := &kgateway.TrafficPolicy{}
+		err := s.TestInstallation.ClusterContext.Client.Get(
+			s.Ctx,
+			types.NamespacedName{Name: policyName, Namespace: "default"},
+			policy,
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+
+		var accepted *metav1.Condition
+		for _, ancestor := range policy.Status.Ancestors {
+			if string(ancestor.ControllerName) == wellknown.DefaultGatewayControllerName &&
+				reporter.IsPolicyStatusSummaryAncestorRef(ancestor.AncestorRef) {
+				accepted = meta.FindStatusCondition(ancestor.Conditions, string(shared.PolicyConditionAccepted))
+				break
+			}
+		}
+		g.Expect(accepted).NotTo(gomega.BeNil(), "policy should report a StatusSummary ancestor")
+		g.Expect(accepted.Status).To(gomega.Equal(metav1.ConditionFalse))
+		g.Expect(accepted.Reason).To(gomega.Equal(string(shared.PolicyReasonTargetNotFound)))
+		g.Expect(accepted.Message).To(gomega.ContainSubstring(expectedMessage))
 	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }

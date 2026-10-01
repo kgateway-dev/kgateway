@@ -745,7 +745,8 @@ func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
 		Headers:         envoyHeaderMatcher(matcher.Headers),
 		QueryParameters: envoyQueryMatcher(matcher.QueryParams),
 	}
-	if matcher.Method != nil {
+	isConnectMatch := isDefaultPathConnectMatch(matcher)
+	if matcher.Method != nil && !isConnectMatch {
 		match.Headers = append(match.GetHeaders(), &envoyroutev3.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_StringMatch{
@@ -758,8 +759,26 @@ func translateMatcher(matcher gwv1.HTTPRouteMatch) *envoyroutev3.RouteMatch {
 		})
 	}
 
-	setEnvoyPathMatcher(matcher, match)
+	if isConnectMatch {
+		match.PathSpecifier = &envoyroutev3.RouteMatch_ConnectMatcher_{
+			ConnectMatcher: &envoyroutev3.RouteMatch_ConnectMatcher{},
+		}
+	} else {
+		setEnvoyPathMatcher(matcher, match)
+	}
 	return match
+}
+
+// isDefaultPathConnectMatch identifies authority-form CONNECT requests, which
+// require Envoy's dedicated connect matcher. Gateway API defaults an omitted
+// path to PathPrefix "/", so omission cannot be detected with match.Path == nil.
+// A non-default path remains a method-and-path match for extended CONNECT.
+func isDefaultPathConnectMatch(match gwv1.HTTPRouteMatch) bool {
+	if match.Method == nil || *match.Method != gwv1.HTTPMethodConnect {
+		return false
+	}
+	pathType, pathValue := routeutils.ParsePath(match.Path)
+	return pathType == gwv1.PathMatchPathPrefix && pathValue == "/"
 }
 
 var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")

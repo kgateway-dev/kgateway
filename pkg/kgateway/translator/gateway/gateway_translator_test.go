@@ -297,6 +297,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("httproute with backend ref to an undefined port reports correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/backend-ref-port-not-found.yaml"},
+			outputFile: "backends/backend-ref-port-not-found.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableIstioIntegration = true
+		})
+	})
+
 	t.Run("httproute with backend port error reports correctly", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/backend-ref-port-error.yaml"},
@@ -603,6 +616,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/local-rate-limit-configurable-percentage.yaml"},
 			outputFile: "traffic-policy/local-rate-limit-configurable-percentage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with local rate limiting shared across the gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-share-across-gateway.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -949,6 +973,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy with buffer filter stage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/buffer-filter-stage.yaml"},
+			outputFile: "traffic-policy/buffer-filter-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with HTTP upgrades attached to route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-upgrade-route.yaml"},
+			outputFile: "traffic-policy/http-upgrade-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("TrafficPolicy with stat prefix attached to route", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/stat-prefix.yaml"},
@@ -1288,6 +1334,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcproute referencing an HTTP-only backend kind reports InvalidKind", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/unsupported-backend-kind.yaml"},
+			outputFile: "tcp-routing/unsupported-backend-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tcproute referencing an unrestricted backend kind resolves", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/static-backend.yaml"},
+			outputFile: "tcp-routing/static-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with multiple backend services", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/multi-backend.yaml"},
@@ -1347,6 +1415,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/invalid-backend.yaml"},
 			outputFile: "tls-routing/invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute referencing an HTTP-only backend kind reports InvalidKind", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/unsupported-backend-kind.yaml"},
+			outputFile: "tls-routing/unsupported-backend-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute referencing an unrestricted backend kind resolves", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/static-backend.yaml"},
+			outputFile: "tls-routing/static-backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1522,6 +1612,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// The golden deliberately emits NO cluster for the invalid Backend, even
+	// though the route still names it. That is what makes the rest of the
+	// fixture work: route replacement already puts
+	// clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR on the route, and that
+	// only fires when the cluster is genuinely absent. Emitting an endpointless
+	// STATIC cluster instead — as translation did before backends were split
+	// into a shared base and per-client overlays — left the cluster present, so
+	// the declared 500 was dead config and a request got 503 (no healthy
+	// upstream) from an empty cluster. The name is still carried in the errored
+	// set, so publication treats it as failed-closed rather than as a missing
+	// reference to wait for.
 	t.Run("Priority groups backend with non-static member reports error", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/priority_groups_aws_error.yaml"},
@@ -1609,6 +1710,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendtlspolicy/tls-san.yaml"},
 			outputFile: "backendtlspolicy/tls-san.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy on unrouted targets", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/unrouted.yaml"},
+			outputFile: "backendtlspolicy/unrouted.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3503,10 +3615,54 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("JWT Policy using remote JWKS with custom timeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/remote-jwks-timeout.yaml"},
+			outputFile: "jwt/remote-jwks-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with clock skew", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/clock-skew.yaml"},
+			outputFile: "jwt/clock-skew.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with cache", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/cache.yaml"},
+			outputFile: "jwt/cache.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy with validation mode AllowMissing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"jwt/gateway-validation-mode.yaml"},
 			outputFile: "jwt/gateway-validation-mode.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with validation mode AllowMissingOrFailed", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/gateway-validation-mode-allow-missing-or-failed.yaml"},
+			outputFile: "jwt/gateway-validation-mode-allow-missing-or-failed.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3936,6 +4092,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Child matches parent via parentRefs", func(t *testing.T) {
 		test(t, "basic_parentref_match.yaml")
+	})
+
+	t.Run("Child matches same-namespace parent via parentRefs without namespace", func(t *testing.T) {
+		test(t, "basic_parentref_match_same_namespace.yaml")
 	})
 
 	t.Run("Child doesn't match parent via parentRefs", func(t *testing.T) {

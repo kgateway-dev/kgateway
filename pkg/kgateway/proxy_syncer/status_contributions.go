@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -13,25 +12,32 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
+// gatewayStatusContributions unpacks the status half of each Gateway translation.
+//
+// It reads gatewayTranslationOutput directly rather than an intermediate collection of
+// GatewayStatusSnapshot. That collection was a pure projection, so its only effect was to run
+// GatewayStatusSnapshot.Equals -- a deep walk of every contribution of every route on the
+// Gateway -- a second time per translation, on top of the one gatewayTranslationOutput.Equals
+// already does. Contributions are still compared individually downstream, so status-only and
+// xDS-only changes stay as isolated from each other as before.
 func gatewayStatusContributions(
-	snapshots krt.Collection[GatewayStatusSnapshot],
+	outputs krt.Collection[gatewayTranslationOutput],
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
-	return krt.NewManyCollection(snapshots, func(_ krt.HandlerContext, snapshot GatewayStatusSnapshot) []reports.StatusContribution {
-		return snapshot.Contributions
+	return krt.NewManyCollection(outputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) []reports.StatusContribution {
+		return output.Status.Contributions
 	}, krtopts.ToOptions("GatewayStatusContributions")...)
 }
 
 func backendPolicyStatusContributions(
 	backends krt.Collection[*ir.BackendObjectIR],
-	excludedPolicyKinds map[schema.GroupKind]struct{},
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
 	return krt.NewManyCollection(backends, func(_ krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
 		if backend == nil {
 			return nil
 		}
-		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend}, excludedPolicyKinds)
+		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend})
 		// Key on the backend's own resource name, not its ObjectSource's: one Service yields a
 		// BackendObjectIR per port, and ObjectSource.ResourceName() drops both the port and the
 		// extra key. Two ports contributing to the same policy would then emit contributions

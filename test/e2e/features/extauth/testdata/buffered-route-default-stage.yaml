@@ -1,0 +1,42 @@
+# The same route and policy as buffered-route.yaml without `filterStage`: the buffer filter sits at
+# its default placement, behind ext_authz.
+#
+# This pins the behavior that motivates `buffer.filterStage`. ext_authz buffers the body ahead of
+# the buffer filter, so by the time the buffer filter lowers the stream's buffer limit the body has
+# already been accumulated by a filter in streaming mode, and Envoy applies back-pressure instead of
+# a 413. An oversized body therefore reaches the backend. If this test starts failing because the
+# oversized body is rejected, the default placement enforces on its own and the knob is no longer
+# needed for this pairing.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: route-example-buffered-default
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "bufferedroute-default.com"
+  rules:
+    - backendRefs:
+        - name: backend
+          port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-base
+  name: buffered-route-default-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: route-example-buffered-default
+  extAuth:
+    extensionRef:
+      name: basic-extauth2
+    withRequestBody:
+      maxRequestBytes: 8192
+  buffer:
+    maxRequestSize: "1024"

@@ -50,52 +50,29 @@ func convertTLSRouteV1ToV1Alpha2(in *gwv1.TLSRoute) *gwv1a2.TLSRoute {
 	}
 }
 
+// convertTLSRouteV1Alpha3ToV1Alpha2 normalizes a v1alpha3 TLSRoute. gwv1a3.TLSRoute is
+// declared as `type TLSRoute v1.TLSRoute`, so the two differ only in the API version they are
+// served under -- which is exactly the one field the conversion stamps. Spelling the field
+// copies out a second time would just be two Spec blocks to keep in sync.
 func convertTLSRouteV1Alpha3ToV1Alpha2(in *gwv1a3.TLSRoute) *gwv1a2.TLSRoute {
 	if in == nil {
 		return nil
 	}
 
-	return &gwv1a2.TLSRoute{
-		// See convertTLSRouteV1ToV1Alpha2: the served API version is preserved.
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1a3.GroupVersion.String(),
-			Kind:       wellknown.TLSRouteKind,
-		},
-		ObjectMeta: *in.ObjectMeta.DeepCopy(),
-		Spec: gwv1a2.TLSRouteSpec{
-			CommonRouteSpec: gwv1a2.CommonRouteSpec{
-				ParentRefs:         in.Spec.ParentRefs,
-				UseDefaultGateways: in.Spec.UseDefaultGateways,
-			},
-			Hostnames: convertTLSRouteHostnamesV1ToV1Alpha2(in.Spec.Hostnames),
-			Rules:     convertTLSRouteRulesV1ToV1Alpha2(in.Spec.Rules),
-		},
-		Status: gwv1a2.TLSRouteStatus{
-			RouteStatus: in.Status.RouteStatus,
-		},
-	}
+	out := convertTLSRouteV1ToV1Alpha2((*gwv1.TLSRoute)(in))
+	// See convertTLSRouteV1ToV1Alpha2: the served API version is preserved.
+	out.TypeMeta.APIVersion = gwv1a3.GroupVersion.String()
+	return out
 }
 
 func convertTLSRouteHostnamesV1ToV1Alpha2(in []gwv1.Hostname) []gwv1a2.Hostname {
-	if len(in) == 0 {
-		return nil
-	}
-
-	out := make([]gwv1a2.Hostname, 0, len(in))
-	for _, hostname := range in {
-		out = append(out, gwv1a2.Hostname(hostname))
-	}
-	return out
+	return convertRouteSliceElems(in, func(h gwv1.Hostname) gwv1a2.Hostname {
+		return gwv1a2.Hostname(h)
+	})
 }
 
 func convertTLSRouteRulesV1ToV1Alpha2(in []gwv1.TLSRouteRule) []gwv1a2.TLSRouteRule {
-	if len(in) == 0 {
-		return nil
-	}
-
-	out := make([]gwv1a2.TLSRouteRule, 0, len(in))
-	for _, rule := range in {
-		out = append(out, gwv1a2.TLSRouteRule(rule))
-	}
-	return out
+	return convertRouteSliceElems(in, func(r gwv1.TLSRouteRule) gwv1a2.TLSRouteRule {
+		return gwv1a2.TLSRouteRule(r)
+	})
 }

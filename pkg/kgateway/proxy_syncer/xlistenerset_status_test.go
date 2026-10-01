@@ -57,7 +57,7 @@ func legacyListenerSet() *gwv1.ListenerSet {
 }
 
 type xListenerSetFixture struct {
-	syncer  *xListenerSetStatusSyncer
+	writer  statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]
 	objects krt.StaticCollection[*gwv1.ListenerSet]
 	dynamic *dynamicfake.FakeDynamicClient
 	res     statussync.Resource
@@ -86,11 +86,7 @@ func newXListenerSetFixture(t *testing.T, ls *gwv1.ListenerSet) xListenerSetFixt
 
 	c := apifake.NewClient(t)
 	return xListenerSetFixture{
-		syncer: &xListenerSetStatusSyncer{
-			col:     objects,
-			client:  c,
-			reports: reportCol,
-		},
+		writer:  xListenerSetWriter(c, objects, reportCol),
 		objects: objects,
 		dynamic: c.Dynamic().(*dynamicfake.FakeDynamicClient),
 		res: statussync.Resource{
@@ -101,7 +97,7 @@ func newXListenerSetFixture(t *testing.T, ls *gwv1.ListenerSet) xListenerSetFixt
 }
 
 func (f xListenerSetFixture) apply() {
-	f.syncer.ApplyStatus(context.Background(), f.res)
+	f.writer.ApplyStatus(context.Background(), f.res)
 }
 
 // statusPatches returns the bodies of the status merge patches sent to the legacy GVR.
@@ -164,11 +160,9 @@ func TestXListenerSetStatusPatchPayload(t *testing.T) {
 func TestXListenerSetWriterIsIdempotent(t *testing.T) {
 	ls := legacyListenerSet()
 	f := newXListenerSetFixture(t, ls)
-	w := f.syncer.writer(context.Background())
-
-	require.True(t, statussync.WriterWouldWrite(w, ls),
+	require.True(t, statussync.WriterWouldWrite(f.writer, f.res, ls),
 		"the seeded legacy status must actually be written, or the check below proves nothing")
-	require.NoError(t, statussync.CheckWriterIdempotent(w, ls,
+	require.NoError(t, statussync.CheckWriterIdempotent(f.writer, f.res, ls,
 		func(current *gwv1.ListenerSet, status gwv1.ListenerSetStatus) *gwv1.ListenerSet {
 			next := current.DeepCopy()
 			next.Status = *status.DeepCopy()
@@ -187,7 +181,7 @@ func TestXListenerSetStatusSkipsNoOpPatch(t *testing.T) {
 	require.Len(t, f.statusPatches(), 1, "the stale status must be corrected in one patch")
 
 	// Echo our own write back into the collection the writer reads, as the informer would.
-	published, ok := f.syncer.writer(context.Background()).Desired(ls)
+	published, ok := f.writer.Desired(f.res, ls)
 	require.True(t, ok, "the writer must have a status for the seeded listener set")
 	echoed := ls.DeepCopy()
 	echoed.Status = published

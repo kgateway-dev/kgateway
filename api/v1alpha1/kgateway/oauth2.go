@@ -236,11 +236,8 @@ type OAuth2JWTProcessingConfig struct {
 	// +optional
 	Audiences []string `json:"audiences,omitempty"`
 
-	// ClaimsToHeaders is a list of claims from the token that should be forwarded upstream as a header.
-	// Optionally set the claims from the JWT payload that you want to extract and add as headers
-	// to the request before the request is forwarded to the upstream destination.
-	// Note: if ClaimsToHeaders is set, the Envoy route cache will be cleared.
-	// This allows the JWT filter to correctly affect routing decisions.
+	// ClaimsToHeaders copies JWT claims into upstream request headers.
+	// Setting this clears Envoy's route cache so routing uses the updated headers.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=32
 	// +optional

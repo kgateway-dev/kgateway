@@ -89,7 +89,8 @@ type StartConfig struct {
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
-	// StatusSyncerOptions is the list of options to be passed when creating the StatusSyncer
+	// StatusSyncerOptions configure the status pipeline. They are passed to both the ProxySyncer,
+	// which produces status contributions, and the StatusSyncer, which writes them.
 	StatusSyncerOptions []proxy_syncer.StatusSyncerOption
 }
 
@@ -152,6 +153,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
+		cfg.StatusSyncerOptions...,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := cfg.Manager.Add(proxySyncer); err != nil {

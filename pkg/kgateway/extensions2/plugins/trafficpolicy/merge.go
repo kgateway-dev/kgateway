@@ -106,6 +106,15 @@ func MergeTrafficPolicies(
 		return
 	}
 
+	// Buffering and HTTP upgrades are individually merged with the same
+	// precedence rules as every other field. Capture the fields that belonged to
+	// p1 so their mutual exclusion can be resolved once, after all field merges.
+	// MergePolicies folds valid policies from left to right, and the resolver
+	// restores the invariant after every fold: a merged policy never contains
+	// both an enabled buffer and an HTTP upgrade.
+	p1HadBuffer := bufferEnabled(p1.spec.buffer)
+	p1HadHTTPUpgrade := p1.spec.httpUpgrade != nil
+
 	mergeFuncs := []func(*TrafficPolicy, *TrafficPolicy, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins, TrafficPolicyMergeOpts){
 		mergeExtProc,
 		mergeRustformation,
@@ -132,11 +141,14 @@ func MergeTrafficPolicies(
 		mergeFaultInjection,
 		mergeHttpACL,
 		mergeStatPrefix,
+		mergeHTTPUpgrade,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
 		mergeFunc(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, tpOpts)
 	}
+
+	resolveBufferHTTPUpgradeConflict(p1, p2, opts, mergeOrigins, p1HadBuffer, p1HadHTTPUpgrade)
 }
 
 func mergeTrafficPolicies(
@@ -596,6 +608,64 @@ func mergeBuffer(
 		Set: func(spec *trafficPolicySpecIr, val *bufferIR) { spec.buffer = val },
 	}
 	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "buffer")
+}
+
+func mergeHTTPUpgrade(
+	p1, p2 *TrafficPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	_ TrafficPolicyMergeOpts,
+) {
+	accessor := fieldAccessor[httpUpgradeIR]{
+		Get: func(spec *trafficPolicySpecIr) *httpUpgradeIR { return spec.httpUpgrade },
+		Set: func(spec *trafficPolicySpecIr, val *httpUpgradeIR) { spec.httpUpgrade = val },
+	}
+	defaultMerge(p1, p2, p2Ref, p2MergeOrigins, opts, mergeOrigins, accessor, "httpUpgrade")
+}
+
+func bufferEnabled(buffer *bufferIR) bool {
+	return buffer != nil && buffer.perRoute != nil && buffer.perRoute.GetBuffer() != nil
+}
+
+// resolveBufferHTTPUpgradeConflict enforces the Envoy constraint that an
+// upgraded stream cannot also use the HTTP buffer filter. It runs after all
+// fields have been merged so the winner is selected according to the policy
+// precedence without one field merger undoing the decision of another. Its
+// callers supply inputs that already satisfy this invariant: construction
+// rejects a single policy containing both fields, and each prior fold was
+// reconciled here.
+func resolveBufferHTTPUpgradeConflict(
+	p1, p2 *TrafficPolicy,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+	p1HadBuffer, p1HadHTTPUpgrade bool,
+) {
+	if !bufferEnabled(p1.spec.buffer) || p1.spec.httpUpgrade == nil {
+		return
+	}
+
+	switch opts.Strategy {
+	case policy.AugmentedShallowMerge, policy.AugmentedDeepMerge:
+		switch {
+		case p1HadHTTPUpgrade:
+			p1.spec.buffer = nil
+			delete(mergeOrigins, "buffer")
+		case p1HadBuffer:
+			p1.spec.httpUpgrade = nil
+			delete(mergeOrigins, "httpUpgrade")
+		}
+	case policy.OverridableShallowMerge, policy.OverridableDeepMerge:
+		switch {
+		case bufferEnabled(p2.spec.buffer):
+			p1.spec.httpUpgrade = nil
+			delete(mergeOrigins, "httpUpgrade")
+		case p2.spec.httpUpgrade != nil:
+			p1.spec.buffer = nil
+			delete(mergeOrigins, "buffer")
+		}
+	}
 }
 
 func mergeAutoHostRewrite(

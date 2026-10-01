@@ -12,7 +12,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -76,8 +75,8 @@ func RegisterKindByObjectGVK[I controllers.Object](
 	opts ...krt.CollectionOption,
 ) krt.Collection[ResourceReports] {
 	return registerKind(s, objects, contributions, byTarget,
-		func(obj I) schema.GroupVersionKind { return objectGVKOrDefault(obj, fallback) },
-		func() { RegisterResourceByObjectGVK(s, fallback, objects) },
+		func(obj I) schema.GroupVersionKind { return ObjectGVKOrDefault(obj, fallback) },
+		func() { registerResourceByObjectGVK(s, fallback, objects) },
 		opts...)
 }
 
@@ -98,7 +97,11 @@ func registerKind[I controllers.Object](
 	return col
 }
 
-func objectGVKOrDefault(obj controllers.Object, fallback schema.GroupVersionKind) schema.GroupVersionKind {
+// ObjectGVKOrDefault returns the GVK recorded in the object's TypeMeta, or fallback when it is
+// empty. Typed informers leave TypeMeta empty, so an object without one is of the collection's
+// native kind; converted objects (for example legacy XListenerSets normalized into the ListenerSet
+// collection) keep their source GVK there.
+func ObjectGVKOrDefault(obj controllers.Object, fallback schema.GroupVersionKind) schema.GroupVersionKind {
 	if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
 		return gvk
 	}
@@ -129,17 +132,20 @@ func NewResourceReports[I controllers.Object](
 // ReportFor looks up the current reduction for one status owner. Writers call it from
 // their Desired func to build status just in time from the latest KRT state.
 //
+// res is the identity Writer.Desired was handed, i.e. the one the resource was enqueued
+// under. Taking it whole rather than a separately-supplied GVK and name is what keeps a
+// writer from looking up a reduction filed under a different key than the queue dispatched on.
+//
 // The returned StatusReport contains pointers into KRT-owned retained state. Builders must
 // treat it as read-only, so later KRT equality checks continue to observe changes.
 func ReportFor(
 	col krt.Collection[ResourceReports],
-	gvk schema.GroupVersionKind,
-	nn types.NamespacedName,
+	res Resource,
 ) (reports.StatusReport, bool) {
 	if col == nil {
 		return reports.StatusReport{}, false
 	}
-	target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn}
+	target := reports.StatusKey{GroupKind: res.GroupKind(), NamespacedName: res.NamespacedName}
 	current := col.GetKey(target.String())
 	if current == nil {
 		return reports.StatusReport{}, false
@@ -213,15 +219,16 @@ func RegisterResource[I controllers.Object](
 	registerResource(s, col, func(I) schema.GroupVersionKind { return gvk })
 }
 
-// RegisterResourceByObjectGVK registers a normalized collection whose objects retain
+// registerResourceByObjectGVK registers a normalized collection whose objects retain
 // distinct source GVKs in TypeMeta, such as the combined ListenerSet/XListenerSet source.
-func RegisterResourceByObjectGVK[I controllers.Object](
+// Callers reach it through RegisterKindByObjectGVK, which wires the reducer alongside it.
+func registerResourceByObjectGVK[I controllers.Object](
 	s *StatusCollections,
 	fallback schema.GroupVersionKind,
 	col krt.Collection[I],
 ) {
 	registerResource(s, col, func(obj I) schema.GroupVersionKind {
-		return objectGVKOrDefault(obj, fallback)
+		return ObjectGVKOrDefault(obj, fallback)
 	})
 }
 

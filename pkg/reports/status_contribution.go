@@ -29,6 +29,10 @@ const (
 	GatewayStatusSource       StatusSourceKind = "gateway"
 	BackendPolicyStatusSource StatusSourceKind = "backend-policy"
 	BackendStatusSource       StatusSourceKind = "backend-status"
+	// PolicyTargetStatusSource contributions come from checking a policy's own targetRefs
+	// against the objects they name, independently of any Gateway translation. They are the
+	// only source that can report on a policy whose target does not exist.
+	PolicyTargetStatusSource StatusSourceKind = "policy-target"
 )
 
 // StatusSource identifies the translation unit that produced a contribution.
