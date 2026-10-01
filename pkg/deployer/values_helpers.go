@@ -127,6 +127,8 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	var externalTrafficPolicy *string
 	var loadBalancerClass *string
 	var loadBalancerSourceRanges []string
+	var ipFamilies []string
+	var ipFamilyPolicy *string
 
 	if svcConfig != nil {
 		if svcConfig.GetType() != nil {
@@ -138,6 +140,12 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
 		loadBalancerClass = svcConfig.GetLoadBalancerClass()
 		loadBalancerSourceRanges = svcConfig.GetLoadBalancerSourceRanges()
+		for _, f := range svcConfig.GetIPFamilies() {
+			ipFamilies = append(ipFamilies, string(f))
+		}
+		if p := svcConfig.GetIPFamilyPolicy(); p != nil {
+			ipFamilyPolicy = new(string(*p))
+		}
 	}
 
 	return &HelmService{
@@ -148,6 +156,8 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		ExternalTrafficPolicy:    externalTrafficPolicy,
 		LoadBalancerClass:        loadBalancerClass,
 		LoadBalancerSourceRanges: loadBalancerSourceRanges,
+		IPFamilies:               ipFamilies,
+		IPFamilyPolicy:           ipFamilyPolicy,
 	}
 }
 

@@ -115,6 +115,30 @@ jobs:
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
             localstack: 'false'
+          # An IPv6-only cluster over the basic routing suites. This has to be
+          # ipv6-only rather than dual-stack to be worth running: kind's
+          # dual-stack mode is IPv4-primary and Services default to SingleStack
+          # IPv4, so the suites here would exercise the same IPv4 paths as every
+          # other cluster and would pass just as well without the IPv6 fixes. In
+          # an IPv6-only cluster the readiness probe, the xDS connection, and the
+          # request path are all IPv6 by construction. Two-family Services are
+          # covered separately by cluster-dual-stack.
+          - cluster-name: 'cluster-ipv6'
+            go-test-args: '-timeout=25m'
+            go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^Deployer$$'
+            localstack: 'false'
+            ip-family: 'ipv6'
+          # The DualStack suite is the only thing in the matrix that needs a
+          # cluster with both families configured, and it is the only thing that
+          # can run on one: kind's dual-stack mode is IPv4-primary and Services
+          # default to SingleStack IPv4, so every other suite would exercise the
+          # same IPv4 paths it already gets elsewhere. It gets its own entry
+          # rather than turning an existing cluster dual-stack for one test.
+          - cluster-name: 'cluster-dual-stack'
+            go-test-args: '-timeout=10m'
+            go-test-run-regex: '^TestKgateway$$/^DualStack$$'
+            localstack: 'false'
+            ip-family: 'dual'
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-multi-install'
             go-test-args: '-timeout=5m'
@@ -165,6 +189,7 @@ jobs:
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           localstack: ${{ matrix.test.localstack }}
           gateway-api-version: ${{ matrix.test.gateway-api-version }}
+          ip-family: ${{ matrix.test.ip-family || 'ipv4' }}
       - id: setup-k3d-cluster
         name: Setup k3d Cluster
         if: ${{ steps.dotenv.outputs.cluster_type == 'k3d' }}

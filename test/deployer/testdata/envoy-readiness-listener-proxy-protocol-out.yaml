@@ -36,7 +36,10 @@ data:
       listeners:
       - name: readiness_listener
         address:
-          socket_address: { address: 0.0.0.0, port_value: 8082 }
+          socket_address:
+            address: "::"
+            ipv4_compat: true
+            port_value: 8082
         listener_filters:
           - name: envoy.filters.listener.proxy_protocol
             typed_config:
@@ -80,7 +83,8 @@ data:
       - name: prometheus_listener
         address:
           socket_address:
-            address: 0.0.0.0
+            address: "::"
+            ipv4_compat: true
             port_value: 9091
         filter_chains:
           - filters:

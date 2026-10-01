@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	neturl "net/url"
 	"path/filepath"
@@ -82,11 +83,11 @@ func (s *tsuite) SetupSuite() {
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		gwIP, err = s.getServiceExternalIP(gateway)
 		assert.NoError(c, err)
-		s.gatewayAddr = gwIP + ":" + tlsPort
+		s.gatewayAddr = net.JoinHostPort(gwIP, tlsPort)
 
 		keycloakIP, err = s.getServiceExternalIP(keycloak)
 		assert.NoError(c, err)
-		s.keycloakAddr = keycloakIP + ":" + tlsPort
+		s.keycloakAddr = net.JoinHostPort(keycloakIP, tlsPort)
 	}, 15*time.Second, 500*time.Millisecond, "failed to get external IPs for gateway or keycloak service")
 }
 

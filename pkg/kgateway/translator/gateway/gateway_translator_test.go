@@ -75,6 +75,35 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// KGW_LISTENER_BIND_IPV6 decides the family the data-plane listeners bind. The
+	// two cases share an input so the only difference in the goldens is the bind
+	// address: the default binds the IPv6 wildcard with ipv4_compat so it still
+	// accepts IPv4, and disabling it binds the IPv4 wildcard with no ipv4_compat,
+	// which is the only thing that works on a node with IPv6 disabled.
+	t.Run("gateway listener binds IPv6 by default", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-bind/gateway.yaml"},
+			outputFile: "listener-bind/bind-ipv6.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("gateway listener binds IPv4 when ListenerBindIpv6 is disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-bind/gateway.yaml"},
+			outputFile: "listener-bind/bind-ipv4-only.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
+		})
+	})
+
 	t.Run("gateway with no valid listeners should report correctly", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"gateway-only/gateway-invalid-listener.yaml"},
@@ -2616,6 +2645,19 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/dns.yaml"},
 			outputFile: "backendconfigpolicy/dns.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// dns.lookupFamily overrides the cluster-wide KGW_DNS_LOOKUP_FAMILY, which is
+	// what lets a single-stack cluster reach the other family for one backend.
+	t.Run("Backend Config Policy with DNS lookup family", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/dns-lookup-family.yaml"},
+			outputFile: "backendconfigpolicy/dns-lookup-family.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

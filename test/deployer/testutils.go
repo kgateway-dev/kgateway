@@ -51,7 +51,12 @@ func NewCommonCols(t test.Failer, initObjs ...client.Object) *collections.Common
 	commonCols := &collections.CommonCollections{
 		GatewayIndex:   gateways,
 		ControllerName: wellknown.DefaultGatewayControllerName,
-		Settings:       apisettings.Settings{},
+		// Mirror the shipped defaults for the settings the deployer reads, so the
+		// golden files describe what a real install renders. Spelled out rather
+		// than built from the environment to keep the goldens deterministic.
+		Settings: apisettings.Settings{
+			ListenerBindIpv6: true,
+		},
 	}
 
 	for !kubeRawGateways.HasSynced() || !kubeRawListenerSets.HasSynced() || !gatewayClasses.HasSynced() {
