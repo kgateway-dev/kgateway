@@ -33,7 +33,8 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: issuer.example.com
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

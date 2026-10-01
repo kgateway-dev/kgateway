@@ -1,6 +1,7 @@
 Clusters:
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -10,7 +11,8 @@ Clusters:
   name: kube_gwtest_httpbin_8080
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

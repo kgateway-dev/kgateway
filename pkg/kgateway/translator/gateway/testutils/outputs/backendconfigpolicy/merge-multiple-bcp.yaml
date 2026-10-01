@@ -6,7 +6,8 @@ Clusters:
       maxRequests: 1024
       maxRetries: 3
   commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

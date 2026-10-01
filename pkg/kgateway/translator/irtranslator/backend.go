@@ -18,6 +18,7 @@ import (
 	envoyproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -524,6 +525,10 @@ func (t *BackendTranslator) ApplyPerClient(
 // zones Envoy's implicit zone-aware defaults (routing_enabled 100%,
 // min_cluster_size 6) would otherwise engage with no policy configured.
 //
+// It disables zone-aware routing (routing_enabled 0%) rather than switching to
+// locality-weighted LB. Locality-weighted LB only uses the weights of groups that
+// have a locality, so endpoints without one would get no traffic.
+//
 // Reports whether it set the specifier, so ApplyPerClient can remove that
 // base-owned value before overlays run and re-evaluate the guard against the
 // final cluster. See removeDefaultedLocalityConfig.
@@ -539,16 +544,17 @@ func defaultLocalityConfig(c *envoyclusterv3.Cluster) bool {
 		return false
 	}
 	if c.GetEdsClusterConfig() == nil {
-		// Only kgateway-managed EDS clusters are guaranteed to carry locality
-		// load-balancing weights on their CLAs; leave plugin-provided inline
-		// clusters untouched.
+		// Only default kgateway-managed EDS clusters; leave plugin-provided
+		// inline clusters untouched.
 		return false
 	}
 	if c.CommonLbConfig == nil {
 		c.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{}
 	}
-	c.CommonLbConfig.LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-		LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+	c.CommonLbConfig.LocalityConfigSpecifier = &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+		ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{
+			RoutingEnabled: &typev3.Percent{Value: 0},
+		},
 	}
 	return true
 }

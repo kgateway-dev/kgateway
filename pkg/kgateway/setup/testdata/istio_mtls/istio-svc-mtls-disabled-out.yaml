@@ -1,6 +1,7 @@
 clusters:
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -42,7 +43,8 @@ clusters:
       sni: example.com
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -84,7 +86,8 @@ clusters:
       sni: example.com
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

@@ -654,11 +654,9 @@ func redirectToInlineCLA(out *envoyclusterv3.Cluster) {
 
 // TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay is the ordering
 // regression guard for the base/overlay split. defaultLocalityConfig declines to
-// touch plugin-provided inline clusters because their CLAs carry no per-locality
-// load_balancing_weight, and Envoy rejects locality weighted LB without it. Before
-// the split, per-client hooks ran first, so that guard saw the final cluster. Now the
-// guard runs on the still-EDS base, so an overlay that inlines the CLA afterwards
-// must undo the default rather than ship a cluster Envoy will reject.
+// touch plugin-provided inline clusters. Before the split, per-client hooks ran
+// first, so that guard saw the final cluster. Now the guard runs on the still-EDS
+// base, so an overlay that inlines the CLA afterwards must undo the default.
 func TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
 	bt := edsWithConfigBackendTranslator(inlineRedirectOverlay(overlayGK))
@@ -669,7 +667,7 @@ func TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay(t *testing.T) {
 	require.NotNil(t, base)
 	require.NoError(t, base.Error)
 	require.True(t, base.DefaultedLocalityConfig, "an EDS base with no LB policy must get the locality default")
-	require.NotNil(t, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+	require.NotNil(t, base.Cluster.GetCommonLbConfig().GetZoneAwareLbConfig(),
 		"precondition: the base carries the defaulted locality mode")
 
 	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
@@ -680,11 +678,11 @@ func TestApplyPerClient_UndoesDefaultedLocalityOnInlineOverlay(t *testing.T) {
 	require.NotNil(t, perClient.GetLoadAssignment(), "precondition: the overlay inlined a CLA")
 	require.Nil(t, perClient.GetEdsClusterConfig(), "precondition: the overlay dropped EDS")
 	assert.Nil(t, perClient.GetCommonLbConfig().GetLocalityConfigSpecifier(),
-		"locality weighting must not survive onto an inlined CLA with no load_balancing_weight")
+		"the defaulted locality mode must not survive onto a plugin-provided inline CLA")
 	assert.Nil(t, perClient.GetCommonLbConfig(),
 		"CommonLbConfig was allocated only to hold the default, so it must not be emitted empty")
 
-	assert.NotNil(t, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+	assert.NotNil(t, base.Cluster.GetCommonLbConfig().GetZoneAwareLbConfig(),
 		"undoing the default must not reach back into the shared base")
 }
 
@@ -716,7 +714,7 @@ func TestApplyPerClient_KeepsDefaultedLocalityWhenStillEDS(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, perClient)
 
-	assert.NotNil(t, perClient.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+	assert.NotNil(t, perClient.GetCommonLbConfig().GetZoneAwareLbConfig(),
 		"a cluster that is still EDS must keep the defaulted locality mode")
 }
 
@@ -731,9 +729,10 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
 						redirectToInlineCLA(out)
+						out.LoadAssignment.Endpoints[0].LoadBalancingWeight = wrapperspb.UInt32(1)
 						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
-								ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+								LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 							},
 						}
 					},
@@ -753,28 +752,27 @@ func TestApplyPerClient_LeavesOverlayChosenLocalityMode(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, perClient)
 
-	assert.NotNil(t, perClient.GetCommonLbConfig().GetZoneAwareLbConfig(),
+	assert.NotNil(t, perClient.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
 		"an overlay's own locality choice must not be undone")
 }
 
-// TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode covers the case
-// where an overlay deliberately replaces the inherited locality-weighted
-// default with its own locality-weighted configuration. The oneof type alone
-// cannot distinguish those values, so ownership must be established before
-// overlays run rather than inferred from the final proto shape.
-func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
+// TestApplyPerClient_LeavesOverlayChosenZoneAwareLocalityMode covers the case
+// where an overlay deliberately replaces the inherited zone-aware default with
+// its own zone-aware configuration. The oneof type alone cannot distinguish
+// those values, so ownership must be established before overlays run rather
+// than inferred from the final proto shape.
+func TestApplyPerClient_LeavesOverlayChosenZoneAwareLocalityMode(t *testing.T) {
 	overlayGK := schema.GroupKind{Group: "test", Kind: "Overlay"}
-	explicitWeightedConfig := &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{}
+	explicitZoneAwareConfig := &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{}
 	bt := edsWithConfigBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
 		overlayGK: {
 			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 				return &sdk.ClusterOverlay{
 					Mutate: func(out *envoyclusterv3.Cluster) {
 						redirectToInlineCLA(out)
-						out.LoadAssignment.Endpoints[0].LoadBalancingWeight = wrapperspb.UInt32(1)
 						out.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-								LocalityWeightedLbConfig: explicitWeightedConfig,
+							LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+								ZoneAwareLbConfig: explicitZoneAwareConfig,
 							},
 						}
 					},
@@ -788,7 +786,9 @@ func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
 	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	require.NotNil(t, base)
 	require.True(t, base.DefaultedLocalityConfig)
-	require.NotSame(t, explicitWeightedConfig, base.Cluster.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+	require.NotNil(t, base.Cluster.GetCommonLbConfig().GetZoneAwareLbConfig(),
+		"precondition: the base carries the zone-aware default")
+	require.NotSame(t, explicitZoneAwareConfig, base.Cluster.GetCommonLbConfig().GetZoneAwareLbConfig(),
 		"precondition: the explicit overlay config must differ from the inherited default")
 
 	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
@@ -796,8 +796,8 @@ func TestApplyPerClient_LeavesOverlayChosenWeightedLocalityMode(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, perClient)
 
-	assert.Same(t, explicitWeightedConfig, perClient.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
-		"an overlay's explicit locality-weighted config must not be mistaken for the inherited default")
+	assert.Same(t, explicitZoneAwareConfig, perClient.GetCommonLbConfig().GetZoneAwareLbConfig(),
+		"an overlay's explicit zone-aware config must not be mistaken for the inherited default")
 }
 
 func pipeEndpoint(path string) *envoyendpointv3.LbEndpoint {

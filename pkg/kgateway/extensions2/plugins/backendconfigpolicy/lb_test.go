@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -72,7 +73,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			},
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&randomv3.Random{
-					LocalityLbConfig: localityWeightedLbConfig(),
+					LocalityLbConfig: defaultTypedLocalityLbConfig(),
 				})
 				return &envoyclusterv3.Cluster{
 					Name: "test",
@@ -92,6 +93,30 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			name: "RoundRobin basic config",
 			config: &kgateway.LoadBalancer{
 				RoundRobin: &kgateway.LoadBalancerRoundRobinConfig{},
+			},
+			expected: func() *envoyclusterv3.Cluster {
+				msg, _ := utils.MessageToAny(&roundrobinv3.RoundRobin{
+					LocalityLbConfig: defaultTypedLocalityLbConfig(),
+				})
+				return &envoyclusterv3.Cluster{
+					Name: "test",
+					LoadBalancingPolicy: &envoyclusterv3.LoadBalancingPolicy{
+						Policies: []*envoyclusterv3.LoadBalancingPolicy_Policy{{
+							TypedExtensionConfig: &envoycorev3.TypedExtensionConfig{
+								Name:        "envoy.load_balancing_policies.round_robin",
+								TypedConfig: msg,
+							},
+						}},
+					},
+					CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{},
+				}
+			}(),
+		},
+		{
+			name: "RoundRobin with localityType WeightedLb",
+			config: &kgateway.LoadBalancer{
+				RoundRobin:   &kgateway.LoadBalancerRoundRobinConfig{},
+				LocalityType: ptr.To(kgateway.LocalityConfigTypeWeightedLb),
 			},
 			expected: func() *envoyclusterv3.Cluster {
 				msg, _ := utils.MessageToAny(&roundrobinv3.RoundRobin{
@@ -134,7 +159,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						},
 						MinWeightPercent: &typev3.Percent{Value: 10},
 					},
-					LocalityLbConfig: localityWeightedLbConfig(),
+					LocalityLbConfig: defaultTypedLocalityLbConfig(),
 				}
 				msg, _ := utils.MessageToAny(rr)
 				return &envoyclusterv3.Cluster{
@@ -161,7 +186,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 			expected: func() *envoyclusterv3.Cluster {
 				lr := &leastrequestv3.LeastRequest{
 					ChoiceCount:      &wrapperspb.UInt32Value{Value: 3},
-					LocalityLbConfig: localityWeightedLbConfig(),
+					LocalityLbConfig: defaultTypedLocalityLbConfig(),
 				}
 				msg, _ := utils.MessageToAny(lr)
 				return &envoyclusterv3.Cluster{
@@ -200,7 +225,7 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 						Aggression:       &envoycorev3.RuntimeDouble{DefaultValue: 1.1, RuntimeKey: "policy.default.slowStart.aggression"},
 						MinWeightPercent: &typev3.Percent{Value: 10},
 					},
-					LocalityLbConfig: localityWeightedLbConfig(),
+					LocalityLbConfig: defaultTypedLocalityLbConfig(),
 				}
 				msg, _ := utils.MessageToAny(lr)
 				return &envoyclusterv3.Cluster{
@@ -691,9 +716,21 @@ func TestApplyLoadBalancerConfig(t *testing.T) {
 	}
 }
 
-// localityWeightedLbConfig returns the locality-weighted LocalityLbConfig that
+// defaultTypedLocalityLbConfig returns the LocalityLbConfig that
 // translateLoadBalancerConfig attaches to typed round_robin/least_request/random
-// policies by default, suppressing Envoy's implicit zone-aware routing.
+// policies by default, disabling Envoy's implicit zone-aware routing.
+func defaultTypedLocalityLbConfig() *envoycommonv3.LocalityLbConfig {
+	return &envoycommonv3.LocalityLbConfig{
+		LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_ZoneAwareLbConfig_{
+			ZoneAwareLbConfig: &envoycommonv3.LocalityLbConfig_ZoneAwareLbConfig{
+				RoutingEnabled: &typev3.Percent{Value: 0},
+			},
+		},
+	}
+}
+
+// localityWeightedLbConfig returns the LocalityLbConfig that
+// translateLoadBalancerConfig attaches when localityType is WeightedLb.
 func localityWeightedLbConfig() *envoycommonv3.LocalityLbConfig {
 	return &envoycommonv3.LocalityLbConfig{
 		LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{

@@ -41,7 +41,8 @@ clusters:
     consecutive5xx: 7
     interval: 300s
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

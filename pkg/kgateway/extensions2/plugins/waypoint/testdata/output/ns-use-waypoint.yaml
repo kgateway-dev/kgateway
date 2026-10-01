@@ -13,7 +13,8 @@ Clusters:
   name: istio-se_infra_se-c_se-c.infra.svc.cluster.local_9000
   type: STATIC
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -23,7 +24,8 @@ Clusters:
   name: kube_infra_helloworld-headless_5000
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -33,7 +35,8 @@ Clusters:
   name: kube_infra_svc-a_5000
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

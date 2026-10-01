@@ -110,16 +110,26 @@ func buildTypedLocalityLbConfig(config *kgateway.LoadBalancer) *envoycommonv3.Lo
 			LocalityConfigSpecifier: zoneAware,
 		}
 	}
-	// Default to locality-weighted LB. A cluster with a typed load_balancing_policy
-	// ignores common_lb_config.locality_config_specifier, and a typed policy without
-	// locality_lb_config falls back to Envoy's implicit zone-aware defaults
-	// (routing_enabled 100%, min_cluster_size 6) once the proxy fleet spans multiple
-	// zones. Locality-weighted keeps traffic evenly distributed unless zoneAware is
-	// explicitly configured. This also covers config.LocalityType, which maps to the
-	// same locality-weighted config.
+	if config.LocalityType != nil {
+		return &envoycommonv3.LocalityLbConfig{
+			LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+			},
+		}
+	}
+	// Default to disabling zone-aware routing. A cluster with a typed
+	// load_balancing_policy ignores common_lb_config.locality_config_specifier, and
+	// a typed policy without locality_lb_config falls back to Envoy's implicit
+	// zone-aware defaults (routing_enabled 100%, min_cluster_size 6) once the proxy
+	// fleet spans multiple zones. routing_enabled 0% keeps traffic evenly
+	// distributed unless zoneAware is explicitly configured. Locality-weighted LB
+	// is not used as the default because it only uses the weights of groups that
+	// have a locality, so endpoints without one would get no traffic.
 	return &envoycommonv3.LocalityLbConfig{
-		LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig_{
-			LocalityWeightedLbConfig: &envoycommonv3.LocalityLbConfig_LocalityWeightedLbConfig{},
+		LocalityConfigSpecifier: &envoycommonv3.LocalityLbConfig_ZoneAwareLbConfig_{
+			ZoneAwareLbConfig: &envoycommonv3.LocalityLbConfig_ZoneAwareLbConfig{
+				RoutingEnabled: &typev3.Percent{Value: 0},
+			},
 		},
 	}
 }

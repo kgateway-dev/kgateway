@@ -15,7 +15,8 @@ clusters:
   name: backend_gwtest_static_0
   type: STATIC
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
