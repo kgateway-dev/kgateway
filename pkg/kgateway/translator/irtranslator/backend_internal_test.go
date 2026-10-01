@@ -23,11 +23,16 @@ func TestDefaultLocalityConfig(t *testing.T) {
 		assert func(t *testing.T, c *envoyclusterv3.Cluster)
 	}{
 		{
-			name:  "EDS cluster without locality config gets locality-weighted defaulting",
+			name:  "EDS cluster without locality config gets zone-aware routing disabled",
 			input: newEdsCluster(),
 			assert: func(t *testing.T, c *envoyclusterv3.Cluster) {
-				require.NotNil(t, c.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
-					"EDS cluster should receive locality-weighted config to disable implicit zone-aware routing")
+				zoneAware := c.GetCommonLbConfig().GetZoneAwareLbConfig()
+				require.NotNil(t, zoneAware.GetRoutingEnabled(),
+					"EDS cluster should receive an explicit routing_enabled to disable implicit zone-aware routing")
+				require.Zero(t, zoneAware.GetRoutingEnabled().GetValue(),
+					"implicit zone-aware routing must be disabled")
+				require.Nil(t, c.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
+					"locality-weighted LB drops endpoints without a locality, so it must not be the default")
 			},
 		},
 		{
@@ -64,16 +69,16 @@ func TestDefaultLocalityConfig(t *testing.T) {
 			input: func() *envoyclusterv3.Cluster {
 				c := newEdsCluster()
 				c.CommonLbConfig = &envoyclusterv3.Cluster_CommonLbConfig{
-					LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
-						ZoneAwareLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+					LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+						LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 					},
 				}
 				return c
 			}(),
 			assert: func(t *testing.T, c *envoyclusterv3.Cluster) {
-				require.NotNil(t, c.GetCommonLbConfig().GetZoneAwareLbConfig(),
+				require.NotNil(t, c.GetCommonLbConfig().GetLocalityWeightedLbConfig(),
 					"a locality mode chosen by a policy plugin must not be overwritten")
-				require.Nil(t, c.GetCommonLbConfig().GetLocalityWeightedLbConfig())
+				require.Nil(t, c.GetCommonLbConfig().GetZoneAwareLbConfig())
 			},
 		},
 	}

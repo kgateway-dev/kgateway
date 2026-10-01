@@ -15,7 +15,8 @@ clusters:
   name: backend_gwtest_log_0
   type: STATIC
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -25,7 +26,8 @@ clusters:
   name: kube_default_kubernetes_443
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

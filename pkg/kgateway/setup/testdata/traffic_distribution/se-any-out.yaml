@@ -39,7 +39,8 @@ clusters:
   name: istio-se_gwtest_inlined-se_se-a.example.com_80
   type: STATIC
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -48,7 +49,8 @@ clusters:
   name: istio-se_gwtest_workloads-se_se-b.example.com_80
   type: EDS
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

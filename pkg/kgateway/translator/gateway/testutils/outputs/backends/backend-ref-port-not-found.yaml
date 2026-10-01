@@ -17,7 +17,8 @@ Clusters:
       loadBalancingWeight: 1
   name: istio-se_default_example-se_se.example.internal_80
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

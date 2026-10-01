@@ -38,7 +38,8 @@ Clusters:
           hostname: auth.example.com
   name: backend_default_oauth-provider-token_0
 - commonLbConfig:
-    localityWeightedLbConfig: {}
+    zoneAwareLbConfig:
+      routingEnabled: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
