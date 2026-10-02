@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -244,12 +246,30 @@ func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v val
 // validateFullRouteConfiguration retains the final scope-level settings as well as
 // routes. Rebuilding only the routes loses inherited filter config and vhost rate limits.
 func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator) error {
-	return validateRouteConfigurationWithCaller(ctx, config, v, validator.CallerRouteFull)
+	return validateRouteConfigurationWithCaller(ctx, config, nil, v, validator.CallerRouteFull)
 }
 
-func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator, caller validator.ValidationCaller) error {
+// validateRouteConfigurationWithCaller validates config served by the given network
+// filters, or by a synthetic HttpConnectionManager when there are none. Plugins emit
+// HTTP filters and HCM settings from state gathered while translating routes, so the
+// final filter chain is only known once routes are, and is validated along with them.
+func validateRouteConfigurationWithCaller(
+	ctx context.Context,
+	config *envoyroutev3.RouteConfiguration,
+	networkFilters []*envoylistenerv3.Filter,
+	v validator.Validator,
+	caller validator.ValidationCaller,
+) error {
 	builder := bootstrap.New()
-	builder.SetRouteConfiguration(config)
+	if len(networkFilters) == 0 {
+		builder.SetRouteConfiguration(config)
+	} else {
+		inlined, err := inlineRouteConfiguration(networkFilters, config)
+		if err != nil {
+			return err
+		}
+		builder.SetNetworkFilters(inlined)
+	}
 	clusterNames := make([]string, 0)
 	// A batched route bootstrap can reference the same backend cluster from many routes.
 	// Track names here so validation adds only one stub Cluster per unique Envoy cluster name.
@@ -265,6 +285,29 @@ func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyrout
 	}
 
 	return runValidation(ctx, v, builder, caller)
+}
+
+// inlineRouteConfiguration copies networkFilters with config in place of each HCM's RDS
+// reference, leaving the emitted filters untouched.
+func inlineRouteConfiguration(networkFilters []*envoylistenerv3.Filter, config *envoyroutev3.RouteConfiguration) ([]*envoylistenerv3.Filter, error) {
+	inlined := make([]*envoylistenerv3.Filter, 0, len(networkFilters))
+	for _, filter := range networkFilters {
+		if !filter.GetTypedConfig().MessageIs(&envoyhttp.HttpConnectionManager{}) {
+			inlined = append(inlined, filter)
+			continue
+		}
+		hcm := &envoyhttp.HttpConnectionManager{}
+		if err := filter.GetTypedConfig().UnmarshalTo(hcm); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal HttpConnectionManager: %w", err)
+		}
+		hcm.RouteSpecifier = &envoyhttp.HttpConnectionManager_RouteConfig{RouteConfig: config}
+		filter, err := NewFilterWithTypedConfig(filter.GetName(), hcm)
+		if err != nil {
+			return nil, err
+		}
+		inlined = append(inlined, filter)
+	}
+	return inlined, nil
 }
 
 // routeValidationScope preserves inherited configuration and named dependencies
@@ -319,7 +362,7 @@ func (s routeValidationScope) validateRoute(ctx context.Context, route *envoyrou
 		Name: route.GetName(), Match: route.GetMatch(),
 		Action: &envoyroutev3.Route_DirectResponse{DirectResponse: &envoyroutev3.DirectResponseAction{Status: 500}},
 	}
-	if err := validateRouteConfigurationWithCaller(ctx, s.configuration([]*envoyroutev3.Route{matcherRoute}), v, validator.CallerRouteMatcher); err != nil {
+	if err := validateRouteConfigurationWithCaller(ctx, s.configuration([]*envoyroutev3.Route{matcherRoute}), nil, v, validator.CallerRouteMatcher); err != nil {
 		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
 	}
 	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)

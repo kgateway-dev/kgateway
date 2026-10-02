@@ -41,12 +41,13 @@ yitqAQ59a80qeeQ8i3nAI5clnJtfDYwZV6gIO72hygBWWE5FMjWzGPCE
 
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
-	routeConfig   *envoyroutev3.RouteConfiguration
-	filterConfigs ir.TypedFilterConfigMap
-	routes        []*envoyroutev3.Route
-	clusters      []*envoyclusterv3.Cluster
-	secrets       []*envoytlsv3.Secret
-	httpFilters   []*envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter
+	routeConfig    *envoyroutev3.RouteConfiguration
+	filterConfigs  ir.TypedFilterConfigMap
+	routes         []*envoyroutev3.Route
+	clusters       []*envoyclusterv3.Cluster
+	secrets        []*envoytlsv3.Secret
+	httpFilters    []*envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter
+	networkFilters []*envoylistenerv3.Filter
 }
 
 // New creates a new ConfigBuilder.
@@ -72,6 +73,13 @@ func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
 // and AddFilterConfig, which build a synthetic virtual host for partial validation.
 func (b *ConfigBuilder) SetRouteConfiguration(config *envoyroutev3.RouteConfiguration) {
 	b.routeConfig = config
+}
+
+// SetNetworkFilters supplies the complete network filter chain to validate. It takes
+// precedence over the synthetic HttpConnectionManager assembled from the other
+// builder inputs, so an HCM among the filters must carry its own route configuration.
+func (b *ConfigBuilder) SetNetworkFilters(filters []*envoylistenerv3.Filter) {
+	b.networkFilters = filters
 }
 
 // AddCluster adds a cluster to the builder.
@@ -145,8 +153,9 @@ func (b *ConfigBuilder) AddHttpFilter(filter *envoy_extensions_filters_network_h
 	b.httpFilters = append(b.httpFilters, filter)
 }
 
-// Build creates a partial bootstrap config suitable for validation.
-func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
+// syntheticHCM builds an HttpConnectionManager around the routes, filter configs,
+// and HTTP filters added to the builder.
+func (b *ConfigBuilder) syntheticHCM() (*envoylistenerv3.Filter, error) {
 	vhost := &envoyroutev3.VirtualHost{
 		Name:    "placeholder_vhost",
 		Domains: []string{"*"},
@@ -191,6 +200,25 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		return nil, fmt.Errorf("failed to marshal HttpConnectionManager: %w", err)
 	}
 
+	return &envoylistenerv3.Filter{
+		Name: envoywellknown.HTTPConnectionManager,
+		ConfigType: &envoylistenerv3.Filter_TypedConfig{
+			TypedConfig: hcmAny,
+		},
+	}, nil
+}
+
+// Build creates a partial bootstrap config suitable for validation.
+func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
+	networkFilters := b.networkFilters
+	if networkFilters == nil {
+		hcmFilter, err := b.syntheticHCM()
+		if err != nil {
+			return nil, err
+		}
+		networkFilters = []*envoylistenerv3.Filter{hcmFilter}
+	}
+
 	staticResources := &envoybootstrapv3.Bootstrap_StaticResources{
 		Listeners: []*envoylistenerv3.Listener{{
 			Name: "placeholder_listener",
@@ -203,13 +231,8 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 				},
 			},
 			FilterChains: []*envoylistenerv3.FilterChain{{
-				Name: "placeholder_filter_chain",
-				Filters: []*envoylistenerv3.Filter{{
-					Name: envoywellknown.HTTPConnectionManager,
-					ConfigType: &envoylistenerv3.Filter_TypedConfig{
-						TypedConfig: hcmAny,
-					},
-				}},
+				Name:    "placeholder_filter_chain",
+				Filters: networkFilters,
 			}},
 		}},
 	}

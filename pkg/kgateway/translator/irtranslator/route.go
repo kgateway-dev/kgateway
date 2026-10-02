@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
@@ -43,6 +44,18 @@ type httpRouteConfigurationTranslator struct {
 	validationLevel           apisettings.ValidationMode
 	validator                 validator.Validator
 	enableRouteSourceMetadata bool
+	// filterChain, when set, is the filter chain that serves this route configuration.
+	filterChain *httpFilterChain
+}
+
+// httpFilterChain computes the network filters of the filter chain serving a route
+// configuration. Plugins emit them from state gathered while translating routes, so they
+// are computed after RouteConfiguration plugins and validated with the final routes.
+type httpFilterChain struct {
+	out      *envoylistenerv3.FilterChain
+	compute  func() []*envoylistenerv3.Filter
+	fallback func() ([]*envoylistenerv3.Filter, error)
+	reporter reportssdk.ListenerReporter
 }
 
 const (
@@ -109,6 +122,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 	}
 	validationCtx := newRouteValidationContext(computedVhosts)
+	networkFilters := h.computeFilterChain()
 	if len(errs) > 0 {
 		// Anytime we encounter any errors while computing the RC or there's invalid policy
 		// attached to the RC (via Gateway or HTTPS listener), we need to replace the entire
@@ -119,12 +133,12 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		cfg.VirtualHosts = []*envoyroutev3.VirtualHost{setFallBackConfig("default", "*")}
 		// Validate the fallback that will be returned, including retained shared
 		// settings, without isolating or reporting routes that were discarded.
-		h.validateRouteConfiguration(ctx, cfg, validationCtx)
+		h.validateRouteConfiguration(ctx, cfg, validationCtx, networkFilters)
 		return cfg
 	}
 	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
 
-	h.validateRouteConfiguration(ctx, cfg, validationCtx)
+	h.validateRouteConfiguration(ctx, cfg, validationCtx, networkFilters)
 
 	return cfg
 }
@@ -494,10 +508,24 @@ func replaceRouteWithDirectResponse(out *envoyroutev3.Route) *envoyroutev3.Route
 	return out
 }
 
+// computeFilterChain computes and emits the network filters of the filter chain serving
+// this route configuration, if there is one.
+func (h *httpRouteConfigurationTranslator) computeFilterChain() []*envoylistenerv3.Filter {
+	if h.filterChain == nil {
+		return nil
+	}
+	h.filterChain.out.Filters = h.filterChain.compute()
+	return h.filterChain.out.Filters
+}
+
+// validateRouteConfiguration validates cfg and, in strict mode, the network filters that
+// serve it. The filters share an Envoy invocation with a check that runs once per route
+// configuration, so validating them costs nothing extra while the configuration is valid.
 func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 	ctx context.Context,
 	cfg *envoyroutev3.RouteConfiguration,
 	validationCtx routeValidationContext,
+	networkFilters []*envoylistenerv3.Filter,
 ) {
 	if h.validationLevel != apisettings.ValidationStandard && h.validationLevel != apisettings.ValidationStrict {
 		return
@@ -527,8 +555,10 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 			neutral.Domains = vhost.GetDomains()
 			shared.VirtualHosts = append(shared.VirtualHosts, neutral)
 		}
-		if err := validateFullRouteConfiguration(ctx, shared, h.validator); err != nil {
-			h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+		if err := validateRouteConfigurationWithCaller(ctx, shared, networkFilters, h.validator, validator.CallerRouteFull); err != nil {
+			if !h.replaceIfInvalidFilterChain(ctx, cfg, validationCtx, networkFilters) {
+				h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
+			}
 			return
 		}
 		for i, vhost := range cfg.VirtualHosts {
@@ -539,7 +569,10 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 	// Repair all lightweight failures before invoking Envoy. Even a large batch
 	// with malformed rewrites or generated matchers needs only one invocation
 	// when the repaired configuration is valid.
-	if validateFullRouteConfiguration(ctx, cfg, h.validator) == nil {
+	if validateRouteConfigurationWithCaller(ctx, cfg, networkFilters, h.validator, validator.CallerRouteFull) == nil {
+		return
+	}
+	if h.replaceIfInvalidFilterChain(ctx, cfg, validationCtx, networkFilters) {
 		return
 	}
 	// Check shared fields before attributing a failure to individual routes.
@@ -552,7 +585,9 @@ func (h *httpRouteConfigurationTranslator) validateRouteConfiguration(
 	for i, vhost := range cfg.GetVirtualHosts() {
 		cfg.VirtualHosts[i] = h.validateRouteBatch(ctx, cfg, vhost, contexts[i])
 	}
-	if err := validateFullRouteConfiguration(ctx, cfg, h.validator); err != nil {
+	// The filters are valid with the fallback configuration, so a failure here lies in
+	// the repaired routes or in how they combine with the filters.
+	if err := validateRouteConfigurationWithCaller(ctx, cfg, networkFilters, h.validator, validator.CallerRouteFull); err != nil {
 		h.replaceInvalidRouteConfiguration(cfg, validationCtx, err)
 	}
 }
@@ -600,7 +635,50 @@ func (h *httpRouteConfigurationTranslator) replaceInvalidRouteConfiguration(cfg 
 	for _, cvh := range validationCtx.vhostsByPointer {
 		h.reportVirtualHostReplacement(cvh.in, err)
 	}
-	// Invalid shared fields must not survive the fallback.
+	h.resetToFallback(cfg)
+}
+
+// replaceIfInvalidFilterChain checks the network filters with the fallback configuration.
+// If Envoy rejects them, it fails closed: the routes must not be served by an HCM
+// stripped of the rejected filters, since those may authorize or limit that traffic.
+func (h *httpRouteConfigurationTranslator) replaceIfInvalidFilterChain(
+	ctx context.Context,
+	cfg *envoyroutev3.RouteConfiguration,
+	validationCtx routeValidationContext,
+	networkFilters []*envoylistenerv3.Filter,
+) bool {
+	if len(networkFilters) == 0 {
+		return false
+	}
+	fallback := &envoyroutev3.RouteConfiguration{}
+	h.resetToFallback(fallback)
+	err := validateRouteConfigurationWithCaller(ctx, fallback, networkFilters, h.validator, validator.CallerHTTPFilterChain)
+	if err == nil {
+		return false
+	}
+	h.logger.Error("http filter chain validation failed", "error", err)
+	incRouteReplacementMetric(h.gw, err)
+	for _, cvh := range validationCtx.vhostsByPointer {
+		h.reportVirtualHostReplacement(cvh.in, err)
+	}
+	h.filterChain.reporter.SetCondition(reportssdk.ListenerCondition{
+		Type:    gwv1.ListenerConditionAccepted,
+		Status:  metav1.ConditionFalse,
+		Reason:  reportssdk.ListenerReplacedReason,
+		Message: err.Error(),
+	})
+	h.resetToFallback(cfg)
+	filters, fallbackErr := h.filterChain.fallback()
+	if fallbackErr != nil {
+		h.logger.Error("failed to build fallback http filter chain", "error", fallbackErr)
+	}
+	h.filterChain.out.Filters = filters
+	return true
+}
+
+// resetToFallback replaces cfg with a catch-all 500. Invalid shared fields must not
+// survive the fallback.
+func (h *httpRouteConfigurationTranslator) resetToFallback(cfg *envoyroutev3.RouteConfiguration) {
 	proto.Reset(cfg)
 	cfg.Name = h.routeConfigName
 	cfg.IgnorePortInHostMatching = true
