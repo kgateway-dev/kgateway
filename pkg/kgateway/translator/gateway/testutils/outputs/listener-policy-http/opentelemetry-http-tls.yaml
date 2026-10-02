@@ -1,14 +1,37 @@
 Clusters:
-- commonLbConfig:
-    localityWeightedLbConfig: {}
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
   connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  ignoreHealthOnHostRemoval: true
-  name: kube_default_opentelemetry-collector_4317
-  type: EDS
+  loadAssignment:
+    clusterName: backend_default_otel-collector_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: otel.example.com
+              portValue: 4318
+          healthCheckConfig:
+            hostname: otel.example.com
+          hostname: otel.example.com
+  name: backend_default_otel-collector_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        combinedValidationContext:
+          defaultValidationContext:
+            matchTypedSubjectAltNames:
+            - matcher:
+                exact: otel.example.com
+              sanType: DNS
+          validationContextSdsSecretConfig:
+            name: SYSTEM_CA_CERT
+      sni: otel.example.com
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
@@ -22,35 +45,6 @@ Listeners:
     - name: envoy.filters.network.http_connection_manager
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-        accessLog:
-        - name: envoy.access_loggers.open_telemetry
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
-            body:
-              stringValue: '"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %RESPONSE_CODE%"'
-            httpService:
-              httpUri:
-                cluster: kube_default_opentelemetry-collector_4317
-                timeout: 2s
-                uri: http://opentelemetry-collector.default.svc.cluster.local:4317/v1/logs
-            logName: otel-accesslog-service
-            resourceAttributes:
-              values:
-              - key: service.name
-                value:
-                  stringValue: example-gateway.default
-              - key: service.namespace
-                value:
-                  stringValue: default
-              - key: service.version
-                value:
-                  stringValue: v1.0.0-ci1
-              - key: k8s.namespace.name
-                value:
-                  stringValue: default
-              - key: k8s.container.name
-                value:
-                  stringValue: kgateway-proxy
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -70,9 +64,9 @@ Listeners:
               '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
               httpService:
                 httpUri:
-                  cluster: kube_default_opentelemetry-collector_4317
+                  cluster: backend_default_otel-collector_0
                   timeout: 2s
-                  uri: http://opentelemetry-collector.default.svc.cluster.local:4317/v1/traces
+                  uri: https://otel.example.com:0/v1/traces
               resourceDetectors:
               - name: envoy.tracers.opentelemetry.resource_detectors.environment
                 typedConfig:
@@ -83,26 +77,26 @@ Listeners:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        default.httpSettings.accessLog:
-        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
-        default.httpSettings.accessLogConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
         default.httpSettings.tracing:
-        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+        - gateway.kgateway.dev/ListenerPolicy/default/tracing-otel-http-tls
   name: listener~8080
 Routes:
 - ignorePortInHostMatching: true
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        default.httpSettings.accessLog:
-        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
-        default.httpSettings.accessLogConfig:
-        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
         default.httpSettings.tracing:
-        - gateway.kgateway.dev/ListenerPolicy/default/access-log-otel-http-identity
+        - gateway.kgateway.dev/ListenerPolicy/default/tracing-otel-http-tls
   name: listener~8080
 Statuses:
+  backends:
+    default/otel-collector:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     default/example-gateway:
       conditions:
@@ -158,7 +152,26 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   policies:
-    ListenerPolicy/default/access-log-otel-http-identity:
+    BackendTLSPolicy/default/otel-collector-tls:
+      ancestors:
+      - ancestorRef:
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: otel-collector
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+    ListenerPolicy/default/tracing-otel-http-tls:
       ancestors:
       - ancestorRef:
           group: gateway.networking.k8s.io

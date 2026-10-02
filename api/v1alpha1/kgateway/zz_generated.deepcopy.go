@@ -1054,6 +1054,11 @@ func (in *CommonHttpProtocolOptions) DeepCopy() *CommonHttpProtocolOptions {
 func (in *CommonHttpService) DeepCopyInto(out *CommonHttpService) {
 	*out = *in
 	in.BackendRef.DeepCopyInto(&out.BackendRef)
+	if in.Path != nil {
+		in, out := &in.Path, &out.Path
+		*out = new(string)
+		**out = **in
+	}
 	if in.Timeout != nil {
 		in, out := &in.Timeout, &out.Timeout
 		*out = new(v1.Duration)

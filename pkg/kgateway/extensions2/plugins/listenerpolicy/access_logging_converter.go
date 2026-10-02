@@ -230,7 +230,7 @@ func generateHttpServiceConfig(httpService kgateway.CommonAccessLogHttpService, 
 		return nil, errors.New("backend ref not found")
 	}
 
-	return ToEnvoyHttp(httpService.CommonHttpService, backend)
+	return ToEnvoyHttp(httpService.CommonHttpService, backend, OTLPHTTPLogsPath)
 }
 
 func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {

@@ -573,9 +573,21 @@ type CommonGrpcService struct {
 // Common HTTP service configuration created by setting `http_service` as the OTLP exporter transport.
 // Ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/http_service.proto
 type CommonHttpService struct {
-	// The backend HTTP service. Can be any type of supported backend (Kubernetes Service, kgateway Backend, etc..)
+	// The backend HTTP service. Must have a resolvable hostname: a Kubernetes Service, or, for
+	// an external endpoint not fronted by a Kubernetes Service (e.g. a SaaS OTLP collector), a
+	// kgateway Backend of type Static.
+	// To send the request over TLS with custom CA/SAN/mTLS settings, attach a BackendTLSPolicy
+	// or BackendConfigPolicy.
 	// +required
 	BackendRef gwv1.BackendRef `json:"backendRef"`
+
+	// The path to use for the OTLP/HTTP request.
+	// Defaults to the standard OTLP path (`/v1/logs` for access logs, `/v1/traces` for tracing).
+	// Override this if the collector endpoint is exposed at a different path.
+	// +optional
+	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:Pattern="^/[-a-zA-Z0-9@:%.+~#?&/=_]+$"
+	Path *string `json:"path,omitempty"`
 
 	// The timeout for the HTTP request. If this field is not set, Envoy's default timeout is used.
 	// +optional
@@ -585,8 +597,6 @@ type CommonHttpService struct {
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
 
 	// Additional request headers to add to each request sent to the HTTP service.
-	// This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
-	// which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
 	// +optional
 	RequestHeadersToAdd []HeaderValue `json:"requestHeadersToAdd,omitempty"`
 }

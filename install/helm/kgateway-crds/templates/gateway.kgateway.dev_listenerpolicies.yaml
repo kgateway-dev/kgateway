@@ -1356,9 +1356,12 @@ spec:
                                     Mutually exclusive with GrpcService.
                                   properties:
                                     backendRef:
-                                      description: The backend HTTP service. Can be
-                                        any type of supported backend (Kubernetes
-                                        Service, kgateway Backend, etc..)
+                                      description: |-
+                                        The backend HTTP service. Must have a resolvable hostname: a Kubernetes Service, or, for
+                                        an external endpoint not fronted by a Kubernetes Service (e.g. a SaaS OTLP collector), a
+                                        kgateway Backend of type Static.
+                                        To send the request over TLS with custom CA/SAN/mTLS settings, attach a BackendTLSPolicy
+                                        or BackendConfigPolicy.
                                       properties:
                                         group:
                                           default: ""
@@ -1450,11 +1453,17 @@ spec:
                                     logName:
                                       description: name of log stream
                                       type: string
-                                    requestHeadersToAdd:
+                                    path:
                                       description: |-
-                                        Additional request headers to add to each request sent to the HTTP service.
-                                        This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
-                                        which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                        The path to use for the OTLP/HTTP request.
+                                        Defaults to the standard OTLP path (`/v1/logs` for access logs, `/v1/traces` for tracing).
+                                        Override this if the collector endpoint is exposed at a different path.
+                                      maxLength: 2048
+                                      pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
+                                      type: string
+                                    requestHeadersToAdd:
+                                      description: Additional request headers to add
+                                        to each request sent to the HTTP service.
                                       items:
                                         description: |-
                                           Header name/value pair.
@@ -3353,9 +3362,12 @@ spec:
                                       Mutually exclusive with GrpcService.
                                     properties:
                                       backendRef:
-                                        description: The backend HTTP service. Can
-                                          be any type of supported backend (Kubernetes
-                                          Service, kgateway Backend, etc..)
+                                        description: |-
+                                          The backend HTTP service. Must have a resolvable hostname: a Kubernetes Service, or, for
+                                          an external endpoint not fronted by a Kubernetes Service (e.g. a SaaS OTLP collector), a
+                                          kgateway Backend of type Static.
+                                          To send the request over TLS with custom CA/SAN/mTLS settings, attach a BackendTLSPolicy
+                                          or BackendConfigPolicy.
                                         properties:
                                           group:
                                             default: ""
@@ -3444,11 +3456,17 @@ spec:
                                         - message: Must have port for Service reference
                                           rule: '(size(self.group) == 0 && self.kind
                                             == ''Service'') ? has(self.port) : true'
-                                      requestHeadersToAdd:
+                                      path:
                                         description: |-
-                                          Additional request headers to add to each request sent to the HTTP service.
-                                          This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
-                                          which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                          The path to use for the OTLP/HTTP request.
+                                          Defaults to the standard OTLP path (`/v1/logs` for access logs, `/v1/traces` for tracing).
+                                          Override this if the collector endpoint is exposed at a different path.
+                                        maxLength: 2048
+                                        pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
+                                        type: string
+                                      requestHeadersToAdd:
+                                        description: Additional request headers to
+                                          add to each request sent to the HTTP service.
                                         items:
                                           description: |-
                                             Header name/value pair.
@@ -4943,10 +4961,12 @@ spec:
                                           Mutually exclusive with GrpcService.
                                         properties:
                                           backendRef:
-                                            description: The backend HTTP service.
-                                              Can be any type of supported backend
-                                              (Kubernetes Service, kgateway Backend,
-                                              etc..)
+                                            description: |-
+                                              The backend HTTP service. Must have a resolvable hostname: a Kubernetes Service, or, for
+                                              an external endpoint not fronted by a Kubernetes Service (e.g. a SaaS OTLP collector), a
+                                              kgateway Backend of type Static.
+                                              To send the request over TLS with custom CA/SAN/mTLS settings, attach a BackendTLSPolicy
+                                              or BackendConfigPolicy.
                                             properties:
                                               group:
                                                 default: ""
@@ -5041,11 +5061,18 @@ spec:
                                           logName:
                                             description: name of log stream
                                             type: string
-                                          requestHeadersToAdd:
+                                          path:
                                             description: |-
-                                              Additional request headers to add to each request sent to the HTTP service.
-                                              This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
-                                              which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                              The path to use for the OTLP/HTTP request.
+                                              Defaults to the standard OTLP path (`/v1/logs` for access logs, `/v1/traces` for tracing).
+                                              Override this if the collector endpoint is exposed at a different path.
+                                            maxLength: 2048
+                                            pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
+                                            type: string
+                                          requestHeadersToAdd:
+                                            description: Additional request headers
+                                              to add to each request sent to the HTTP
+                                              service.
                                             items:
                                               description: |-
                                                 Header name/value pair.
@@ -6974,10 +7001,12 @@ spec:
                                             Mutually exclusive with GrpcService.
                                           properties:
                                             backendRef:
-                                              description: The backend HTTP service.
-                                                Can be any type of supported backend
-                                                (Kubernetes Service, kgateway Backend,
-                                                etc..)
+                                              description: |-
+                                                The backend HTTP service. Must have a resolvable hostname: a Kubernetes Service, or, for
+                                                an external endpoint not fronted by a Kubernetes Service (e.g. a SaaS OTLP collector), a
+                                                kgateway Backend of type Static.
+                                                To send the request over TLS with custom CA/SAN/mTLS settings, attach a BackendTLSPolicy
+                                                or BackendConfigPolicy.
                                               properties:
                                                 group:
                                                   default: ""
@@ -7069,11 +7098,18 @@ spec:
                                                 rule: '(size(self.group) == 0 && self.kind
                                                   == ''Service'') ? has(self.port)
                                                   : true'
-                                            requestHeadersToAdd:
+                                            path:
                                               description: |-
-                                                Additional request headers to add to each request sent to the HTTP service.
-                                                This can be used for scenarios in which additional ad hoc authorization headers (e.g. x-foo-bar: baz-key) are to be injected,
-                                                which is useful since OTLP/HTTP collectors commonly require an API key header that has no gRPC equivalent.
+                                                The path to use for the OTLP/HTTP request.
+                                                Defaults to the standard OTLP path (`/v1/logs` for access logs, `/v1/traces` for tracing).
+                                                Override this if the collector endpoint is exposed at a different path.
+                                              maxLength: 2048
+                                              pattern: ^/[-a-zA-Z0-9@:%.+~#?&/=_]+$
+                                              type: string
+                                            requestHeadersToAdd:
+                                              description: Additional request headers
+                                                to add to each request sent to the
+                                                HTTP service.
                                               items:
                                                 description: |-
                                                   Header name/value pair.

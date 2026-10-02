@@ -105,7 +105,7 @@ func TestTracingConverter(t *testing.T) {
 							TypedConfig: mustMessageToAny(t, &envoytracev3.OpenTelemetryConfig{
 								HttpService: &envoycorev3.HttpService{
 									HttpUri: &envoycorev3.HttpUri{
-										Uri: "backend_default_test-service_0",
+										Uri: "http://otel-collector.default.svc.cluster.local:0/v1/traces",
 										HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
 											Cluster: "backend_default_test-service_0",
 										},
@@ -498,6 +498,7 @@ func TestTracingConverter(t *testing.T) {
 					Name:      "test-service",
 					Namespace: "default",
 				}, 0, "", "")
+				backend.CanonicalHostname = "otel-collector.default.svc.cluster.local"
 
 				provider, config, err := translateTracing(
 					tc.config,

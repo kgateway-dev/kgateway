@@ -867,9 +867,9 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 							TypedConfig: mustMessageToAny(t, &envoy_open_telemetry.OpenTelemetryAccessLogConfig{
 								HttpService: &envoycorev3.HttpService{
 									HttpUri: &envoycorev3.HttpUri{
-										Uri: "backend_default_test-service_0",
+										Uri: "http://otel-collector.default.svc.cluster.local:4317/v1/logs",
 										HttpUpstreamType: &envoycorev3.HttpUri_Cluster{
-											Cluster: "backend_default_test-service_0",
+											Cluster: "backend_default_test-service_4317",
 										},
 										Timeout: &durationpb.Duration{Seconds: 2},
 									},
@@ -1389,7 +1389,8 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 								Kind:      "Backend",
 								Name:      "test-service",
 								Namespace: "default",
-							}, 0, "", "")
+							}, 4317, "", "")
+							backend.CanonicalHostname = "otel-collector.default.svc.cluster.local"
 							return &backend
 						}(),
 					},

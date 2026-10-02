@@ -124,7 +124,7 @@ func convertOTelTracingConfig(
 		}
 		tracingCfg.GrpcService = envoyGrpcService
 	case config.HttpService != nil:
-		envoyHttpService, err := ToEnvoyHttp(*config.HttpService, backend)
+		envoyHttpService, err := ToEnvoyHttp(*config.HttpService, backend, OTLPHTTPTracesPath)
 		if err != nil {
 			return nil, err
 		}
