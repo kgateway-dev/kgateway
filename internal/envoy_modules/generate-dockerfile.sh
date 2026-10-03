@@ -80,7 +80,7 @@ trap 'rm -rf "$TMPDIR_GENERATED"' EXIT
 # Section 3: RUN cargo fetch && cargo zigbuild && find ... -delete
 {
     printf 'RUN cargo fetch \\\n'
-    printf '    && cargo zigbuild --target ${RUST_BUILD_ARCH}-unknown-linux-gnu \\\n'
+    printf '    && cargo zigbuild --release --target ${RUST_BUILD_ARCH}-unknown-linux-gnu \\\n'
     printf '    && find /build/target \\( '
     first=true
     for member in $members; do
