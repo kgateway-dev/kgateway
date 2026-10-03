@@ -10,6 +10,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -235,7 +236,7 @@ func TestBuildEnvoyExtProc(t *testing.T) {
 func TestConvertFilterStageSpec(t *testing.T) {
 	tests := []struct {
 		name     string
-		cfg      *kgateway.FilterStageSpec
+		cfg      *shared.FilterStageSpec
 		expected filters.FilterStage[filters.WellKnownFilterStage]
 	}{
 		{
@@ -245,52 +246,52 @@ func TestConvertFilterStageSpec(t *testing.T) {
 		},
 		{
 			name:     "Fault/Before",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageFault, Predicate: kgateway.FilterStagePredicateBefore},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageFault, Predicate: shared.FilterStagePredicateBefore},
 			expected: filters.BeforeStage(filters.FaultStage),
 		},
 		{
 			name:     "Fault/During",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageFault, Predicate: kgateway.FilterStagePredicateDuring},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageFault, Predicate: shared.FilterStagePredicateDuring},
 			expected: filters.DuringStage(filters.FaultStage),
 		},
 		{
 			name:     "Fault/After",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageFault, Predicate: kgateway.FilterStagePredicateAfter},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageFault, Predicate: shared.FilterStagePredicateAfter},
 			expected: filters.AfterStage(filters.FaultStage),
 		},
 		{
 			name:     "AuthN/Before",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthN, Predicate: kgateway.FilterStagePredicateBefore},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageAuthN, Predicate: shared.FilterStagePredicateBefore},
 			expected: filters.BeforeStage(filters.AuthNStage),
 		},
 		{
 			name:     "AuthN/During",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthN, Predicate: kgateway.FilterStagePredicateDuring},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageAuthN, Predicate: shared.FilterStagePredicateDuring},
 			expected: filters.DuringStage(filters.AuthNStage),
 		},
 		{
 			name:     "AuthZ/After",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthZ, Predicate: kgateway.FilterStagePredicateAfter},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageAuthZ, Predicate: shared.FilterStagePredicateAfter},
 			expected: filters.AfterStage(filters.AuthZStage),
 		},
 		{
 			name:     "RateLimit/During",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageRateLimit, Predicate: kgateway.FilterStagePredicateDuring},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageRateLimit, Predicate: shared.FilterStagePredicateDuring},
 			expected: filters.DuringStage(filters.RateLimitStage),
 		},
 		{
 			name:     "Route/Before",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageRoute, Predicate: kgateway.FilterStagePredicateBefore},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageRoute, Predicate: shared.FilterStagePredicateBefore},
 			expected: filters.BeforeStage(filters.RouteStage),
 		},
 		{
 			name:     "unknown stage returns default",
-			cfg:      &kgateway.FilterStageSpec{Stage: "Unknown", Predicate: kgateway.FilterStagePredicateBefore},
+			cfg:      &shared.FilterStageSpec{Stage: "Unknown", Predicate: shared.FilterStagePredicateBefore},
 			expected: defaultExtProcFilterStage,
 		},
 		{
 			name:     "empty predicate defaults to During",
-			cfg:      &kgateway.FilterStageSpec{Stage: kgateway.FilterStageAuthN},
+			cfg:      &shared.FilterStageSpec{Stage: shared.FilterStageAuthN},
 			expected: filters.DuringStage(filters.AuthNStage),
 		},
 	}
