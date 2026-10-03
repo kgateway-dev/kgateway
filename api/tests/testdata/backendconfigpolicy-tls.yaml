@@ -1,0 +1,51 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: no-trust-source
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    sni: example.com
+    simpleTLS: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: system-ca
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    wellKnownCACertificates: System
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: insecure-skip-verify-false
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    insecureSkipVerify: false
+---
+_err: at most one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] may be set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: two-trust-sources
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    secretRef:
+      name: tls-secret
+    wellKnownCACertificates: System

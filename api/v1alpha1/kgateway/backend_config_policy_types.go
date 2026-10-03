@@ -350,7 +350,13 @@ type TCPKeepalive struct {
 	KeepAliveInterval *metav1.Duration `json:"keepAliveInterval,omitempty"`
 }
 
-// +kubebuilder:validation:ExactlyOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
+// TLS configures TLS origination to the backend.
+//
+// At most one trust source may be set: secretRef, files, wellKnownCACertificates,
+// or insecureSkipVerify. If none is set, the backend's certificate is validated
+// against the system CA certificates, as if wellKnownCACertificates were System.
+//
+// +kubebuilder:validation:AtMostOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional
@@ -363,10 +369,13 @@ type TLS struct {
 	// WellKnownCACertificates specifies whether to use a well-known set of CA
 	// certificates for validating the backend's certificate chain. Currently,
 	// only the system certificate pool is supported via SDS.
+	// This is the default when no other trust source is set. When sni is set and
+	// verifySubjectAltNames is empty, the certificate must also be valid for the sni.
 	// +optional
 	WellKnownCACertificates *gwv1.WellKnownCACertificatesType `json:"wellKnownCACertificates,omitempty"`
 
 	// InsecureSkipVerify originates TLS but skips verification of the backend's certificate.
+	// Setting it to false has the same effect as leaving it unset.
 	// WARNING: This is an insecure option that should only be used if the risks are understood.
 	// +optional
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`

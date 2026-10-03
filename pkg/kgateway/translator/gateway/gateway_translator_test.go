@@ -2746,6 +2746,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with TLS and no trust source defaults to system ca", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/tls-default-system-ca.yaml"},
+			outputFile: "backendconfigpolicy/tls-default-system-ca.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with Circuit Breakers minimal", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/circuitbreakers-minimal.yaml"},

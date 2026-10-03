@@ -143,11 +143,17 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContext *envoytlsv3.CommonTlsContext) error {
 	sanMatchers := verifySanListToTypedMatchSanList(tlsConfig.VerifySubjectAltNames)
 
-	// If the user opted to use the system CA bundle, configure a CombinedValidationContext
-	// that references the SDS secret for the system CA set, and attach SAN matchers if any.
-	if tlsConfig.WellKnownCACertificates != nil {
-		switch *tlsConfig.WellKnownCACertificates {
+	// If the user opted to use the system CA bundle, or named no trust source at all,
+	// configure a CombinedValidationContext that references the SDS secret for the
+	// system CA set, and attach SAN matchers if any.
+	if wellKnown := effectiveWellKnownCACertificates(tlsConfig); wellKnown != nil {
+		switch *wellKnown {
 		case gwv1.WellKnownCACertificatesSystem:
+			// A public CA vouches for every hostname it has issued for, so without an
+			// explicit SAN list, pin the certificate to the SNI we are sending.
+			if len(sanMatchers) == 0 && tlsConfig.Sni != nil {
+				sanMatchers = verifySanListToTypedMatchSanList([]string{*tlsConfig.Sni})
+			}
 			combined := &envoytlsv3.CommonTlsContext_CombinedValidationContext{
 				CombinedValidationContext: &envoytlsv3.CommonTlsContext_CombinedCertificateValidationContext{
 					DefaultValidationContext: &envoytlsv3.CertificateValidationContext{
@@ -161,7 +167,7 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 			tlsContext.ValidationContextType = combined
 			return nil
 		default:
-			logger.Error("unsupported WellKnownCACertificates value", "value", *tlsConfig.WellKnownCACertificates)
+			logger.Error("unsupported WellKnownCACertificates value", "value", *wellKnown)
 		}
 	}
 
@@ -192,6 +198,20 @@ func buildValidationContext(tlsData *tlsData, tlsConfig *kgateway.TLS, tlsContex
 	}
 	tlsContext.ValidationContextType = validationCtx
 
+	return nil
+}
+
+// effectiveWellKnownCACertificates returns the well-known CA set to validate the
+// backend against. When the policy names no trust source (no secretRef, files, or
+// wellKnownCACertificates), it defaults to the system CA set rather than skipping
+// validation. Callers handle insecureSkipVerify: true before reaching here.
+func effectiveWellKnownCACertificates(tlsConfig *kgateway.TLS) *gwv1.WellKnownCACertificatesType {
+	if tlsConfig.WellKnownCACertificates != nil {
+		return tlsConfig.WellKnownCACertificates
+	}
+	if tlsConfig.SecretRef == nil && tlsConfig.Files == nil {
+		return new(gwv1.WellKnownCACertificatesSystem)
+	}
 	return nil
 }
 
