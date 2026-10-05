@@ -328,14 +328,14 @@ func buildTranslateFunc(
 // applyTLSExtensionOptions applies the same kgateway.dev/* TLS extension annotations supported
 // on a Gateway listener to the UpstreamTlsContext generated for a BackendTLSPolicy.
 // validationContext must be the same CertificateValidationContext already embedded in tlsContext.
-// Keys kgateway does not recognize are skipped rather than rejected: options is an
+// Keys outside the kgateway.dev/ prefix are skipped rather than rejected: options is an
 // implementation-specific map, so it may carry keys meant for other implementations.
 func applyTLSExtensionOptions(
 	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
 	tlsContext *envoytlsv3.UpstreamTlsContext,
 	validationContext *envoytlsv3.CertificateValidationContext,
 ) error {
-	options = knownTLSExtensionOptions(options)
+	options = kgatewayTLSOptions(options)
 	if len(options) == 0 {
 		return nil
 	}
@@ -364,22 +364,22 @@ func applyTLSExtensionOptions(
 	return nil
 }
 
-// knownTLSExtensionOptions returns the subset of options whose keys are kgateway TLS extension
-// options.
-func knownTLSExtensionOptions(
+// kgatewayTLSOptions returns the subset of options in the kgateway.dev/ namespace, so options
+// meant only for other implementations leave the TLS context untouched.
+func kgatewayTLSOptions(
 	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
 ) map[gwv1.AnnotationKey]gwv1.AnnotationValue {
-	var known map[gwv1.AnnotationKey]gwv1.AnnotationValue
+	var out map[gwv1.AnnotationKey]gwv1.AnnotationValue
 	for key, value := range options {
-		if _, ok := sslutils.TLSExtensionOptionFuncs[key]; !ok {
+		if !sslutils.IsKgatewayTLSOption(key) {
 			continue
 		}
-		if known == nil {
-			known = make(map[gwv1.AnnotationKey]gwv1.AnnotationValue, len(options))
+		if out == nil {
+			out = make(map[gwv1.AnnotationKey]gwv1.AnnotationValue, len(options))
 		}
-		known[key] = value
+		out[key] = value
 	}
-	return known
+	return out
 }
 
 func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {
