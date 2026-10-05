@@ -118,9 +118,12 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			// A minimum alone normalizes the maximum to the highest supported protocol, so it
+			// never leaves an inverted range against Envoy's own implicit default maximum.
 			name: "tls_min_version",
 			out: &ir.TLSConfig{
 				MinTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_3),
+				MaxTLSVersion: new(envoytlsv3.TlsParameters_TLSv1_3),
 			},
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.MinTLSVersion: "1.3",
