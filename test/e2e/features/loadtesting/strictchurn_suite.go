@@ -643,7 +643,7 @@ func (s *StrictChurnSuite) waitForGatewayProxies(gateways []string) {
 			lastErr = s.testInstallation.ClusterContext.Client.Get(ctx,
 				types.NamespacedName{Namespace: s.loadTestManager.testNamespace, Name: gw}, deployment)
 			if lastErr != nil {
-				return false, nil
+				return false, nil //nolint:nilerr // Retry lookup failures until the deadline; lastErr is reported if polling times out.
 			}
 			desired := int32(1)
 			if deployment.Spec.Replicas != nil {
