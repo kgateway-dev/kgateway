@@ -388,7 +388,8 @@ type TLS struct {
 	Sni *string `json:"sni,omitempty"`
 
 	// Verify that the Subject Alternative Name in the peer certificate is one of the specified values.
-	// note that a root_ca must be provided if this option is used.
+	// When using secretRef or files, a root CA (ca.crt or rootCA) must be provided if this option is used.
+	// When validating against the system CA certificates and this is empty, the certificate must be valid for sni.
 	// +optional
 	VerifySubjectAltNames []string `json:"verifySubjectAltNames,omitempty"`
 
