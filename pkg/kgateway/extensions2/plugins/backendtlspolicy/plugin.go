@@ -328,11 +328,14 @@ func buildTranslateFunc(
 // applyTLSExtensionOptions applies the same kgateway.dev/* TLS extension annotations supported
 // on a Gateway listener to the UpstreamTlsContext generated for a BackendTLSPolicy.
 // validationContext must be the same CertificateValidationContext already embedded in tlsContext.
+// Keys kgateway does not recognize are skipped rather than rejected: options is an
+// implementation-specific map, so it may carry keys meant for other implementations.
 func applyTLSExtensionOptions(
 	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
 	tlsContext *envoytlsv3.UpstreamTlsContext,
 	validationContext *envoytlsv3.CertificateValidationContext,
 ) error {
+	options = knownTLSExtensionOptions(options)
 	if len(options) == 0 {
 		return nil
 	}
@@ -359,6 +362,24 @@ func applyTLSExtensionOptions(
 	}
 
 	return nil
+}
+
+// knownTLSExtensionOptions returns the subset of options whose keys are kgateway TLS extension
+// options.
+func knownTLSExtensionOptions(
+	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
+) map[gwv1.AnnotationKey]gwv1.AnnotationValue {
+	var known map[gwv1.AnnotationKey]gwv1.AnnotationValue
+	for key, value := range options {
+		if _, ok := sslutils.TLSExtensionOptionFuncs[key]; !ok {
+			continue
+		}
+		if known == nil {
+			known = make(map[gwv1.AnnotationKey]gwv1.AnnotationValue, len(options))
+		}
+		known[key] = value
+	}
+	return known
 }
 
 func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {
