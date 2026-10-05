@@ -45,6 +45,7 @@ endpoints:
             portValue: 9000
       loadBalancingWeight: 1
     loadBalancingWeight: 1
+    locality: {}
 - clusterName: kube_gwtest_reviews_8080
   endpoints:
   - lbEndpoints:

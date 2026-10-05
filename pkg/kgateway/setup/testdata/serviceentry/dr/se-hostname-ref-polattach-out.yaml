@@ -11,6 +11,7 @@ clusters:
               portValue: 80
         loadBalancingWeight: 1
       loadBalancingWeight: 1
+      locality: {}
   name: istio-se_gwtest_example-se_se.example.com_80
   transportSocket:
     name: envoy.transport_sockets.tls
