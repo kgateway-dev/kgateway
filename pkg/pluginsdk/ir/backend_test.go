@@ -2,11 +2,13 @@ package ir
 
 import (
 	"encoding/json"
+	"errors"
 	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -173,16 +175,16 @@ func TestBackendObjectIREquals(t *testing.T) {
 			backend2 := tt.backend2()
 
 			// Test forward equality
-			result := backend1.Equals(backend2)
+			result := backend1.Equals(&backend2)
 			a.Equal(tt.want, result, "BackendObjectIR.Equals() result mismatch")
 
 			// Test symmetry: a.Equals(b) should equal b.Equals(a)
-			reverseResult := backend2.Equals(backend1)
+			reverseResult := backend2.Equals(&backend1)
 			a.Equal(result, reverseResult, "symmetry check failed: a.Equals(b) != b.Equals(a)")
 
 			// Test reflexivity: x.Equals(x) should always be true
-			a.True(backend1.Equals(backend1), "reflexivity check failed for backend1")
-			a.True(backend2.Equals(backend2), "reflexivity check failed for backend2")
+			a.True(backend1.Equals(&backend1), "reflexivity check failed for backend1")
+			a.True(backend2.Equals(&backend2), "reflexivity check failed for backend2")
 		})
 	}
 }
@@ -321,16 +323,31 @@ func TestBackendObjectIREqualsIsSymmetricOnObjIr(t *testing.T) {
 	with := serviceBackedIR("1", nil, 0)
 	with.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
 
-	assert.False(t, with.Equals(without), "an IR with plugin state is not equal to one without")
-	assert.False(t, without.Equals(with), "and the answer must not depend on which side is the receiver")
+	assert.False(t, with.Equals(&without), "an IR with plugin state is not equal to one without")
+	assert.False(t, without.Equals(&with), "and the answer must not depend on which side is the receiver")
 
 	same := serviceBackedIR("1", nil, 0)
 	same.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
-	assert.True(t, with.Equals(same), "equal plugin state on both sides compares equal")
-	assert.True(t, same.Equals(with))
+	assert.True(t, with.Equals(&same), "equal plugin state on both sides compares equal")
+	assert.True(t, same.Equals(&with))
 
 	moved := serviceBackedIR("1", nil, 0)
 	moved.ObjIr = &addressesIR{addrs: []string{"10.0.0.1", "2001:2::1"}}
-	assert.False(t, with.Equals(moved), "a change inside the plugin state is a change")
-	assert.False(t, moved.Equals(with))
+	assert.False(t, with.Equals(&moved), "a change inside the plugin state is a change")
+	assert.False(t, moved.Equals(&with))
+}
+
+// TestBackendObjectIRKrtEqualUsesEquals pins that krt compares backends with
+// Equals, for both value and pointer collections. Without an Equaler for the
+// element type, krt falls back to reflect.DeepEqual, which reads attached policy
+// IR protos while other goroutines marshal clusters built from them (a data
+// race on their size caches). The two backends differ only in Errors, which
+// Equals deliberately skips, so DeepEqual would report them as different.
+func TestBackendObjectIRKrtEqualUsesEquals(t *testing.T) {
+	a := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	b := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	b.Errors = []error{errors.New("derived from ObjIr, ignored by Equals")}
+
+	assert.True(t, krt.Equal(a, b), "value collections must compare with Equals")
+	assert.True(t, krt.Equal(&a, &b), "pointer collections must compare with Equals")
 }
