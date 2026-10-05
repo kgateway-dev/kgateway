@@ -191,7 +191,7 @@ type HTTPSettings struct {
 	LocalReplies *LocalReplyConfig `json:"localReplies,omitempty"`
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
 	// +optional
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
 

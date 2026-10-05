@@ -114,7 +114,8 @@ type PolicyAncestorStatus struct {
 	// Example: "example.net/gateway-controller".
 	//
 	// The format of this field is DOMAIN "/" PATH, where DOMAIN and PATH are
-	// valid [Kubernetes names](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names).
+	// valid Kubernetes names
+	// (https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names).
 	//
 	// Controllers MUST populate this field when writing status. Controllers should ensure that
 	// entries to status populated with their ControllerName are cleaned up when they are no
