@@ -26,7 +26,45 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:
-  name: insecure-skip-verify-false
+  name: insecure-skip-verify-false-with-sni
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    sni: example.com
+    insecureSkipVerify: false
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: insecure-skip-verify-true-without-sni
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    insecureSkipVerify: true
+---
+_err: sni is required when no trust source is set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: empty-tls
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls: {}
+---
+_err: sni is required when no trust source is set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: insecure-skip-verify-false-without-sni
 spec:
   targetRefs:
   - group: ""
@@ -34,6 +72,20 @@ spec:
     name: backend
   tls:
     insecureSkipVerify: false
+---
+_err: sni is required when no trust source is set
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: parameters-only
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: backend
+  tls:
+    parameters:
+      minVersion: "1.2"
 ---
 _err: at most one of the fields in [secretRef files insecureSkipVerify wellKnownCACertificates] may be set
 apiVersion: gateway.kgateway.dev/v1alpha1

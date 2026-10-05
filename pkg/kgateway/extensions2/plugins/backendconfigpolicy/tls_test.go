@@ -471,7 +471,7 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
-			name:      "TLS config with no trust source defaults to system ca",
+			name:      "TLS config with no trust source and no SNI, stored before CEL required SNI, defaults to system ca",
 			tlsConfig: &kgateway.TLS{},
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: systemCAContext(),

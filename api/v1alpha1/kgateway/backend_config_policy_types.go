@@ -354,9 +354,11 @@ type TCPKeepalive struct {
 //
 // At most one trust source may be set: secretRef, files, wellKnownCACertificates,
 // or insecureSkipVerify. If none is set, the backend's certificate is validated
-// against the system CA certificates, as if wellKnownCACertificates were System.
+// against the system CA certificates, as if wellKnownCACertificates were System,
+// and sni is required so the certificate can be checked against a hostname.
 //
 // +kubebuilder:validation:AtMostOneOf=secretRef;files;insecureSkipVerify;wellKnownCACertificates
+// +kubebuilder:validation:XValidation:rule="has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates) || (has(self.insecureSkipVerify) && self.insecureSkipVerify) || has(self.sni)",message="sni is required when no trust source is set; set sni, provide secretRef, files, or wellKnownCACertificates, or set insecureSkipVerify to true"
 type TLS struct {
 	// Reference to the TLS secret containing the certificate, key, and optionally the root CA.
 	// +optional

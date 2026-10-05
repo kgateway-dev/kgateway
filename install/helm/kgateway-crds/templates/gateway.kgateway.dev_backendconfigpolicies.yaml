@@ -1155,6 +1155,12 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-validations:
+                - message: sni is required when no trust source is set; set sni, provide
+                    secretRef, files, or wellKnownCACertificates, or set insecureSkipVerify
+                    to true
+                  rule: has(self.secretRef) || has(self.files) || has(self.wellKnownCACertificates)
+                    || (has(self.insecureSkipVerify) && self.insecureSkipVerify) ||
+                    has(self.sni)
                 - message: at most one of the fields in [secretRef files insecureSkipVerify
                     wellKnownCACertificates] may be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
