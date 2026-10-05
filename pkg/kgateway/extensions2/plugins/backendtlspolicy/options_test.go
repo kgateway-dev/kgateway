@@ -6,6 +6,7 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -162,7 +163,7 @@ func TestBuildTranslateFunc_OnlyForeignTLSOptions(t *testing.T) {
 
 	tlsCtx := &envoytlsv3.UpstreamTlsContext{}
 	require.NoError(t, pol.transportSocket.GetTypedConfig().UnmarshalTo(tlsCtx))
-	assert.Nil(t, tlsCtx.GetCommonTlsContext().GetTlsParams(), "foreign-only options should leave the TLS context untouched")
+	assert.Zero(t, proto.Size(tlsCtx.GetCommonTlsContext().GetTlsParams()), "foreign-only options should set no TLS parameters")
 }
 
 func TestBuildTranslateFunc_AllowEmptyAlpnProtocols(t *testing.T) {

@@ -305,9 +305,9 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 // kgatewayTLSOptionPrefix is the domain prefix of every kgateway TLS extension option.
 const kgatewayTLSOptionPrefix = "kgateway.dev/"
 
-// IsKgatewayTLSOption reports whether key is in the kgateway TLS extension option namespace.
+// isKgatewayTLSOption reports whether key is in the kgateway TLS extension option namespace.
 // TLS options maps are shared with other implementations, so keys outside it are ignored.
-func IsKgatewayTLSOption(key gwv1.AnnotationKey) bool {
+func isKgatewayTLSOption(key gwv1.AnnotationKey) bool {
 	return strings.HasPrefix(string(key), kgatewayTLSOptionPrefix)
 }
 
@@ -319,7 +319,7 @@ func IsKgatewayTLSOption(key gwv1.AnnotationKey) bool {
 func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValue, out *ir.TLSConfig) error {
 	var errs error
 	for key, option := range options {
-		if !IsKgatewayTLSOption(key) {
+		if !isKgatewayTLSOption(key) {
 			continue
 		}
 		if extensionFunc, ok := TLSExtensionOptionFuncs[key]; ok {
