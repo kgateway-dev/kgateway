@@ -49,6 +49,7 @@ endpoints:
             portValue: 8080
       loadBalancingWeight: 1
     loadBalancingWeight: 1
+    locality: {}
 listeners:
 - address:
     socketAddress:
