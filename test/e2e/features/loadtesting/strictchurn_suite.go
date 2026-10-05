@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -630,15 +631,33 @@ func (s *StrictChurnSuite) startEndpointChurner(ctx context.Context) {
 }
 
 // waitForGatewayProxies requires every gateway's Envoy deployment (named
-// after the Gateway by the deployer) to finish rolling out within
-// gatewayRolloutBound.
+// after the Gateway by the deployer) to be created and finish rolling out
+// within a single gatewayRolloutBound per gateway.
 func (s *StrictChurnSuite) waitForGatewayProxies(gateways []string) {
+	bound, err := time.ParseDuration(gatewayRolloutBound)
+	s.Require().NoError(err, "gateway rollout bound must be a duration")
 	for _, gw := range gateways {
-		err := s.testInstallation.Actions.Kubectl().DeploymentRolloutStatus(s.ctx,
-			gw, "-n", s.loadTestManager.testNamespace, "--timeout="+gatewayRolloutBound)
+		var lastErr error
+		err := wait.PollUntilContextTimeout(s.ctx, translationPollingInterval, bound, true, func(ctx context.Context) (bool, error) {
+			deployment := &appsv1.Deployment{}
+			lastErr = s.testInstallation.ClusterContext.Client.Get(ctx,
+				types.NamespacedName{Namespace: s.loadTestManager.testNamespace, Name: gw}, deployment)
+			if lastErr != nil {
+				return false, nil
+			}
+			desired := int32(1)
+			if deployment.Spec.Replicas != nil {
+				desired = *deployment.Spec.Replicas
+			}
+			if !deploymentRolloutReady(deployment, deployment.Generation, desired) {
+				lastErr = fmt.Errorf("deployment rollout incomplete: %s", deploymentRolloutStatus(deployment))
+				return false, nil
+			}
+			return true, nil
+		})
 		s.Require().NoError(err,
-			"gateway %s proxy must become Ready before the stable route is asserted (a cold Envoy must receive its first xDS snapshot); proxy pods: %s",
-			gw, s.loadTestManager.proxyPodSummary())
+			"gateway %s proxy must become Ready before the stable route is asserted (a cold Envoy must receive its first xDS snapshot); last rollout error: %v; proxy pods: %s",
+			gw, lastErr, s.loadTestManager.proxyPodSummary())
 	}
 }
 
@@ -655,14 +674,15 @@ func (s *StrictChurnSuite) dumpDiagnosticsOnFailure() {
 		{"get", "deploy,pods", "-n", ns, "-o", "wide"},
 		{"get", "events", "-n", ns, "--sort-by=.lastTimestamp"},
 		{"get", "pods", "-n", s.installNamespace, "-o", "wide"},
-		{"logs", "deployment/" + s.controllerDeployment, "-n", s.installNamespace, "--all-containers", "--tail=300"},
+		{"logs", "-l", controllerSelector(), "-n", s.installNamespace, "--all-containers", "--prefix", "--tail=300"},
 	} {
 		stdout, stderr, err := kubectl.Execute(s.ctx, args...)
 		s.T().Logf("kubectl %s (err=%v):\n%s%s", strings.Join(args, " "), err, stdout, stderr)
 	}
 	for _, gw := range strictChurnGateways {
-		stdout, stderr, err := kubectl.Execute(s.ctx, "logs", "deployment/"+gw, "-n", ns, "--all-containers", "--tail=100")
-		s.T().Logf("kubectl logs deployment/%s (err=%v):\n%s%s", gw, err, stdout, stderr)
+		selector := "gateway.networking.k8s.io/gateway-name=" + gw
+		stdout, stderr, err := kubectl.Execute(s.ctx, "logs", "-l", selector, "-n", ns, "--all-containers", "--prefix", "--tail=100")
+		s.T().Logf("kubectl logs -l %s (err=%v):\n%s%s", selector, err, stdout, stderr)
 	}
 }
 
