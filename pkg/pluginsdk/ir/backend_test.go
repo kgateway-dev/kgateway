@@ -2,10 +2,13 @@ package ir
 
 import (
 	"encoding/json"
+	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -151,6 +154,18 @@ func TestBackendObjectIREquals(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "backends with different supported route kinds should not be equal",
+			backend1: func() BackendObjectIR {
+				backend := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+				backend.SupportedRouteKinds = HTTPRouteKinds
+				return backend
+			},
+			backend2: func() BackendObjectIR {
+				return createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -160,16 +175,16 @@ func TestBackendObjectIREquals(t *testing.T) {
 			backend2 := tt.backend2()
 
 			// Test forward equality
-			result := backend1.Equals(backend2)
+			result := backend1.Equals(&backend2)
 			a.Equal(tt.want, result, "BackendObjectIR.Equals() result mismatch")
 
 			// Test symmetry: a.Equals(b) should equal b.Equals(a)
-			reverseResult := backend2.Equals(backend1)
+			reverseResult := backend2.Equals(&backend1)
 			a.Equal(result, reverseResult, "symmetry check failed: a.Equals(b) != b.Equals(a)")
 
 			// Test reflexivity: x.Equals(x) should always be true
-			a.True(backend1.Equals(backend1), "reflexivity check failed for backend1")
-			a.True(backend2.Equals(backend2), "reflexivity check failed for backend2")
+			a.True(backend1.Equals(&backend1), "reflexivity check failed for backend1")
+			a.True(backend2.Equals(&backend2), "reflexivity check failed for backend2")
 		})
 	}
 }
@@ -249,4 +264,90 @@ func TestGatewayBackendClientCertificateIRMarshalJSONRedactsCertificate(t *testi
 	assert.JSONEq(t, `{"certificate":"[REDACTED]"}`, string(marshaled))
 	assert.NotContains(t, string(marshaled), "gateway-cert")
 	assert.NotContains(t, string(marshaled), "gateway-key")
+}
+
+func TestBackendObjectIRSupportsRouteKind(t *testing.T) {
+	base := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	tcp := wellknown.TCPRouteGVK.GroupKind()
+	http := wellknown.HTTPRouteGVK.GroupKind()
+	grpc := wellknown.GRPCRouteGVK.GroupKind()
+
+	t.Run("no declaration supports every route kind", func(t *testing.T) {
+		assert.True(t, base.SupportsRouteKind(tcp))
+		assert.True(t, base.SupportsRouteKind(http))
+	})
+
+	t.Run("an HTTP-only backend rejects TCPRoute but not GRPCRoute", func(t *testing.T) {
+		httpOnly := base
+		httpOnly.SupportedRouteKinds = HTTPRouteKinds
+		assert.False(t, httpOnly.SupportsRouteKind(tcp))
+		assert.True(t, httpOnly.SupportsRouteKind(http))
+		assert.True(t, httpOnly.SupportsRouteKind(grpc))
+	})
+
+	t.Run("the per-gateway client certificate clone keeps the declaration", func(t *testing.T) {
+		httpOnly := base
+		httpOnly.SupportedRouteKinds = HTTPRouteKinds
+		clone := httpOnly.CloneForGatewayBackendClientCertificate(ObjectSource{Namespace: "default", Name: "gw"}, nil)
+		assert.False(t, clone.SupportsRouteKind(tcp))
+	})
+}
+
+// serviceBackedIR is a Service-backed IR: generation-less, so Equals falls back
+// to comparing resourceVersion.
+func serviceBackedIR(rv string, labels map[string]string, generation int64) BackendObjectIR {
+	b := NewBackendObjectIR(ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
+	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv, Labels: labels, Generation: generation,
+	}}
+	return b
+}
+
+// addressesIR is a minimal plugin-owned ObjIr, standing in for the projections
+// the kubernetes and serviceentry plugins attach.
+type addressesIR struct{ addrs []string }
+
+func (a *addressesIR) Equals(in any) bool {
+	other, ok := in.(*addressesIR)
+	return ok && slices.Equal(a.addrs, other.addrs)
+}
+
+// TestBackendObjectIREqualsIsSymmetricOnObjIr pins that Equals gives the same
+// answer whichever side carries plugin state. Guarding only on the receiver's
+// ObjIr made Equals(withIR, withoutIR) false but Equals(withoutIR, withIR)
+// true. KRT compares the stored row against the new one, so which side is the
+// receiver depends on event order, and an asymmetric Equals lets the same
+// change be stored on one path and dropped as "unchanged" on another.
+func TestBackendObjectIREqualsIsSymmetricOnObjIr(t *testing.T) {
+	without := serviceBackedIR("1", nil, 0)
+	with := serviceBackedIR("1", nil, 0)
+	with.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
+
+	assert.False(t, with.Equals(&without), "an IR with plugin state is not equal to one without")
+	assert.False(t, without.Equals(&with), "and the answer must not depend on which side is the receiver")
+
+	same := serviceBackedIR("1", nil, 0)
+	same.ObjIr = &addressesIR{addrs: []string{"10.0.0.1"}}
+	assert.True(t, with.Equals(&same), "equal plugin state on both sides compares equal")
+	assert.True(t, same.Equals(&with))
+
+	moved := serviceBackedIR("1", nil, 0)
+	moved.ObjIr = &addressesIR{addrs: []string{"10.0.0.1", "2001:2::1"}}
+	assert.False(t, with.Equals(&moved), "a change inside the plugin state is a change")
+	assert.False(t, moved.Equals(&with))
+}
+
+// TestBackendObjectIRKrtEqualUsesEquals pins that krt compares backends with
+// Equals, for both value and pointer collections. Without an Equaler for the
+// element type, krt falls back to reflect.DeepEqual, which reads attached policy
+// IR protos while other goroutines marshal clusters built from them (a data
+// race on their size caches). The two backends differ only in Errors, which
+// Equals deliberately skips, so DeepEqual would report them as different.
+func TestBackendObjectIRKrtEqualUsesEquals(t *testing.T) {
+	a := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	b := createTestBackendObjectIR(wellknown.TrafficDistributionAny)
+	b.Errors = []error{errors.New("derived from ObjIr, ignored by Equals")}
+
+	assert.True(t, krt.Equal(a, b), "value collections must compare with Equals")
+	assert.True(t, krt.Equal(&a, &b), "pointer collections must compare with Equals")
 }

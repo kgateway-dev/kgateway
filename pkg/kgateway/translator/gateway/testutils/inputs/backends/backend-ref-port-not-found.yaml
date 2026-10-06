@@ -1,0 +1,85 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+# Service exists, but does not define port 8080.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: service-wrong-port
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "svc.example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 8080
+---
+# ServiceEntry exists, but does not define port 8080.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: serviceentry-wrong-port
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "se.example.com"
+  rules:
+  - backendRefs:
+    - name: example-se
+      kind: ServiceEntry
+      group: networking.istio.io
+      port: 8080
+---
+# Hostname resolves through the ServiceEntry's alias, but port 8080 is not defined.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hostname-wrong-port
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "hostname.example.com"
+  rules:
+  - backendRefs:
+    - name: se.example.internal
+      kind: Hostname
+      group: networking.istio.io
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+spec:
+  selector:
+    app: example
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: example-se
+spec:
+  hosts:
+  - se.example.internal
+  ports:
+  - number: 80
+    name: http
+    protocol: HTTP
+  resolution: DNS
+  location: MESH_EXTERNAL

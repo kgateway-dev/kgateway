@@ -46,13 +46,28 @@ func convertTCPRouteV1ToV1Alpha2(in *gwv1.TCPRoute) *gwv1a2.TCPRoute {
 }
 
 func convertTCPRouteRulesV1ToV1Alpha2(in []gwv1.TCPRouteRule) []gwv1a2.TCPRouteRule {
+	return convertRouteSliceElems(in, func(r gwv1.TCPRouteRule) gwv1a2.TCPRouteRule {
+		return gwv1a2.TCPRouteRule(r)
+	})
+}
+
+// convertRouteSliceElems converts a slice of route spec elements to the identically-shaped
+// alpha type. Go has no conversion between slices of distinct element types, so every one of
+// these conversions is element-wise; this holds the part of that which is easy to get wrong.
+//
+// Empty input converts to nil, whether it arrived as nil or as a non-nil empty slice: the
+// two are canonicalized to one. That is what each of the per-kind helpers folded in here
+// already did, so it is preserved rather than chosen. It is also why this does not use
+// slices.Map, which returns a non-nil empty slice for empty input — switching would flip the
+// normalized Spec of every route that carries no rules or hostnames, which is a behavior
+// change unrelated to deduplicating these conversions.
+func convertRouteSliceElems[In, Out any](in []In, convert func(In) Out) []Out {
 	if len(in) == 0 {
 		return nil
 	}
-
-	out := make([]gwv1a2.TCPRouteRule, 0, len(in))
-	for _, rule := range in {
-		out = append(out, gwv1a2.TCPRouteRule(rule))
+	out := make([]Out, 0, len(in))
+	for _, e := range in {
+		out = append(out, convert(e))
 	}
 	return out
 }

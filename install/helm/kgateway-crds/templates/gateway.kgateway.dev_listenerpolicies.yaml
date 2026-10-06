@@ -392,10 +392,9 @@ spec:
                                             - numerator
                                             type: object
                                           runtimeKey:
-                                            description: |-
-                                              The runtime key to look up in the runtime implementation. This key determines whether
-                                              the access log is enabled. When the runtime key value is set, the filter checks this key
-                                              at runtime to decide whether to log each request.
+                                            description: RuntimeKey identifies the
+                                              runtime setting used to decide whether
+                                              to log each request.
                                             minLength: 1
                                             type: string
                                           useIndependentRandomness:
@@ -769,10 +768,9 @@ spec:
                                             - numerator
                                             type: object
                                           runtimeKey:
-                                            description: |-
-                                              The runtime key to look up in the runtime implementation. This key determines whether
-                                              the access log is enabled. When the runtime key value is set, the filter checks this key
-                                              at runtime to decide whether to log each request.
+                                            description: RuntimeKey identifies the
+                                              runtime setting used to decide whether
+                                              to log each request.
                                             minLength: 1
                                             type: string
                                           useIndependentRandomness:
@@ -858,10 +856,9 @@ spec:
                                       - numerator
                                       type: object
                                     runtimeKey:
-                                      description: |-
-                                        The runtime key to look up in the runtime implementation. This key determines whether
-                                        the access log is enabled. When the runtime key value is set, the filter checks this key
-                                        at runtime to decide whether to log each request.
+                                      description: RuntimeKey identifies the runtime
+                                        setting used to decide whether to log each
+                                        request.
                                       minLength: 1
                                       type: string
                                     useIndependentRandomness:
@@ -2004,10 +2001,9 @@ spec:
                                                 - numerator
                                                 type: object
                                               runtimeKey:
-                                                description: |-
-                                                  The runtime key to look up in the runtime implementation. This key determines whether
-                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                  at runtime to decide whether to log each request.
+                                                description: RuntimeKey identifies
+                                                  the runtime setting used to decide
+                                                  whether to log each request.
                                                 minLength: 1
                                                 type: string
                                               useIndependentRandomness:
@@ -2382,10 +2378,9 @@ spec:
                                                 - numerator
                                                 type: object
                                               runtimeKey:
-                                                description: |-
-                                                  The runtime key to look up in the runtime implementation. This key determines whether
-                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                  at runtime to decide whether to log each request.
+                                                description: RuntimeKey identifies
+                                                  the runtime setting used to decide
+                                                  whether to log each request.
                                                 minLength: 1
                                                 type: string
                                               useIndependentRandomness:
@@ -2471,10 +2466,9 @@ spec:
                                           - numerator
                                           type: object
                                         runtimeKey:
-                                          description: |-
-                                            The runtime key to look up in the runtime implementation. This key determines whether
-                                            the access log is enabled. When the runtime key value is set, the filter checks this key
-                                            at runtime to decide whether to log each request.
+                                          description: RuntimeKey identifies the runtime
+                                            setting used to decide whether to log
+                                            each request.
                                           minLength: 1
                                           type: string
                                         useIndependentRandomness:
@@ -2752,6 +2746,17 @@ spec:
                             must be set
                           rule: '[has(self.mappers),has(self.defaultBodyFormat)].filter(x,x==true).size()
                             >= 1'
+                      maxConnectionDuration:
+                        description: |-
+                          MaxConnectionDuration is the maximum duration of a connection, measured from
+                          when the connection was established. When this duration is reached, Envoy starts
+                          the drain sequence. If unset, there is no maximum connection duration.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+                        maxLength: 32
+                        type: string
+                        x-kubernetes-validations:
+                        - message: invalid duration value
+                          rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                       maxHeadersCount:
                         description: |-
                           MaxHeadersCount sets the maximum number of headers allowed in a request.
@@ -3275,8 +3280,11 @@ spec:
                           See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
                         properties:
                           enabledUpgrades:
-                            description: List of upgrade types to enable (e.g. "websocket",
-                              "CONNECT", etc.)
+                            description: |-
+                              EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+                              and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+                              upstream without termination. To terminate CONNECT and forward its payload
+                              as raw TCP data, configure httpUpgrade in a TrafficPolicy.
                             items:
                               type: string
                             minItems: 1
@@ -3685,10 +3693,9 @@ spec:
                                                   - numerator
                                                   type: object
                                                 runtimeKey:
-                                                  description: |-
-                                                    The runtime key to look up in the runtime implementation. This key determines whether
-                                                    the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                    at runtime to decide whether to log each request.
+                                                  description: RuntimeKey identifies
+                                                    the runtime setting used to decide
+                                                    whether to log each request.
                                                   minLength: 1
                                                   type: string
                                                 useIndependentRandomness:
@@ -4064,10 +4071,9 @@ spec:
                                                   - numerator
                                                   type: object
                                                 runtimeKey:
-                                                  description: |-
-                                                    The runtime key to look up in the runtime implementation. This key determines whether
-                                                    the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                    at runtime to decide whether to log each request.
+                                                  description: RuntimeKey identifies
+                                                    the runtime setting used to decide
+                                                    whether to log each request.
                                                   minLength: 1
                                                   type: string
                                                 useIndependentRandomness:
@@ -4153,10 +4159,9 @@ spec:
                                             - numerator
                                             type: object
                                           runtimeKey:
-                                            description: |-
-                                              The runtime key to look up in the runtime implementation. This key determines whether
-                                              the access log is enabled. When the runtime key value is set, the filter checks this key
-                                              at runtime to decide whether to log each request.
+                                            description: RuntimeKey identifies the
+                                              runtime setting used to decide whether
+                                              to log each request.
                                             minLength: 1
                                             type: string
                                           useIndependentRandomness:
@@ -5317,10 +5322,10 @@ spec:
                                                       - numerator
                                                       type: object
                                                     runtimeKey:
-                                                      description: |-
-                                                        The runtime key to look up in the runtime implementation. This key determines whether
-                                                        the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                        at runtime to decide whether to log each request.
+                                                      description: RuntimeKey identifies
+                                                        the runtime setting used to
+                                                        decide whether to log each
+                                                        request.
                                                       minLength: 1
                                                       type: string
                                                     useIndependentRandomness:
@@ -5700,10 +5705,10 @@ spec:
                                                       - numerator
                                                       type: object
                                                     runtimeKey:
-                                                      description: |-
-                                                        The runtime key to look up in the runtime implementation. This key determines whether
-                                                        the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                        at runtime to decide whether to log each request.
+                                                      description: RuntimeKey identifies
+                                                        the runtime setting used to
+                                                        decide whether to log each
+                                                        request.
                                                       minLength: 1
                                                       type: string
                                                     useIndependentRandomness:
@@ -5790,10 +5795,9 @@ spec:
                                                 - numerator
                                                 type: object
                                               runtimeKey:
-                                                description: |-
-                                                  The runtime key to look up in the runtime implementation. This key determines whether
-                                                  the access log is enabled. When the runtime key value is set, the filter checks this key
-                                                  at runtime to decide whether to log each request.
+                                                description: RuntimeKey identifies
+                                                  the runtime setting used to decide
+                                                  whether to log each request.
                                                 minLength: 1
                                                 type: string
                                               useIndependentRandomness:
@@ -6072,6 +6076,17 @@ spec:
                                   must be set
                                 rule: '[has(self.mappers),has(self.defaultBodyFormat)].filter(x,x==true).size()
                                   >= 1'
+                            maxConnectionDuration:
+                              description: |-
+                                MaxConnectionDuration is the maximum duration of a connection, measured from
+                                when the connection was established. When this duration is reached, Envoy starts
+                                the drain sequence. If unset, there is no maximum connection duration.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+                              maxLength: 32
+                              type: string
+                              x-kubernetes-validations:
+                              - message: invalid duration value
+                                rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
                             maxHeadersCount:
                               description: |-
                                 MaxHeadersCount sets the maximum number of headers allowed in a request.
@@ -6611,8 +6626,11 @@ spec:
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
                               properties:
                                 enabledUpgrades:
-                                  description: List of upgrade types to enable (e.g.
-                                    "websocket", "CONNECT", etc.)
+                                  description: |-
+                                    EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+                                    and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+                                    upstream without termination. To terminate CONNECT and forward its payload
+                                    as raw TCP data, configure httpUpgrade in a TrafficPolicy.
                                   items:
                                     type: string
                                   minItems: 1

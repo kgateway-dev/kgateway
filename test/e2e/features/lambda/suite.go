@@ -31,8 +31,24 @@ import (
 )
 
 // stsSuccessStatRegex matches the 2xx request counter of the internal cluster
-// Envoy creates for its assume-role credential provider's STS calls.
+// Envoy creates for its STS-backed credential providers. Every STS action of a
+// region shares this one cluster, so the counter proves the proxy talked to STS
+// but not which API it called.
 var stsSuccessStatRegex = regexp.MustCompile(`cluster\.sts_token_service_internal-us-east-1\.upstream_rq_2xx: (\d+)`)
+
+const (
+	stsAssumeRoleAction     = "sts.AssumeRole"
+	stsWebIdentityAction    = "sts.AssumeRoleWithWebIdentity"
+	stsRequestCountTimeout  = 30 * time.Second
+	stsRequestCountInterval = 2 * time.Second
+)
+
+// stsCallCounts holds how many times localstack served each STS action; see
+// localstack.RequestCount.
+type stsCallCounts struct {
+	assumeRole  int
+	webIdentity int
+}
 
 // testingSuite is a suite of Lambda backend routing tests
 type testingSuite struct {
@@ -42,6 +58,10 @@ type testingSuite struct {
 	manifests    map[string][]string
 	endpointURL  string
 	stsServiceIP string
+	// stsCallsBefore is the localstack STS request tally taken before the
+	// current test's manifests were applied, so assertions can count only the
+	// calls made by the current test.
+	stsCallsBefore stsCallCounts
 }
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -99,6 +119,11 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	if !ok {
 		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
+
+	// Snapshot STS activity before the proxy for this test exists: Envoy's
+	// credential providers call STS as soon as the proxy starts, not on the
+	// first request.
+	s.stsCallsBefore = s.countSTSCalls()
 
 	for _, manifest := range manifests {
 		// Read the manifest content
@@ -272,9 +297,14 @@ func (s *testingSuite) TestLambdaBackendQualifier() {
 }
 
 // TestLambdaBackendAssumeRole verifies STS role chaining: the proxy must use its
-// base credentials (env vars on the dedicated gateway's Envoy container) to call
-// sts:AssumeRole on the Backend's roleArn, then sign the Lambda invocation with
-// the temporary credentials STS returns.
+// base credentials to call sts:AssumeRole on the Backend's roleArn, then sign the
+// Lambda invocation with the temporary credentials STS returns.
+//
+// The base credentials come from a web identity token (as IRSA provides on EKS),
+// which Envoy resolves asynchronously via sts:AssumeRoleWithWebIdentity. That is
+// the path that hung on Envoy < v1.39.0 (envoyproxy/envoy#45643): the inner
+// chain signing the AssumeRole call never learned its credentials had arrived.
+// Static env-var credentials are synchronous and would mask a regression there.
 func (s *testingSuite) TestLambdaBackendAssumeRole() {
 	// BeforeTest waits on the shared gateway; this test brings its own.
 	s.ti.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, assumeRoleProxyServiceMeta, assumeRoleProxyDeploymentMeta)
@@ -300,9 +330,7 @@ func (s *testingSuite) TestLambdaBackendAssumeRole() {
 
 	// A 200 alone doesn't prove role chaining: localstack doesn't enforce IAM, so
 	// a proxy that (incorrectly) signs with its base credentials also gets a 200.
-	// Envoy only creates and uses the internal STS cluster when the assume-role
-	// credential provider is actually active, so require a successful AssumeRole
-	// call to have gone through it.
+	// The proxy must have gone to STS through its own internal cluster...
 	s.ti.AssertionsT(s.T()).AssertEnvoyAdminApi(s.ctx, assumeRoleProxyDeploymentMeta.ObjectMeta,
 		func(ctx context.Context, adminClient *admincli.Client) {
 			stats, err := adminClient.GetStats(ctx, map[string]string{
@@ -311,12 +339,37 @@ func (s *testingSuite) TestLambdaBackendAssumeRole() {
 			s.Assert().NoError(err, "can fetch envoy stats")
 			matches := stsSuccessStatRegex.FindStringSubmatch(stats)
 			s.Require().Len(matches, 2, "expected an upstream_rq_2xx stat for the STS cluster; "+
-				"its absence means Envoy never called sts:AssumeRole and signed with its base credentials instead. stats: %q", stats)
+				"its absence means no credential provider of the proxy ever called STS. stats: %q", stats)
 			count, err := strconv.Atoi(matches[1])
 			s.Assert().NoError(err, "can parse STS 2xx stat value")
-			s.Assert().GreaterOrEqual(count, 1, "expected at least one successful sts:AssumeRole call")
+			s.Assert().GreaterOrEqual(count, 1, "expected at least one successful STS call from the proxy")
 		},
 	)
+
+	// ...but that cluster carries every STS action, so it cannot tell an
+	// AssumeRoleWithWebIdentity exchange (which the aws_lambda filter's own
+	// default chain also performs) from the AssumeRole call this test is about.
+	// Localstack logs one line per API action, so require, since this test's
+	// proxy was created, both a web identity exchange (the async base-credential
+	// path that hung on Envoy < v1.39.0) and an AssumeRole call (the role
+	// chaining itself).
+	var after stsCallCounts
+	s.Require().Eventually(func() bool {
+		after = s.countSTSCalls()
+		return after.webIdentity > s.stsCallsBefore.webIdentity && after.assumeRole > s.stsCallsBefore.assumeRole
+	}, stsRequestCountTimeout, stsRequestCountInterval,
+		"expected localstack to have served both sts:AssumeRoleWithWebIdentity and sts:AssumeRole since the proxy started; "+
+			"before: %+v, after: %+v. A missing AssumeRole means Envoy signed the Lambda invocation with the gateway's base credentials",
+		s.stsCallsBefore, after)
+}
+
+// countSTSCalls tallies the successful STS actions localstack has served so far.
+func (s *testingSuite) countSTSCalls() stsCallCounts {
+	assumeRole, err := localstack.RequestCount(s.ctx, s.ti.Actions.Kubectl(), stsAssumeRoleAction, http.StatusOK)
+	s.Require().NoError(err, "can count %s requests in localstack logs", stsAssumeRoleAction)
+	webIdentity, err := localstack.RequestCount(s.ctx, s.ti.Actions.Kubectl(), stsWebIdentityAction, http.StatusOK)
+	s.Require().NoError(err, "can count %s requests in localstack logs", stsWebIdentityAction)
+	return stsCallCounts{assumeRole: assumeRole, webIdentity: webIdentity}
 }
 
 func (s *testingSuite) extractLocalstackEndpoint() {

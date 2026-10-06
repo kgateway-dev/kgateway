@@ -24,6 +24,7 @@ Listeners:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         commonHttpProtocolOptions:
           idleTimeout: 30s
+          maxConnectionDuration: 600s
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -41,6 +42,8 @@ Listeners:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.maxConnectionDuration:
+        - gateway.kgateway.dev/ListenerPolicy/default/idle-time
         default.httpSettings.mergeIdleTimeout:
         - gateway.kgateway.dev/ListenerPolicy/default/idle-time
   name: listener~80
@@ -49,6 +52,8 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
+        default.httpSettings.maxConnectionDuration:
+        - gateway.kgateway.dev/ListenerPolicy/default/idle-time
         default.httpSettings.mergeIdleTimeout:
         - gateway.kgateway.dev/ListenerPolicy/default/idle-time
   name: listener~80

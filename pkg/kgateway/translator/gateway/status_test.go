@@ -32,4 +32,23 @@ func TestStatuses(t *testing.T) {
 			settingOpt,
 		)
 	})
+
+	// A policy with one valid and one misspelled targetRef keeps the Gateway ancestor its valid
+	// target earns and additionally reports the missing target on its StatusSummary ancestor;
+	// a policy whose only target is missing reports just that ancestor.
+	t.Run("TargetNotFound", func(t *testing.T) {
+		dir := fsutils.MustGetThisDir()
+		translatortest.TestTranslation(
+			t,
+			t.Context(),
+			[]string{
+				filepath.Join(dir, "testutils/inputs/status/target-not-found.yaml"),
+			},
+			filepath.Join(dir, "testutils/outputs/status/target-not-found.yaml"),
+			types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		)
+	})
 }

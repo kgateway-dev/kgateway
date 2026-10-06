@@ -23,6 +23,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -34,10 +35,15 @@ func newTestBackend(objSrc ir.ObjectSource, port int32) *ir.BackendObjectIR {
 	return &backend
 }
 
+func translateBackendBase(t *testing.T, bt *irtranslator.BackendTranslator, backend *ir.BackendObjectIR) (*envoyclusterv3.Cluster, error) {
+	t.Helper()
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, t.Context(), backend)
+	require.NotNil(t, base)
+	return base.Cluster, base.Error
+}
+
 func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 	var bt irtranslator.BackendTranslator
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
 	backend := newTestBackend(ir.ObjectSource{
 		Group:     "group",
 		Kind:      "kind",
@@ -53,7 +59,7 @@ func TestBackendTranslatorTranslatesAppProtocol(t *testing.T) {
 		},
 	}
 
-	c, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	c, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	opts := c.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"]
 	assert.NotNil(t, opts)
@@ -97,10 +103,7 @@ func TestBackendTranslatorAppliesDnsLookupFamilyToDnsCluster(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
-
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 
 	clusterType := cluster.GetClusterType()
@@ -139,10 +142,8 @@ func TestBackendTranslatorHandlesBackendIRErrors(t *testing.T) {
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
 	// Validate that the backend IR errors are propagated.
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid backend hostname")
 	assert.Contains(t, err.Error(), "unsupported backend protocol")
@@ -208,9 +209,7 @@ func TestBackendTranslatorPropagatesPolicyErrors(t *testing.T) {
 		},
 	}
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	// Validate that the policy errors are propagated.
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid TLS certificate")
@@ -262,9 +261,7 @@ func TestBackendTranslatorHandlesXDSValidationErrors(t *testing.T) {
 	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = mockValidator
 
-	var ucc ir.UniquelyConnectedClient
-	var kctx krt.TestingDummyContext
-	cluster, err := bt.TranslateBackend(context.Background(), kctx, ucc, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 
 	// Should get an error because xDS validation failed
 	require.Error(t, err)
@@ -333,7 +330,7 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificate(t *testing.T) {
 		},
 	}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.NotNil(t, cluster.TransportSocket)
@@ -373,7 +370,7 @@ func TestBackendTranslatorDoesNotEnableTLSForGatewayBackendClientCertificate(t *
 	}
 	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	assert.Nil(t, cluster.TransportSocket)
@@ -452,7 +449,7 @@ func TestBackendTranslatorAppliesGatewayBackendClientCertificateToTransportSocke
 		},
 	}
 
-	cluster, err := bt.TranslateBackend(context.Background(), krt.TestingDummyContext{}, ir.UniquelyConnectedClient{}, backend)
+	cluster, err := translateBackendBase(t, &bt, backend)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 	require.Nil(t, cluster.TransportSocket)
@@ -491,4 +488,247 @@ func (t *testPolicyIR) CreationTime() time.Time {
 func (t *testPolicyIR) Equals(other any) bool {
 	_, ok := other.(*testPolicyIR)
 	return ok
+}
+
+// TestApplyPerClient_StrictModeRejectsInvalidOverlay is a regression test for
+// the strict-mode bypass: PerClientClusterOverlay hooks (destrule, waypoint,
+// …) mutate the cluster AFTER TranslateBackendBase has validated it. Without
+// per-client validation, invalid overlay output would only surface as Envoy
+// NACKs at the data plane. The fix runs strict-mode validation on the
+// post-overlay cluster too. This test:
+//
+//  1. Sets up a translator where the validator rejects only clusters that have
+//     an OutlierDetection set (the marker of our test overlay).
+//  2. Translates the base — passes validation (no outlier).
+//  3. Calls ApplyPerClient with an overlay that sets OutlierDetection.
+//  4. Asserts the result is an error + the blackhole cluster.
+func TestApplyPerClient_StrictModeRejectsInvalidOverlay(t *testing.T) {
+	backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "core",
+		Kind:      "Service",
+		Name:      "svc",
+		Namespace: "ns",
+	}, 80, "", "")
+	backendIR.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
+	}
+	backend := &backendIR
+
+	overlayGK := schema.GroupKind{Group: "test", Kind: "DestructiveOverlay"}
+
+	var bt irtranslator.BackendTranslator
+	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
+		{Group: "core", Kind: "Service"}: {
+			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				return nil
+			},
+		},
+	}
+	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+					},
+				}
+			},
+		},
+	}
+	bt.Mode = apisettings.ValidationStrict
+	bt.Validator = &mockValidator{
+		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+			for _, c := range config.GetStaticResources().GetClusters() {
+				if c.GetOutlierDetection() != nil {
+					return errors.New("overlay produced invalid cluster")
+				}
+			}
+			return nil
+		},
+	}
+
+	ctx := context.Background()
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error, "base must pass strict validation (no overlay applied yet)")
+
+	cluster, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ir.UniquelyConnectedClient{}, backend, base)
+	require.Error(t, err, "strict-mode validation must reject invalid overlay output")
+	assert.Contains(t, err.Error(), "overlay produced invalid cluster")
+	require.NotNil(t, cluster, "must return a blackhole cluster so the snapshot can mark it errored")
+	// GetType() reports STATIC for an unset discovery type too, so check the
+	// fields that actually distinguish the blackhole from the rejected overlay
+	// output: the overlay's mutation must be gone and the blackhole's explicit
+	// STATIC type plus empty inline CLA must be present.
+	assert.Nil(t, cluster.GetOutlierDetection(), "the blackhole must not carry the rejected overlay mutation")
+	require.NotNil(t, cluster.GetClusterDiscoveryType(), "the blackhole sets an explicit discovery type")
+	assert.Equal(t, envoyclusterv3.Cluster_STATIC, cluster.GetType())
+	require.NotNil(t, cluster.GetLoadAssignment(), "the blackhole carries an empty inline CLA")
+	assert.Empty(t, cluster.GetLoadAssignment().GetEndpoints())
+}
+
+// TestApplyPerClient_StrictModePassesValidOverlay confirms the validator is
+// invoked on the post-overlay cluster — not just invoked a second time — and
+// does not reject when the result is valid.
+func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
+	backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "core",
+		Kind:      "Service",
+		Name:      "svc",
+		Namespace: "ns",
+	}, 80, "", "")
+	backendIR.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
+	}
+	backend := &backendIR
+
+	overlayGK := schema.GroupKind{Group: "test", Kind: "MarkerOverlay"}
+
+	// Each validation submits one cluster; record them so the test can check
+	// what was validated, not merely how often.
+	var validated []*envoyclusterv3.Cluster
+	var bt irtranslator.BackendTranslator
+	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
+		{Group: "core", Kind: "Service"}: {
+			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				return nil
+			},
+		},
+	}
+	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		overlayGK: {
+			PerClientClusterOverlay: func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
+				return &sdk.ClusterOverlay{
+					Mutate: func(out *envoyclusterv3.Cluster) {
+						out.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+					},
+				}
+			},
+		},
+	}
+	bt.Mode = apisettings.ValidationStrict
+	bt.Validator = &mockValidator{
+		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+			validated = append(validated, config.GetStaticResources().GetClusters()...)
+			return nil
+		},
+	}
+
+	ctx := context.Background()
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error)
+	require.Len(t, validated, 1, "base translation must invoke the validator once")
+	assert.Nil(t, validated[0].GetOutlierDetection(), "the base is validated before any overlay runs")
+
+	cluster, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ir.UniquelyConnectedClient{}, backend, base)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+	require.NotNil(t, cluster.OutlierDetection, "overlay mutation must be retained on the returned cluster")
+	require.Len(t, validated, 2,
+		"strict mode must invoke the validator a second time on the post-overlay cluster")
+	assert.NotNil(t, validated[1].GetOutlierDetection(),
+		"the second validation must see the overlay's mutation, i.e. the complete per-client cluster")
+}
+
+// inlineCLAStrictTranslator builds a strict-mode translator whose only backend
+// is a STRICT_DNS cluster with one inline endpoint, and whose validator mimics
+// Envoy's logical-DNS check: any cluster without a load_assignment is rejected.
+// distribution decides whether the CLA depends on the client.
+func inlineCLAStrictTranslator(distribution wellknown.TrafficDistribution, validated *[]*envoyclusterv3.Cluster) *irtranslator.BackendTranslator {
+	var bt irtranslator.BackendTranslator
+	bt.ContributedBackends = map[schema.GroupKind]ir.BackendInit{
+		{Group: "core", Kind: "Service"}: {
+			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STRICT_DNS}
+				eps := ir.NewEndpointsForBackend(in)
+				eps.TrafficDistribution = distribution
+				eps.Add(ir.PodLocality{}, ir.EndpointWithMd{LbEndpoint: pipeEndpoint("a")})
+				return eps
+			},
+		},
+	}
+	bt.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{}
+	bt.Mode = apisettings.ValidationStrict
+	bt.Validator = &mockValidator{
+		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
+			for _, c := range config.GetStaticResources().GetClusters() {
+				*validated = append(*validated, c)
+				if c.GetLoadAssignment() == nil {
+					return errors.New("clusters must have a load_assignment")
+				}
+			}
+			return nil
+		},
+	}
+	return &bt
+}
+
+func inlineCLABackend() *ir.BackendObjectIR {
+	backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     "core",
+		Kind:      "Service",
+		Name:      "svc",
+		Namespace: "ns",
+	}, 80, "", "")
+	backendIR.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
+	}
+	return &backendIR
+}
+
+// TestTranslateBackendBase_ClientIndependentInlineCLAIsBuiltOnBase: a
+// ServiceEntry-style STRICT_DNS backend with no traffic distribution and no
+// endpoint hook that could apply produces the same CLA for every client, so
+// the base carries it, strict mode validates the complete base exactly once,
+// and ApplyPerClient has nothing to materialize.
+func TestTranslateBackendBase_ClientIndependentInlineCLAIsBuiltOnBase(t *testing.T) {
+	var validatedClusters []*envoyclusterv3.Cluster
+	bt := inlineCLAStrictTranslator(wellknown.TrafficDistributionAny, &validatedClusters)
+	backend := inlineCLABackend()
+
+	ctx := context.Background()
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error, "a base that carries its CLA must pass validation")
+	require.NotNil(t, base.Cluster.GetLoadAssignment(), "the client-independent CLA must be built onto the base")
+	require.Len(t, base.Cluster.GetLoadAssignment().GetEndpoints(), 1)
+	require.False(t, base.NeedsInlineCLA(), "a base with its CLA is complete")
+	require.Len(t, validatedClusters, 1, "strict mode must validate the complete base exactly once")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{Region: "r1", Zone: "z1"})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err)
+	require.Nil(t, perClient, "no per-client cluster: every client publishes the shared base")
+	require.Len(t, validatedClusters, 1, "nothing is re-validated per client")
+}
+
+// TestTranslateBackendBase_StrictModeDefersValidationForClientDependentInlineCLA
+// is a regression test for strict-mode validation of CLA-built-per-client
+// backends. With a traffic distribution that orders endpoints by the client's
+// zone, the CLA cannot live on the base; the base then carries no
+// LoadAssignment, and validating it would blackhole a valid backend for every
+// client (Envoy rejects some CLA-less clusters outright). TranslateBackendBase
+// must defer validation to ApplyPerClient, which validates the complete
+// per-client cluster.
+func TestTranslateBackendBase_StrictModeDefersValidationForClientDependentInlineCLA(t *testing.T) {
+	var validatedClusters []*envoyclusterv3.Cluster
+	bt := inlineCLAStrictTranslator(wellknown.TrafficDistributionPreferSameZone, &validatedClusters)
+	backend := inlineCLABackend()
+
+	ctx := context.Background()
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	require.NotNil(t, base)
+	require.NoError(t, base.Error,
+		"the CLA-less base must not be validated (and so must not error): its CLA is built per client")
+	require.Nil(t, base.Cluster.GetLoadAssignment(), "a client-dependent CLA must not be built onto the base")
+	require.True(t, base.NeedsInlineCLA())
+	require.Empty(t, validatedClusters, "validation must be deferred until the per-client CLA exists")
+
+	ucc := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
+	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, ctx, ucc, backend, base)
+	require.NoError(t, err, "the complete per-client cluster must pass validation")
+	require.NotNil(t, perClient)
+	require.NotNil(t, perClient.GetLoadAssignment(), "per-client cluster must carry the built CLA")
+	require.Len(t, validatedClusters, 1, "strict mode must validate the complete per-client cluster exactly once")
 }

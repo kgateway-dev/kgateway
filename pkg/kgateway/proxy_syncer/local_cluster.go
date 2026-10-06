@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -23,16 +24,23 @@ import (
 // to be listening on every Envoy pod.
 const localClusterEndpointPort uint32 = 19000
 
+// localClusterEndpoint is one gateway pod as it appears in the local-cluster CLA:
+// just the address and locality, plus the pod's resource name for stable ordering.
 type localClusterEndpoint struct {
 	resourceName string
 	address      string
 	locality     ir.PodLocality
 }
 
+// gatewayPodIndexKey keys gateway pods by the Gateway they belong to.
 func gatewayPodIndexKey(namespace, gatewayName string) string {
 	return namespace + "/" + gatewayName
 }
 
+// NewPerClientLocalClusterEndpoints builds each gateway's local-cluster CLA
+// from its pods for Envoy's zone-aware routing. Rows are per client, not per backend.
+// Clients that have not subscribed are skipped: publishing an unrequested CLA
+// would cause go-control-plane to withhold their ADS endpoint responses.
 func NewPerClientLocalClusterEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
@@ -64,7 +72,7 @@ func NewPerClientLocalClusterEndpoints(
 		cla := buildLocalClusterLoadAssignment(localClusterName, gwPods)
 		return &UccWithEndpoints{
 			Client:        ucc,
-			Endpoints:     cla,
+			Endpoints:     sharedproto.Wrap(cla),
 			EndpointsHash: hashLocalClusterLoadAssignment(cla),
 			endpointsName: localClusterName,
 			resourceName:  uccEndpointsResourceName(ucc, localClusterName),
@@ -81,6 +89,13 @@ func NewPerClientLocalClusterEndpoints(
 	}
 }
 
+// buildLocalClusterLoadAssignment groups the gateway's pods by locality into a CLA,
+// weighting each locality by its pod count so Envoy's zone-aware routing sees the
+// real distribution of the fleet. Pods with no address yet are skipped.
+//
+// Output is deterministic: pods are sorted by locality, then resource name, then
+// address before grouping, so an unchanged fleet always hashes to the same value
+// regardless of the order KRT returned the pods in.
 func buildLocalClusterLoadAssignment(
 	clusterName string,
 	pods []krtcollections.LocalityPod,
@@ -158,6 +173,9 @@ func buildLocalClusterLoadAssignment(
 	return cla
 }
 
+// hashLocalClusterLoadAssignment hashes the cluster name and each locality's
+// endpoint addresses and ports for KRT change detection.
+// Pod updates that leave these unchanged do not republish EDS.
 func hashLocalClusterLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
 	hasher := fnv.New64a()
 	utils.HashStringField(hasher, cla.GetClusterName())

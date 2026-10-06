@@ -134,8 +134,8 @@ func (s *testingSuite) TestBackendWithRuntimeError() {
 		Type:   "Accepted",
 		Status: metav1.ConditionFalse,
 		Reason: "Invalid",
-		Message: `Backend error: "failed to create aws request signing config: failed to derive static secret: access_key is not a valid string
-secret_key is not a valid string"`,
+		Message: `Backend error: "failed to create aws request signing config: failed to derive static secret: secret data key "accessKey" is missing or empty
+secret data key "secretKey" is missing or empty"`,
 	})
 }
 

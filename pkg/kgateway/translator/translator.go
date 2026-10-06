@@ -36,9 +36,18 @@ type CombinedTranslator struct {
 	gwtranslator      sdk.KGwTranslator
 	irtranslator      *irtranslator.Translator
 	backendTranslator *irtranslator.BackendTranslator
-	endpointPlugins   []sdk.EndpointPlugin
+	endpointPlugins   []irtranslator.EndpointPlugin
 
 	logger *slog.Logger
+}
+
+// ResolvedEndpoints is the UCC-resolved endpoint state produced by ResolveEndpoints:
+// the plugin-augmented inputs plus the hashes that identify when the resulting CLA
+// varies per client. BuildClusterLoadAssignment turns it into a ClusterLoadAssignment.
+type ResolvedEndpoints struct {
+	Inputs            endpoints.EndpointsInputs
+	AdditionalHash    uint64
+	LoadBalancingHash uint64
 }
 
 func NewCombinedTranslator(
@@ -81,6 +90,9 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 		CommonCols:          s.commonCols,
 		Validator:           s.validator,
 		Mode:                s.commonCols.Settings.ValidationMode,
+		// Cache cluster verdicts before building bootstraps in every ValidatorMode.
+		// See Settings.ValidatorMode.
+		ValidationMemo: validator.NewMemo(s.commonCols.Settings.ValidatorCacheSize),
 	}
 	for k, up := range s.extensions.ContributesBackends {
 		s.backendTranslator.ContributedBackends[k] = up.BackendInit
@@ -141,14 +153,24 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	return &xdsSnap, rm
 }
 
-func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) (*envoyendpointv3.ClusterLoadAssignment, uint64) {
-	epInputs := endpoints.EndpointsInputs{
+// ResolveEndpoints runs the endpoint plugins for a (ucc, backend) pair and captures
+// the inputs plus the hashes that determine whether the resulting CLA is UCC-specific.
+// It does NOT build the CLA — that is BuildClusterLoadAssignment. Callers can use
+// the hashes to bucket built CLAs for collision-safe content interning.
+func (s *CombinedTranslator) ResolveEndpoints(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) ResolvedEndpoints {
+	epInputs, hash := irtranslator.ResolveEndpointInputs(kctx, context.TODO(), ucc, endpoints.EndpointsInputs{
 		EndpointsForBackend: ep,
+	}, s.endpointPlugins)
+	return ResolvedEndpoints{
+		Inputs:            epInputs,
+		AdditionalHash:    hash,
+		LoadBalancingHash: endpoints.LoadBalancingContextHash(ucc, epInputs),
 	}
-	var hash uint64
-	for _, processEndpoints := range s.endpointPlugins {
-		additionalHash := processEndpoints(kctx, context.TODO(), ucc, &epInputs)
-		hash ^= additionalHash
-	}
-	return endpoints.PrioritizeEndpoints(s.logger, ucc, epInputs), hash
+}
+
+// BuildClusterLoadAssignment turns resolved endpoint state into a ClusterLoadAssignment.
+// It is pure given (ucc, resolved); NewPerClientEnvoyEndpoints uses the resolved hashes
+// to bucket results, then verifies protobuf equality before interning them.
+func (s *CombinedTranslator) BuildClusterLoadAssignment(ucc ir.UniquelyConnectedClient, resolved ResolvedEndpoints) *envoyendpointv3.ClusterLoadAssignment {
+	return endpoints.PrioritizeEndpoints(s.logger, ucc, resolved.Inputs)
 }

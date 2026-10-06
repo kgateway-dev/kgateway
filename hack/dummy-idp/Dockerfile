@@ -1,10 +1,6 @@
-ARG BASE_IMAGE
-
-FROM $BASE_IMAGE
+FROM cgr.dev/chainguard/static:latest
 
 ARG GOARCH=amd64
-
-RUN apk -U upgrade
 
 COPY dummy-idp-linux-$GOARCH /usr/local/bin/dummy-idp
 
