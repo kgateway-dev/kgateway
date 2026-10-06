@@ -27,9 +27,33 @@ inputs:
     required: false
     default: "false"
     description: Whether to install localstack
+  ip-family:
+    required: false
+    default: "ipv4"
+    description: The IP family of the cluster - ipv4, ipv6, or dual
 runs:
   using: "composite"
   steps:
+    # GitHub-hosted runners ship a docker daemon with IPv6 disabled, so kind's
+    # docker network has no IPv6 subnet and an ipv6/dual cluster cannot come up.
+    - name: Enable IPv6 on the docker daemon
+      if: ${{ inputs.ip-family != 'ipv4' }}
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/docker
+        # Merge rather than overwrite: the runner image ships a daemon.json and
+        # replacing it would drop whatever else it configures. Later keys win.
+        # ip6tables needs no "experimental" flag on the runner's Docker (28.x);
+        # it left experimental in 26.0.
+        existing=$(sudo cat /etc/docker/daemon.json 2>/dev/null || echo '{}')
+        printf '%s\n%s\n' \
+          "$existing" \
+          '{"ipv6": true, "fixed-cidr-v6": "fd00:dead:beef::/64", "ip6tables": true}' \
+          | jq -s 'add' | sudo tee /etc/docker/daemon.json
+        sudo systemctl restart docker
+        # sysctls the kind nodes need to route IPv6 between pods
+        sudo sysctl -w net.ipv6.conf.all.forwarding=1
+        sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0
     - uses: azure/setup-kubectl@776406bce94f63e41d621b960d78ee25c8b76ede # v4.0.1
       id: kubectl
       with:
@@ -43,5 +67,6 @@ runs:
         CONFORMANCE_VERSION: ${{ inputs.gateway-api-version }}
         CONFORMANCE_CHANNEL: ${{ inputs.gateway-api-channel }}
         LOCALSTACK: ${{ inputs.localstack }}
+        IP_FAMILY: ${{ inputs.ip-family }}
       run: |
         ./hack/kind/setup-kind.sh

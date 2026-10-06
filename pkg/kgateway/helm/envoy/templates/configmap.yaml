@@ -95,7 +95,8 @@ data:
       listeners:
       - name: readiness_listener
         address:
-          socket_address: { address: 0.0.0.0, port_value: 8082 }
+          socket_address:
+            {{- include "kgateway.gateway.wildcardSocketAddress" (dict "bindIpv6" $gateway.bindIpv6 "port" 8082) | nindent 12 }}
 {{- if $gateway.enableReadinessProbeProxyProtocol }}
         listener_filters:
           - name: envoy.filters.listener.proxy_protocol
@@ -144,8 +145,7 @@ data:
       - name: prometheus_listener
         address:
           socket_address:
-            address: 0.0.0.0
-            port_value: 9091
+            {{- include "kgateway.gateway.wildcardSocketAddress" (dict "bindIpv6" $gateway.bindIpv6 "port" 9091) | nindent 12 }}
         filter_chains:
           - filters:
             - name: envoy.filters.network.http_connection_manager

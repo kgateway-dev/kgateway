@@ -13,6 +13,8 @@ CLUSTER_NAME="${CLUSTER_NAME:-kgw-zone-aware}"
 CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f}"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
 KIND="${KIND:-go tool kind}"
+# The IP family of the kind cluster: ipv4, ipv6, or dual.
+IP_FAMILY="${IP_FAMILY:-ipv4}"
 
 # The test stub region and zones assigned to the worker nodes.
 ZONE_REGION="us-east-1"
@@ -35,6 +37,8 @@ function create_kind_cluster_or_skip() {
     --config=- <<EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: ${IP_FAMILY}
 nodes:
 - role: control-plane
 - role: worker
