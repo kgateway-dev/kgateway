@@ -1085,7 +1085,7 @@ endif
 
 .PHONY: metallb
 metallb: ## Install the MetalLB load balancer
-	IP_FAMILY=$(IP_FAMILY) CLUSTER_NAME=$(CLUSTER_NAME) \
+	IP_FAMILY=$(IP_FAMILY) \
 		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
 		./hack/kind/setup-metalllb-on-kind.sh
 
