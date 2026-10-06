@@ -169,7 +169,7 @@ func validatePath(path string, errs *[]error) {
 // reject the entire RouteConfiguration, whereas failing here costs only the offending route.
 func validateRedirectPath(path string, errs *[]error) {
 	if strings.ContainsAny(path, "\x00\n\r") {
-		*errs = append(*errs, fmt.Errorf("the \"%s\" path is invalid: %w", path, RedirectPathControlCharacterError))
+		*errs = append(*errs, fmt.Errorf("the \"%q\" path is invalid: %w", path, RedirectPathControlCharacterError))
 	}
 }
 
