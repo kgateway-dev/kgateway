@@ -2,19 +2,26 @@
 package bootstrap
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/ratelimit/v3"
+	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 func TestConfigBuilder_Build(t *testing.T) {
@@ -34,8 +41,17 @@ func TestConfigBuilder_Build(t *testing.T) {
 				if n := got.GetNode().GetId(); n != "validation-node-id" {
 					t.Fatalf("unexpected node ID: %q", n)
 				}
-				if len(got.GetStaticResources().GetClusters()) != 0 {
-					t.Fatalf("expected no clusters, got %d", len(got.GetStaticResources().GetClusters()))
+				if len(ValidatedClusters(got)) != 0 {
+					t.Fatalf("expected no clusters, got %d", len(ValidatedClusters(got)))
+				}
+				// The proxy bootstrap always sets a local cluster; Envoy rejects e.g.
+				// local_cluster_rate_limit without one.
+				if n := got.GetClusterManager().GetLocalClusterName(); n != validationLocalClusterName {
+					t.Fatalf("unexpected local cluster name: %q", n)
+				}
+				clusters := got.GetStaticResources().GetClusters()
+				if len(clusters) != 1 || clusters[0].GetName() != validationLocalClusterName {
+					t.Fatalf("expected only the local cluster %q, got %v", validationLocalClusterName, clusters)
 				}
 			},
 		},
@@ -63,7 +79,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 			},
 			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
 				want := 1
-				if diff := cmp.Diff(want, len(got.GetStaticResources().GetClusters())); diff != "" {
+				if diff := cmp.Diff(want, len(ValidatedClusters(got))); diff != "" {
 					t.Fatalf("cluster count mismatch (-want +got):\n%s", diff)
 				}
 			},
@@ -99,7 +115,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 				b.AddCluster(&envoyclusterv3.Cluster{Name: "test_cluster_2"})
 			},
 			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
-				clusters := got.GetStaticResources().GetClusters()
+				clusters := ValidatedClusters(got)
 				if len(clusters) != 1 {
 					t.Fatalf("expected 1 cluster, got %d", len(clusters))
 				}
@@ -215,6 +231,27 @@ func TestConfigBuilder_Build(t *testing.T) {
 }
 
 // unmarshalHCM pulls the first HCM filter out of the generated bootstrap for inspection.
+// TestBuild_LocalClusterRateLimitPassesEnvoyValidation runs Envoy on a bootstrap with a
+// shareAcrossGateway local rate limit, which Envoy rejects without a local cluster.
+func TestBuild_LocalClusterRateLimitPassesEnvoyValidation(t *testing.T) {
+	b := New()
+	b.AddFilterConfig("envoy.filters.http.local_ratelimit", &localratelimitv3.LocalRateLimit{
+		StatPrefix: "validation",
+		TokenBucket: &typev3.TokenBucket{
+			MaxTokens:    12,
+			FillInterval: durationpb.New(time.Minute),
+		},
+		LocalClusterRateLimit: &ratelimitv3.LocalClusterRateLimit{},
+	})
+	bs, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build() error: %v", err)
+	}
+	if err := validator.NewDocker().Validate(context.Background(), bs); err != nil {
+		t.Fatalf("envoy rejected the validation bootstrap: %v", err)
+	}
+}
+
 func unmarshalHCM(t *testing.T, bs *envoybootstrapv3.Bootstrap) *envoy_hcm.HttpConnectionManager {
 	t.Helper()
 
