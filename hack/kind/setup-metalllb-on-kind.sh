@@ -8,11 +8,6 @@ METALLB_VERSION=${METALLB_VERSION:-v0.13.7}
 # The IP family of the cluster: ipv4, ipv6, or dual. Determines which of the
 # docker network's subnets the LoadBalancer pool is carved out of.
 IP_FAMILY="${IP_FAMILY:-ipv4}"
-# The kind cluster to install into. Every kubectl call below is pinned to this
-# cluster's context: this script also runs standalone via `make metallb`, where
-# the current context may well belong to some other cluster.
-CLUSTER_NAME="${CLUSTER_NAME:-kind}"
-KUBE_CONTEXT="${KUBE_CONTEXT:-kind-${CLUSTER_NAME}}"
 
 # Optional per-cluster pool overrides. Every kind cluster shares one docker
 # network, so two clusters derive the same pool from it and advertise
@@ -24,14 +19,14 @@ KUBE_CONTEXT="${KUBE_CONTEXT:-kind-${CLUSTER_NAME}}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-}"
 CLUSTER_SUBNET_V6="${CLUSTER_SUBNET_V6:-}"
 
-echo "installing MetalLB ${METALLB_VERSION} on cluster ${CLUSTER_NAME} (context ${KUBE_CONTEXT}) with ipFamily=${IP_FAMILY}"
+echo "installing MetalLB ${METALLB_VERSION} into context $(kubectl config current-context) with ipFamily=${IP_FAMILY}"
 
-kubectl --context "$KUBE_CONTEXT" apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml
 
 # Wait for MetalLB to become available.
-kubectl --context "$KUBE_CONTEXT" rollout status -n metallb-system deployment/controller --timeout 5m
-kubectl --context "$KUBE_CONTEXT" rollout status -n metallb-system daemonset/speaker --timeout 5m
-kubectl --context "$KUBE_CONTEXT" wait -n metallb-system pod -l app=metallb --for=condition=Ready --timeout=60s
+kubectl rollout status -n metallb-system deployment/controller --timeout 5m
+kubectl rollout status -n metallb-system daemonset/speaker --timeout 5m
+kubectl wait -n metallb-system pod -l app=metallb --for=condition=Ready --timeout=60s
 
 # Ready pods are not enough. The IPAddressPool and L2Advertisement CRs below go
 # through MetalLB's own validating webhook, and that only starts admitting once
@@ -40,7 +35,7 @@ kubectl --context "$KUBE_CONTEXT" wait -n metallb-system pod -l app=metallb --fo
 echo "waiting for the MetalLB admission webhook to have endpoints"
 webhook_ready=false
 for _ in $(seq 1 60); do
-  if [[ -n "$(kubectl --context "$KUBE_CONTEXT" get endpointslices -n metallb-system \
+  if [[ -n "$(kubectl get endpointslices -n metallb-system \
       -l kubernetes.io/service-name=webhook-service \
       -o jsonpath='{.items[*].endpoints[*].addresses[0]}')" ]]; then
     webhook_ready=true
@@ -150,7 +145,7 @@ done
 
 # Apply the IPAddressPool on its own first: the L2Advertisement below names it,
 # and the webhook rejects an advertisement whose pool does not exist yet.
-kubectl --context "$KUBE_CONTEXT" apply -f - <<-EOF
+kubectl apply -f - <<-EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -161,7 +156,7 @@ spec:
 ${ADDRESS_YAML}
 EOF
 
-kubectl --context "$KUBE_CONTEXT" apply -f - <<-EOF
+kubectl apply -f - <<-EOF
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
@@ -172,4 +167,4 @@ spec:
     - address-pool
 EOF
 
-echo "MetalLB installation completed for ${CLUSTER_NAME}"
+echo "MetalLB installation completed"

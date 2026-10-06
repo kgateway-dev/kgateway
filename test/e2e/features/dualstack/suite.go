@@ -62,14 +62,32 @@ func (s *testingSuite) SetupSuite() {
 }
 
 // clusterHasBothIPFamilies reports whether the cluster is configured for IPv4 and
-// IPv6, read off the default kubernetes Service: a single-stack cluster lists one
-// family there, a dual-stack cluster both.
+// IPv6. It creates a throwaway PreferDualStack Service and reads back the
+// families the API server allocated: a dual-stack cluster gives it both, a
+// single-stack cluster only its one. The default kubernetes Service cannot be
+// used for this, because it stays single-stack even on a dual-stack cluster.
 func (s *testingSuite) clusterHasBothIPFamilies() bool {
-	var svc corev1.Service
-	err := s.TestInstallation.ClusterContext.Client.Get(s.Ctx,
-		client.ObjectKey{Name: "kubernetes", Namespace: metav1.NamespaceDefault}, &svc)
-	s.Require().NoError(err, "failed to read the default kubernetes Service to detect the cluster's IP families")
-	return len(svc.Spec.IPFamilies) > 1
+	preferDualStack := corev1.IPFamilyPolicyPreferDualStack
+	probe := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "dualstack-probe-",
+			Namespace:    metav1.NamespaceDefault,
+		},
+		Spec: corev1.ServiceSpec{
+			IPFamilyPolicy: &preferDualStack,
+			Ports:          []corev1.ServicePort{{Port: 80}},
+		},
+	}
+	cli := s.TestInstallation.ClusterContext.Client
+	err := cli.Create(s.Ctx, probe)
+	s.Require().NoError(err, "failed to create the PreferDualStack probe Service to detect the cluster's IP families")
+	// Delete on both outcomes: on a single-stack cluster the suite is skipped
+	// right after this returns, and no teardown runs to clean up after it.
+	defer func() {
+		err := cli.Delete(s.Ctx, probe)
+		s.Require().NoError(client.IgnoreNotFound(err), "failed to delete the dual-stack probe Service")
+	}()
+	return len(probe.Spec.IPFamilies) > 1
 }
 
 // TestDualStackService exercises the Service ipFamilies/ipFamilyPolicy fields on
