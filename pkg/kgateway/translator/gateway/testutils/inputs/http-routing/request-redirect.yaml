@@ -209,8 +209,7 @@ spec:
           type: ReplaceFullPath
           replaceFullPath: /test?foo=bar
         statusCode: 301
-  # A redirect target is never matched on, so sequences that are rejected in a match path
-  # are legal here - Envoy accepts them and normalizes on its own side.
+  # Envoy permits redirect-target sequences that are rejected in a match path.
   - matches:
     - path:
         type: PathPrefix
