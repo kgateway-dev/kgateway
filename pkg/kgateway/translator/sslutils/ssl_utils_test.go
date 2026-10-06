@@ -184,6 +184,19 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 				"unknown tls option: kgateway.dev/min-tls-versions",
 			},
 		},
+		{
+			// TLS options maps are shared with other implementations, so keys outside the
+			// kgateway.dev/ prefix are skipped, while kgateway keys alongside them still apply.
+			name: "foreign_options_skipped",
+			out: &ir.TLSConfig{
+				EcdhCurves: []string{"P-384"},
+			},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				"example.com/other-implementation": "value",
+				"unprefixed-option":                "value",
+				annotations.EcdhCurves:             "P-384",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
