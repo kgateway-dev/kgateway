@@ -270,13 +270,17 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		slices.SortFunc(eps, func(a, b *envoyendpointv3.LbEndpoint) int {
 			return cmp.Compare(lbEndpointSortKey(a), lbEndpointSortKey(b))
 		})
-		var localityWeight uint32
+		var localityWeight uint64
 		for _, ep := range eps {
-			localityWeight += ep.GetLoadBalancingWeight().GetValue()
+			localityWeight += uint64(ep.GetLoadBalancingWeight().GetValue())
+		}
+		if localityWeight > uint64(^uint32(0)) {
+			localityWeight = uint64(^uint32(0))
 		}
 		lle := &envoyendpointv3.LocalityLbEndpoints{
-			LbEndpoints:         eps,
-			LoadBalancingWeight: wrapperspb.UInt32(localityWeight),
+			LbEndpoints: eps,
+			//nolint:gosec // G115: localityWeight is capped at the uint32 max above
+			LoadBalancingWeight: wrapperspb.UInt32(uint32(localityWeight)),
 		}
 		if locality != (ir.PodLocality{}) {
 			lle.Locality = &envoycorev3.Locality{
