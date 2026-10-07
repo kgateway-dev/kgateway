@@ -64,12 +64,13 @@ import (
 )
 
 type translationResult struct {
-	Routes        []*envoyroutev3.RouteConfiguration
-	Listeners     []*envoylistenerv3.Listener
-	ExtraClusters []*envoyclusterv3.Cluster
-	Clusters      []*envoyclusterv3.Cluster
-	Secrets       []*envoytlsv3.Secret
-	Statuses      *Statuses
+	Routes           []*envoyroutev3.RouteConfiguration
+	Listeners        []*envoylistenerv3.Listener
+	ExtraClusters    []*envoyclusterv3.Cluster
+	Clusters         []*envoyclusterv3.Cluster
+	BackendListeners []*envoylistenerv3.Listener
+	Secrets          []*envoytlsv3.Secret
+	Statuses         *Statuses
 }
 
 func (tr *translationResult) MarshalJSON() ([]byte, error) {
@@ -111,6 +112,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	if len(tr.BackendListeners) > 0 {
+		listeners, err := marshalProtoMessages(tr.BackendListeners, m)
+		if err != nil {
+			return nil, err
+		}
+		result["BackendListeners"] = listeners
 	}
 
 	if len(tr.Secrets) > 0 {
@@ -199,6 +208,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			tr.Clusters[i] = cluster
+		}
+	}
+
+	if listenersData, ok := result["BackendListeners"]; ok {
+		var listeners []json.RawMessage
+		if err := json.Unmarshal(listenersData, &listeners); err != nil {
+			return err
+		}
+		tr.BackendListeners = make([]*envoylistenerv3.Listener, len(listeners))
+		for i, listenerData := range listeners {
+			listener := &envoylistenerv3.Listener{}
+			if err := m.Unmarshal(listenerData, listener); err != nil {
+				return err
+			}
+			tr.BackendListeners[i] = listener
 		}
 	}
 
@@ -313,13 +337,15 @@ func TestTranslationWithExtraPlugins(
 	// sort the output and print it
 	result.Proxy = sortProxy(result.Proxy)
 	result.Clusters = sortClusters(result.Clusters)
+	result.BackendListeners = sortListeners(result.BackendListeners)
 	output := &translationResult{
-		Routes:        result.Proxy.Routes,
-		Listeners:     result.Proxy.Listeners,
-		ExtraClusters: result.Proxy.ExtraClusters,
-		Clusters:      result.Clusters,
-		Secrets:       result.Proxy.Secrets,
-		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
+		Routes:           result.Proxy.Routes,
+		Listeners:        result.Proxy.Listeners,
+		ExtraClusters:    result.Proxy.ExtraClusters,
+		Clusters:         result.Clusters,
+		BackendListeners: result.BackendListeners,
+		Secrets:          result.Proxy.Secrets,
+		Statuses:         buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
 	outputYaml, err := testutils.MarshalAnyYaml(output)
 	r.NoErrorf(err, "error marshaling output to YAML; actual result: %s", outputYaml)
@@ -342,6 +368,10 @@ func TestTranslationWithExtraPlugins(
 	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing clusters output")
 
+	gotBackendListeners, err := compareBackendListeners(outputFile, result.BackendListeners)
+	r.Emptyf(gotBackendListeners, "unexpected diff in backend listeners output; actual result: %s", outputYaml)
+	r.NoError(err, "error comparing backend listeners output")
+
 	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
 	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
 	r.NoError(err, "error comparing statuses output")
@@ -358,6 +388,8 @@ type ActualTestResult struct {
 	ListenerSets  map[types.NamespacedName]*gwv1.ListenerSet
 	PolicyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin
 	Clusters      []*envoyclusterv3.Cluster
+	// BackendListeners are the listeners generated with Clusters.
+	BackendListeners []*envoylistenerv3.Listener
 }
 
 func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
@@ -476,6 +508,22 @@ func compareClusters(expectedFile string, actualClusters []*envoyclusterv3.Clust
 
 	// Sort both expected and actual clusters by name and compare
 	return cmp.Diff(sortClusters(expectedOutput.Clusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+}
+
+func compareBackendListeners(expectedFile string, actualListeners []*envoylistenerv3.Listener) (string, error) {
+	expectedOutput := &translationResult{}
+	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
+		return "", err
+	}
+
+	return cmp.Diff(sortListeners(expectedOutput.BackendListeners), sortListeners(actualListeners), protocmp.Transform()), nil
+}
+
+func sortListeners(listeners []*envoylistenerv3.Listener) []*envoylistenerv3.Listener {
+	slices.SortFunc(listeners, func(a, b *envoylistenerv3.Listener) int {
+		return stdcmp.Compare(a.GetName(), b.GetName())
+	})
+	return listeners
 }
 
 func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster {
@@ -904,19 +952,21 @@ func (tc TestCase) Run(
 		t := translator.GetBackendTranslator()
 		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
+		var backendListeners []*envoylistenerv3.Listener
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				// Errored translations (including strict-mode validation failures) are
 				// skipped rather than failing the test: snapshotPerClient omits errored
 				// clusters from CDS, so the golden output must omit them too.
-				cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
+				cluster, listeners, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
 				if err != nil {
 					continue
 				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
 				}
+				backendListeners = append(backendListeners, listeners...)
 			}
 		}
 		if clientCertificate, err := gatewaytls.ResolveForGateway(krt.TestingDummyContext{}, ctx, queries, &gw); err == nil && clientCertificate != nil {
@@ -927,46 +977,47 @@ func (tc TestCase) Run(
 						continue
 					}
 
-					cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, &clone)
+					cluster, listeners, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, &clone)
 					if err != nil {
 						continue
 					}
 					if cluster != nil {
 						clusters = append(clusters, cluster)
 					}
+					backendListeners = append(backendListeners, listeners...)
 				}
 			}
 		}
 		r := results[gwNN]
 		r.Clusters = clusters
+		r.BackendListeners = backendListeners
 		results[gwNN] = r
 	}
 
 	return results, nil
 }
 
-// translateBackendForGolden selects the base or per-client cluster using the
-// same translation contract as snapshot assembly. Errored translations return
-// no cluster because snapshotPerClient excludes errored rows from CDS.
+// translateBackendForGolden selects the base or per-client resources, omitting
+// errored translations to match snapshot assembly.
 func translateBackendForGolden(
 	ctx context.Context,
 	kctx krt.HandlerContext,
 	backendTranslator *irtranslator.BackendTranslator,
 	ucc ir.UniquelyConnectedClient,
 	backend *ir.BackendObjectIR,
-) (*envoyclusterv3.Cluster, error) {
+) (*envoyclusterv3.Cluster, []*envoylistenerv3.Listener, error) {
 	base := backendTranslator.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
 	if base.Error != nil {
-		return nil, base.Error
+		return nil, nil, base.Error
 	}
 	perClient, err := backendTranslator.ApplyPerClient(kctx, ctx, ucc, backend, base)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if perClient != nil {
-		return perClient, nil
+		return perClient, base.Listeners, nil
 	}
-	return base.Cluster, nil
+	return base.Cluster, base.Listeners, nil
 }
 
 func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {

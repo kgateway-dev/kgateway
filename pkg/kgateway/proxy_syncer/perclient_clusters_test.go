@@ -2,17 +2,23 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
@@ -257,4 +263,95 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 		c := storedClustersForClient(clusters, stable)[clustersTestBackend("b4").ClusterName()]
 		return c != nil && c.GetAltStatName() == lastProtocol
 	}, 5*time.Second, 10*time.Millisecond, "the stable client's payload must carry the last backend update")
+}
+
+// tunnelLifecycleTranslator uses AppProtocol for tunnel state and StatPrefix for credentials.
+func tunnelLifecycleTranslator() *irtranslator.BackendTranslator {
+	translator := clustersTestTranslator()
+	translator.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test.example.io", Kind: "Tunnel"}: {
+			ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+				switch in.AppProtocol {
+				case "":
+					return sdk.BaseClusterResources{}, nil
+				case "invalid":
+					return sdk.BaseClusterResources{}, errors.New("invalid tunnel")
+				}
+				return sdk.BaseClusterResources{Listeners: []*envoylistenerv3.Listener{{
+					Name:       "connect_tunnel_" + out.GetName(),
+					StatPrefix: string(in.AppProtocol),
+				}}}, nil
+			},
+		},
+	}
+	return translator
+}
+
+// TestBackendListenerLifecycle checks delivery to all clients across tunnel
+// failure, credential rotation, detachment, and backend deletion.
+func TestBackendListenerLifecycle(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	clients := []ir.UniquelyConnectedClient{clustersTestClient("role-a"), clustersTestClient("role-b")}
+	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{clustersTestBackendWithProtocol("dest", "cred-1")}, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, tunnelLifecycleTranslator(), finalBackends, uccs)
+
+	name := clustersTestBackend("dest").ClusterName()
+	listenerName := "connect_tunnel_" + name
+	type state struct {
+		published bool
+		errored   bool
+		listener  string // StatPrefix credential marker
+		hash      uint64
+	}
+	observe := func(ucc ir.UniquelyConnectedClient) state {
+		row := clusters.perClient.GetKey(ucc.ResourceName())
+		if row == nil {
+			return state{}
+		}
+		_, published := row.clusters.Items[name]
+		s := state{published: published, errored: slices.Contains(row.erroredClusters, name), hash: row.listenersHash}
+		for _, l := range row.listeners {
+			if envoycache.GetResourceName(l.Resource) == listenerName {
+				s.listener = l.Resource.(*envoylistenerv3.Listener).GetStatPrefix()
+			}
+		}
+		return s
+	}
+	expect := func(step string, want state) map[string]uint64 {
+		t.Helper()
+		hashes := map[string]uint64{}
+		for _, ucc := range clients {
+			var last state
+			require.Eventuallyf(t, func() bool {
+				last = observe(ucc)
+				return last.published == want.published && last.errored == want.errored && last.listener == want.listener
+			}, 5*time.Second, 10*time.Millisecond, "%s: client %s never reached %+v (last: %+v)", step, ucc.ResourceName(), want, last)
+			hashes[ucc.ResourceName()] = last.hash
+		}
+		return hashes
+	}
+	update := func(appProtocol string) {
+		finalBackends.UpdateObject(clustersTestBackendWithProtocol("dest", appProtocol))
+	}
+
+	first := expect("valid", state{published: true, listener: "cred-1"})
+
+	update("invalid")
+	expect("invalid", state{errored: true})
+
+	update("cred-2")
+	rotated := expect("rotated", state{published: true, listener: "cred-2"})
+	for client, hash := range rotated {
+		assert.NotEqual(t, first[client], hash, "a credential change must change the listener version for %s", client)
+	}
+
+	update("")
+	expect("detached", state{published: true})
+
+	finalBackends.DeleteObject(clustersTestBackend("dest").ResourceName())
+	expect("deleted", state{})
 }

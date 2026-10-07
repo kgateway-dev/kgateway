@@ -265,6 +265,30 @@ func TestFilterEndpointResourcesForErroredClusters(t *testing.T) {
 	g.Expect(recovered.Items).To(gomega.HaveKey("errored-cluster"))
 }
 
+func TestMergeBackendListeners(t *testing.T) {
+	gateway := envoycache.NewResourcesWithTTL("gw-1", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoylistenerv3.Listener{Name: "http", StatPrefix: "gateway"}},
+	})
+	withBackendListener := func(hash uint64) envoycache.Resources {
+		return mergeBackendListeners(gateway, &clustersWithErrors{
+			listeners:     []envoycachetypes.ResourceWithTTL{{Resource: &envoylistenerv3.Listener{Name: "connect_tunnel_dest"}}},
+			listenersHash: hash,
+		})
+	}
+
+	g := gomega.NewWithT(t)
+	g.Expect(mergeBackendListeners(gateway, &clustersWithErrors{})).To(gomega.Equal(gateway),
+		"without backend listeners the Gateway's listeners must be used as is")
+
+	merged := withBackendListener(1)
+	g.Expect(merged.Items).To(gomega.HaveKey("http"))
+	g.Expect(merged.Items).To(gomega.HaveKey("connect_tunnel_dest"))
+	g.Expect(merged.Version).ToNot(gomega.Equal(gateway.Version), "adding listeners must change the LDS version")
+	g.Expect(withBackendListener(2).Version).ToNot(gomega.Equal(merged.Version),
+		"a changed backend listener must change the LDS version")
+	g.Expect(gateway.Items).To(gomega.HaveLen(1), "the Gateway's resources are shared and must not be modified")
+}
+
 // TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored pins the
 // fail-closed behavior for errored clusters: a cluster whose backend
 // translation failed is excluded from the CDS payload (routes to it get

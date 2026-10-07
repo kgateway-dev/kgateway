@@ -1,0 +1,89 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: external
+  namespace: gwtest
+spec:
+  parentRefs:
+  - name: http-gw-for-test
+  hostnames:
+  - "www.example.com"
+  rules:
+  - backendRefs:
+    - name: external
+      group: gateway.kgateway.dev
+      kind: Backend
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: external
+  namespace: gwtest
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: external.example.com
+      port: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress-proxy
+  namespace: gwtest
+spec:
+  ports:
+  - name: http
+    port: 3128
+    targetPort: 3128
+  selector:
+    app: egress-proxy
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: egress-proxy-credentials
+  namespace: gwtest
+type: Opaque
+data:
+  # Includes a trailing newline to test Secret normalization.
+  authorization: QmFzaWMgZFhObGNqcHdZWE56Cg==
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: external-egress
+  namespace: gwtest
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: external
+  tls:
+    sni: external.example.com
+    wellKnownCACertificates: System
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      secretRef:
+        name: egress-proxy-credentials
+        key: authorization

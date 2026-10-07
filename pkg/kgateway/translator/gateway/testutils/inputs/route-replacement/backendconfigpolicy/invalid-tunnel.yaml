@@ -1,0 +1,198 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress-proxy
+  namespace: gwtest
+spec:
+  ports:
+    - name: http
+      port: 3128
+      targetPort: 3128
+  selector:
+    app: egress-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress-proxy
+  namespace: egress
+spec:
+  ports:
+    - name: http
+      port: 3128
+      targetPort: 3128
+  selector:
+    app: egress-proxy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: tunnel-route
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: example-gateway
+  hostnames:
+    - "example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /valid
+      backendRefs:
+        - name: valid
+          group: gateway.kgateway.dev
+          kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /dfp-destination
+      backendRefs:
+        - name: dfp-destination
+          group: gateway.kgateway.dev
+          kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /no-grant
+      backendRefs:
+        - name: no-grant
+          group: gateway.kgateway.dev
+          kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /missing-proxy
+      backendRefs:
+        - name: missing-proxy
+          group: gateway.kgateway.dev
+          kind: Backend
+---
+# Valid tunnel - should be unaffected by the invalid tunnels below
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: valid
+  namespace: gwtest
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: valid.example.com
+        port: 443
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: valid-tunnel
+  namespace: gwtest
+spec:
+  targetRefs:
+    - name: valid
+      group: gateway.kgateway.dev
+      kind: Backend
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128
+---
+# Tunnel to a non-Static Backend - should cause validation error
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp-destination
+  namespace: gwtest
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy: {}
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: dfp-destination-tunnel
+  namespace: gwtest
+spec:
+  targetRefs:
+    - name: dfp-destination
+      group: gateway.kgateway.dev
+      kind: Backend
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128
+---
+# Tunnel through a proxy in another namespace without a ReferenceGrant - should cause validation error
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: no-grant
+  namespace: gwtest
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: no-grant.example.com
+        port: 443
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: no-grant-tunnel
+  namespace: gwtest
+spec:
+  targetRefs:
+    - name: no-grant
+      group: gateway.kgateway.dev
+      kind: Backend
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        namespace: egress
+        port: 3128
+---
+# Tunnel through a proxy that doesn't exist - should cause validation error
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: missing-proxy
+  namespace: gwtest
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: missing-proxy.example.com
+        port: 443
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: missing-proxy-tunnel
+  namespace: gwtest
+spec:
+  targetRefs:
+    - name: missing-proxy
+      group: gateway.kgateway.dev
+      kind: Backend
+  tunnel:
+    proxy:
+      backendRef:
+        name: nonexistent-proxy  # This proxy doesn't exist
+        port: 3128
