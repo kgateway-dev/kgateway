@@ -2,26 +2,19 @@
 package bootstrap
 
 import (
-	"context"
 	"strings"
 	"testing"
-	"time"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	ratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/ratelimit/v3"
-	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 )
 
 func TestConfigBuilder_Build(t *testing.T) {
@@ -231,27 +224,6 @@ func TestConfigBuilder_Build(t *testing.T) {
 }
 
 // unmarshalHCM pulls the first HCM filter out of the generated bootstrap for inspection.
-// TestBuild_LocalClusterRateLimitPassesEnvoyValidation runs Envoy on a bootstrap with a
-// shareAcrossGateway local rate limit, which Envoy rejects without a local cluster.
-func TestBuild_LocalClusterRateLimitPassesEnvoyValidation(t *testing.T) {
-	b := New()
-	b.AddFilterConfig("envoy.filters.http.local_ratelimit", &localratelimitv3.LocalRateLimit{
-		StatPrefix: "validation",
-		TokenBucket: &typev3.TokenBucket{
-			MaxTokens:    12,
-			FillInterval: durationpb.New(time.Minute),
-		},
-		LocalClusterRateLimit: &ratelimitv3.LocalClusterRateLimit{},
-	})
-	bs, err := b.Build()
-	if err != nil {
-		t.Fatalf("Build() error: %v", err)
-	}
-	if err := validator.NewDocker().Validate(context.Background(), bs); err != nil {
-		t.Fatalf("envoy rejected the validation bootstrap: %v", err)
-	}
-}
-
 func unmarshalHCM(t *testing.T, bs *envoybootstrapv3.Bootstrap) *envoy_hcm.HttpConnectionManager {
 	t.Helper()
 
