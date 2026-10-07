@@ -1156,6 +1156,177 @@ spec:
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
+              tunnel:
+                description: |-
+                  Tunnel sends Backend connections through an HTTP CONNECT proxy.
+                  Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+                  Requires Backend targetRefs; targetSelectors are not supported.
+                properties:
+                  headers:
+                    description: |-
+                      Headers are sent only on CONNECT requests. Each requires a name and
+                      exactly one of value or secretRef.
+                    items:
+                      description: |-
+                        HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                        be set. When using secretRef, name and key interact as follows:
+                          - Both present: name is the header name, key is the Secret data key.
+                          - name absent, key present: the key is also used as the header name.
+                          - name present, key absent: the name is also used as the Secret data key.
+                          - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                      properties:
+                        name:
+                          description: |-
+                            Name is the HTTP header field name. Name matching is case-insensitive.
+                            (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                            Required when value is set. When secretRef is used, if omitted the Secret data key is
+                            used as the header name; if both name and key are omitted every Secret entry is injected
+                            as a header.
+                          maxLength: 256
+                          minLength: 1
+                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                          type: string
+                        secretRef:
+                          description: |-
+                            SecretRef sources the header value from a key in a Kubernetes Secret.
+                            Mutually exclusive with value.
+                          properties:
+                            key:
+                              description: |-
+                                Key is the key within the Secret's data map to use as the header value. When omitted and
+                                the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                omitted, all entries in the Secret are injected as headers.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name is the name of the Kubernetes Secret.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                namespace permitting access from the policy's namespace.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        value:
+                          description: |-
+                            Value is an inline string value for the header. Mutually exclusive with secretRef.
+                            Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                          maxLength: 4096
+                          minLength: 1
+                          pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                          type: string
+                      type: object
+                      x-kubernetes-validations:
+                      - message: name is required when using an inline value
+                        rule: 'has(self.value) ? has(self.name) : true'
+                      - message: exactly one of the fields in [value secretRef] must
+                          be set
+                        rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                          == 1'
+                    maxItems: 16
+                    type: array
+                    x-kubernetes-list-type: atomic
+                    x-kubernetes-validations:
+                    - message: tunnel headers require a name
+                      rule: self.all(h, has(h.name))
+                    - message: tunnel headers cannot set Host
+                      rule: self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')
+                  proxy:
+                    description: Proxy identifies the forward proxy that establishes
+                      the tunnel.
+                    properties:
+                      backendRef:
+                        description: |-
+                          BackendRef references the proxy Service or Backend. CONNECT uses that
+                          backend's HTTP protocol.
+                        properties:
+                          group:
+                            default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
+                            maxLength: 253
+                            pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
+                          kind:
+                            default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                            type: string
+                          name:
+                            description: Name is the name of the referent.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                          port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                        required:
+                        - name
+                        type: object
+                        x-kubernetes-validations:
+                        - message: proxy backendRef must reference a Service or a
+                            Backend
+                          rule: (self.group == '' && self.kind == 'Service') || (self.group
+                            == 'gateway.kgateway.dev' && self.kind == 'Backend')
+                        - message: Must have port for Service reference
+                          rule: '(size(self.group) == 0 && self.kind == ''Service'')
+                            ? has(self.port) : true'
+                    required:
+                    - backendRef
+                    type: object
+                required:
+                - proxy
+                type: object
               upstreamProxyProtocol:
                 description: |-
                   UpstreamProxyProtocol configures the PROXY protocol for upstream connections to the backend.
@@ -1177,6 +1348,11 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
+            - message: tunnel does not support targetSelectors
+              rule: '!has(self.tunnel) || !has(self.targetSelectors)'
+            - message: tunnel requires targetRefs that reference Backends
+              rule: '!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r,
+                r.group == ''gateway.kgateway.dev'' && r.kind == ''Backend''))'
             - message: at most one of the fields in [http1ProtocolOptions http2ProtocolOptions]
                 may be set
               rule: '[has(self.http1ProtocolOptions),has(self.http2ProtocolOptions)].filter(x,x==true).size()
