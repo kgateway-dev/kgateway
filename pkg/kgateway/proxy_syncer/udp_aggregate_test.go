@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"math"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -238,4 +239,34 @@ func TestMergeUdpAggregateLoadAssignment_EmptyServiceDrops(t *testing.T) {
 	// valid = 20*1000 = 20000, blackhole = 80*1000 = 80000 -> 20% valid, 80% dropped.
 	assert.Equal(t, uint32(20000), wValid)
 	assert.Equal(t, uint32(80000), wDrop)
+}
+
+// TestMergeUdpAggregateLoadAssignment_ScalesDownToUint32 asserts that when the summed endpoint
+// weights exceed the uint32 max, every weight scales down by one divisor so both the per-locality
+// endpoint sum and the locality weight stay under the cap while the equal split is preserved.
+func TestMergeUdpAggregateLoadAssignment_ScalesDownToUint32(t *testing.T) {
+	// Five members, one endpoint each, all weight 1e6. Unscaled per-endpoint weight is
+	// 1e6*1000/1 = 1e9, so the five total 5e9, above the uint32 max (~4.29e9).
+	members := make([]udpMemberEndpoints, 5)
+	addrs := []string{"10.0.0.1", "10.0.0.2", "10.0.0.3", "10.0.0.4", "10.0.0.5"}
+	for i, addr := range addrs {
+		members[i] = udpMemberEndpoints{weight: 1_000_000, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint(addr))}}
+	}
+
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	require.Len(t, cla.GetEndpoints(), 1, "all endpoints share the default locality")
+
+	// div = ceil(5e9 / 4294967295) = 2, so each 1e9 becomes 5e8 and the five still split evenly.
+	var localityWeight uint64
+	for _, addr := range addrs {
+		w, ok := endpointWeight(cla, addr)
+		require.True(t, ok, "endpoint %s present", addr)
+		assert.Equal(t, uint32(500_000_000), w)
+		localityWeight += uint64(w)
+	}
+
+	lle := cla.GetEndpoints()[0]
+	assert.Equal(t, uint32(2_500_000_000), lle.GetLoadBalancingWeight().GetValue())
+	require.LessOrEqual(t, localityWeight, uint64(math.MaxUint32), "the locality endpoint sum must fit uint32")
+	require.LessOrEqual(t, uint64(lle.GetLoadBalancingWeight().GetValue()), uint64(math.MaxUint32), "the locality weight must fit uint32")
 }

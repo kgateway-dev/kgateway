@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"cmp"
 	"hash/fnv"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -200,15 +201,15 @@ func buildUdpAggregateLoadAssignment(
 // member's live endpoint count, so a member's total weight stays proportional to its backendRef
 // weight regardless of replica count. dropWeight is added as a single blackhole endpoint.
 func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndpoints, dropWeight uint32) *envoyendpointv3.ClusterLoadAssignment {
-	byLocality := map[ir.PodLocality][]*envoyendpointv3.LbEndpoint{}
-	var localityOrder []ir.PodLocality
-
-	addToLocality := func(locality ir.PodLocality, ep *envoyendpointv3.LbEndpoint) {
-		if _, ok := byLocality[locality]; !ok {
-			localityOrder = append(localityOrder, locality)
-		}
-		byLocality[locality] = append(byLocality[locality], ep)
+	// weighted carries an endpoint's uint64 weight so the whole set can be scaled together before the
+	// weights are narrowed to uint32.
+	type weighted struct {
+		locality ir.PodLocality
+		ep       *envoyendpointv3.LbEndpoint
+		weight   uint64
 	}
+	var collected []weighted
+	var total uint64
 
 	for _, m := range members {
 		count := 0
@@ -230,9 +231,6 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		if perEndpointWeight == 0 {
 			perEndpointWeight = 1
 		}
-		if perEndpointWeight > uint64(^uint32(0)) {
-			perEndpointWeight = uint64(^uint32(0))
-		}
 		for _, efb := range m.efbs {
 			for locality, eps := range efb.LbEps {
 				for _, ep := range eps {
@@ -240,9 +238,8 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 						continue
 					}
 					clone := proto.Clone(ep.LbEndpoint).(*envoyendpointv3.LbEndpoint)
-					//nolint:gosec // G115: perEndpointWeight is capped at the uint32 max above
-					clone.LoadBalancingWeight = wrapperspb.UInt32(uint32(perEndpointWeight))
-					addToLocality(locality, clone)
+					collected = append(collected, weighted{locality: locality, ep: clone, weight: perEndpointWeight})
+					total += perEndpointWeight
 				}
 			}
 		}
@@ -253,11 +250,34 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		if bhWeight == 0 {
 			bhWeight = 1
 		}
-		if bhWeight > uint64(^uint32(0)) {
-			bhWeight = uint64(^uint32(0))
+		collected = append(collected, weighted{ep: blackholeLbEndpoint(), weight: bhWeight})
+		total += bhWeight
+	}
+
+	// Envoy caps both the endpoint weights summed within a locality and the locality weights summed
+	// across a priority at the uint32 max. Each locality weight is the sum of its endpoints, so
+	// scaling every endpoint weight down by one divisor until the grand total fits keeps both sums
+	// under the cap while preserving the backendRef proportions.
+	if total > math.MaxUint32 {
+		div := (total + math.MaxUint32 - 1) / math.MaxUint32
+		for i := range collected {
+			scaled := collected[i].weight / div
+			if scaled == 0 {
+				scaled = 1
+			}
+			collected[i].weight = scaled
 		}
-		//nolint:gosec // G115: bhWeight is capped at the uint32 max above
-		addToLocality(ir.PodLocality{}, blackholeLbEndpoint(uint32(bhWeight)))
+	}
+
+	byLocality := map[ir.PodLocality][]*envoyendpointv3.LbEndpoint{}
+	var localityOrder []ir.PodLocality
+	for _, w := range collected {
+		//nolint:gosec // G115: weight is scaled below the uint32 max above
+		w.ep.LoadBalancingWeight = wrapperspb.UInt32(uint32(w.weight))
+		if _, ok := byLocality[w.locality]; !ok {
+			localityOrder = append(localityOrder, w.locality)
+		}
+		byLocality[w.locality] = append(byLocality[w.locality], w.ep)
 	}
 
 	slices.SortFunc(localityOrder, func(a, b ir.PodLocality) int {
@@ -274,12 +294,9 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		for _, ep := range eps {
 			localityWeight += uint64(ep.GetLoadBalancingWeight().GetValue())
 		}
-		if localityWeight > uint64(^uint32(0)) {
-			localityWeight = uint64(^uint32(0))
-		}
 		lle := &envoyendpointv3.LocalityLbEndpoints{
 			LbEndpoints: eps,
-			//nolint:gosec // G115: localityWeight is capped at the uint32 max above
+			//nolint:gosec // G115: localityWeight sums endpoint weights already scaled below the uint32 max
 			LoadBalancingWeight: wrapperspb.UInt32(uint32(localityWeight)),
 		}
 		if locality != (ir.PodLocality{}) {
@@ -294,10 +311,10 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 	return cla
 }
 
-// blackholeLbEndpoint returns a weighted endpoint targeting the loopback discard port.
-func blackholeLbEndpoint(weight uint32) *envoyendpointv3.LbEndpoint {
+// blackholeLbEndpoint returns an endpoint targeting the loopback discard port. The caller sets its
+// weight alongside the member endpoints so the whole set scales together.
+func blackholeLbEndpoint() *envoyendpointv3.LbEndpoint {
 	return &envoyendpointv3.LbEndpoint{
-		LoadBalancingWeight: wrapperspb.UInt32(weight),
 		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 			Endpoint: &envoyendpointv3.Endpoint{
 				Address: &envoycorev3.Address{
