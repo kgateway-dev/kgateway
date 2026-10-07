@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"errors"
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -29,15 +30,43 @@ func gatewayStatusContributions(
 	}, krtopts.ToOptions("GatewayStatusContributions")...)
 }
 
+// attributedError isolates policy-attributed errors from unrelated base changes.
+type attributedError struct {
+	clusterName string
+	err         error
+}
+
+func (a attributedError) ResourceName() string { return a.clusterName }
+
+func (a attributedError) Equals(in attributedError) bool {
+	return a.clusterName == in.clusterName && errorsEqual(a.err, in.err)
+}
+
+// backendPolicyStatusContributions projects attachments and attributed errors
+// into policy status.
 func backendPolicyStatusContributions(
 	backends krt.Collection[*ir.BackendObjectIR],
+	bases krt.Collection[baseEnvoyCluster],
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
-	return krt.NewManyCollection(backends, func(_ krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
+	attributed := krt.NewCollection(bases, func(_ krt.HandlerContext, base baseEnvoyCluster) *attributedError {
+		var policyErr *ir.PolicyError
+		if !errors.As(base.Error, &policyErr) {
+			return nil
+		}
+		return &attributedError{clusterName: base.Name, err: base.Error}
+	}, krtopts.ToOptions("BackendAttributedErrors")...)
+	return krt.NewManyCollection(backends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
 		if backend == nil {
 			return nil
 		}
-		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend})
+		translationErr := func(b *ir.BackendObjectIR) error {
+			if a := krt.FetchOne(kctx, attributed, krt.FilterKey(b.ClusterName())); a != nil {
+				return a.err
+			}
+			return nil
+		}
+		reportMap := generateBackendPolicyReport([]*ir.BackendObjectIR{backend}, translationErr)
 		// Key on the backend's own resource name, not its ObjectSource's: one Service yields a
 		// BackendObjectIR per port, and ObjectSource.ResourceName() drops both the port and the
 		// extra key. Two ports contributing to the same policy would then emit contributions

@@ -13,6 +13,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
@@ -31,6 +32,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -65,10 +67,10 @@ type BackendTranslator struct {
 	overlayOnce    sync.Once
 	overlayPlugins []overlayPlugin
 
-	// baseClusterHooks is the (Group, Kind)-ordered set of ProcessBaseCluster
-	// hooks, computed once on first use for the same reason as overlayPlugins.
-	baseClusterOnce  sync.Once
-	baseClusterHooks []sdk.ProcessBaseCluster
+	// Base hooks are cached in (Group, Kind) order.
+	baseHooksOnce     sync.Once
+	baseClusterHooks  []sdk.ProcessBaseCluster
+	baseResourceHooks []sdk.ProcessBaseClusterResources
 }
 
 // overlayPlugin is one policy plugin's per-client cluster hook: either the
@@ -125,12 +127,21 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 // (Group, Kind) order. applyBasePolicies iterates the policy map, which leaves
 // its hooks unordered; these run after all of them, in a stable order.
 func (t *BackendTranslator) orderedBaseClusterHooks() []sdk.ProcessBaseCluster {
-	t.baseClusterOnce.Do(func() {
+	t.orderBaseHooks()
+	return t.baseClusterHooks
+}
+
+func (t *BackendTranslator) orderedBaseResourceHooks() []sdk.ProcessBaseClusterResources {
+	t.orderBaseHooks()
+	return t.baseResourceHooks
+}
+
+// orderBaseHooks caches cluster and resource hooks in (Group, Kind) order.
+func (t *BackendTranslator) orderBaseHooks() {
+	t.baseHooksOnce.Do(func() {
 		gks := make([]schema.GroupKind, 0, len(t.ContributedPolicies))
-		for gk, policyPlugin := range t.ContributedPolicies {
-			if policyPlugin.ProcessBaseCluster != nil {
-				gks = append(gks, gk)
-			}
+		for gk := range t.ContributedPolicies {
+			gks = append(gks, gk)
 		}
 		slices.SortFunc(gks, func(a, b schema.GroupKind) int {
 			if c := cmp.Compare(a.Group, b.Group); c != 0 {
@@ -139,10 +150,34 @@ func (t *BackendTranslator) orderedBaseClusterHooks() []sdk.ProcessBaseCluster {
 			return cmp.Compare(a.Kind, b.Kind)
 		})
 		for _, gk := range gks {
-			t.baseClusterHooks = append(t.baseClusterHooks, t.ContributedPolicies[gk].ProcessBaseCluster)
+			policyPlugin := t.ContributedPolicies[gk]
+			if policyPlugin.ProcessBaseCluster != nil {
+				t.baseClusterHooks = append(t.baseClusterHooks, policyPlugin.ProcessBaseCluster)
+			}
+			if policyPlugin.ProcessBaseClusterResources != nil {
+				t.baseResourceHooks = append(t.baseResourceHooks, policyPlugin.ProcessBaseClusterResources)
+			}
 		}
 	})
-	return t.baseClusterHooks
+}
+
+// applyBaseClusterResources collects generated listeners in hook order and
+// fails the base on the first hook error.
+func (t *BackendTranslator) applyBaseClusterResources(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	backend *ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+) ([]*envoylistenerv3.Listener, error) {
+	var listeners []*envoylistenerv3.Listener
+	for _, hook := range t.orderedBaseResourceHooks() {
+		resources, err := hook(kctx, ctx, *backend, out)
+		if err != nil {
+			return nil, err
+		}
+		listeners = append(listeners, resources.Listeners...)
+	}
+	return listeners, nil
 }
 
 // HasUndeclaredOverlayInputs reports whether a cached base must also compare
@@ -236,7 +271,9 @@ type BaseCluster struct {
 	// ApplyPerClient clears it in that case. A LoadAssignment set by a backend
 	// plugin or an overlay is theirs and is left alone.
 	GeneratedInlineCLA bool
-	Error              error
+	// Listeners accompany Cluster to every client and are shared read-only.
+	Listeners []*envoylistenerv3.Listener
+	Error     error
 }
 
 // NeedsInlineCLA reports whether this base cluster is incomplete without a
@@ -313,6 +350,11 @@ func (t *BackendTranslator) TranslateBackendBase(
 	for _, hook := range t.orderedBaseClusterHooks() {
 		hook(kctx, ctx, *backend, out)
 	}
+	listeners, err := t.applyBaseClusterResources(kctx, ctx, backend, out)
+	if err != nil {
+		logger.Error("failed to generate base cluster resources", "cluster", out.GetName(), "error", err)
+		return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
+	}
 	defaultedLocality := defaultLocalityConfig(out)
 	if err := applyGatewayBackendClientCertificate(out, backend); err != nil {
 		logger.Error("failed to apply gateway backend client certificate", "cluster", out.GetName(), "error", err)
@@ -330,6 +372,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 		EndpointInputs:          endpointInputs,
 		SupportsInlineCLA:       clusterSupportsInlineCLA(out),
 		DefaultedLocalityConfig: defaultedLocality,
+		Listeners:               listeners,
 	}
 
 	// An inline CLA that no client can influence is built once, here, so the
@@ -353,6 +396,13 @@ func (t *BackendTranslator) TranslateBackendBase(
 	if t.Mode == apisettings.ValidationStrict && t.Validator != nil && !result.NeedsInlineCLA() {
 		if err := t.validateClusterConfig(ctx, out); err != nil {
 			logger.Error("cluster failed xDS validation in strict mode", "cluster", out.GetName(), "error", err)
+			return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
+		}
+	}
+	// Listener validation does not depend on per-client endpoint assignment.
+	if t.Mode == apisettings.ValidationStrict && t.Validator != nil && len(listeners) > 0 {
+		if err := t.validateListeners(ctx, listeners); err != nil {
+			logger.Error("generated listeners failed xDS validation in strict mode", "cluster", out.GetName(), "error", err)
 			return &BaseCluster{Cluster: buildBlackholeCluster(backend), Error: err}
 		}
 	}
@@ -670,6 +720,21 @@ func (t *BackendTranslator) validateClusterConfig(ctx context.Context, cluster *
 		return run(ctx)
 	}
 	return t.ValidationMemo.Validate(ctx, key, run)
+}
+
+// validateListeners validates generated listeners after redacting credentials,
+// which Envoy may otherwise quote in validation errors.
+func (t *BackendTranslator) validateListeners(ctx context.Context, listeners []*envoylistenerv3.Listener) error {
+	ctx = validator.WithValidationCaller(ctx, validator.CallerBackend)
+	builder := bootstrap.New()
+	for _, l := range listeners {
+		builder.AddListener(xds.RedactListenerCredentials(l))
+	}
+	bootstrap, err := builder.Build()
+	if err != nil {
+		return err
+	}
+	return t.Validator.Validate(ctx, bootstrap)
 }
 
 var inlineCLAClusterTypes = sets.New(

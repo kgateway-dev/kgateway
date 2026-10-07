@@ -144,12 +144,12 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
-		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
+		snapshot.Resources[envoycachetypes.Listener] = mergeBackendListeners(listenerRouteSnapshot.Listeners, clustersForUcc)
 		snapshot.Resources[envoycachetypes.Secret] = listenerRouteSnapshot.Secrets
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
 		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
-			"listeners", resourcesStringer(listenerRouteSnapshot.Listeners).String(),
+			"listeners", resourcesStringer(snapshot.Resources[envoycachetypes.Listener]).String(),
 			"clusters", resourcesStringer(clusterResources).String(),
 			"routes", resourcesStringer(listenerRouteSnapshot.Routes).String(),
 			"endpoints", resourcesStringer(endpointRes).String(),
@@ -237,6 +237,23 @@ func snapshotPerClient(
 	newSnapshotDeferralTracker().register(uccCol, xdsSnapshotsForUcc)
 
 	return xdsSnapshotsForUcc
+}
+
+// mergeBackendListeners combines Gateway and backend listeners without mutating
+// shared resources. Gateway listeners take precedence on name collisions.
+func mergeBackendListeners(gateway envoycache.Resources, clusters *clustersWithErrors) envoycache.Resources {
+	if len(clusters.listeners) == 0 {
+		return gateway
+	}
+	items := make(map[string]envoycachetypes.ResourceWithTTL, len(gateway.Items)+len(clusters.listeners))
+	for _, l := range clusters.listeners {
+		items[envoycache.GetResourceName(l.Resource)] = l
+	}
+	maps.Copy(items, gateway.Items)
+	return envoycache.Resources{
+		Version: fmt.Sprintf("%s-backend-%d", gateway.Version, clusters.listenersHash),
+		Items:   items,
+	}
 }
 
 // filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters

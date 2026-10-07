@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -129,6 +130,21 @@ type ProcessBaseCluster func(
 	out *envoyclusterv3.Cluster,
 )
 
+// BaseClusterResources are delivered to every client receiving the base cluster
+// and withdrawn if the cluster fails translation.
+type BaseClusterResources struct {
+	Listeners []*envoylistenerv3.Listener
+}
+
+// ProcessBaseClusterResources runs after all ProcessBaseCluster hooks in
+// (Group, Kind) order. A returned error fails the backend.
+type ProcessBaseClusterResources func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	in ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+) (BaseClusterResources, error)
+
 // PerClientProcessBackend is the legacy eager cluster mutation hook.
 // Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
 // applicable to every client because they cannot report a no-op cheaply.
@@ -162,8 +178,9 @@ type PolicyPlugin struct {
 	ProcessBackend ProcessBackend
 	// ProcessBaseCluster runs for every backend after all ProcessBackend
 	// hooks; see ProcessBaseCluster.
-	ProcessBaseCluster      ProcessBaseCluster
-	PerClientClusterOverlay PerClientClusterOverlay
+	ProcessBaseCluster          ProcessBaseCluster
+	ProcessBaseClusterResources ProcessBaseClusterResources
+	PerClientClusterOverlay     PerClientClusterOverlay
 	// OverlayInputsHash declares the backend fields the per-client hook reads.
 	// Required for efficient change detection with either hook; absent a
 	// declaration, consumers compare backend IR and backing-object version.

@@ -29,6 +29,12 @@ var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 // GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
 // Exported for testing.
 func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+	return generateBackendPolicyReport(in, nil)
+}
+
+// generateBackendPolicyReport reports attached policies, including backend
+// translation errors attributed to them.
+func generateBackendPolicyReport(in []*ir.BackendObjectIR, translationErr func(*ir.BackendObjectIR) error) reports.ReportMap {
 	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
 
@@ -38,6 +44,10 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
+		var attributedErrs map[string][]error
+		if translationErr != nil {
+			attributedErrs = errorsByPolicy(translationErr(obj))
+		}
 		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
 		targetRef := backendAncestorRef(obj.GetObjectSource())
 
@@ -73,6 +83,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+				if len(polAtt.Errors) == 0 {
+					polAtt.Errors = attributedErrs[polAtt.PolicyRef.ID()]
+				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    string(shared.PolicyConditionAccepted),
@@ -106,6 +119,23 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	}
 
 	return merged
+}
+
+// errorsByPolicy groups attributed translation errors by policy ID.
+func errorsByPolicy(err error) map[string][]error {
+	var out map[string][]error
+	for _, e := range ir.FlattenJoinedErr(err) {
+		var policyErr *ir.PolicyError
+		if !errors.As(e, &policyErr) || policyErr.Ref == nil {
+			continue
+		}
+		if out == nil {
+			out = map[string][]error{}
+		}
+		id := policyErr.Ref.ID()
+		out[id] = append(out[id], policyErr.Err)
+	}
+	return out
 }
 
 // backendAncestorRef returns the ancestor ref for a policy attached to a backend: the
