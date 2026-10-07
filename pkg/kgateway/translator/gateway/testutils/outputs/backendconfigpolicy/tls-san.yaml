@@ -80,6 +80,9 @@ Clusters:
           - matcher:
               exact: 10.0.0.1
             sanType: IP_ADDRESS
+          - matcher:
+              exact: 10.0.0.1
+            sanType: DNS
           trustedCa:
             inlineString: |
               -----BEGIN CERTIFICATE-----

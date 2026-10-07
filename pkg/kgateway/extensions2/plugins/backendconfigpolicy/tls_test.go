@@ -547,7 +547,7 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 			},
 		},
 		{
-			name:    "IPv4 address is matched as an IP SAN",
+			name:    "IPv4 address is matched as an IP SAN and as a DNS SAN",
 			sanList: []string{"10.0.0.1"},
 			expected: []*envoytlsv3.SubjectAltNameMatcher{
 				{
@@ -556,16 +556,46 @@ func TestVerifySanListToTypedMatchSanList(t *testing.T) {
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "10.0.0.1"},
 					},
 				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "10.0.0.1"},
+					},
+				},
 			},
 		},
 		{
-			name:    "IPv6 address is matched as an IP SAN",
+			name:    "IPv6 address is matched as an IP SAN and as a DNS SAN",
 			sanList: []string{"fd00::1"},
 			expected: []*envoytlsv3.SubjectAltNameMatcher{
 				{
 					SanType: envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS,
 					Matcher: &envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00::1"},
+					},
+				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00::1"},
+					},
+				},
+			},
+		},
+		{
+			name:    "IPv6 address in long form is matched in canonical form as an IP SAN",
+			sanList: []string{"fd00:0:0:0:0:0:0:1"},
+			expected: []*envoytlsv3.SubjectAltNameMatcher{
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_IP_ADDRESS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00::1"},
+					},
+				},
+				{
+					SanType: envoytlsv3.SubjectAltNameMatcher_DNS,
+					Matcher: &envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "fd00:0:0:0:0:0:0:1"},
 					},
 				},
 			},
