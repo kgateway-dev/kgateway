@@ -217,9 +217,12 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 				count += len(eps)
 			}
 		}
-		// A valid backend with no ready endpoints contributes nothing, so its weight redistributes
-		// across the healthy members. An invalid backend's weight is dropped to the blackhole instead.
+		// A Service with no endpoints is invalid per the UDPRoute spec, so its share drops, not
+		// redistributes. A member with no EDS source (len(efbs)==0, e.g. Static) keeps its share.
 		if count == 0 {
+			if len(m.efbs) > 0 {
+				dropWeight += m.weight
+			}
 			continue
 		}
 		//nolint:gosec // G115: count is a positive endpoint count (guarded > 0 above)

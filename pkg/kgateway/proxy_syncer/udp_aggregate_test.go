@@ -94,7 +94,7 @@ func TestMergeUdpAggregateLoadAssignment_WeightsRespectReplicaCount(t *testing.T
 func TestMergeUdpAggregateLoadAssignment_SkipsEmptyAndZeroWeight(t *testing.T) {
 	members := []udpMemberEndpoints{
 		{weight: 100, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
-		{weight: 50, efbs: nil}, // valid backend with no ready endpoints, contributes nothing
+		{weight: 50, efbs: nil}, // no EDS source (len==0), redistributes rather than drops
 	}
 	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 	require.Len(t, cla.GetEndpoints(), 1)
@@ -201,24 +201,41 @@ func TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster(t *testing.
 	g.Expect(got[0].Endpoints.Clone().GetClusterName()).To(gomega.Equal(clusterName))
 }
 
-// TestMergeUdpAggregateLoadAssignment_ZeroEndpointBackendRedistributes asserts a valid backend with
-// no ready endpoints has its weight redistributed to the healthy members, not dropped to a
-// blackhole (which is reserved for invalid backends via dropWeight).
-func TestMergeUdpAggregateLoadAssignment_ZeroEndpointBackendRedistributes(t *testing.T) {
+// TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes asserts a member with no EDS source
+// at all (len(efbs)==0, e.g. a Static backend) is not treated as an empty Service, so its weight
+// redistributes rather than drops. Only a Service that yields an empty EndpointsForBackend drops.
+func TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes(t *testing.T) {
 	members := []udpMemberEndpoints{
 		{weight: 80, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
-		{weight: 20, efbs: nil}, // valid backend, no ready endpoints
+		{weight: 20, efbs: nil}, // no EDS source (len==0), not an empty Service
 	}
 	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
 
-	// Only the healthy backend is present, so it takes all traffic. The zero-endpoint backend's
-	// weight is not represented, redistributed rather than dropped.
 	require.Len(t, cla.GetEndpoints(), 1)
 	w, ok := endpointWeight(cla, "10.0.0.1")
 	require.True(t, ok)
 	assert.Equal(t, uint32(80000), w)
 
-	// No blackhole endpoint, the missing weight is not dropped.
 	_, hasBlackhole := endpointWeight(cla, udpBlackholeAddr)
-	assert.False(t, hasBlackhole, "a valid zero-endpoint backend must not create a blackhole drop")
+	assert.False(t, hasBlackhole, "a member with no EDS source must not be dropped")
+}
+
+// TestMergeUdpAggregateLoadAssignment_EmptyServiceDrops asserts a Service with no endpoints (a
+// resolved backend that yields an EndpointsForBackend with no endpoints) has its weighted share
+// dropped to the blackhole per the UDPRoute spec, not redistributed to the healthy member.
+func TestMergeUdpAggregateLoadAssignment_EmptyServiceDrops(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 20, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+		{weight: 80, efbs: []ir.EndpointsForBackend{{}}}, // empty Service: an EDS row with no endpoints
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+
+	wValid, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok)
+	wDrop, ok := endpointWeight(cla, udpBlackholeAddr)
+	require.True(t, ok, "the empty Service's weighted share must go to the blackhole")
+
+	// valid = 20*1000 = 20000, blackhole = 80*1000 = 80000 -> 20% valid, 80% dropped.
+	assert.Equal(t, uint32(20000), wValid)
+	assert.Equal(t, uint32(80000), wDrop)
 }
