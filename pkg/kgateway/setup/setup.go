@@ -399,7 +399,7 @@ func (s *setup) buildKgatewayWithConfig(
 	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
-	augmentedPods, _ := krtcollections.NewPodsCollection(s.apiClient, krtOpts)
+	augmentedPods := commonCollections.LocalityPods
 	augmentedPodsForUcc := augmentedPods
 	if envutils.IsEnvTruthy("DISABLE_POD_LOCALITY_XDS") {
 		augmentedPodsForUcc = nil
