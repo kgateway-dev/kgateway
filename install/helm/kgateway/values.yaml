@@ -297,7 +297,10 @@ waypoint:
 validation:
   # -- Validation level. Accepted values: "standard" or "strict" (case-insensitive).
   #    Standard replaces invalid routes with a direct 500 response and continues applying valid configuration.
-  #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
+  #    It does not run Envoy, so configuration that only Envoy can reject, such as an invalid RE2 regex in a
+  #    route matcher, is still sent; Envoy then NACKs the update and keeps its last accepted route configuration.
+  #    Strict also validates the generated configuration with Envoy and removes or replaces only the invalid parts,
+  #    so that Envoy does not NACK the update. It does not keep a previous version of an invalid route.
   #    Default is "standard".
   level: standard
 
