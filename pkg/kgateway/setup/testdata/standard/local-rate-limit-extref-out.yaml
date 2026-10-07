@@ -39,6 +39,7 @@ endpoints:
             address: 10.244.1.11
             portValue: 8080
     loadBalancingWeight: 1
+    locality: {}
 - clusterName: kube_gwtest_reviews-v2_8080
   endpoints:
   - lbEndpoints:
@@ -48,6 +49,7 @@ endpoints:
             address: 10.244.1.12
             portValue: 8080
     loadBalancingWeight: 1
+    locality: {}
 listeners:
 - address:
     socketAddress:

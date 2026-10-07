@@ -257,7 +257,12 @@ func (c BackendObjectIR) ResourceName() string {
 	return c.resourceName
 }
 
-func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
+// Equals has a pointer receiver so that krt finds it for both
+// krt.Collection[BackendObjectIR] and krt.Collection[*BackendObjectIR]. With a
+// value receiver, a pointer collection has no Equaler[*BackendObjectIR] and krt
+// falls back to reflect.DeepEqual, which walks attached policy IR protos and
+// races with goroutines that marshal clusters built from them.
+func (c *BackendObjectIR) Equals(in *BackendObjectIR) bool {
 	if !c.objectSource.Equals(in.objectSource) {
 		return false
 	}
@@ -735,7 +740,7 @@ func backendObjectEqual(a, b *BackendObjectIR) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Equals(*b)
+	return a.Equals(b)
 }
 
 func errorsEqual(a, b error) bool {

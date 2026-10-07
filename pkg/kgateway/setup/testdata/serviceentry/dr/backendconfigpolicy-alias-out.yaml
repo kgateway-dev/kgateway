@@ -10,6 +10,7 @@ clusters:
               address: 1.1.1.1
               portValue: 80
       loadBalancingWeight: 1
+      locality: {}
   name: istio-se_gwtest_httpbin-se_se.example.com_80
   type: STATIC
   typedExtensionProtocolOptions:
