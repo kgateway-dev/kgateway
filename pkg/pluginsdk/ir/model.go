@@ -184,19 +184,19 @@ type EndpointsForBackend struct {
 	// +noKrtEquals
 	BackendLabels map[string]string
 
-	// AttachedPolicies carries the policy attachment view already resolved for
-	// the backend. LbEpsEqualityHash includes backend policy versioning, so this
-	// field does not need to participate in equality directly.
+	// AttachedPolicies carries the policy attachment view resolved for the backend.
+	// NewEndpointsForBackend copies it without hashing it. The final EDS collection
+	// folds backendEndpointVersionHash into LbEpsEqualityHash via FoldVersion;
+	// inline CLA translation includes that policy hash in baseClusterVersion.
 	// +noKrtEquals
 	AttachedPolicies AttachedPolicies
 
-	// LbEps is summarized by epsEqualityHash, which Add() maintains and Equals compares:
-	// every endpoint contributes its locality, metadata labels and LbEndpoint proto to that
-	// hash. Comparing the map directly would mean a proto compare per endpoint on a path that
-	// runs for every backend on every endpoint update.
-	// Note the hash XORs per-endpoint hashes, so it is deliberately order-insensitive; the
-	// flip side is that a pair of byte-identical endpoints in one locality cancels out.
-	// Distinct pods cannot produce identical LbEndpoints, so that is not reachable today.
+	// LbEps is summarized by epsEqualityHash and endpointCount, both compared by
+	// Equals. Add hashes locality, metadata labels, and the LbEndpoint proto;
+	// reuse/adoption methods preserve those contributions. The hash is order-independent.
+	// endpointCount detects additions/removals even when identical contributions
+	// cancel under XOR. Same-count hash collisions remain possible; equality assumes
+	// they do not occur. Writers must maintain these summaries rather than edit LbEps directly.
 	// +noKrtEquals
 	LbEps                LocalityLbMap
 	ClusterName          string

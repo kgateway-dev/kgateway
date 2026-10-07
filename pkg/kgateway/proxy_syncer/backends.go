@@ -33,9 +33,8 @@ type baseEnvoyCluster struct {
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	// Error is the translation error for this backend, if any. Compared by message in
-	// Equals because all errored clusters share one blackhole proto and baseClusterVersion
-	// collapses every error to 0, so ClusterVersion can't tell error states apart.
+	// Error is the translation error for this backend, if any. Equals compares
+	// nilness and message because baseClusterVersion returns zero for every error.
 	Error error
 	// BackendSource identifies the Backend this cluster was translated from, for status attribution.
 	BackendSource ir.ObjectSource
@@ -88,24 +87,25 @@ func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
 // uccWithCluster is one client's view of one backend's cluster: the shared base
 // or this client's own clone, along with any translation error and the source
 // Backend identity used for status attribution. clustersForClient returns it,
-// and it is also the row type of the status collection (StatusClusters), where
-// Cluster and ClusterVersion are left zero because status does not read them.
+// and it is also the row type of the status collection (StatusClusters). Base
+// status rows omit Cluster and ClusterVersion; per-client error rows retain
+// them from clustersForClient, although status does not read them.
 type uccWithCluster struct {
 	Client ir.UniquelyConnectedClient
-	// Cluster is wrapped so snapshot assembly cannot mutate a proto shared with
-	// other clients; the only exits are ResourceWithTTL (into the envoycache
-	// snapshot, tripwire-verified) and Clone. Content equality is carried by
-	// ClusterVersion, a content hash over the same proto.
+	// Cluster is shared read-only; see package sharedproto for access and cloning.
+	// For publishable rows, ClusterVersion covers the proto and, for shared bases,
+	// any inline endpoint inputs. Errored rows are excluded from CDS and compared
+	// by Error; base status rows have no proto.
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	// Name is the translated cluster's name. It is part of ResourceName, so it cannot change
-	// without changing the KRT key, but it is compared anyway: it names the CDS resource, and
-	// an Equals that ignores it would be wrong if this type were ever re-keyed.
+	// Name identifies the CDS resource and forms part of the status row's KRT key.
+	// Equals also compares rows inside clustersWithErrors.perClientErrors, where
+	// the enclosing collection is keyed by client, so it must compare Name.
 	Name string
-	// Error is the translation error for this backend/client pair, if any. Compared by message
-	// in Equals because all errored clusters share one blackhole proto, so ClusterVersion can't
-	// tell error states apart.
+	// Error is the base or per-client translation error. Equals compares nilness
+	// and message directly: base errors use version zero, and base status rows
+	// omit ClusterVersion entirely.
 	Error error
 	// PerClientError reports that Error was produced for this client alone (a
 	// strict-mode validation failure of an overlaid cluster) rather than by the
@@ -350,10 +350,8 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 	for _, c := range rows {
 		if c.Error != nil {
 			erroredClusters = append(erroredClusters, c.Name)
-			// For errored clusters, we don't want to include the cluster version
-			// in the hash. The cluster version is the hash of the proto. because this cluster
-			// won't be sent to envoy anyway, there's no point trigger updates if it changes from
-			// one error state to a different error state.
+			// The CDS exclusion set depends only on cluster names. Error details
+			// are tracked separately for status, through perClientErrors or base rows.
 			erroredClustersHash ^= utils.HashString(c.Name)
 			if c.PerClientError {
 				perClientErrors = append(perClientErrors, c)
@@ -389,9 +387,9 @@ func (iu *PerClientEnvoyClusters) StatusClusters() krt.Collection[uccWithCluster
 // newStatusClusters builds the cluster view needed for fleet-wide Backend status
 // attribution: one row per base cluster (carrying the source Backend identity and
 // any UCC-invariant translation error) plus one row per errored per-client cluster
-// (carrying the per-client translation error attributed to the same Backend). Only
-// Name, Error, BackendSource, BackendGeneration, and Client on per-client rows, are
-// populated; those are the fields GenerateBackendStatusReport consumes. Clusters
+// (carrying the per-client translation error attributed to the same Backend).
+// Base rows populate Name, Error, BackendSource, and BackendGeneration; per-client
+// error rows are forwarded intact from the assembled client payload. Clusters
 // that translated cleanly for a client contribute nothing beyond their base row.
 //
 // This is a collection rather than a Fetch helper because backendStatusContributions

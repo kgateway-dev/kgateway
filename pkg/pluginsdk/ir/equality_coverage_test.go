@@ -1,9 +1,8 @@
 package ir
 
 // equality_coverage_test.go covers the IR types whose Equals implementations
-// deliberately omit a field, and proves the claim each +noKrtEquals marker
-// makes: that a change to the omitted field is still observed through whatever
-// the Equals method does compare (a version, a hash, or a companion field).
+// deliberately omit fields. The tests model representative updates to those
+// fields together with the versions or hashes that Equals compares.
 //
 // See test/testutils/equalstest for the harness API.
 
@@ -432,8 +431,9 @@ func TestHarnessPolicyWrapperEquals(t *testing.T) {
 }
 
 // TestPolicyWrapperEqualsObservesTargetRefChangeViaGeneration is the evidence for
-// the +noKrtEquals marker on TargetRefs: every plugin builds it from the policy
-// spec, and editing that spec bumps the CRD's generation.
+// the +noKrtEquals marker on TargetRefs for policies whose targets come from
+// a CRD spec: editing that spec bumps generation. Annotation-derived targets
+// use the metadata/resourceVersion checks in versionEquals instead.
 func TestPolicyWrapperEqualsObservesTargetRefChangeViaGeneration(t *testing.T) {
 	orig := baseHarnessPolicyWrapper()
 
@@ -618,16 +618,14 @@ func TestHarnessEndpointsForBackendEquals(t *testing.T) {
 		baseHarnessEndpointsForBackend,
 		func(a, b EndpointsForBackend) bool { return a.Equals(b) },
 		cases,
-		// AttachedPolicies is +noKrtEquals; backend policy versioning already feeds
-		// LbEpsEqualityHash via the backend's own equality.
+		// AttachedPolicies is +noKrtEquals. This fixture does not model policy
+		// versioning; newFinalBackendEndpoints folds it into LbEpsEqualityHash.
 		[]string{"AttachedPolicies"},
 	)
 }
 
-// TestHarnessEndpointsForBackendEqualityHashIsDeterministic is a regression test: the
-// backend labels used to be written into a single running FNV hasher in Go map
-// iteration order, so two identical backends hashed differently and every
-// recomputation of the endpoints collection looked like a change to KRT.
+// TestHarnessEndpointsForBackendEqualityHashIsDeterministic checks that rebuilding
+// identical backend labels preserves equality despite randomized map iteration.
 func TestHarnessEndpointsForBackendEqualityHashIsDeterministic(t *testing.T) {
 	labels := map[string]string{
 		"a": "1", "b": "2", "c": "3", "d": "4", "e": "5",

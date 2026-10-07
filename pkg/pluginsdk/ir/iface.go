@@ -297,11 +297,11 @@ type PolicyWrapper struct {
 	// Opaque to us other than metadata.
 	PolicyIR PolicyIR
 
-	// Where to attach the policy. This usually comes from the policy CRD.
-	// Every producer derives this from the policy object itself - spec.targetRefs and
-	// spec.targetSelectors for the built-in plugins, an annotation in examples/plugin - and
-	// versionEquals(Policy) compares generation, labels and annotations, so it observes any
-	// change a producer could have derived this from.
+	// Where to attach the policy. Built-in producers derive this from the policy
+	// spec; examples/plugin uses a ConfigMap annotation. Equals relies on
+	// versionEquals(Policy): generation and metadata for versioned specs, or
+	// resourceVersion for objects such as ConfigMaps. Producers must keep target
+	// references tied to these source-object inputs.
 	// +noKrtEquals
 	TargetRefs []PolicyRef
 

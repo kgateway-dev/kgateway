@@ -71,9 +71,8 @@ var (
 )
 
 func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
-	// as backends resolution may change when they are added/remove we need to check equality for them as well
-	// we don't need to check the whole backend, just the cluster name (that may swap in and out of black-hole)
-	// note - if we stop setting cluster to black whole here (and always set it to the expect cluster name) we can remove the backend equality check.
+	// Backend and policy resolution can change without a route spec update.
+	// Compare those inputs through rulesEqual as well as the source object version.
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&

@@ -2,8 +2,8 @@ package proxy_syncer
 
 // equality_coverage_test.go covers the per-client and per-gateway xDS types whose
 // Equals implementations summarize a payload with a hash instead of comparing the
-// protos, and proves that a change to the payload still moves the hash that
-// Equals does compare.
+// protos, and checks that representative payload changes move the hash that
+// Equals compares.
 //
 // See test/testutils/equalstest for the harness API.
 
@@ -86,20 +86,20 @@ func TestHarnessUccWithClusterEquals(t *testing.T) {
 		baseUccWithCluster,
 		func(a, b uccWithCluster) bool { return a.Equals(b) },
 		cases,
-		// Cluster is +noKrtEquals: ClusterVersion is HashProto(Cluster); see
+		// Cluster is +noKrtEquals: publishable content is covered by ClusterVersion; see
 		// TestUccWithClusterEqualsObservesClusterChangeViaVersion.
 		[]string{"Cluster"},
 		equalstest.IncludeUnexported(),
 	)
 }
 
-// TestUccWithClusterEqualsObservesClusterChangeViaVersion is the evidence for the
-// +noKrtEquals marker on Cluster: the collection recomputes ClusterVersion from
-// the translated proto, so any proto change moves the version.
+// TestUccWithClusterEqualsObservesClusterChangeViaVersion checks that Equals
+// observes a changed proto through its version, using the successful overlay path's
+// HashProto scheme. Shared bases use baseClusterVersion instead.
 func TestUccWithClusterEqualsObservesClusterChangeViaVersion(t *testing.T) {
 	orig := baseUccWithCluster()
 
-	// Model what NewPerClientEnvoyClusters produces for a changed cluster.
+	// Model a successful overlay returned by clustersForClient.
 	changedCluster := &envoyclusterv3.Cluster{
 		Name:           "cluster-a",
 		ConnectTimeout: durationSeconds(5),
@@ -149,18 +149,16 @@ func TestHarnessUccWithEndpointsEquals(t *testing.T) {
 		baseUccWithEndpoints,
 		func(a, b UccWithEndpoints) bool { return a.Equals(b) },
 		cases,
-		// Endpoints is +noKrtEquals: the CLA is a pure function of Client, the source
-		// EndpointsForBackend hash, and the endpoint plugin hashes, all of which feed
-		// EndpointsHash or are compared directly. resourceName caches the key derived
-		// from Client and endpointsName.
+		// Endpoints is +noKrtEquals: producers summarize CLA inputs or content in
+		// EndpointsHash. resourceName caches the key derived from Client and endpointsName.
 		[]string{"Endpoints", "resourceName"},
 		equalstest.IncludeUnexported(),
 	)
 }
 
-// TestUccWithEndpointsEqualsObservesEndpointChangeViaHash is the evidence for the
-// +noKrtEquals marker on Endpoints: EndpointsHash is derived from the source
-// EndpointsForBackend's LbEpsEqualityHash XORed with the endpoint plugin hashes.
+// TestUccWithEndpointsEqualsObservesEndpointChangeViaHash checks that Equals
+// observes a changed EndpointsHash. This fixture uses HashProto; backend CLAs use
+// combineEndpointHash, and local-cluster CLAs use hashLocalClusterLoadAssignment.
 func TestUccWithEndpointsEqualsObservesEndpointChangeViaHash(t *testing.T) {
 	orig := baseUccWithEndpoints()
 
@@ -179,9 +177,8 @@ func TestUccWithEndpointsEqualsObservesEndpointChangeViaHash(t *testing.T) {
 	}
 }
 
-// TestUccWithEndpointsEqualsCoversPluginContributions pins the contract that lets
-// Endpoints stay out of Equals: an endpoint plugin that changes the CLA must
-// return a hash of its contribution, which is XORed into EndpointsHash.
+// TestUccWithEndpointsEqualsCoversPluginContributions checks that changing only
+// the plugin contribution passed to combineEndpointHash changes row equality.
 func TestUccWithEndpointsEqualsCoversPluginContributions(t *testing.T) {
 	ep := ir.NewEndpointsForBackend(ir.BackendObjectIR{})
 
@@ -189,12 +186,12 @@ func TestUccWithEndpointsEqualsCoversPluginContributions(t *testing.T) {
 
 	before := UccWithEndpoints{
 		Client:        testUcc(),
-		EndpointsHash: ep.LbEpsEqualityHash ^ pluginHashBefore,
+		EndpointsHash: combineEndpointHash(ep.LbEpsEqualityHash, pluginHashBefore, 0),
 		endpointsName: ep.ResourceName(),
 	}
 	after := UccWithEndpoints{
 		Client:        testUcc(),
-		EndpointsHash: ep.LbEpsEqualityHash ^ pluginHashAfter,
+		EndpointsHash: combineEndpointHash(ep.LbEpsEqualityHash, pluginHashAfter, 0),
 		endpointsName: ep.ResourceName(),
 	}
 
@@ -260,8 +257,8 @@ func TestHarnessGatewayXdsResourcesEquals(t *testing.T) {
 }
 
 // TestGatewayXdsResourcesEqualsObservesClusterChangeViaHash is the evidence for the
-// +noKrtEquals marker on Clusters: toResources derives ClustersHash from the same
-// slice, so a CDS payload change moves the hash.
+// +noKrtEquals marker on Clusters: sliceToResourcesHash derives ClustersHash
+// from the resource slice, and the changes exercised here move that hash.
 func TestGatewayXdsResourcesEqualsObservesClusterChangeViaHash(t *testing.T) {
 	orig := baseGatewayXdsResources()
 

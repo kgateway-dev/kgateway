@@ -118,9 +118,9 @@ func TestHarnessTrafficPolicyGatewayExtensionIREquals(t *testing.T) {
 	)
 }
 
-// TestGatewayExtensionIREqualsDetectsNameAndFilterStageChanges spells out the case the old
-// Equals missed: two extensions with identical config but different names produce
-// different filter names in the dataplane, so they must not compare equal.
+// TestGatewayExtensionIREqualsDetectsNameAndFilterStageChanges checks that provider
+// names participate in equality and that FilterStage handles nil. Provider names
+// determine filter names in the generated Envoy configuration.
 func TestGatewayExtensionIREqualsDetectsNameAndFilterStageChanges(t *testing.T) {
 	a := baseHarnessGatewayExtensionIR()
 	b := baseHarnessGatewayExtensionIR()
