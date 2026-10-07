@@ -1,7 +1,6 @@
 package proxy_syncer
 
 import (
-	"errors"
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -30,39 +29,21 @@ func gatewayStatusContributions(
 	}, krtopts.ToOptions("GatewayStatusContributions")...)
 }
 
-// attributedError isolates policy-attributed errors from unrelated base changes.
-type attributedError struct {
-	clusterName string
-	err         error
-}
-
-func (a attributedError) ResourceName() string { return a.clusterName }
-
-func (a attributedError) Equals(in attributedError) bool {
-	return a.clusterName == in.clusterName && errorsEqual(a.err, in.err)
-}
-
-// backendPolicyStatusContributions projects attachments and attributed errors
-// into policy status.
+// backendPolicyStatusContributions projects attachments and the base
+// translation errors attributed to policies into policy status.
 func backendPolicyStatusContributions(
 	backends krt.Collection[*ir.BackendObjectIR],
-	bases krt.Collection[baseEnvoyCluster],
+	statusClusters krt.Collection[uccWithCluster],
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
-	attributed := krt.NewCollection(bases, func(_ krt.HandlerContext, base baseEnvoyCluster) *attributedError {
-		var policyErr *ir.PolicyError
-		if !errors.As(base.Error, &policyErr) {
-			return nil
-		}
-		return &attributedError{clusterName: base.Name, err: base.Error}
-	}, krtopts.ToOptions("BackendAttributedErrors")...)
 	return krt.NewManyCollection(backends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
 		if backend == nil {
 			return nil
 		}
 		translationErr := func(b *ir.BackendObjectIR) error {
-			if a := krt.FetchOne(kctx, attributed, krt.FilterKey(b.ClusterName())); a != nil {
-				return a.err
+			baseKey := uccClusterResourceName(ir.UniquelyConnectedClient{}, b.ClusterName())
+			if base := krt.FetchOne(kctx, statusClusters, krt.FilterKey(baseKey)); base != nil {
+				return base.Error
 			}
 			return nil
 		}

@@ -465,12 +465,12 @@ func TestBackendPolicyStatusReportsAttributedTranslationErrors(t *testing.T) {
 		},
 	}}
 	backends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend})
-	bases := krt.NewStaticCollection(nil, []baseEnvoyCluster{{
+	statusClusters := krt.NewStaticCollection(nil, []uccWithCluster{{
 		Name:  backend.ClusterName(),
 		Error: &ir.PolicyError{Ref: policyRef("tunnel"), Err: errors.New(tunnelErr)},
 	}})
 
-	contributions := backendPolicyStatusContributions(backends, bases, krtutil.KrtOptions{})
+	contributions := backendPolicyStatusContributions(backends, statusClusters, krtutil.KrtOptions{})
 
 	ancestor := reports.ParentRefKey{
 		Group:          wellknown.BackendGVK.Group,

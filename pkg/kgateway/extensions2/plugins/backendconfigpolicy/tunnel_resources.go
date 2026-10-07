@@ -7,6 +7,7 @@ import (
 	"net"
 	"slices"
 	"strconv"
+	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -194,7 +195,7 @@ func buildTunnelListener(
 		StatPrefix:       name,
 		ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: proxyCluster},
 		TunnelingConfig: &envoytcp.TcpProxy_TunnelingConfig{
-			Hostname:     target.authority(),
+			Hostname:     strings.ReplaceAll(target.authority(), "%", "%%"),
 			HeadersToAdd: headers,
 		},
 	}

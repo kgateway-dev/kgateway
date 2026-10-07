@@ -2,9 +2,9 @@ package backendconfigpolicy
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
-	"unicode/utf8"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/proto"
@@ -24,6 +24,10 @@ import (
 
 // maxTunnelHeaderValueBytes is Envoy's header value limit.
 const maxTunnelHeaderValueBytes = 16384
+
+// tunnelHeaderValuePattern is the CRD pattern for inline header values. Secret
+// values skip admission, so they are checked against it here.
+var tunnelHeaderValuePattern = regexp.MustCompile(`^[!-~]+([\t ]?[!-~]+)*$`)
 
 // tunnelIR holds the effective proxy reference and resolved CONNECT headers.
 type tunnelIR struct {
@@ -93,10 +97,8 @@ func normalizeTunnelHeaders(headers []*envoycorev3.HeaderValueOption) error {
 		switch {
 		case value == "":
 			return fmt.Errorf("header %s has an empty value", header.GetKey())
-		case strings.ContainsAny(value, "\r\n\x00"):
-			return fmt.Errorf("header %s value contains CR, LF or NUL", header.GetKey())
-		case !utf8.ValidString(value):
-			return fmt.Errorf("header %s value is not valid UTF-8", header.GetKey())
+		case !tunnelHeaderValuePattern.MatchString(value):
+			return fmt.Errorf("header %s value must be printable ASCII, with single spaces or tabs between words", header.GetKey())
 		}
 		// Keep credentials literal in Envoy's formatter.
 		value = strings.ReplaceAll(value, "%", "%%")

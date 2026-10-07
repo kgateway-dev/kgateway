@@ -108,11 +108,11 @@ spec:
   attached to the proxy backend, so a shared proxy cluster has one TLS setting.
 - CONNECT uses the proxy cluster's HTTP protocol, HTTP/1.1 or HTTP/2.
 - Tunnel settings merge as one unit under existing BackendConfigPolicy precedence.
-- Header values drop one terminal LF or CRLF and trim surrounding spaces and tabs,
-  as Secret files often end with a newline. Empty values, CR, LF, NUL, invalid
-  UTF-8, and values over 16 KiB are rejected; `%` is escaped for Envoy's
-  formatter. This runs on every Secret update, and errors name the header, never
-  the value.
+- Header values are trimmed of surrounding whitespace, as Secret files often end
+  with a newline. Secret values must then match the pattern the CRD enforces on
+  inline values: printable ASCII, with single spaces or tabs between words. `%` is
+  escaped for Envoy's formatter, in header values and the CONNECT hostname. This
+  runs on every Secret update, and errors name the header, never the value.
 
 ### Plugin
 

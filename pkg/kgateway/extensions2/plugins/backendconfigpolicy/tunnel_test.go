@@ -147,7 +147,7 @@ func TestNormalizeTunnelHeaders(t *testing.T) {
 		wantErr string
 	}{
 		{name: "drops a terminal LF", value: "Basic " + marker + "\n", want: "Basic " + marker},
-		{name: "rejects an inner LF", value: "Basic\n" + marker, wantErr: "CR, LF or NUL"},
+		{name: "rejects a non-printable character", value: "Basic\x01" + marker, wantErr: "printable ASCII"},
 		{name: "rejects an empty value", value: "", wantErr: "empty value"},
 	}
 	for _, tt := range tests {
