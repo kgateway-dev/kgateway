@@ -140,6 +140,8 @@ func initServiceEntryCollections(
 		SelectingServiceEntries,
 		WorkloadEntries,
 		commonCols.LocalityPods,
+		commonCols.Namespaces,
+		commonCols.Settings.IstioNamespace,
 		opts.Aliaser,
 		opts.WorkloadEntriesExclusionLabelKeys,
 		opts.PromoteWorkloadEntryAnnotations,
@@ -196,6 +198,8 @@ func selectedWorkloads(
 	ServiceEntries krt.Collection[seSelector],
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
+	namespaces krt.Collection[krtcollections.NamespaceMetadata],
+	systemNamespace string,
 	aliaser Aliaser,
 	weExclusionLabelKeys sets.Set[string],
 	promoteAnnotationKeys sets.Set[string],
@@ -243,6 +247,7 @@ func selectedWorkloads(
 			promoteAnnotationKeys,
 			&we.Spec,
 			selectedByServiceEntries,
+			krtcollections.SystemNetwork(ctx, namespaces, systemNamespace),
 		)
 
 		return &workload
@@ -285,6 +290,7 @@ func selectedWorkloadFromEntry(
 	promoteAnnotationKeys sets.Set[string],
 	weSpec *networking.WorkloadEntry,
 	selectedBy []seSelector,
+	defaultNetwork string,
 ) selectedWorkload {
 	labels := maps.Clone(weSpec.GetLabels())
 	if labels == nil {
@@ -309,6 +315,11 @@ func selectedWorkloadFromEntry(
 	network := weSpec.GetNetwork()
 	if network == "" && labels[label.TopologyNetwork.Name] != "" {
 		network = labels[label.TopologyNetwork.Name]
+	}
+	// Like Istio, a WorkloadEntry without a network is in the system network,
+	// which is also what pods without a network label resolve to.
+	if network == "" {
+		network = defaultNetwork
 	}
 
 	// we propagate the value to the labels so that endpoint plugins can see it

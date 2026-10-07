@@ -27,6 +27,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 			nil,          // no annotation keys to promote
 			e,
 			nil, // not in krt, don't need selectedBy
+			"",  // not in krt, the system network is not available
 		)
 		inlineWorkloads = append(inlineWorkloads, converted)
 	}
@@ -43,6 +44,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 				nil,                                    // no annotation keys to promote
 				&networking.WorkloadEntry{Address: hostname},
 				nil, // not in krt, don't need selectedBy
+				"",  // not in krt, the system network is not available
 			)
 			inlineWorkloads = append(inlineWorkloads, converted)
 		}

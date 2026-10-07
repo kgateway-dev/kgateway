@@ -179,18 +179,32 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-func NewPodsCollection(client apiclient.Client, krtOptions krtutil.KrtOptions) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
+// NewPodsCollection builds the augmented and wrapped pod collections. namespaces
+// and systemNamespace (the Istio system namespace) resolve the network of pods
+// without a topology.istio.io/network label; see SystemNetwork.
+func NewPodsCollection(
+	client apiclient.Client,
+	namespaces krt.Collection[NamespaceMetadata],
+	systemNamespace string,
+	krtOptions krtutil.KrtOptions,
+) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
 	podClient := kclient.NewFiltered[*corev1.Pod](client, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
 		ObjectFilter:    client.ObjectFilter(),
 	})
 	pods := krt.WrapClient(podClient, krtOptions.ToOptions("Pods")...)
 	nodes := newNodeCollection(client, krtOptions)
-	return NewLocalityPodsCollection(nodes, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
+	return NewLocalityPodsCollection(nodes, namespaces, systemNamespace, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
 }
 
-func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[LocalityPod] {
-	return krt.NewCollection(pods, augmentPodLabels(nodes), krtOptions.ToOptions("AugmentPod")...)
+func NewLocalityPodsCollection(
+	nodes krt.Collection[NodeMetadata],
+	namespaces krt.Collection[NamespaceMetadata],
+	systemNamespace string,
+	pods krt.Collection[*corev1.Pod],
+	krtOptions krtutil.KrtOptions,
+) krt.Collection[LocalityPod] {
+	return krt.NewCollection(pods, augmentPodLabels(nodes, namespaces, systemNamespace), krtOptions.ToOptions("AugmentPod")...)
 }
 
 func NewPodWrapperCollection(pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[WrappedPod] {
@@ -271,7 +285,11 @@ func getPodIPs(p *corev1.Pod) []corev1.PodIP {
 	return k8sPodIPs
 }
 
-func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
+func augmentPodLabels(
+	nodes krt.Collection[NodeMetadata],
+	namespaces krt.Collection[NamespaceMetadata],
+	systemNamespace string,
+) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
 	return func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
 		labels := maps.Clone(pod.Labels)
 		if labels == nil {
@@ -291,7 +309,16 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 
 				//	labels[label.TopologyCluster.Name] = clusterID.String()
 				labels[corev1.LabelHostname] = nodeName
-				//	labels[label.TopologyNetwork.Name] = networkID.String()
+			}
+		}
+
+		// Resolve the network the way Istio does, so that network-based failover
+		// priorities (PreferNetwork, PreferClose, ...) compare the same value for
+		// the proxy and for endpoints. Sidecar-injected pods carry the label, but
+		// ambient pods and gateway pods do not and fall back to the system network.
+		if labels[label.TopologyNetwork.Name] == "" {
+			if nw := SystemNetwork(kctx, namespaces, systemNamespace); nw != "" {
+				labels[label.TopologyNetwork.Name] = nw
 			}
 		}
 

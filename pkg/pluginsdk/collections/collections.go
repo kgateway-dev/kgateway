@@ -214,7 +214,7 @@ func NewCommonCollections(
 
 	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
-	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, krtOptions)
+	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, namespaces, settings.IstioNamespace, krtOptions)
 
 	return &CommonCollections{
 		Client:                                client,
