@@ -30,7 +30,7 @@ func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 			},
 		},
 	}
-	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil)
+	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "")
 
 	podWorkload := func(name, ip string, ready bool) selectedWorkload {
 		return selectedWorkload{
@@ -96,7 +96,7 @@ func TestEndpointsFromWorkloads_SkipsTerminatingPods(t *testing.T) {
 			},
 		},
 	}
-	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil)
+	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "")
 
 	podWorkload := func(name, ip string, ready, terminating bool) selectedWorkload {
 		return selectedWorkload{

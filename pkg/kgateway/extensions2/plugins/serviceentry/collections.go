@@ -148,7 +148,7 @@ func initServiceEntryCollections(
 	)
 
 	// init the outputs
-	Backends := backendsCollections(logger, ServiceEntries, commonCols.KrtOpts, opts.Aliaser)
+	Backends := backendsCollections(logger, ServiceEntries, commonCols.Namespaces, commonCols.Settings.IstioNamespace, commonCols.KrtOpts, opts.Aliaser)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
 
 	return serviceEntryPlugin{
