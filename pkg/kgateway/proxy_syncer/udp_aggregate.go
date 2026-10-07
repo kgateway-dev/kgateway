@@ -240,7 +240,7 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 						continue
 					}
 					clone := proto.Clone(ep.LbEndpoint).(*envoyendpointv3.LbEndpoint)
-					//nolint:gosec // G115: perEndpointWeight is clamped to uint32 max above
+					//nolint:gosec // G115: perEndpointWeight is capped at the uint32 max above
 					clone.LoadBalancingWeight = wrapperspb.UInt32(uint32(perEndpointWeight))
 					addToLocality(locality, clone)
 				}
@@ -256,7 +256,7 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 		if bhWeight > uint64(^uint32(0)) {
 			bhWeight = uint64(^uint32(0))
 		}
-		//nolint:gosec // G115: bhWeight is clamped to uint32 max above
+		//nolint:gosec // G115: bhWeight is capped at the uint32 max above
 		addToLocality(ir.PodLocality{}, blackholeLbEndpoint(uint32(bhWeight)))
 	}
 
