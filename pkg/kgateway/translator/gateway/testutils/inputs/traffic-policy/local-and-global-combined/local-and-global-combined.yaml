@@ -16,6 +16,15 @@ spec:
         maxTokens: 5
         tokensPerFill: 1
         fillInterval: "1s"
+      descriptors:
+      - entries:
+        - type: Header
+          header: "X-User-Type"
+        tokenBucket:
+          maxTokens: 2
+          tokensPerFill: 1
+          fillInterval: "1s"
+      alwaysConsumeDefaultTokenBucket: false
     global:
       descriptors:
       - entries:
