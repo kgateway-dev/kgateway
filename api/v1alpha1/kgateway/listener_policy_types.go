@@ -232,6 +232,16 @@ type HTTPSettings struct {
 	// +optional
 	MergeSlashes *bool `json:"mergeSlashes,omitempty"`
 
+	// PathWithEscapedSlashesAction determines how the connection manager handles requests whose
+	// path contains escaped slash sequences (%2F, %2f, %5C, %5c). This runs before path
+	// normalization and slash merging. If unset, Envoy's implementation specific default applies,
+	// which is currently KeepUnchanged: the escaped sequences are passed through to routing as-is,
+	// so a request for /foo%2Fbar does not match a /foo/ prefix.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-path-with-escaped-slashes-action
+	// +kubebuilder:validation:Enum=KeepUnchanged;RejectRequest;UnescapeAndRedirect;UnescapeAndForward
+	// +optional
+	PathWithEscapedSlashesAction *PathWithEscapedSlashesAction `json:"pathWithEscapedSlashesAction,omitempty"`
+
 	// Proxy100Continue determines whether Envoy forwards requests with an
 	// Expect: 100-continue header upstream and proxies upstream 100 Continue
 	// responses downstream. When unset or false, Envoy handles the response locally.
@@ -1119,6 +1129,23 @@ const (
 	StripMatchingHostPortMode StripHostPortMode = "MatchingPort"
 	// StripAnyHostPortMode strips any port from the header, regardless of its value.
 	StripAnyHostPortMode StripHostPortMode = "AnyPort"
+)
+
+// PathWithEscapedSlashesAction determines how Envoy handles escaped slash sequences
+// (%2F, %2f, %5C, %5c) in the request path.
+type PathWithEscapedSlashesAction string
+
+const (
+	// PathWithEscapedSlashesActionKeepUnchanged keeps the escaped sequences as-is.
+	PathWithEscapedSlashesActionKeepUnchanged PathWithEscapedSlashesAction = "KeepUnchanged"
+	// PathWithEscapedSlashesActionRejectRequest rejects the request with a 400 status.
+	PathWithEscapedSlashesActionRejectRequest PathWithEscapedSlashesAction = "RejectRequest"
+	// PathWithEscapedSlashesActionUnescapeAndRedirect unescapes the sequences and redirects the
+	// client to the resulting path.
+	PathWithEscapedSlashesActionUnescapeAndRedirect PathWithEscapedSlashesAction = "UnescapeAndRedirect"
+	// PathWithEscapedSlashesActionUnescapeAndForward unescapes the sequences and forwards the
+	// request with the resulting path.
+	PathWithEscapedSlashesActionUnescapeAndForward PathWithEscapedSlashesAction = "UnescapeAndForward"
 )
 
 // EnvoyHealthCheck represents configuration for Envoy's health check filter.
