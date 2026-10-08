@@ -6,12 +6,9 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/onsi/gomega"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -66,41 +63,6 @@ func TestRedacted(t *testing.T) {
 	s := string(data)
 	expectedJson := `{"Snap":{"Clusters":{"foo":{"transport_socket":{"name":"foo","typed_config":{"@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext","common_tls_context":{"tls_certificates":[{"private_key":{"inline_string":"[REDACTED]"}}]}}}}}},"ProxyKey":""}`
 	g.Expect(s).To(gomega.MatchJSON(expectedJson))
-}
-
-// TestRedactedTunnelingHeaders checks that detailed KRT dumps hide CONNECT
-// values while preserving header names.
-func TestRedactedTunnelingHeaders(t *testing.T) {
-	UseDetailedUnmarshalling = true
-	g := gomega.NewWithT(t)
-	l := &envoylistenerv3.Listener{
-		Name: "connect_tunnel_test",
-		FilterChains: []*envoylistenerv3.FilterChain{{
-			Filters: []*envoylistenerv3.Filter{{
-				Name: envoywellknown.TCPProxy,
-				ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustAny(&envoytcp.TcpProxy{
-					StatPrefix:       "connect_tunnel_test",
-					ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: "kube_default_egress-proxy_3128"},
-					TunnelingConfig: &envoytcp.TcpProxy_TunnelingConfig{
-						Hostname: "external.example.com:443",
-						HeadersToAdd: []*envoycorev3.HeaderValueOption{{
-							Header: &envoycorev3.HeaderValue{Key: "Proxy-Authorization", Value: "Basic c2VjcmV0"},
-						}},
-					},
-				})},
-			}},
-		}},
-	}
-	snap := &envoycache.Snapshot{}
-	snap.Resources[envoycachetypes.Listener] = envoycache.Resources{
-		Version: "foo",
-		Items:   map[string]envoycachetypes.ResourceWithTTL{l.Name: {Resource: l}},
-	}
-
-	data, err := XdsSnapWrapper{}.WithSnapshot(snap).MarshalJSON()
-	g.Expect(err).NotTo(gomega.HaveOccurred())
-	g.Expect(string(data)).NotTo(gomega.ContainSubstring("Basic c2VjcmV0"), "CONNECT credentials must not reach the KRT dump")
-	g.Expect(string(data)).To(gomega.ContainSubstring("Proxy-Authorization"), "header names are kept")
 }
 
 func TestMapOfAny(t *testing.T) {

@@ -1,18 +1,3 @@
-BackendListeners:
-- address:
-    pipe:
-      path: '@connect_tunnel_fb296e58d68f4850'
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.tcp_proxy
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        cluster: kube_gwtest_egress-proxy_3128
-        statPrefix: connect_tunnel_fb296e58d68f4850
-        tunnelingConfig:
-          hostname: valid.example.com:443
-  name: connect_tunnel_fb296e58d68f4850
-  statPrefix: connect_tunnel_fb296e58d68f4850
 Clusters:
 - connectTimeout: 5s
   loadAssignment:
@@ -49,6 +34,20 @@ Clusters:
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
+- address:
+    pipe:
+      path: '@connect_tunnel_fb296e58d68f4850'
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+        cluster: kube_gwtest_egress-proxy_3128
+        statPrefix: connect_tunnel_fb296e58d68f4850
+        tunnelingConfig:
+          hostname: valid.example.com:443
+  name: connect_tunnel_fb296e58d68f4850
+  statPrefix: connect_tunnel_fb296e58d68f4850
 - address:
     socketAddress:
       address: '::'

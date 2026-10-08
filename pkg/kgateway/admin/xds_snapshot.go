@@ -5,12 +5,9 @@ import (
 	"maps"
 	"net/http"
 
-	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 )
 
 // The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
@@ -54,51 +51,45 @@ func getXdsSnapshot(xdsCache cache.SnapshotCache, k string) (c cache.ResourceSna
 	if !ok {
 		return nil, fmt.Errorf("invalid snapshot type; expected *cache.Snapshot, got %T", snap)
 	}
-	redacted := redactListenerCredentials(redactSecrets(tmp))
+	redacted := redactSecrets(tmp)
 	return redacted, err
 }
 
-// redactListenerCredentials redacts CONNECT credentials without mutating the snapshot.
-func redactListenerCredentials(snap *cache.Snapshot) *cache.Snapshot {
-	return redactResources(snap, types.Listener, func(res types.Resource) types.Resource {
-		if l, ok := res.(*envoylistenerv3.Listener); ok {
-			return xds.RedactListenerCredentials(l)
-		}
-		return res
-	})
-}
-
 func redactSecrets(snap *cache.Snapshot) *cache.Snapshot {
-	return redactResources(snap, types.Secret, func(res types.Resource) types.Resource {
-		if secret, ok := res.(*envoytlsv3.Secret); ok {
-			return &envoytlsv3.Secret{Name: secret.Name}
-		}
-		return res
-	})
-}
-
-// redactResources copies changed resources without mutating the live snapshot.
-func redactResources(snap *cache.Snapshot, typ types.ResponseType, redact func(types.Resource) types.Resource) *cache.Snapshot {
 	if snap == nil {
 		return snap
 	}
 	resources := snap.Resources // Resources is an array, so this makes a copy
-	typed := resources[typ]
-	var items map[string]types.ResourceWithTTL
-	for key, res := range typed.Items {
-		redacted := redact(res.Resource)
-		if redacted == res.Resource {
-			continue
-		}
-		if items == nil {
-			items = maps.Clone(typed.Items)
-		}
-		items[key] = types.ResourceWithTTL{Resource: redacted, TTL: res.TTL}
-	}
-	if items == nil {
+	// secrets is a struct and not a pointer, so modifications are safe
+	secrets := resources[types.Secret]
+	if len(secrets.Items) == 0 {
 		return snap
 	}
-	typed.Items = items
-	resources[typ] = typed
-	return &cache.Snapshot{Resources: resources, VersionMap: snap.VersionMap}
+
+	// need to redact secrets, so create a new snapshot to avoid modifying the original
+	snap = &cache.Snapshot{
+		VersionMap: snap.VersionMap,
+	}
+
+	// avoid modifying the original resource map
+	items := maps.Clone(secrets.Items)
+	for key, res := range items {
+		original, ok := res.Resource.(*envoytlsv3.Secret)
+		if !ok {
+			// should never happen
+			continue
+		}
+		redacted := &envoytlsv3.Secret{
+			Name: original.Name,
+			// redact actual secret data
+		}
+		items[key] = types.ResourceWithTTL{
+			Resource: redacted,
+			TTL:      res.TTL,
+		}
+	}
+	secrets.Items = items
+	resources[types.Secret] = secrets
+	snap.Resources = resources
+	return snap
 }

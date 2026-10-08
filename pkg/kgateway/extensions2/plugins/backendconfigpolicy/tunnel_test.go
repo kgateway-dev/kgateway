@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
@@ -22,7 +21,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -54,13 +52,6 @@ func newTunnelSecretIndex(t *testing.T, secrets ...*corev1.Secret) *krtcollectio
 	secretCol.WaitUntilSynced(nil)
 	require.Eventually(t, index.HasSynced, 5*time.Second, 10*time.Millisecond, "secret index should sync")
 	return index
-}
-
-func connectHeader(name, value string) *envoycorev3.HeaderValueOption {
-	return &envoycorev3.HeaderValueOption{
-		Header:       &envoycorev3.HeaderValue{Key: name, Value: value},
-		AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
-	}
 }
 
 var tunnelPolicySource = ir.ObjectSource{
@@ -103,9 +94,9 @@ func TestTranslateTunnel(t *testing.T) {
 			want: &tunnelIR{
 				source: tunnelPolicySource,
 				proxy:  proxy,
-				headers: []*envoycorev3.HeaderValueOption{
-					connectHeader("X-Proxy-Client", "gateway"),
-					connectHeader("Proxy-Authorization", "Basic dXNlcjpwYXNz"),
+				headers: []gwv1.HTTPHeader{
+					{Name: "X-Proxy-Client", Value: "gateway"},
+					{Name: "Proxy-Authorization", Value: "Basic dXNlcjpwYXNz"},
 				},
 			},
 		},
@@ -152,7 +143,7 @@ func TestNormalizeTunnelHeaders(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			headers := []*envoycorev3.HeaderValueOption{connectHeader("Proxy-Authorization", tt.value)}
+			headers := []gwv1.HTTPHeader{{Name: "Proxy-Authorization", Value: tt.value}}
 			err := normalizeTunnelHeaders(headers)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
@@ -161,18 +152,16 @@ func TestNormalizeTunnelHeaders(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, headers[0].GetHeader().GetValue())
+			assert.Equal(t, tt.want, headers[0].Value)
 		})
 	}
 }
 
 func baseHarnessTunnel() *tunnelIR {
 	return &tunnelIR{
-		source: tunnelPolicySource,
-		proxy:  gwv1.BackendObjectReference{Name: "egress-proxy", Port: new(gwv1.PortNumber(3128))},
-		headers: []*envoycorev3.HeaderValueOption{
-			connectHeader("Proxy-Authorization", "Basic dXNlcjpwYXNz"),
-		},
+		source:  tunnelPolicySource,
+		proxy:   gwv1.BackendObjectReference{Name: "egress-proxy", Port: new(gwv1.PortNumber(3128))},
+		headers: []gwv1.HTTPHeader{{Name: "Proxy-Authorization", Value: "Basic dXNlcjpwYXNz"}},
 	}
 }
 
@@ -182,7 +171,7 @@ func TestHarnessTunnelIREquals(t *testing.T) {
 		{Field: "source", Mutate: func(p **tunnelIR) { (*p).source.Namespace = "other" }},
 		{Field: "proxy", Mutate: func(p **tunnelIR) { (*p).proxy.Name = "other-proxy" }},
 		{Field: "proxy", Mutate: func(p **tunnelIR) { (*p).proxy.Namespace = new(gwv1.Namespace("egress")) }},
-		{Field: "headers", Mutate: func(p **tunnelIR) { (*p).headers[0].Header.Value = "Basic cm90YXRlZA==" }},
+		{Field: "headers", Mutate: func(p **tunnelIR) { (*p).headers[0].Value = "Basic cm90YXRlZA==" }},
 		{Field: "headers", Mutate: func(p **tunnelIR) { (*p).headers = nil }},
 	}
 	equalstest.Run(
@@ -193,18 +182,6 @@ func TestHarnessTunnelIREquals(t *testing.T) {
 		nil,
 		equalstest.IncludeUnexported(),
 	)
-}
-
-func TestBackendConfigPolicyIREqualsTunnel(t *testing.T) {
-	a := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
-	b := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
-	assert.True(t, a.Equals(b), "identical tunnels should be equal")
-
-	b.tunnel.headers[0].Header.Value = "Basic cm90YXRlZA=="
-	assert.False(t, a.Equals(b), "a rotated credential must change the policy IR")
-
-	b.tunnel = nil
-	assert.False(t, a.Equals(b), "removing the tunnel must change the policy IR")
 }
 
 // TestKrtDebugRedactsInlineTunnelHeaders checks that policy dumps hide credentials
@@ -256,5 +233,5 @@ func TestKrtDebugRedactsInlineTunnelHeaders(t *testing.T) {
 		return strings.Contains(dump, `"external-egress"`)
 	}, 10*time.Second, 50*time.Millisecond, "the policy must stay visible in KRT debug output")
 	assert.False(t, strings.Contains(dump, inlineValue), "inline tunnel header values must be redacted from KRT debug output")
-	assert.True(t, strings.Contains(dump, xds.RedactedValue), "the redacted header must stay visible in KRT debug output")
+	assert.True(t, strings.Contains(dump, redactedValue), "the redacted header must stay visible in KRT debug output")
 }

@@ -265,27 +265,24 @@ func TestFilterEndpointResourcesForErroredClusters(t *testing.T) {
 	g.Expect(recovered.Items).To(gomega.HaveKey("errored-cluster"))
 }
 
-func TestMergeBackendListeners(t *testing.T) {
+func TestMergeBackendResources(t *testing.T) {
 	gateway := envoycache.NewResourcesWithTTL("gw-1", []envoycachetypes.ResourceWithTTL{
 		{Resource: &envoylistenerv3.Listener{Name: "http", StatPrefix: "gateway"}},
 	})
-	withBackendListener := func(hash uint64) envoycache.Resources {
-		return mergeBackendListeners(gateway, &clustersWithErrors{
-			listeners:     []envoycachetypes.ResourceWithTTL{{Resource: &envoylistenerv3.Listener{Name: "connect_tunnel_dest"}}},
-			listenersHash: hash,
-		})
+	withBackendListener := func(statPrefix string) envoycache.Resources {
+		return mergeBackendResources(gateway, wrapBaseResources([]*envoylistenerv3.Listener{{Name: "connect_tunnel_dest", StatPrefix: statPrefix}}))
 	}
 
 	g := gomega.NewWithT(t)
-	g.Expect(mergeBackendListeners(gateway, &clustersWithErrors{})).To(gomega.Equal(gateway),
-		"without backend listeners the Gateway's listeners must be used as is")
+	g.Expect(mergeBackendResources(gateway, baseResources[*envoylistenerv3.Listener]{})).To(gomega.Equal(gateway),
+		"without backend resources the Gateway's resources must be used as is")
 
-	merged := withBackendListener(1)
+	merged := withBackendListener("first")
 	g.Expect(merged.Items).To(gomega.HaveKey("http"))
 	g.Expect(merged.Items).To(gomega.HaveKey("connect_tunnel_dest"))
-	g.Expect(merged.Version).ToNot(gomega.Equal(gateway.Version), "adding listeners must change the LDS version")
-	g.Expect(withBackendListener(2).Version).ToNot(gomega.Equal(merged.Version),
-		"a changed backend listener must change the LDS version")
+	g.Expect(merged.Version).ToNot(gomega.Equal(gateway.Version), "adding resources must change the version")
+	g.Expect(withBackendListener("second").Version).ToNot(gomega.Equal(merged.Version),
+		"a changed backend resource must change the version")
 	g.Expect(gateway.Items).To(gomega.HaveLen(1), "the Gateway's resources are shared and must not be modified")
 }
 

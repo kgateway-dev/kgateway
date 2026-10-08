@@ -14,12 +14,15 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoygenericsecret "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/generic_secret/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -27,15 +30,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
-
-type tunnelTarget struct {
-	host string
-	port uint32
-}
-
-func (t tunnelTarget) authority() string {
-	return net.JoinHostPort(t.host, strconv.FormatUint(uint64(t.port), 10))
-}
 
 // newTunnelHook generates CONNECT listeners, resolving proxies after policy
 // attachment to avoid a KRT dependency cycle.
@@ -46,46 +40,52 @@ func newTunnelHook(commoncol *collections.CommonCollections) sdk.ProcessBaseClus
 		if tunnel == nil {
 			return sdk.BaseClusterResources{}, nil
 		}
-		listener, err := translateTunnelResources(kctx, commoncol.BackendIndex, in, out, tunnel)
-		if err != nil {
-			return sdk.BaseClusterResources{}, &ir.PolicyError{Ref: tunnel.policyRef(), Err: err}
+		resources, err := translateTunnelResources(kctx, commoncol.BackendIndex, in, out, tunnel)
+		resources.Policy = &ir.AttachedPolicyRef{
+			Group:     tunnel.source.Group,
+			Kind:      tunnel.source.Kind,
+			Namespace: tunnel.source.Namespace,
+			Name:      tunnel.source.Name,
 		}
-		return sdk.BaseClusterResources{Listeners: []*envoylistenerv3.Listener{listener}}, nil
+		return resources, err
 	}
 }
 
 // translateTunnelResources validates the tunnel, rewrites the destination
-// cluster, and returns its CONNECT listener.
+// cluster, and returns its CONNECT listener and header secrets.
 func translateTunnelResources(
 	kctx krt.HandlerContext,
 	backends *krtcollections.BackendIndex,
 	in ir.BackendObjectIR,
 	out *envoyclusterv3.Cluster,
 	tunnel *tunnelIR,
-) (*envoylistenerv3.Listener, error) {
+) (sdk.BaseClusterResources, error) {
 	target, err := tunnelDestination(in)
 	if err != nil {
-		return nil, err
+		return sdk.BaseClusterResources{}, err
 	}
 	if err := validateTunnelCluster(out); err != nil {
-		return nil, err
+		return sdk.BaseClusterResources{}, err
 	}
 	proxyCluster, err := resolveTunnelProxy(kctx, backends, tunnel)
 	if err != nil {
-		return nil, err
+		return sdk.BaseClusterResources{}, err
 	}
-	listener, err := buildTunnelListener(out.GetName(), proxyCluster, target, tunnel.headers)
-	if err != nil {
-		return nil, err
-	}
-	rewriteTunnelCluster(out, target)
-	return listener, nil
+	// Hash the cluster name to fit the Unix socket path limit.
+	name := fmt.Sprintf("connect_tunnel_%016x", utils.HashString(out.GetName()))
+	listener, secrets := buildTunnelListener(name, proxyCluster, target, tunnel.headers)
+	rewriteTunnelCluster(out, target, name)
+	return sdk.BaseClusterResources{Listeners: []*envoylistenerv3.Listener{listener}, Secrets: secrets}, nil
 }
 
 // effectiveTunnel returns the tunnel selected by policy precedence.
 // Errored policies fail base translation before resource hooks run.
 func effectiveTunnel(in ir.BackendObjectIR) *tunnelIR {
 	policies := in.AttachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+	setsTunnel := func(att ir.PolicyAtt) bool {
+		pol, ok := att.PolicyIr.(*BackendConfigPolicyIR)
+		return ok && pol.tunnel != nil
+	}
 	if !slices.ContainsFunc(policies, setsTunnel) {
 		return nil
 	}
@@ -96,25 +96,17 @@ func effectiveTunnel(in ir.BackendObjectIR) *tunnelIR {
 	return merged.tunnel
 }
 
-func setsTunnel(att ir.PolicyAtt) bool {
-	pol, ok := att.PolicyIr.(*BackendConfigPolicyIR)
-	return ok && pol.tunnel != nil
-}
-
 // tunnelDestination returns the host and port of a single-host Static Backend.
-func tunnelDestination(in ir.BackendObjectIR) (tunnelTarget, error) {
+func tunnelDestination(in ir.BackendObjectIR) (kgateway.Host, error) {
 	backend, ok := in.Obj.(*kgateway.Backend)
 	if !ok || backend.Spec.Static == nil {
-		return tunnelTarget{}, errors.New("tunnel: only Static Backends can be tunneled")
+		return kgateway.Host{}, errors.New("tunnel: only Static Backends can be tunneled")
 	}
 	hosts := backend.Spec.Static.Hosts
 	if len(hosts) != 1 {
-		return tunnelTarget{}, fmt.Errorf("tunnel: a tunneled Static Backend must have exactly one host, found %d", len(hosts))
+		return kgateway.Host{}, fmt.Errorf("tunnel: a tunneled Static Backend must have exactly one host, found %d", len(hosts))
 	}
-	return tunnelTarget{
-		host: hosts[0].Host,
-		port: uint32(hosts[0].Port), //nolint:gosec // G115: port is validated as 1-65535
-	}, nil
+	return hosts[0], nil
 }
 
 // validateTunnelCluster rejects unsupported destination settings; connections
@@ -152,21 +144,9 @@ func resolveTunnelProxy(kctx krt.HandlerContext, backends *krtcollections.Backen
 	return proxy.ClusterName(), nil
 }
 
-// tunnelName hashes the cluster name to fit the Unix socket path limit.
-func tunnelName(clusterName string) string {
-	return fmt.Sprintf("connect_tunnel_%016x", utils.HashString(clusterName))
-}
-
-// tunnelSocketAddress uses Envoy's @ prefix for Linux abstract Unix sockets.
-func tunnelSocketAddress(clusterName string) *envoycorev3.Address {
-	return &envoycorev3.Address{
-		Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "@" + tunnelName(clusterName)}},
-	}
-}
-
 // rewriteTunnelCluster replaces discovery with a pipe endpoint, preserving
 // destination TLS and the hostname used by autoHostRewrite.
-func rewriteTunnelCluster(out *envoyclusterv3.Cluster, target tunnelTarget) {
+func rewriteTunnelCluster(out *envoyclusterv3.Cluster, target kgateway.Host, name string) {
 	out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC}
 	out.EdsClusterConfig = nil
 	out.LoadAssignment = &envoyendpointv3.ClusterLoadAssignment{
@@ -175,8 +155,10 @@ func rewriteTunnelCluster(out *envoyclusterv3.Cluster, target tunnelTarget) {
 			LbEndpoints: []*envoyendpointv3.LbEndpoint{{
 				HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
 					Endpoint: &envoyendpointv3.Endpoint{
-						Hostname: target.host,
-						Address:  tunnelSocketAddress(out.GetName()),
+						Hostname: target.Host,
+						Address: &envoycorev3.Address{
+							Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "@" + name}},
+						},
 					},
 				},
 			}},
@@ -184,34 +166,66 @@ func rewriteTunnelCluster(out *envoyclusterv3.Cluster, target tunnelTarget) {
 	}
 }
 
-// buildTunnelListener creates a Unix listener that CONNECTs through the proxy cluster.
+// buildTunnelListener creates a Unix listener that CONNECTs through the proxy
+// cluster. Header values are returned as SDS secrets, which the listener reads
+// with Envoy's generic_secret formatter, so LDS carries no credentials.
 func buildTunnelListener(
-	clusterName, proxyCluster string,
-	target tunnelTarget,
-	headers []*envoycorev3.HeaderValueOption,
-) (*envoylistenerv3.Listener, error) {
-	name := tunnelName(clusterName)
-	tcpProxy := &envoytcp.TcpProxy{
+	name, proxyCluster string,
+	target kgateway.Host,
+	headers []gwv1.HTTPHeader,
+) (*envoylistenerv3.Listener, []*envoytlsv3.Secret) {
+	authority := net.JoinHostPort(target.Host, strconv.Itoa(int(target.Port)))
+	tunneling := &envoytcp.TcpProxy_TunnelingConfig{
+		Hostname: strings.ReplaceAll(authority, "%", "%%"),
+	}
+	var secrets []*envoytlsv3.Secret
+	secretConfigs := map[string]*envoytlsv3.SdsSecretConfig{}
+	for i, h := range headers {
+		// Envoy caches SDS values by name, and LDS and SDS updates arrive apart.
+		// Rotation keeps the name; a new proxy or header renames it, so a listener
+		// never sends a value cached for another proxy or header.
+		secretName := fmt.Sprintf("%s/%016x", name, utils.HashString(fmt.Sprintf("%s\x00%d\x00%s", proxyCluster, i, h.Name)))
+		tunneling.HeadersToAdd = append(tunneling.HeadersToAdd, &envoycorev3.HeaderValueOption{
+			Header:       &envoycorev3.HeaderValue{Key: string(h.Name), Value: "%SECRET(" + secretName + ")%"},
+			AppendAction: envoycorev3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+		})
+		secretConfigs[secretName] = &envoytlsv3.SdsSecretConfig{
+			Name: secretName,
+			SdsConfig: &envoycorev3.ConfigSource{
+				ResourceApiVersion:    envoycorev3.ApiVersion_V3,
+				ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{Ads: &envoycorev3.AggregatedConfigSource{}},
+			},
+		}
+		secrets = append(secrets, &envoytlsv3.Secret{
+			Name: secretName,
+			Type: &envoytlsv3.Secret_GenericSecret{GenericSecret: &envoytlsv3.GenericSecret{
+				Secret: pluginutils.InlineStringDataSource(h.Value),
+			}},
+		})
+	}
+	if len(headers) > 0 {
+		tunneling.Formatters = []*envoycorev3.TypedExtensionConfig{{
+			Name:        "envoy.formatter.generic_secret",
+			TypedConfig: utils.MustMessageToAny(&envoygenericsecret.GenericSecret{SecretConfigs: secretConfigs}),
+		}}
+	}
+	config := utils.MustMessageToAny(&envoytcp.TcpProxy{
 		StatPrefix:       name,
 		ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: proxyCluster},
-		TunnelingConfig: &envoytcp.TcpProxy_TunnelingConfig{
-			Hostname:     strings.ReplaceAll(target.authority(), "%", "%%"),
-			HeadersToAdd: headers,
-		},
-	}
-	config, err := utils.MessageToAny(tcpProxy)
-	if err != nil {
-		return nil, fmt.Errorf("tunnel listener: %w", err)
-	}
+		TunnelingConfig:  tunneling,
+	})
 	return &envoylistenerv3.Listener{
 		Name:       name,
 		StatPrefix: name,
-		Address:    tunnelSocketAddress(clusterName),
+		// @ is Envoy's prefix for a Linux abstract Unix socket.
+		Address: &envoycorev3.Address{
+			Address: &envoycorev3.Address_Pipe{Pipe: &envoycorev3.Pipe{Path: "@" + name}},
+		},
 		FilterChains: []*envoylistenerv3.FilterChain{{
 			Filters: []*envoylistenerv3.Filter{{
 				Name:       envoywellknown.TCPProxy,
 				ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: config},
 			}},
 		}},
-	}, nil
+	}, secrets
 }

@@ -10,8 +10,10 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
@@ -34,7 +36,8 @@ type baseEnvoyCluster struct {
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	Listeners      *baseListeners
+	Listeners      baseResources[*envoylistenerv3.Listener]
+	Secrets        baseResources[*envoytlsv3.Secret]
 	// Error is the translation error for this backend, if any. Compared by message in
 	// Equals because all errored clusters share one blackhole proto and baseClusterVersion
 	// collapses every error to 0, so ClusterVersion can't tell error states apart.
@@ -81,7 +84,8 @@ func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
 	}
 	return b.Name == in.Name &&
 		b.ClusterVersion == in.ClusterVersion &&
-		b.Listeners.version() == in.Listeners.version() &&
+		b.Listeners.hash == in.Listeners.hash &&
+		b.Secrets.hash == in.Secrets.hash &&
 		b.OverlayInputsHash == in.OverlayInputsHash &&
 		b.BackendSource == in.BackendSource &&
 		b.BackendGeneration == in.BackendGeneration &&
@@ -102,7 +106,8 @@ type uccWithCluster struct {
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	Listeners      *baseListeners
+	Listeners      baseResources[*envoylistenerv3.Listener]
+	Secrets        baseResources[*envoytlsv3.Secret]
 	Name           string
 	Error          error
 	// PerClientError reports that Error was produced for this client alone (a
@@ -130,7 +135,8 @@ func (c uccWithCluster) ResourceName() string {
 func (c uccWithCluster) Equals(in uccWithCluster) bool {
 	return c.Client.Equals(in.Client) &&
 		c.ClusterVersion == in.ClusterVersion &&
-		c.Listeners.version() == in.Listeners.version() &&
+		c.Listeners.hash == in.Listeners.hash &&
+		c.Secrets.hash == in.Secrets.hash &&
 		c.Name == in.Name &&
 		c.PerClientError == in.PerClientError &&
 		c.BackendSource == in.BackendSource &&
@@ -164,15 +170,13 @@ func errorsEqual(a, b error) bool {
 // status would report the new generation as accepted while CDS still excludes it.
 type clustersWithErrors struct {
 	// +noKrtEquals
-	clusters envoycache.Resources
-	// Compared by listenersHash.
-	// +noKrtEquals
-	listeners []envoycachetypes.ResourceWithTTL
+	clusters  envoycache.Resources
+	listeners baseResources[*envoylistenerv3.Listener]
+	secrets   baseResources[*envoytlsv3.Secret]
 	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
 	clustersHash        uint64
-	listenersHash       uint64
 	// perClientErrors are the rows whose Error was produced for this client
 	// alone, sorted by cluster name; the status projection reads them. Base
 	// errors are attributed from the base rows instead, once rather than once
@@ -189,7 +193,8 @@ var _ krt.Equaler[clustersWithErrors] = new(clustersWithErrors)
 
 func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 	return c.clustersHash == k.clustersHash &&
-		c.listenersHash == k.listenersHash &&
+		c.listeners.hash == k.listeners.hash &&
+		c.secrets.hash == k.secrets.hash &&
 		c.erroredClustersHash == k.erroredClustersHash &&
 		c.resourceName == k.resourceName &&
 		slices.EqualFunc(c.perClientErrors, k.perClientErrors, uccWithCluster.Equals)
@@ -226,29 +231,23 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 	return hasher.Sum64()
 }
 
-// baseListeners shares immutable generated listeners and their hash across clients.
-type baseListeners struct {
-	items []sharedproto.Shared[*envoylistenerv3.Listener]
+// baseResources shares immutable resources generated with a cluster, and their
+// hash, across clients.
+type baseResources[M proto.Message] struct {
+	items []sharedproto.Shared[M]
 	hash  uint64
 }
 
-func (l *baseListeners) version() uint64 {
-	if l == nil {
-		return 0
+// wrapBaseResources shares generated resources across clients with a content hash.
+func wrapBaseResources[M proto.Message](resources []M) baseResources[M] {
+	if len(resources) == 0 {
+		return baseResources[M]{}
 	}
-	return l.hash
-}
-
-// wrapBaseListeners shares generated listeners across clients with a content hash.
-func wrapBaseListeners(listeners []*envoylistenerv3.Listener) *baseListeners {
-	if len(listeners) == 0 {
-		return nil
-	}
-	out := &baseListeners{items: make([]sharedproto.Shared[*envoylistenerv3.Listener], 0, len(listeners))}
+	out := baseResources[M]{items: make([]sharedproto.Shared[M], 0, len(resources))}
 	hasher := fnv.New64a()
-	for _, l := range listeners {
-		hash := utils.HashProto(l)
-		out.items = append(out.items, sharedproto.WrapPrehashed(l, hash))
+	for _, r := range resources {
+		hash := utils.HashProto(r)
+		out.items = append(out.items, sharedproto.WrapPrehashed(r, hash))
 		utils.HashUint64(hasher, hash)
 	}
 	out.hash = hasher.Sum64()
@@ -321,6 +320,7 @@ func clustersForClient(
 			Cluster:           b.Cluster,
 			ClusterVersion:    b.ClusterVersion,
 			Listeners:         b.Listeners,
+			Secrets:           b.Secrets,
 			Name:              b.Name,
 			Error:             b.Error,
 			BackendSource:     b.BackendSource,
@@ -376,9 +376,9 @@ func clustersForClient(
 func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithCluster) *clustersWithErrors {
 	clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(rows))
 	var (
-		listenersProto      []envoycachetypes.ResourceWithTTL
+		listeners           baseResources[*envoylistenerv3.Listener]
+		secrets             baseResources[*envoytlsv3.Secret]
 		clustersHash        uint64
-		listenersHash       uint64
 		erroredClustersHash uint64
 		erroredClusters     []string
 		perClientErrors     []uccWithCluster
@@ -400,12 +400,10 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		// mutation tripwire when armed. See package sharedproto.
 		clustersProto = append(clustersProto, c.Cluster.ResourceWithTTL())
 		clustersHash ^= c.ClusterVersion
-		if c.Listeners != nil {
-			for _, l := range c.Listeners.items {
-				listenersProto = append(listenersProto, l.ResourceWithTTL())
-			}
-		}
-		listenersHash ^= c.Listeners.version()
+		listeners.items = append(listeners.items, c.Listeners.items...)
+		listeners.hash ^= c.Listeners.hash
+		secrets.items = append(secrets.items, c.Secrets.items...)
+		secrets.hash ^= c.Secrets.hash
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
 	// Base rows arrive in map order; sort so Equals compares like with like.
@@ -413,10 +411,10 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 
 	return &clustersWithErrors{
 		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
-		listeners:           listenersProto,
+		listeners:           listeners,
+		secrets:             secrets,
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
-		listenersHash:       listenersHash,
 		erroredClustersHash: erroredClustersHash,
 		perClientErrors:     perClientErrors,
 		resourceName:        ucc.ResourceName(),
@@ -520,10 +518,12 @@ func NewPerClientEnvoyClusters(
 		}
 		clusterVersion := baseClusterVersion(backendObj, baseRes)
 		sharedCluster := sharedproto.Wrap(baseRes.Cluster)
-		sharedListeners := wrapBaseListeners(baseRes.Listeners)
-		// Drop raw aliases to protect shared protos and keep credentials out of KRT dumps.
+		sharedListeners := wrapBaseResources(baseRes.Listeners)
+		sharedSecrets := wrapBaseResources(baseRes.Secrets)
+		// Drop raw aliases to protect shared protos and keep secrets out of KRT dumps.
 		baseRes.Cluster = nil
 		baseRes.Listeners = nil
+		baseRes.Secrets = nil
 		var backendGeneration int64
 		if backendObj.Obj != nil {
 			backendGeneration = backendObj.Obj.GetGeneration()
@@ -533,6 +533,7 @@ func NewPerClientEnvoyClusters(
 			Cluster:              sharedCluster,
 			ClusterVersion:       clusterVersion,
 			Listeners:            sharedListeners,
+			Secrets:              sharedSecrets,
 			OverlayInputsHash:    translator.OverlayInputsHash(*backendObj),
 			CompareBackendInputs: translator.HasUndeclaredOverlayInputs(),
 			Error:                baseRes.Error,

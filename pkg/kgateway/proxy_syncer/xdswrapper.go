@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	udpaannontations "github.com/cncf/xds/go/udpa/annotations"
-	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -106,14 +105,8 @@ func addToSnap(snapJson map[string]map[string]any, k string, resources map[strin
 
 func redact(snap *envoycache.Snapshot) {
 	// clusters and listener might have secrets
-	listeners := snap.Resources[envoycachetypes.Listener].Items
-	for k, l := range listeners {
+	for _, l := range snap.Resources[envoycachetypes.Listener].Items {
 		redactProto(l.Resource)
-		// CONNECT headers lack sensitive annotations.
-		if lis, ok := l.Resource.(*envoylistenerv3.Listener); ok {
-			l.Resource = xds.RedactListenerCredentials(lis)
-			listeners[k] = l
-		}
 	}
 	for _, l := range snap.Resources[envoycachetypes.Cluster].Items {
 		redactProto(l.Resource)
@@ -198,9 +191,9 @@ func visitMessage(v protoreflect.Value, sensitive bool) {
 func redactValue(fd protoreflect.FieldDescriptor, v protoreflect.Value) protoreflect.Value {
 	switch fd.Kind() {
 	case protoreflect.StringKind:
-		return protoreflect.ValueOfString(xds.RedactedValue)
+		return protoreflect.ValueOfString("[REDACTED]")
 	case protoreflect.BytesKind:
-		return protoreflect.ValueOfBytes([]byte(xds.RedactedValue))
+		return protoreflect.ValueOfBytes([]byte("[REDACTED]"))
 	}
 	return v
 }

@@ -28,7 +28,7 @@ backend's cluster through the proxy.
 - Let the proxy resolve the destination's hostname.
 - Fail closed: an invalid or unreachable tunnel never falls back to a direct
   connection.
-- Keep credentials out of status, logs, and debug endpoints.
+- Keep credentials out of LDS, status, logs, and debug endpoints.
 
 ## Non-Goals
 
@@ -110,16 +110,17 @@ spec:
 - Tunnel settings merge as one unit under existing BackendConfigPolicy precedence.
 - Header values are trimmed of surrounding whitespace, as Secret files often end
   with a newline. Secret values must then match the pattern the CRD enforces on
-  inline values: printable ASCII, with single spaces or tabs between words. `%` is
-  escaped for Envoy's formatter, in header values and the CONNECT hostname. This
+  inline values: printable ASCII, with single spaces or tabs between words. This
   runs on every Secret update, and errors name the header, never the value.
 
 ### Plugin
 
 A new plugin SDK hook, `ProcessBaseClusterResources`, works like
-`ProcessBaseCluster` but can return listeners delivered with the cluster, or fail
-the backend. These hooks run after all `ProcessBaseCluster` hooks, in
-(Group, Kind) order.
+`ProcessBaseCluster` but can return listeners and SDS secrets delivered with the
+cluster, or fail the backend. It also names the policy the resources come from,
+so the hook's errors and the listeners' strict-validation failures are reported
+on that policy. These hooks run after all `ProcessBaseCluster` hooks, in (Group,
+Kind) order.
 
 BackendConfigPolicy's hook:
 
@@ -134,8 +135,17 @@ BackendConfigPolicy's hook:
    `autoHostRewrite`. The hash is FNV-64a of the cluster name, so the name is
    stable across credential changes.
 5. Returns a listener on that socket whose TCP proxy has a `tunneling_config`
-   with the destination `host:port` and the CONNECT headers, and points at the
-   proxy cluster.
+   with the destination `host:port` and points at the proxy cluster. Each CONNECT
+   header value is returned as an SDS generic secret, which the header reads with
+   Envoy's `envoy.formatter.generic_secret` formatter. `%` in the hostname is
+   escaped for Envoy's formatter.
+
+A secret's name is the listener name plus a hash of the proxy cluster and the
+header's position and name. Envoy shares SDS values by name, and LDS and SDS
+updates arrive separately. A credential rotation keeps the name, so only SDS
+changes. A new proxy or header binding renames the secret, so the new listener
+waits for its own values instead of sending ones cached for another proxy or
+header.
 
 ```yaml
 # Destination cluster
@@ -161,22 +171,39 @@ filter_chains:
       tunneling_config:
         hostname: api.example.com:443
         headers_to_add:
-        - header: {key: Proxy-Authorization, value: "<secret value>"}
+        - header:
+            key: Proxy-Authorization
+            value: "%SECRET(connect_tunnel_4f73a2c1d09e8b65/9c1e5b7a20d4f386)%"
+        formatters:
+        - name: envoy.formatter.generic_secret
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.formatter.generic_secret.v3.GenericSecret
+            secret_configs:
+              connect_tunnel_4f73a2c1d09e8b65/9c1e5b7a20d4f386:
+                name: connect_tunnel_4f73a2c1d09e8b65/9c1e5b7a20d4f386
+                sds_config: {ads: {}, resource_api_version: V3}
+---
+# Generated secret
+name: connect_tunnel_4f73a2c1d09e8b65/9c1e5b7a20d4f386
+generic_secret:
+  secret: {inline_string: "<header value>"}
 ```
 
 ### Translator and Proxy Syncer
 
-Generated listeners travel with their cluster on the shared base row and the
-per-client rows, and are merged into each client's LDS. Every client that
-receives the cluster receives its listener. The listeners take part in row
-equality and the snapshot version, so a credential-only change pushes new LDS.
+Generated listeners and secrets travel with their cluster on the shared base row
+and the per-client rows, and are merged into each client's LDS and SDS. Every
+client that receives the cluster receives its listener and secrets. They take
+part in row equality and the snapshot versions, so a credential-only change
+pushes new SDS but leaves LDS unchanged.
 
-An errored backend withdraws both the cluster and the listener, so traffic fails
-instead of going direct. Removing the tunnel restores the ordinary cluster;
-deleting the Backend removes both.
+An errored backend withdraws the cluster, the listener, and its secrets, so
+traffic fails instead of going direct. Removing the tunnel restores the ordinary
+cluster; deleting the Backend removes all of them.
 
-In strict validation mode, generated listeners are validated with credentials
-redacted, because Envoy's errors quote the rejected configuration.
+In strict validation mode, generated listeners are validated and memoized like
+clusters. They hold no credentials, and Envoy's validate mode does not resolve
+their SDS references.
 
 ### Reporting
 
@@ -198,14 +225,16 @@ the connection and are not reported in status.
 
 ### Security
 
-As with other inline backend credentials, CONNECT headers are part of the
-generated listener's LDS configuration, and every Gateway of the controller
-receives every tunnel. kgateway redacts them from `/snapshots/xds`,
-`/snapshots/krt`, and strict-validation errors. Redacting `/snapshots/krt`
-covers the policy's inline values and its
-`kubectl.kubernetes.io/last-applied-configuration` annotation.
+CONNECT header values, inline or from a Secret, are served over SDS, and the
+listener only references them. `/snapshots/xds` redacts SDS secrets and 
+`/snapshots/krt` omits them. `/snapshots/krt` also redacts the policy's inline
+values and its `kubectl.kubernetes.io/last-applied-configuration` annotation.
+Every Gateway of the controller receives every tunnel and its secrets.
 
 New connections use rotated credentials; existing tunnels drain normally.
+
+The `envoy.formatter.generic_secret` formatter needs Envoy 1.39 or later for
+`tunneling_config`, and is an alpha extension.
 
 ### Test Plan
 
@@ -213,8 +242,9 @@ New connections use rotated credentials; existing tunnels drain normally.
   - header resolution and normalization;
   - IR equality, where a rotated credential changes the IR;
   - error attribution and policy status;
-  - listener lifecycle (valid, invalid, rotated, detached, deleted) and LDS merge;
-  - redaction in `/snapshots/xds` and `/snapshots/krt`.
+  - listener and secret lifecycle (valid, invalid, rotated, detached, deleted),
+    where a rotation changes only SDS, and the LDS and SDS merge;
+  - policy redaction in `/snapshots/krt`.
 - Translator tests in strict mode:
   - Service and Backend proxies, with destination and proxy TLS;
   - rejection of an unsupported destination, a missing ReferenceGrant, and a
@@ -233,6 +263,8 @@ New connections use rotated credentials; existing tunnels drain normally.
 | Route or Gateway traffic policy | Does not cover filters that call a cluster directly. |
 | Envoy internal listener instead of a Unix socket | [Main-thread clients](https://github.com/envoyproxy/envoy/blob/v1.39.1/source/extensions/bootstrap/internal_listener/client_connection_factory.cc) cannot connect to internal listeners. |
 | `http_11_proxy` transport socket | No configurable CONNECT headers and no proxy TLS. |
+| Header values inline in `headers_to_add` | Puts credentials in LDS, so debug endpoints and validation errors need custom redaction, and every rotation replaces the listener. |
+| `credential_injector` as an upstream filter on the proxy cluster | Upstream HTTP filters on TCP proxy need `envoy.restart_features.upstream_http_filters_with_tcp_proxy`, which is off by default. |
 
 ## Open Questions
 

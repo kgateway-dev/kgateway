@@ -1,42 +1,3 @@
-BackendListeners:
-- address:
-    pipe:
-      path: '@connect_tunnel_b13260c9343385aa'
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.tcp_proxy
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        cluster: kube_default_egress-proxy_3128
-        statPrefix: connect_tunnel_b13260c9343385aa
-        tunnelingConfig:
-          headersToAdd:
-          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-            header:
-              key: Proxy-Authorization
-              value: Basic dXNlcjpwYXNz
-          hostname: external.example.com:443
-  name: connect_tunnel_b13260c9343385aa
-  statPrefix: connect_tunnel_b13260c9343385aa
-- address:
-    pipe:
-      path: '@connect_tunnel_d06a943ef9d329b5'
-  filterChains:
-  - filters:
-    - name: envoy.filters.network.tcp_proxy
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-        cluster: backend_default_proxy-pool_0
-        statPrefix: connect_tunnel_d06a943ef9d329b5
-        tunnelingConfig:
-          headersToAdd:
-          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-            header:
-              key: Proxy-Authorization
-              value: Basic dXNlcjpwYXNz
-          hostname: api.example.com:443
-  name: connect_tunnel_d06a943ef9d329b5
-  statPrefix: connect_tunnel_d06a943ef9d329b5
 Clusters:
 - connectTimeout: 5s
   loadAssignment:
@@ -123,6 +84,64 @@ Clusters:
   name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
+    pipe:
+      path: '@connect_tunnel_b13260c9343385aa'
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+        cluster: kube_default_egress-proxy_3128
+        statPrefix: connect_tunnel_b13260c9343385aa
+        tunnelingConfig:
+          formatters:
+          - name: envoy.formatter.generic_secret
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.formatter.generic_secret.v3.GenericSecret
+              secretConfigs:
+                connect_tunnel_b13260c9343385aa/536239a6521efff8:
+                  name: connect_tunnel_b13260c9343385aa/536239a6521efff8
+                  sdsConfig:
+                    ads: {}
+                    resourceApiVersion: V3
+          headersToAdd:
+          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: Proxy-Authorization
+              value: '%SECRET(connect_tunnel_b13260c9343385aa/536239a6521efff8)%'
+          hostname: external.example.com:443
+  name: connect_tunnel_b13260c9343385aa
+  statPrefix: connect_tunnel_b13260c9343385aa
+- address:
+    pipe:
+      path: '@connect_tunnel_d06a943ef9d329b5'
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+        cluster: backend_default_proxy-pool_0
+        statPrefix: connect_tunnel_d06a943ef9d329b5
+        tunnelingConfig:
+          formatters:
+          - name: envoy.formatter.generic_secret
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.formatter.generic_secret.v3.GenericSecret
+              secretConfigs:
+                connect_tunnel_d06a943ef9d329b5/b2262ce222de0e24:
+                  name: connect_tunnel_d06a943ef9d329b5/b2262ce222de0e24
+                  sdsConfig:
+                    ads: {}
+                    resourceApiVersion: V3
+          headersToAdd:
+          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+            header:
+              key: Proxy-Authorization
+              value: '%SECRET(connect_tunnel_d06a943ef9d329b5/b2262ce222de0e24)%'
+          hostname: api.example.com:443
+  name: connect_tunnel_d06a943ef9d329b5
+  statPrefix: connect_tunnel_d06a943ef9d329b5
+- address:
     socketAddress:
       address: '::'
       ipv4Compat: true
@@ -150,6 +169,15 @@ Listeners:
 Routes:
 - ignorePortInHostMatching: true
   name: listener~8080
+Secrets:
+- genericSecret:
+    secret:
+      inlineString: Basic dXNlcjpwYXNz
+  name: connect_tunnel_b13260c9343385aa/536239a6521efff8
+- genericSecret:
+    secret:
+      inlineString: Basic dXNlcjpwYXNz
+  name: connect_tunnel_d06a943ef9d329b5/b2262ce222de0e24
 Statuses:
   backends:
     default/api:

@@ -7,6 +7,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,6 +135,13 @@ type ProcessBaseCluster func(
 // and withdrawn if the cluster fails translation.
 type BaseClusterResources struct {
 	Listeners []*envoylistenerv3.Listener
+	// Secrets are served over SDS, so listeners can reference them instead of
+	// carrying credentials in LDS.
+	Secrets []*envoytlsv3.Secret
+	// Policy is the policy the resources are generated from, if any. The hook's
+	// errors and the resources' strict validation failures are attributed to it,
+	// so a hook sets it even when it returns an error.
+	Policy *ir.AttachedPolicyRef
 }
 
 // ProcessBaseClusterResources runs after all ProcessBaseCluster hooks in

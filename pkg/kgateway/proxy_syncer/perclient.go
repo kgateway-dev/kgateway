@@ -9,6 +9,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -144,8 +145,8 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
-		snapshot.Resources[envoycachetypes.Listener] = mergeBackendListeners(listenerRouteSnapshot.Listeners, clustersForUcc)
-		snapshot.Resources[envoycachetypes.Secret] = listenerRouteSnapshot.Secrets
+		snapshot.Resources[envoycachetypes.Listener] = mergeBackendResources(listenerRouteSnapshot.Listeners, clustersForUcc.listeners)
+		snapshot.Resources[envoycachetypes.Secret] = mergeBackendResources(listenerRouteSnapshot.Secrets, clustersForUcc.secrets)
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
 		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
@@ -153,7 +154,7 @@ func snapshotPerClient(
 			"clusters", resourcesStringer(clusterResources).String(),
 			"routes", resourcesStringer(listenerRouteSnapshot.Routes).String(),
 			"endpoints", resourcesStringer(endpointRes).String(),
-			"secrets", resourcesStringer(listenerRouteSnapshot.Secrets).String(),
+			"secrets", resourcesStringer(snapshot.Resources[envoycachetypes.Secret]).String(),
 		)
 
 		return &snap
@@ -239,19 +240,21 @@ func snapshotPerClient(
 	return xdsSnapshotsForUcc
 }
 
-// mergeBackendListeners combines Gateway and backend listeners without mutating
-// shared resources. Gateway listeners take precedence on name collisions.
-func mergeBackendListeners(gateway envoycache.Resources, clusters *clustersWithErrors) envoycache.Resources {
-	if len(clusters.listeners) == 0 {
+// mergeBackendResources combines Gateway resources with those generated with
+// backend clusters, without mutating shared resources. Gateway resources take
+// precedence on name collisions.
+func mergeBackendResources[M proto.Message](gateway envoycache.Resources, backend baseResources[M]) envoycache.Resources {
+	if len(backend.items) == 0 {
 		return gateway
 	}
-	items := make(map[string]envoycachetypes.ResourceWithTTL, len(gateway.Items)+len(clusters.listeners))
-	for _, l := range clusters.listeners {
-		items[envoycache.GetResourceName(l.Resource)] = l
+	items := make(map[string]envoycachetypes.ResourceWithTTL, len(gateway.Items)+len(backend.items))
+	for _, r := range backend.items {
+		res := r.ResourceWithTTL()
+		items[envoycache.GetResourceName(res.Resource)] = res
 	}
 	maps.Copy(items, gateway.Items)
 	return envoycache.Resources{
-		Version: fmt.Sprintf("%s-backend-%d", gateway.Version, clusters.listenersHash),
+		Version: fmt.Sprintf("%s-backend-%d", gateway.Version, backend.hash),
 		Items:   items,
 	}
 }

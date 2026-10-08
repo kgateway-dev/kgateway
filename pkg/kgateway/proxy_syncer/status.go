@@ -44,9 +44,10 @@ func generateBackendPolicyReport(in []*ir.BackendObjectIR, translationErr func(*
 	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
-		var attributedErrs map[string][]error
+		// Base translation stops at its first error, so at most one is attributed.
+		var policyErr *ir.PolicyError
 		if translationErr != nil {
-			attributedErrs = errorsByPolicy(translationErr(obj))
+			errors.As(translationErr(obj), &policyErr)
 		}
 		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
 		targetRef := backendAncestorRef(obj.GetObjectSource())
@@ -83,8 +84,8 @@ func generateBackendPolicyReport(in []*ir.BackendObjectIR, translationErr func(*
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
-				if len(polAtt.Errors) == 0 {
-					polAtt.Errors = attributedErrs[polAtt.PolicyRef.ID()]
+				if len(polAtt.Errors) == 0 && policyErr != nil && policyErr.Ref != nil && policyErr.Ref.ID() == polAtt.PolicyRef.ID() {
+					polAtt.Errors = []error{policyErr.Err}
 				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
@@ -119,23 +120,6 @@ func generateBackendPolicyReport(in []*ir.BackendObjectIR, translationErr func(*
 	}
 
 	return merged
-}
-
-// errorsByPolicy groups attributed translation errors by policy ID.
-func errorsByPolicy(err error) map[string][]error {
-	var out map[string][]error
-	for _, e := range ir.FlattenJoinedErr(err) {
-		var policyErr *ir.PolicyError
-		if !errors.As(e, &policyErr) || policyErr.Ref == nil {
-			continue
-		}
-		if out == nil {
-			out = map[string][]error{}
-		}
-		id := policyErr.Ref.ID()
-		out[id] = append(out[id], policyErr.Err)
-	}
-	return out
 }
 
 // backendAncestorRef returns the ancestor ref for a policy attached to a backend: the
