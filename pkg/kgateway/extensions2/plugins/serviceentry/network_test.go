@@ -117,3 +117,30 @@ func TestBuildInlineEndpoints_SystemNamespaceNetwork(t *testing.T) {
 	}
 	assert.Equal(t, map[string]uint32{"1.1.1.1": 0, "2.2.2.2": 1}, priorities)
 }
+
+// Like Istio, a DNS ServiceEntry without endpoints turns its hosts into
+// endpoints that get no network, not the system namespace network.
+func TestBuildInlineEndpoints_DNSHostsGetNoNetwork(t *testing.T) {
+	se := &networkingclient.ServiceEntry{
+		ObjectMeta: metav1.ObjectMeta{Name: "dns-se", Namespace: "gwtest"},
+		Spec: networking.ServiceEntry{
+			Hosts:      []string{"se.example.com"},
+			Location:   networking.ServiceEntry_MESH_EXTERNAL,
+			Resolution: networking.ServiceEntry_DNS,
+			Ports:      []*networking.ServicePort{{Name: "http", Number: 80, Protocol: "TCP"}},
+		},
+	}
+	be := BuildServiceEntryBackendObjectIR(se, "se.example.com", 80, "TCP", nil, "n1")
+	plugin := &serviceEntryPlugin{logger: slog.Default()}
+	eps := plugin.buildInlineEndpoints(be, se)
+
+	var count int
+	for _, group := range eps.LbEps {
+		for _, ep := range group {
+			count++
+			_, ok := ep.EndpointMd.Labels[label.TopologyNetwork.Name]
+			assert.False(t, ok, "host endpoint %s must not get a network", ep.GetEndpoint().GetAddress().GetSocketAddress().GetAddress())
+		}
+	}
+	assert.Equal(t, 1, count, "one endpoint per host")
+}

@@ -48,7 +48,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 				nil,                                    // no annotation keys to promote
 				&networking.WorkloadEntry{Address: hostname},
 				nil, // not in krt, don't need selectedBy
-				systemNamespaceNetwork,
+				"",  // like Istio, endpoints made from hosts get no network
 			)
 			inlineWorkloads = append(inlineWorkloads, converted)
 		}
