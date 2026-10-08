@@ -666,6 +666,17 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "labeled-discovery-mode",
+		valuesYAML: `secretDiscoveryMode: LABELED
+configMapDiscoveryMode: labeled
+`,
+	},
+	{
+		name: "service-label-selector",
+		valuesYAML: `serviceLabelSelector: "team in (a,b),tier!=batch"
+`,
+	},
+	{
 		name: "additional-labels",
 		valuesYAML: `commonLabels:
     extra-label-key: extra-label-value
@@ -887,6 +898,93 @@ controller:
   create: false
 `,
 	},
+}
+
+func TestServiceLabelSelectorEnvironmentVariable(t *testing.T) {
+	testCases := map[string]struct {
+		valuesYAML      string
+		expected        string
+		expectedPresent bool
+	}{
+		"omitted by default": {},
+		"explicit empty value is omitted": {
+			valuesYAML: `serviceLabelSelector: ""
+`,
+		},
+		"renders equality selector": {
+			valuesYAML: `serviceLabelSelector: app=my-app,tier=frontend
+`,
+			expected:        "app=my-app,tier=frontend",
+			expectedPresent: true,
+		},
+		"preserves set-based selector": {
+			valuesYAML: `serviceLabelSelector: "app.kubernetes.io/name in (api,web),environment!=dev"
+`,
+			expected:        "app.kubernetes.io/name in (api,web),environment!=dev",
+			expectedPresent: true,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			deployment := findDeployment(t, renderHelmTemplate(t, "kgateway", tc.valuesYAML, nil))
+			require.NotEmpty(t, deployment.Spec.Template.Spec.Containers)
+
+			env := deployment.Spec.Template.Spec.Containers[0].Env
+			var actual *string
+			for _, variable := range env {
+				if variable.Name == "KGW_SERVICE_LABEL_SELECTOR" {
+					actual = &variable.Value
+					break
+				}
+			}
+			if !tc.expectedPresent {
+				require.Nil(t, actual, "controller environment should omit KGW_SERVICE_LABEL_SELECTOR")
+				return
+			}
+
+			require.NotNil(t, actual, "controller environment should include KGW_SERVICE_LABEL_SELECTOR")
+			require.Equal(t, tc.expected, *actual)
+		})
+	}
+}
+
+func TestServiceLabelSelectorRejectsNonStringHelmValues(t *testing.T) {
+	testCases := map[string]struct {
+		valuesYAML    string
+		expectedError string
+	}{
+		"selector cannot be a boolean": {
+			valuesYAML: `serviceLabelSelector: true
+`,
+			expectedError: "serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+		"selector cannot be a number": {
+			valuesYAML: `serviceLabelSelector: 42
+`,
+			expectedError: "serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+		"selector cannot be a list": {
+			valuesYAML: `serviceLabelSelector:
+  - app=api
+`,
+			expectedError: "serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+		"selector cannot be a map": {
+			valuesYAML: `serviceLabelSelector:
+  app: api
+`,
+			expectedError: "serviceLabelSelector must be a string containing a Kubernetes label selector",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", tc.valuesYAML, nil)
+			require.Error(t, err)
+			require.Contains(t, stderr, tc.expectedError)
+		})
+	}
 }
 
 // TestHelmChartTemplate tests helm template output for the kgateway chart

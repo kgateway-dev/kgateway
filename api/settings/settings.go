@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"k8s.io/apimachinery/pkg/labels"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -65,6 +66,56 @@ func (v *ValidatorMode) Decode(value string) error {
 
 // ReferenceGrantMode controls how strictly cross-namespace references are validated
 // via ReferenceGrant across the control plane.
+// DiscoveryMode selects how much of a resource kind kgateway watches.
+type DiscoveryMode string
+
+const (
+	// DiscoveryAll watches every object of the kind in the discovered namespaces.
+	DiscoveryAll DiscoveryMode = "ALL"
+
+	// DiscoveryLabeled watches only objects carrying the wellknown.WatchLabel
+	// (`kgateway.dev/watch: "true"`). The label becomes a watch selector, so the API server
+	// never sends the other objects and they cost no memory. Anything kgateway is expected
+	// to resolve must be labeled.
+	DiscoveryLabeled DiscoveryMode = "LABELED"
+)
+
+// Decode implements envconfig.Decoder.
+func (d *DiscoveryMode) Decode(value string) error {
+	mode := DiscoveryMode(strings.ToUpper(value))
+	switch mode {
+	case DiscoveryAll, DiscoveryLabeled:
+		*d = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid discovery mode: %q", value)
+	}
+}
+
+// LabelSelector is a Kubernetes label selector in its string form, validated on decode.
+// Empty selects everything.
+type LabelSelector string
+
+// Decode implements envconfig.Decoder.
+func (l *LabelSelector) Decode(value string) error {
+	if err := LabelSelector(value).Validate(); err != nil {
+		return err
+	}
+	*l = LabelSelector(value)
+	return nil
+}
+
+// Validate reports whether the selector parses. Settings built in code rather than decoded
+// from the environment bypass Decode, so consumers that hand the selector to an informer
+// call this too: the API server rejects a malformed selector on every List, which would keep
+// the informer from ever syncing.
+func (l LabelSelector) Validate() error {
+	if _, err := labels.Parse(string(l)); err != nil {
+		return fmt.Errorf("invalid label selector %q: %w", string(l), err)
+	}
+	return nil
+}
+
 type ReferenceGrantMode string
 
 const (
@@ -341,6 +392,32 @@ type Settings struct {
 
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
+
+	// SecretDiscoveryMode controls which Secrets kgateway watches. Supported values are:
+	// - "ALL": watch every Secret in the discovered namespaces (default).
+	// - "LABELED": watch only Secrets labeled `kgateway.dev/watch: "true"`.
+	//
+	// "LABELED" is an opt-in memory optimization for clusters with many Secrets that
+	// kgateway never references. The label is pushed to the API server as a watch selector,
+	// so unlabeled Secrets never reach the informer cache. Every Secret referenced by
+	// Gateway API or kgateway resources must carry the label, otherwise the reference is
+	// reported as not found.
+	SecretDiscoveryMode DiscoveryMode `split_words:"true" default:"ALL"`
+
+	// ConfigMapDiscoveryMode controls which ConfigMaps kgateway watches, with the same
+	// values and semantics as SecretDiscoveryMode.
+	ConfigMapDiscoveryMode DiscoveryMode `split_words:"true" default:"ALL"`
+
+	// ServiceLabelSelector restricts which Services kgateway watches to those matching this
+	// Kubernetes label selector (for example "kgateway.dev/watch=true" or "team in (a,b)").
+	// Empty, the default, watches every Service. The selector is pushed to the API server, so
+	// non-matching Services cost no memory, and because every watched Service becomes a
+	// backend it also bounds the number of clusters kgateway sends to Envoy.
+	//
+	// Route backendRefs to a non-matching Service are reported as not found, and a
+	// non-matching Service is not matched as a waypoint. The proxy Services kgateway renders
+	// need not match: the gateway controller watches those separately.
+	ServiceLabelSelector LabelSelector `split_words:"true"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:

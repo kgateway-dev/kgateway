@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"regexp"
@@ -55,6 +56,9 @@ func allEnvVarsSet() map[string]string {
 		"KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS":         "example.io/managed-by,example.io/other-key",
 		"KGW_ENABLE_ROUTE_SOURCE_METADATA":              "true",
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
+		"KGW_SECRET_DISCOVERY_MODE":                     string(DiscoveryLabeled),
+		"KGW_CONFIG_MAP_DISCOVERY_MODE":                 string(DiscoveryLabeled),
+		"KGW_SERVICE_LABEL_SELECTOR":                    "team in (a,b)",
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 	}
 }
@@ -114,6 +118,8 @@ func TestSettings(t *testing.T) {
 				GatewayClassParametersRefs:            GatewayClassParametersRefs{},
 				EnableAuthMetadata:                    false,
 				ServiceEntriesExclusionLabelSelectors: "[]",
+				SecretDiscoveryMode:                   DiscoveryAll,
+				ConfigMapDiscoveryMode:                DiscoveryAll,
 			},
 		},
 		{
@@ -155,6 +161,9 @@ func TestSettings(t *testing.T) {
 				EnableExperimentalGatewayAPIFeatures:  false,
 				WorkloadEntriesExclusionLabels:        "example.io/managed-by,example.io/other-key",
 				ServiceEntriesExclusionLabelSelectors: `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
+				SecretDiscoveryMode:                   DiscoveryLabeled,
+				ConfigMapDiscoveryMode:                DiscoveryLabeled,
+				ServiceLabelSelector:                  "team in (a,b)",
 				GatewayClassParametersRefs: GatewayClassParametersRefs{
 					"kgateway": {
 						Name:      "custom-gwp",
@@ -207,6 +216,13 @@ func TestSettings(t *testing.T) {
 				"KGW_REFERENCE_GRANT_MODE": "invalid",
 			},
 			expectedErrorStr: `invalid reference grant mode: "invalid"`,
+		},
+		{
+			name: "errors on invalid service label selector",
+			envVars: map[string]string{
+				"KGW_SERVICE_LABEL_SELECTOR": "team in (a",
+			},
+			expectedErrorStr: `invalid label selector "team in (a"`,
 		},
 		{
 			name: "errors on invalid gatewayclass parameters refs: missing name",
@@ -265,6 +281,8 @@ func TestSettings(t *testing.T) {
 				EnableExperimentalGatewayAPIFeatures:  true,
 				GatewayClassParametersRefs:            GatewayClassParametersRefs{},
 				ServiceEntriesExclusionLabelSelectors: "[]",
+				SecretDiscoveryMode:                   DiscoveryAll,
+				ConfigMapDiscoveryMode:                DiscoveryAll,
 			},
 		},
 	}
@@ -397,4 +415,41 @@ type validateExpectedEnvs struct {
 	FieldSSLConfig string `split_words:"true"`
 	// Field with acronym and split_words:false
 	FieldHTTPConfig string `split_words:"false"`
+}
+
+func TestLabelSelectorValidate(t *testing.T) {
+	validSelectors := map[string]string{
+		"empty selects every Service":     "",
+		"equality requirements":           "app=my-app,tier=frontend",
+		"set requirements":                "app in (api,web),environment notin (dev)",
+		"inequality requirement":          "environment!=dev",
+		"label existence":                 "app",
+		"label non-existence":             "!deprecated",
+		"domain-prefixed label key":       "app.kubernetes.io/name=api",
+		"empty label value is valid":      "environment=",
+		"double-equals operator is valid": "app==api",
+	}
+	for name, selector := range validSelectors {
+		t.Run("valid/"+name, func(t *testing.T) {
+			require.NoError(t, LabelSelector(selector).Validate())
+		})
+	}
+
+	invalidSelectors := map[string]string{
+		"missing set closing parenthesis": "app in (api,web",
+		"missing set opening parenthesis": "app in api,web)",
+		"missing set values":              "app in",
+		"invalid operator":                "app > api",
+		"invalid label value":             "app=front end",
+		"invalid label key":               "(app)=api",
+		"unexpected character":            "app#api",
+		"duplicate comma":                 "app=api,,tier=frontend",
+		"trailing comma":                  "app=api,",
+	}
+	for name, selector := range invalidSelectors {
+		t.Run("invalid/"+name, func(t *testing.T) {
+			err := LabelSelector(selector).Validate()
+			require.ErrorContains(t, err, fmt.Sprintf("invalid label selector %q", selector))
+		})
+	}
 }

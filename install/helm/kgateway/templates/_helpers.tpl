@@ -67,6 +67,20 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Validate a resource discovery mode and return it upper-cased.
+Supported values: "ALL" or "LABELED" (case-insensitive).
+Args: dict "value" <the value> "field" <the values.yaml field name, for the error message>
+*/}}
+{{- define "kgateway.discoveryMode" -}}
+{{- $mode := .value | default "ALL" | upper | trimAll " " -}}
+{{- if or (eq $mode "ALL") (eq $mode "LABELED") -}}
+{{- $mode -}}
+{{- else -}}
+{{- printf "ERROR: Invalid %s '%v'. Must be 'ALL' or 'LABELED' (case-insensitive)." .field .value | fail -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Validate validation level and return the validated value.
 Supported values: "standard" or "strict" (case-insensitive).
 */}}

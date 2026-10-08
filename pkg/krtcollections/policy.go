@@ -84,6 +84,26 @@ func (e *BackendPortNotFoundError) Error() string {
 		" found, but port " + strconv.Itoa(int(e.Port)) + " not defined"
 }
 
+// ServiceBackendNotFoundError is a NotFoundError for a Service while a Service label selector
+// is active. kgateway cannot tell a nonexistent Service from one the selector excluded, since
+// excluded Services never reach the informer cache, so the message names the selector.
+type ServiceBackendNotFoundError struct {
+	NotFound             *NotFoundError
+	ServiceLabelSelector string
+}
+
+func (e *ServiceBackendNotFoundError) Error() string {
+	return fmt.Sprintf(
+		"%s; kgateway only watches Services matching label selector %q (Helm value serviceLabelSelector, KGW_SERVICE_LABEL_SELECTOR); verify the Service labels match the selector",
+		e.NotFound,
+		e.ServiceLabelSelector,
+	)
+}
+
+func (e *ServiceBackendNotFoundError) Unwrap() error {
+	return e.NotFound
+}
+
 type BackendPortNotAllowedError struct {
 	BackendName string
 }
@@ -120,6 +140,10 @@ type BackendIndex struct {
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
 	krtopts   krtutil.KrtOptions
+
+	// serviceLabelSelector, when set, is named in missing-Service errors; see
+	// ServiceBackendNotFoundError.
+	serviceLabelSelector string
 }
 
 type backendKey struct {
@@ -133,12 +157,24 @@ func (b backendKey) String() string {
 	return b.ObjectSource.String() + ":" + strconv.Itoa(int(b.port))
 }
 
+// BackendIndexOption configures a BackendIndex.
+type BackendIndexOption func(*BackendIndex)
+
+// WithServiceLabelSelector names the active Service label selector in missing-Service errors.
+// The selector itself is applied by the Service informer, not here.
+func WithServiceLabelSelector(selector string) BackendIndexOption {
+	return func(i *BackendIndex) {
+		i.serviceLabelSelector = selector
+	}
+}
+
 func NewBackendIndex(
 	krtopts krtutil.KrtOptions,
 	policies *PolicyIndex,
 	refgrants *RefGrantIndex,
+	opts ...BackendIndexOption,
 ) *BackendIndex {
-	return &BackendIndex{
+	index := &BackendIndex{
 		policies:                        policies,
 		refgrants:                       refgrants,
 		availableBackendsWithPolicyByGK: map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]{},
@@ -147,6 +183,10 @@ func NewBackendIndex(
 		gkAliases:                       map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:                         krtopts,
 	}
+	for _, opt := range opts {
+		opt(index)
+	}
+	return index
 }
 
 func (i *BackendIndex) HasSynced() bool {
@@ -360,7 +400,7 @@ func (i *BackendIndex) notFoundErr(kctx krt.HandlerContext, gk schema.GroupKind,
 	if gwport != nil && i.hasBackendNamed(kctx, gk, key) {
 		return &BackendPortNotFoundError{PortNotFoundObj: key, Port: int32(*gwport)}
 	}
-	return &NotFoundError{NotFoundObj: key}
+	return i.backendNotFoundError(key)
 }
 
 // hasBackendNamed reports whether any backend exists under key on any port, checking
@@ -440,10 +480,21 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	}
 
 	if out == nil {
-		return nil, &NotFoundError{NotFoundObj: key.ObjectSource}
+		return nil, i.backendNotFoundError(key.ObjectSource)
 	}
 
 	return out, nil
+}
+
+func (i *BackendIndex) backendNotFoundError(source ir.ObjectSource) error {
+	notFound := &NotFoundError{NotFoundObj: source}
+	if i.serviceLabelSelector == "" || source.GetGroupKind() != wellknown.ServiceGVK.GroupKind() {
+		return notFound
+	}
+	return &ServiceBackendNotFoundError{
+		NotFound:             notFound,
+		ServiceLabelSelector: i.serviceLabelSelector,
+	}
 }
 
 func (i *BackendIndex) getBackendFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
