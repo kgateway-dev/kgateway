@@ -17,32 +17,32 @@ import (
 
 // TestSelectedWorkloadFromEntry_Network verifies a WorkloadEntry's network is
 // resolved like Istio does: spec.network, else the network label, else the
-// system network that pods without a network label also resolve to.
+// system namespace network that pods without a network label also resolve to.
 func TestSelectedWorkloadFromEntry_Network(t *testing.T) {
 	tests := []struct {
-		name           string
-		metadataLabels map[string]string
-		specNetwork    string
-		defaultNetwork string
-		want           string
+		name                   string
+		metadataLabels         map[string]string
+		specNetwork            string
+		systemNamespaceNetwork string
+		want                   string
 	}{
 		{
-			name:           "spec network wins",
-			metadataLabels: map[string]string{label.TopologyNetwork.Name: "from-label"},
-			specNetwork:    "cluster2",
-			defaultNetwork: "cluster1",
-			want:           "cluster2",
+			name:                   "spec network wins",
+			metadataLabels:         map[string]string{label.TopologyNetwork.Name: "from-label"},
+			specNetwork:            "cluster2",
+			systemNamespaceNetwork: "cluster1",
+			want:                   "cluster2",
 		},
 		{
-			name:           "network label used without spec network",
-			metadataLabels: map[string]string{label.TopologyNetwork.Name: "cluster2"},
-			defaultNetwork: "cluster1",
-			want:           "cluster2",
+			name:                   "network label used without spec network",
+			metadataLabels:         map[string]string{label.TopologyNetwork.Name: "cluster2"},
+			systemNamespaceNetwork: "cluster1",
+			want:                   "cluster2",
 		},
 		{
-			name:           "system network used without spec network or label",
-			defaultNetwork: "cluster1",
-			want:           "cluster1",
+			name:                   "system namespace network used without spec network or label",
+			systemNamespaceNetwork: "cluster1",
+			want:                   "cluster1",
 		},
 		{
 			name: "no network anywhere",
@@ -58,7 +58,7 @@ func TestSelectedWorkloadFromEntry_Network(t *testing.T) {
 				nil,
 				&networking.WorkloadEntry{Address: "1.2.3.4", Network: tt.specNetwork},
 				nil,
-				tt.defaultNetwork,
+				tt.systemNamespaceNetwork,
 			)
 			assert.Equal(t, tt.want, workload.network)
 			nw, ok := workload.AugmentedLabels[label.TopologyNetwork.Name]
@@ -69,22 +69,22 @@ func TestSelectedWorkloadFromEntry_Network(t *testing.T) {
 }
 
 // A relabelled system namespace must re-emit inline ServiceEntry backends, since
-// their endpoints carry the system network.
-func TestServiceEntryBackendIR_ReactsToSystemNetwork(t *testing.T) {
+// their endpoints carry the system namespace network.
+func TestServiceEntryBackendIR_ReactsToSystemNamespaceNetwork(t *testing.T) {
 	se := serviceEntryWithStatusAddrs(1)
 	n1 := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "n1").ObjIr
 	n2 := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "n2").ObjIr
 	n1Again := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "n1").ObjIr
 
-	assert.False(t, n1.Equals(n2), "a system network change must NOT be considered equal")
-	assert.True(t, n1.Equals(n1Again), "the same system network must be equal")
+	assert.False(t, n1.Equals(n2), "a system namespace network change must NOT be considered equal")
+	assert.True(t, n1.Equals(n1Again), "the same system namespace network must be equal")
 }
 
-// TestBuildInlineEndpoints_SystemNetwork verifies an unlabelled local inline
-// endpoint inherits the system network, so with PreferNetwork it ranks ahead
-// of a remote endpoint for a gateway in the system network instead of tying
+// TestBuildInlineEndpoints_SystemNamespaceNetwork verifies an unlabelled local inline
+// endpoint inherits the system namespace network, so with PreferNetwork it ranks ahead
+// of a remote endpoint for a gateway in the system namespace network instead of tying
 // with it.
-func TestBuildInlineEndpoints_SystemNetwork(t *testing.T) {
+func TestBuildInlineEndpoints_SystemNamespaceNetwork(t *testing.T) {
 	se := &networkingclient.ServiceEntry{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "inlined-se",

@@ -17,9 +17,9 @@ import (
 // buildInlineEndpoints creates a static EndpointsForBackend for non-EDS a ServiceEntry using
 // the inline endpoints (or hosts field for DNS resolution without endpoints).
 func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *networkingclient.ServiceEntry) *ir.EndpointsForBackend {
-	var systemNetwork string
+	var systemNamespaceNetwork string
 	if seIR, ok := be.ObjIr.(*serviceEntryBackendIR); ok {
-		systemNetwork = seIR.systemNetwork
+		systemNamespaceNetwork = seIR.systemNamespaceNetwork
 	}
 	var inlineWorkloads []selectedWorkload
 	for i, e := range se.Spec.GetEndpoints() {
@@ -31,7 +31,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 			nil,          // no annotation keys to promote
 			e,
 			nil, // not in krt, don't need selectedBy
-			systemNetwork,
+			systemNamespaceNetwork,
 		)
 		inlineWorkloads = append(inlineWorkloads, converted)
 	}
@@ -48,7 +48,7 @@ func (s *serviceEntryPlugin) buildInlineEndpoints(be ir.BackendObjectIR, se *net
 				nil,                                    // no annotation keys to promote
 				&networking.WorkloadEntry{Address: hostname},
 				nil, // not in krt, don't need selectedBy
-				systemNetwork,
+				systemNamespaceNetwork,
 			)
 			inlineWorkloads = append(inlineWorkloads, converted)
 		}

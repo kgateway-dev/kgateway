@@ -29,9 +29,9 @@ const dnsClusterExtensionName = "envoy.clusters.dns"
 // static cluster.
 type serviceEntryBackendIR struct {
 	addresses []string
-	// systemNetwork is the network of inline endpoints that set none, resolved
+	// systemNamespaceNetwork is the network of inline endpoints that set none, resolved
 	// in the backend collection because buildInlineEndpoints runs outside KRT.
-	systemNetwork string
+	systemNamespaceNetwork string
 }
 
 func (s *serviceEntryBackendIR) Equals(in any) bool {
@@ -40,7 +40,7 @@ func (s *serviceEntryBackendIR) Equals(in any) bool {
 		return false
 	}
 	return slices.Equal(s.addresses, other.addresses) &&
-		s.systemNetwork == other.systemNetwork
+		s.systemNamespaceNetwork == other.systemNamespaceNetwork
 }
 
 func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
@@ -118,10 +118,10 @@ func backendsCollections(
 
 		logger.Debug("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
 		var out []ir.BackendObjectIR
-		var systemNetwork string
+		var systemNamespaceNetwork string
 		if !isEDSServiceEntry(se) {
 			// only inline endpoints need it; EDS workloads resolve their own network
-			systemNetwork = krtcollections.SystemNetwork(ctx, namespaces, systemNamespace)
+			systemNamespaceNetwork = krtcollections.SystemNamespaceNetwork(ctx, namespaces, systemNamespace)
 		}
 
 		for _, hostname := range se.Spec.GetHosts() {
@@ -132,7 +132,7 @@ func backendsCollections(
 					int32(svcPort.GetNumber()), //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
 					svcPort.GetProtocol(),
 					aliaser,
-					systemNetwork,
+					systemNamespaceNetwork,
 				))
 			}
 		}
@@ -147,7 +147,7 @@ func BuildServiceEntryBackendObjectIR(
 	svcPort int32,
 	svcProtocol string,
 	aliaser Aliaser,
-	systemNetwork string,
+	systemNamespaceNetwork string,
 ) ir.BackendObjectIR {
 	objSrc := ir.ObjectSource{
 		Group:     gvk.ServiceEntry.Group,
@@ -164,7 +164,7 @@ func BuildServiceEntryBackendObjectIR(
 	backend.CanonicalHostname = hostname
 	backend.Obj = se
 	// Carry resolved addresses so a status-only VIP update re-emits the backend.
-	backend.ObjIr = &serviceEntryBackendIR{addresses: ServiceEntryAddresses(se), systemNetwork: systemNetwork}
+	backend.ObjIr = &serviceEntryBackendIR{addresses: ServiceEntryAddresses(se), systemNamespaceNetwork: systemNamespaceNetwork}
 
 	// include ourselves as alias to fix issues with one-to-many se-to-backend
 	backend.Aliases = []ir.ObjectSource{objSrc}

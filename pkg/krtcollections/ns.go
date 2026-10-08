@@ -43,12 +43,12 @@ func NewNamespaceCollectionFromCol(ctx context.Context, col krt.Collection[*core
 	}, krtOpts.ToOptions("NamespacesMetadata")...)
 }
 
-// SystemNetwork returns the network Istio assigns to a workload that carries no
+// SystemNamespaceNetwork returns the network Istio assigns to a workload that carries no
 // topology.istio.io/network label of its own: the value of that label on the
 // Istio system namespace. Istio resolves a workload's network as its own label,
 // else this system namespace label (else meshNetworks, which kgateway does not
 // read). Returns "" when namespaces is nil or the label is unset.
-func SystemNetwork(kctx krt.HandlerContext, namespaces krt.Collection[NamespaceMetadata], systemNamespace string) string {
+func SystemNamespaceNetwork(kctx krt.HandlerContext, namespaces krt.Collection[NamespaceMetadata], systemNamespace string) string {
 	if namespaces == nil || systemNamespace == "" {
 		return ""
 	}

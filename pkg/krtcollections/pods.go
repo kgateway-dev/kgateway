@@ -181,7 +181,7 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 
 // NewPodsCollection builds the augmented and wrapped pod collections. namespaces
 // and systemNamespace (the Istio system namespace) resolve the network of pods
-// without a topology.istio.io/network label; see SystemNetwork.
+// without a topology.istio.io/network label; see SystemNamespaceNetwork.
 func NewPodsCollection(
 	client apiclient.Client,
 	namespaces krt.Collection[NamespaceMetadata],
@@ -315,9 +315,9 @@ func augmentPodLabels(
 		// Resolve the network the way Istio does, so that network-based failover
 		// priorities (PreferNetwork, PreferClose, ...) compare the same value for
 		// the proxy and for endpoints. Sidecar-injected pods carry the label, but
-		// ambient pods and gateway pods do not and fall back to the system network.
+		// ambient pods and gateway pods do not and fall back to the system namespace network.
 		if labels[label.TopologyNetwork.Name] == "" {
-			if nw := SystemNetwork(kctx, namespaces, systemNamespace); nw != "" {
+			if nw := SystemNamespaceNetwork(kctx, namespaces, systemNamespace); nw != "" {
 				labels[label.TopologyNetwork.Name] = nw
 			}
 		}

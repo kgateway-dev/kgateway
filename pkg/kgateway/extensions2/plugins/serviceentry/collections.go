@@ -247,7 +247,7 @@ func selectedWorkloads(
 			promoteAnnotationKeys,
 			&we.Spec,
 			selectedByServiceEntries,
-			krtcollections.SystemNetwork(ctx, namespaces, systemNamespace),
+			krtcollections.SystemNamespaceNetwork(ctx, namespaces, systemNamespace),
 		)
 
 		return &workload
@@ -290,7 +290,7 @@ func selectedWorkloadFromEntry(
 	promoteAnnotationKeys sets.Set[string],
 	weSpec *networking.WorkloadEntry,
 	selectedBy []seSelector,
-	defaultNetwork string,
+	systemNamespaceNetwork string,
 ) selectedWorkload {
 	labels := maps.Clone(weSpec.GetLabels())
 	if labels == nil {
@@ -316,10 +316,10 @@ func selectedWorkloadFromEntry(
 	if network == "" && labels[label.TopologyNetwork.Name] != "" {
 		network = labels[label.TopologyNetwork.Name]
 	}
-	// Like Istio, a WorkloadEntry without a network is in the system network,
+	// Like Istio, a WorkloadEntry without a network is in the system namespace network,
 	// which is also what pods without a network label resolve to.
 	if network == "" {
-		network = defaultNetwork
+		network = systemNamespaceNetwork
 	}
 
 	// we propagate the value to the labels so that endpoint plugins can see it
