@@ -76,8 +76,9 @@ func newLogNackCallback(xdsAuth bool) *logNackCallback {
 	}
 }
 
-// OnStreamOpen pins metric identity to the authenticated peer. Unauthenticated
-// clients share unknown labels rather than creating series from node metadata.
+// OnStreamOpen validates the authenticated stream. Gateway identity is resolved
+// by the preceding unique-client callback on each request, not from the service
+// account name here. Unauthenticated clients always share unknown labels.
 func (l *logNackCallback) OnStreamOpen(ctx context.Context, streamID int64, _ string) error {
 	key := resourceKey{Namespace: "unknown", Name: "unknown"}
 	if l.xdsAuth {
@@ -85,8 +86,6 @@ func (l *logNackCallback) OnStreamOpen(ctx context.Context, streamID int64, _ st
 		if !ok || caller == nil {
 			return fmt.Errorf("missing authenticated xDS peer for stream %d", streamID)
 		}
-		key.Namespace = caller.KubernetesInfo.PodNamespace
-		key.Name = caller.KubernetesInfo.PodServiceAccount
 	}
 	l.lock.Lock()
 	l.streamIdentity[streamID] = key
@@ -114,6 +113,20 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	l.lock.Unlock()
 	if !ok {
 		return nil
+	}
+	if l.xdsAuth {
+		// NewControlPlane chains this callback after unique-client processing.
+		// That callback re-derives identity from current pod state and rewrites
+		// the role; errors (including identity drift) stop the chain before us.
+		// Never use this metadata for unauthenticated streams.
+		role := req.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
+		parts := strings.SplitN(role, xds.KeyDelimiter, 4)
+		if xds.IsKubeGatewayCacheKey(role) && len(parts) >= 3 {
+			key.Namespace, key.Name = parts[1], parts[2]
+			l.lock.Lock()
+			l.streamIdentity[streamID] = key
+			l.lock.Unlock()
+		}
 	}
 	key.ResourceTypeUrl = rejectionTypeURL(req.GetTypeUrl())
 
