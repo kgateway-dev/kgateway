@@ -63,6 +63,8 @@ spec:
     kgateway.dev/ecdh-curves: "P-384,P-256"
     kgateway.dev/cipher-suites: "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
     kgateway.dev/alpn-protocols: "h2,http/1.1"
+    # options meant for other implementations are ignored
+    example.com/other-implementation: "value"
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
