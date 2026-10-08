@@ -104,6 +104,8 @@ func NewControlPlane(
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
 	lnc := newLogNackCallback(xdsAuth)
+	// The rejection metrics consume the role resolved by unique-client processing.
+	// Keep that callback first so failed requests never reach the metric callback.
 	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
