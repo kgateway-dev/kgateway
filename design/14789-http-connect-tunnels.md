@@ -244,6 +244,8 @@ The `envoy.formatter.generic_secret` formatter needs Envoy 1.39 or later for
   - error attribution and policy status;
   - listener and secret lifecycle (valid, invalid, rotated, detached, deleted),
     where a rotation changes only SDS, and the LDS and SDS merge;
+  - SDS delivery, where a secret the client never requests does not hold back
+    the secrets it requests;
   - policy redaction in `/snapshots/krt`.
 - Translator tests in strict mode:
   - Service and Backend proxies, with destination and proxy TLS;

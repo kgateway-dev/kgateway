@@ -135,8 +135,8 @@ func TestEndpointUpdatesFlowWhileAnotherClusterErrored(t *testing.T) {
 
 	f := newErroredClusterFixture(t)
 	logs := &capturingXdsLogger{}
-	// Same cache and server construction as setup/controlplane.go: ADS mode,
-	// node-role hasher, unordered ADS (EnableOrderedAds defaults to false).
+	// The ADS cache and server as setup/controlplane.go builds them, without
+	// its secrets cache.
 	cache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), logs)
 	envoy := startADSServerAndClient(t, ctx, cache, f.ucc.ResourceName())
 

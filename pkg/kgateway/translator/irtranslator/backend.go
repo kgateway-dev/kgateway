@@ -122,14 +122,6 @@ func (t *BackendTranslator) orderedOverlayPlugins() []overlayPlugin {
 	return t.overlayPlugins
 }
 
-// orderedBaseClusterHooks returns the contributed ProcessBaseCluster hooks in
-// (Group, Kind) order. applyBasePolicies iterates the policy map, which leaves
-// its hooks unordered; these run after all of them, in a stable order.
-func (t *BackendTranslator) orderedBaseClusterHooks() []sdk.ProcessBaseCluster {
-	t.orderBaseHooks()
-	return t.baseClusterHooks
-}
-
 // orderBaseHooks caches cluster and resource hooks in (Group, Kind) order.
 func (t *BackendTranslator) orderBaseHooks() {
 	t.baseHooksOnce.Do(func() {
@@ -354,7 +346,8 @@ func (t *BackendTranslator) TranslateBackendBase(
 	}
 	// Client-independent hooks that apply to every backend run after the
 	// attached policies, so they can build on what those policies set.
-	for _, hook := range t.orderedBaseClusterHooks() {
+	t.orderBaseHooks()
+	for _, hook := range t.baseClusterHooks {
 		hook(kctx, ctx, *backend, out)
 	}
 	listeners, secrets, err := t.applyBaseClusterResources(kctx, ctx, backend, out)

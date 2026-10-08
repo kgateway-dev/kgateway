@@ -98,7 +98,7 @@ func TestBackendPolicyStatus(t *testing.T) {
 	backends := []*ir.BackendObjectIR{&backend1, &backend2}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport(backends)
+	rm := GenerateBackendPolicyReport(backends, nil)
 
 	// assert 3 unique policies: conn-policy-1, conn-policy-2, tls-policy
 	a.Len(rm.Policies, 3)
@@ -244,7 +244,7 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 	backends := []*ir.BackendObjectIR{&backend}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport(backends)
+	rm := GenerateBackendPolicyReport(backends, nil)
 
 	a.Len(rm.Policies, 1)
 
@@ -331,7 +331,7 @@ func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
 	}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend})
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
 	a.Len(rm.Policies, 2)
 
 	targetKey := reports.ParentRefKey{
@@ -419,7 +419,7 @@ func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t 
 	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{btpGK: {newerValid, olderInvalid}}}
 
 	a := assert.New(t)
-	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend})
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
 	targetKey := reports.ParentRefKey{Group: "", Kind: "Service", NamespacedName: types.NamespacedName{Namespace: "default", Name: "svc"}}
 
 	older := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "older-invalid"}].Ancestors[targetKey]

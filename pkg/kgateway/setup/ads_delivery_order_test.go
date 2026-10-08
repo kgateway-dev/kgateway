@@ -82,7 +82,7 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 		sent: make(chan *discoveryv3.DiscoveryResponse, 16),
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
-	cache := envoycache.NewSnapshotCache(true, kgwxds.NewNodeRoleHasher(), nil)
+	cache := newSnapshotCache(kgwxds.NewNodeRoleHasher(), nil)
 
 	var opts []serverconfig.XDSOption
 	if ordered {
@@ -135,21 +135,23 @@ func (h *adsHarness) setSnapshot(snapshot envoycache.ResourceSnapshot) {
 	require.NoError(h.t, h.cache.SetSnapshot(h.ctx, adsTestNodeID, snapshot))
 }
 
-func (h *adsHarness) subscribe(typeURL string) {
+func (h *adsHarness) subscribe(typeURL string, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
-		Node:    h.node,
-		TypeUrl: typeURL,
+		Node:          h.node,
+		TypeUrl:       typeURL,
+		ResourceNames: names,
 	})
 }
 
-func (h *adsHarness) ack(resp *discoveryv3.DiscoveryResponse) {
+func (h *adsHarness) ack(resp *discoveryv3.DiscoveryResponse, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
 		Node:          h.node,
 		TypeUrl:       resp.GetTypeUrl(),
+		ResourceNames: names,
 		VersionInfo:   resp.GetVersionInfo(),
 		ResponseNonce: resp.GetNonce(),
 	})

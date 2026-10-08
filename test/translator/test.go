@@ -836,6 +836,15 @@ func (tc TestCase) Run(
 		}
 	}
 
+	// Status reports read translation errors from the proxy syncer's status
+	// rows; build them for one test client.
+	ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
+	perClientClusters := proxy_syncer.NewPerClientEnvoyClusters(ctx, krtOpts, translator.GetBackendTranslator(),
+		krt.JoinCollection(commoncol.BackendIndex.BackendsWithPolicy(), krtOpts.ToOptions("FinalBackends")...),
+		krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtOpts.ToOptions("UniqueClients")...))
+	perClientClusters.StatusClusters().WaitUntilSynced(ctx.Done())
+	statusRows := perClientClusters.StatusClusters().List()
+
 	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
@@ -848,7 +857,7 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, statusRows)
 
 		// Merge gateway reports with backend policy reports. A policy can appear in both
 		// (BackendTLSPolicy reports Gateway ancestors from translation and target ancestors
@@ -868,12 +877,9 @@ func (tc TestCase) Run(
 		// than replacing the policy's report.
 		mergedReports.MergePolicyReports(proxy_syncer.GeneratePolicyTargetReports(commoncol, extensions, statusSyncerOpts...))
 
-		// Backend Accepted conditions are also generated outside gateway translation
-		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
-		// the kgateway Backend plugin's collections so golden files capture Backend
-		// statuses. Per-client translation errors are not reproducible here (the
-		// uccWithCluster type is internal to proxy_syncer), so only IR errors and
-		// plugin-contributed conditions are reflected.
+		// Backend Accepted conditions are generated outside gateway translation
+		// (see proxy_syncer's backendStatusContributions); reproduce them here so
+		// golden files capture Backend statuses.
 		var kgwBackends []ir.BackendObjectIR
 		var kgwExtraConditions []ir.BackendObjectStatus
 		if kgwBackendPlugin, ok := extensions.ContributesBackends[wellknown.BackendGVK.GroupKind()]; ok {
@@ -884,7 +890,7 @@ func (tc TestCase) Run(
 				kgwExtraConditions = kgwBackendPlugin.ExtraConditions.List()
 			}
 		}
-		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, nil, kgwExtraConditions)
+		backendStatusReports := proxy_syncer.GenerateBackendStatusReport(kgwBackends, statusRows, kgwExtraConditions)
 		maps.Copy(mergedReports.Backends, backendStatusReports.Backends)
 
 		gwNN := types.NamespacedName{
@@ -902,7 +908,6 @@ func (tc TestCase) Run(
 
 		ctx := context.Background()
 		t := translator.GetBackendTranslator()
-		ucc := ir.NewUniquelyConnectedClient("test", "test", nil, ir.PodLocality{})
 		var clusters []*envoyclusterv3.Cluster
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {

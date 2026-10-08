@@ -114,23 +114,27 @@ Statuses:
     gwtest/dfp-destination:
       conditions:
       - lastTransitionTime: null
-        message: Backend accepted
-        reason: Accepted
-        status: "True"
+        message: 'Backend error: "gateway.kgateway.dev/BackendConfigPolicy/gwtest/dfp-destination-tunnel:
+          tunnel: only Static Backends can be tunneled"'
+        reason: Invalid
+        status: "False"
         type: Accepted
     gwtest/missing-proxy:
       conditions:
       - lastTransitionTime: null
-        message: Backend accepted
-        reason: Accepted
-        status: "True"
+        message: 'Backend error: "gateway.kgateway.dev/BackendConfigPolicy/gwtest/missing-proxy-tunnel:
+          tunnel proxy gwtest/nonexistent-proxy: Service gwtest/nonexistent-proxy
+          not found"'
+        reason: Invalid
+        status: "False"
         type: Accepted
     gwtest/no-grant:
       conditions:
       - lastTransitionTime: null
-        message: Backend accepted
-        reason: Accepted
-        status: "True"
+        message: 'Backend error: "gateway.kgateway.dev/BackendConfigPolicy/gwtest/no-grant-tunnel:
+          tunnel proxy egress/egress-proxy: missing reference grant"'
+        reason: Invalid
+        status: "False"
         type: Accepted
     gwtest/valid:
       conditions:
@@ -220,14 +224,14 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
+          message: 'tunnel: only Static Backends can be tunneled'
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway
     BackendConfigPolicy/gwtest/missing-proxy-tunnel:
@@ -239,14 +243,15 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
+          message: 'tunnel proxy gwtest/nonexistent-proxy: Service gwtest/nonexistent-proxy
+            not found'
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway
     BackendConfigPolicy/gwtest/no-grant-tunnel:
@@ -258,14 +263,14 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: Policy accepted
-          reason: Valid
-          status: "True"
+          message: 'tunnel proxy egress/egress-proxy: missing reference grant'
+          reason: Invalid
+          status: "False"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
-          status: "True"
+          message: ""
+          reason: Pending
+          status: "False"
           type: Attached
         controllerName: kgateway.dev/kgateway
     BackendConfigPolicy/gwtest/valid-tunnel:

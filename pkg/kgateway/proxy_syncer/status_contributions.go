@@ -40,14 +40,8 @@ func backendPolicyStatusContributions(
 		if backend == nil {
 			return nil
 		}
-		translationErr := func(b *ir.BackendObjectIR) error {
-			baseKey := uccClusterResourceName(ir.UniquelyConnectedClient{}, b.ClusterName())
-			if base := krt.FetchOne(kctx, statusClusters, krt.FilterKey(baseKey)); base != nil {
-				return base.Error
-			}
-			return nil
-		}
-		reportMap := generateBackendPolicyReport([]*ir.BackendObjectIR{backend}, translationErr)
+		baseKey := uccClusterResourceName(ir.UniquelyConnectedClient{}, backend.ClusterName())
+		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend}, krt.Fetch(kctx, statusClusters, krt.FilterKey(baseKey)))
 		// Key on the backend's own resource name, not its ObjectSource's: one Service yields a
 		// BackendObjectIR per port, and ObjectSource.ResourceName() drops both the port and the
 		// extra key. Two ports contributing to the same policy would then emit contributions

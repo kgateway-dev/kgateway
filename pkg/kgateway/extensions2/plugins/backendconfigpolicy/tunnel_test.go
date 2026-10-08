@@ -73,58 +73,38 @@ func TestTranslateTunnel(t *testing.T) {
 		Port:      new(gwv1.PortNumber(3128)),
 	}
 
-	tests := []struct {
-		name    string
-		spec    *kgateway.Tunnel
-		want    *tunnelIR
-		wantErr string
-	}{
-		{
-			name: "inline and secret headers keep declaration order",
-			spec: &kgateway.Tunnel{
-				Proxy: kgateway.TunnelProxy{BackendRef: proxy},
-				Headers: []shared.HTTPHeader{
-					{Name: new(gwv1.HTTPHeaderName("X-Proxy-Client")), Value: new("gateway")},
-					{
-						Name:      new(gwv1.HTTPHeaderName("Proxy-Authorization")),
-						SecretRef: &shared.SecretRefWithKey{Name: "proxy-creds", Key: new("authorization")},
-					},
-				},
-			},
-			want: &tunnelIR{
-				source: tunnelPolicySource,
-				proxy:  proxy,
-				headers: []gwv1.HTTPHeader{
-					{Name: "X-Proxy-Client", Value: "gateway"},
-					{Name: "Proxy-Authorization", Value: "Basic dXNlcjpwYXNz"},
-				},
+	got, err := translateTunnel(krt.TestingDummyContext{}, secrets, "default", "tunnel", &kgateway.Tunnel{
+		Proxy: kgateway.TunnelProxy{BackendRef: proxy},
+		Headers: []shared.HTTPHeader{
+			{Name: new(gwv1.HTTPHeaderName("X-Proxy-Client")), Value: new("gateway")},
+			{
+				Name:      new(gwv1.HTTPHeaderName("Proxy-Authorization")),
+				SecretRef: &shared.SecretRefWithKey{Name: "proxy-creds", Key: new("authorization")},
 			},
 		},
-		{
-			name: "missing secret",
-			spec: &kgateway.Tunnel{
-				Proxy: kgateway.TunnelProxy{BackendRef: proxy},
-				Headers: []shared.HTTPHeader{{
-					Name:      new(gwv1.HTTPHeaderName("Proxy-Authorization")),
-					SecretRef: &shared.SecretRefWithKey{Name: "missing"},
-				}},
-			},
-			want:    &tunnelIR{source: tunnelPolicySource, proxy: proxy},
-			wantErr: "tunnel headers",
+	})
+	require.NoError(t, err)
+	want := &tunnelIR{
+		source: tunnelPolicySource,
+		proxy:  proxy,
+		headers: []gwv1.HTTPHeader{
+			{Name: "X-Proxy-Client", Value: "gateway"},
+			{Name: "Proxy-Authorization", Value: "Basic dXNlcjpwYXNz"},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := translateTunnel(krt.TestingDummyContext{}, secrets, "default", "tunnel", tt.spec)
-			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
-			} else {
-				require.NoError(t, err)
-			}
-			require.NotNil(t, got, "an invalid tunnel must not read as absent")
-			assert.True(t, tt.want.Equals(got), "got %+v, want %+v", got, tt.want)
-		})
-	}
+	assert.True(t, want.Equals(got), "inline and secret headers must keep declaration order: got %+v, want %+v", got, want)
+
+	got, err = translateTunnel(krt.TestingDummyContext{}, secrets, "default", "tunnel", &kgateway.Tunnel{
+		Proxy: kgateway.TunnelProxy{BackendRef: proxy},
+		Headers: []shared.HTTPHeader{{
+			Name:      new(gwv1.HTTPHeaderName("Proxy-Authorization")),
+			SecretRef: &shared.SecretRefWithKey{Name: "missing"},
+		}},
+	})
+	require.ErrorContains(t, err, "tunnel headers")
+	require.NotNil(t, got, "an invalid tunnel must not read as absent")
+	want = &tunnelIR{source: tunnelPolicySource, proxy: proxy}
+	assert.True(t, want.Equals(got), "got %+v, want %+v", got, want)
 }
 
 // TestNormalizeTunnelHeaders checks newline normalization and credential-safe errors.
