@@ -29,8 +29,8 @@ const dnsClusterExtensionName = "envoy.clusters.dns"
 // static cluster.
 type serviceEntryBackendIR struct {
 	addresses []string
-	// systemNamespaceNetwork is the network of inline endpoints that set none, resolved
-	// in the backend collection because buildInlineEndpoints runs outside KRT.
+	// systemNamespaceNetwork is the default network for inline endpoints that
+	// don't specify one, inherited from the Istio system namespace.
 	systemNamespaceNetwork string
 }
 
