@@ -302,12 +302,26 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 	annotations.VerifyCertificateHash: ApplyVerifyCertificateHash,
 }
 
+// kgatewayTLSOptionPrefix is the domain prefix of every kgateway TLS extension option.
+const kgatewayTLSOptionPrefix = "kgateway.dev/"
+
+// isKgatewayTLSOption reports whether key is in the kgateway TLS extension option namespace.
+// TLS options maps are shared with other implementations, so keys outside it are ignored.
+func isKgatewayTLSOption(key gwv1.AnnotationKey) bool {
+	return strings.HasPrefix(string(key), kgatewayTLSOptionPrefix)
+}
+
 // ApplyTLSExtensionOptions applies the TLS options to the TLS bundle IR
 // This function will never exit early, even if an error is encountered.
 // It will apply all options and return a wrapped error with all errors encountered.
+// Keys outside the kgateway.dev/ prefix are skipped; unknown kgateway.dev/ keys are an error,
+// so a misspelled option is reported rather than silently ignored.
 func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValue, out *ir.TLSConfig) error {
 	var errs error
 	for key, option := range options {
+		if !isKgatewayTLSOption(key) {
+			continue
+		}
 		if extensionFunc, ok := TLSExtensionOptionFuncs[key]; ok {
 			if err := extensionFunc(string(option), out); err != nil {
 				errs = errors.Join(errs, err)
@@ -317,11 +331,44 @@ func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValu
 		}
 	}
 
+	normalizeTLSVersionRange(out)
+
 	if err := validateTLSVersions(out); err != nil {
 		errs = errors.Join(errs, err)
 	}
 
 	return errs
+}
+
+// normalizeTLSVersionRange defaults an unset maximum to the highest supported protocol when
+// only a minimum was configured. Without this, an explicit minimum alone leaves the maximum at
+// whatever Envoy's own implicit default is, which can be lower than the configured minimum and
+// produce an inverted, unusable range.
+func normalizeTLSVersionRange(out *ir.TLSConfig) {
+	if out.MinTLSVersion != nil && out.MaxTLSVersion == nil {
+		maxTLSVersion := envoytlsv3.TlsParameters_TLSv1_3
+		out.MaxTLSVersion = &maxTLSVersion
+	}
+}
+
+// ApplyTLSParameters copies TLS settings from cfg to params. The downstream listener path and
+// the upstream BackendTLSPolicy path both call this function.
+func ApplyTLSParameters(params *envoytlsv3.TlsParameters, cfg *ir.TLSConfig) {
+	if len(cfg.CipherSuites) > 0 {
+		params.CipherSuites = cfg.CipherSuites
+	}
+	if len(cfg.EcdhCurves) > 0 {
+		params.EcdhCurves = cfg.EcdhCurves
+	}
+	if len(cfg.SignatureAlgorithms) > 0 {
+		params.SignatureAlgorithms = cfg.SignatureAlgorithms
+	}
+	if cfg.MinTLSVersion != nil {
+		params.TlsMinimumProtocolVersion = *cfg.MinTLSVersion
+	}
+	if cfg.MaxTLSVersion != nil {
+		params.TlsMaximumProtocolVersion = *cfg.MaxTLSVersion
+	}
 }
 
 func validateTLSVersions(out *ir.TLSConfig) error {
@@ -334,4 +381,18 @@ func validateTLSVersions(out *ir.TLSConfig) error {
 		}
 	}
 	return nil
+}
+
+// ResolveAlpnProtocols converts a TLSConfig's configured ALPN protocols into the list Envoy
+// should be given: defaultProtocols when none were requested, an explicit empty list when the
+// AllowEmptyAlpnProtocols sentinel was requested, or the requested list otherwise.
+func ResolveAlpnProtocols(configured []string, defaultProtocols []string) []string {
+	switch {
+	case len(configured) == 0:
+		return defaultProtocols
+	case len(configured) == 1 && configured[0] == string(annotations.AllowEmptyAlpnProtocols):
+		return []string{}
+	default:
+		return configured
+	}
 }

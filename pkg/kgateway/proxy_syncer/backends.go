@@ -73,7 +73,7 @@ func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
 			if b.Backend != in.Backend {
 				return false
 			}
-		} else if !b.Backend.Equals(*in.Backend) {
+		} else if !b.Backend.Equals(in.Backend) {
 			return false
 		}
 	}
