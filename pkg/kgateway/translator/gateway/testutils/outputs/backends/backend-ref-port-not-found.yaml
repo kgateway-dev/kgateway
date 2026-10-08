@@ -15,6 +15,7 @@ Clusters:
               address: se.example.internal
               portValue: 80
       loadBalancingWeight: 1
+      locality: {}
   name: istio-se_default_example-se_se.example.internal_80
 - commonLbConfig:
     localityWeightedLbConfig: {}
