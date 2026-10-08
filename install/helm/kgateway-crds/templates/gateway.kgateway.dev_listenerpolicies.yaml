@@ -3277,7 +3277,7 @@ spec:
                       upgradeConfig:
                         description: |-
                           UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-                          See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
                         properties:
                           enabledUpgrades:
                             description: |-
@@ -6623,7 +6623,7 @@ spec:
                             upgradeConfig:
                               description: |-
                                 UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-                                See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
                               properties:
                                 enabledUpgrades:
                                   description: |-
