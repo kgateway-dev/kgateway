@@ -140,15 +140,14 @@ func initServiceEntryCollections(
 		SelectingServiceEntries,
 		WorkloadEntries,
 		commonCols.LocalityPods,
-		commonCols.Namespaces,
-		commonCols.Settings.IstioNamespace,
+		commonCols.SystemNamespaceNetwork,
 		opts.Aliaser,
 		opts.WorkloadEntriesExclusionLabelKeys,
 		opts.PromoteWorkloadEntryAnnotations,
 	)
 
 	// init the outputs
-	Backends := backendsCollections(logger, ServiceEntries, commonCols.Namespaces, commonCols.Settings.IstioNamespace, commonCols.KrtOpts, opts.Aliaser)
+	Backends := backendsCollections(logger, ServiceEntries, commonCols.SystemNamespaceNetwork, commonCols.KrtOpts, opts.Aliaser)
 	Endpoints := endpointsCollection(Backends, SelectedWorkloads, selectedWorkloadsIndex, commonCols.KrtOpts)
 
 	return serviceEntryPlugin{
@@ -198,8 +197,7 @@ func selectedWorkloads(
 	ServiceEntries krt.Collection[seSelector],
 	WorkloadEntries krt.Collection[*networkingclient.WorkloadEntry],
 	Pods krt.Collection[krtcollections.LocalityPod],
-	namespaces krt.Collection[krtcollections.NamespaceMetadata],
-	systemNamespace string,
+	systemNamespaceNetwork krt.Singleton[string],
 	aliaser Aliaser,
 	weExclusionLabelKeys sets.Set[string],
 	promoteAnnotationKeys sets.Set[string],
@@ -247,7 +245,7 @@ func selectedWorkloads(
 			promoteAnnotationKeys,
 			&we.Spec,
 			selectedByServiceEntries,
-			krtcollections.SystemNamespaceNetwork(ctx, namespaces, systemNamespace),
+			krtcollections.FetchSystemNamespaceNetwork(ctx, systemNamespaceNetwork),
 		)
 
 		return &workload

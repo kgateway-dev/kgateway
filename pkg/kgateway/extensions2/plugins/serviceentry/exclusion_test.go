@@ -158,7 +158,7 @@ func TestServiceEntryExclusionFiltersBackendCollection(t *testing.T) {
 	})
 
 	filtered := filteredServiceEntries(serviceEntries, selectors)
-	backends := backendsCollections(logger, filtered, nil, "", krtutil.KrtOptions{}, nil)
+	backends := backendsCollections(logger, filtered, nil, krtutil.KrtOptions{}, nil)
 	backends.WaitUntilSynced(context.Background().Done())
 
 	got := backends.List()

@@ -104,8 +104,7 @@ func (s *serviceEntryPlugin) initServiceEntryBackend(ctx context.Context, in ir.
 func backendsCollections(
 	logger *slog.Logger,
 	ServiceEntries krt.Collection[*networkingclient.ServiceEntry],
-	namespaces krt.Collection[krtcollections.NamespaceMetadata],
-	systemNamespace string,
+	systemNamespaceNetwork krt.Singleton[string],
 	krtOpts krtutil.KrtOptions,
 	aliaser Aliaser,
 ) krt.Collection[ir.BackendObjectIR] {
@@ -118,10 +117,10 @@ func backendsCollections(
 
 		logger.Debug("converting ServiceEntry to Upstream", "name", se.GetName(), "namespace", se.GetNamespace())
 		var out []ir.BackendObjectIR
-		var systemNamespaceNetwork string
+		var network string
 		if !isEDSServiceEntry(se) {
 			// only inline endpoints need it; EDS workloads resolve their own network
-			systemNamespaceNetwork = krtcollections.SystemNamespaceNetwork(ctx, namespaces, systemNamespace)
+			network = krtcollections.FetchSystemNamespaceNetwork(ctx, systemNamespaceNetwork)
 		}
 
 		for _, hostname := range se.Spec.GetHosts() {
@@ -132,7 +131,7 @@ func backendsCollections(
 					int32(svcPort.GetNumber()), //nolint:gosec // G115: ServiceEntry port numbers are always valid port range (1-65535)
 					svcPort.GetProtocol(),
 					aliaser,
-					systemNamespaceNetwork,
+					network,
 				))
 			}
 		}

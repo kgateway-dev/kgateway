@@ -7,6 +7,7 @@ import (
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
@@ -43,18 +44,31 @@ func NewNamespaceCollectionFromCol(ctx context.Context, col krt.Collection[*core
 	}, krtOpts.ToOptions("NamespacesMetadata")...)
 }
 
-// SystemNamespaceNetwork returns the network Istio assigns to a workload that carries no
-// topology.istio.io/network label of its own: the value of that label on the
-// Istio system namespace. Istio resolves a workload's network as its own label,
-// else this system namespace label (else meshNetworks, which kgateway does not
-// read). Returns "" when namespaces is nil or the label is unset.
-func SystemNamespaceNetwork(kctx krt.HandlerContext, namespaces krt.Collection[NamespaceMetadata], systemNamespace string) string {
-	if namespaces == nil || systemNamespace == "" {
+// NewSystemNamespaceNetwork returns the network Istio assigns to a workload that
+// carries no topology.istio.io/network label of its own: the value of that label
+// on the Istio system namespace. Istio resolves a workload's network as its own
+// label, else this system namespace label (else meshNetworks, which kgateway does
+// not read). It is a singleton of just the label value, so dependents recompute
+// only when the network changes, not on any other system namespace change.
+func NewSystemNamespaceNetwork(namespaces krt.Collection[NamespaceMetadata], systemNamespace string, krtOpts krtutil.KrtOptions) krt.Singleton[string] {
+	return krt.NewSingleton(func(kctx krt.HandlerContext) *string {
+		ns := krt.FetchOne(kctx, namespaces, krt.FilterKey(systemNamespace))
+		if ns == nil {
+			return nil
+		}
+		nw := ns.Labels[label.TopologyNetwork.Name]
+		if nw == "" {
+			return nil
+		}
+		return &nw
+	}, krtOpts.ToOptions("SystemNamespaceNetwork")...)
+}
+
+// FetchSystemNamespaceNetwork returns the system namespace network, or "" when
+// it is unset or systemNamespaceNetwork is nil.
+func FetchSystemNamespaceNetwork(kctx krt.HandlerContext, systemNamespaceNetwork krt.Singleton[string]) string {
+	if systemNamespaceNetwork == nil {
 		return ""
 	}
-	ns := krt.FetchOne(kctx, namespaces, krt.FilterKey(systemNamespace))
-	if ns == nil {
-		return ""
-	}
-	return ns.Labels[label.TopologyNetwork.Name]
+	return ptr.OrEmpty(krt.FetchOne(kctx, systemNamespaceNetwork.AsCollection()))
 }

@@ -1430,7 +1430,7 @@ func TestEndpoints(t *testing.T) {
 			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := NewLocalityPodsCollection(nodes, nil, "", krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+			pods := NewLocalityPodsCollection(nodes, nil, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 			pods.WaitUntilSynced(context.Background().Done())
 			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,

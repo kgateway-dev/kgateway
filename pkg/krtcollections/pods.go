@@ -179,13 +179,12 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-// NewPodsCollection builds the augmented and wrapped pod collections. namespaces
-// and systemNamespace (the Istio system namespace) resolve the network of pods
-// without a topology.istio.io/network label; see SystemNamespaceNetwork.
+// NewPodsCollection builds the augmented and wrapped pod collections.
+// systemNamespaceNetwork is the network of pods without a
+// topology.istio.io/network label; see NewSystemNamespaceNetwork.
 func NewPodsCollection(
 	client apiclient.Client,
-	namespaces krt.Collection[NamespaceMetadata],
-	systemNamespace string,
+	systemNamespaceNetwork krt.Singleton[string],
 	krtOptions krtutil.KrtOptions,
 ) (krt.Collection[LocalityPod], krt.Collection[WrappedPod]) {
 	podClient := kclient.NewFiltered[*corev1.Pod](client, kclient.Filter{
@@ -194,17 +193,16 @@ func NewPodsCollection(
 	})
 	pods := krt.WrapClient(podClient, krtOptions.ToOptions("Pods")...)
 	nodes := newNodeCollection(client, krtOptions)
-	return NewLocalityPodsCollection(nodes, namespaces, systemNamespace, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
+	return NewLocalityPodsCollection(nodes, systemNamespaceNetwork, pods, krtOptions), NewPodWrapperCollection(pods, krtOptions)
 }
 
 func NewLocalityPodsCollection(
 	nodes krt.Collection[NodeMetadata],
-	namespaces krt.Collection[NamespaceMetadata],
-	systemNamespace string,
+	systemNamespaceNetwork krt.Singleton[string],
 	pods krt.Collection[*corev1.Pod],
 	krtOptions krtutil.KrtOptions,
 ) krt.Collection[LocalityPod] {
-	return krt.NewCollection(pods, augmentPodLabels(nodes, namespaces, systemNamespace), krtOptions.ToOptions("AugmentPod")...)
+	return krt.NewCollection(pods, augmentPodLabels(nodes, systemNamespaceNetwork), krtOptions.ToOptions("AugmentPod")...)
 }
 
 func NewPodWrapperCollection(pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[WrappedPod] {
@@ -287,8 +285,7 @@ func getPodIPs(p *corev1.Pod) []corev1.PodIP {
 
 func augmentPodLabels(
 	nodes krt.Collection[NodeMetadata],
-	namespaces krt.Collection[NamespaceMetadata],
-	systemNamespace string,
+	systemNamespaceNetwork krt.Singleton[string],
 ) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
 	return func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
 		labels := maps.Clone(pod.Labels)
@@ -317,7 +314,7 @@ func augmentPodLabels(
 		// the proxy and for endpoints. Sidecar-injected pods carry the label, but
 		// ambient pods and gateway pods do not and fall back to the system namespace network.
 		if labels[label.TopologyNetwork.Name] == "" {
-			if nw := SystemNamespaceNetwork(kctx, namespaces, systemNamespace); nw != "" {
+			if nw := FetchSystemNamespaceNetwork(kctx, systemNamespaceNetwork); nw != "" {
 				labels[label.TopologyNetwork.Name] = nw
 			}
 		}

@@ -28,18 +28,21 @@ import (
 )
 
 type CommonCollections struct {
-	Client            apiclient.Client
-	KrtOpts           krtutil.KrtOptions
-	Secrets           *krtcollections.SecretIndex
-	ConfigMaps        *krtcollections.ConfigMapIndex
-	BackendIndex      *krtcollections.BackendIndex
-	Routes            *krtcollections.RoutesIndex
-	Namespaces        krt.Collection[krtcollections.NamespaceMetadata]
-	Endpoints         krt.Collection[ir.EndpointsForBackend]
-	GatewayIndex      *krtcollections.GatewayIndex
-	GatewayExtensions krt.Collection[ir.GatewayExtension]
-	Services          krt.Collection[*corev1.Service]
-	ServiceEntries    krt.Collection[*networkingclient.ServiceEntry]
+	Client       apiclient.Client
+	KrtOpts      krtutil.KrtOptions
+	Secrets      *krtcollections.SecretIndex
+	ConfigMaps   *krtcollections.ConfigMapIndex
+	BackendIndex *krtcollections.BackendIndex
+	Routes       *krtcollections.RoutesIndex
+	Namespaces   krt.Collection[krtcollections.NamespaceMetadata]
+	// SystemNamespaceNetwork is the topology.istio.io/network label of the Istio
+	// system namespace; see krtcollections.NewSystemNamespaceNetwork.
+	SystemNamespaceNetwork krt.Singleton[string]
+	Endpoints              krt.Collection[ir.EndpointsForBackend]
+	GatewayIndex           *krtcollections.GatewayIndex
+	GatewayExtensions      krt.Collection[ir.GatewayExtension]
+	Services               krt.Collection[*corev1.Service]
+	ServiceEntries         krt.Collection[*networkingclient.ServiceEntry]
 
 	// ServiceEntriesExclusionLabelSelectors is parsed from Settings.ServiceEntriesExclusionLabelSelectors.
 	// Keep it with CommonCollections so ServiceEntry exclusion config has one validated source of truth.
@@ -214,7 +217,8 @@ func NewCommonCollections(
 
 	gwExts := krtcollections.NewGatewayExtensionsCollection(ctx, client, krtOptions)
 
-	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, namespaces, settings.IstioNamespace, krtOptions)
+	systemNamespaceNetwork := krtcollections.NewSystemNamespaceNetwork(namespaces, settings.IstioNamespace, krtOptions)
+	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, systemNamespaceNetwork, krtOptions)
 
 	return &CommonCollections{
 		Client:                                client,
@@ -226,6 +230,7 @@ func NewCommonCollections(
 		RefGrants:                             refgrants,
 		Settings:                              settings,
 		Namespaces:                            namespaces,
+		SystemNamespaceNetwork:                systemNamespaceNetwork,
 		Services:                              services,
 		ServiceEntries:                        serviceEntries,
 		ServiceEntriesExclusionLabelSelectors: serviceEntriesExclusionLabelSelectors,
