@@ -321,3 +321,98 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
         abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
     );
 }
+
+#[test]
+fn test_selective_model_header_matches_full_transform() {
+    use std::sync::{Arc, Mutex};
+
+    for body in [
+        br#"{"model":"first","messages":[{"model":"nested","content":"hello"}],"model":"last"}"#
+            .as_slice(),
+        br#"{"messages":[{"model":"nested only"}]}"#.as_slice(),
+        br#"{"model":null}"#.as_slice(),
+        br#"{"model":42}"#.as_slice(),
+        br#"{"model":{"nested":[true,"text"]}}"#.as_slice(),
+        br#"[]"#.as_slice(),
+    ] {
+        let mut outputs = Vec::new();
+        // The conditional template forces the existing full-JSON path while
+        // rendering the same value, providing a compatibility reference.
+        for template in ["{{ model }}", "{% if true %}{{ model }}{% endif %}"] {
+            for buffered in [false, true] {
+                let config_json = serde_json::json!({
+                    "request": {
+                        "body": {"parseAs": "AsJson"},
+                        "set": [
+                            {"name": "Modal-Inference-Endpoint", "value": template},
+                            {"name": "Modal-Inference-Route", "value": "1"}
+                        ]
+                    }
+                })
+                .to_string();
+                let config = FilterConfig::new(&config_json).unwrap();
+                assert_eq!(
+                    config.request_json_fields.is_some(),
+                    template == "{{ model }}"
+                );
+                let mut envoy = MockEnvoyHttpFilter::default();
+                // Exercise the per-route config path used by the chat route.
+                envoy
+                    .expect_get_most_specific_route_config()
+                    .returning(move || Some(Arc::new(config.clone())));
+                envoy.expect_get_request_headers().returning(Vec::new);
+                let bytes = body.to_vec();
+                let chunks = move || {
+                    let bytes = Box::leak(bytes.clone().into_boxed_slice());
+                    let (first, rest) = bytes.split_at_mut(1);
+                    // These disjoint buffers remain valid for the filter's lifetime.
+                    Some(unsafe { vec![EnvoyMutBuffer::new(first), EnvoyMutBuffer::new(rest)] })
+                };
+                if buffered {
+                    envoy.expect_get_buffered_request_body().returning(chunks);
+                    envoy.expect_get_received_request_body().times(0);
+                } else {
+                    envoy.expect_get_buffered_request_body().returning(|| None);
+                    envoy.expect_get_received_request_body().returning(chunks);
+                }
+                let headers = Arc::new(Mutex::new(Vec::new()));
+                let set_headers = headers.clone();
+                envoy
+                    .expect_set_request_header()
+                    .returning(move |key, value| {
+                        set_headers
+                            .lock()
+                            .unwrap()
+                            .push((key.to_owned(), Some(value.to_vec())));
+                        true
+                    });
+                let removed_headers = headers.clone();
+                envoy.expect_remove_request_header().returning(move |key| {
+                    removed_headers.lock().unwrap().push((key.to_owned(), None));
+                    true
+                });
+                envoy.expect_drain_buffered_request_body().times(0);
+                envoy.expect_drain_received_request_body().times(0);
+                envoy.expect_append_buffered_request_body().times(0);
+                envoy.expect_append_received_request_body().times(0);
+
+                let base = FilterConfig::new("{}").unwrap();
+                let mut filter = base.new_http_filter(&mut envoy);
+                assert_eq!(filter.on_request_headers(&mut envoy, false),
+                    abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::StopIteration);
+                assert_eq!(filter.on_request_body(&mut envoy, false),
+                    abi::envoy_dynamic_module_type_on_http_filter_request_body_status::StopIterationAndBuffer);
+                assert_eq!(
+                    filter.on_request_body(&mut envoy, true),
+                    abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
+                );
+                outputs.push(headers.lock().unwrap().clone());
+            }
+        }
+        assert!(
+            outputs.windows(2).all(|pair| pair[0] == pair[1]),
+            "{body:?}: {outputs:?}"
+        );
+        assert!(outputs[0].contains(&("Modal-Inference-Route".to_owned(), Some(b"1".to_vec()))));
+    }
+}
