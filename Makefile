@@ -127,9 +127,6 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Static base image for dummy-idp, which is built with CGO_ENABLED=0.
-export DUMMY_IDP_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
-
 # Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
 # to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
@@ -929,6 +926,10 @@ DUMMY_IDP_DIR=hack/dummy-idp
 DUMMY_IDP_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_IDP_DIR)
 export DUMMY_IDP_IMAGE_REPO ?= dummy-idp
 DUMMY_IDP_VERSION=0.0.1
+# dummy-idp.go embeds the cert and key, so they are sources too. The directory
+# itself is listed so that adding or deleting a file, which $(wildcard) alone
+# cannot see, also triggers a rebuild.
+DUMMY_IDP_SOURCES=$(DUMMY_IDP_DIR) $(wildcard $(DUMMY_IDP_DIR)/*.go $(DUMMY_IDP_DIR)/*.cert $(DUMMY_IDP_DIR)/*.key) go.mod go.sum
 
 $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./hack/dummy-idp...
@@ -942,7 +943,6 @@ $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
 $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
 	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(DUMMY_IDP_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
 	@touch $@
 

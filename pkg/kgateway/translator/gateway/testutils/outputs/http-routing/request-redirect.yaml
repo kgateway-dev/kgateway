@@ -86,6 +86,24 @@ Routes:
         pathSeparatedPrefix: /rule0
       name: listener~8080~invalid-code-numeric_com-route-0-httproute-invalid-code-numeric-default-0-0-matcher-0
   - domains:
+    - replace-full-path-with-query.com
+    name: listener~8080~replace-full-path-with-query_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /rule0
+      name: listener~8080~replace-full-path-with-query_com-route-0-httproute-replace-full-path-with-query-default-0-0-matcher-0
+      redirect:
+        hostRedirect: example.com
+        httpsRedirect: true
+        pathRedirect: /test?foo=bar
+    - match:
+        pathSeparatedPrefix: /rule1
+      name: listener~8080~replace-full-path-with-query_com-route-1-httproute-replace-full-path-with-query-default-1-0-matcher-0
+      redirect:
+        pathRedirect: //test/../other?a=1#frag
+        portRedirect: 8080
+        responseCode: FOUND
+  - domains:
     - route-level-override.com
     name: listener~8080~route-level-override_com
     routes:
@@ -143,7 +161,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 7
+      - attachedRoutes: 8
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -263,6 +281,29 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: test
+    default/replace-full-path-with-query:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully programmed Route
+          reason: Programmed
+          status: "True"
+          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

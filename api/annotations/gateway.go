@@ -3,10 +3,12 @@ package annotations
 import gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 const (
-	// AlpnProtocols is the annotation key used to set the ALPN protocols for a TLS listener.
+	// AlpnProtocols is the annotation key used to set the ALPN protocols for a TLS listener or
+	// a BackendTLSPolicy.
 	// The value is a comma separated list of protocols, e.g "h2,http/1.1".
-	// If not present, the listener will use the default ALPN protocols ("h2", "http/1.1").
-	// Use in the TLS options field of a TLS listener.
+	// If not present on a listener, it will use the default ALPN protocols ("h2", "http/1.1").
+	// If not present on a BackendTLSPolicy, no ALPN protocols are set.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	// example:
 	// ```
 	// tls:
@@ -22,38 +24,45 @@ const (
 	// The value is a boolean, e.g "true".
 	AllowEmptyAlpnProtocols gwv1.AnnotationValue = "allow-empty"
 
-	// CipherSuites is the annotation key used to set the cipher suites for a TLS listener.
+	// CipherSuites is the annotation key used to set the cipher suites for a TLS listener or a
+	// BackendTLSPolicy.
 	// The value is a comma separated list of cipher suites, e.g "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384".
-	// Use in the TLS options field of a TLS listener.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	CipherSuites gwv1.AnnotationKey = "kgateway.dev/cipher-suites"
 
-	// EcdhCurves is the annotation key used to set the ECDH curves for a TLS listener.
+	// EcdhCurves is the annotation key used to set the ECDH curves for a TLS listener or a
+	// BackendTLSPolicy.
 	// The value is a comma separated list of curves, e.g "X25519MLKEM768,X25519,P-256".
-	// Use in the TLS options field of a TLS listener.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	EcdhCurves gwv1.AnnotationKey = "kgateway.dev/ecdh-curves"
 
-	// SignatureAlgorithms is the annotation key used to set the supported algorithms for a TLS listener.
+	// SignatureAlgorithms is the annotation key used to set the supported algorithms for a TLS
+	// listener or a BackendTLSPolicy.
 	// The value is a comma separated list of algorithms, e.g "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256".
-	// Use in the TLS options field of a TLS listener.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	SignatureAlgorithms gwv1.AnnotationKey = "kgateway.dev/signature-algorithms"
 
-	// MinTLSVersion is the annotation key used to set the minimum TLS version for a TLS listener.
+	// MinTLSVersion is the annotation key used to set the minimum TLS version for a TLS listener
+	// or a BackendTLSPolicy.
 	// The value is a string representing the version, e.g "1.2".
-	// Use in the TLS options field of a TLS listener.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	MinTLSVersion gwv1.AnnotationKey = "kgateway.dev/min-tls-version"
 
-	// MaxTLSVersion is the annotation key used to set the maximum TLS version for a TLS listener.
+	// MaxTLSVersion is the annotation key used to set the maximum TLS version for a TLS listener
+	// or a BackendTLSPolicy.
 	// The value is a string representing the version, e.g "1.3".
-	// Use in the TLS options field of a TLS listener.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	MaxTLSVersion gwv1.AnnotationKey = "kgateway.dev/max-tls-version"
 
-	// VerifySubjectAltNames is the annotation key used to set the verify subject alt names for a TLS listener.
+	// VerifySubjectAltNames is the annotation key used to set the verify subject alt names for a
+	// TLS listener or a BackendTLSPolicy.
 	// The value is a comma separated list of subject alt names, e.g "example.com,www.example.com".
-	// Use in the TLS options field of a TLS listener.
+	// Use in the TLS options field of a TLS listener, or the options field of a BackendTLSPolicy.
 	// Note: This annotation requires a trusted CA to be configured
 	VerifySubjectAltNames gwv1.AnnotationKey = "kgateway.dev/verify-subject-alt-names"
 
-	// VerifyCertificateHash is the annotation key used to set the verify certificate hash used by the client.
+	// VerifyCertificateHash is the annotation key used to set the verify certificate hash used by
+	// the client, for a TLS listener or a BackendTLSPolicy.
 	// The value is a comma or "-" separated list of certificate hashes which may be whitespace padded for readability.
 	// Valid values are sha256 hashes in hex format, e.g "7D86C6654C8229364ECFE4D4964C69410090AE09E9B4D0C9B2AD7854175AD51D" or "7D:86:C6:65:4C:82:29:36:4E:CF:E4:D4:96:4C:69:41:00:90:AE:09:E9:B4:D0:C9:B2:AD:78:54:17:5A:D5:1D".
 	// All characters, including formatting, are limited to 4096 characters by the annotation value specification https://gateway-api.sigs.k8s.io/reference/1.4/spec/#annotationvalue
