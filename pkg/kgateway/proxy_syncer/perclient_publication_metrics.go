@@ -79,8 +79,9 @@ var (
 				"incomplete-but-consistent config instead of waiting indefinitely " +
 				"(it would otherwise have crash-looped, #14184). mode=warm_truth: " +
 				"a warm client's only gaps were referenced clusters with no " +
-				"derived CLA — steady state, not lag — and withholding would have " +
-				"frozen its config indefinitely (#14352). mode=flip_release: a " +
+				"derived CLA, and withholding would have frozen its config " +
+				"indefinitely (#14352); those CLAs were left out, so the client " +
+				"kept its endpoints for them. mode=flip_release: a " +
 				"held route flip published because its newly-referenced cluster " +
 				"never became ready; the affected routes fail until it does, and " +
 				"pinned route/listener/secret updates resume.",
@@ -91,8 +92,10 @@ var (
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
 			Name:      "perclient_inconsistent_snapshots_total",
-			Help: "Total per-client snapshots that failed go-control-plane's " +
-				"Snapshot.Consistent() check immediately before publication. " +
+			Help: "Total per-client snapshots that, immediately before " +
+				"publication, carried an EDS or RDS resource that no CDS or LDS " +
+				"resource in the same snapshot references (go-control-plane " +
+				"withholds an ADS response carrying an unrequested resource). " +
 				"Only recorded when KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK is " +
 				"enabled (test/CI environments); the snapshot is still " +
 				"published. The publication paths maintain consistency by " +
@@ -180,7 +183,8 @@ func recordBoundedPublish(proxyKey string, mode string) {
 	)
 }
 
-// recordInconsistentSnapshot counts a pre-publication Consistent() violation.
+// recordInconsistentSnapshot counts a pre-publication consistency violation
+// (see snapshotConsistencyError).
 func recordInconsistentSnapshot(proxyKey string) {
 	if !metrics.Active() {
 		return

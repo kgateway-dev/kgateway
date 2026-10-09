@@ -32,26 +32,33 @@ type XdsSnapWrapper struct {
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
-	// deferred marks a snapshot built while some referenced cluster was not
-	// ready (see snapshotPerClient's guards). syncXds resolves it per cluster
-	// against the currently-published snapshot: previously-published clusters
-	// are carried forward, previously-referenced clusters whose CLA row
-	// vanished publish the synthesized empty (their slices are gone — that is
-	// the truth), and a route flip onto a newly-referenced not-yet-derived
-	// cluster is held back for at most the publish budget (see publishGate).
-	// +noKrtEquals (derived: true iff either missing list below is non-empty, and Equals compares both)
-	deferred bool
 	// missingReferenced lists referenced clusters absent from this snapshot's
 	// CDS (translation lagging, or the backend is gone). Sorted.
 	missingReferenced []string
 	// missingEndpointsReferenced lists referenced EDS clusters whose CLA was
 	// not derived by the per-client endpoints collection; a synthesized empty
 	// stands in for it in the snapshot, and whether the backend has endpoints
-	// is unknown (per-client derivation lag, or a plugin that contributed an
-	// EDS cluster without an endpoints row; kube Services always derive a
-	// row, even sliceless ones like ExternalName). A derived-but-empty CLA
-	// is the backend's known truth and is NOT listed (#14352). Sorted.
+	// is unknown (the client's per-client rows are still being built, or a
+	// plugin contributed an EDS cluster without an endpoints row; kube
+	// Services always derive a row, even sliceless ones like ExternalName).
+	// A derived-but-empty CLA is the backend's known truth and is NOT listed
+	// (#14352). Sorted.
 	missingEndpointsReferenced []string
+	// synthesizedEndpoints lists every EDS resource whose CLA in snap is a
+	// synthesized empty, referenced or not. The publish gate decides which of
+	// them the client receives (settleSynthesizedEndpoints). Sorted.
+	synthesizedEndpoints []string
+}
+
+// deferred reports whether the snapshot was built while some referenced
+// cluster was not ready. syncXds resolves such a snapshot per cluster against
+// the snapshot published on the client's current connection:
+// previously-published clusters are carried forward, previously-referenced
+// clusters whose CLA row is not derived keep the endpoints the client holds,
+// and a route flip onto a newly-referenced not-yet-derived cluster is held
+// back for at most the publish budget (see publishGate).
+func (p XdsSnapWrapper) deferred() bool {
+	return len(p.missingReferenced) > 0 || len(p.missingEndpointsReferenced) > 0
 }
 
 func (p XdsSnapWrapper) WithSnapshot(snap *envoycache.Snapshot) XdsSnapWrapper {
@@ -68,20 +75,21 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 			return false
 		}
 	}
-	// The gap classification must be compared explicitly: the per-type
-	// versions cannot distinguish a synthesized empty CLA from a derived-but-
-	// empty one (they are byte-identical protos, so the recomputed EDS version
-	// hash is unchanged when one replaces the other). Without this, a wrapper
+	// The gap classification drives publication, so it is compared directly
+	// rather than inferred from versions: a synthesized empty CLA and a
+	// derived-but-empty one are byte-identical protos. Without this, a wrapper
 	// can transition deferred->ready with every version equal, KRT suppresses
 	// the event, and syncXds keeps holding a route flip whose blocking cluster
 	// has already derived its (empty) truth — unbounded when the publish
-	// budget is disabled. The same applies to a referenced cluster arriving
-	// errored-from-birth (missingReferenced shrinks, no version changes).
+	// budget is disabled — or keeps leaving out a CLA that is now derived. The
+	// same applies to a referenced cluster arriving errored-from-birth
+	// (missingReferenced shrinks, no version changes).
 	// erroredClusters needs no comparison: membership changes always change
 	// the CDS version (an errored cluster leaves/enters the cluster items and
 	// hash), and error-text-only changes are deliberately suppressed.
 	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
-		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced)
+		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
+		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints)
 }
 
 func (p XdsSnapWrapper) ResourceName() string {

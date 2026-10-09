@@ -9,18 +9,19 @@ import (
 
 // consistencyCheckingCache decorates a SnapshotCache so that EVERY snapshot
 // published by any test — including intermediate publishes no assertion looks
-// at, and publishes fired from the gate's budget timers — is checked against
-// go-control-plane's Snapshot.Consistent() invariant (every EDS resource
-// matched to a CDS reference, every RDS resource to an LDS reference).
+// at, and publishes fired from the gate's budget timers — is checked for
+// resources no other resource of the snapshot references (every EDS resource
+// must match a CDS reference, every RDS resource an LDS reference; see
+// snapshotConsistencyError).
 //
-// Accounting for the known bootstrap local cluster, consistency is a universal
+// Accounting for the known bootstrap local cluster, this is a universal
 // invariant: it must hold on every publish, including the deliberately
-// incomplete ones (bounded first publish, flip release), because their
-// incompleteness lives entirely in the route->cluster edge that Consistent()
-// does not model. That makes this a zero-false-positive oracle. The
-// route->cluster closure is deliberately NOT asserted here — bounded publishes
-// legitimately violate it — and remains an opt-in assertion
-// (assertSnapshotCoherent) for tests that expect full coherence.
+// incomplete ones (bounded first publish, flip release, CLAs left out so a
+// client keeps its endpoints), because their incompleteness lives in edges
+// the check does not model: route->cluster and EDS cluster->CLA. That makes
+// this a zero-false-positive oracle. Those closures are deliberately NOT
+// asserted here and remain an opt-in assertion (assertSnapshotCoherent) for
+// tests that expect full coherence.
 //
 // t.Errorf (not Fatalf) is used because SetSnapshot runs on gate timer
 // goroutines; Errorf is safe from non-test goroutines.
@@ -44,7 +45,7 @@ func (c *consistencyCheckingCache) SetSnapshot(ctx context.Context, node string,
 	if !ok {
 		c.t.Errorf("published snapshot for %q is %T, not *envoycache.Snapshot", node, snapshot)
 	} else if err := snapshotConsistencyError(node, snap); err != nil {
-		c.t.Errorf("published snapshot for %q violates Snapshot.Consistent(): %v", node, err)
+		c.t.Errorf("published snapshot for %q publishes unreferenced resources: %v", node, err)
 	}
 	return c.SnapshotCache.SetSnapshot(ctx, node, snapshot)
 }
