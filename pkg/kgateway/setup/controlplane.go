@@ -103,7 +103,7 @@ func NewControlPlane(
 	orderedADS bool,
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
-	lnc := newLogNackCallback()
+	lnc := newLogNackCallback(xdsAuth)
 	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
