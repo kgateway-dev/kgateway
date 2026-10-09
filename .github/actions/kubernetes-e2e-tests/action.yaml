@@ -29,9 +29,34 @@ inputs:
     default: '1.33'
     description: Kubernetes minor version for envtest API-server assets
 
+  collect-coverage:
+    required: false
+    default: "false"
+    description: >-
+      Collect coverage from a coverage-instrumented controller (built with KGATEWAY_COVER=true) and
+      upload it as the coverage-e2e-<cluster-name> artifact for the Test Coverage job to merge.
+
 runs:
   using: "composite"
   steps:
+    - name: Prepare coverage directory
+      if: ${{ inputs.collect-coverage == 'true' }}
+      id: coverage-node
+      shell: bash
+      env:
+        CLUSTER_NAME: ${{ inputs.cluster-name }}
+      run: |
+        set -euo pipefail
+        # The instrumented controller writes coverage data to /coverage on its node when it exits.
+        # It runs as a non-root user, hence the permissive mode on a throwaway CI node.
+        node="$(docker ps --format '{{.Names}}' | grep -E "^(${CLUSTER_NAME}-control-plane|k3d-${CLUSTER_NAME}-server-0)$" | head -n1 || true)"
+        if [[ -z "${node}" ]]; then
+          echo "::warning::no cluster node found for ${CLUSTER_NAME}; skipping e2e coverage"
+          exit 0
+        fi
+        docker exec "${node}" sh -c 'mkdir -p /coverage && chmod 777 /coverage'
+        echo "node=${node}" >> "$GITHUB_OUTPUT"
+        echo "KGW_E2E_COVERAGE_VALUES=${GITHUB_WORKSPACE}/test/e2e/tests/manifests/coverage.yaml" >> "$GITHUB_ENV"
     - name: Execute tests
       env:
         GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
@@ -50,3 +75,34 @@ runs:
       with:
         name: bug-report-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
         path: ./_test/bug_report/${{ inputs.cluster-name }}
+    - name: Collect coverage
+      if: ${{ always() && steps.coverage-node.outputs.node != '' }}
+      shell: bash
+      env:
+        NODE: ${{ steps.coverage-node.outputs.node }}
+        CLUSTER_NAME: ${{ inputs.cluster-name }}
+      run: |
+        set -uo pipefail
+        # Coverage data is only written when the controller exits, so stop any that are still running.
+        # Suites uninstall kgateway when they finish, but a failed or interrupted run may not have.
+        kubectl get deployments -A -o json \
+          | jq -r '.items[] | select(any(.spec.template.spec.containers[]; .image | test("/kgateway:"))) | "\(.metadata.namespace) \(.metadata.name) \(.spec.selector.matchLabels | to_entries | map("\(.key)=\(.value)") | join(","))"' \
+          | while read -r ns name selector; do
+              kubectl -n "${ns}" scale deployment "${name}" --replicas=0 || true
+              kubectl -n "${ns}" wait --for=delete pod -l "${selector}" --timeout=90s || true
+            done
+        mkdir -p _output/e2e-covdata "_output/e2e-cover"
+        docker cp "${NODE}:/coverage/." _output/e2e-covdata
+        if [[ -z "$(ls -A _output/e2e-covdata)" ]]; then
+          echo "::warning::no e2e coverage data found for ${CLUSTER_NAME}"
+          exit 0
+        fi
+        go tool covdata textfmt -i=_output/e2e-covdata -o=_output/e2e-cover/cover.out
+    - name: Upload e2e coverage profile
+      if: ${{ always() && steps.coverage-node.outputs.node != '' }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: coverage-e2e-${{ inputs.cluster-name }}
+        path: _output/e2e-cover/cover.out
+        if-no-files-found: warn
+        retention-days: 7

@@ -531,7 +531,7 @@ E2E_GO_TEST_ARGS ?= -vet=off -timeout=35m -outputdir=$(OUTPUT_DIR)
 # upgraded setup-envtest so much slower?)
 GO_TEST_ARGS ?= -timeout=35m -outputdir=$(OUTPUT_DIR) -race
 GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
-GO_TEST_COVERAGE ?= go tool github.com/vladopajic/go-test-coverage/v2
+GO_TEST_COVERAGE ?= go tool -modfile tools/go.mod github.com/vladopajic/go-test-coverage/v2
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
@@ -561,13 +561,30 @@ unit: ## Run all unit tests (excludes e2e tests)
 	@$(MAKE) --no-print-directory go-test TEST_TAG=""
 
 .PHONY: validate-test-coverage
-validate-test-coverage: ## Validate the test coverage
+validate-test-coverage: merge-test-coverage ## Validate the (merged) test coverage against test_coverage.yml
 	$(GO_TEST_COVERAGE) --config=./test_coverage.yml
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: view-test-coverage
 view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
+
+# Coverage from several test runs (unit, e2e shards, ...) is stitched into one profile.
+# COVERAGE_PROFILES is a comma separated list; COVERAGE_BASE (e.g. origin/main) enables patch coverage.
+COVERAGE_PROFILES ?= $(OUTPUT_DIR)/cover.out
+COVERAGE_MERGED ?= $(OUTPUT_DIR)/cover.merged.out
+COVERAGE_BASE ?=
+COVERAGE_MIN_PATCH ?= 0
+
+.PHONY: merge-test-coverage
+merge-test-coverage: ## Merge COVERAGE_PROFILES, and report coverage of lines changed since COVERAGE_BASE
+	go run ./hack/ci/covreport -profiles "$(COVERAGE_PROFILES)" -merged-out "$(COVERAGE_MERGED)" \
+		$(if $(COVERAGE_BASE),-base "$(COVERAGE_BASE)" -min-patch $(COVERAGE_MIN_PATCH)) \
+		$(if $(GITHUB_STEP_SUMMARY),-summary "$(GITHUB_STEP_SUMMARY)")
+
+.PHONY: html-test-coverage
+html-test-coverage: merge-test-coverage ## Write a per-file HTML coverage report to $(OUTPUT_DIR)/coverage.html
+	go tool cover -html "$(COVERAGE_MERGED)" -o "$(OUTPUT_DIR)/coverage.html"
 
 #----------------------------------------------------------------------------------
 # Container Structure Tests
@@ -773,8 +790,14 @@ CONTROLLER_CACHE_FROM := $(if $(CONTROLLER_CACHE_REF),--cache-from type=registry
 
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
+# Set KGATEWAY_COVER=true to build a coverage-instrumented controller. It writes coverage data to
+# $GOCOVERDIR when it exits, which is how e2e tests measure the controller's coverage.
+# Delete the binary (or run `make clean`) when toggling this, as make does not track the flag.
+KGATEWAY_COVER ?=
+KGATEWAY_COVER_FLAGS := $(if $(filter true,$(KGATEWAY_COVER)),-cover -covermode=atomic -coverpkg=github.com/kgateway-dev/kgateway/v2/...)
+
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
+	$(GO_BUILD_FLAGS) GOOS=linux go build $(KGATEWAY_COVER_FLAGS) -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
 
 # TODO: is this target obsolete?
 .PHONY: kgateway

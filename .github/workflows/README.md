@@ -21,7 +21,12 @@ Runs [code generation](/devel/contributing/code-generation.md) and makes sure th
 
 ### [Unit Tests](./unit.yaml)
 
-Runs all Go unit tests.
+Runs all Go unit tests, then merges every `coverage-*` artifact into one profile (the `Test Coverage` job).
+That job writes the total and patch coverage (how many lines added by the PR are tested) to the job summary,
+publishes an HTML report as the `coverage-html` artifact, and fails if the thresholds in [test_coverage.yml](/test_coverage.yml) are not met.
+The end-to-end shards run a coverage-instrumented controller and upload `coverage-e2e-<cluster>` profiles; the job waits for the e2e run of the same commit and merges them in.
+If e2e does not finish successfully, the report is still produced but thresholds are not enforced.
+Any other job can contribute by uploading a `coverage-<name>` artifact containing a `cover.out` profile.
 
 ### [Gateway API Conformance Tests](./conformance.yaml)
 Runs conformance tests against both the experimental and standard Gateway API channels.

@@ -127,12 +127,99 @@ jobs:
           CGO_ENABLED: '1'
           KGW_REQUIRE_PACKAGED_CHART: 'true'
         run: make unit-with-coverage
-      - name: Validate Test Coverage
+      - name: Upload coverage profile
+        # Consumed by the `coverage` job, which stitches this profile together
+        # with any other `coverage-*` artifacts into one report.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-unit
+          path: _output/cover.out
+          if-no-files-found: error
+          retention-days: 7
+
+  # Merges coverage profiles from every test run, reports how well the lines
+  # changed by the PR are covered, publishes an HTML report, and enforces the
+  # thresholds in test_coverage.yml.
+  coverage:
+    name: Test Coverage
+    needs: go
+    runs-on: ubuntu-22.04
+    # Includes waiting for the end-to-end shards (e2e.yaml), which run for up to ~1h45m after the PR is pushed.
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+      - name: Download coverage profiles
+        # Any job that uploads a `coverage-<name>/cover.out` artifact is merged in.
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: coverage-*
+          path: _output/coverage
+      - name: Fetch e2e coverage
+        id: e2e
         shell: bash
-        # The make will error if test coverage drops below a certain threshold
-        # We intentionally ignore the errors while we build out our test coverage, to establish a good baseline
-        # However, we should strive to establish a baseline, and then make it required on PRs
-        run: make --always-make --ignore-errors validate-test-coverage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          # Unit coverage alone understates what the tests exercise, so wait for the e2e run of this
+          # commit and stitch its per-shard profiles in. If it never completes successfully we still
+          # report, but do not enforce thresholds against partial data.
+          deadline=$((SECONDS + 6300))
+          while (( SECONDS < deadline )); do
+            run="$(gh run list --workflow e2e.yaml --commit "${SHA}" --event "${EVENT}" --limit 1 \
+              --json databaseId,status,conclusion --jq '.[0] // empty')"
+            if [[ -n "${run}" && "$(jq -r .status <<<"${run}")" == "completed" ]]; then
+              if [[ "$(jq -r .conclusion <<<"${run}")" == "success" ]]; then
+                gh run download "$(jq -r .databaseId <<<"${run}")" --pattern 'coverage-e2e-*' --dir _output/coverage
+                echo "complete=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "::warning::e2e run did not succeed; coverage thresholds are not enforced"
+                echo "complete=false" >> "$GITHUB_OUTPUT"
+              fi
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "::warning::timed out waiting for the e2e run; coverage thresholds are not enforced"
+          echo "complete=false" >> "$GITHUB_OUTPUT"
+      - name: Report and validate coverage
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          E2E_COMPLETE: ${{ steps.e2e.outputs.complete }}
+        run: |
+          set -euo pipefail
+          profiles="$(find _output/coverage -name cover.out | sort | paste -sd, -)"
+          echo "Merging: ${profiles}"
+          args=(COVERAGE_PROFILES="${profiles}")
+          # Patch coverage only makes sense against a PR base; merge queue runs only check totals.
+          if [[ -n "${BASE_REF}" ]]; then
+            git fetch --no-tags origin "${BASE_REF}"
+            args+=(COVERAGE_BASE="origin/${BASE_REF}")
+          fi
+          make html-test-coverage "${args[@]}"
+          if [[ "${E2E_COMPLETE}" == "true" ]]; then
+            make validate-test-coverage COVERAGE_PROFILES="${profiles}"
+          fi
+      - name: Upload HTML coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-html
+          path: |
+            _output/coverage.html
+            _output/cover.merged.out
+          if-no-files-found: ignore
+          retention-days: 14
 
   # Catches version drift between go.mod, Dockerfile, and Makefile
   version-drift:
