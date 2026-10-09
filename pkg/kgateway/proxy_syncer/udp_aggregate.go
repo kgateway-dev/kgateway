@@ -1,0 +1,356 @@
+package proxy_syncer
+
+import (
+	"cmp"
+	"hash/fnv"
+	"math"
+	"slices"
+	"strconv"
+	"strings"
+
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtutil "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
+)
+
+// udpWeightScale scales backendRef weights into per-endpoint load-balancing weights. Envoy only
+// needs proportionality, so a fixed scale is enough.
+const udpWeightScale uint64 = 1000
+
+// Invalid weight goes to a blackhole endpoint on the loopback discard port.
+// The Gateway API requires that weight to drop rather than redistribute
+// to the healthy backends.
+const (
+	udpBlackholeAddr = "127.0.0.1"
+	udpBlackholePort = 9
+)
+
+type udpAggregateMember struct {
+	// backendResourceName matches ir.EndpointsForBackend.UpstreamResourceName.
+	backendResourceName string
+	weight              uint32
+}
+
+// udpAggregate describes the synthetic cluster a multi-backend UDPRoute routes to. The struct holds
+// the weighted member backends whose endpoints are unioned, plus the combined weight of any invalid
+// backends.
+type udpAggregate struct {
+	clusterName string
+	members     []udpAggregateMember
+	dropWeight  uint32
+}
+
+func (u udpAggregate) ResourceName() string { return u.clusterName }
+
+func (u udpAggregate) Equals(o udpAggregate) bool {
+	return u.clusterName == o.clusterName &&
+		u.dropWeight == o.dropWeight &&
+		slices.Equal(u.members, o.members)
+}
+
+// newUdpAggregateCollection derives one aggregate descriptor per multi-backend UDPRoute. Invalid
+// backends contribute no endpoints, only their weight into dropWeight.
+func newUdpAggregateCollection(
+	krtopts krtutil.KrtOptions,
+	udpRoutes krt.Collection[ir.UdpRouteIR],
+) krt.Collection[udpAggregate] {
+	return krt.NewCollection(udpRoutes, func(_ krt.HandlerContext, r ir.UdpRouteIR) *udpAggregate {
+		// A multi-backend route uses a synthetic aggregate cluster; a single-backend route targets
+		// its backend directly. The descriptor only supplies the members. Whether a CLA is emitted
+		// for it is gated by the cluster the gateway's CDS actually carries (see
+		// newAcceptedUdpAggregateCollection), so a rejected route's descriptor is simply never used.
+		if len(r.Backends) <= 1 {
+			return nil
+		}
+		members := make([]udpAggregateMember, 0, len(r.Backends))
+		var dropWeight uint32
+		for _, b := range r.Backends {
+			if b.Weight == 0 {
+				continue
+			}
+			if b.BackendObject == nil {
+				dropWeight += b.Weight
+				continue
+			}
+			members = append(members, udpAggregateMember{
+				backendResourceName: b.BackendObject.ResourceName(),
+				weight:              b.Weight,
+			})
+		}
+		return &udpAggregate{
+			clusterName: ir.UdpAggregateClusterName(r.Namespace, r.Name),
+			members:     members,
+			dropWeight:  dropWeight,
+		}
+	}, krtopts.ToOptions("UdpAggregates")...)
+}
+
+// acceptedUdpAggregate names one aggregate cluster a gateway's CDS actually emitted, keyed by that
+// gateway's snapshot role. The CLA is emitted only where the cluster is, so CDS and EDS stay in
+// lockstep. A rejected route or a gateway that does not carry the route gets neither, avoiding the
+// withhold in issue #14471.
+type acceptedUdpAggregate struct {
+	role        string
+	clusterName string
+}
+
+func (a acceptedUdpAggregate) ResourceName() string { return a.role + "/" + a.clusterName }
+
+func (a acceptedUdpAggregate) Equals(o acceptedUdpAggregate) bool {
+	return a.role == o.role && a.clusterName == o.clusterName
+}
+
+// newAcceptedUdpAggregateCollection reads the aggregate clusters each gateway emitted in its CDS,
+// so the CLA can be scoped to exactly those gateways' clients.
+func newAcceptedUdpAggregateCollection(
+	krtopts krtutil.KrtOptions,
+	mostXdsSnapshots krt.Collection[GatewayXdsResources],
+) krt.Collection[acceptedUdpAggregate] {
+	return krt.NewManyCollection(mostXdsSnapshots, func(_ krt.HandlerContext, snap GatewayXdsResources) []acceptedUdpAggregate {
+		var out []acceptedUdpAggregate
+		for _, c := range snap.Clusters {
+			cluster, ok := c.Resource.(*envoyclusterv3.Cluster)
+			if !ok || !strings.HasPrefix(cluster.GetName(), ir.UdpAggregateClusterPrefix) {
+				continue
+			}
+			out = append(out, acceptedUdpAggregate{role: snap.ResourceName(), clusterName: cluster.GetName()})
+		}
+		return out
+	}, krtopts.ToOptions("AcceptedUdpAggregates")...)
+}
+
+// NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. A
+// client receives one only when its gateway's CDS carries the matching cluster. The endpoint set is
+// client-independent, the weighted union of the member backends' endpoints.
+func NewPerClientUdpAggregateEndpoints(
+	krtopts krtutil.KrtOptions,
+	uccs krt.Collection[ir.UniquelyConnectedClient],
+	aggregates krt.Collection[udpAggregate],
+	mostXdsSnapshots krt.Collection[GatewayXdsResources],
+	backendEndpoints krt.Collection[ir.EndpointsForBackend],
+) PerClientEnvoyEndpoints {
+	epByBackend := krtpkg.UnnamedIndex(backendEndpoints, func(e ir.EndpointsForBackend) []string {
+		return []string{e.UpstreamResourceName}
+	})
+	accepted := newAcceptedUdpAggregateCollection(krtopts, mostXdsSnapshots)
+	acceptedByRole := krtpkg.UnnamedIndex(accepted, func(a acceptedUdpAggregate) []string {
+		return []string{a.role}
+	})
+
+	endpoints := krt.NewManyCollection(uccs, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []UccWithEndpoints {
+		clusters := krt.Fetch(kctx, accepted, krt.FilterIndex(acceptedByRole, ucc.Role))
+		ret := make([]UccWithEndpoints, 0, len(clusters))
+		for _, c := range clusters {
+			agg := krt.FetchOne(kctx, aggregates, krt.FilterKey(c.clusterName))
+			if agg == nil {
+				continue
+			}
+			cla := buildUdpAggregateLoadAssignment(kctx, *agg, backendEndpoints, epByBackend)
+			ret = append(ret, UccWithEndpoints{
+				Client:        ucc,
+				Endpoints:     sharedproto.Wrap(cla),
+				EndpointsHash: hashUdpAggregateLoadAssignment(cla),
+				endpointsName: c.clusterName,
+				resourceName:  uccEndpointsResourceName(ucc, c.clusterName),
+			})
+		}
+		return ret
+	}, krtopts.ToOptions("UdpAggregateEndpoints")...)
+
+	idx := krtpkg.UnnamedIndex(endpoints, func(u UccWithEndpoints) []string {
+		return []string{u.Client.ResourceName()}
+	})
+
+	return PerClientEnvoyEndpoints{endpoints: endpoints, index: idx}
+}
+
+// udpMemberEndpoints pairs a member's backendRef weight with its resolved endpoints, decoupling
+// the krt Fetch from the (unit-tested) weight-merge below.
+type udpMemberEndpoints struct {
+	weight uint32
+	efbs   []ir.EndpointsForBackend
+}
+
+func buildUdpAggregateLoadAssignment(
+	kctx krt.HandlerContext,
+	agg udpAggregate,
+	backendEndpoints krt.Collection[ir.EndpointsForBackend],
+	epByBackend krt.Index[string, ir.EndpointsForBackend],
+) *envoyendpointv3.ClusterLoadAssignment {
+	members := make([]udpMemberEndpoints, 0, len(agg.members))
+	for _, m := range agg.members {
+		members = append(members, udpMemberEndpoints{
+			weight: m.weight,
+			efbs:   krt.Fetch(kctx, backendEndpoints, krt.FilterIndex(epByBackend, m.backendResourceName)),
+		})
+	}
+	return mergeUdpAggregateLoadAssignment(agg.clusterName, members, agg.dropWeight)
+}
+
+// mergeUdpAggregateLoadAssignment unions the members' endpoints into one weighted CLA. Each
+// endpoint's weight is its member's backendRef weight scaled by udpWeightScale and divided by the
+// member's live endpoint count, so a member's total weight stays proportional to its backendRef
+// weight regardless of replica count. dropWeight is added as a single blackhole endpoint.
+func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndpoints, dropWeight uint32) *envoyendpointv3.ClusterLoadAssignment {
+	// weighted carries an endpoint's uint64 weight so the whole set can be scaled together before the
+	// weights are narrowed to uint32.
+	type weighted struct {
+		locality ir.PodLocality
+		ep       *envoyendpointv3.LbEndpoint
+		weight   uint64
+	}
+	var collected []weighted
+	var total uint64
+
+	for _, m := range members {
+		count := 0
+		for _, efb := range m.efbs {
+			for _, eps := range efb.LbEps {
+				count += len(eps)
+			}
+		}
+		// A Service with no endpoints is invalid per the UDPRoute spec, so its share drops, not
+		// redistributes. A member with no EDS source (len(efbs)==0, e.g. Static) keeps its share.
+		if count == 0 {
+			if len(m.efbs) > 0 {
+				dropWeight += m.weight
+			}
+			continue
+		}
+		//nolint:gosec // G115: count is a positive endpoint count (guarded > 0 above)
+		perEndpointWeight := (uint64(m.weight) * udpWeightScale) / uint64(count)
+		if perEndpointWeight == 0 {
+			perEndpointWeight = 1
+		}
+		for _, efb := range m.efbs {
+			for locality, eps := range efb.LbEps {
+				for _, ep := range eps {
+					if ep.LbEndpoint == nil {
+						continue
+					}
+					clone := proto.Clone(ep.LbEndpoint).(*envoyendpointv3.LbEndpoint)
+					collected = append(collected, weighted{locality: locality, ep: clone, weight: perEndpointWeight})
+					total += perEndpointWeight
+				}
+			}
+		}
+	}
+
+	if dropWeight > 0 {
+		bhWeight := uint64(dropWeight) * udpWeightScale
+		if bhWeight == 0 {
+			bhWeight = 1
+		}
+		collected = append(collected, weighted{ep: blackholeLbEndpoint(), weight: bhWeight})
+		total += bhWeight
+	}
+
+	// Envoy caps both the endpoint weights summed within a locality and the locality weights summed
+	// across a priority at the uint32 max. Each locality weight is the sum of its endpoints, so
+	// scaling every endpoint weight down by one divisor until the grand total fits keeps both sums
+	// under the cap while preserving the backendRef proportions.
+	if total > math.MaxUint32 {
+		div := (total + math.MaxUint32 - 1) / math.MaxUint32
+		for i := range collected {
+			scaled := collected[i].weight / div
+			if scaled == 0 {
+				scaled = 1
+			}
+			collected[i].weight = scaled
+		}
+	}
+
+	byLocality := map[ir.PodLocality][]*envoyendpointv3.LbEndpoint{}
+	var localityOrder []ir.PodLocality
+	for _, w := range collected {
+		//nolint:gosec // G115: weight is scaled below the uint32 max above
+		w.ep.LoadBalancingWeight = wrapperspb.UInt32(uint32(w.weight))
+		if _, ok := byLocality[w.locality]; !ok {
+			localityOrder = append(localityOrder, w.locality)
+		}
+		byLocality[w.locality] = append(byLocality[w.locality], w.ep)
+	}
+
+	slices.SortFunc(localityOrder, func(a, b ir.PodLocality) int {
+		return cmp.Compare(a.String(), b.String())
+	})
+
+	cla := &envoyendpointv3.ClusterLoadAssignment{ClusterName: clusterName}
+	for _, locality := range localityOrder {
+		eps := byLocality[locality]
+		slices.SortFunc(eps, func(a, b *envoyendpointv3.LbEndpoint) int {
+			return cmp.Compare(lbEndpointSortKey(a), lbEndpointSortKey(b))
+		})
+		var localityWeight uint64
+		for _, ep := range eps {
+			localityWeight += uint64(ep.GetLoadBalancingWeight().GetValue())
+		}
+		lle := &envoyendpointv3.LocalityLbEndpoints{
+			LbEndpoints: eps,
+			//nolint:gosec // G115: localityWeight sums endpoint weights already scaled below the uint32 max
+			LoadBalancingWeight: wrapperspb.UInt32(uint32(localityWeight)),
+		}
+		if locality != (ir.PodLocality{}) {
+			lle.Locality = &envoycorev3.Locality{
+				Region:  locality.Region,
+				Zone:    locality.Zone,
+				SubZone: locality.Subzone,
+			}
+		}
+		cla.Endpoints = append(cla.GetEndpoints(), lle)
+	}
+	return cla
+}
+
+// blackholeLbEndpoint returns an endpoint targeting the loopback discard port. The caller sets its
+// weight alongside the member endpoints so the whole set scales together.
+func blackholeLbEndpoint() *envoyendpointv3.LbEndpoint {
+	return &envoyendpointv3.LbEndpoint{
+		HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+			Endpoint: &envoyendpointv3.Endpoint{
+				Address: &envoycorev3.Address{
+					Address: &envoycorev3.Address_SocketAddress{
+						SocketAddress: &envoycorev3.SocketAddress{
+							Protocol:      envoycorev3.SocketAddress_TCP,
+							Address:       udpBlackholeAddr,
+							PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: udpBlackholePort},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func lbEndpointSortKey(ep *envoyendpointv3.LbEndpoint) string {
+	sa := ep.GetEndpoint().GetAddress().GetSocketAddress()
+	return sa.GetAddress() + ":" + strconv.FormatUint(uint64(sa.GetPortValue()), 10)
+}
+
+func hashUdpAggregateLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
+	hasher := fnv.New64a()
+	utils.HashStringField(hasher, cla.GetClusterName())
+	for _, lle := range cla.GetEndpoints() {
+		loc := lle.GetLocality()
+		utils.HashStringField(hasher, loc.GetRegion())
+		utils.HashStringField(hasher, loc.GetZone())
+		utils.HashStringField(hasher, loc.GetSubZone())
+		utils.HashStringField(hasher, strconv.FormatUint(uint64(lle.GetLoadBalancingWeight().GetValue()), 10))
+		for _, ep := range lle.GetLbEndpoints() {
+			sa := ep.GetEndpoint().GetAddress().GetSocketAddress()
+			utils.HashStringField(hasher, sa.GetAddress())
+			utils.HashStringField(hasher, strconv.FormatUint(uint64(sa.GetPortValue()), 10))
+			utils.HashStringField(hasher, strconv.FormatUint(uint64(ep.GetLoadBalancingWeight().GetValue()), 10))
+		}
+	}
+	return hasher.Sum64()
+}

@@ -487,6 +487,7 @@ func TestTransformGRPCRoute(t *testing.T) {
 				grpcRoutes,
 				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),
 				krttest.GetMockCollection[*gwv1a2.TLSRoute](mock),
+				krttest.GetMockCollection[*gwv1.UDPRoute](mock),
 				policies,
 				backends,
 				refgrants,

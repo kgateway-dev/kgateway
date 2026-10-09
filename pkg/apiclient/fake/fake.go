@@ -235,6 +235,8 @@ func kindForSeededCRD(resource schema.GroupVersionResource) string {
 		return wellknown.GRPCRouteKind
 	case gvr.TCPRoute, wellknown.TCPRouteV1GVR:
 		return wellknown.TCPRouteKind
+	case wellknown.UDPRouteGVR:
+		return wellknown.UDPRouteKind
 	case gvr.TLSRoute, wellknown.TLSRouteV1Alpha3GVR:
 		return wellknown.TLSRouteKind
 	case gvr.ReferenceGrant:

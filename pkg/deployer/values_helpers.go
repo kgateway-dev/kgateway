@@ -49,7 +49,11 @@ func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) 
 			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
 			continue
 		}
-		gwPorts = AppendPortValue(gwPorts, port, portName, gwp)
+		protocol := "TCP"
+		if gw.UDPPorts.Contains(port) {
+			protocol = "UDP"
+		}
+		gwPorts = AppendPortValue(gwPorts, port, portName, protocol, gwp)
 	}
 
 	// Add ports from GatewayParameters.Service.Ports
@@ -65,7 +69,11 @@ func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) 
 				},
 			}
 			portName := listener.GenerateListenerName(l)
-			gwPorts = AppendPortValue(gwPorts, portValue, portName, gwp)
+			protocol := "TCP"
+			if gw.UDPPorts.Contains(portValue) {
+				protocol = "UDP"
+			}
+			gwPorts = AppendPortValue(gwPorts, portValue, portName, protocol, gwp)
 		}
 	}
 
@@ -86,13 +94,12 @@ func SanitizePortName(name string) string {
 	return str
 }
 
-func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.GatewayParameters) []HelmPort {
+func AppendPortValue(gwPorts []HelmPort, port int32, name, protocol string, gwp *kgateway.GatewayParameters) []HelmPort {
 	if istioslices.IndexFunc(gwPorts, func(p HelmPort) bool { return *p.Port == port }) != -1 {
 		return gwPorts
 	}
 
 	portName := SanitizePortName(name)
-	protocol := "TCP"
 
 	// Search for static NodePort set from the GatewayParameters spec.
 	// NodePort and LoadBalancer both support explicit node ports; if not set, nil renders nothing.

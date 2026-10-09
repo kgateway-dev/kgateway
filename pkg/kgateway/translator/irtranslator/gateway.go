@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -48,16 +49,31 @@ func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sd
 	pass := t.newPass(reporter)
 	var res TranslationResult
 
+	// Synthetic clusters that a multi-backend UDPRoute's udp_proxy routes to, deduped by name
+	// since a route could attach to more than one listener.
+	udpAggregateClusters := map[string]struct{}{}
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
-		// Envoy rejects listeners with no filter chains; skip adding such listeners.
-		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
+		// Envoy rejects listeners with no filter chains, so the translator skips those. A UDP
+		// listener is the exception, carrying a udp_proxy listener filter instead of a filter
+		// chain, so a UDP filter chain is enough to keep the listener in the IR.
+		if outListener == nil || (len(outListener.GetFilterChains()) == 0 && len(l.UdpFilterChain) == 0) {
 			originalListenerName := findOriginalListenerName(gw, l)
 			logger.Warn("invalid listener due to no filter chains generated", "listener", originalListenerName)
 			continue
 		}
 		res.Listeners = append(res.Listeners, outListener)
 		res.Routes = append(res.Routes, routes...)
+		for _, ufc := range l.UdpFilterChain {
+			if ufc.AggregateClusterName == "" {
+				continue
+			}
+			if _, seen := udpAggregateClusters[ufc.AggregateClusterName]; seen {
+				continue
+			}
+			udpAggregateClusters[ufc.AggregateClusterName] = struct{}{}
+			res.ExtraClusters = append(res.ExtraClusters, buildUdpAggregateCluster(ufc.AggregateClusterName))
+		}
 	}
 
 	for _, c := range pass {
@@ -101,7 +117,13 @@ func (t *Translator) ComputeListener(
 	reporter sdkreporter.Reporter,
 ) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
 	gwreporter := reporter.Gateway(gw.SourceObject.Obj)
-	listenerAddress, err := computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter)
+	// A listener carries either TCP/HTTP filter chains or UDP filter chains, never both, since
+	// Gateway API listeners are single-protocol. UDP requires a UDP socket address.
+	socketProtocol := envoycorev3.SocketAddress_TCP
+	if len(lis.UdpFilterChain) > 0 {
+		socketProtocol = envoycorev3.SocketAddress_UDP
+	}
+	listenerAddress, err := computeListenerAddress(lis.BindAddress, lis.BindPort, socketProtocol, gwreporter)
 	if err != nil {
 		// Error already reported via SetCondition; skip listener creation.
 		return nil, nil
@@ -110,7 +132,8 @@ func (t *Translator) ComputeListener(
 		Name:    lis.Name,
 		Address: listenerAddress,
 	}
-	if gw.PerConnectionBufferLimitBytes != nil {
+	// per_connection_buffer_limit_bytes is a TCP concept a connectionless UDPRoute listener does not use.
+	if gw.PerConnectionBufferLimitBytes != nil && len(lis.UdpFilterChain) == 0 {
 		ret.PerConnectionBufferLimitBytes = &wrapperspb.UInt32Value{Value: *gw.PerConnectionBufferLimitBytes}
 	}
 	t.runListenerPlugins(pass, gw, lis, reporter, ret)
@@ -192,6 +215,14 @@ func (t *Translator) ComputeListener(
 			hasTls = true
 		}
 	}
+
+	// A UDP listener carries a udp_proxy listener filter instead of network filter chains. The UDP
+	// socket address marks the listener as UDP, so no udp_listener_config is needed. kgateway
+	// honors a single UDPRoute per listener, so a UDP listener has at most one chain.
+	for _, ufc := range lis.UdpFilterChain {
+		ret.ListenerFilters = append(ret.GetListenerFilters(), fct.computeUdpFilters(ufc)...)
+	}
+
 	// sort filter chains for idempotency
 	slices.SortFunc(ret.GetFilterChains(), func(a, b *envoylistenerv3.FilterChain) int {
 		return cmp.Compare(a.GetName(), b.GetName())
@@ -213,8 +244,13 @@ func (t *Translator) runListenerPlugins(
 	out *envoylistenerv3.Listener,
 ) {
 	var attachedPolicies ir.AttachedPolicies
-	// Listener policies take precedence over gateway policies, so they are ordered first
-	attachedPolicies.Append(l.AttachedPolicies, gw.AttachedHttpPolicies)
+	// Listener policies take precedence over gateway policies, so they are ordered first.
+	attachedPolicies.Append(l.AttachedPolicies)
+	// Gateway-wide listener policies do not apply to a UDPRoute listener. The gate keys on the
+	// udp_proxy chain, not the UDP socket, so a future HTTP/3-over-QUIC listener still gets them.
+	if len(l.UdpFilterChain) == 0 {
+		attachedPolicies.Append(gw.AttachedHttpPolicies)
+	}
 	for _, gk := range attachedPolicies.ApplyOrderedGroupKinds() {
 		pols := attachedPolicies.Policies[gk]
 		pass := pass[gk]

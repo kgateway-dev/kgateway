@@ -1,0 +1,272 @@
+package proxy_syncer
+
+import (
+	"math"
+	"testing"
+
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
+)
+
+func udpTestEndpoint(addr string) ir.EndpointWithMd {
+	return ir.EndpointWithMd{
+		LbEndpoint: &envoyendpointv3.LbEndpoint{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+				Endpoint: &envoyendpointv3.Endpoint{
+					Address: &envoycorev3.Address{
+						Address: &envoycorev3.Address_SocketAddress{
+							SocketAddress: &envoycorev3.SocketAddress{
+								Address:       addr,
+								PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: 8080},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func efbInDefaultLocality(eps ...ir.EndpointWithMd) ir.EndpointsForBackend {
+	return ir.EndpointsForBackend{LbEps: ir.LocalityLbMap{ir.PodLocality{}: eps}}
+}
+
+// endpointWeight looks up the LB weight of the endpoint with the given address in a CLA.
+func endpointWeight(cla *envoyendpointv3.ClusterLoadAssignment, addr string) (uint32, bool) {
+	for _, lle := range cla.GetEndpoints() {
+		for _, ep := range lle.GetLbEndpoints() {
+			if ep.GetEndpoint().GetAddress().GetSocketAddress().GetAddress() == addr {
+				return ep.GetLoadBalancingWeight().GetValue(), true
+			}
+		}
+	}
+	return 0, false
+}
+
+func TestMergeUdpAggregateLoadAssignment_WeightsRespectReplicaCount(t *testing.T) {
+	// Member A has weight 90 across 2 endpoints, member B weight 10 across 1 endpoint.
+	// Each member's TOTAL weight must stay proportional to its backendRef weight (90:10),
+	// independent of the member's endpoint count.
+	members := []udpMemberEndpoints{
+		{weight: 90, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(
+			udpTestEndpoint("10.0.0.1"), udpTestEndpoint("10.0.0.2"),
+		)}},
+		{weight: 10, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(
+			udpTestEndpoint("10.0.1.1"),
+		)}},
+	}
+
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	require.Equal(t, "udpagg_test", cla.GetClusterName())
+	require.Len(t, cla.GetEndpoints(), 1, "all endpoints share the default locality")
+
+	wA1, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok)
+	wA2, _ := endpointWeight(cla, "10.0.0.2")
+	wB, _ := endpointWeight(cla, "10.0.1.1")
+
+	// Per-endpoint weights.
+	// A = 90*1000/2 = 45000
+	// B = 10*1000/1 = 10000
+	assert.Equal(t, uint32(45000), wA1)
+	assert.Equal(t, uint32(45000), wA2)
+	assert.Equal(t, uint32(10000), wB)
+
+	// Totals per member: A = 90000, B = 10000 -> 9:1, matching the 90:10 backendRef weights.
+	assert.Equal(t, uint32(90000), wA1+wA2)
+	assert.Equal(t, uint32(10000), wB)
+
+	// Locality weight is the sum of its endpoints' weights.
+	assert.Equal(t, uint32(100000), cla.GetEndpoints()[0].GetLoadBalancingWeight().GetValue())
+}
+
+func TestMergeUdpAggregateLoadAssignment_SkipsEmptyAndZeroWeight(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 100, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+		{weight: 50, efbs: nil}, // no EDS source (len==0), redistributes rather than drops
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	require.Len(t, cla.GetEndpoints(), 1)
+	require.Len(t, cla.GetEndpoints()[0].GetLbEndpoints(), 1)
+	w, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok)
+	assert.Equal(t, uint32(100000), w) // 100*1000/1
+}
+
+func TestMergeUdpAggregateLoadAssignment_MultiLocality(t *testing.T) {
+	// One member, one endpoint per locality, so each locality's weight is that endpoint's weight.
+	members := []udpMemberEndpoints{
+		{weight: 10, efbs: []ir.EndpointsForBackend{{
+			LbEps: ir.LocalityLbMap{
+				ir.PodLocality{Region: "r1", Zone: "z1"}: {udpTestEndpoint("10.0.0.1")},
+				ir.PodLocality{Region: "r2", Zone: "z2"}: {udpTestEndpoint("10.0.0.2")},
+			},
+		}}},
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	require.Len(t, cla.GetEndpoints(), 2)
+	// 10*1000/2 = 5000 per endpoint. Each locality has one endpoint, so locality weight = 5000.
+	for _, lle := range cla.GetEndpoints() {
+		require.Len(t, lle.GetLbEndpoints(), 1)
+		assert.Equal(t, uint32(5000), lle.GetLbEndpoints()[0].GetLoadBalancingWeight().GetValue())
+		assert.Equal(t, uint32(5000), lle.GetLoadBalancingWeight().GetValue())
+	}
+}
+
+func TestMergeUdpAggregateLoadAssignment_DropWeightBlackhole(t *testing.T) {
+	// Valid backend weight 20 (1 endpoint) and an invalid backend weight 80 (dropWeight). The invalid
+	// share must go to a blackhole endpoint, not be redistributed.
+	members := []udpMemberEndpoints{
+		{weight: 20, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 80)
+
+	wValid, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok, "valid endpoint present")
+	wDrop, ok := endpointWeight(cla, udpBlackholeAddr)
+	require.True(t, ok, "blackhole endpoint present for the invalid backend's weight")
+
+	// valid = 20*1000 = 20000
+	// blackhole = 80*1000 = 80000
+	assert.Equal(t, uint32(20000), wValid)
+	assert.Equal(t, uint32(80000), wDrop)
+
+	// The blackhole targets the loopback discard port.
+	var found bool
+	for _, lle := range cla.GetEndpoints() {
+		for _, ep := range lle.GetLbEndpoints() {
+			sa := ep.GetEndpoint().GetAddress().GetSocketAddress()
+			if sa.GetAddress() == udpBlackholeAddr {
+				assert.Equal(t, uint32(udpBlackholePort), sa.GetPortValue())
+				found = true
+			}
+		}
+	}
+	assert.True(t, found)
+}
+
+// TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster guards both #14471 directions:
+// the aggregate CLA is emitted only to clients of a gateway whose CDS carries the matching cluster.
+// A client of a gateway without the cluster (an unaccepted route, or simply a different gateway)
+// receives no CLA, even though the aggregate descriptor exists.
+func TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster(t *testing.T) {
+	g := gomega.NewWithT(t)
+
+	clusterName := ir.UdpAggregateClusterName("ns", "route")
+	roleA := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw-a")
+	roleB := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw-b")
+	clientA := ir.NewUniquelyConnectedClient(roleA, "ns", map[string]string{wellknown.GatewayNameLabel: "gw-a"}, ir.PodLocality{})
+	clientB := ir.NewUniquelyConnectedClient(roleB, "ns", map[string]string{wellknown.GatewayNameLabel: "gw-b"}, ir.PodLocality{})
+	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{clientA, clientB})
+
+	// gw-a's CDS carries the aggregate cluster; gw-b's does not.
+	snapshots := krt.NewStaticCollection(nil, []GatewayXdsResources{
+		{
+			NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw-a"},
+			Clusters:       []envoycachetypes.ResourceWithTTL{{Resource: &envoyclusterv3.Cluster{Name: clusterName}}},
+		},
+		{
+			NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw-b"},
+			Clusters:       []envoycachetypes.ResourceWithTTL{{Resource: &envoyclusterv3.Cluster{Name: "kube_ns_backend_80"}}},
+		},
+	})
+
+	aggregates := krt.NewStaticCollection(nil, []udpAggregate{
+		{clusterName: clusterName, members: []udpAggregateMember{{backendResourceName: "be1", weight: 100}}},
+	})
+	backendEndpoints := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{
+		{UpstreamResourceName: "be1", LbEps: ir.LocalityLbMap{ir.PodLocality{}: {udpTestEndpoint("10.0.0.1")}}},
+	})
+
+	eps := NewPerClientUdpAggregateEndpoints(krtutil.KrtOptions{}, uccs, aggregates, snapshots, backendEndpoints)
+
+	var got []UccWithEndpoints
+	g.Eventually(func() []UccWithEndpoints {
+		got = eps.endpoints.List()
+		return got
+	}).Should(gomega.HaveLen(1), "only the gateway whose CDS carries the aggregate cluster gets the CLA")
+
+	g.Expect(got[0].Client.ResourceName()).To(gomega.Equal(clientA.ResourceName()))
+	g.Expect(got[0].Endpoints.Clone().GetClusterName()).To(gomega.Equal(clusterName))
+}
+
+// TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes asserts a member with no EDS source
+// at all (len(efbs)==0, e.g. a Static backend) is not treated as an empty Service, so its weight
+// redistributes rather than drops. Only a Service that yields an empty EndpointsForBackend drops.
+func TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 80, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+		{weight: 20, efbs: nil}, // no EDS source (len==0), not an empty Service
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+
+	require.Len(t, cla.GetEndpoints(), 1)
+	w, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok)
+	assert.Equal(t, uint32(80000), w)
+
+	_, hasBlackhole := endpointWeight(cla, udpBlackholeAddr)
+	assert.False(t, hasBlackhole, "a member with no EDS source must not be dropped")
+}
+
+// TestMergeUdpAggregateLoadAssignment_EmptyServiceDrops asserts a Service with no endpoints (a
+// resolved backend that yields an EndpointsForBackend with no endpoints) has its weighted share
+// dropped to the blackhole per the UDPRoute spec, not redistributed to the healthy member.
+func TestMergeUdpAggregateLoadAssignment_EmptyServiceDrops(t *testing.T) {
+	members := []udpMemberEndpoints{
+		{weight: 20, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},
+		{weight: 80, efbs: []ir.EndpointsForBackend{{}}}, // empty Service: an EDS row with no endpoints
+	}
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+
+	wValid, ok := endpointWeight(cla, "10.0.0.1")
+	require.True(t, ok)
+	wDrop, ok := endpointWeight(cla, udpBlackholeAddr)
+	require.True(t, ok, "the empty Service's weighted share must go to the blackhole")
+
+	// valid = 20*1000 = 20000, blackhole = 80*1000 = 80000 -> 20% valid, 80% dropped.
+	assert.Equal(t, uint32(20000), wValid)
+	assert.Equal(t, uint32(80000), wDrop)
+}
+
+// TestMergeUdpAggregateLoadAssignment_ScalesDownToUint32 asserts that when the summed endpoint
+// weights exceed the uint32 max, every weight scales down by one divisor so both the per-locality
+// endpoint sum and the locality weight stay under the cap while the equal split is preserved.
+func TestMergeUdpAggregateLoadAssignment_ScalesDownToUint32(t *testing.T) {
+	// Five members, one endpoint each, all weight 1e6. Unscaled per-endpoint weight is
+	// 1e6*1000/1 = 1e9, so the five total 5e9, above the uint32 max (~4.29e9).
+	members := make([]udpMemberEndpoints, 5)
+	addrs := []string{"10.0.0.1", "10.0.0.2", "10.0.0.3", "10.0.0.4", "10.0.0.5"}
+	for i, addr := range addrs {
+		members[i] = udpMemberEndpoints{weight: 1_000_000, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint(addr))}}
+	}
+
+	cla := mergeUdpAggregateLoadAssignment("udpagg_test", members, 0)
+	require.Len(t, cla.GetEndpoints(), 1, "all endpoints share the default locality")
+
+	// div = ceil(5e9 / 4294967295) = 2, so each 1e9 becomes 5e8 and the five still split evenly.
+	var localityWeight uint64
+	for _, addr := range addrs {
+		w, ok := endpointWeight(cla, addr)
+		require.True(t, ok, "endpoint %s present", addr)
+		assert.Equal(t, uint32(500_000_000), w)
+		localityWeight += uint64(w)
+	}
+
+	lle := cla.GetEndpoints()[0]
+	assert.Equal(t, uint32(2_500_000_000), lle.GetLoadBalancingWeight().GetValue())
+	require.LessOrEqual(t, localityWeight, uint64(math.MaxUint32), "the locality endpoint sum must fit uint32")
+	require.LessOrEqual(t, uint64(lle.GetLoadBalancingWeight().GetValue()), uint64(math.MaxUint32), "the locality weight must fit uint32")
+}

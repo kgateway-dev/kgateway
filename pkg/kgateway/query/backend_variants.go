@@ -130,6 +130,11 @@ func cloneRouteWithVariants(route ir.Route, variants map[string]*ir.BackendObjec
 		clone.Hostnames = slices.Clone(typed.Hostnames)
 		clone.Backends = cloneBackendRefsWithVariants(typed.Backends, variants)
 		return &clone
+	case *ir.UdpRouteIR:
+		clone := *typed
+		clone.ParentRefs = slices.Clone(typed.ParentRefs)
+		clone.Backends = cloneBackendRefsWithVariants(typed.Backends, variants)
+		return &clone
 	default:
 		return route
 	}
@@ -196,6 +201,10 @@ func collectRouteBackends(route *RouteInfo, visit func(*ir.BackendObjectIR)) {
 			visit(backend.BackendObject)
 		}
 	case *ir.TlsRouteIR:
+		for _, backend := range typed.Backends {
+			visit(backend.BackendObject)
+		}
+	case *ir.UdpRouteIR:
 		for _, backend := range typed.Backends {
 			visit(backend.BackendObject)
 		}
