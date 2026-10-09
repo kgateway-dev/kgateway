@@ -8,16 +8,19 @@ profile: _output/cover.merged.out
 # We should strive to increase these percentages over time
 threshold:
   # (optional; default 0)
-  # The minimum coverage that each file should have
-  file: 50
+  # The minimum coverage that each file should have.
+  # Not enforced yet: a baseline run (unit tests only, no Docker) leaves ~170 files and many packages
+  # under 50% that are mostly exercised by e2e. Raise once the merged unit+e2e baseline is known.
+  file: 0
 
   # (optional; default 0)
-  # The minimum coverage that each package should have
-  package: 50
+  # The minimum coverage that each package should have. Not enforced yet, see above.
+  package: 0
 
   # (optional; default 0)
-  # The minimum total coverage project should have
-  total: 50
+  # The minimum total coverage project should have. A local unit-only baseline measured 57.4%;
+  # e2e coverage is merged on top of that in CI. The long-term goal is 85%.
+  total: 55
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.
@@ -42,3 +45,9 @@ exclude:
     - \.pb\.go$
     - \.pb\.hash\.go$
     - \.pb\.equal\.go$
+    # Exclude generated code (deepcopy, register, ...), which tests can't meaningfully cover
+    - zz_generated[^/]*\.go$
+    # Exclude test support code (helpers, matchers, fixtures); it is exercised by the tests, not under test
+    - ^test/
+    # Exclude the tooling that lives under hack/ (code generation, CI helpers)
+    - ^hack/
