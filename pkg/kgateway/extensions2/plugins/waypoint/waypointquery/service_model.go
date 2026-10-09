@@ -133,6 +133,7 @@ func (s Service) BackendObject(port uint32) ir.BackendObjectIR {
 			int32(port), //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
 			protocol,
 			nil, // we just need the cluster name, aliases not important here
+			"",  // nor the network of inline endpoints
 		)
 	case *corev1.Service:
 		return kubernetes.BuildServiceBackendObjectIR(obj, int32(port), protocol) //nolint:gosec // G115: port is uint32 representing a port number, safe to convert to int32
