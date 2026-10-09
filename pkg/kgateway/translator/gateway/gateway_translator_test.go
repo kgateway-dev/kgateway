@@ -119,6 +119,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// Same as basic.yaml, but the caCertificateRefs spell the core API group as
+	// "core" instead of "". The output must be identical to basic.yaml.
+	t.Run("gateway with FrontendTLSConfig and core group CA certificate refs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/core-group.yaml"},
+			outputFile: "frontendtlsconfig/core-group.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml"},
