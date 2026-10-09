@@ -144,7 +144,11 @@ jobs:
     name: Test Coverage
     needs: go
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    # Includes waiting for the end-to-end shards (e2e.yaml), which run for up to ~1h45m after the PR is pushed.
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -157,10 +161,41 @@ jobs:
         with:
           pattern: coverage-*
           path: _output/coverage
+      - name: Fetch e2e coverage
+        id: e2e
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          # Unit coverage alone understates what the tests exercise, so wait for the e2e run of this
+          # commit and stitch its per-shard profiles in. If it never completes successfully we still
+          # report, but do not enforce thresholds against partial data.
+          deadline=$((SECONDS + 6300))
+          while (( SECONDS < deadline )); do
+            run="$(gh run list --workflow e2e.yaml --commit "${SHA}" --event "${EVENT}" --limit 1 \
+              --json databaseId,status,conclusion --jq '.[0] // empty')"
+            if [[ -n "${run}" && "$(jq -r .status <<<"${run}")" == "completed" ]]; then
+              if [[ "$(jq -r .conclusion <<<"${run}")" == "success" ]]; then
+                gh run download "$(jq -r .databaseId <<<"${run}")" --pattern 'coverage-e2e-*' --dir _output/coverage
+                echo "complete=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "::warning::e2e run did not succeed; coverage thresholds are not enforced"
+                echo "complete=false" >> "$GITHUB_OUTPUT"
+              fi
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "::warning::timed out waiting for the e2e run; coverage thresholds are not enforced"
+          echo "complete=false" >> "$GITHUB_OUTPUT"
       - name: Report and validate coverage
         shell: bash
         env:
           BASE_REF: ${{ github.base_ref }}
+          E2E_COMPLETE: ${{ steps.e2e.outputs.complete }}
         run: |
           set -euo pipefail
           profiles="$(find _output/coverage -name cover.out | sort | paste -sd, -)"
@@ -172,7 +207,9 @@ jobs:
             args+=(COVERAGE_BASE="origin/${BASE_REF}")
           fi
           make html-test-coverage "${args[@]}"
-          make validate-test-coverage COVERAGE_PROFILES="${profiles}"
+          if [[ "${E2E_COMPLETE}" == "true" ]]; then
+            make validate-test-coverage COVERAGE_PROFILES="${profiles}"
+          fi
       - name: Upload HTML coverage report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

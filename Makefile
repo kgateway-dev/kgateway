@@ -790,8 +790,14 @@ CONTROLLER_CACHE_FROM := $(if $(CONTROLLER_CACHE_REF),--cache-from type=registry
 
 # We include the files in K8S_GATEWAY_SOURCES as dependencies to the kgateway build
 # so changes in those directories cause the make target to rebuild
+# Set KGATEWAY_COVER=true to build a coverage-instrumented controller. It writes coverage data to
+# $GOCOVERDIR when it exits, which is how e2e tests measure the controller's coverage.
+# Delete the binary (or run `make clean`) when toggling this, as make does not track the flag.
+KGATEWAY_COVER ?=
+KGATEWAY_COVER_FLAGS := $(if $(filter true,$(KGATEWAY_COVER)),-cover -covermode=atomic -coverpkg=github.com/kgateway-dev/kgateway/v2/...)
+
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
+	$(GO_BUILD_FLAGS) GOOS=linux go build $(KGATEWAY_COVER_FLAGS) -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/kgateway/...
 
 # TODO: is this target obsolete?
 .PHONY: kgateway

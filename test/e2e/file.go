@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -25,11 +26,22 @@ var (
 	TestAssertionsManifest = ManifestPath("test-assertions.yaml")
 )
 
+// CoverageValuesEnv names an environment variable holding the path of a Helm values file that is
+// appended to every install and upgrade; see CoverageManifest and withTestAssertions.
+const CoverageValuesEnv = "KGW_E2E_COVERAGE_VALUES"
+
 // withTestAssertions appends TestAssertionsManifest to a set of Helm values files.
 // It is applied by every install and upgrade the framework performs, and comes last so
 // that a suite's own values cannot disable an assertion by accident.
+//
+// If KGW_E2E_COVERAGE_VALUES names a values file, it is appended as well. CI uses it to point a
+// coverage-instrumented controller at a directory for its coverage data.
 func withTestAssertions(valuesFiles []string) []string {
-	return append(append([]string{}, valuesFiles...), TestAssertionsManifest)
+	out := append(append([]string{}, valuesFiles...), TestAssertionsManifest)
+	if coverageValues := os.Getenv(CoverageValuesEnv); coverageValues != "" {
+		out = append(out, coverageValues)
+	}
+	return out
 }
 
 // ManifestPath returns the absolute path to a manifest file.

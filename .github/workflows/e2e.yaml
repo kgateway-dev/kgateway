@@ -39,6 +39,8 @@ jobs:
         env:
           ENVOYINIT_LOCAL_CACHE_FROM: /tmp/.buildx-cache-envoyinit
           ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
+          # Instrument the controller so the shards can report e2e coverage (see the Test Coverage job in unit.yaml).
+          KGATEWAY_COVER: 'true'
         run: |
           mkdir -p /tmp/.buildx-cache-envoyinit
           make save-e2e-shared-images
@@ -203,6 +205,7 @@ jobs:
           run-regex: ${{ matrix.test.go-test-run-regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           matrix-label: "pr"
+          collect-coverage: 'true'
       - id: debug-space
         shell: bash
         run: |

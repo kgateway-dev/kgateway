@@ -1,0 +1,18 @@
+# Helm values for collecting coverage from a coverage-instrumented controller (built with
+# `make kgateway-docker KGATEWAY_COVER=true`). They are only applied when CI sets
+# KGW_E2E_COVERAGE_VALUES to this file's path.
+#
+# The controller writes its coverage data to GOCOVERDIR when it exits, so the directory must outlive
+# the pod. It is a hostPath on the cluster node, which CI creates world-writable (the controller runs
+# as a non-root user) and copies out after the tests. Every install/uninstall adds its own files.
+controller:
+  extraEnv:
+    GOCOVERDIR: /coverage
+  extraVolumes:
+    - name: coverage
+      hostPath:
+        path: /coverage
+        type: DirectoryOrCreate
+  extraVolumeMounts:
+    - name: coverage
+      mountPath: /coverage
