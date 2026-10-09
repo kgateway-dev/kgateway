@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	udpaannontations "github.com/cncf/xds/go/udpa/annotations"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -23,12 +24,41 @@ var UseDetailedUnmarshalling = !envutils.IsEnvTruthy("DISABLE_DETAILED_SNAP_UNMA
 
 type XdsSnapWrapper struct {
 	snap *envoycache.Snapshot
-	// erroredClusters contains clusters that encountered errors during backend translation
-	// TODO: this is not used anywhere, we need surface this somewhere
+	// erroredClusters lists clusters whose current translation failed. The
+	// publish-time per-cluster resolution treats them fail-closed: they are
+	// never resurrected from the previously-published snapshot (see
+	// resolveDeferredPerCluster).
 	// +noKrtEquals
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
+	// missingReferenced lists referenced clusters absent from this snapshot's
+	// CDS (translation lagging, or the backend is gone). Sorted.
+	missingReferenced []string
+	// missingEndpointsReferenced lists referenced EDS clusters whose CLA was
+	// not derived by the per-client endpoints collection; a synthesized empty
+	// stands in for it in the snapshot, and whether the backend has endpoints
+	// is unknown (the client's per-client rows are still being built, or a
+	// plugin contributed an EDS cluster without an endpoints row; kube
+	// Services always derive a row, even sliceless ones like ExternalName).
+	// A derived-but-empty CLA is the backend's known truth and is NOT listed
+	// (#14352). Sorted.
+	missingEndpointsReferenced []string
+	// synthesizedEndpoints lists every EDS resource whose CLA in snap is a
+	// synthesized empty, referenced or not. The publish gate decides which of
+	// them the client receives (settleSynthesizedEndpoints). Sorted.
+	synthesizedEndpoints []string
+}
+
+// deferred reports whether the snapshot was built while some referenced
+// cluster was not ready. syncXds resolves such a snapshot per cluster against
+// the snapshot published on the client's current connection:
+// previously-published clusters are carried forward, previously-referenced
+// clusters whose CLA row is not derived keep the endpoints the client holds,
+// and a route flip onto a newly-referenced not-yet-derived cluster is held
+// back for at most the publish budget (see publishGate).
+func (p XdsSnapWrapper) deferred() bool {
+	return len(p.missingReferenced) > 0 || len(p.missingEndpointsReferenced) > 0
 }
 
 func (p XdsSnapWrapper) WithSnapshot(snap *envoycache.Snapshot) XdsSnapWrapper {
@@ -45,7 +75,21 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 			return false
 		}
 	}
-	return true
+	// The gap classification drives publication, so it is compared directly
+	// rather than inferred from versions: a synthesized empty CLA and a
+	// derived-but-empty one are byte-identical protos. Without this, a wrapper
+	// can transition deferred->ready with every version equal, KRT suppresses
+	// the event, and syncXds keeps holding a route flip whose blocking cluster
+	// has already derived its (empty) truth — unbounded when the publish
+	// budget is disabled — or keeps leaving out a CLA that is now derived. The
+	// same applies to a referenced cluster arriving errored-from-birth
+	// (missingReferenced shrinks, no version changes).
+	// erroredClusters needs no comparison: membership changes always change
+	// the CDS version (an errored cluster leaves/enters the cluster items and
+	// hash), and error-text-only changes are deliberately suppressed.
+	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
+		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
+		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints)
 }
 
 func (p XdsSnapWrapper) ResourceName() string {

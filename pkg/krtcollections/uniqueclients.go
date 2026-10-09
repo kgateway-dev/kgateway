@@ -113,6 +113,7 @@ type callbacksCollection struct {
 	// cluster once every stream currently in that bucket has confirmed it, or the same
 	// full-EDS-withholding this file exists to prevent reappears for the still-old siblings.
 	knownLocalClusterBySid map[int64]bool
+	priorXDSVersions       map[string]struct{}
 	stateLock              sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
@@ -163,13 +164,24 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
 type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient]
 
+// XDSClientState exposes per-client connection state derived from the xDS
+// callbacks. HasPriorXDSVersion reports whether a stream of the client opened
+// a resource type with a version it had accepted before (an empty nonce with a
+// non-empty version) — i.e. the Envoy may already be serving config accepted
+// on a previous stream even though this controller has not published to it
+// (reconnect, controller restart). The mark belongs to the resource name, so
+// it covers every stream sharing it, and lasts until the last of them closes.
+type XDSClientState interface {
+	HasPriorXDSVersion(resourceName string) bool
+}
+
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
 
 func NewUniquelyConnectedClients(
 	extraXDSCallbacks xdsserver.Callbacks,
 	xdsAuth bool,
-) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder) {
+) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder, XDSClientState) {
 	cb := &callbacks{
 		extraXDSCallbacks: extraXDSCallbacks,
 		xdsAuth:           xdsAuth,
@@ -181,7 +193,7 @@ func NewUniquelyConnectedClients(
 		StreamRequestFunc: cb.OnStreamRequest,
 		FetchRequestFunc:  cb.OnFetchRequest,
 	}
-	return envoycb, buildCollection(cb)
+	return envoycb, buildCollection(cb), cb
 }
 
 func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
@@ -194,6 +206,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 			uniqClientsCount:       make(map[string]uint64),
 			uniqClients:            make(map[string]ir.UniquelyConnectedClient),
 			knownLocalClusterBySid: make(map[int64]bool),
+			priorXDSVersions:       make(map[string]struct{}),
 			trigger:                trigger,
 		}
 
@@ -259,6 +272,7 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 			ucc := x.uniqClients[resourceName]
 			delete(x.uniqClientsCount, resourceName)
 			delete(x.uniqClients, resourceName)
+			delete(x.priorXDSVersions, resourceName)
 			return &ucc
 		}
 	}
@@ -458,6 +472,9 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		return fmt.Errorf("got empty unique client name for sid %d", sid)
 	}
 	x.observeLocalClusterRequest(sid, ucc, r)
+	if hasPriorXDSVersion(r) {
+		x.markPriorXDSVersion(ucc)
+	}
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -485,6 +502,31 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		time.Sleep(delay)
 	}
 	return nil
+}
+
+func hasPriorXDSVersion(r *envoy_service_discovery_v3.DiscoveryRequest) bool {
+	return r.GetResponseNonce() == "" && r.GetVersionInfo() != ""
+}
+
+func (x *callbacksCollection) markPriorXDSVersion(resourceName string) {
+	x.stateLock.Lock()
+	defer x.stateLock.Unlock()
+	x.priorXDSVersions[resourceName] = struct{}{}
+}
+
+func (x *callbacks) HasPriorXDSVersion(resourceName string) bool {
+	c := x.collection.Load()
+	if c == nil {
+		return false
+	}
+	return c.hasPriorXDSVersion(resourceName)
+}
+
+func (x *callbacksCollection) hasPriorXDSVersion(resourceName string) bool {
+	x.stateLock.RLock()
+	defer x.stateLock.RUnlock()
+	_, ok := x.priorXDSVersions[resourceName]
+	return ok
 }
 
 func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
