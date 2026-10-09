@@ -127,9 +127,6 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
-# Static base image for dummy-idp, which is built with CGO_ENABLED=0.
-export DUMMY_IDP_BASE_IMAGE ?= cgr.dev/chainguard/static:latest
-
 # Distroless glibc base used for the kgateway controller, SDS, and envoy-wrapper containers. Exported for use in goreleaser.yaml.
 # Tracked as :latest (unpinned) on purpose: this distroless image has no package manager, so the only way
 # to receive Chainguard's CVE fixes is to pull a newer build. A pinned digest would freeze CVEs in place and
@@ -192,12 +189,10 @@ fmt-changed: fmt-go-changed fmt-yaml-changed ## Format changed Go and YAML files
 mod-download:  ## Download transitive dependencies
 	go mod download
 	cd tools && go mod download
-	cd test/e2e/defaults/extproc && go mod download
 
 .PHONY: mod-tidy
 mod-tidy: ## Tidy the go mod file
 	@echo "Tidying tools..." && cd tools && go mod tidy
-	@echo "Tidying test/e2e/defaults/extproc..." && cd test/e2e/defaults/extproc && go mod tidy
 	@echo "Tidying top level" && go mod tidy
 
 #----------------------------------------------------------------------------
@@ -673,8 +668,7 @@ MOCK_SOURCE_FILES := pkg/kgateway/query/query_test.go
 
 # Files that track dependency changes
 MOD_FILES := go.mod go.sum \
-	tools/go.mod tools/go.sum \
-	test/e2e/defaults/extproc/go.mod test/e2e/defaults/extproc/go.sum
+	tools/go.mod tools/go.sum
 
 # Clean generated code
 .PHONY: clean-gen
@@ -915,6 +909,10 @@ DUMMY_IDP_DIR=hack/dummy-idp
 DUMMY_IDP_OUTPUT_DIR=$(OUTPUT_DIR)/$(DUMMY_IDP_DIR)
 export DUMMY_IDP_IMAGE_REPO ?= dummy-idp
 DUMMY_IDP_VERSION=0.0.1
+# dummy-idp.go embeds the cert and key, so they are sources too. The directory
+# itself is listed so that adding or deleting a file, which $(wildcard) alone
+# cannot see, also triggers a rebuild.
+DUMMY_IDP_SOURCES=$(DUMMY_IDP_DIR) $(wildcard $(DUMMY_IDP_DIR)/*.go $(DUMMY_IDP_DIR)/*.cert $(DUMMY_IDP_DIR)/*.key) go.mod go.sum
 
 $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./hack/dummy-idp...
@@ -928,7 +926,6 @@ $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
 $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
 	$(BUILDX_BUILD) --load $(PLATFORM) $(DUMMY_IDP_OUTPUT_DIR) -f $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg BASE_IMAGE=$(DUMMY_IDP_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(DUMMY_IDP_IMAGE_REPO):$(DUMMY_IDP_VERSION)
 	@touch $@
 
@@ -948,10 +945,21 @@ EXTPROC_SERVER_OUTPUT_DIR=$(OUTPUT_DIR)/$(EXTPROC_SERVER_DIR)
 export EXTPROC_SERVER_IMAGE_REPO ?= extproc-server
 EXTPROC_SERVER_VERSION=0.0.1
 
-$(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(shell find $(EXTPROC_SERVER_DIR) -name '*.go') $(EXTPROC_SERVER_DIR)/Dockerfile
-	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTPROC_SERVER_DIR) -f $(EXTPROC_SERVER_DIR)/Dockerfile \
-		-t $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
+# Built from the root module so it shares the root go.mod/go.sum (and their CVE bumps).
+$(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH): $(shell find $(EXTPROC_SERVER_DIR) -name '*.go') go.mod go.sum
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./$(EXTPROC_SERVER_DIR)
+
+.PHONY: extproc-server
+extproc-server: $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH)
+
+$(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server: $(EXTPROC_SERVER_DIR)/Dockerfile
 	@mkdir -p $(dir $@)
+	cp $< $@
+
+$(EXTPROC_SERVER_OUTPUT_DIR)/.docker-stamp-$(EXTPROC_SERVER_VERSION)-$(GOARCH): $(EXTPROC_SERVER_OUTPUT_DIR)/extproc-server-linux-$(GOARCH) $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server
+	$(BUILDX_BUILD) --load $(PLATFORM) $(EXTPROC_SERVER_OUTPUT_DIR) -f $(EXTPROC_SERVER_OUTPUT_DIR)/Dockerfile.extproc-server \
+		--build-arg GOARCH=$(GOARCH) \
+		-t $(IMAGE_REGISTRY)/$(EXTPROC_SERVER_IMAGE_REPO):$(EXTPROC_SERVER_VERSION)
 	@touch $@
 
 .PHONY: extproc-server-docker
@@ -1059,7 +1067,7 @@ kind-create: ## Create a KinD cluster
 	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.6.1
+CONFORMANCE_VERSION ?= v1.6.2
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)

@@ -54,6 +54,7 @@ endpoints:
             address: 10.244.2.14
             portValue: 9091
     loadBalancingWeight: 1
+    locality: {}
 - clusterName: kube_gwtest_ratings_8080
 - clusterName: kube_gwtest_reviews_8080
   endpoints:
@@ -64,6 +65,7 @@ endpoints:
             address: 10.244.2.14
             portValue: 8080
     loadBalancingWeight: 1
+    locality: {}
   - lbEndpoints:
     - endpoint:
         address:

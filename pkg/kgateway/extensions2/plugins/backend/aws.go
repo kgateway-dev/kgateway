@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -241,6 +242,7 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 func buildLambdaFilters(
 	arn string,
 	region string,
+	hostRewrite string,
 	auth *kgateway.AwsAuth,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
@@ -254,10 +256,12 @@ func buildLambdaFilters(
 		payloadPassthrough = false
 	}
 
+	// Use the Lambda endpoint authority instead of the client authority or a route-level rewrite.
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
 		Arn:                arn,
 		InvocationMode:     invokeMode,
 		PayloadPassthrough: payloadPassthrough,
+		HostRewrite:        hostRewrite,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lambda config: %w", err)
@@ -332,6 +336,19 @@ type lambdaEndpointConfig struct {
 	hostname string
 	port     uint32
 	useTLS   bool
+}
+
+// authority returns the HTTP authority, omitting only the scheme's default port.
+func (u *lambdaEndpointConfig) authority() string {
+	host := u.hostname
+	if strings.Contains(host, ":") {
+		// url.Hostname() strips the brackets an IPv6 authority needs.
+		host = "[" + host + "]"
+	}
+	if (u.useTLS && u.port == 443) || (!u.useTLS && u.port == 80) {
+		return host
+	}
+	return host + ":" + strconv.FormatUint(uint64(u.port), 10)
 }
 
 // Equals checks if two lambdaEndpointConfig objects are equal.

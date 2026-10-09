@@ -198,7 +198,7 @@ func (s *testingSuite) TestLambdaBackendRouting() {
 			curl.WithBody("{}"), // JSON payload is a requirement when Envoy payload transformation is disabled
 		},
 		// Ensure the JSON transformation Envoy applies are not a part of the lambda's response body:
-		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#configuration-as-a-listener-filter
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: gomega.And(

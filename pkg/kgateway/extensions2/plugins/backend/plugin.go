@@ -235,7 +235,7 @@ func buildTranslateFunc(
 				}
 
 				lambdaFilters, err := buildLambdaFilters(
-					lambdaArn, region, i.Spec.Aws.Auth, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
+					lambdaArn, region, endpointConfig.authority(), i.Spec.Aws.Auth, secret, invokeMode, i.Spec.Aws.Lambda.PayloadTransformMode)
 				if err != nil {
 					beIr.errors = append(beIr.errors, err)
 					break

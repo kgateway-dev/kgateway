@@ -1,6 +1,8 @@
 package deployer
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -674,4 +676,267 @@ func TestDeepMergeSecurityContextWindowsOptions(t *testing.T) {
 			assert.Equal(t, tt.want, gotPod.WindowsOptions, "pod securityContext.windowsOptions")
 		})
 	}
+}
+
+func assertAllFieldsSet(t *testing.T, v any) {
+	t.Helper()
+	rv := reflect.ValueOf(v).Elem()
+	for i := range rv.NumField() {
+		assert.False(t, rv.Field(i).IsZero(), "fixture must populate %s.%s", rv.Type().Name(), rv.Type().Field(i).Name)
+	}
+}
+
+func TestDeepMergeSecurityContextAllFields(t *testing.T) {
+	dst := &corev1.SecurityContext{
+		Capabilities:             &corev1.Capabilities{Add: []corev1.Capability{"NET_BIND_SERVICE"}, Drop: []corev1.Capability{"KILL"}},
+		Privileged:               new(true),
+		SELinuxOptions:           &corev1.SELinuxOptions{User: "system_u", Role: "system_r", Type: "container_t", Level: "s0"},
+		WindowsOptions:           &corev1.WindowsSecurityContextOptions{RunAsUserName: new("default-user")},
+		RunAsUser:                new(int64(1000)),
+		RunAsGroup:               new(int64(1000)),
+		RunAsNonRoot:             new(false),
+		ReadOnlyRootFilesystem:   new(false),
+		AllowPrivilegeEscalation: new(true),
+		ProcMount:                new(corev1.DefaultProcMount),
+		SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeUnconfined},
+		AppArmorProfile:          &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeRuntimeDefault},
+	}
+	src := &corev1.SecurityContext{
+		Capabilities:             &corev1.Capabilities{Add: []corev1.Capability{"NET_ADMIN"}, Drop: []corev1.Capability{"ALL"}},
+		Privileged:               new(false),
+		SELinuxOptions:           &corev1.SELinuxOptions{User: "user_u", Role: "user_r", Type: "spc_t", Level: "s0:c1"},
+		WindowsOptions:           &corev1.WindowsSecurityContextOptions{RunAsUserName: new("override-user")},
+		RunAsUser:                new(int64(1001)),
+		RunAsGroup:               new(int64(1002)),
+		RunAsNonRoot:             new(true),
+		ReadOnlyRootFilesystem:   new(true),
+		AllowPrivilegeEscalation: new(false),
+		ProcMount:                new(corev1.UnmaskedProcMount),
+		SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeLocalhost, LocalhostProfile: new("seccomp.json")},
+		AppArmorProfile:          &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("k8s-apparmor")},
+	}
+	assertAllFieldsSet(t, dst)
+	assertAllFieldsSet(t, src)
+
+	t.Run("src fields are copied into empty dst", func(t *testing.T) {
+		got := DeepMergeSecurityContext(&corev1.SecurityContext{}, src.DeepCopy())
+		assert.Equal(t, src, got)
+	})
+
+	t.Run("dst fields are kept when src is empty", func(t *testing.T) {
+		got := DeepMergeSecurityContext(dst.DeepCopy(), &corev1.SecurityContext{})
+		assert.Equal(t, dst, got)
+	})
+
+	t.Run("src fields override populated dst and lists are appended", func(t *testing.T) {
+		want := src.DeepCopy()
+		want.Capabilities.Add = []corev1.Capability{"NET_BIND_SERVICE", "NET_ADMIN"}
+		want.Capabilities.Drop = []corev1.Capability{"KILL", "ALL"}
+
+		got := DeepMergeSecurityContext(dst.DeepCopy(), src.DeepCopy())
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestDeepMergePodSecurityContextAllFields(t *testing.T) {
+	dst := &corev1.PodSecurityContext{
+		SELinuxOptions:           &corev1.SELinuxOptions{User: "system_u", Role: "system_r", Type: "container_t", Level: "s0"},
+		WindowsOptions:           &corev1.WindowsSecurityContextOptions{RunAsUserName: new("default-user")},
+		RunAsUser:                new(int64(1000)),
+		RunAsGroup:               new(int64(1000)),
+		RunAsNonRoot:             new(false),
+		SupplementalGroups:       []int64{2000},
+		SupplementalGroupsPolicy: new(corev1.SupplementalGroupsPolicyMerge),
+		FSGroup:                  new(int64(1000)),
+		Sysctls:                  []corev1.Sysctl{{Name: "net.core.somaxconn", Value: "1024"}},
+		FSGroupChangePolicy:      new(corev1.FSGroupChangeAlways),
+		SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeUnconfined},
+		AppArmorProfile:          &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeRuntimeDefault},
+		SELinuxChangePolicy:      new(corev1.SELinuxChangePolicyMountOption),
+	}
+	src := &corev1.PodSecurityContext{
+		SELinuxOptions:           &corev1.SELinuxOptions{User: "user_u", Role: "user_r", Type: "spc_t", Level: "s0:c1"},
+		WindowsOptions:           &corev1.WindowsSecurityContextOptions{RunAsUserName: new("override-user")},
+		RunAsUser:                new(int64(1001)),
+		RunAsGroup:               new(int64(1002)),
+		RunAsNonRoot:             new(true),
+		SupplementalGroups:       []int64{3000},
+		SupplementalGroupsPolicy: new(corev1.SupplementalGroupsPolicyStrict),
+		FSGroup:                  new(int64(1003)),
+		Sysctls:                  []corev1.Sysctl{{Name: "net.ipv4.ip_unprivileged_port_start", Value: "0"}},
+		FSGroupChangePolicy:      new(corev1.FSGroupChangeOnRootMismatch),
+		SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeLocalhost, LocalhostProfile: new("seccomp.json")},
+		AppArmorProfile:          &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("k8s-apparmor")},
+		SELinuxChangePolicy:      new(corev1.SELinuxChangePolicyRecursive),
+	}
+	assertAllFieldsSet(t, dst)
+	assertAllFieldsSet(t, src)
+
+	t.Run("src fields are copied into empty dst", func(t *testing.T) {
+		got := deepMergePodSecurityContext(&corev1.PodSecurityContext{}, src.DeepCopy())
+		assert.Equal(t, src, got)
+	})
+
+	t.Run("dst fields are kept when src is empty", func(t *testing.T) {
+		got := deepMergePodSecurityContext(dst.DeepCopy(), &corev1.PodSecurityContext{})
+		assert.Equal(t, dst, got)
+	})
+
+	t.Run("src fields override populated dst and lists are appended", func(t *testing.T) {
+		want := src.DeepCopy()
+		want.SupplementalGroups = []int64{2000, 3000}
+		want.Sysctls = []corev1.Sysctl{
+			{Name: "net.core.somaxconn", Value: "1024"},
+			{Name: "net.ipv4.ip_unprivileged_port_start", Value: "0"},
+		}
+
+		got := deepMergePodSecurityContext(dst.DeepCopy(), src.DeepCopy())
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestDeepMergeSecurityContextListSemantics(t *testing.T) {
+	tests := []struct {
+		name string
+		dst  []int64
+		src  []int64
+		want []int64
+	}{
+		{name: "nil src inherits dst", dst: []int64{1}, src: nil, want: []int64{1}},
+		{name: "empty src clears dst", dst: []int64{1}, src: []int64{}, want: []int64{}},
+		{name: "non-empty src with distinct entries is appended to dst", dst: []int64{1}, src: []int64{2}, want: []int64{1, 2}},
+		{name: "nil dst takes src", dst: nil, src: []int64{2}, want: []int64{2}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPod := deepMergePodSecurityContext(
+				&corev1.PodSecurityContext{
+					SupplementalGroups: tt.dst,
+					Sysctls:            toSysctls(tt.dst),
+				},
+				&corev1.PodSecurityContext{
+					SupplementalGroups: tt.src,
+					Sysctls:            toSysctls(tt.src),
+				},
+			)
+			assert.Equal(t, tt.want, gotPod.SupplementalGroups, "pod securityContext.supplementalGroups")
+			assert.Equal(t, toSysctls(tt.want), gotPod.Sysctls, "pod securityContext.sysctls")
+
+			got := DeepMergeSecurityContext(
+				&corev1.SecurityContext{Capabilities: &corev1.Capabilities{Add: toCapabilities(tt.dst), Drop: toCapabilities(tt.dst)}},
+				&corev1.SecurityContext{Capabilities: &corev1.Capabilities{Add: toCapabilities(tt.src), Drop: toCapabilities(tt.src)}},
+			)
+			assert.Equal(t, toCapabilities(tt.want), got.Capabilities.Add, "container securityContext.capabilities.add")
+			assert.Equal(t, toCapabilities(tt.want), got.Capabilities.Drop, "container securityContext.capabilities.drop")
+		})
+	}
+}
+
+func TestDeepMergeAppArmorProfile(t *testing.T) {
+	tests := []struct {
+		name string
+		dst  *corev1.AppArmorProfile
+		src  *corev1.AppArmorProfile
+		want *corev1.AppArmorProfile
+	}{
+		{
+			name: "nil src keeps dst",
+			dst:  &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("foo")},
+			src:  nil,
+			want: &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("foo")},
+		},
+		{
+			name: "localhost src replaces runtime default dst",
+			dst:  &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeRuntimeDefault},
+			src:  &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("foo")},
+			want: &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("foo")},
+		},
+		{
+			name: "runtime default src replaces localhost dst without keeping localhostProfile",
+			dst:  &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeLocalhost, LocalhostProfile: new("foo")},
+			src:  &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeRuntimeDefault},
+			want: &corev1.AppArmorProfile{Type: corev1.AppArmorProfileTypeRuntimeDefault},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPod := deepMergePodSecurityContext(
+				&corev1.PodSecurityContext{AppArmorProfile: tt.dst.DeepCopy()},
+				&corev1.PodSecurityContext{AppArmorProfile: tt.src.DeepCopy()},
+			)
+			assert.Equal(t, tt.want, gotPod.AppArmorProfile, "pod securityContext.appArmorProfile")
+
+			got := DeepMergeSecurityContext(
+				&corev1.SecurityContext{AppArmorProfile: tt.dst.DeepCopy()},
+				&corev1.SecurityContext{AppArmorProfile: tt.src.DeepCopy()},
+			)
+			assert.Equal(t, tt.want, got.AppArmorProfile, "container securityContext.appArmorProfile")
+		})
+	}
+}
+
+func TestDeepMergePodSecurityContextSysctls(t *testing.T) {
+	tests := []struct {
+		name string
+		dst  []corev1.Sysctl
+		src  []corev1.Sysctl
+		want []corev1.Sysctl
+	}{
+		{
+			name: "same name in src overrides dst value",
+			dst:  []corev1.Sysctl{{Name: "net.core.somaxconn", Value: "1024"}},
+			src:  []corev1.Sysctl{{Name: "net.core.somaxconn", Value: "4096"}},
+			want: []corev1.Sysctl{{Name: "net.core.somaxconn", Value: "4096"}},
+		},
+		{
+			name: "overrides keep dst order and new names are appended",
+			dst: []corev1.Sysctl{
+				{Name: "net.core.somaxconn", Value: "1024"},
+				{Name: "net.ipv4.tcp_syncookies", Value: "1"},
+			},
+			src: []corev1.Sysctl{
+				{Name: "net.ipv4.ip_unprivileged_port_start", Value: "0"},
+				{Name: "net.core.somaxconn", Value: "4096"},
+			},
+			want: []corev1.Sysctl{
+				{Name: "net.core.somaxconn", Value: "4096"},
+				{Name: "net.ipv4.tcp_syncookies", Value: "1"},
+				{Name: "net.ipv4.ip_unprivileged_port_start", Value: "0"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deepMergePodSecurityContext(
+				&corev1.PodSecurityContext{Sysctls: tt.dst},
+				&corev1.PodSecurityContext{Sysctls: tt.src},
+			)
+			assert.Equal(t, tt.want, got.Sysctls)
+		})
+	}
+}
+
+func toSysctls(ids []int64) []corev1.Sysctl {
+	if ids == nil {
+		return nil
+	}
+	out := make([]corev1.Sysctl, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, corev1.Sysctl{Name: fmt.Sprintf("sysctl.%d", id), Value: "1"})
+	}
+	return out
+}
+
+func toCapabilities(ids []int64) []corev1.Capability {
+	if ids == nil {
+		return nil
+	}
+	out := make([]corev1.Capability, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, corev1.Capability(fmt.Sprintf("CAP_%d", id)))
+	}
+	return out
 }

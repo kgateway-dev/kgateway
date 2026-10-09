@@ -236,6 +236,57 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 	}
 }
 
+func TestSetInfrastructureMetadataFromGateway(t *testing.T) {
+	tests := []struct {
+		name            string
+		infrastructure  *gwv1.GatewayInfrastructure
+		wantLabels      map[string]string
+		wantAnnotations map[string]string
+	}{
+		{
+			name:            "nil infrastructure leaves metadata unset",
+			infrastructure:  nil,
+			wantLabels:      nil,
+			wantAnnotations: nil,
+		},
+		{
+			name: "labels and annotations are copied",
+			infrastructure: &gwv1.GatewayInfrastructure{
+				Labels:      map[gwv1.LabelKey]gwv1.LabelValue{"key1": "value1"},
+				Annotations: map[gwv1.AnnotationKey]gwv1.AnnotationValue{"key2": "value2"},
+			},
+			wantLabels:      map[string]string{"key1": "value1"},
+			wantAnnotations: map[string]string{"key2": "value2"},
+		},
+		{
+			name: "gateway.networking.k8s.io prefixed keys are dropped",
+			infrastructure: &gwv1.GatewayInfrastructure{
+				Labels: map[gwv1.LabelKey]gwv1.LabelValue{
+					"gateway.networking.k8s.io/gateway-name": "other",
+					"key1":                                   "value1",
+				},
+				Annotations: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+					"gateway.networking.k8s.io/foo": "bar",
+				},
+			},
+			wantLabels:      map[string]string{"key1": "value1"},
+			wantAnnotations: map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gw := &gwv1.Gateway{Spec: gwv1.GatewaySpec{Infrastructure: tt.infrastructure}}
+			gtw := &HelmGateway{}
+
+			SetInfrastructureMetadataFromGateway(gw, gtw)
+
+			assert.Equal(t, tt.wantLabels, gtw.GatewayLabels)
+			assert.Equal(t, tt.wantAnnotations, gtw.GatewayAnnotations)
+		})
+	}
+}
+
 func TestGetServiceValues(t *testing.T) {
 	lbType := corev1.ServiceTypeLoadBalancer
 
