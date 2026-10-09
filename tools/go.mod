@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2/tools
 
-go 1.26.8
+go 1.27.1
 
 tool (
 	github.com/google/yamlfmt/cmd/yamlfmt
@@ -8,8 +8,6 @@ tool (
 	sigs.k8s.io/cloud-provider-kind
 	sigs.k8s.io/controller-runtime/tools/setup-envtest
 )
-
-require golang.org/x/mod v0.41.0 // indirect
 
 require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
@@ -343,6 +341,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	gocloud.dev v0.45.0 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
@@ -380,7 +379,7 @@ require (
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20260209172322-2053ba3d414e // indirect
 	sigs.k8s.io/gateway-api v1.4.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
-	sigs.k8s.io/kind v0.32.0 // indirect
+	sigs.k8s.io/kind v0.33.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.1 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect

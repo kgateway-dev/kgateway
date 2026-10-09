@@ -165,15 +165,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 		timeouts: convertTimeouts(rule.Timeouts),
 	}
 
-	// ON_EXPERIMENTAL_PROMOTION : Remove this block
-	// Ref: https://github.com/kgateway-dev/kgateway/issues/12824
-	if rule.Retry != nil {
-		if h.enableExperimentalGatewayAPIFeatures {
-			ir.retry = convertRetry(rule.Retry, rule.Timeouts)
-		} else {
-			logger.Warn("experimental gateway api features are disabled but HTTPRouteRetry is configured. Skipping")
-		}
-	}
+	ir.retry = convertRetry(rule.Retry, rule.Timeouts)
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12825
 	if rule.SessionPersistence != nil {
@@ -295,8 +287,8 @@ func convertRetry(
 		},
 		StatusCodes: retry.Codes,
 	}
-	if retry.Attempts != nil {
-		in.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
+	if retry.Attempts > 0 {
+		in.Attempts = int32(retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
 	}
 	if retry.Backoff != nil {
 		duration, err := time.ParseDuration(string(*retry.Backoff))
@@ -334,6 +326,13 @@ func (r ruleIR) applyRetry(
 	action.RetryPolicy = r.retry
 }
 
+func headerSessionName(header *gwv1.HeaderConfig) string {
+	if header == nil || header.Name == "" {
+		return "x-session-persistence"
+	}
+	return string(header.Name)
+}
+
 func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *stateful_sessionv3.StatefulSessionPerRoute {
 	if sessionPersistence == nil {
 		return nil
@@ -354,21 +353,20 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *sta
 				ttl = durationpb.New(parsed)
 			}
 		}
+		cookieConfig := ptr.Deref(sessionPersistence.Cookie, gwv1.CookieConfig{})
 		cookie := &httpv3.Cookie{
-			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
+			Name: utils.SanitizeCookieName(string(ptr.Deref(cookieConfig.Name, "sessionPersistence"))),
 			Ttl:  ttl,
-			// Always set path to root to set cookie for all requests to hostname.
+			// Default path to root to set cookie for all requests to hostname.
 			// Default browser behavior otherwise is to use the current "directory" of the request.
 			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
 			// requests to unrelated subpaths could get routed to a different upstream.
 			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
-			// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
-			Path: "/",
+			Path: ptr.Deref(cookieConfig.Path, "/"),
 		}
 		// Only set LifetimeType if present in CookieConfig
-		if sessionPersistence.CookieConfig != nil &&
-			sessionPersistence.CookieConfig.LifetimeType != nil {
-			switch *sessionPersistence.CookieConfig.LifetimeType {
+		if cookieConfig.LifetimeType != nil {
+			switch *cookieConfig.LifetimeType {
 			case gwv1.SessionCookieLifetimeType:
 				// Session cookies — cookies without a Max-Age or Expires attribute – are deleted when the current session ends
 				cookie.Ttl = nil
@@ -383,7 +381,7 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *sta
 		}
 	case gwv1.HeaderBasedSessionPersistence:
 		sessionState = &stateful_header.HeaderBasedSessionState{
-			Name: utils.SanitizeHeaderName(ptr.Deref(sessionPersistence.SessionName, "x-session-persistence")),
+			Name: utils.SanitizeHeaderName(headerSessionName(sessionPersistence.Header)),
 		}
 	}
 	sessionStateAny, err := utils.MessageToAny(sessionState)

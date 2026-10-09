@@ -2169,8 +2169,6 @@ spec:
 
                         Implementations MAY support specifying discrete values in the 400-499 range,
                         which are often inadvisable to retry.
-
-                        <gateway:experimental>
                       maximum: 599
                       minimum: 400
                       type: integer
