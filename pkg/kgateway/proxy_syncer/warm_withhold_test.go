@@ -200,7 +200,7 @@ func TestWarmWithhold_ColdClientNeverCounted(t *testing.T) {
 func TestWarmWithhold_MarkClearedPublishesAtNextCheck(t *testing.T) {
 	prior := &mutablePriorXDS{has: true}
 	pt := newPublishGateTestTranslator(t, true, 20*time.Millisecond)
-	pt.xdsClientState = prior
+	pt.gate.clientState = prior
 	pt.gate.warmWithholdBound = time.Minute
 
 	pt.syncXds(context.Background(), deferredWrapperV("v1"))
@@ -232,7 +232,7 @@ func TestWarmWithhold_AfterReleaseLaterBuildsResolvePerCluster(t *testing.T) {
 	pt.gate.mu.Lock()
 	st := pt.gate.pending[publishGateTestClient]
 	pt.gate.mu.Unlock()
-	assert.True(t, st == nil || st.snap == nil,
+	assert.True(t, st == nil || st.wrap.snap == nil,
 		"a client with a published snapshot must not be offered to the cold-path withhold again")
 	assert.Zero(t, warmWithheldCount(pt))
 }
@@ -269,7 +269,7 @@ func (s sharedKeyClients) HasColdStreamSince(string, time.Duration) bool { retur
 
 func newSharedKeyTestTranslator(t *testing.T, coldWaited bool, budget, bound time.Duration) *ProxyTranslator {
 	pt := newPublishGateTestTranslator(t, true, budget)
-	pt.xdsClientState = sharedKeyClients{coldWaited: coldWaited}
+	pt.gate.clientState = sharedKeyClients{coldWaited: coldWaited}
 	pt.gate.warmWithholdBound = bound
 	return pt
 }

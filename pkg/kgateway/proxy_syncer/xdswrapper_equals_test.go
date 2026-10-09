@@ -28,7 +28,6 @@ func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
 	deferredWrap := XdsSnapWrapper{
 		snap:                       newSnap(),
 		proxyKey:                   "client",
-		deferred:                   true,
 		missingEndpointsReferenced: []string{"cluster-underived"},
 	}
 	readyWrap := XdsSnapWrapper{
@@ -51,4 +50,11 @@ func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
 	same.snap = newSnap()
 	assert.True(t, deferredWrap.Equals(same),
 		"identical versions and identical classification are equal")
+
+	// An unreferenced cluster's CLA turning from synthesized into derived-empty
+	// changes nothing any version sees, but the gate stops leaving that CLA out.
+	synthesizedOnly := readyWrap
+	synthesizedOnly.synthesizedEndpoints = []string{"cluster-unreferenced"}
+	assert.False(t, readyWrap.Equals(synthesizedOnly),
+		"a change in which CLAs are synthesized must not be equal")
 }
