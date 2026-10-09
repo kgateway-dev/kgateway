@@ -39,10 +39,8 @@ func TestPruneRemovedResources(t *testing.T) {
 
 	createGateway := func() *gwv1.Gateway {
 		gw := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      gwName,
-				Namespace: ns,
-			},
+			Name:      gwName,
+			Namespace: ns,
 			Spec: gwv1.GatewaySpec{
 				GatewayClassName: wellknown.DefaultGatewayClassName,
 			},
@@ -53,16 +51,12 @@ func TestPruneRemovedResources(t *testing.T) {
 
 	createPDB := func(name string, gatewayName string) *policyv1.PodDisruptionBudget {
 		pdb := &policyv1.PodDisruptionBudget{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
-				APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-				Labels: map[string]string{
-					wellknown.GatewayNameLabel: gatewayName,
-				},
+			Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
+			APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
+			Name:       name,
+			Namespace:  ns,
+			Labels: map[string]string{
+				wellknown.GatewayNameLabel: gatewayName,
 			},
 			Spec: policyv1.PodDisruptionBudgetSpec{
 				Selector: &metav1.LabelSelector{
@@ -75,16 +69,12 @@ func TestPruneRemovedResources(t *testing.T) {
 
 	createHPA := func(name string, gatewayName string) *autoscalingv2.HorizontalPodAutoscaler {
 		hpa := &autoscalingv2.HorizontalPodAutoscaler{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       wellknown.HorizontalPodAutoscalerGVK.Kind,
-				APIVersion: wellknown.HorizontalPodAutoscalerGVK.GroupVersion().String(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-				Labels: map[string]string{
-					wellknown.GatewayNameLabel: gatewayName,
-				},
+			Kind:       wellknown.HorizontalPodAutoscalerGVK.Kind,
+			APIVersion: wellknown.HorizontalPodAutoscalerGVK.GroupVersion().String(),
+			Name:       name,
+			Namespace:  ns,
+			Labels: map[string]string{
+				wellknown.GatewayNameLabel: gatewayName,
 			},
 			Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 				ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
@@ -331,10 +321,8 @@ func TestPruneRemovedResourcesLongGatewayName(t *testing.T) {
 
 	createGateway := func(name string) *gwv1.Gateway {
 		gw := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-			},
+			Name:      name,
+			Namespace: ns,
 			Spec: gwv1.GatewaySpec{
 				GatewayClassName: wellknown.DefaultGatewayClassName,
 			},
@@ -345,16 +333,12 @@ func TestPruneRemovedResourcesLongGatewayName(t *testing.T) {
 
 	createPDB := func(name string, gatewayName string) *policyv1.PodDisruptionBudget {
 		pdb := &policyv1.PodDisruptionBudget{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
-				APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-				Labels: map[string]string{
-					wellknown.GatewayNameLabel: gatewayName,
-				},
+			Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
+			APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
+			Name:       name,
+			Namespace:  ns,
+			Labels: map[string]string{
+				wellknown.GatewayNameLabel: gatewayName,
 			},
 			Spec: policyv1.PodDisruptionBudgetSpec{
 				Selector: &metav1.LabelSelector{

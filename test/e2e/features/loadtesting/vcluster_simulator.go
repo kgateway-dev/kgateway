@@ -9,7 +9,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -96,13 +95,11 @@ func (vcs *VClusterSimulator) createSimulationNamespace() error {
 	}
 
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: vcs.config.Namespace,
-			Labels: map[string]string{
-				"vcluster-simulation": "true",
-				"test-scenario":       vcs.config.SimulationName,
-				"loadtest":            "true",
-			},
+		Name: vcs.config.Namespace,
+		Labels: map[string]string{
+			"vcluster-simulation": "true",
+			"test-scenario":       vcs.config.SimulationName,
+			"loadtest":            "true",
 		},
 	}
 
@@ -161,14 +158,12 @@ func (vcs *VClusterSimulator) createServiceWithEndpoints(serviceIndex, nodeIndex
 	serviceName := fmt.Sprintf("sim-service-%d", serviceIndex)
 
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceName,
-			Namespace: vcs.config.Namespace,
-			Labels: map[string]string{
-				"vcluster-simulation": "true",
-				"simulation":          vcs.config.SimulationName,
-				"sim-node":            fmt.Sprintf("sim-node-%s-%d", vcs.config.SimulationName, nodeIndex),
-			},
+		Name:      serviceName,
+		Namespace: vcs.config.Namespace,
+		Labels: map[string]string{
+			"vcluster-simulation": "true",
+			"simulation":          vcs.config.SimulationName,
+			"sim-node":            fmt.Sprintf("sim-node-%s-%d", vcs.config.SimulationName, nodeIndex),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{"app": serviceName},
@@ -218,14 +213,12 @@ func (vcs *VClusterSimulator) buildFakeEndpoints(serviceName string, serviceInde
 	httpPortName := "http"
 
 	return &discoveryv1.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceName,
-			Namespace: vcs.config.Namespace,
-			Labels: map[string]string{
-				"vcluster-simulation":        "true",
-				"simulation":                 vcs.config.SimulationName,
-				"kubernetes.io/service-name": serviceName,
-			},
+		Name:      serviceName,
+		Namespace: vcs.config.Namespace,
+		Labels: map[string]string{
+			"vcluster-simulation":        "true",
+			"simulation":                 vcs.config.SimulationName,
+			"kubernetes.io/service-name": serviceName,
 		},
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints:   endpoints,
@@ -265,7 +258,7 @@ func (vcs *VClusterSimulator) Cleanup() error {
 	}
 
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: vcs.config.Namespace},
+		Name: vcs.config.Namespace,
 	}
 	if err := vcs.testInstallation.ClusterContext.Client.Delete(vcs.ctx, namespace); err != nil && client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete simulation namespace %s: %w", vcs.config.Namespace, err)

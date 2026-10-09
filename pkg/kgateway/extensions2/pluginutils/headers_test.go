@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -150,10 +149,8 @@ type convertFilterTestCase struct {
 func TestConvertHeaderFilter(t *testing.T) {
 	secrets := []any{
 		&corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "headers",
-				Namespace: "default",
-			},
+			Name:      "headers",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"explicit-key":      []byte("Explicit-Key-Value"),
 				"Implicit-Key":      []byte("Implicit-Key-Value"),
@@ -174,14 +171,12 @@ func TestConvertHeaderFilter(t *testing.T) {
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 			return &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
-					Namespace: i.Namespace,
-					Name:      i.Name,
-				},
-				Obj:  i,
-				Data: i.Data,
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: i.Namespace,
+				Name:      i.Name,
+				Obj:       i,
+				Data:      i.Data,
 			}
 		}),
 	}

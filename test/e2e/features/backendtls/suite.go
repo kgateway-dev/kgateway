@@ -39,42 +39,32 @@ var (
 	tlsVersionBackendManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata/tls-version-backend.yaml")
 
 	backendTlsPolicy = &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tls-policy",
-			Namespace: "kgateway-base",
-		},
+		Name:      "tls-policy",
+		Namespace: "kgateway-base",
 	}
 	gatewayMeta = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: "kgateway-base",
 	}
 	wellknownBackendTlsPolicy = &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "wellknown-tls-policy",
-			Namespace: "kgateway-base",
-		},
+		Name:      "wellknown-tls-policy",
+		Namespace: "kgateway-base",
 	}
 	unroutedBackendTlsPolicy = &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "unrouted-tls-policy",
-			Namespace: "kgateway-base",
-		},
+		Name:      "unrouted-tls-policy",
+		Namespace: "kgateway-base",
 	}
 	terminatedTLSRoutePolicy = &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tlsroute-backend-tls",
-			Namespace: "kgateway-base",
-		},
+		Name:      "tlsroute-backend-tls",
+		Namespace: "kgateway-base",
 	}
 	terminatedTLSRouteGatewayMeta = metav1.ObjectMeta{
 		Name:      "tlsroute-gateway",
 		Namespace: "kgateway-base",
 	}
 	terminatedTLSRouteInvalidPolicy = &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-tlsroute-backend-tls",
-			Namespace: "kgateway-base",
-		},
+		Name:      "invalid-tlsroute-backend-tls",
+		Namespace: "kgateway-base",
 	}
 	terminatedTLSRouteInvalidGatewayMeta = metav1.ObjectMeta{
 		Name:      "invalid-tlsroute-gateway",

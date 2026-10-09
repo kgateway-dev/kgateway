@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -81,13 +80,11 @@ func createTestBackendObjectIR(trafficDist wellknown.TrafficDistribution) Backen
 		Kind:      "Service",
 	}, 8080, "", "")
 	backend.Obj = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "test-service",
-			Namespace:       "default",
-			UID:             "test-uid",
-			ResourceVersion: "1",
-			Generation:      1,
-		},
+		Name:            "test-service",
+		Namespace:       "default",
+		UID:             "test-uid",
+		ResourceVersion: "1",
+		Generation:      1,
 	}
 	backend.TrafficDistribution = trafficDist
 	return backend
@@ -297,9 +294,9 @@ func TestBackendObjectIRSupportsRouteKind(t *testing.T) {
 // to comparing resourceVersion.
 func serviceBackedIR(rv string, labels map[string]string, generation int64) BackendObjectIR {
 	b := NewBackendObjectIR(ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	b.Obj = &corev1.Service{
 		Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv, Labels: labels, Generation: generation,
-	}}
+	}
 	return b
 }
 

@@ -70,7 +70,7 @@ func patchXListenerSetStatus(
 	return func(ctx context.Context, om metav1.ObjectMeta, desired gwv1.ListenerSetStatus) error {
 		res := statussync.Resource{
 			GroupVersionKind: wellknown.XListenerSetGVK,
-			NamespacedName:   types.NamespacedName{Namespace: om.Namespace, Name: om.Name},
+			Namespace:        om.Namespace, Name: om.Name,
 		}
 		live := current(res)
 		if live == nil {

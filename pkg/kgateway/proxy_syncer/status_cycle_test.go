@@ -12,7 +12,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
@@ -45,9 +44,7 @@ func staleTime() metav1.Time {
 // and one condition belongs to a different writer entirely.
 func cycleGateway() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "gw", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
-		},
+		Name: "gw", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: wellknown.DefaultGatewayClassName,
 			Listeners: []gwv1.Listener{{
@@ -106,9 +103,7 @@ func cycleRoute() *gwv1.HTTPRoute {
 		}
 	}
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "route", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
-		},
+		Name: "route", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: []gwv1.ParentReference{cycleParentRef}},
 		},
@@ -136,9 +131,7 @@ func cycleRoute() *gwv1.HTTPRoute {
 // (by listener name) than the top-level one.
 func cycleListenerSet() *gwv1.ListenerSet {
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "ls", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
-		},
+		Name: "ls", Namespace: cycleNamespace, Generation: 2, ResourceVersion: "1",
 		Spec: gwv1.ListenerSetSpec{
 			ParentRef: gwv1.ParentGatewayReference{Name: "gw"},
 			Listeners: []gwv1.ListenerEntry{{
@@ -343,21 +336,21 @@ func statusOf[O controllers.ComparableObject](col krt.Collection[O], name string
 func gatewayResource() statussync.Resource {
 	return statussync.Resource{
 		GroupVersionKind: wellknown.GatewayGVK,
-		NamespacedName:   types.NamespacedName{Namespace: cycleNamespace, Name: "gw"},
+		Namespace:        cycleNamespace, Name: "gw",
 	}
 }
 
 func routeResource() statussync.Resource {
 	return statussync.Resource{
 		GroupVersionKind: wellknown.HTTPRouteGVK,
-		NamespacedName:   types.NamespacedName{Namespace: cycleNamespace, Name: "route"},
+		Namespace:        cycleNamespace, Name: "route",
 	}
 }
 
 func listenerSetResource() statussync.Resource {
 	return statussync.Resource{
 		GroupVersionKind: wellknown.ListenerSetGVK,
-		NamespacedName:   types.NamespacedName{Namespace: cycleNamespace, Name: "ls"},
+		Namespace:        cycleNamespace, Name: "ls",
 	}
 }
 

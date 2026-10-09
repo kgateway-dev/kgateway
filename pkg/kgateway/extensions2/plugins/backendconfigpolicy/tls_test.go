@@ -115,13 +115,11 @@ func TestTranslateTLSConfig(t *testing.T) {
 				AlpnProtocols:      []string{"h2", "http/1.1"},
 			},
 			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
-					Namespace: "default",
-					Name:      "test-secret",
-				},
-				Obj: &corev1.Secret{},
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: "default",
+				Name:      "test-secret",
+				Obj:       &corev1.Secret{},
 				Data: map[string][]byte{
 					"tls.crt": []byte(CACert),
 					"tls.key": []byte(TLSKey),
@@ -354,13 +352,11 @@ func TestTranslateTLSConfig(t *testing.T) {
 				},
 			},
 			secret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
-					Namespace: "default",
-					Name:      "test-secret",
-				},
-				Obj: &corev1.Secret{},
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: "default",
+				Name:      "test-secret",
+				Obj:       &corev1.Secret{},
 				Data: map[string][]byte{
 					"tls.crt": []byte(CACert),
 					"tls.key": []byte(TLSKey),

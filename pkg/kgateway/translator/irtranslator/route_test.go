@@ -608,12 +608,10 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 				Name:       "unique-test-rule",
 				RuleName:   "test-rule",
 				Parent: &ir.HttpRouteIR{
-					ObjectSource: ir.ObjectSource{
-						Kind:      "HTTPRoute",
-						Group:     "gateway.networking.k8s.io",
-						Name:      "test-route",
-						Namespace: "default",
-					},
+					Kind:      "HTTPRoute",
+					Group:     "gateway.networking.k8s.io",
+					Name:      "test-route",
+					Namespace: "default",
 				},
 			},
 			expected: map[string]string{
@@ -632,12 +630,10 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 				MatchIndex: 2,
 				Name:       "unique-test-rule",
 				Parent: &ir.HttpRouteIR{
-					ObjectSource: ir.ObjectSource{
-						Kind:      "HTTPRoute",
-						Group:     "gateway.networking.k8s.io",
-						Name:      "test-route",
-						Namespace: "default",
-					},
+					Kind:      "HTTPRoute",
+					Group:     "gateway.networking.k8s.io",
+					Name:      "test-route",
+					Namespace: "default",
 				},
 			},
 			expected: map[string]string{
@@ -653,11 +649,9 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 			name: "missing rule and kind",
 			in: ir.HttpRouteRuleMatchIR{
 				Parent: &ir.HttpRouteIR{
-					ObjectSource: ir.ObjectSource{
-						Group:     "gateway.networking.k8s.io",
-						Name:      "test-route",
-						Namespace: "default",
-					},
+					Group:     "gateway.networking.k8s.io",
+					Name:      "test-route",
+					Namespace: "default",
 				},
 			},
 			expected: map[string]string{
@@ -677,10 +671,8 @@ func TestAddRouteSourceMetadata(t *testing.T) {
 			name: "existing metadata preserved",
 			in: ir.HttpRouteRuleMatchIR{
 				Parent: &ir.HttpRouteIR{
-					ObjectSource: ir.ObjectSource{
-						Kind: "HTTPRoute",
-						Name: "test-route",
-					},
+					Kind: "HTTPRoute",
+					Name: "test-route",
 				},
 			},
 			initialMetadata: &envoycorev3.Metadata{
@@ -740,12 +732,10 @@ func TestRouteSourceMetadataFlag(t *testing.T) {
 	in := ir.HttpRouteRuleMatchIR{
 		Name: "my-rule",
 		Parent: &ir.HttpRouteIR{
-			ObjectSource: ir.ObjectSource{
-				Kind:      "HTTPRoute",
-				Group:     "gateway.networking.k8s.io",
-				Name:      "my-route",
-				Namespace: "default",
-			},
+			Kind:      "HTTPRoute",
+			Group:     "gateway.networking.k8s.io",
+			Name:      "my-route",
+			Namespace: "default",
 		},
 	}
 

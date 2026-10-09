@@ -269,7 +269,7 @@ func policyTargetStatusContribution(policy ir.PolicyWrapper, problems []string) 
 			Kind: reports.PolicyTargetStatusSource,
 			Name: policy.ResourceName(),
 		},
-		StatusReport: reports.StatusReport{Policy: buildPolicyTargetReport(policy, problems)},
+		Policy: buildPolicyTargetReport(policy, problems),
 	}
 }
 

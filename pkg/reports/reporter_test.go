@@ -337,10 +337,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				reporter := reports.NewReporter(&rm)
 
 				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route",
-						Namespace: "default",
-					},
+					Name:      "route",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -384,10 +382,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 			},
 			Entry("httproute", &gwv1.HTTPRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route",
-					Namespace: "default",
-				},
+				Name:      "route",
+				Namespace: "default",
 				Spec: gwv1.HTTPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -880,10 +876,8 @@ func fakeTranslate(reporter reporter.Reporter, obj client.Object) {
 
 func httpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -898,10 +892,8 @@ func httpRoute(conditions ...metav1.Condition) client.Object {
 
 func tcpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -916,10 +908,8 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -934,10 +924,8 @@ func tlsRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRouteV1(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -952,10 +940,8 @@ func tlsRouteV1(conditions ...metav1.Condition) client.Object {
 
 func grpcRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.GRPCRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -982,10 +968,8 @@ func otherParentRef() *gwv1.ParentReference {
 
 func delegateeRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-route",
-			Namespace: "default",
-		},
+		Name:      "child-route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRouteRef())
 	if len(conditions) > 0 {
@@ -1009,10 +993,8 @@ func parentRouteRef() *gwv1.ParentReference {
 
 func gw() *gwv1.Gateway {
 	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "kgateway-gtw",
-		},
+		Namespace: "default",
+		Name:      "kgateway-gtw",
 	}
 	gw.Spec.Listeners = append(gw.Spec.Listeners, *listener())
 	return gw
@@ -1026,10 +1008,8 @@ func listener() *gwv1.Listener {
 
 func ls() *gwv1.ListenerSet {
 	ls := &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 	}
 	ls.Spec.Listeners = []gwv1.ListenerEntry{
 		{

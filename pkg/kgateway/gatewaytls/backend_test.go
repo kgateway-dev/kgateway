@@ -22,10 +22,8 @@ func TestResolveBackendClientCertificate(t *testing.T) {
 		resolved, err := ResolveBackendClientCertificate(gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 			assert.Equal(t, gwv1.ObjectName("client-cert"), secretRef.Name)
 			return &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Namespace: "default",
-					Name:      "client-cert",
-				},
+				Namespace: "default",
+				Name:      "client-cert",
 				Data: map[string][]byte{
 					corev1.TLSCertKey:       []byte(testTLSCert),
 					corev1.TLSPrivateKeyKey: []byte(testTLSKey),
@@ -64,10 +62,8 @@ func TestResolveBackendClientCertificate(t *testing.T) {
 
 		resolved, err := ResolveBackendClientCertificate(gateway, func(secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 			return &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Namespace: "default",
-					Name:      "client-cert",
-				},
+				Namespace: "default",
+				Name:      "client-cert",
 				Data: map[string][]byte{
 					corev1.TLSCertKey: []byte(testTLSCert),
 				},
@@ -82,12 +78,10 @@ func TestResolveBackendClientCertificate(t *testing.T) {
 
 func testGatewayWithClientCertificateRef(ref gwv1.SecretObjectReference) *ir.Gateway {
 	return &ir.Gateway{
-		ObjectSource: ir.ObjectSource{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      "Gateway",
-			Namespace: "default",
-			Name:      "gw",
-		},
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "Gateway",
+		Namespace: "default",
+		Name:      "gw",
 		BackendTLSConfig: &ir.GatewayBackendTLSConfigIR{
 			ClientCertificateRef: ref.DeepCopy(),
 		},

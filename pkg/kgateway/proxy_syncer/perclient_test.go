@@ -16,7 +16,6 @@ import (
 	"github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
@@ -308,9 +307,9 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:         routes,
-		Listeners:      listeners,
+		Namespace: "ns", Name: "gw",
+		Routes:    routes,
+		Listeners: listeners,
 	}})
 	pcc, _ := newTestPerClientClusters([]uccWithCluster{
 		{
@@ -396,9 +395,9 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 	})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:         routes,
-		Listeners:      listeners,
+		Namespace: "ns", Name: "gw",
+		Routes:    routes,
+		Listeners: listeners,
 	}})
 
 	pcc, _ := newTestPerClientClusters([]uccWithCluster{
@@ -463,9 +462,9 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 	})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}})
 	initial := GatewayXdsResources{
-		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Routes:         goodRoutes,
-		Listeners:      listeners,
+		Namespace: "ns", Name: "gw",
+		Routes:    goodRoutes,
+		Listeners: listeners,
 	}
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{initial})
 

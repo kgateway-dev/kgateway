@@ -52,11 +52,9 @@ var _ e2e.NewSuiteFunc = NewAttachedRoutesSuite
 
 func NewAttachedRoutesSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &AttachedRoutesSuite{
-		LoadTestingSuite: LoadTestingSuite{
-			Suite:            suite.Suite{},
-			ctx:              ctx,
-			testInstallation: testInst,
-		},
+		Suite:            suite.Suite{},
+		ctx:              ctx,
+		testInstallation: testInst,
 	}
 }
 
@@ -432,10 +430,8 @@ func (s *AttachedRoutesSuite) createSingleIncrementalRoute(gatewayName string) *
 	routeName := fmt.Sprintf("incremental-route-%d", time.Now().UnixNano())
 
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      routeName,
-			Namespace: s.loadTestManager.testNamespace,
-		},
+		Name:      routeName,
+		Namespace: s.loadTestManager.testNamespace,
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{Name: gwv1.ObjectName(gatewayName)}},
@@ -449,12 +445,8 @@ func (s *AttachedRoutesSuite) createSingleIncrementalRoute(gatewayName string) *
 					},
 				}},
 				BackendRefs: []gwv1.HTTPBackendRef{{
-					BackendRef: gwv1.BackendRef{
-						BackendObjectReference: gwv1.BackendObjectReference{
-							Name: gwv1.ObjectName("loadtest-backend"),
-							Port: &[]gwv1.PortNumber{80}[0],
-						},
-					},
+					Name: gwv1.ObjectName("loadtest-backend"),
+					Port: &[]gwv1.PortNumber{80}[0],
 				}},
 			}},
 		},

@@ -540,11 +540,9 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		}
 
 		return &ir.TcpIR{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: tcpHostName,
-				TLS:             tlsConfig,
-			},
-			BackendRefs: backends,
+			FilterChainName: tcpHostName,
+			TLS:             tlsConfig,
+			BackendRefs:     backends,
 		}
 	case *ir.TlsRouteIR:
 		tRoute := r.Object.(*ir.TlsRouteIR)
@@ -626,12 +624,10 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		matcher.SniDomains = slices.Clone(tc.sniDomains)
 
 		return &ir.TcpIR{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: tcpHostName,
-				Matcher:         matcher,
-				TLS:             tlsConfig,
-			},
-			BackendRefs: backends,
+			FilterChainName: tcpHostName,
+			Matcher:         matcher,
+			TLS:             tlsConfig,
+			BackendRefs:     backends,
 		}
 	default:
 		return nil
@@ -814,9 +810,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 
 	// TODO: Make a similar change for other filter chains ???
 	return ir.HttpFilterChainIR{
-		FilterChainCommon: ir.FilterChainCommon{
-			FilterChainName: parentName,
-		},
+		FilterChainName: parentName,
 		// Http plain text filter chains do not have attached policies.
 		// Because a single chain is shared across multiple gateway-api listeners, we don't have a clean way
 		// of applying listener level policies.
@@ -914,11 +908,9 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	})
 
 	return &ir.HttpFilterChainIR{
-		FilterChainCommon: ir.FilterChainCommon{
-			FilterChainName: hfc.gatewayListenerName,
-			Matcher:         matcher,
-			TLS:             tlsConfig,
-		},
+		FilterChainName:  hfc.gatewayListenerName,
+		Matcher:          matcher,
+		TLS:              tlsConfig,
 		AttachedPolicies: hfc.attachedPolicies,
 		Vhosts:           virtualHosts,
 	}, nil
@@ -1374,8 +1366,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	}
 
-	var notFoundErr *krtcollections.NotFoundError
-	if errors.As(err, &notFoundErr) {
+	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
 			resourceType = "Resource"

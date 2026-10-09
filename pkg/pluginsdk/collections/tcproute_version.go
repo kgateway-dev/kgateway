@@ -1,7 +1,6 @@
 package collections
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -27,10 +26,8 @@ func convertTCPRouteV1ToV1Alpha2(in *gwv1.TCPRoute) *gwv1a2.TCPRoute {
 		// only record of which version an object came from — and that is the version its
 		// status must be written back through. statussync.RegisterKindByObjectGVK keys the
 		// status reductions and the write queue off this GVK, so it has to be set here.
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       wellknown.TCPRouteKind,
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       wellknown.TCPRouteKind,
 		ObjectMeta: *in.ObjectMeta.DeepCopy(),
 		Spec: gwv1a2.TCPRouteSpec{
 			CommonRouteSpec: in.Spec.CommonRouteSpec,

@@ -138,7 +138,7 @@ GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
 DEPSGOBIN ?= $(OUTPUT_DIR)
-GOLANGCI_LINT ?= go tool golangci-lint
+GOLANGCI_LINT ?= go tool -modfile tools/go.mod golangci-lint
 ANALYZE_ARGS ?= --fix --verbose --max-issues-per-linter 0 --max-same-issues 0
 CUSTOM_GOLANGCI_LINT_BIN ?= $(DEPSGOBIN)/golangci-lint-custom
 CUSTOM_GOLANGCI_LINT_RUN ?= $(CUSTOM_GOLANGCI_LINT_BIN) run --build-tags e2e

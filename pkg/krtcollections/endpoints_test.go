@@ -59,10 +59,8 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 		},
 		Port: 8080,
 		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "svc",
-				Namespace: "ns",
-			},
+			Name:      "svc",
+			Namespace: "ns",
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
@@ -182,10 +180,8 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 		},
 		Port: 8080,
 		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "svc",
-				Namespace: "ns",
-			},
+			Name:      "svc",
+			Namespace: "ns",
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
@@ -205,10 +201,8 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 		},
 		Port: 8080,
 		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "discovered-name",
-				Namespace: "ns",
-			},
+			Name:      "discovered-name",
+			Namespace: "ns",
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
@@ -312,10 +306,8 @@ func TestEndpointsForUpstreamWithDifferentTrafficDistributionButSameEndpoints(t 
 		},
 		Port: 8080,
 		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "svc",
-				Namespace: "ns",
-			},
+			Name:      "svc",
+			Namespace: "ns",
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
@@ -466,10 +458,8 @@ func TestEndpointsForGatewayScopedBackendsWithSameEndpointsHaveDifferentHashes(t
 		Port:     8080,
 		GvPrefix: "kube",
 		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "svc",
-				Namespace: "ns",
-			},
+			Name:      "svc",
+			Namespace: "ns",
 		},
 	})
 	clientCertificate := &ir.GatewayBackendClientCertificateIR{}
@@ -537,11 +527,9 @@ func TestEndpoints(t *testing.T) {
 			name: "basic",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
@@ -551,21 +539,17 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-abcde", // Unique name for the EndpointSlice
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-abcde", // Unique name for the EndpointSlice
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -600,10 +584,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8080,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -662,10 +644,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8080,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -686,12 +666,10 @@ func TestEndpoints(t *testing.T) {
 			name: "endpoint slices without matching backend port returns empty endpoints",
 			inputs: []any{
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-slice-mismatch",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-slice-mismatch",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -720,10 +698,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8081,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -751,11 +727,9 @@ func TestEndpoints(t *testing.T) {
 			name: "two pods two zones",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
@@ -765,29 +739,23 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node2",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone2",
-						},
+					Name: "node2",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone2",
 					},
 				},
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name2",
-						Namespace: "ns",
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name2",
+					Namespace: "ns",
 					Spec: corev1.PodSpec{
 						NodeName: "node2",
 					},
@@ -797,12 +765,10 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-abcde",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-abcde",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -848,10 +814,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8080,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -928,14 +892,12 @@ func TestEndpoints(t *testing.T) {
 			name: "basic - metadata propagates",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels: map[string]string{
-							// pod labels should propagate to endpoint metadata.
-							"label": "value",
-						},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
+					Labels: map[string]string{
+						// pod labels should propagate to endpoint metadata.
+						"label": "value",
 					},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
@@ -946,23 +908,19 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-							// this label should not propagate. only node topology labels should.
-							"unralated": "label",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
+						// this label should not propagate. only node topology labels should.
+						"unralated": "label",
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-abcde",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-abcde",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -996,10 +954,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8080,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -1050,13 +1006,11 @@ func TestEndpoints(t *testing.T) {
 			name: "deduplication of endpoints across endpointslices",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"app": "test",
-						},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "pod1",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"app": "test",
 					},
 					Spec: corev1.PodSpec{
 						NodeName: "node1",
@@ -1067,21 +1021,17 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node1",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region1",
-							corev1.LabelTopologyZone:   "zone1",
-						},
+					Name: "node1",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region1",
+						corev1.LabelTopologyZone:   "zone1",
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-slice1",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-slice1",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -1106,12 +1056,10 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-slice2",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-slice2",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -1145,10 +1093,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8080,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -1199,13 +1145,11 @@ func TestEndpoints(t *testing.T) {
 			name: "filter out unready endpoints",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"app": "test",
-						},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "pod1",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"app": "test",
 					},
 					Spec: corev1.PodSpec{
 						NodeName: "node1",
@@ -1216,21 +1160,17 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node1",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region1",
-							corev1.LabelTopologyZone:   "zone1",
-						},
+					Name: "node1",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region1",
+						corev1.LabelTopologyZone:   "zone1",
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-slice-unready",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-slice-unready",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -1264,10 +1204,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8080,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -1288,11 +1226,9 @@ func TestEndpoints(t *testing.T) {
 			name: "multiple ports",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pod1",
-						Namespace: "ns",
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "pod1",
+					Namespace: "ns",
 					Spec: corev1.PodSpec{
 						NodeName: "node1",
 					},
@@ -1302,21 +1238,17 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node1",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region1",
-							corev1.LabelTopologyZone:   "zone1",
-						},
+					Name: "node1",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region1",
+						corev1.LabelTopologyZone:   "zone1",
 					},
 				},
 				&discoveryv1.EndpointSlice{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc-slice-unready",
-						Namespace: "ns",
-						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc",
-						},
+					Name:      "svc-slice-unready",
+					Namespace: "ns",
+					Labels: map[string]string{
+						"kubernetes.io/service-name": "svc",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -1360,10 +1292,8 @@ func TestEndpoints(t *testing.T) {
 				},
 				Port: 8081,
 				Obj: &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc",
-						Namespace: "ns",
-					},
+					Name:      "svc",
+					Namespace: "ns",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{

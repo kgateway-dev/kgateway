@@ -37,17 +37,13 @@ var _ = Describe("SnapshotResponseData", func() {
 			admin.SnapshotResponseData{
 				Data: []corev1.Namespace{
 					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "name",
-							Namespace: "namespace",
-							ManagedFields: []metav1.ManagedFieldsEntry{{
-								Manager: "manager",
-							}},
-						},
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "kind",
-							APIVersion: "version",
-						},
+						Name:      "name",
+						Namespace: "namespace",
+						ManagedFields: []metav1.ManagedFieldsEntry{{
+							Manager: "manager",
+						}},
+						Kind:       "kind",
+						APIVersion: "version",
 					},
 				},
 				Error: nil,

@@ -8,14 +8,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func testResource(name string) Resource {
 	return Resource{
-		GroupVersionKind: schema.GroupVersionKind{Group: "g", Version: "v", Kind: "K"},
-		NamespacedName:   types.NamespacedName{Namespace: "ns", Name: name},
+		Group: "g", Version: "v", Kind: "K",
+		Namespace: "ns", Name: name,
 	}
 }
 

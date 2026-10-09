@@ -158,12 +158,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 		}
 
 		pol := &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: b.Namespace,
-				Name:      b.Name,
-			},
+			Group:      gk.Group,
+			Kind:       gk.Kind,
+			Namespace:  b.Namespace,
+			Name:       b.Name,
 			Policy:     b,
 			PolicyIR:   policyIR,
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),

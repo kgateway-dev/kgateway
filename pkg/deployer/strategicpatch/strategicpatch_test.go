@@ -22,13 +22,9 @@ func TestOverlayApplier_ApplyOverlays_NilParams(t *testing.T) {
 	applier := NewOverlayApplierFromGatewayParameters(nil)
 	objs := []client.Object{
 		&appsv1.Deployment{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "apps/v1",
-				Kind:       "Deployment",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-deployment",
-			},
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+			Name:       "test-deployment",
 		},
 	}
 
@@ -41,12 +37,10 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-					DeploymentOverlay: &shared.KubernetesResourceOverlay{
-						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{
-								"custom-label": "custom-value",
-							},
+				DeploymentOverlay: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
+						Labels: map[string]string{
+							"custom-label": "custom-value",
 						},
 					},
 				},
@@ -56,15 +50,11 @@ func TestOverlayApplier_ApplyOverlays_MetadataLabels(t *testing.T) {
 
 	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-deployment",
-			Labels: map[string]string{
-				"existing-label": "existing-value",
-			},
+		APIVersion: "apps/v1",
+		Kind:       "Deployment",
+		Name:       "test-deployment",
+		Labels: map[string]string{
+			"existing-label": "existing-value",
 		},
 	}
 	objs := []client.Object{deployment}
@@ -81,12 +71,10 @@ func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-					ServiceOverlay: &shared.KubernetesResourceOverlay{
-						Metadata: &shared.ObjectMetadata{
-							Annotations: map[string]string{
-								"custom-annotation": "custom-value",
-							},
+				ServiceOverlay: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
+						Annotations: map[string]string{
+							"custom-annotation": "custom-value",
 						},
 					},
 				},
@@ -96,13 +84,9 @@ func TestOverlayApplier_ApplyOverlays_MetadataAnnotations(t *testing.T) {
 
 	applier := NewOverlayApplierFromGatewayParameters(params)
 	svc := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-service",
-		},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       "test-service",
 	}
 	objs := []client.Object{svc}
 
@@ -134,10 +118,8 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-					DeploymentOverlay: &shared.KubernetesResourceOverlay{
-						Spec: &apiextensionsv1.JSON{Raw: specPatch},
-					},
+				DeploymentOverlay: &shared.KubernetesResourceOverlay{
+					Spec: &apiextensionsv1.JSON{Raw: specPatch},
 				},
 			},
 		},
@@ -145,13 +127,9 @@ func TestOverlayApplier_ApplyOverlays_DeploymentSpec(t *testing.T) {
 
 	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-deployment",
-		},
+		APIVersion: "apps/v1",
+		Kind:       "Deployment",
+		Name:       "test-deployment",
 		Spec: appsv1.DeploymentSpec{
 			Replicas: new(int32(1)),
 			Template: corev1.PodTemplateSpec{
@@ -194,10 +172,8 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-					DeploymentOverlay: &shared.KubernetesResourceOverlay{
-						Spec: &apiextensionsv1.JSON{Raw: specPatch},
-					},
+				DeploymentOverlay: &shared.KubernetesResourceOverlay{
+					Spec: &apiextensionsv1.JSON{Raw: specPatch},
 				},
 			},
 		},
@@ -205,13 +181,9 @@ func TestOverlayApplier_ApplyOverlays_DeleteContainerWithPatchDirective(t *testi
 
 	applier := NewOverlayApplierFromGatewayParameters(params)
 	deployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-deployment",
-		},
+		APIVersion: "apps/v1",
+		Kind:       "Deployment",
+		Name:       "test-deployment",
 		Spec: appsv1.DeploymentSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
@@ -247,10 +219,8 @@ func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-					ServiceOverlay: &shared.KubernetesResourceOverlay{
-						Spec: &apiextensionsv1.JSON{Raw: specPatch},
-					},
+				ServiceOverlay: &shared.KubernetesResourceOverlay{
+					Spec: &apiextensionsv1.JSON{Raw: specPatch},
 				},
 			},
 		},
@@ -258,13 +228,9 @@ func TestOverlayApplier_ApplyOverlays_ServiceSpec(t *testing.T) {
 
 	applier := NewOverlayApplierFromGatewayParameters(params)
 	svc := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-service",
-		},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       "test-service",
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
 		},
@@ -282,21 +248,19 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 	params := &kgateway.GatewayParameters{
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
-				GatewayParametersOverlays: kgateway.GatewayParametersOverlays{
-					DeploymentOverlay: &shared.KubernetesResourceOverlay{
-						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{"app": "modified"},
-						},
+				DeploymentOverlay: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
+						Labels: map[string]string{"app": "modified"},
 					},
-					ServiceOverlay: &shared.KubernetesResourceOverlay{
-						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{"svc": "modified"},
-						},
+				},
+				ServiceOverlay: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
+						Labels: map[string]string{"svc": "modified"},
 					},
-					ServiceAccountOverlay: &shared.KubernetesResourceOverlay{
-						Metadata: &shared.ObjectMetadata{
-							Labels: map[string]string{"sa": "modified"},
-						},
+				},
+				ServiceAccountOverlay: &shared.KubernetesResourceOverlay{
+					Metadata: &shared.ObjectMetadata{
+						Labels: map[string]string{"sa": "modified"},
 					},
 				},
 			},
@@ -306,20 +270,20 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 	applier := NewOverlayApplierFromGatewayParameters(params)
 	objs := []client.Object{
 		&appsv1.Deployment{
-			TypeMeta:   metav1.TypeMeta{APIVersion: "apps/v1", Kind: "Deployment"},
-			ObjectMeta: metav1.ObjectMeta{Name: "test-deployment"},
+			APIVersion: "apps/v1", Kind: "Deployment",
+			Name: "test-deployment",
 		},
 		&corev1.Service{
-			TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
-			ObjectMeta: metav1.ObjectMeta{Name: "test-service"},
+			APIVersion: "v1", Kind: "Service",
+			Name: "test-service",
 		},
 		&corev1.ServiceAccount{
-			TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "ServiceAccount"},
-			ObjectMeta: metav1.ObjectMeta{Name: "test-sa"},
+			APIVersion: "v1", Kind: "ServiceAccount",
+			Name: "test-sa",
 		},
 		&corev1.ConfigMap{
-			TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "ConfigMap"},
-			ObjectMeta: metav1.ObjectMeta{Name: "test-cm"},
+			APIVersion: "v1", Kind: "ConfigMap",
+			Name: "test-cm",
 		},
 	}
 
@@ -348,12 +312,10 @@ func TestOverlayApplier_ApplyOverlays_MultipleObjects(t *testing.T) {
 // PDB / HPA / VPA creation.
 func deploymentWithLabels(labels map[string]string) *appsv1.Deployment {
 	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{APIVersion: "apps/v1", Kind: "Deployment"},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw",
-			Namespace: "default",
-			Labels:    labels,
-		},
+		APIVersion: "apps/v1", Kind: "Deployment",
+		Name:      "gw",
+		Namespace: "default",
+		Labels:    labels,
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{MatchLabels: labels},
 		},

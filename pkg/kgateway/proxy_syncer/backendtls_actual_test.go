@@ -47,14 +47,10 @@ SxODgqhtaPnOxQ==
 
 func newActualBackendTLSTestService() *corev1.Service {
 	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-service",
-			Namespace: "default",
-		},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       "backend-service",
+		Namespace:  "default",
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
@@ -69,14 +65,10 @@ func newActualBackendTLSTestService() *corev1.Service {
 
 func newActualBackendTLSTestConfigMap() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tls-checks-ca-certificate",
-			Namespace: "default",
-		},
+		APIVersion: "v1",
+		Kind:       "ConfigMap",
+		Name:       "tls-checks-ca-certificate",
+		Namespace:  "default",
 		Data: map[string]string{
 			"ca.crt": backendTLSConformanceCACert,
 		},
@@ -85,24 +77,18 @@ func newActualBackendTLSTestConfigMap() *corev1.ConfigMap {
 
 func newActualBackendTLSPolicy(name, hostname string, creationTime time.Time) *gwv1.BackendTLSPolicy {
 	return &gwv1.BackendTLSPolicy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       wellknown.BackendTLSPolicyGVK.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              name,
-			Namespace:         "default",
-			CreationTimestamp: metav1.NewTime(creationTime),
-			Generation:        1,
-		},
+		APIVersion:        gwv1.GroupVersion.String(),
+		Kind:              wellknown.BackendTLSPolicyGVK.Kind,
+		Name:              name,
+		Namespace:         "default",
+		CreationTimestamp: metav1.NewTime(creationTime),
+		Generation:        1,
 		Spec: gwv1.BackendTLSPolicySpec{
 			TargetRefs: []gwv1.LocalPolicyTargetReferenceWithSectionName{
 				{
-					LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{
-						Group: "",
-						Kind:  "Service",
-						Name:  "backend-service",
-					},
+					Group: "",
+					Kind:  "Service",
+					Name:  "backend-service",
 				},
 			},
 			Validation: gwv1.BackendTLSPolicyValidation{

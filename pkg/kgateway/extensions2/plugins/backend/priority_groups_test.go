@@ -7,7 +7,6 @@ import (
 	"github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -15,7 +14,7 @@ import (
 
 func staticBackend(name string, hosts ...kgateway.Host) *kgateway.Backend {
 	return &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+		Name: name, Namespace: "default",
 		Spec: kgateway.BackendSpec{
 			Static: &kgateway.StaticBackend{Hosts: hosts},
 		},
@@ -24,8 +23,8 @@ func staticBackend(name string, hosts ...kgateway.Host) *kgateway.Backend {
 
 func priorityGroupsBackend(groups ...kgateway.PriorityGroup) *kgateway.Backend {
 	return &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{Name: "pg", Namespace: "default"},
-		Spec:       kgateway.BackendSpec{PriorityGroups: groups},
+		Name: "pg", Namespace: "default",
+		Spec: kgateway.BackendSpec{PriorityGroups: groups},
 	}
 }
 
@@ -90,7 +89,7 @@ func TestBuildPriorityGroupsIrErrors(t *testing.T) {
 	g := gomega.NewWithT(t)
 
 	awsBackend := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{Name: "lambda", Namespace: "default"},
+		Name: "lambda", Namespace: "default",
 		Spec: kgateway.BackendSpec{
 			Aws: &kgateway.AwsBackend{},
 		},

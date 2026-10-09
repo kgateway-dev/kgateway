@@ -202,7 +202,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 					s.deleteManifests(crossNsNoRefGrantBackendNsManifest)
 				}
 
-				s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: tc.gtwNs}})
+				s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{Name: tc.gtwNs})
 			})
 
 			// Setup environment for ReferenceGrant test cases

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
@@ -203,19 +202,15 @@ func listenerIsolationHostname(hostname string) *gwv1.Hostname {
 
 func listenerIsolationRouteInfo(hostnames []string) *query.RouteInfo {
 	source := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	return &query.RouteInfo{
 		Object: &ir.HttpRouteIR{
-			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      "HTTPRoute",
-				Namespace: "default",
-				Name:      "route",
-			},
+			Group:        gwv1.GroupVersion.Group,
+			Kind:         "HTTPRoute",
+			Namespace:    "default",
+			Name:         "route",
 			SourceObject: source,
 			Hostnames:    hostnames,
 			ParentRefs: []gwv1.ParentReference{

@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -17,8 +15,8 @@ import (
 // Desired builders ignore it, but CheckWriterIdempotent needs the resource a real writer
 // would have been handed.
 var testRoute = Resource{
-	GroupVersionKind: schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"},
-	NamespacedName:   types.NamespacedName{Namespace: "default", Name: "route"},
+	Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute",
+	Namespace: "default", Name: "route",
 }
 
 // applyRouteStatus is the ApplyStatusFn for an HTTPRoute: it models what the API server
@@ -54,8 +52,8 @@ func acceptedCondition(at time.Time) metav1.Condition {
 // routeWithParents returns a route whose live status holds the given parents.
 func routeWithParents(parents ...gwv1.RouteParentStatus) *gwv1.HTTPRoute {
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"},
-		Status:     gwv1.HTTPRouteStatus{RouteStatus: gwv1.RouteStatus{Parents: parents}},
+		Name: "route", Namespace: "default",
+		Status: gwv1.HTTPRouteStatus{RouteStatus: gwv1.RouteStatus{Parents: parents}},
 	}
 }
 

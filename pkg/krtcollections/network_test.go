@@ -11,7 +11,6 @@ import (
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -30,19 +29,15 @@ func TestFetchSystemNamespaceNetwork(t *testing.T) {
 func TestK8sEndpointsWithoutPodGetSystemNamespaceNetwork(t *testing.T) {
 	mock := krttest.NewMock(t, []any{
 		&corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "remote",
-				Namespace: "ns",
-				Labels:    map[string]string{label.TopologyNetwork.Name: "n2"},
-			},
-			Status: corev1.PodStatus{PodIP: "5.6.7.8"},
+			Name:      "remote",
+			Namespace: "ns",
+			Labels:    map[string]string{label.TopologyNetwork.Name: "n2"},
+			Status:    corev1.PodStatus{PodIP: "5.6.7.8"},
 		},
 		&discoveryv1.EndpointSlice{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "svc-abcde",
-				Namespace: "ns",
-				Labels:    map[string]string{discoveryv1.LabelServiceName: "svc"},
-			},
+			Name:        "svc-abcde",
+			Namespace:   "ns",
+			Labels:      map[string]string{discoveryv1.LabelServiceName: "svc"},
 			AddressType: discoveryv1.AddressTypeIPv4,
 			Endpoints: []discoveryv1.Endpoint{
 				{
@@ -81,8 +76,8 @@ func TestK8sEndpointsWithoutPodGetSystemNamespaceNetwork(t *testing.T) {
 		ObjectSource: ir.ObjectSource{Namespace: "ns", Name: "svc", Kind: "Service"},
 		Port:         8080,
 		Obj: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "ns"},
-			Spec:       corev1.ServiceSpec{Ports: []corev1.ServicePort{{Name: "http", Port: 8080}}},
+			Name: "svc", Namespace: "ns",
+			Spec: corev1.ServiceSpec{Ports: []corev1.ServicePort{{Name: "http", Port: 8080}}},
 		},
 	})
 	eps := builder(krt.TestingDummyContext{}, backend)

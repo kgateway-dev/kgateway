@@ -107,12 +107,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		tlsPolicyIR, err := translate(krtctx, i)
 
 		pol := &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     backendTlsPolicyGroupKind.Group,
-				Kind:      backendTlsPolicyGroupKind.Kind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
+			Group:      backendTlsPolicyGroupKind.Group,
+			Kind:       backendTlsPolicyGroupKind.Kind,
+			Namespace:  i.Namespace,
+			Name:       i.Name,
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),

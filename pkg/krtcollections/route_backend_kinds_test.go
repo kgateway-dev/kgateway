@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -92,18 +91,14 @@ func httpOnlyBackend() *kgateway.Backend {
 
 func grpcRouteWithBackendRef(refN string) *gwv1.GRPCRoute {
 	return &gwv1.GRPCRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "grpcroute",
-			Namespace: "default",
-		},
+		Name:      "grpcroute",
+		Namespace: "default",
 		Spec: gwv1.GRPCRouteSpec{
 			Rules: []gwv1.GRPCRouteRule{
 				{
 					BackendRefs: []gwv1.GRPCBackendRef{
 						{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: kgatewayBackendRef(refN),
-							},
+							BackendObjectReference: kgatewayBackendRef(refN),
 						},
 					},
 				},
@@ -114,10 +109,8 @@ func grpcRouteWithBackendRef(refN string) *gwv1.GRPCRoute {
 
 func tcpRouteWithKgatewayBackendRef(refN string) *gwv1a2.TCPRoute {
 	return &gwv1a2.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tcproute",
-			Namespace: "default",
-		},
+		Name:      "tcproute",
+		Namespace: "default",
 		Spec: gwv1a2.TCPRouteSpec{
 			Rules: []gwv1a2.TCPRouteRule{
 				{

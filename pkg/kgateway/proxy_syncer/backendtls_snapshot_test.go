@@ -33,26 +33,18 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 	ctx := t.Context()
 
 	gatewayClass := &gwv1.GatewayClass{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "GatewayClass",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "example-gateway-class",
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       "GatewayClass",
+		Name:       "example-gateway-class",
 		Spec: gwv1.GatewayClassSpec{
 			ControllerName: gwv1.GatewayController(wellknown.DefaultGatewayControllerName),
 		},
 	}
 	gateway := &gwv1.Gateway{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "Gateway",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-gateway",
-			Namespace: "default",
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       "Gateway",
+		Name:       "example-gateway",
+		Namespace:  "default",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "example-gateway-class",
 			Listeners: []gwv1.Listener{
@@ -65,14 +57,10 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		},
 	}
 	httpRoute := &gwv1.HTTPRoute{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "HTTPRoute",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-route",
-			Namespace: "default",
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       "HTTPRoute",
+		Name:       "example-route",
+		Namespace:  "default",
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{
@@ -85,21 +73,17 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 					Matches: []gwv1.HTTPRouteMatch{
 						{
 							Path: &gwv1.HTTPPathMatch{
-								Type:  snapshotPtr(gwv1.PathMatchExact),
+								Type:  new(gwv1.PathMatchExact),
 								Value: new("/backendtlspolicy-conflicted-without-section-name"),
 							},
 						},
 					},
 					BackendRefs: []gwv1.HTTPBackendRef{
 						{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Group: snapshotPtr(gwv1.Group("")),
-									Kind:  snapshotPtr(gwv1.Kind("Service")),
-									Name:  "backend-service",
-									Port:  snapshotPtr(gwv1.PortNumber(443)),
-								},
-							},
+							Group: new(gwv1.Group("")),
+							Kind:  new(gwv1.Kind("Service")),
+							Name:  "backend-service",
+							Port:  new(gwv1.PortNumber(443)),
 						},
 					},
 				},
@@ -114,7 +98,7 @@ func TestPerClientSnapshotUpdatesWhenBackendTLSPolicyConflictsAddedLater(t *test
 		httpRoute,
 		newActualBackendTLSTestService(),
 		newActualBackendTLSTestConfigMap(),
-		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
+		&corev1.Namespace{Name: "default"},
 	)
 	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
@@ -231,26 +215,18 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 	ctx := t.Context()
 
 	gatewayClass := &gwv1.GatewayClass{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "GatewayClass",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "example-gateway-class",
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       "GatewayClass",
+		Name:       "example-gateway-class",
 		Spec: gwv1.GatewayClassSpec{
 			ControllerName: gwv1.GatewayController(wellknown.DefaultGatewayControllerName),
 		},
 	}
 	gateway := &gwv1.Gateway{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "Gateway",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-gateway",
-			Namespace: "default",
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       "Gateway",
+		Name:       "example-gateway",
+		Namespace:  "default",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "example-gateway-class",
 			Listeners: []gwv1.Listener{{
@@ -261,14 +237,10 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		},
 	}
 	httpRoute := &gwv1.HTTPRoute{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       "HTTPRoute",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-route",
-			Namespace: "default",
-		},
+		APIVersion: gwv1.GroupVersion.String(),
+		Kind:       "HTTPRoute",
+		Name:       "example-route",
+		Namespace:  "default",
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{Name: "example-gateway"}},
@@ -278,37 +250,29 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 				{
 					Matches: []gwv1.HTTPRouteMatch{{
 						Path: &gwv1.HTTPPathMatch{
-							Type:  snapshotPtr(gwv1.PathMatchExact),
+							Type:  new(gwv1.PathMatchExact),
 							Value: new("/with-section-name"),
 						},
 					}},
 					BackendRefs: []gwv1.HTTPBackendRef{{
-						BackendRef: gwv1.BackendRef{
-							BackendObjectReference: gwv1.BackendObjectReference{
-								Group: snapshotPtr(gwv1.Group("")),
-								Kind:  snapshotPtr(gwv1.Kind("Service")),
-								Name:  "backend-service",
-								Port:  snapshotPtr(gwv1.PortNumber(443)),
-							},
-						},
+						Group: new(gwv1.Group("")),
+						Kind:  new(gwv1.Kind("Service")),
+						Name:  "backend-service",
+						Port:  new(gwv1.PortNumber(443)),
 					}},
 				},
 				{
 					Matches: []gwv1.HTTPRouteMatch{{
 						Path: &gwv1.HTTPPathMatch{
-							Type:  snapshotPtr(gwv1.PathMatchExact),
+							Type:  new(gwv1.PathMatchExact),
 							Value: new("/without-section-name"),
 						},
 					}},
 					BackendRefs: []gwv1.HTTPBackendRef{{
-						BackendRef: gwv1.BackendRef{
-							BackendObjectReference: gwv1.BackendObjectReference{
-								Group: snapshotPtr(gwv1.Group("")),
-								Kind:  snapshotPtr(gwv1.Kind("Service")),
-								Name:  "backend-service",
-								Port:  snapshotPtr(gwv1.PortNumber(8443)),
-							},
-						},
+						Group: new(gwv1.Group("")),
+						Kind:  new(gwv1.Kind("Service")),
+						Name:  "backend-service",
+						Port:  new(gwv1.PortNumber(8443)),
 					}},
 				},
 			},
@@ -316,14 +280,10 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 	}
 
 	service := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-service",
-			Namespace: "default",
-		},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       "backend-service",
+		Namespace:  "default",
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
@@ -343,7 +303,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 	serviceWidePolicy := newActualBackendTLSPolicy("service-wide", "abc.example.com", time.Now())
 	serviceWidePolicy.Spec.TargetRefs[0].SectionName = nil
 	sectionSpecificPolicy := newActualBackendTLSPolicy("section-specific", "other.example.com", time.Now().Add(time.Second))
-	sectionSpecificPolicy.Spec.TargetRefs[0].SectionName = snapshotPtr(gwv1.SectionName("https-1"))
+	sectionSpecificPolicy.Spec.TargetRefs[0].SectionName = new(gwv1.SectionName("https-1"))
 
 	fakeClient := apifake.NewClient(
 		t,
@@ -354,7 +314,7 @@ func TestPerClientSnapshotUsesSectionSpecificAndServiceWideBackendTLSPolicies(t 
 		newActualBackendTLSTestConfigMap(),
 		serviceWidePolicy,
 		sectionSpecificPolicy,
-		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
+		&corev1.Namespace{Name: "default"},
 	)
 	settings := apisettings.Settings{}
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
@@ -492,9 +452,4 @@ func snapshotEndpointVersion(snapshots krt.Collection[XdsSnapWrapper], snapshotK
 		return ""
 	}
 	return snap.snap.Resources[envoycachetypes.Endpoint].Version
-}
-
-//go:fix inline
-func snapshotPtr[T any](in T) *T {
-	return new(in)
 }

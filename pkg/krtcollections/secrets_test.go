@@ -32,10 +32,8 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			ns:         "default",
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-secret",
-						Namespace: "default",
-					},
+					Name:      "my-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"key1": []byte("value1"),
 					},
@@ -43,12 +41,10 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			},
 			wantErr: false,
 			expectedSecret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
-					Namespace: "default",
-					Name:      "my-secret",
-				},
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: "default",
+				Name:      "my-secret",
 				Data: map[string][]byte{
 					"key1": []byte("value1"),
 				},
@@ -60,10 +56,8 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			ns:         "default",
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "other-secret",
-						Namespace: "default",
-					},
+					Name:      "other-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"key1": []byte("value1"),
 					},
@@ -96,19 +90,15 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			ns:         "default",
 			secrets: []*corev1.Secret{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "other-secret",
-						Namespace: "default",
-					},
+					Name:      "other-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"key1": []byte("value1"),
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "target-secret",
-						Namespace: "default",
-					},
+					Name:      "target-secret",
+					Namespace: "default",
 					Data: map[string][]byte{
 						"key1": []byte("value1"),
 						"key2": []byte("value2"),
@@ -117,12 +107,10 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			},
 			wantErr: false,
 			expectedSecret: &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
-					Namespace: "default",
-					Name:      "target-secret",
-				},
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: "default",
+				Name:      "target-secret",
 				Data: map[string][]byte{
 					"key1": []byte("value1"),
 					"key2": []byte("value2"),
@@ -152,14 +140,12 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 			secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 				corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 					return &ir.Secret{
-						ObjectSource: ir.ObjectSource{
-							Group:     "",
-							Kind:      "Secret",
-							Namespace: i.Namespace,
-							Name:      i.Name,
-						},
-						Obj:  i,
-						Data: i.Data,
+						Group:     "",
+						Kind:      "Secret",
+						Namespace: i.Namespace,
+						Name:      i.Name,
+						Obj:       i,
+						Data:      i.Data,
 					}
 				}),
 			}

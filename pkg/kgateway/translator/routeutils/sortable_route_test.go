@@ -1,7 +1,6 @@
 package routeutils
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -58,17 +57,13 @@ func regexMatcher(s string) gwv1.HTTPRouteMatch {
 
 func defaultRt() *gwv1.HTTPRoute {
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "a-test",
-		},
+		Name: "a-test",
 	}
 }
 
 func defaultRtB() *gwv1.HTTPRoute {
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "b-test",
-		},
+		Name: "b-test",
 	}
 }
 

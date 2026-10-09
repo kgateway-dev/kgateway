@@ -114,16 +114,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				config: []kgateway.AccessLog{
 					{
 						GrpcService: &kgateway.AccessLogGrpcService{
-							CommonAccessLogGrpcService: kgateway.CommonAccessLogGrpcService{
-								CommonGrpcService: kgateway.CommonGrpcService{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-										},
-									},
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name: "test-service",
 								},
-								LogName: "grpc-log",
 							},
+							LogName:                         "grpc-log",
 							AdditionalRequestHeadersToLog:   []string{"x-request-id"},
 							AdditionalResponseHeadersToLog:  []string{"x-response-id"},
 							AdditionalResponseTrailersToLog: []string{"x-trailer"},
@@ -289,16 +285,12 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				config: []kgateway.AccessLog{
 					{
 						GrpcService: &kgateway.AccessLogGrpcService{
-							CommonAccessLogGrpcService: kgateway.CommonAccessLogGrpcService{
-								CommonGrpcService: kgateway.CommonGrpcService{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-										},
-									},
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name: "test-service",
 								},
-								LogName: "grpc-log",
 							},
+							LogName: "grpc-log",
 						},
 					},
 				},
@@ -328,22 +320,18 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				config: []kgateway.AccessLog{
 					{
 						GrpcService: &kgateway.AccessLogGrpcService{
-							CommonAccessLogGrpcService: kgateway.CommonAccessLogGrpcService{
-								CommonGrpcService: kgateway.CommonGrpcService{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-										},
-									},
-									RetryPolicy: &kgateway.RetryPolicy{
-										RetryBackOff: &kgateway.BackoffStrategy{
-											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
-											MaxInterval:  &metav1.Duration{Duration: 1 * time.Second},
-										},
-									},
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name: "test-service",
 								},
-								LogName: "grpc-log",
 							},
+							RetryPolicy: &kgateway.RetryPolicy{
+								RetryBackOff: &kgateway.BackoffStrategy{
+									BaseInterval: metav1.Duration{Duration: 5 * time.Second},
+									MaxInterval:  &metav1.Duration{Duration: 1 * time.Second},
+								},
+							},
+							LogName: "grpc-log",
 						},
 					},
 				},
@@ -378,31 +366,27 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				config: []kgateway.AccessLog{
 					{
 						GrpcService: &kgateway.AccessLogGrpcService{
-							CommonAccessLogGrpcService: kgateway.CommonAccessLogGrpcService{
-								CommonGrpcService: kgateway.CommonGrpcService{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-										},
-									},
-									Authority:               new("www.example.com"),
-									MaxReceiveMessageLength: new(int32(127)),
-									SkipEnvoyHeaders:        new(true),
-									Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
-									InitialMetadata: []kgateway.HeaderValue{{
-										Key:   "key",
-										Value: new("value"),
-									}},
-									RetryPolicy: &kgateway.RetryPolicy{
-										RetryBackOff: &kgateway.BackoffStrategy{
-											BaseInterval: metav1.Duration{Duration: 5 * time.Second},
-											MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
-										},
-										NumRetries: new(int32(3)),
-									},
+							BackendRef: gwv1.BackendRef{
+								BackendObjectReference: gwv1.BackendObjectReference{
+									Name: "test-service",
 								},
-								LogName: "grpc-log",
 							},
+							Authority:               new("www.example.com"),
+							MaxReceiveMessageLength: new(int32(127)),
+							SkipEnvoyHeaders:        new(true),
+							Timeout:                 &metav1.Duration{Duration: 10 * time.Second},
+							InitialMetadata: []kgateway.HeaderValue{{
+								Key:   "key",
+								Value: new("value"),
+							}},
+							RetryPolicy: &kgateway.RetryPolicy{
+								RetryBackOff: &kgateway.BackoffStrategy{
+									BaseInterval: metav1.Duration{Duration: 5 * time.Second},
+									MaxInterval:  &metav1.Duration{Duration: 10 * time.Second},
+								},
+								NumRetries: new(int32(3)),
+							},
+							LogName: "grpc-log",
 						},
 					},
 				},
@@ -1308,15 +1292,11 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 				result, err := generateAccessLogConfig(&ir.HcmContext{
 					Gateway: ir.GatewayIR{
 						SourceObject: &ir.Gateway{
-							ObjectSource: ir.ObjectSource{
-								Namespace: "default",
-								Name:      "gw",
-							},
+							Namespace: "default",
+							Name:      "gw",
 							Obj: &gwv1.Gateway{
-								ObjectMeta: metav1.ObjectMeta{
-									UID:        "test-uid-1234",
-									Generation: 7,
-								},
+								UID:        "test-uid-1234",
+								Generation: 7,
 							},
 						},
 					},
@@ -1517,10 +1497,8 @@ func TestAccessLogFilters(t *testing.T) {
 			hcmCtx := &ir.HcmContext{
 				Gateway: ir.GatewayIR{
 					SourceObject: &ir.Gateway{
-						ObjectSource: ir.ObjectSource{
-							Name:      "gw",
-							Namespace: "default",
-						},
+						Name:      "gw",
+						Namespace: "default",
 					},
 				},
 			}

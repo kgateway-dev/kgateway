@@ -8,7 +8,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -31,7 +30,7 @@ var (
 // fromGK in fromNs.
 func secretRefGrant(ns string, fromGK schema.GroupKind, fromNs string) *gwv1b1.ReferenceGrant {
 	return &gwv1b1.ReferenceGrant{
-		ObjectMeta: metav1.ObjectMeta{Name: "grant", Namespace: ns},
+		Name: "grant", Namespace: ns,
 		Spec: gwv1b1.ReferenceGrantSpec{
 			From: []gwv1b1.ReferenceGrantFrom{{
 				Group:     gwv1.Group(fromGK.Group),
@@ -56,9 +55,9 @@ func newTestSecretIndexWithMode(t *testing.T, mode apisettings.ReferenceGrantMod
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		secretGK: krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 			return &ir.Secret{
-				ObjectSource: ir.ObjectSource{Kind: "Secret", Namespace: i.Namespace, Name: i.Name},
-				Obj:          i,
-				Data:         i.Data,
+				Kind: "Secret", Namespace: i.Namespace, Name: i.Name,
+				Obj:  i,
+				Data: i.Data,
 			}
 		}),
 	}
@@ -71,12 +70,10 @@ func newTestSecretIndexWithMode(t *testing.T, mode apisettings.ReferenceGrantMod
 
 func testSecret() *corev1.Secret {
 	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api-keys",
-			Namespace: "secrets-ns",
-			Labels:    map[string]string{"app": "keys"},
-		},
-		Data: map[string][]byte{"user": []byte("k1")},
+		Name:      "api-keys",
+		Namespace: "secrets-ns",
+		Labels:    map[string]string{"app": "keys"},
+		Data:      map[string][]byte{"user": []byte("k1")},
 	}
 }
 

@@ -250,8 +250,8 @@ func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolici
 		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
 	}
 	// iterate in the reverse order so that the input order in l is preserved at the end
-	for i := len(l) - 1; i >= 0; i-- {
-		for k, v := range l[i].Policies {
+	for _, v := range slices.Backward(l) {
+		for k, v := range v.Policies {
 			// Copy before mutating: see AppendWithPriority. v also backs the result, so
 			// without a copy the append below could write into the shared source's array.
 			cp := make([]PolicyAtt, len(v))

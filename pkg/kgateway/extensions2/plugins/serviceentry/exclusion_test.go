@@ -9,7 +9,6 @@ import (
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -169,11 +168,9 @@ func TestServiceEntryExclusionFiltersBackendCollection(t *testing.T) {
 
 func newTestServiceEntry(name, host string, labels map[string]string) *networkingclient.ServiceEntry {
 	return &networkingclient.ServiceEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-			Labels:    labels,
-		},
+		Name:      name,
+		Namespace: "default",
+		Labels:    labels,
 		Spec: networking.ServiceEntry{
 			Hosts:      []string{host},
 			Resolution: networking.ServiceEntry_DNS,

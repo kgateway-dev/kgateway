@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -203,10 +202,8 @@ func TestSetLoadBalancerIPFromGateway(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-gateway",
-					Namespace: "default",
-				},
+				Name:      "test-gateway",
+				Namespace: "default",
 				Spec: gwv1.GatewaySpec{
 					Addresses: tt.addresses,
 				},

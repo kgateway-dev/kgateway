@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
@@ -256,10 +255,10 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 
 	// Verify the ancestor report is keyed with SectionName
 	ancestorReport := policyReport.Ancestors[reports.ParentRefKey{
-		Group:          "",
-		Kind:           "Service",
-		NamespacedName: types.NamespacedName{Namespace: "default", Name: "my-svc"},
-		SectionName:    "https",
+		Group:     "",
+		Kind:      "Service",
+		Namespace: "default", Name: "my-svc",
+		SectionName: "https",
 	}]
 	a.NotNil(ancestorReport, "ancestor report should be keyed with SectionName")
 
@@ -285,9 +284,9 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 
 	// Verify that looking up without SectionName returns nil
 	ancestorNoSection := policyReport.Ancestors[reports.ParentRefKey{
-		Group:          "",
-		Kind:           "Service",
-		NamespacedName: types.NamespacedName{Namespace: "default", Name: "my-svc"},
+		Group:     "",
+		Kind:      "Service",
+		Namespace: "default", Name: "my-svc",
 	}]
 	a.Nil(ancestorNoSection, "ancestor report without SectionName should not exist")
 }
@@ -332,9 +331,9 @@ func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
 	a.Len(rm.Policies, 2)
 
 	targetKey := reports.ParentRefKey{
-		Group:          wellknown.BackendGVK.Group,
-		Kind:           wellknown.BackendGVK.Kind,
-		NamespacedName: types.NamespacedName{Namespace: "default", Name: "issuer"},
+		Group:     wellknown.BackendGVK.Group,
+		Kind:      wellknown.BackendGVK.Kind,
+		Namespace: "default", Name: "issuer",
 	}
 	ancestorFor := func(name string) *reports.AncestorRefReport {
 		report := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: name}]
@@ -417,7 +416,7 @@ func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t 
 
 	a := assert.New(t)
 	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend})
-	targetKey := reports.ParentRefKey{Group: "", Kind: "Service", NamespacedName: types.NamespacedName{Namespace: "default", Name: "svc"}}
+	targetKey := reports.ParentRefKey{Group: "", Kind: "Service", Namespace: "default", Name: "svc"}
 
 	older := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "older-invalid"}].Ancestors[targetKey]
 	a.NotNil(older)

@@ -6,19 +6,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // serviceEntryWithStatusAddrs builds a ServiceEntry with a fixed spec and the
 // given auto-allocated VIPs in Status.Addresses.
 func serviceEntryWithStatusAddrs(generation int64, statusAddrs ...string) *networkingclient.ServiceEntry {
 	se := &networkingclient.ServiceEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "autogen.server.server",
-			Namespace:  "istio-system",
-			Generation: generation,
-			UID:        "uid-1",
-		},
+		Name:       "autogen.server.server",
+		Namespace:  "istio-system",
+		Generation: generation,
+		UID:        "uid-1",
 		Spec: networking.ServiceEntry{
 			Hosts:      []string{"server.server.mesh.internal"},
 			Location:   networking.ServiceEntry_MESH_INTERNAL,

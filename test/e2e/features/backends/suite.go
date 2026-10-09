@@ -107,10 +107,8 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 // TestBackendWithRuntimeError tests if backend condition is updated with error
 func (s *testingSuite) TestBackendWithRuntimeError() {
 	backendWithError := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-aws-backend",
-			Namespace: proxyObjMeta.GetNamespace(),
-		},
+		Name:      "example-aws-backend",
+		Namespace: proxyObjMeta.GetNamespace(),
 	}
 
 	s.assertStatus(backendWithError, metav1.Condition{
@@ -148,7 +146,7 @@ secret data key "secretKey" is missing or empty"`,
 // health checks probe the real services directly.
 func (s *testingSuite) TestPriorityGroupsFailover() {
 	pgBackend := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{Name: "priority-groups", Namespace: proxyObjMeta.GetNamespace()},
+		Name: "priority-groups", Namespace: proxyObjMeta.GetNamespace(),
 	}
 
 	testutils.Cleanup(s.T(), func() {
@@ -192,7 +190,7 @@ func (s *testingSuite) TestPriorityGroupsFailover() {
 	// ClusterIP, so the priority-0 endpoint stays resolvable but the health
 	// check starts failing.
 	nginxPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "nginx", Namespace: common.SharedNginxNamespace},
+		Name: "nginx", Namespace: common.SharedNginxNamespace,
 	}
 	s.Require().NoError(s.TestInstallation.ClusterContext.Client.Delete(s.Ctx, nginxPod))
 	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.Ctx, common.SharedNginxNamespace, metav1.ListOptions{
