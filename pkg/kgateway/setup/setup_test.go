@@ -350,6 +350,28 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 8080
+`, `apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: test-service-slice
+  namespace: gwtest
+  labels:
+    kubernetes.io/service-name: test-service
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 10.244.1.13
+    conditions:
+      ready: true
+    nodeName: worker
+    targetRef:
+      kind: Pod
+      name: test-service-1
+      namespace: gwtest
+ports:
+  - name: http
+    port: 8080
+    protocol: TCP
 `)
 		if err != nil {
 			t.Fatalf("failed to apply initial resources: %v", err)
