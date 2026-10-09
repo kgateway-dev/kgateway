@@ -109,6 +109,14 @@ Routes:
         requestMirrorPolicies:
         - cluster: kube_default_mirror-one_80
           disableShadowHostSuffixAppend: true
+  - domains:
+    - '*'
+    name: https~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     default/example-gateway:

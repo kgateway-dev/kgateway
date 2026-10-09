@@ -86,8 +86,34 @@ Listeners:
 Routes:
 - ignorePortInHostMatching: true
   name: https-bookinfo
+  virtualHosts:
+  - domains:
+    - bookinfo.example.com
+    name: https-bookinfo~bookinfo_example_com
+    requireTls: ALL
+  - domains:
+    - '*'
+    name: https-bookinfo~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 - ignorePortInHostMatching: true
   name: https-httpbin
+  virtualHosts:
+  - domains:
+    - httpbin.example.com
+    name: https-httpbin~httpbin_example_com
+    requireTls: ALL
+  - domains:
+    - '*'
+    name: https-httpbin~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     default/http:

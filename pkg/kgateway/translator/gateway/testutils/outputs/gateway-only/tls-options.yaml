@@ -107,6 +107,19 @@ Routes:
   name: https
 - ignorePortInHostMatching: true
   name: https-with-hostname
+  virtualHosts:
+  - domains:
+    - second-example.org
+    name: https-with-hostname~second-example_org
+    requireTls: ALL
+  - domains:
+    - '*'
+    name: https-with-hostname~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     default/example-gateway:
