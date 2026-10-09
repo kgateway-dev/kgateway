@@ -564,13 +564,30 @@ unit: ## Run all unit tests (excludes e2e tests)
 	@$(MAKE) --no-print-directory go-test TEST_TAG=""
 
 .PHONY: validate-test-coverage
-validate-test-coverage: ## Validate the test coverage
+validate-test-coverage: merge-test-coverage ## Validate the (merged) test coverage against test_coverage.yml
 	$(GO_TEST_COVERAGE) --config=./test_coverage.yml
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: view-test-coverage
 view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
+
+# Coverage from several test runs (unit, e2e shards, ...) is stitched into one profile.
+# COVERAGE_PROFILES is a comma separated list; COVERAGE_BASE (e.g. origin/main) enables patch coverage.
+COVERAGE_PROFILES ?= $(OUTPUT_DIR)/cover.out
+COVERAGE_MERGED ?= $(OUTPUT_DIR)/cover.merged.out
+COVERAGE_BASE ?=
+COVERAGE_MIN_PATCH ?= 0
+
+.PHONY: merge-test-coverage
+merge-test-coverage: ## Merge COVERAGE_PROFILES, and report coverage of lines changed since COVERAGE_BASE
+	go run ./hack/ci/covreport -profiles "$(COVERAGE_PROFILES)" -merged-out "$(COVERAGE_MERGED)" \
+		$(if $(COVERAGE_BASE),-base "$(COVERAGE_BASE)" -min-patch $(COVERAGE_MIN_PATCH)) \
+		$(if $(GITHUB_STEP_SUMMARY),-summary "$(GITHUB_STEP_SUMMARY)")
+
+.PHONY: html-test-coverage
+html-test-coverage: merge-test-coverage ## Write a per-file HTML coverage report to $(OUTPUT_DIR)/coverage.html
+	go tool cover -html "$(COVERAGE_MERGED)" -o "$(OUTPUT_DIR)/coverage.html"
 
 #----------------------------------------------------------------------------------
 # Container Structure Tests

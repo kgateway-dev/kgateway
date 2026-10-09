@@ -2,7 +2,7 @@
 
 # (mandatory)
 # Path to coverprofile file (output of `go test -coverprofile` command)
-profile: _output/cover.out
+profile: _output/cover.merged.out
 
 # Holds coverage thresholds percentages, values should be in range [0-100]
 # We should strive to increase these percentages over time
