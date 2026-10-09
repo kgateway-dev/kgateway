@@ -1,6 +1,7 @@
 package krtcollections
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -222,6 +223,181 @@ func TestSecretIndex_GetSecretWithoutRefGrant(t *testing.T) {
 				} else if string(actualValue) != string(expectedValue) {
 					t.Errorf("GetSecretWithoutRefGrant() secret.Data[%q] = %q, want %q", key, string(actualValue), string(expectedValue))
 				}
+			}
+		})
+	}
+}
+
+func TestSecretIndex_GetSecretsBySelector(t *testing.T) {
+	secretGK := schema.GroupKind{Group: "", Kind: "Secret"}
+
+	makeSecret := func(name, ns string, labels map[string]string) *corev1.Secret {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				Labels:    labels,
+			},
+			Data: map[string][]byte{
+				"client1": []byte("k-123"),
+			},
+		}
+	}
+
+	tests := []struct {
+		name              string
+		secrets           []*corev1.Secret
+		ns                string
+		matchLabels       map[string]string
+		matchExpressions  []metav1.LabelSelectorRequirement
+		wantErr           bool
+		wantErrIs         error
+		expectedSecretIDs []string
+	}{
+		{
+			name: "matchLabels selects only secrets with all labels present",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "api-keys", "type": "authentication"}),
+				makeSecret("api-keys-2", "default", map[string]string{"app": "other"}),
+			},
+			ns:                "default",
+			matchLabels:       map[string]string{"app": "api-keys", "type": "authentication"},
+			expectedSecretIDs: []string{"default/api-keys-1"},
+		},
+		{
+			name: "matchExpressions In operator",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "api-keys", "tier": "prod"}),
+				makeSecret("api-keys-2", "default", map[string]string{"app": "api-keys", "tier": "dev"}),
+				makeSecret("api-keys-3", "default", map[string]string{"app": "other", "tier": "prod"}),
+			},
+			ns: "default",
+			matchExpressions: []metav1.LabelSelectorRequirement{
+				{Key: "app", Operator: metav1.LabelSelectorOpIn, Values: []string{"api-keys"}},
+			},
+			expectedSecretIDs: []string{"default/api-keys-1", "default/api-keys-2"},
+		},
+		{
+			name: "matchExpressions NotIn operator",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "api-keys", "tier": "prod"}),
+				makeSecret("api-keys-2", "default", map[string]string{"app": "api-keys", "tier": "dev"}),
+			},
+			ns: "default",
+			matchExpressions: []metav1.LabelSelectorRequirement{
+				{Key: "tier", Operator: metav1.LabelSelectorOpNotIn, Values: []string{"dev"}},
+			},
+			expectedSecretIDs: []string{"default/api-keys-1"},
+		},
+		{
+			name: "matchExpressions Exists operator",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "api-keys", "tier": "prod"}),
+				makeSecret("api-keys-2", "default", map[string]string{"app": "api-keys"}),
+			},
+			ns: "default",
+			matchExpressions: []metav1.LabelSelectorRequirement{
+				{Key: "tier", Operator: metav1.LabelSelectorOpExists},
+			},
+			expectedSecretIDs: []string{"default/api-keys-1"},
+		},
+		{
+			name: "matchExpressions DoesNotExist operator",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "api-keys", "tier": "prod"}),
+				makeSecret("api-keys-2", "default", map[string]string{"app": "api-keys"}),
+			},
+			ns: "default",
+			matchExpressions: []metav1.LabelSelectorRequirement{
+				{Key: "tier", Operator: metav1.LabelSelectorOpDoesNotExist},
+			},
+			expectedSecretIDs: []string{"default/api-keys-2"},
+		},
+		{
+			name: "matchLabels and matchExpressions are ANDed together",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "api-keys", "tier": "prod"}),
+				makeSecret("api-keys-2", "default", map[string]string{"app": "api-keys", "tier": "dev"}),
+				makeSecret("api-keys-3", "default", map[string]string{"app": "other", "tier": "prod"}),
+			},
+			ns:          "default",
+			matchLabels: map[string]string{"app": "api-keys"},
+			matchExpressions: []metav1.LabelSelectorRequirement{
+				{Key: "tier", Operator: metav1.LabelSelectorOpIn, Values: []string{"prod"}},
+			},
+			expectedSecretIDs: []string{"default/api-keys-1"},
+		},
+		{
+			name: "no secrets match the selector",
+			secrets: []*corev1.Secret{
+				makeSecret("api-keys-1", "default", map[string]string{"app": "other"}),
+			},
+			ns:                "default",
+			matchLabels:       map[string]string{"app": "api-keys"},
+			expectedSecretIDs: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var initObjs []any
+			for _, secret := range tt.secrets {
+				initObjs = append(initObjs, secret)
+			}
+
+			mock := krttest.NewMock(t, initObjs)
+			secretCol := krttest.GetMockCollection[*corev1.Secret](mock)
+			refGrantCol := krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock)
+			refgrants := NewRefGrantIndex(refGrantCol, apisettings.ReferenceGrantPermissive)
+			secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
+				secretGK: krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
+					return &ir.Secret{
+						ObjectSource: ir.ObjectSource{
+							Group:     "",
+							Kind:      "Secret",
+							Namespace: i.Namespace,
+							Name:      i.Name,
+						},
+						Obj:  i,
+						Data: i.Data,
+					}
+				}),
+			}
+			secretIndex := NewSecretIndex(secretsCol, refgrants)
+
+			secretCol.WaitUntilSynced(nil)
+			for !secretIndex.HasSynced() {
+				// Poll until synced
+			}
+
+			krtctx := krt.TestingDummyContext{}
+			from := From{Namespace: tt.ns}
+
+			result, err := secretIndex.GetSecretsBySelector(krtctx, from, secretGK, tt.matchLabels, tt.matchExpressions)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("GetSecretsBySelector() expected error but got none")
+				}
+				if tt.wantErrIs != nil && err != tt.wantErrIs {
+					t.Errorf("GetSecretsBySelector() error = %v, want %v", err, tt.wantErrIs)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("GetSecretsBySelector() unexpected error = %v", err)
+			}
+
+			var gotIDs []string
+			for _, secret := range result {
+				gotIDs = append(gotIDs, secret.Namespace+"/"+secret.Name)
+			}
+			slices.Sort(gotIDs)
+			wantIDs := append([]string(nil), tt.expectedSecretIDs...)
+			slices.Sort(wantIDs)
+
+			if !slices.Equal(gotIDs, wantIDs) {
+				t.Errorf("GetSecretsBySelector() secrets = %v, want %v", gotIDs, wantIDs)
 			}
 		})
 	}
