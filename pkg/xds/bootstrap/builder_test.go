@@ -34,8 +34,17 @@ func TestConfigBuilder_Build(t *testing.T) {
 				if n := got.GetNode().GetId(); n != "validation-node-id" {
 					t.Fatalf("unexpected node ID: %q", n)
 				}
-				if len(got.GetStaticResources().GetClusters()) != 0 {
-					t.Fatalf("expected no clusters, got %d", len(got.GetStaticResources().GetClusters()))
+				if len(ValidatedClusters(got)) != 0 {
+					t.Fatalf("expected no clusters, got %d", len(ValidatedClusters(got)))
+				}
+				// The proxy bootstrap always sets a local cluster; Envoy rejects e.g.
+				// local_cluster_rate_limit without one.
+				if n := got.GetClusterManager().GetLocalClusterName(); n != validationLocalClusterName {
+					t.Fatalf("unexpected local cluster name: %q", n)
+				}
+				clusters := got.GetStaticResources().GetClusters()
+				if len(clusters) != 1 || clusters[0].GetName() != validationLocalClusterName {
+					t.Fatalf("expected only the local cluster %q, got %v", validationLocalClusterName, clusters)
 				}
 			},
 		},
@@ -63,7 +72,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 			},
 			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
 				want := 1
-				if diff := cmp.Diff(want, len(got.GetStaticResources().GetClusters())); diff != "" {
+				if diff := cmp.Diff(want, len(ValidatedClusters(got))); diff != "" {
 					t.Fatalf("cluster count mismatch (-want +got):\n%s", diff)
 				}
 			},
@@ -99,7 +108,7 @@ func TestConfigBuilder_Build(t *testing.T) {
 				b.AddCluster(&envoyclusterv3.Cluster{Name: "test_cluster_2"})
 			},
 			validate: func(t *testing.T, got *envoybootstrapv3.Bootstrap) {
-				clusters := got.GetStaticResources().GetClusters()
+				clusters := ValidatedClusters(got)
 				if len(clusters) != 1 {
 					t.Fatalf("expected 1 cluster, got %d", len(clusters))
 				}
