@@ -54,6 +54,7 @@ func TestPublicationRetainsOnlySupportedBootstrapEndpoints(t *testing.T) {
 				krtutil.NewKrtOptions(t.Context().Done(), nil), clients,
 				krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"}}}),
 				newTestPerClientEndpoints(nil), clusters,
+				clusterScoping{},
 				newTestPerClientEndpoints([]UccWithEndpoints{{
 					Client: ucc, endpointsName: localName, resourceName: uccEndpointsResourceName(ucc, localName),
 					Endpoints: sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: localName}), EndpointsHash: 1,
