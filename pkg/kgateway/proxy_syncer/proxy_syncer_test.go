@@ -12,8 +12,8 @@ import (
 
 func TestStatusContributionsReduceRouteParentsAcrossGateways(t *testing.T) {
 	route := types.NamespacedName{Namespace: "default", Name: "route"}
-	gw1 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-1"}}
-	gw2 := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw-2"}}
+	gw1 := reports.ParentRefKey{Namespace: "default", Name: "gw-1"}
+	gw2 := reports.ParentRefKey{Namespace: "default", Name: "gw-2"}
 
 	first := reports.NewReportMap()
 	first.HTTPRoutes[route] = &reports.RouteReport{Parents: map[reports.ParentRefKey]*reports.ParentRefReport{gw1: {}}}
@@ -31,8 +31,8 @@ func TestStatusContributionsReduceRouteParentsAcrossGateways(t *testing.T) {
 
 func TestStatusContributionsReducePolicyAncestorsAcrossPaths(t *testing.T) {
 	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
-	gw := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"}}
-	backend := reports.ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"}}
+	gw := reports.ParentRefKey{Namespace: "default", Name: "gw"}
+	backend := reports.ParentRefKey{Namespace: "default", Name: "backend"}
 
 	gatewayReport := reports.NewReportMap()
 	gatewayReport.Policies[policy] = &reports.PolicyReport{Ancestors: map[reports.ParentRefKey]*reports.AncestorRefReport{gw: {}}}

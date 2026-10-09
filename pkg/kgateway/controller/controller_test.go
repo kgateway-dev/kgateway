@@ -173,7 +173,7 @@ func (s *ControllerSuite) TestGatewayStatus() {
 			gwNamespace := "default"
 
 			t.Cleanup(func() {
-				gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: gwName, Namespace: gwNamespace}}
+				gw := &gwv1.Gateway{Name: gwName, Namespace: gwNamespace}
 				err := s.client.Delete(context.Background(), gw)
 				if err != nil && k8serrors.IsNotFound(err) {
 					return
@@ -182,10 +182,8 @@ func (s *ControllerSuite) TestGatewayStatus() {
 			})
 
 			gw := gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      gwName,
-					Namespace: gwNamespace,
-				},
+				Name:      gwName,
+				Namespace: gwNamespace,
 				Spec: gwv1.GatewaySpec{
 					Addresses: []gwv1.GatewaySpecAddress{{
 						Type:  new(gwv1.IPAddressType),
@@ -254,10 +252,8 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 	})
 
 	gwp = &kgateway.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-gwp",
-			Namespace: "default",
-		},
+		Name:      "invalid-gwp",
+		Namespace: "default",
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				Deployment: &kgateway.ProxyDeployment{
@@ -267,11 +263,9 @@ func (s *ControllerSuite) TestInvalidGatewayParameters() {
 		},
 	}
 	gw = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "gw",
-			Namespace:  "default",
-			Generation: 1,
-		},
+		Name:       "gw",
+		Namespace:  "default",
+		Generation: 1,
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: gwv1.ObjectName(gatewayClassName),
 			Infrastructure: &gwv1.GatewayInfrastructure{
@@ -334,10 +328,8 @@ func (s *ControllerSuite) TestMetrics() {
 	setup := func(t *testing.T) {
 		r := require.New(t)
 		gw = &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test",
-				Namespace: defaultNamespace,
-			},
+			Name:      "test",
+			Namespace: defaultNamespace,
 			Spec: gwv1.GatewaySpec{
 				GatewayClassName: gwv1.ObjectName(gatewayClassName),
 				Listeners: []gwv1.Listener{{
@@ -502,9 +494,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 		t := s.T()
 		externalController := gwv1.GatewayController("external.controller/name")
 		externalGC := &gwv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "other-controller",
-			},
+			Name: "other-controller",
 			Spec: gwv1.GatewayClassSpec{
 				ControllerName: externalController,
 			},
@@ -545,7 +535,7 @@ func (s *ControllerSuite) TestGatewayClass() {
 			}, defaultPollTimeout, 500*time.Millisecond, "timed out waiting for GatewayClass %s to be created", gwClass)
 
 			// Delete the GatewayClass
-			err := s.client.Delete(ctx, &gwv1.GatewayClass{ObjectMeta: metav1.ObjectMeta{Name: gwClass}})
+			err := s.client.Delete(ctx, &gwv1.GatewayClass{Name: gwClass})
 			r.NoError(err)
 			// Verify it is recreated
 			r.EventuallyWithTf(func(c *assert.CollectT) {
@@ -714,10 +704,8 @@ func (s *ControllerSuite) startController(
 	}
 
 	if err := s.client.Create(ctx, &kgateway.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      selfManagedGatewayClassName,
-			Namespace: "default",
-		},
+		Name:      selfManagedGatewayClassName,
+		Namespace: "default",
 		Spec: kgateway.GatewayParametersSpec{
 			SelfManaged: &kgateway.SelfManagedGateway{},
 		},

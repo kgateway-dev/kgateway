@@ -142,7 +142,7 @@ func (h *RoutesIndex) NewBuiltInIr(
 
 func (h *RoutesIndex) NewBuiltInRuleIr(rule gwv1.HTTPRouteRule) *builtinPlugin {
 	// If no rule policies are set, return nil so that we don't have a no-op policy
-	if rule.Timeouts == nil && rule.Retry == nil && rule.SessionPersistence == nil {
+	if rule.Timeouts == nil && rule.Retry == nil && rule.SessionPersistence == nil { //nolint:staticcheck // SA1019: route-level session persistence is still supported
 		return nil
 	}
 	return &builtinPlugin{
@@ -168,6 +168,7 @@ func (h *RoutesIndex) buildHTTPRouteRulePolicy(rule gwv1.HTTPRouteRule) ruleIR {
 	ir.retry = convertRetry(rule.Retry, rule.Timeouts)
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
 	// Ref: https://github.com/kgateway-dev/kgateway/issues/12825
+	//nolint:staticcheck // SA1019: route-level session persistence is still supported
 	if rule.SessionPersistence != nil {
 		if h.enableExperimentalGatewayAPIFeatures {
 			ir.sessionPersistence = convertSessionPersistence(rule.SessionPersistence)
@@ -993,7 +994,7 @@ func (u *urlRewriteIr) apply(
 			if outputRoute.GetRoute().GetPrefixRewrite() != "" {
 				// clear the PrefixRewrite in order to override it with the RegexRewrite
 				outputRoute.GetRoute().PrefixRewrite = ""
-				logger.Debug("overriding PrefixRewrite with RegexRewrite", "path", path, "prefixReplace", u.PrefixReplace)
+				logger.Debug("overriding PrefixRewrite with RegexRewrite", "path", path, "prefix_replace", u.PrefixReplace)
 			}
 			outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 				Pattern: &envoy_type_matcher_v3.RegexMatcher{
@@ -1005,7 +1006,7 @@ func (u *urlRewriteIr) apply(
 			if outputRoute.GetRoute().GetRegexRewrite() != nil {
 				// clear the RegexRewrite in order to override it with the PrefixRewrite
 				outputRoute.GetRoute().RegexRewrite = nil
-				logger.Debug("overriding RegexRewrite with PrefixRewrite", "path", path, "prefixReplace", u.PrefixReplace)
+				logger.Debug("overriding RegexRewrite with PrefixRewrite", "path", path, "prefix_replace", u.PrefixReplace)
 			}
 			outputRoute.GetRoute().PrefixRewrite = u.PrefixReplace
 		}

@@ -53,14 +53,10 @@ func TestDelayedTLSRouteV1Alpha3InformerBypassesCrdWatcherFilter_Issue13735(t *t
 	_, err := client.GatewayAPI().GatewayV1alpha3().TLSRoutes("default").Create(
 		context.Background(),
 		&gwv1a3.TLSRoute{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: wellknown.TLSRouteV1Alpha3GVK.GroupVersion().String(),
-				Kind:       wellknown.TLSRouteKind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "v1alpha3-route",
-				Namespace: "default",
-			},
+			APIVersion: wellknown.TLSRouteV1Alpha3GVK.GroupVersion().String(),
+			Kind:       wellknown.TLSRouteKind,
+			Name:       "v1alpha3-route",
+			Namespace:  "default",
 			Spec: gwv1.TLSRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{{
@@ -183,14 +179,10 @@ func createV1Alpha3TLSRoute(t *testing.T, client kube.Client) {
 	_, err := client.GatewayAPI().GatewayV1alpha3().TLSRoutes("default").Create(
 		context.Background(),
 		&gwv1a3.TLSRoute{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: wellknown.TLSRouteV1Alpha3GVK.GroupVersion().String(),
-				Kind:       wellknown.TLSRouteKind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "v1alpha3-route",
-				Namespace: "default",
-			},
+			APIVersion: wellknown.TLSRouteV1Alpha3GVK.GroupVersion().String(),
+			Kind:       wellknown.TLSRouteKind,
+			Name:       "v1alpha3-route",
+			Namespace:  "default",
 			Spec: gwv1.TLSRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{{

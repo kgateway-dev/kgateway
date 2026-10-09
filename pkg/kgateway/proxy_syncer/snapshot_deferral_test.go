@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -100,8 +99,8 @@ func TestSnapshotPerClientReportsDeferredClients(t *testing.T) {
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"},
-		Listeners:      sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
+		Namespace: "ns", Name: "gw",
+		Listeners: sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
 	}}, krtopts.ToOptions("GatewayXds")...)
 
 	// No base clusters yet: the per-client cluster row does not exist, so the

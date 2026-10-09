@@ -97,8 +97,7 @@ func (b *binaryValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	cmd.Stderr = &e
 	if err := cmd.Run(); err != nil {
 		rawErr := normalizeEnvoyError(e.String())
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
+		if _, ok := errors.AsType[*exec.ExitError](err); ok {
 			if rawErr == "" {
 				rawErr = err.Error()
 			}
@@ -196,8 +195,7 @@ func (d *dockerValidator) Validate(ctx context.Context, bootstrap *envoybootstra
 	}
 
 	rawErr := strings.TrimSpace(stderr.String())
-	var exitError *exec.ExitError
-	if errors.As(err, &exitError) {
+	if _, ok := errors.AsType[*exec.ExitError](err); ok {
 		// Extract just the envoy error message, ignoring Docker pull output
 		if envoyErr := extractEnvoyError(rawErr); envoyErr != "" {
 			return fmt.Errorf("%w: %s", ErrInvalidXDS, normalizeEnvoyError(envoyErr))

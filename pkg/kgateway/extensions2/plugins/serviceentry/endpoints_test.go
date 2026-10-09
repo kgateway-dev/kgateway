@@ -6,10 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
-	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 )
 
 // TestEndpointsFromWorkloads_SkipsNotReadyPods verifies that endpointsFromWorkloads
@@ -20,7 +16,7 @@ import (
 // locally selected pods go NotReady.
 func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 	se := &networkingclient.ServiceEntry{
-		ObjectMeta: metav1.ObjectMeta{Name: "autogen.server.server", Namespace: "istio-system"},
+		Name: "autogen.server.server", Namespace: "istio-system",
 		Spec: networking.ServiceEntry{
 			Hosts:      []string{"server.server.mesh.internal"},
 			Location:   networking.ServiceEntry_MESH_INTERNAL,
@@ -34,12 +30,10 @@ func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 
 	podWorkload := func(name, ip string, ready bool) selectedWorkload {
 		return selectedWorkload{
-			LocalityPod: krtcollections.LocalityPod{
-				Named:           krt.Named{Name: name, Namespace: "server"},
-				Addresses:       []string{ip},
-				AugmentedLabels: map[string]string{"app": "server"},
-				Ready:           ready,
-			},
+			Name: name, Namespace: "server",
+			Addresses:       []string{ip},
+			AugmentedLabels: map[string]string{"app": "server"},
+			Ready:           ready,
 		}
 	}
 
@@ -86,7 +80,7 @@ func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 // EndpointSlice/Service path and ztunnel.
 func TestEndpointsFromWorkloads_SkipsTerminatingPods(t *testing.T) {
 	se := &networkingclient.ServiceEntry{
-		ObjectMeta: metav1.ObjectMeta{Name: "autogen.server.server", Namespace: "istio-system"},
+		Name: "autogen.server.server", Namespace: "istio-system",
 		Spec: networking.ServiceEntry{
 			Hosts:      []string{"server.server.mesh.internal"},
 			Location:   networking.ServiceEntry_MESH_INTERNAL,
@@ -100,13 +94,11 @@ func TestEndpointsFromWorkloads_SkipsTerminatingPods(t *testing.T) {
 
 	podWorkload := func(name, ip string, ready, terminating bool) selectedWorkload {
 		return selectedWorkload{
-			LocalityPod: krtcollections.LocalityPod{
-				Named:           krt.Named{Name: name, Namespace: "server"},
-				Addresses:       []string{ip},
-				AugmentedLabels: map[string]string{"app": "server"},
-				Ready:           ready,
-				Terminating:     terminating,
-			},
+			Name: name, Namespace: "server",
+			Addresses:       []string{ip},
+			AugmentedLabels: map[string]string{"app": "server"},
+			Ready:           ready,
+			Terminating:     terminating,
 		}
 	}
 

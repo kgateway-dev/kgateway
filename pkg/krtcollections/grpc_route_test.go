@@ -9,7 +9,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -39,10 +38,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 		{
 			name: "basic_grpc_route",
 			grpcRoute: &gwv1.GRPCRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-grpc-route",
-					Namespace: "default",
-				},
+				Name:      "test-grpc-route",
+				Namespace: "default",
 				Spec: gwv1.GRPCRouteSpec{
 					Hostnames: []gwv1.Hostname{"test.example.com"},
 					Rules: []gwv1.GRPCRouteRule{
@@ -58,12 +55,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 							},
 							BackendRefs: []gwv1.GRPCBackendRef{
 								{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-											Port: new(gwv1.PortNumber(8080)),
-										},
-									},
+									Name: "test-service",
+									Port: new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -72,10 +65,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 			},
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-service",
-						Namespace: "default",
-					},
+					Name:      "test-service",
+					Namespace: "default",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -134,10 +125,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 		{
 			name: "grpc_route_with_regex_method",
 			grpcRoute: &gwv1.GRPCRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-grpc-route-regex",
-					Namespace: "default",
-				},
+				Name:      "test-grpc-route-regex",
+				Namespace: "default",
 				Spec: gwv1.GRPCRouteSpec{
 					Rules: []gwv1.GRPCRouteRule{
 						{
@@ -151,12 +140,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 							},
 							BackendRefs: []gwv1.GRPCBackendRef{
 								{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-											Port: new(gwv1.PortNumber(8080)),
-										},
-									},
+									Name: "test-service",
+									Port: new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -165,10 +150,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 			},
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-service",
-						Namespace: "default",
-					},
+					Name:      "test-service",
+					Namespace: "default",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -208,10 +191,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 		{
 			name: "grpc_route_with_headers",
 			grpcRoute: &gwv1.GRPCRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-grpc-route-headers",
-					Namespace: "default",
-				},
+				Name:      "test-grpc-route-headers",
+				Namespace: "default",
 				Spec: gwv1.GRPCRouteSpec{
 					Rules: []gwv1.GRPCRouteRule{
 						{
@@ -232,12 +213,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 							},
 							BackendRefs: []gwv1.GRPCBackendRef{
 								{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-											Port: new(gwv1.PortNumber(8080)),
-										},
-									},
+									Name: "test-service",
+									Port: new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -246,10 +223,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 			},
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-service",
-						Namespace: "default",
-					},
+					Name:      "test-service",
+					Namespace: "default",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -293,10 +268,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 		{
 			name: "cross_namespace_backend",
 			grpcRoute: &gwv1.GRPCRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-grpc-route-cross-ns",
-					Namespace: "default",
-				},
+				Name:      "test-grpc-route-cross-ns",
+				Namespace: "default",
 				Spec: gwv1.GRPCRouteSpec{
 					Rules: []gwv1.GRPCRouteRule{
 						{
@@ -309,13 +282,9 @@ func TestTransformGRPCRoute(t *testing.T) {
 							},
 							BackendRefs: []gwv1.GRPCBackendRef{
 								{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name:      "test-service",
-											Namespace: new(gwv1.Namespace("other")),
-											Port:      new(gwv1.PortNumber(8080)),
-										},
-									},
+									Name:      "test-service",
+									Namespace: new(gwv1.Namespace("other")),
+									Port:      new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -324,10 +293,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 			},
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-service",
-						Namespace: "other",
-					},
+					Name:      "test-service",
+					Namespace: "other",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{
@@ -339,10 +306,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 				},
 			},
 			referenceGrant: &gwv1b1.ReferenceGrant{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "allow-grpc-to-service",
-					Namespace: "other",
-				},
+				Name:      "allow-grpc-to-service",
+				Namespace: "other",
 				Spec: gwv1b1.ReferenceGrantSpec{
 					From: []gwv1b1.ReferenceGrantFrom{
 						{
@@ -387,10 +352,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 		{
 			name: "no_method_match",
 			grpcRoute: &gwv1.GRPCRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-grpc-route-no-method",
-					Namespace: "default",
-				},
+				Name:      "test-grpc-route-no-method",
+				Namespace: "default",
 				Spec: gwv1.GRPCRouteSpec{
 					Rules: []gwv1.GRPCRouteRule{
 						{
@@ -401,12 +364,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 							},
 							BackendRefs: []gwv1.GRPCBackendRef{
 								{
-									BackendRef: gwv1.BackendRef{
-										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "test-service",
-											Port: new(gwv1.PortNumber(8080)),
-										},
-									},
+									Name: "test-service",
+									Port: new(gwv1.PortNumber(8080)),
 								},
 							},
 						},
@@ -415,10 +374,8 @@ func TestTransformGRPCRoute(t *testing.T) {
 			},
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-service",
-						Namespace: "default",
-					},
+					Name:      "test-service",
+					Namespace: "default",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{
 							{

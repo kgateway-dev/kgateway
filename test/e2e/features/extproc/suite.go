@@ -9,7 +9,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -402,7 +401,7 @@ func (s *testingSuite) TestExtProcWithDeepMerge() {
 	// gateway (whose behavior must not change for other suites). It still runs off the
 	// curl pod by resolving the gateway address and sending through a common.Gateway.
 	deepMergeGateway := common.Gateway{
-		NamespacedName: types.NamespacedName{Name: "gw-deep-merge", Namespace: "default"},
+		Name: "gw-deep-merge", Namespace: "default",
 		Address: s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(
 			s.Ctx, "gw-deep-merge", "default"),
 	}

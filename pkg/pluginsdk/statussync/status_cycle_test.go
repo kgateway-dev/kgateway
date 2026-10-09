@@ -54,7 +54,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	// the skip mechanism alone.
 	routeReport := reports.NewReportMap()
 	reports.NewReporter(&routeReport).
-		Route(&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}).
+		Route(&gwv1.HTTPRoute{Name: "route", Namespace: "default"}).
 		ParentRef(&gwv1.ParentReference{Name: "gw"})
 	buildDesired := func(_ Resource, current *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 		status := reports.BuildRouteStatus(
@@ -108,7 +108,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	}
 
 	_, err := c.GatewayAPI().GatewayV1().HTTPRoutes("default").Create(ctx, &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"},
+		Name: "route", Namespace: "default",
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -146,7 +146,7 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 	// Phase 3: a duplicate push (e.g. leader re-election replay) reaches the writer, which
 	// must detect live == merged desired and skip the API write.
 	prevSyncs := syncs.Load()
-	pool.Push(Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}})
+	pool.Push(Resource{GroupVersionKind: gvk, Namespace: "default", Name: "route"})
 	require.Eventually(t, func() bool {
 		return syncs.Load() > prevSyncs
 	}, 5*time.Second, 10*time.Millisecond, "writer should process the duplicate push")

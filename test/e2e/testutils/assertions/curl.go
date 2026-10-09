@@ -40,9 +40,7 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 ) *http.Response {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: podOpts.Name, Namespace: podOpts.Namespace,
-		},
+		Name: podOpts.Name, Namespace: podOpts.Namespace,
 	})
 
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
@@ -110,9 +108,7 @@ func (p *Provider) assertCurlReturnResponse(
 ) *http.Response {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: podOpts.Name, Namespace: podOpts.Namespace,
-		},
+		Name: podOpts.Name, Namespace: podOpts.Namespace,
 	})
 
 	// Rely on default timeouts set in CurlFromPod
@@ -185,9 +181,7 @@ func (p *Provider) AssertEventualCurlError(
 ) {
 	// We rely on the curlPod to execute a curl, therefore we must assert that it actually exists
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: podOpts.Name, Namespace: podOpts.Namespace,
-		},
+		Name: podOpts.Name, Namespace: podOpts.Namespace,
 	})
 
 	pollTimeout := 5 * time.Second

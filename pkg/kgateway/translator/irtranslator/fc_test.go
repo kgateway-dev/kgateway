@@ -65,22 +65,18 @@ func TestFilterChains(t *testing.T) {
 		BindAddress: "0.0.0.0",
 		BindPort:    8080,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: "httpchain",
-				CustomNetworkFilters: []ir.CustomEnvoyFilter{{
-					Name:        testCustomFilterName,
-					FilterStage: filters.BeforeStage(filters.AuthZStage),
-				}},
-			},
+			FilterChainName: "httpchain",
+			CustomNetworkFilters: []ir.CustomEnvoyFilter{{
+				Name:        testCustomFilterName,
+				FilterStage: filters.BeforeStage(filters.AuthZStage),
+			}},
 		}},
 		TcpFilterChain: []ir.TcpIR{{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: "tcpchain",
-				CustomNetworkFilters: []ir.CustomEnvoyFilter{{
-					Name:        testCustomFilterName,
-					FilterStage: filters.BeforeStage(filters.AuthZStage),
-				}},
-			},
+			FilterChainName: "tcpchain",
+			CustomNetworkFilters: []ir.CustomEnvoyFilter{{
+				Name:        testCustomFilterName,
+				FilterStage: filters.BeforeStage(filters.AuthZStage),
+			}},
 		}},
 	}
 
@@ -124,9 +120,7 @@ func TestFilterChainsIPv6(t *testing.T) {
 		BindAddress: "2001:db8::1",
 		BindPort:    8080,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: "httpchain",
-			},
+			FilterChainName: "httpchain",
 		}},
 	}
 
@@ -154,9 +148,7 @@ func TestFilterChainsIPv4MappedIPv6(t *testing.T) {
 		BindAddress: "::ffff:192.168.1.1",
 		BindPort:    8080,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: "httpchain",
-			},
+			FilterChainName: "httpchain",
 		}},
 	}
 
@@ -184,9 +176,7 @@ func TestFilterChainsInvalidIP(t *testing.T) {
 		BindAddress: "not-an-ip",
 		BindPort:    8080,
 		HttpFilterChain: []ir.HttpFilterChainIR{{
-			FilterChainCommon: ir.FilterChainCommon{
-				FilterChainName: "httpchain",
-			},
+			FilterChainName: "httpchain",
 		}},
 	}
 

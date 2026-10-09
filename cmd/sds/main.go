@@ -34,7 +34,7 @@ func main() {
 // is not accepting connections.
 func runHealthCheck() {
 	addr := healthCheckAddress(os.Getenv("SDS_SERVER_ADDRESS"))
-	conn, err := net.DialTimeout("tcp", addr, healthCheckTimeout)
+	conn, err := net.DialTimeout("tcp", addr, healthCheckTimeout) //nolint:gosec // G704: healthCheckAddress always dials 127.0.0.1
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sds healthcheck: %v\n", err)
 		os.Exit(1)

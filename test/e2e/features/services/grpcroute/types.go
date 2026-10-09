@@ -46,17 +46,13 @@ var (
 	gatewayService = &corev1.Service{ObjectMeta: gatewayObjectMeta}
 
 	grpcEchoDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      grpcDeployName,
-			Namespace: testNamespace,
-		},
+		Name:      grpcDeployName,
+		Namespace: testNamespace,
 	}
 
 	grpcEchoService = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      grpcSvcName,
-			Namespace: testNamespace,
-		},
+		Name:      grpcSvcName,
+		Namespace: testNamespace,
 	}
 
 	// Expected response

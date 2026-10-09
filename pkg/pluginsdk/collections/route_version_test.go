@@ -158,8 +158,8 @@ func TestSelectRouteGVRsDoesNotAliasKnownVersions(t *testing.T) {
 // crdWithVersions builds an apiextensions client holding one CRD with the given versions.
 func crdWithVersions(crdName string, versions ...apiextensionsv1.CustomResourceDefinitionVersion) *apiextensionsfake.Clientset {
 	return apiextensionsfake.NewClientset(&apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{Name: crdName},
-		Spec:       apiextensionsv1.CustomResourceDefinitionSpec{Versions: versions},
+		Name: crdName,
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{Versions: versions},
 	})
 }
 

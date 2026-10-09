@@ -208,7 +208,7 @@ func TestPolicyUpdate(t *testing.T) {
 		t.Fatalf("can't get settings %v", err)
 	}
 	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
-		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
+		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{Name: "gwtest"}, metav1.CreateOptions{})
 
 		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
@@ -306,7 +306,7 @@ func TestServiceAppProtocolUpdate(t *testing.T) {
 		t.Fatalf("can't get settings %v", err)
 	}
 	setupEnvTestAndRun(t, st, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
-		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
+		client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{Name: "gwtest"}, metav1.CreateOptions{})
 
 		err = client.ApplyYAMLContents("gwtest", `kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1

@@ -60,10 +60,8 @@ func buildStatusesFromReports(
 			gw = *actualGw
 		} else {
 			gw = gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      gwNN.Name,
-					Namespace: gwNN.Namespace,
-				},
+				Name:      gwNN.Name,
+				Namespace: gwNN.Namespace,
 			}
 		}
 		if status := reportsMap.BuildGWStatus(gw, nil); status != nil {
@@ -82,10 +80,8 @@ func buildStatusesFromReports(
 				listenerSet = *actualLS
 			} else {
 				listenerSet = gwv1.ListenerSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      listenerSetNN.Name,
-						Namespace: listenerSetNN.Namespace,
-					},
+					Name:      listenerSetNN.Name,
+					Namespace: listenerSetNN.Namespace,
 				}
 			}
 			if listenerSet.GroupVersionKind().Empty() {
@@ -101,10 +97,8 @@ func buildStatusesFromReports(
 	// Build HTTPRoute statuses
 	for routeNN := range reportsMap.HTTPRoutes {
 		route := gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      routeNN.Name,
-				Namespace: routeNN.Namespace,
-			},
+			Name:      routeNN.Name,
+			Namespace: routeNN.Namespace,
 		}
 		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
@@ -115,10 +109,8 @@ func buildStatusesFromReports(
 	// Build TCPRoute statuses
 	for routeNN := range reportsMap.TCPRoutes {
 		route := gwv1a2.TCPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      routeNN.Name,
-				Namespace: routeNN.Namespace,
-			},
+			Name:      routeNN.Name,
+			Namespace: routeNN.Namespace,
 		}
 		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
@@ -129,10 +121,8 @@ func buildStatusesFromReports(
 	// Build TLSRoute statuses
 	for routeNN := range reportsMap.TLSRoutes {
 		route := gwv1.TLSRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      routeNN.Name,
-				Namespace: routeNN.Namespace,
-			},
+			Name:      routeNN.Name,
+			Namespace: routeNN.Namespace,
 		}
 		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
@@ -143,10 +133,8 @@ func buildStatusesFromReports(
 	// Build GRPCRoute statuses
 	for routeNN := range reportsMap.GRPCRoutes {
 		route := gwv1.GRPCRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      routeNN.Name,
-				Namespace: routeNN.Namespace,
-			},
+			Name:      routeNN.Name,
+			Namespace: routeNN.Namespace,
 		}
 		if status := reportsMap.BuildRouteStatus(&route, wellknown.DefaultGatewayClassName); status != nil {
 			normalizeRouteStatus(status, fixedTime)
@@ -166,10 +154,8 @@ func buildStatusesFromReports(
 	// Build Backend statuses
 	for backendNN := range reportsMap.Backends {
 		backend := kgateway.Backend{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      backendNN.Name,
-				Namespace: backendNN.Namespace,
-			},
+			Name:      backendNN.Name,
+			Namespace: backendNN.Namespace,
 		}
 		if status := reportsMap.BuildBackendStatus(&backend, kgateway.BackendStatus{}); status != nil {
 			normalizeBackendStatus(status, fixedTime)
@@ -189,11 +175,9 @@ func buildPolicyStatus(
 	// RegisterPolicyStatus hook at runtime); mirror it here for golden outputs.
 	if policyKey.Group == gwv1.GroupName && policyKey.Kind == wellknown.BackendTLSPolicyKind {
 		pol := &gwv1.BackendTLSPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      policyKey.Name,
-				Namespace: policyKey.Namespace,
-			},
-			Status: currentStatus,
+			Name:      policyKey.Name,
+			Namespace: policyKey.Namespace,
+			Status:    currentStatus,
 		}
 		return backendtlspolicy.BuildDesiredPolicyStatus(reportsMap.PolicyReport(policyKey), pol, wellknown.DefaultGatewayControllerName)
 	}

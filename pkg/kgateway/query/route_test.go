@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -17,10 +16,8 @@ import (
 func TestClonePreservesHostnameOverrides(t *testing.T) {
 	original := &query.RouteInfo{
 		Object: &ir.HttpRouteIR{
-			ObjectSource: ir.ObjectSource{
-				Name:      "test-route",
-				Namespace: "default",
-			},
+			Name:      "test-route",
+			Namespace: "default",
 		},
 		HostnameOverrides: []string{"foo.com", "bar.com"},
 	}
@@ -48,10 +45,8 @@ func TestGetRouteChain(t *testing.T) {
 		{
 			name: "wildcard delegation without resolution errors",
 			parent: &ir.HttpRouteIR{
-				ObjectSource: ir.ObjectSource{
-					Name:      "parent",
-					Namespace: "default",
-				},
+				Name:      "parent",
+				Namespace: "default",
 				Rules: []ir.HttpRouteRuleIR{
 					{
 						Backends: []ir.HttpBackendOrDelegate{
@@ -70,10 +65,8 @@ func TestGetRouteChain(t *testing.T) {
 			routes: []client.Object{
 				// cyclic reference to self via implicit attachment
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "parent",
-						Namespace: "default",
-					},
+					Name:      "parent",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -87,19 +80,15 @@ func TestGetRouteChain(t *testing.T) {
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child1",
-						Namespace: "default",
-					},
-					Spec: gwv1.HTTPRouteSpec{
+					Name:      "child1",
+					Namespace: "default",
+					Spec:      gwv1.HTTPRouteSpec{
 						// No ParentRefs, implicit attachment
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child2",
-						Namespace: "default",
-					},
+					Name:      "child2",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -113,10 +102,8 @@ func TestGetRouteChain(t *testing.T) {
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child3",
-						Namespace: "default",
-					},
+					Name:      "child3",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -130,10 +117,8 @@ func TestGetRouteChain(t *testing.T) {
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "parent2",
-						Namespace: "default",
-					},
+					Name:      "parent2",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -153,10 +138,8 @@ func TestGetRouteChain(t *testing.T) {
 		{
 			name: "wildcard delegation resulting in cyclic reference to parent route",
 			parent: &ir.HttpRouteIR{
-				ObjectSource: ir.ObjectSource{
-					Name:      "parent",
-					Namespace: "default",
-				},
+				Name:      "parent",
+				Namespace: "default",
 				Rules: []ir.HttpRouteRuleIR{
 					{
 						Backends: []ir.HttpBackendOrDelegate{
@@ -175,25 +158,19 @@ func TestGetRouteChain(t *testing.T) {
 			routes: []client.Object{
 				// cyclic reference to self via implicit attachment
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "parent",
-						Namespace: "default",
-					},
+					Name:      "parent",
+					Namespace: "default",
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child1",
-						Namespace: "default",
-					},
-					Spec: gwv1.HTTPRouteSpec{
+					Name:      "child1",
+					Namespace: "default",
+					Spec:      gwv1.HTTPRouteSpec{
 						// No ParentRefs, implicit attachment
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child2",
-						Namespace: "default",
-					},
+					Name:      "child2",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -207,10 +184,8 @@ func TestGetRouteChain(t *testing.T) {
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "child3",
-						Namespace: "default",
-					},
+					Name:      "child3",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -224,10 +199,8 @@ func TestGetRouteChain(t *testing.T) {
 					},
 				},
 				&gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "parent2",
-						Namespace: "default",
-					},
+					Name:      "parent2",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{

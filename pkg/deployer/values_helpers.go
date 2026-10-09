@@ -44,7 +44,7 @@ func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) 
 	// Add ports from Gateway listeners
 	for _, port := range gw.Ports.List() {
 		portName := listener.GenerateListenerNameFromPort(port)
-		if err := validate.ListenerPort(ir.Listener{Listener: gwv1.Listener{Port: port}}, port); err != nil {
+		if err := validate.ListenerPort(ir.Listener{Port: port}, port); err != nil {
 			// skip invalid ports; statuses are handled in the translator
 			logger.Error("skipping port", "gateway", gw.ResourceName(), "error", err)
 			continue
@@ -60,9 +60,7 @@ func GetPortsValues(gw *ir.GatewayForDeployer, gwp *kgateway.GatewayParameters) 
 		for _, servicePort := range servicePorts {
 			portValue := servicePort.GetPort()
 			l := ir.Listener{
-				Listener: gwv1.Listener{
-					Port: gwv1.PortNumber(portValue),
-				},
+				Port: gwv1.PortNumber(portValue),
 			}
 			portName := listener.GenerateListenerName(l)
 			gwPorts = AppendPortValue(gwPorts, portValue, portName, gwp)
@@ -98,7 +96,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name string, gwp *kgateway.
 	// NodePort and LoadBalancer both support explicit node ports; if not set, nil renders nothing.
 	var nodePort *int32 = nil
 	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil {
-		serviceType := *(gwp.Spec.GetKube().GetService().GetType())
+		serviceType := *gwp.Spec.GetKube().GetService().GetType()
 		if serviceType == corev1.ServiceTypeNodePort || serviceType == corev1.ServiceTypeLoadBalancer {
 			if idx := istioslices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 				return p.GetPort() == port

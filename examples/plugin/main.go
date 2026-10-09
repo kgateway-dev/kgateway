@@ -140,12 +140,10 @@ func ourPolicies(commoncol *collections.CommonCollections) krt.Collection[ir.Pol
 		}
 
 		pol := &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     configMapGK.Group,
-				Kind:      configMapGK.Kind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
+			Group:      configMapGK.Group,
+			Kind:       configMapGK.Kind,
+			Namespace:  i.Namespace,
+			Name:       i.Name,
 			Policy:     i,
 			PolicyIR:   configMapToIr(i),
 			TargetRefs: extractTargetRefs(i),

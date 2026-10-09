@@ -234,11 +234,9 @@ var _ e2e.NewSuiteFunc = NewXdsCostSuite
 
 func NewXdsCostSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &XdsCostSuite{
-		LoadTestingSuite: LoadTestingSuite{
-			Suite:            suite.Suite{},
-			ctx:              ctx,
-			testInstallation: testInst,
-		},
+		Suite:            suite.Suite{},
+		ctx:              ctx,
+		testInstallation: testInst,
 	}
 }
 
@@ -539,9 +537,9 @@ func (s *XdsCostSuite) churnEndpointSlice(i int) {
 	s.churnGen++
 	ip := fmt.Sprintf("10.246.%d.%d", (s.churnGen/250)%200, s.churnGen%250+1)
 	patch := fmt.Sprintf(`[{"op":"replace","path":"/endpoints/0/addresses/0","value":%q}]`, ip)
-	eps := &discoveryv1.EndpointSlice{ObjectMeta: metav1.ObjectMeta{
+	eps := &discoveryv1.EndpointSlice{
 		Name: fmt.Sprintf("sim-service-%d", idx), Namespace: cfg.Namespace,
-	}}
+	}
 	s.Require().NoError(s.testInstallation.ClusterContext.Client.Patch(s.ctx, eps,
 		client.RawPatch(types.JSONPatchType, []byte(patch))), "should patch EndpointSlice %d", idx)
 }

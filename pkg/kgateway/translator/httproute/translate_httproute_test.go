@@ -48,14 +48,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			Name: "my-gw",
 		}
 		route = &gwv1.HTTPRoute{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       wellknown.HTTPRouteKind,
-				APIVersion: gwv1.GroupVersion.String(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo-httproute",
-				Namespace: "bar",
-			},
+			Kind:       wellknown.HTTPRouteKind,
+			APIVersion: gwv1.GroupVersion.String(),
+			Name:       "foo-httproute",
+			Namespace:  "bar",
 			Spec: gwv1.HTTPRouteSpec{
 				Hostnames: []gwv1.Hostname{"example.com"},
 				CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -67,12 +63,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			},
 		}
 		routeir = &ir.HttpRouteIR{
-			ObjectSource: ir.ObjectSource{
-				Namespace: route.Namespace,
-				Name:      route.Name,
-				Kind:      route.Kind,
-				Group:     gwv1.GroupVersion.Group,
-			},
+			Namespace:    route.Namespace,
+			Name:         route.Name,
+			Kind:         route.Kind,
+			Group:        gwv1.GroupVersion.Group,
 			SourceObject: route,
 			ParentRefs:   []gwv1.ParentReference{*parentRef},
 			Hostnames:    []string{"example.com"},
@@ -94,10 +88,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			BeforeEach(func() {
 				// Setup the backing service
 				backingSvc = &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: "bar",
-					},
+					Name:      "foo",
+					Namespace: "bar",
 					Spec: corev1.ServiceSpec{
 						Ports: []corev1.ServicePort{{
 							Name: "http",
@@ -125,14 +117,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						},
 						BackendRefs: []gwv1.HTTPBackendRef{
 							{
-								BackendRef: gwv1.BackendRef{
-									BackendObjectReference: gwv1.BackendObjectReference{
-										Name:      gwv1.ObjectName("foo"),
-										Namespace: new(gwv1.Namespace("bar")),
-										Kind:      new(gwv1.Kind("Service")),
-										Port:      new(gwv1.PortNumber(8080)),
-									},
-								},
+								Name:      gwv1.ObjectName("foo"),
+								Namespace: new(gwv1.Namespace("bar")),
+								Kind:      new(gwv1.Kind("Service")),
+								Port:      new(gwv1.PortNumber(8080)),
 							},
 						},
 					},
@@ -205,14 +193,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						},
 						BackendRefs: []gwv1.HTTPBackendRef{
 							{
-								BackendRef: gwv1.BackendRef{
-									BackendObjectReference: gwv1.BackendObjectReference{
-										Name:      gwv1.ObjectName("foo"),
-										Namespace: new(gwv1.Namespace("bar")),
-										Kind:      new(gwv1.Kind("Service")),
-										Port:      new(gwv1.PortNumber(8080)),
-									},
-								},
+								Name:      gwv1.ObjectName("foo"),
+								Namespace: new(gwv1.Namespace("bar")),
+								Kind:      new(gwv1.Kind("Service")),
+								Port:      new(gwv1.PortNumber(8080)),
 							},
 						},
 					},

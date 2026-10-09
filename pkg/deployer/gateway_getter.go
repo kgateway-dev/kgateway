@@ -36,12 +36,10 @@ func GatewayIRFrom(gw *gwv1.Gateway, controllerNameGuess string) *ir.GatewayForD
 		ports.Insert(l.Port)
 	}
 	return &ir.GatewayForDeployer{
-		ObjectSource: ir.ObjectSource{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      wellknown.GatewayKind,
-			Namespace: gw.Namespace,
-			Name:      gw.Name,
-		},
+		Group:          gwv1.GroupVersion.Group,
+		Kind:           wellknown.GatewayKind,
+		Namespace:      gw.Namespace,
+		Name:           gw.Name,
 		ControllerName: controllerNameGuess,
 		Ports:          smallset.New(ports.UnsortedList()...),
 	}

@@ -27,21 +27,19 @@ func TestDomainsPerListenerMetric(t *testing.T) {
 
 	gw := ir.GatewayIR{
 		SourceObject: &ir.Gateway{
-			ObjectSource: ir.ObjectSource{
-				Name:      "gateway",
-				Namespace: "default",
-			},
+			Name:      "gateway",
+			Namespace: "default",
 			Listeners: []ir.Listener{
-				{Listener: gwv1.Listener{
+				{
 					Name:     "listener1",
 					Port:     80,
 					Protocol: gwv1.HTTPProtocolType,
-				}},
-				{Listener: gwv1.Listener{
+				},
+				{
 					Name:     "listener2",
 					Port:     443,
 					Protocol: gwv1.HTTPSProtocolType,
-				}},
+				},
 			},
 			Obj: &gwv1.Gateway{},
 		},
@@ -202,10 +200,8 @@ func TestIncRouteReplacementLabels(t *testing.T) {
 
 	gw := ir.GatewayIR{
 		SourceObject: &ir.Gateway{
-			ObjectSource: ir.ObjectSource{
-				Name:      "gw-a",
-				Namespace: "ns-a",
-			},
+			Name:      "gw-a",
+			Namespace: "ns-a",
 		},
 	}
 

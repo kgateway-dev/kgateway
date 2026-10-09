@@ -880,7 +880,7 @@ func (s *testingSuite) TestGatewayWithTransformation() {
 
 	testCases := []transformationTestCase{}
 	testCases = append(testCases, s.commonTestCases...)
-	s.runTestCases((testCases))
+	s.runTestCases(testCases)
 }
 
 func (s *testingSuite) runTestCases(testCases []transformationTestCase) {

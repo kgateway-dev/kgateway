@@ -289,10 +289,8 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									Exec: &corev1.ExecAction{
-										Command: []string{"exec", "command"},
-									},
+								Exec: &corev1.ExecAction{
+									Command: []string{"exec", "command"},
 								},
 							},
 						},
@@ -304,10 +302,8 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									TCPSocket: &corev1.TCPSocketAction{
-										Port: intstr.FromString("8080"),
-									},
+								TCPSocket: &corev1.TCPSocketAction{
+									Port: intstr.FromString("8080"),
 								},
 							},
 						},
@@ -319,10 +315,8 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									TCPSocket: &corev1.TCPSocketAction{
-										Port: intstr.FromString("8080"),
-									},
+								TCPSocket: &corev1.TCPSocketAction{
+									Port: intstr.FromString("8080"),
 								},
 							},
 						},
@@ -337,10 +331,8 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									Exec: &corev1.ExecAction{
-										Command: []string{"exec", "command"},
-									},
+								Exec: &corev1.ExecAction{
+									Command: []string{"exec", "command"},
 								},
 							},
 						},
@@ -357,10 +349,8 @@ func TestDeepMergeGatewayParameters(t *testing.T) {
 					Kube: &kgateway.KubernetesProxyConfig{
 						PodTemplate: &kgateway.Pod{
 							StartupProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									Exec: &corev1.ExecAction{
-										Command: []string{"exec", "command"},
-									},
+								Exec: &corev1.ExecAction{
+									Command: []string{"exec", "command"},
 								},
 							},
 						},

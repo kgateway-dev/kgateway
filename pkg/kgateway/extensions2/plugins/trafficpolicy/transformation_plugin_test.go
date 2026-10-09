@@ -24,7 +24,7 @@ func TestRustformationIREquals(t *testing.T) {
 				Name: RustformationModuleName,
 			},
 			FilterName:         RustformationFilterName,
-			PerRouteConfigName: RustformationFilterName,
+			PerRouteConfigName: RustformationFilterName, //nolint:staticcheck // SA1019: PerRouteConfigName is kept for legacy migration purposes
 			FilterConfig:       filterCfg,
 		}
 	}
@@ -92,7 +92,7 @@ func TestRustformationIREquals(t *testing.T) {
 					Name: RustformationModuleName,
 				},
 				FilterName:         RustformationFilterName,
-				PerRouteConfigName: RustformationFilterName,
+				PerRouteConfigName: RustformationFilterName, //nolint:staticcheck // SA1019: PerRouteConfigName is kept for legacy migration purposes
 			},
 		}
 		assert.True(t, transformation.Equals(transformation), "transformation should equal itself")

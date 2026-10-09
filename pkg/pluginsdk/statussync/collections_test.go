@@ -8,9 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -47,7 +45,7 @@ func (q *recordingQueue) awaitResources(t *testing.T, n int) []Resource {
 func TestRegisterResourceReplaysAndTracksRawObjects(t *testing.T) {
 	stop := test.NewStop(t)
 	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
-	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
+	route := &gwv1.HTTPRoute{Name: "route", Namespace: "default"}
 	col := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route}, krt.WithStop(stop))
 
 	sources := NewStatusCollections()
@@ -55,7 +53,7 @@ func TestRegisterResourceReplaysAndTracksRawObjects(t *testing.T) {
 	RegisterResource(sources, gvk, col)
 	sources.SetQueue(queue)
 
-	want := Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}}
+	want := Resource{GroupVersionKind: gvk, Namespace: "default", Name: "route"}
 	require.Equal(t, want, queue.awaitResources(t, 1)[0], "leadership acquisition must sweep current objects")
 
 	updated := route.DeepCopy()
@@ -74,7 +72,7 @@ func TestRegisterResourceUsesConfiguredGVKForNormalizedCollections(t *testing.T)
 	stop := test.NewStop(t)
 	fallback := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1alpha3", Kind: "ListenerSet"}
 	objectGVK := schema.GroupVersionKind{Group: "gateway.networking.x-k8s.io", Version: "v1alpha1", Kind: "XListenerSet"}
-	ls := &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Name: "listeners", Namespace: "default"}}
+	ls := &gwv1.ListenerSet{Name: "listeners", Namespace: "default"}
 	ls.SetGroupVersionKind(objectGVK)
 	col := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{ls}, krt.WithStop(stop))
 
@@ -91,7 +89,7 @@ func TestRegisterResourceByObjectGVKPreservesMixedSourceKinds(t *testing.T) {
 	stop := test.NewStop(t)
 	fallback := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1alpha3", Kind: "ListenerSet"}
 	actual := schema.GroupVersionKind{Group: "gateway.networking.x-k8s.io", Version: "v1alpha1", Kind: "XListenerSet"}
-	ls := &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Name: "listeners", Namespace: "default"}}
+	ls := &gwv1.ListenerSet{Name: "listeners", Namespace: "default"}
 	ls.SetGroupVersionKind(actual)
 	col := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{ls}, krt.WithStop(stop))
 
@@ -106,8 +104,8 @@ func TestRegisterResourceByObjectGVKPreservesMixedSourceKinds(t *testing.T) {
 func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 	stop := test.NewStop(t)
 	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
-	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
-	otherRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: "default"}}
+	route := &gwv1.HTTPRoute{Name: "route", Namespace: "default"}
+	otherRoute := &gwv1.HTTPRoute{Name: "other", Namespace: "default"}
 	objects := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route, otherRoute}, krt.WithStop(stop))
 
 	first := routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first")
@@ -122,14 +120,14 @@ func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 		contributions,
 		byTarget,
 		func(object *gwv1.HTTPRoute) Resource {
-			return Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: object.Namespace, Name: object.Name}}
+			return Resource{GroupVersionKind: gvk, Namespace: object.Namespace, Name: object.Name}
 		},
 		krt.WithStop(stop),
 	)
 	require.True(t, reduced.WaitUntilSynced(nil))
 
-	routeKey := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: types.NamespacedName{Namespace: route.Namespace, Name: route.Name}}
-	otherKey := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: types.NamespacedName{Namespace: otherRoute.Namespace, Name: otherRoute.Name}}
+	routeKey := reports.StatusKey{GroupKind: gvk.GroupKind(), Namespace: route.Namespace, Name: route.Name}
+	otherKey := reports.StatusKey{GroupKind: gvk.GroupKind(), Namespace: otherRoute.Namespace, Name: otherRoute.Name}
 	require.Eventually(t, func() bool {
 		current := reduced.GetKey(routeKey.String())
 		return routeParentCount(current) == 2
@@ -171,8 +169,8 @@ func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 func TestFetchedContributionsAreNotAliasedByIndexStorage(t *testing.T) {
 	stop := test.NewStop(t)
 	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
-	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
-	otherRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "other", Namespace: "default"}}
+	route := &gwv1.HTTPRoute{Name: "route", Namespace: "default"}
+	otherRoute := &gwv1.HTTPRoute{Name: "other", Namespace: "default"}
 	objects := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route, otherRoute}, krt.WithStop(stop))
 
 	want := []reports.StatusContribution{
@@ -190,7 +188,7 @@ func TestFetchedContributionsAreNotAliasedByIndexStorage(t *testing.T) {
 	var mu sync.Mutex
 	overwritten := 0
 	saboteur := krt.NewCollection(objects, func(kctx krt.HandlerContext, object *gwv1.HTTPRoute) *ResourceReports {
-		res := Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: object.Namespace, Name: object.Name}}
+		res := Resource{GroupVersionKind: gvk, Namespace: object.Namespace, Name: object.Name}
 		target := reports.StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: res.NamespacedName}
 		fetched := krt.Fetch(kctx, contributions, krt.FilterIndex(byTarget, target))
 		for i := range fetched {

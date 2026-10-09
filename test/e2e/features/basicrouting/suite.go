@@ -9,7 +9,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -79,11 +78,9 @@ func (s *testingSuite) SetupSuite() {
 		"default",
 	)
 	s.localGateway = common.Gateway{
-		NamespacedName: types.NamespacedName{
-			Name:      "gateway",
-			Namespace: "default",
-		},
-		Address: address,
+		Name:      "gateway",
+		Namespace: "default",
+		Address:   address,
 	}
 }
 
@@ -117,12 +114,12 @@ func (s *testingSuite) TestSamePrefixLongGatewayNameRouting() {
 
 	// Get addresses for both Gateways
 	firstGateway := common.Gateway{
-		NamespacedName: types.NamespacedName{Name: gwNameOne, Namespace: "default"},
-		Address:        s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, gwNameOne, "default"),
+		Name: gwNameOne, Namespace: "default",
+		Address: s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, gwNameOne, "default"),
 	}
 	secondGateway := common.Gateway{
-		NamespacedName: types.NamespacedName{Name: gwNameTwo, Namespace: "default"},
-		Address:        s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, gwNameTwo, "default"),
+		Name: gwNameTwo, Namespace: "default",
+		Address: s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, gwNameTwo, "default"),
 	}
 
 	// Verify routing works for both Gateways independently

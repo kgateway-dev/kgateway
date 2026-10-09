@@ -38,17 +38,13 @@ var (
 	}
 
 	proxyDeploymentMeta = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      gatewayName,
-			Namespace: lambdaNamespace,
-		},
+		Name:      gatewayName,
+		Namespace: lambdaNamespace,
 	}
 
 	proxyServiceMeta = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      gatewayName,
-			Namespace: lambdaNamespace,
-		},
+		Name:      gatewayName,
+		Namespace: lambdaNamespace,
 	}
 
 	assumeRoleGatewayObjectMeta = metav1.ObjectMeta{
@@ -57,16 +53,12 @@ var (
 	}
 
 	assumeRoleProxyDeploymentMeta = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      assumeRoleGatewayName,
-			Namespace: lambdaNamespace,
-		},
+		Name:      assumeRoleGatewayName,
+		Namespace: lambdaNamespace,
 	}
 
 	assumeRoleProxyServiceMeta = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      assumeRoleGatewayName,
-			Namespace: lambdaNamespace,
-		},
+		Name:      assumeRoleGatewayName,
+		Namespace: lambdaNamespace,
 	}
 )

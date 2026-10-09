@@ -41,23 +41,19 @@ func TestUniqueClients(t *testing.T) {
 			name: "basic",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "podname",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "podname",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 			},
@@ -86,43 +82,35 @@ func TestUniqueClients(t *testing.T) {
 			name: "two UCCs",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "podname",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "podname",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "podname2",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "podname2",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Spec: corev1.PodSpec{
 						NodeName: "node2",
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node2",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region2",
-							corev1.LabelTopologyZone:   "zone2",
-						},
+					Name: "node2",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region2",
+						corev1.LabelTopologyZone:   "zone2",
 					},
 				},
 			},
@@ -260,22 +248,18 @@ func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
 
 	inputs := []any{
 		&corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "podname",
-				Namespace: "ns",
-				Labels: map[string]string{
-					wellknown.GatewayNameLabel: "gw",
-				},
+			Name:      "podname",
+			Namespace: "ns",
+			Labels: map[string]string{
+				wellknown.GatewayNameLabel: "gw",
 			},
 			Spec: corev1.PodSpec{NodeName: "node"},
 		},
 		&corev1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "node",
-				Labels: map[string]string{
-					corev1.LabelTopologyRegion: "region",
-					corev1.LabelTopologyZone:   "zone",
-				},
+			Name: "node",
+			Labels: map[string]string{
+				corev1.LabelTopologyRegion: "region",
+				corev1.LabelTopologyZone:   "zone",
 			},
 		},
 	}
@@ -458,7 +442,7 @@ func TestUniqueClientsFollowUpWithReusedAugmentedNode(t *testing.T) {
 	driftedLabels := map[string]string{"a": "b", corev1.LabelTopologyZone: "zone-1"}
 
 	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: labels,
 	}})
 
@@ -494,7 +478,7 @@ func TestUniqueClientsFollowUpWithReusedAugmentedNode(t *testing.T) {
 
 	// Genuine pod-state drift must still be detected through the reused node.
 	pods.UpdateObject(LocalityPod{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: driftedLabels,
 	})
 	g.Expect(cb.OnStreamRequest(1, req)).To(MatchError(ContainSubstring("xds client identity changed")),
@@ -511,7 +495,7 @@ func TestUniqueClientsReidentifyOnPodChange(t *testing.T) {
 	freshLabels := map[string]string{"a": "b", corev1.LabelTopologyZone: "zone-1"}
 
 	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: staleLabels,
 	}})
 
@@ -543,7 +527,7 @@ func TestUniqueClientsReidentifyOnPodChange(t *testing.T) {
 
 	// The pod's augmented data catches up while the stream is open.
 	pods.UpdateObject(LocalityPod{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: freshLabels,
 	})
 
@@ -580,7 +564,7 @@ func TestUniqueClientsKeepIdentityWhenPodLookupFails(t *testing.T) {
 	labels := map[string]string{"a": "b"}
 
 	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: labels,
 	}})
 
@@ -642,7 +626,7 @@ func TestUniqueClientsLocalClusterGatingSurvivesIdentityReDerivation(t *testing.
 	driftedLabels := map[string]string{wellknown.GatewayNameLabel: "gw", corev1.LabelTopologyZone: "zone-1"}
 
 	pods := krt.NewStaticCollection[LocalityPod](nil, []LocalityPod{{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: labels,
 	}})
 
@@ -682,7 +666,7 @@ func TestUniqueClientsLocalClusterGatingSurvivesIdentityReDerivation(t *testing.
 	// Identity drift closes the stream; the capability must NOT carry over to the
 	// reconnect, which is a fresh stream that has not yet proven anything.
 	pods.UpdateObject(LocalityPod{
-		Named:           krt.Named{Name: "podname", Namespace: "ns"},
+		Name: "podname", Namespace: "ns",
 		AugmentedLabels: driftedLabels,
 	})
 	g.Expect(cb.OnStreamRequest(1, edsReq())).To(MatchError(ContainSubstring("xds client identity changed")))

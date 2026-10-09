@@ -54,12 +54,10 @@ func lsToIR(ls *gwv1.ListenerSet) ir.ListenerSet {
 	}
 	lsGVK := ls.GroupVersionKind()
 	out := ir.ListenerSet{
-		ObjectSource: ir.ObjectSource{
-			Group:     lsGVK.Group,
-			Kind:      lsGVK.Kind,
-			Namespace: ls.Namespace,
-			Name:      ls.Name,
-		},
+		Group:     lsGVK.Group,
+		Kind:      lsGVK.Kind,
+		Namespace: ls.Namespace,
+		Name:      ls.Name,
 		Obj:       ls,
 		Listeners: make([]ir.Listener, 0, len(ls.Spec.Listeners)),
 	}
@@ -1052,10 +1050,8 @@ func TestTCPHostnameConflict(t *testing.T) {
 
 func simpleGwTCPRoute() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-gateway",
-		},
+		Namespace: "default",
+		Name:      "tcp-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1078,10 +1074,8 @@ func simpleGwTCPRoute() *gwv1.Gateway {
 
 func simpleLsTCPRoute() *gwv1.ListenerSet {
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-listenerset",
-		},
+		Namespace: "default",
+		Name:      "tcp-listenerset",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1103,10 +1097,8 @@ func simpleLsTCPRoute() *gwv1.ListenerSet {
 
 func simpleGwInvalidTCPRouteKind() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-invalid-gateway",
-		},
+		Namespace: "default",
+		Name:      "tcp-invalid-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1129,10 +1121,8 @@ func simpleGwInvalidTCPRouteKind() *gwv1.Gateway {
 
 func simpleLsInvalidTCPRouteKind() *gwv1.ListenerSet {
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-invalid-listenerset",
-		},
+		Namespace: "default",
+		Name:      "tcp-invalid-listenerset",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1154,10 +1144,8 @@ func simpleLsInvalidTCPRouteKind() *gwv1.ListenerSet {
 
 func tcpProtocolConflictGw() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-conflict-gateway",
-		},
+		Namespace: "default",
+		Name:      "tcp-conflict-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1173,10 +1161,8 @@ func tcpProtocolConflictGw() *gwv1.Gateway {
 
 func tcpProtocolConflictLs() *gwv1.ListenerSet {
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-conflict-listenerset",
-		},
+		Namespace: "default",
+		Name:      "tcp-conflict-listenerset",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1192,10 +1178,8 @@ func tcpProtocolConflictLs() *gwv1.ListenerSet {
 func tcpHostnameConflictGw() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-hostname-conflict-gateway",
-		},
+		Namespace: "default",
+		Name:      "tcp-hostname-conflict-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1213,10 +1197,8 @@ func tcpHostnameConflictGw() *gwv1.Gateway {
 func tcpHostnameConflictLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tcp-hostname-conflict-listenerset",
-		},
+		Namespace: "default",
+		Name:      "tcp-hostname-conflict-listenerset",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1257,10 +1239,8 @@ func TestValidTLSRouteListener(t *testing.T) {
 func TestPassthroughTLSListenerRejectsTCPRouteKindButKeepsTLSRoute(t *testing.T) {
 	mode := gwv1.TLSModePassthrough
 	gateway := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tls-passthrough-gateway",
-		},
+		Namespace: "default",
+		Name:      "tls-passthrough-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1314,10 +1294,8 @@ func TestPassthroughTLSListenerRejectsTCPRouteKindButKeepsTLSRoute(t *testing.T)
 func TestTerminatedTLSListenerSupportsTCPRoute(t *testing.T) {
 	mode := gwv1.TLSModeTerminate
 	gateway := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tls-terminated-gateway",
-		},
+		Namespace: "default",
+		Name:      "tls-terminated-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1362,10 +1340,8 @@ func TestTerminatedTLSListenerSupportsTCPRoute(t *testing.T) {
 func TestTerminatedTLSListenerSupportsTLSRouteAndTCPRouteKinds(t *testing.T) {
 	mode := gwv1.TLSModeTerminate
 	gateway := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tls-terminated-mixed-gateway",
-		},
+		Namespace: "default",
+		Name:      "tls-terminated-mixed-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1470,10 +1446,8 @@ func TestMixedTLSModeListenersAllowedWhenExperimentalGatewayAPIFeaturesEnabled(t
 
 func simpleGwTLSRoute() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "tls-gateway",
-		},
+		Namespace: "default",
+		Name:      "tls-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1500,10 +1474,8 @@ func mixedTLSModeGateway() *gwv1.Gateway {
 	terminateHostname := gwv1.Hostname("terminate.example.com")
 	passthroughHostname := gwv1.Hostname("passthrough.example.com")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "mixed-tls-mode-gateway",
-		},
+		Namespace: "default",
+		Name:      "mixed-tls-mode-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1710,10 +1682,8 @@ func assertExpectedListenerStatuses(
 func simpleGw() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1731,10 +1701,8 @@ func simpleGw() *gwv1.Gateway {
 func simpleLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1750,10 +1718,8 @@ func simpleLs() *gwv1.ListenerSet {
 
 func simpleGwNoHostname() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1769,10 +1735,8 @@ func simpleGwNoHostname() *gwv1.Gateway {
 
 func simpleLsNoHostname() *gwv1.ListenerSet {
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1787,10 +1751,8 @@ func simpleLsNoHostname() *gwv1.ListenerSet {
 
 func simpleGwDuplicateNoHostname() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1806,10 +1768,8 @@ func simpleGwDuplicateNoHostname() *gwv1.Gateway {
 
 func simpleLsDuplicateNoHostname() *gwv1.ListenerSet {
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1825,10 +1785,8 @@ func simpleLsDuplicateNoHostname() *gwv1.ListenerSet {
 func simpleGwValidRouteKind() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1853,10 +1811,8 @@ func simpleGwValidRouteKind() *gwv1.Gateway {
 func simpleLsValidRouteKind() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1880,10 +1836,8 @@ func simpleLsValidRouteKind() *gwv1.ListenerSet {
 func simpleGwInvalidRouteKind() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1908,10 +1862,8 @@ func simpleGwInvalidRouteKind() *gwv1.Gateway {
 func simpleLsInvalidRouteKind() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1937,10 +1889,8 @@ func simpleGwMultiListener() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -1965,10 +1915,8 @@ func simpleLsMultiListener() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -1992,10 +1940,8 @@ func simpleGwMultiListenerExplicitRoutes() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2027,10 +1973,8 @@ func simpleLsMultiListenerExplicitRoutes() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2061,10 +2005,8 @@ func simpleGwMultiListenerWithInvalidListener() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2103,10 +2045,8 @@ func simpleLsMultiListenerWithInvalidListener() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2143,10 +2083,8 @@ func simpleLsMultiListenerWithInvalidListener() *gwv1.ListenerSet {
 func protocolConfGw() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2164,10 +2102,8 @@ func protocolConfGw() *gwv1.Gateway {
 func protocolConfLs() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2185,10 +2121,8 @@ func protocolConfLs() *gwv1.ListenerSet {
 func protocolConfGwWithInvalidRoute() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2213,10 +2147,8 @@ func protocolConfGwWithInvalidRoute() *gwv1.Gateway {
 func protocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2233,10 +2165,8 @@ func protocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 func actualProtocolConfGwWithInvalidRoute() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2274,10 +2204,8 @@ func actualProtocolConfGwWithInvalidRoute() *gwv1.Gateway {
 func actualProtocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2294,10 +2222,8 @@ func actualProtocolConfLsWithInvalidRoute() *gwv1.ListenerSet {
 func hostConfGw() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2315,10 +2241,8 @@ func hostConfGw() *gwv1.Gateway {
 func hostConfLs() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2335,10 +2259,8 @@ func hostConfLs() *gwv1.ListenerSet {
 func hostConfGwWithInvalidRoute() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2363,10 +2285,8 @@ func hostConfGwWithInvalidRoute() *gwv1.Gateway {
 func hostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2383,10 +2303,8 @@ func hostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 func actualHostConfGwWithInvalidRoute() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2424,10 +2342,8 @@ func actualHostConfGwWithInvalidRoute() *gwv1.Gateway {
 func actualHostConfLsWithInvalidRoute() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2445,10 +2361,8 @@ func hostConfGw2() *gwv1.Gateway {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname2 := gwv1.Hostname("test.kgateway.dev")
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2473,10 +2387,8 @@ func hostConfLs2() *gwv1.ListenerSet {
 	hostname := gwv1.Hostname("kgateway.dev")
 	hostname4 := gwv1.Hostname("ls.kgateway.dev")
 	return &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 		Spec: gwv1.ListenerSetSpec{
 			Listeners: []gwv1.ListenerEntry{
 				{
@@ -2498,10 +2410,8 @@ func hostConfLs2() *gwv1.ListenerSet {
 
 func unsupportedProtocolGw() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "unsupported-protocol-gateway",
-		},
+		Namespace: "default",
+		Name:      "unsupported-protocol-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{
@@ -2517,10 +2427,8 @@ func unsupportedProtocolGw() *gwv1.Gateway {
 
 func hboneProtocolGw() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "hbone-protocol-gateway",
-		},
+		Namespace: "default",
+		Name:      "hbone-protocol-gateway",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{

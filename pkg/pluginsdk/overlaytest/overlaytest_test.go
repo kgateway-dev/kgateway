@@ -9,7 +9,6 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -54,10 +53,10 @@ func labelOverlay(declared ...string) sdk.PolicyPlugin {
 
 func fixtureBackend() ir.BackendObjectIR {
 	b := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	b.Obj = &corev1.Service{
 		Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1",
 		Labels: map[string]string{"gate": "on", "shape": "round"},
-	}}
+	}
 	return b
 }
 

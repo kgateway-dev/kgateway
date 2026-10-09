@@ -29,12 +29,10 @@ func TestPods(t *testing.T) {
 			name: "basic",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
@@ -43,12 +41,10 @@ func TestPods(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 			},
@@ -75,12 +71,10 @@ func TestPods(t *testing.T) {
 			name: "multi-IP",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
@@ -93,12 +87,10 @@ func TestPods(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 			},
@@ -125,23 +117,19 @@ func TestPods(t *testing.T) {
 			name: "no IP",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 			},
@@ -167,15 +155,13 @@ func TestPods(t *testing.T) {
 			name: "long gateway name annotation is augmented into labels",
 			inputs: []any{
 				&corev1.Pod{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-						Annotations: map[string]string{
-							// This is a long gateway name that exceeds 63 chars
-							wellknown.GatewayNameAnnotation: strings.Repeat("a", 100) + "-gateway",
-						},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      "name",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
+					Annotations: map[string]string{
+						// This is a long gateway name that exceeds 63 chars
+						wellknown.GatewayNameAnnotation: strings.Repeat("a", 100) + "-gateway",
 					},
 					Spec: corev1.PodSpec{
 						NodeName: "node",
@@ -185,12 +171,10 @@ func TestPods(t *testing.T) {
 					},
 				},
 				&corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node",
-						Labels: map[string]string{
-							corev1.LabelTopologyRegion: "region",
-							corev1.LabelTopologyZone:   "zone",
-						},
+					Name: "node",
+					Labels: map[string]string{
+						corev1.LabelTopologyRegion: "region",
+						corev1.LabelTopologyZone:   "zone",
 					},
 				},
 			},
@@ -218,11 +202,9 @@ func TestPods(t *testing.T) {
 			name: "pod without network label gets the system namespace network",
 			inputs: []any{
 				&corev1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels:    map[string]string{"a": "b"},
-					},
+					Name:      "name",
+					Namespace: "ns",
+					Labels:    map[string]string{"a": "b"},
 					Status: corev1.PodStatus{
 						PodIP: "1.2.3.4",
 					},
@@ -245,11 +227,9 @@ func TestPods(t *testing.T) {
 			name: "pod network label wins over the system namespace network",
 			inputs: []any{
 				&corev1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "name",
-						Namespace: "ns",
-						Labels:    map[string]string{label.TopologyNetwork.Name: "other"},
-					},
+					Name:      "name",
+					Namespace: "ns",
+					Labels:    map[string]string{label.TopologyNetwork.Name: "other"},
 					Status: corev1.PodStatus{
 						PodIP: "1.2.3.4",
 					},
@@ -287,9 +267,7 @@ func TestPods(t *testing.T) {
 
 func istioSystemNamespace(network string) *corev1.Namespace {
 	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "istio-system",
-			Labels: map[string]string{label.TopologyNetwork.Name: network},
-		},
+		Name:   "istio-system",
+		Labels: map[string]string{label.TopologyNetwork.Name: network},
 	}
 }

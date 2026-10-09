@@ -243,7 +243,7 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte{0})
 	utils.HashUint64(h, utils.HashLabels(labels))
 	h.Write([]byte{0})
-	h.Write([]byte{byte(us.TrafficDistribution)})
+	h.Write([]byte{byte(us.TrafficDistribution)}) //nolint:gosec // G115: TrafficDistribution is a small iota enum
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForBackend{

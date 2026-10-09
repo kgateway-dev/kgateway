@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	k8stesting "k8s.io/client-go/testing"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
@@ -49,7 +48,7 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 
 	if createRoute {
 		_, err := c.GatewayAPI().GatewayV1().HTTPRoutes("default").Create(context.Background(), &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default", ResourceVersion: "1"},
+			Name: "route", Namespace: "default", ResourceVersion: "1",
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 	}
@@ -91,7 +90,7 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 func testRouteResource() Resource {
 	return Resource{
 		GroupVersionKind: wellknown.HTTPRouteGVK,
-		NamespacedName:   types.NamespacedName{Namespace: "default", Name: "route"},
+		Namespace:        "default", Name: "route",
 	}
 }
 
@@ -171,7 +170,7 @@ func TestApplyStatusReadsTheCollectionNotTheWriteClient(t *testing.T) {
 	stop := test.NewStop(t)
 	c := kube.NewFakeClient()
 	_, err := c.GatewayAPI().GatewayV1().HTTPRoutes("default").Create(context.Background(), &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default", ResourceVersion: "1"},
+		Name: "route", Namespace: "default", ResourceVersion: "1",
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -179,7 +178,7 @@ func TestApplyStatusReadsTheCollectionNotTheWriteClient(t *testing.T) {
 	// delayed client before its informer is swapped in.
 	blindClient := unloadedClient[*gwv1.HTTPRoute]{Client: kclient.NewFiltered[*gwv1.HTTPRoute](c, kclient.Filter{})}
 	routes := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default", ResourceVersion: "1"},
+		Name: "route", Namespace: "default", ResourceVersion: "1",
 	}}, krt.WithStop(stop))
 
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{

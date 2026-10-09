@@ -13,7 +13,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -145,40 +144,32 @@ func TestHarnessAttachedPoliciesEquals(t *testing.T) {
 
 func baseGatewayObj() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-gateway",
-			Namespace:       "default",
-			ResourceVersion: "1",
-			UID:             "uid-1",
-		},
+		Name:            "my-gateway",
+		Namespace:       "default",
+		ResourceVersion: "1",
+		UID:             "uid-1",
 	}
 }
 
 func baseHarnessListener() Listener {
 	port := gwv1.PortNumber(80)
 	return Listener{
-		Listener: gwv1.Listener{
-			Name:     "http",
-			Port:     port,
-			Protocol: gwv1.HTTPProtocolType,
-		},
+		Name:     "http",
+		Port:     port,
+		Protocol: gwv1.HTTPProtocolType,
 	}
 }
 
 func baseHarnessListenerSet() ListenerSet {
 	return ListenerSet{
-		ObjectSource: ObjectSource{
-			Group:     "gateway.networking.k8s.io",
-			Kind:      "ListenerSet",
-			Namespace: "default",
-			Name:      "my-listenerset",
-		},
+		Group:     "gateway.networking.k8s.io",
+		Kind:      "ListenerSet",
+		Namespace: "default",
+		Name:      "my-listenerset",
 		Listeners: Listeners{baseHarnessListener()},
 		Obj: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				ResourceVersion: "1",
-				UID:             "ls-uid-1",
-			},
+			ResourceVersion: "1",
+			UID:             "ls-uid-1",
 		},
 		Err: nil,
 	}
@@ -188,12 +179,10 @@ func baseHarnessGateway() Gateway {
 	ls := baseHarnessListenerSet()
 	gvk := schema.GroupVersionKind{Group: "gateway.networking.k8s.io", Version: "v1", Kind: "ListenerSet"}
 	return Gateway{
-		ObjectSource: ObjectSource{
-			Group:     "gateway.networking.k8s.io",
-			Kind:      "Gateway",
-			Namespace: "default",
-			Name:      "my-gateway",
-		},
+		Group:               "gateway.networking.k8s.io",
+		Kind:                "Gateway",
+		Namespace:           "default",
+		Name:                "my-gateway",
 		Listeners:           Listeners{baseHarnessListener()},
 		AllowedListenerSets: GVKListenerSets{gvk: ListenerSets{ls}},
 		DeniedListenerSets:  GVKListenerSets{},
@@ -204,7 +193,7 @@ func baseHarnessGateway() Gateway {
 		AttachedHttpPolicies: AttachedPolicies{
 			Policies: map[schema.GroupKind][]PolicyAtt{},
 		},
-		PerConnectionBufferLimitBytes: uint32ptr(65535),
+		PerConnectionBufferLimitBytes: new(uint32(65535)),
 		FrontendTLSConfig:             nil,
 		BackendTLSConfig:              nil,
 	}
@@ -269,7 +258,7 @@ func TestHarnessGatewayEquals(t *testing.T) {
 		{
 			Field: "PerConnectionBufferLimitBytes",
 			Mutate: func(g *Gateway) {
-				g.PerConnectionBufferLimitBytes = uint32ptr(32768)
+				g.PerConnectionBufferLimitBytes = new(uint32(32768))
 			},
 		},
 		{
@@ -325,10 +314,8 @@ func TestHarnessListenerSetEquals(t *testing.T) {
 			Field: "Obj",
 			Mutate: func(ls *ListenerSet) {
 				ls.Obj = &corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						ResourceVersion: "999",
-						UID:             "ls-uid-1",
-					},
+					ResourceVersion: "999",
+					UID:             "ls-uid-1",
 				}
 			},
 		},
@@ -356,12 +343,10 @@ func baseHarnessBackendRefIR() BackendRefIR {
 		Kind:      "Service",
 	}, 8080, "", "")
 	backend.Obj = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-service",
-			Namespace:       "default",
-			UID:             "svc-uid-1",
-			ResourceVersion: "1",
-		},
+		Name:            "my-service",
+		Namespace:       "default",
+		UID:             "svc-uid-1",
+		ResourceVersion: "1",
 	}
 	return BackendRefIR{
 		ClusterName:   "service_default_my-service_8080",
@@ -397,12 +382,10 @@ func TestHarnessBackendRefIREquals(t *testing.T) {
 func baseHarnessGatewayExtension() GatewayExtension {
 	grpcSvcName := gwv1.ObjectName("ext-auth-svc")
 	return GatewayExtension{
-		ObjectSource: ObjectSource{
-			Group:     "gateway.kgateway.io",
-			Kind:      "GatewayExtension",
-			Namespace: "default",
-			Name:      "my-extension",
-		},
+		Group:     "gateway.kgateway.io",
+		Kind:      "GatewayExtension",
+		Namespace: "default",
+		Name:      "my-extension",
 		ExtAuth: &kgateway.ExtAuthProvider{
 			GrpcService: &kgateway.ExtGrpcService{
 				BackendRef: gwv1.BackendRef{
@@ -499,18 +482,14 @@ func baseHarnessFullListener() Listener {
 	proto := gwv1.HTTPSProtocolType
 	gk := schema.GroupKind{Group: "example.com", Kind: "MyPolicy"}
 	return Listener{
-		Listener: gwv1.Listener{
-			Name:     "https",
-			Hostname: &hostname,
-			Port:     port,
-			Protocol: proto,
-		},
+		Name:     "https",
+		Hostname: &hostname,
+		Port:     port,
+		Protocol: proto,
 		Parent: &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            "my-gateway",
-				Namespace:       "default",
-				ResourceVersion: "1",
-			},
+			Name:            "my-gateway",
+			Namespace:       "default",
+			ResourceVersion: "1",
 		},
 		AttachedPolicies: AttachedPolicies{
 			Policies: map[schema.GroupKind][]PolicyAtt{
@@ -545,11 +524,9 @@ func TestHarnessListenerEquals(t *testing.T) {
 			Field: "Parent",
 			Mutate: func(l *Listener) {
 				l.Parent = &gwv1.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "my-gateway",
-						Namespace:       "default",
-						ResourceVersion: "2",
-					},
+					Name:            "my-gateway",
+					Namespace:       "default",
+					ResourceVersion: "2",
 				}
 			},
 		},
@@ -598,25 +575,21 @@ func TestHarnessListenerEquals(t *testing.T) {
 func TestListenerEqualsIgnoresStatusOnlyParentUpdates(t *testing.T) {
 	base := baseHarnessFullListener()
 	base.Parent = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-gateway",
-			Namespace:       "default",
-			UID:             types.UID("my-gateway-uid"),
-			ResourceVersion: "1",
-			Generation:      1,
-		},
+		Name:            "my-gateway",
+		Namespace:       "default",
+		UID:             types.UID("my-gateway-uid"),
+		ResourceVersion: "1",
+		Generation:      1,
 	}
 
 	// Status-only write: ResourceVersion bumps, Generation does not → equal.
 	statusOnly := baseHarnessFullListener()
 	statusOnly.Parent = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-gateway",
-			Namespace:       "default",
-			UID:             types.UID("my-gateway-uid"),
-			ResourceVersion: "2",
-			Generation:      1,
-		},
+		Name:            "my-gateway",
+		Namespace:       "default",
+		UID:             types.UID("my-gateway-uid"),
+		ResourceVersion: "2",
+		Generation:      1,
 	}
 	if !base.Equals(statusOnly) {
 		t.Error("Listener.Equals returned false for a status-only parent update (ResourceVersion bumped, Generation unchanged); expected true")
@@ -625,18 +598,13 @@ func TestListenerEqualsIgnoresStatusOnlyParentUpdates(t *testing.T) {
 	// Spec change: Generation bumps → unequal.
 	specChange := baseHarnessFullListener()
 	specChange.Parent = &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-gateway",
-			Namespace:       "default",
-			UID:             types.UID("my-gateway-uid"),
-			ResourceVersion: "3",
-			Generation:      2,
-		},
+		Name:            "my-gateway",
+		Namespace:       "default",
+		UID:             types.UID("my-gateway-uid"),
+		ResourceVersion: "3",
+		Generation:      2,
 	}
 	if base.Equals(specChange) {
 		t.Error("Listener.Equals returned true for a parent spec change (Generation bumped); expected false")
 	}
 }
-
-//go:fix inline
-func uint32ptr(v uint32) *uint32 { return new(v) }

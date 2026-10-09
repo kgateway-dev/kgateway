@@ -60,10 +60,8 @@ func (p testPolicyIR) Equals(in any) bool {
 func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 	now := time.Now()
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-service",
-			Namespace: "default",
-		},
+		Name:      "backend-service",
+		Namespace: "default",
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{Name: "https-1", Port: 443},
@@ -72,19 +70,15 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 		},
 	}
 	serviceWide := ir.PolicyWrapper{
-		ObjectSource: ir.ObjectSource{
-			Group:     wellknown.BackendTLSPolicyGVK.Group,
-			Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-			Namespace: "default",
-			Name:      "service-wide",
-		},
+		Group:     wellknown.BackendTLSPolicyGVK.Group,
+		Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+		Namespace: "default",
+		Name:      "service-wide",
 		Policy: &gwv1.BackendTLSPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "service-wide",
-				Namespace:         "default",
-				CreationTimestamp: metav1.NewTime(now),
-				Generation:        1,
-			},
+			Name:              "service-wide",
+			Namespace:         "default",
+			CreationTimestamp: metav1.NewTime(now),
+			Generation:        1,
 		},
 		PolicyIR: testPolicyIR{ct: now},
 		TargetRefs: []ir.PolicyRef{{
@@ -94,19 +88,15 @@ func TestGetBackendFromRefReturnsPolicyAttachedBackend(t *testing.T) {
 		}},
 	}
 	portSpecific := ir.PolicyWrapper{
-		ObjectSource: ir.ObjectSource{
-			Group:     wellknown.BackendTLSPolicyGVK.Group,
-			Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-			Namespace: "default",
-			Name:      "port-specific",
-		},
+		Group:     wellknown.BackendTLSPolicyGVK.Group,
+		Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+		Namespace: "default",
+		Name:      "port-specific",
 		Policy: &gwv1.BackendTLSPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              "port-specific",
-				Namespace:         "default",
-				CreationTimestamp: metav1.NewTime(now.Add(time.Second)),
-				Generation:        1,
-			},
+			Name:              "port-specific",
+			Namespace:         "default",
+			CreationTimestamp: metav1.NewTime(now.Add(time.Second)),
+			Generation:        1,
 		},
 		PolicyIR: testPolicyIR{ct: now.Add(time.Second)},
 		TargetRefs: []ir.PolicyRef{{
@@ -186,14 +176,10 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 	ctx := t.Context()
 
 	service := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-service",
-			Namespace: "default",
-		},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       "backend-service",
+		Namespace:  "default",
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{"app": "backend"},
 			Ports: []corev1.ServicePort{
@@ -221,13 +207,11 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 	backendTLSPolicies := krt.WrapClient(backendTLSPolicyClient, krtopts.ToOptions("BackendTLSPolicy")...)
 	policyCol := krt.NewCollection(backendTLSPolicies, func(kctx krt.HandlerContext, policy *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		return &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     wellknown.BackendTLSPolicyGVK.Group,
-				Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-				Namespace: policy.Namespace,
-				Name:      policy.Name,
-			},
-			Policy: policy,
+			Group:     wellknown.BackendTLSPolicyGVK.Group,
+			Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+			Namespace: policy.Namespace,
+			Name:      policy.Name,
+			Policy:    policy,
 			PolicyIR: testPolicyIR{
 				ct:           policy.CreationTimestamp.Time,
 				transportSNI: string(policy.Spec.Validation.Hostname),
@@ -293,24 +277,18 @@ func TestBackendPoliciesUpdateWhenBackendTLSPolicyCreatedAfterService(t *testing
 
 	createdAt := metav1.NewTime(time.Now())
 	backendTLSPolicy := &gwv1.BackendTLSPolicy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       wellknown.BackendTLSPolicyGVK.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "backend-tls",
-			Namespace:         "default",
-			CreationTimestamp: createdAt,
-			Generation:        1,
-		},
+		APIVersion:        gwv1.GroupVersion.String(),
+		Kind:              wellknown.BackendTLSPolicyGVK.Kind,
+		Name:              "backend-tls",
+		Namespace:         "default",
+		CreationTimestamp: createdAt,
+		Generation:        1,
 		Spec: gwv1.BackendTLSPolicySpec{
 			TargetRefs: []gwv1.LocalPolicyTargetReferenceWithSectionName{
 				{
-					LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{
-						Group: "",
-						Kind:  "Service",
-						Name:  "backend-service",
-					},
+					Group: "",
+					Kind:  "Service",
+					Name:  "backend-service",
 				},
 			},
 			Validation: gwv1.BackendTLSPolicyValidation{

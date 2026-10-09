@@ -8,7 +8,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
 
@@ -29,7 +28,7 @@ func (p *Provider) AssertEventualGrpcurlSuccess(
 ) (stdout, stderr string) {
 	// Ensure the grpcurl client pod is running.
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: podOpts.Name, Namespace: podOpts.Namespace},
+		Name: podOpts.Name, Namespace: podOpts.Namespace,
 	})
 
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
@@ -70,7 +69,7 @@ func (p *Provider) AssertEventualGrpcurlJsonResponseMatches(
 	timeout ...time.Duration,
 ) (stdout, stderr string) {
 	p.EventuallyObjectsExist(ctx, &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: podOpts.Name, Namespace: podOpts.Namespace},
+		Name: podOpts.Name, Namespace: podOpts.Namespace,
 	})
 
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)

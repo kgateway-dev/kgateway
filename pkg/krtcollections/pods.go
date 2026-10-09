@@ -217,10 +217,8 @@ func NewPodWrapperCollection(pods krt.Collection[*corev1.Pod], krtOptions krtuti
 		}
 
 		return &WrappedPod{
-			Named: krt.Named{
-				Name:      obj.Name,
-				Namespace: obj.Namespace,
-			},
+			Name:               obj.Name,
+			Namespace:          obj.Namespace,
 			HostNetwork:        obj.Spec.HostNetwork,
 			NodeName:           obj.Spec.NodeName,
 			ServiceAccountName: obj.Spec.ServiceAccountName,
