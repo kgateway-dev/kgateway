@@ -1,4 +1,6 @@
-# Only this authenticated CONNECT proxy resolves destination.internal to nginx.
+# The Backends name destination.internal  resolves nowhere. nginx is
+# reachable only through connect-proxy, and it accepts CONNECT only for
+# destination.internal:8080 or :8443 with the right Proxy-Authorization.
 apiVersion: v1
 kind: ConfigMap
 metadata:

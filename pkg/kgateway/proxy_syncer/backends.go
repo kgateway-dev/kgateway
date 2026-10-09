@@ -36,8 +36,11 @@ type baseEnvoyCluster struct {
 	// +noKrtEquals
 	Cluster        sharedproto.Shared[*envoyclusterv3.Cluster]
 	ClusterVersion uint64
-	Listeners      baseResources[*envoylistenerv3.Listener]
-	Secrets        baseResources[*envoytlsv3.Secret]
+	// Listeners and Secrets are returned by ProcessBaseClusterResources hooks
+	// and delivered with the cluster. Used for CONNECT tunnel's listener, and
+	// the secrets hold its header values.
+	Listeners baseResources[*envoylistenerv3.Listener]
+	Secrets   baseResources[*envoytlsv3.Secret]
 	// Error is the translation error for this backend, if any. Compared by message in
 	// Equals because all errored clusters share one blackhole proto and baseClusterVersion
 	// collapses every error to 0, so ClusterVersion can't tell error states apart.

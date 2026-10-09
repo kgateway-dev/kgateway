@@ -82,6 +82,22 @@ spec:
         - name: missing-proxy
           group: gateway.kgateway.dev
           kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /mixed-static
+      backendRefs:
+        - name: mixed-static
+          group: gateway.kgateway.dev
+          kind: Backend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /mixed-dfp
+      backendRefs:
+        - name: mixed-dfp
+          group: gateway.kgateway.dev
+          kind: Backend
 ---
 # Valid tunnel - should be unaffected by the invalid tunnels below
 apiVersion: gateway.kgateway.dev/v1alpha1
@@ -195,4 +211,45 @@ spec:
     proxy:
       backendRef:
         name: nonexistent-proxy  # This proxy doesn't exist
+        port: 3128
+---
+# One policy on a Static and a DynamicForwardProxy Backend - accepted on the first, rejected on the second
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mixed-static
+  namespace: gwtest
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: mixed.example.com
+        port: 443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: mixed-dfp
+  namespace: gwtest
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy: {}
+---
+kind: BackendConfigPolicy
+apiVersion: gateway.kgateway.dev/v1alpha1
+metadata:
+  name: mixed-tunnel
+  namespace: gwtest
+spec:
+  targetRefs:
+    - name: mixed-static
+      group: gateway.kgateway.dev
+      kind: Backend
+    - name: mixed-dfp
+      group: gateway.kgateway.dev
+      kind: Backend
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
         port: 3128

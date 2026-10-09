@@ -36,7 +36,7 @@ backend's cluster through the proxy.
 - Gateway-wide `HTTP_PROXY`, `HTTPS_PROXY`, or `NO_PROXY` settings.
 - Chained proxies, dynamic destinations, POST-based tunneling, and
   challenge-response proxy authentication.
-- agentgateway.
+- Authentication between processes within the Envoy pod.
 
 ## Implementation Details
 
