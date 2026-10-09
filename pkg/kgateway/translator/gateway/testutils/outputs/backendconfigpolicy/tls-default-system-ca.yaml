@@ -19,9 +19,6 @@ Clusters:
             - matcher:
                 exact: test.example.com
               sanType: DNS
-            - matcher:
-                exact: api.example.com
-              sanType: DNS
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: test.example.com
@@ -165,12 +162,12 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    BackendConfigPolicy/default/system-ca-san:
+    BackendConfigPolicy/default/default-ca:
       ancestors:
       - ancestorRef:
           group: ""
           kind: Service
-          name: backend-service2
+          name: backend-service
           namespace: default
         conditions:
         - lastTransitionTime: null
@@ -184,12 +181,12 @@ Statuses:
           status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway
-    BackendConfigPolicy/default/systemca:
+    BackendConfigPolicy/default/insecure-skip-verify-false:
       ancestors:
       - ancestorRef:
           group: ""
           kind: Service
-          name: backend-service
+          name: backend-service2
           namespace: default
         conditions:
         - lastTransitionTime: null
