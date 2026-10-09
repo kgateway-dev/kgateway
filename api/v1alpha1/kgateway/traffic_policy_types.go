@@ -208,7 +208,7 @@ type TrafficPolicySpec struct {
 	FaultInjection *FaultInjectionPolicy `json:"faultInjection,omitempty"`
 
 	// ACL configures IP-based access control for HTTP requests.
-	// Rules are evaluated using longest-prefix matching on the effictive client IP
+	// Rules are evaluated using longest-prefix matching on the effective client IP
 	// from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
 	// XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
 	//
