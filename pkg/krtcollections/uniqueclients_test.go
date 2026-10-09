@@ -189,7 +189,7 @@ func TestUniqueClients(t *testing.T) {
 			if tc.inputs != nil {
 				mock := krttest.NewMock(t, tc.inputs)
 				nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+				pods = NewLocalityPodsCollection(nodes, nil, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 				nodes.WaitUntilSynced(context.Background().Done())
 				pods.WaitUntilSynced(context.Background().Done())
 			}
@@ -281,7 +281,7 @@ func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
 	}
 	mock := krttest.NewMock(t, inputs)
 	nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-	pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+	pods := NewLocalityPodsCollection(nodes, nil, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 	nodes.WaitUntilSynced(context.Background().Done())
 	pods.WaitUntilSynced(context.Background().Done())
 

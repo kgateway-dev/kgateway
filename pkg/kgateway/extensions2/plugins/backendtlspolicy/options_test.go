@@ -6,12 +6,14 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 )
 
 // newSystemCABackendTLSPolicy builds a minimal BackendTLSPolicy that uses the system CA bundle
@@ -115,6 +117,53 @@ func TestBuildTranslateFunc_InvalidTLSOption(t *testing.T) {
 	_, err := translate(krt.TestingDummyContext{}, policy)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrInvalidTLSOptions)
+}
+
+func TestBuildTranslateFunc_ForeignTLSOptionsSkipped(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	// options is shared across implementations, so keys outside kgateway.dev/ must not fail the
+	// policy (which would blackhole the backend); the kgateway keys still apply.
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		"example.com/other-implementation": "value",
+		annotations.EcdhCurves:             "P-384",
+	})
+
+	pol, err := translate(krt.TestingDummyContext{}, policy)
+	require.NoError(t, err)
+
+	tlsCtx := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, pol.transportSocket.GetTypedConfig().UnmarshalTo(tlsCtx))
+	assert.Equal(t, []string{"P-384"}, tlsCtx.GetCommonTlsContext().GetTlsParams().GetEcdhCurves())
+}
+
+func TestBuildTranslateFunc_UnknownKgatewayTLSOptionRejected(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	// An unknown kgateway.dev/ key is most likely a typo, so it is reported rather than skipped.
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		annotations.MinTLSVersion + "s": "1.2",
+	})
+
+	_, err := translate(krt.TestingDummyContext{}, policy)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrInvalidTLSOptions)
+	assert.ErrorIs(t, err, sslutils.ErrUnknownTLSExtensionOption)
+}
+
+func TestBuildTranslateFunc_OnlyForeignTLSOptions(t *testing.T) {
+	translate := buildTranslateFunc(nil, nil)
+
+	policy := newSystemCABackendTLSPolicy(map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+		"example.com/other-implementation": "value",
+	})
+
+	pol, err := translate(krt.TestingDummyContext{}, policy)
+	require.NoError(t, err)
+
+	tlsCtx := &envoytlsv3.UpstreamTlsContext{}
+	require.NoError(t, pol.transportSocket.GetTypedConfig().UnmarshalTo(tlsCtx))
+	assert.Zero(t, proto.Size(tlsCtx.GetCommonTlsContext().GetTlsParams()), "foreign-only options should set no TLS parameters")
 }
 
 func TestBuildTranslateFunc_AllowEmptyAlpnProtocols(t *testing.T) {

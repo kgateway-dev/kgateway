@@ -302,12 +302,26 @@ var TLSExtensionOptionFuncs = map[gwv1.AnnotationKey]TLSExtensionOptionFunc{
 	annotations.VerifyCertificateHash: ApplyVerifyCertificateHash,
 }
 
+// kgatewayTLSOptionPrefix is the domain prefix of every kgateway TLS extension option.
+const kgatewayTLSOptionPrefix = "kgateway.dev/"
+
+// isKgatewayTLSOption reports whether key is in the kgateway TLS extension option namespace.
+// TLS options maps are shared with other implementations, so keys outside it are ignored.
+func isKgatewayTLSOption(key gwv1.AnnotationKey) bool {
+	return strings.HasPrefix(string(key), kgatewayTLSOptionPrefix)
+}
+
 // ApplyTLSExtensionOptions applies the TLS options to the TLS bundle IR
 // This function will never exit early, even if an error is encountered.
 // It will apply all options and return a wrapped error with all errors encountered.
+// Keys outside the kgateway.dev/ prefix are skipped; unknown kgateway.dev/ keys are an error,
+// so a misspelled option is reported rather than silently ignored.
 func ApplyTLSExtensionOptions(options map[gwv1.AnnotationKey]gwv1.AnnotationValue, out *ir.TLSConfig) error {
 	var errs error
 	for key, option := range options {
+		if !isKgatewayTLSOption(key) {
+			continue
+		}
 		if extensionFunc, ok := TLSExtensionOptionFuncs[key]; ok {
 			if err := extensionFunc(string(option), out); err != nil {
 				errs = errors.Join(errs, err)

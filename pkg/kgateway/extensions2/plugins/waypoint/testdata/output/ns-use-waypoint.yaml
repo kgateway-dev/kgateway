@@ -10,6 +10,7 @@ Clusters:
               address: 3.3.3.3
               portValue: 9000
       loadBalancingWeight: 1
+      locality: {}
   name: istio-se_infra_se-c_se-c.infra.svc.cluster.local_9000
   type: STATIC
 - commonLbConfig:

@@ -119,6 +119,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// Same as basic.yaml, but the caCertificateRefs spell the core API group as
+	// "core" instead of "". The output must be identical to basic.yaml.
+	t.Run("gateway with FrontendTLSConfig and core group CA certificate refs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/core-group.yaml"},
+			outputFile: "frontendtlsconfig/core-group.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with verify subject alt names missing ca certificate", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/verify-subject-alt-names-missing-ca.yaml"},
@@ -631,6 +644,22 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	// Envoy rejects local_cluster_rate_limit unless the bootstrap names a local cluster, so the
+	// strict validation bootstrap must set one like the proxy bootstrap does, or the targeted
+	// route rule is replaced with a 500.
+	t.Run("TrafficPolicy with local rate limiting shared across the gateway in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-share-across-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 
@@ -3326,6 +3355,23 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "test",
 			},
+		})
+	})
+
+	// Runs the same inputs through a real Envoy in strict mode. A redirect target is validated
+	// by Envoy itself against RedirectAction.path_redirect's own constraint, so if that
+	// constraint is ever tightened upstream, the targets in this fixture start failing here
+	// instead of silently reaching users as a rejected RouteConfiguration.
+	t.Run("HTTP RequestRedirect filter in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/request-redirect.yaml"},
+			outputFile: "http-routing/request-redirect.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 
