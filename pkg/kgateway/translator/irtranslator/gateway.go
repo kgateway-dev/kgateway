@@ -133,6 +133,7 @@ func (t *Translator) ComputeListener(
 			gw:                        gw,
 			listener:                  lis,
 			routeConfigName:           hfc.FilterChainName,
+			misdirectedRequestDomains: hfc.MisdirectedRequestDomains,
 			fc:                        hfc.FilterChainCommon,
 			attachedPolicies:          hfc.AttachedPolicies,
 			reporter:                  reporter,
@@ -151,6 +152,9 @@ func (t *Translator) ComputeListener(
 			// Only one domain per virtual host is supported currently, but that may change in the future,
 			// so loop through the virtual hosts and count the unique domains.
 			for _, vhost := range rc.VirtualHosts {
+				if vhost.GetName() == hfc.FilterChainName+misdirectedRequestVhostSuffix {
+					continue
+				}
 				for _, domain := range vhost.Domains {
 					domains[domain] = struct{}{}
 				}

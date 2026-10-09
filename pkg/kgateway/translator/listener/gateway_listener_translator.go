@@ -363,6 +363,7 @@ func (ml *MergedListener) TranslateListener(
 			reporter,
 			ml.gateway.FrontendTLSConfig,
 			ml.gateway.Namespace,
+			ml.httpsFilterChains,
 		)
 		if err != nil {
 			// Log and skip invalid HTTPS filter chains
@@ -847,14 +848,22 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	reporter reports.Reporter,
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
 	gatewayNamespace string,
+	siblings []httpsFilterChain,
 ) (*ir.HttpFilterChainIR, error) {
 	// process routes first, so any route related errors are reported on the httproute.
+	// Hostnames owned by a more specific HTTPS listener on the same port are served by
+	// that listener's filter chain; here they are misdirected and get a 421 instead.
 	routesByHost := map[string]routeutils.SortableRoutes{}
-	buildRoutesPerHost(
+	buildRoutesPerHostWithHostnamesFilter(
 		ctx,
 		routesByHost,
 		hfc.routesWithHosts,
 		reporter,
+		func(hostnames []string) []string {
+			return slices.DeleteFunc(slices.Clone(hostnames), func(hostname string) bool {
+				return hostnameOwnedByMoreSpecificHTTPSListener(*hfc, siblings, hostname)
+			})
+		},
 	)
 
 	var (
@@ -874,6 +883,19 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 				Rules:    vhostRoutes.ToRoutes(),
 			}
 			virtualHosts = append(virtualHosts, virtualHost)
+		}
+	}
+	// Requests for the listener's own hostname are never misdirected, even when no route
+	// produced a virtual host for it, so they keep returning 404 rather than 421.
+	if hfc.sniDomain != nil && *hfc.sniDomain != "" {
+		host := string(*hfc.sniDomain)
+		vhostName := makeVhostName(ctx, hfc.gatewayListenerName, host)
+		if !virtualHostNames[vhostName] {
+			virtualHostNames[vhostName] = true
+			virtualHosts = append(virtualHosts, &ir.VirtualHost{
+				Name:     vhostName,
+				Hostname: host,
+			})
 		}
 	}
 
@@ -919,9 +941,51 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 			Matcher:         matcher,
 			TLS:             tlsConfig,
 		},
-		AttachedPolicies: hfc.attachedPolicies,
-		Vhosts:           virtualHosts,
+		AttachedPolicies:          hfc.attachedPolicies,
+		Vhosts:                    virtualHosts,
+		MisdirectedRequestDomains: misdirectedRequestDomains(*hfc, siblings),
 	}, nil
+}
+
+// hostnameOwnedByMoreSpecificHTTPSListener reports whether another HTTPS listener on the
+// same port has a more specific hostname that covers hostname. SNI routes such requests to
+// that listener's filter chain, so this listener must not serve them.
+func hostnameOwnedByMoreSpecificHTTPSListener(self httpsFilterChain, siblings []httpsFilterChain, hostname string) bool {
+	for _, candidate := range siblings {
+		if candidate.gatewayListenerName == self.gatewayListenerName {
+			continue
+		}
+		if !listenerHostnameCoversRouteHostname(candidate.sniDomain, hostname) {
+			continue
+		}
+		if listenerHostnamePrecedes(self.sniDomain, candidate.sniDomain) {
+			return true
+		}
+	}
+	return false
+}
+
+// misdirectedRequestDomains returns the request hostnames that the filter chain selected by
+// self's SNI must reject with 421: hostnames of more specific HTTPS listeners on the same port
+// that self's hostname covers, and, when self has a hostname, everything else ("*").
+func misdirectedRequestDomains(self httpsFilterChain, siblings []httpsFilterChain) []string {
+	var domains []string
+	for _, candidate := range siblings {
+		if candidate.gatewayListenerName == self.gatewayListenerName ||
+			candidate.sniDomain == nil || *candidate.sniDomain == "" {
+			continue
+		}
+		hostname := string(*candidate.sniDomain)
+		if listenerHostnamePrecedes(self.sniDomain, candidate.sniDomain) &&
+			listenerHostnameCoversRouteHostname(self.sniDomain, hostname) {
+			domains = append(domains, hostname)
+		}
+	}
+	if self.sniDomain != nil && *self.sniDomain != "" {
+		domains = append(domains, "*")
+	}
+	slices.Sort(domains)
+	return slices.Compact(domains)
 }
 
 func buildRoutesPerHost(

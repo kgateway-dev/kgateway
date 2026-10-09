@@ -226,3 +226,67 @@ func listenerIsolationRouteInfo(hostnames []string) *query.RouteInfo {
 		ParentRef: gwv1.ParentReference{Name: "gw"},
 	}
 }
+
+// misdirectedRequestSiblings mirrors the HTTPS listeners sharing a port in the
+// HTTPRouteHTTPSListenerDetectMisdirectedRequests conformance test.
+func misdirectedRequestSiblings() []httpsFilterChain {
+	return []httpsFilterChain{
+		{gatewayListenerName: "https"},
+		{gatewayListenerName: "https-with-hostname", sniDomain: listenerIsolationHostname("second-example.org")},
+		{gatewayListenerName: "https-with-wildcard-hostname", sniDomain: listenerIsolationHostname("*.wildcard.org")},
+		{gatewayListenerName: "https-with-hostname-matching-wildcard", sniDomain: listenerIsolationHostname("fourth-example.wildcard.org")},
+	}
+}
+
+func TestMisdirectedRequestDomains(t *testing.T) {
+	want := map[string][]string{
+		// No hostname: only hosts owned by more specific listeners are misdirected.
+		"https": {"*.wildcard.org", "fourth-example.wildcard.org", "second-example.org"},
+		// Exact hostname: every other host is misdirected.
+		"https-with-hostname": {"*"},
+		// Wildcard hostname: other hosts, plus the exact listener it covers.
+		"https-with-wildcard-hostname":          {"*", "fourth-example.wildcard.org"},
+		"https-with-hostname-matching-wildcard": {"*"},
+	}
+
+	siblings := misdirectedRequestSiblings()
+	for _, self := range siblings {
+		t.Run(self.gatewayListenerName, func(t *testing.T) {
+			got := misdirectedRequestDomains(self, siblings)
+			if diff := cmp.Diff(want[self.gatewayListenerName], got); diff != "" {
+				t.Fatalf("misdirectedRequestDomains() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHostnameOwnedByMoreSpecificHTTPSListener(t *testing.T) {
+	tests := []struct {
+		name     string
+		self     string
+		hostname string
+		want     bool
+	}{
+		{name: "fallback listener yields an exact listener's hostname", self: "https", hostname: "second-example.org", want: true},
+		{name: "fallback listener keeps the catch all hostname", self: "https", hostname: "*", want: false},
+		{name: "fallback listener keeps hostnames no listener claims", self: "https", hostname: "example.org", want: false},
+		{name: "wildcard listener yields a more specific exact listener's hostname", self: "https-with-wildcard-hostname", hostname: "fourth-example.wildcard.org", want: true},
+		{name: "wildcard listener keeps unclaimed hostnames it covers", self: "https-with-wildcard-hostname", hostname: "fifth-example.wildcard.org", want: false},
+		{name: "exact listener keeps its own hostname", self: "https-with-hostname-matching-wildcard", hostname: "fourth-example.wildcard.org", want: false},
+	}
+
+	siblings := misdirectedRequestSiblings()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var self httpsFilterChain
+			for _, sibling := range siblings {
+				if sibling.gatewayListenerName == tt.self {
+					self = sibling
+				}
+			}
+			if got := hostnameOwnedByMoreSpecificHTTPSListener(self, siblings, tt.hostname); got != tt.want {
+				t.Fatalf("hostnameOwnedByMoreSpecificHTTPSListener(%q) = %v, want %v", tt.hostname, got, tt.want)
+			}
+		})
+	}
+}
