@@ -210,10 +210,11 @@ func NewProxySyncer(
 ) *ProxySyncer {
 	optCfg := processStatusSyncerOptions(opts...)
 	return &ProxySyncer{
-		controllerName:             controllerName,
-		commonCols:                 commonCols,
-		apiClient:                  client,
-		proxyTranslator:            NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck),
+		controllerName: controllerName,
+		commonCols:     commonCols,
+		apiClient:      client,
+		proxyTranslator: NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck,
+			clusterScopingFrom(commonCols.Settings)),
 		uniqueClients:              uniqueClients,
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
@@ -241,11 +242,21 @@ type ProxyTranslator struct {
 	gate *publishGate
 }
 
-func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState priorXDSVersionReader, publishBudget time.Duration, checkSnapshotConsistency bool) ProxyTranslator {
+// NewProxyTranslator builds the publishing half of the syncer. dereferenceGrace
+// is how long a cluster that has left the emitted set stays published; pass 0
+// when cluster discovery emits everything, since nothing is ever de-referenced
+// then.
+func NewProxyTranslator(
+	xdsCache envoycache.SnapshotCache,
+	xdsClientState priorXDSVersionReader,
+	publishBudget time.Duration,
+	checkSnapshotConsistency bool,
+	scoping clusterScoping,
+) ProxyTranslator {
 	return ProxyTranslator{
 		xdsCache:       xdsCache,
 		xdsClientState: xdsClientState,
-		gate:           newPublishGate(publishBudget, checkSnapshotConsistency),
+		gate:           newPublishGate(publishBudget, checkSnapshotConsistency, scoping),
 	}
 }
 
