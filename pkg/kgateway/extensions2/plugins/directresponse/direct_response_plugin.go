@@ -67,14 +67,12 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *kgateway.DirectResponse) *ir.PolicyWrapper {
 		pol := &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     gk.Group,
-				Kind:      gk.Kind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
-			Policy:   i,
-			PolicyIR: &directResponse{ct: i.CreationTimestamp.Time, spec: i.Spec},
+			Group:     gk.Group,
+			Kind:      gk.Kind,
+			Namespace: i.Namespace,
+			Name:      i.Name,
+			Policy:    i,
+			PolicyIR:  &directResponse{ct: i.CreationTimestamp.Time, spec: i.Spec},
 			// no target refs for direct response
 		}
 		return pol

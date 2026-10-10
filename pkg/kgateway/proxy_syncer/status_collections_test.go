@@ -73,7 +73,7 @@ func TestBuildGWStatusCarriesLiveAddresses(t *testing.T) {
 		addr(gwv1.IPAddressType, "10.0.0.10"),
 	}
 	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
+		Name: "gw", Namespace: "default",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{{

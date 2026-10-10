@@ -19,11 +19,9 @@ func TestBuildBackendStatusMergesAndPreservesConditions(t *testing.T) {
 	statusReporter := reports.NewReporter(&rm)
 
 	backend := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "example-backend",
-			Namespace:  "default",
-			Generation: 7,
-		},
+		Name:       "example-backend",
+		Namespace:  "default",
+		Generation: 7,
 	}
 
 	statusReporter.Backend(backend).SetCondition(pluginreporter.BackendCondition{
@@ -72,11 +70,9 @@ func TestBuildBackendStatusDropsStaleManagedCondition(t *testing.T) {
 	statusReporter := reports.NewReporter(&rm)
 
 	backend := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "example-backend",
-			Namespace:  "default",
-			Generation: 3,
-		},
+		Name:       "example-backend",
+		Namespace:  "default",
+		Generation: 3,
 	}
 
 	// The fresh report only contains Accepted; the backend no longer contributes an
@@ -140,11 +136,9 @@ func requireConditionExists(t *testing.T, conditions []metav1.Condition, condTyp
 func TestGatewayStatusStampsObservedGenerationFromReport(t *testing.T) {
 	newGateway := func(generation int64) *gwv1.Gateway {
 		return &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "example-gateway",
-				Namespace:  "default",
-				Generation: generation,
-			},
+			Name:       "example-gateway",
+			Namespace:  "default",
+			Generation: generation,
 			Spec: gwv1.GatewaySpec{
 				Listeners: []gwv1.Listener{
 					{Name: "http"},
@@ -211,11 +205,9 @@ func requireAllObservedGenerations(t *testing.T, status *gwv1.GatewayStatus, wan
 func TestRouteStatusStampsObservedGenerationFromReport(t *testing.T) {
 	newRoute := func(generation int64) *gwv1.HTTPRoute {
 		return &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "example-route",
-				Namespace:  "default",
-				Generation: generation,
-			},
+			Name:       "example-route",
+			Namespace:  "default",
+			Generation: generation,
 			Spec: gwv1.HTTPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{
@@ -332,11 +324,9 @@ func metaFindStatusCondition(conditions []metav1.Condition, conditionType string
 func TestBackendStatusStampsObservedGenerationFromReport(t *testing.T) {
 	newBackend := func(generation int64) *kgateway.Backend {
 		return &kgateway.Backend{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "example-backend",
-				Namespace:  "default",
-				Generation: generation,
-			},
+			Name:       "example-backend",
+			Namespace:  "default",
+			Generation: generation,
 		}
 	}
 
@@ -393,11 +383,9 @@ func TestBackendStatusStampsObservedGenerationFromReport(t *testing.T) {
 func TestListenerSetStatusStampsObservedGenerationFromReport(t *testing.T) {
 	newListenerSet := func(generation int64) *gwv1.ListenerSet {
 		ls := &gwv1.ListenerSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "test",
-				Namespace:  "default",
-				Generation: generation,
-			},
+			Name:       "test",
+			Namespace:  "default",
+			Generation: generation,
 		}
 		ls.Spec.Listeners = []gwv1.ListenerEntry{
 			{Name: "http"},

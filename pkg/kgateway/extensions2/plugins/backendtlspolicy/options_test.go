@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -20,10 +19,8 @@ import (
 // for validation, with the given extension options set.
 func newSystemCABackendTLSPolicy(options map[gwv1.AnnotationKey]gwv1.AnnotationValue) *gwv1.BackendTLSPolicy {
 	return &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "policy",
-			Namespace: "default",
-		},
+		Name:      "policy",
+		Namespace: "default",
 		Spec: gwv1.BackendTLSPolicySpec{
 			Validation: gwv1.BackendTLSPolicyValidation{
 				WellKnownCACertificates: ptr.To(gwv1.WellKnownCACertificatesSystem),

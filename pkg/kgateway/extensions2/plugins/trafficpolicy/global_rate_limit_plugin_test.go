@@ -409,10 +409,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 						},
 					},
 				},
-				ObjectSource: ir.ObjectSource{
-					Name:      defaultExtensionName,
-					Namespace: defaultNamespace,
-				},
+				Name:      defaultExtensionName,
+				Namespace: defaultNamespace,
 			},
 			policy: &kgateway.RateLimitPolicy{
 				ExtensionRef: shared.NamespacedObjectReference{
@@ -459,10 +457,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					},
 					Timeout: metav1.Duration{Duration: 5 * time.Second},
 				},
-				ObjectSource: ir.ObjectSource{
-					Name:      defaultExtensionName,
-					Namespace: defaultNamespace,
-				},
+				Name:      defaultExtensionName,
+				Namespace: defaultNamespace,
 			},
 			policy: &kgateway.RateLimitPolicy{
 				ExtensionRef: shared.NamespacedObjectReference{
@@ -501,10 +497,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 					},
 					FailOpen: true,
 				},
-				ObjectSource: ir.ObjectSource{
-					Name:      defaultExtensionName,
-					Namespace: defaultNamespace,
-				},
+				Name:      defaultExtensionName,
+				Namespace: defaultNamespace,
 			},
 			policy: &kgateway.RateLimitPolicy{
 				ExtensionRef: shared.NamespacedObjectReference{

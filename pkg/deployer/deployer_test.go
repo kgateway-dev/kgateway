@@ -134,9 +134,7 @@ var _ = Describe("Deployer", func() {
 	var (
 		defaultGatewayClass = func() *gwv1.GatewayClass {
 			return &gwv1.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.DefaultGatewayClassName,
-				},
+				Name: wellknown.DefaultGatewayClassName,
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 				},
@@ -156,11 +154,9 @@ var _ = Describe("Deployer", func() {
 
 		defaultGateway = func() *gwv1.Gateway {
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Listeners: []gwv1.Listener{{
@@ -185,11 +181,9 @@ var _ = Describe("Deployer", func() {
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/kgateway/templates/gatewayparameters.yaml
 		defaultGatewayParams = func() *kgateway.GatewayParameters {
 			return &kgateway.GatewayParameters{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      wellknown.DefaultGatewayParametersName,
-					Namespace: defaultNamespace,
-					UID:       "1237",
-				},
+				Name:      wellknown.DefaultGatewayParametersName,
+				Namespace: defaultNamespace,
+				UID:       "1237",
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						Deployment: &kgateway.ProxyDeployment{
@@ -256,11 +250,9 @@ var _ = Describe("Deployer", func() {
 
 		selfManagedGatewayParam = func(name string) *kgateway.GatewayParameters {
 			return &kgateway.GatewayParameters{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: defaultNamespace,
-					UID:       "1237",
-				},
+				Name:      name,
+				Namespace: defaultNamespace,
+				UID:       "1237",
 				Spec: kgateway.GatewayParametersSpec{
 					SelfManaged: &kgateway.SelfManagedGateway{},
 				},
@@ -269,11 +261,9 @@ var _ = Describe("Deployer", func() {
 
 		envoyOmitDefaultSecurityContextParam = func(name string) *kgateway.GatewayParameters {
 			return &kgateway.GatewayParameters{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: defaultNamespace,
-					UID:       "1237",
-				},
+				Name:      name,
+				Namespace: defaultNamespace,
+				UID:       "1237",
 				Spec: kgateway.GatewayParametersSpec{
 					Kube: &kgateway.KubernetesProxyConfig{
 						OmitDefaultSecurityContext: new(true),
@@ -291,9 +281,7 @@ var _ = Describe("Deployer", func() {
 	Context("default case", func() {
 		It("should work with empty params", func() {
 			gwc := &gwv1.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.DefaultGatewayClassName,
-				},
+				Name: wellknown.DefaultGatewayClassName,
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 					ParametersRef: &gwv1.ParametersReference{
@@ -305,19 +293,15 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gwParams := &kgateway.GatewayParameters{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      wellknown.DefaultGatewayParametersName,
-					Namespace: defaultNamespace,
-					UID:       "1237",
-				},
+				Name:      wellknown.DefaultGatewayParametersName,
+				Namespace: defaultNamespace,
+				UID:       "1237",
 			}
 
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Listeners: []gwv1.Listener{
@@ -375,9 +359,7 @@ var _ = Describe("Deployer", func() {
 		BeforeEach(func() {
 			gwp = selfManagedGatewayParam("self-managed-gateway-params")
 			gwc = &gwv1.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.DefaultGatewayClassName,
-				},
+				Name: wellknown.DefaultGatewayClassName,
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 					ParametersRef: &gwv1.ParametersReference{
@@ -392,10 +374,8 @@ var _ = Describe("Deployer", func() {
 
 		It("deploys nothing", func() {
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -451,9 +431,7 @@ var _ = Describe("Deployer", func() {
 		BeforeEach(func() {
 			gwp = envoyOmitDefaultSecurityContextParam("envoy-params")
 			gwc = &gwv1.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.DefaultGatewayClassName,
-				},
+				Name: wellknown.DefaultGatewayClassName,
 				Spec: gwv1.GatewayClassSpec{
 					ControllerName: wellknown.DefaultGatewayControllerName,
 					ParametersRef: &gwv1.ParametersReference{
@@ -481,10 +459,8 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "envoy-gateway",
-					Namespace: defaultNamespace,
-				},
+				Name:      "envoy-gateway",
+				Namespace: defaultNamespace,
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -549,10 +525,8 @@ var _ = Describe("Deployer", func() {
 			gwp.Spec.Kube.EnvoyContainer.SecurityContext = nil
 			gwp.Spec.Kube.PodTemplate = &kgateway.Pod{}
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "envoy-gateway",
-					Namespace: defaultNamespace,
-				},
+				Name:      "envoy-gateway",
+				Namespace: defaultNamespace,
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -633,10 +607,8 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "envoy-gateway",
-					Namespace: defaultNamespace,
-				},
+				Name:      "envoy-gateway",
+				Namespace: defaultNamespace,
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -724,10 +696,8 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "envoy-gateway",
-					Namespace: defaultNamespace,
-				},
+				Name:      "envoy-gateway",
+				Namespace: defaultNamespace,
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -794,11 +764,9 @@ var _ = Describe("Deployer", func() {
 
 		It("deploys multiple GWs with the same GWP", func() {
 			gw1 := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Listeners: []gwv1.Listener{
@@ -812,11 +780,9 @@ var _ = Describe("Deployer", func() {
 			}
 
 			gw2 := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "bar",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "bar",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Listeners: []gwv1.Listener{
@@ -906,11 +872,9 @@ var _ = Describe("Deployer", func() {
 	Context("Gateway API infrastructure field", func() {
 		It("rejects invalid group in spec.infrastructure.parametersRef", func() {
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -951,11 +915,9 @@ var _ = Describe("Deployer", func() {
 
 		It("rejects invalid kind in spec.infrastructure.parametersRef", func() {
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					Infrastructure: &gwv1.GatewayInfrastructure{
@@ -1012,11 +974,9 @@ var _ = Describe("Deployer", func() {
 
 				gwc := defaultGatewayClass()
 				gw := &gwv1.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
 					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 						Listeners: []gwv1.Listener{{
@@ -1071,11 +1031,9 @@ var _ = Describe("Deployer", func() {
 			)
 			BeforeEach(func() {
 				gwp = &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: defaultNamespace,
-						UID:       "1237",
-					},
+					Name:      wellknown.DefaultGatewayParametersName,
+					Namespace: defaultNamespace,
+					UID:       "1237",
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							EnvoyContainer: &kgateway.EnvoyContainer{
@@ -1093,11 +1051,9 @@ var _ = Describe("Deployer", func() {
 				var err error
 
 				gw := &gwv1.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
 					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 						Infrastructure: &gwv1.GatewayInfrastructure{
@@ -1160,10 +1116,8 @@ var _ = Describe("Deployer", func() {
 			)
 			BeforeEach(func() {
 				gwp = &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "minimal-gwp",
-						Namespace: defaultNamespace,
-					},
+					Name:      "minimal-gwp",
+					Namespace: defaultNamespace,
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							// Only override a few values, rest should be defaulted
@@ -1186,11 +1140,9 @@ var _ = Describe("Deployer", func() {
 				var err error
 
 				gw := &gwv1.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
 					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 						Infrastructure: &gwv1.GatewayInfrastructure{
@@ -1290,11 +1242,9 @@ var _ = Describe("Deployer", func() {
 
 			defaultGatewayParamsOverride = func() *kgateway.GatewayParameters {
 				return &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gwpOverrideName,
-						Namespace: defaultNamespace,
-						UID:       "1236",
-					},
+					Name:      gwpOverrideName,
+					Namespace: defaultNamespace,
+					UID:       "1236",
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
@@ -1351,11 +1301,9 @@ var _ = Describe("Deployer", func() {
 			// this is the result of `defaultGatewayParams` (GatewayClass-level) merged with `defaultGatewayParamsOverride` (Gateway-level)
 			mergedGatewayParamsNoLowPorts = func() *kgateway.GatewayParameters {
 				return &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gwpOverrideName,
-						Namespace: defaultNamespace,
-						UID:       "1236",
-					},
+					Name:      gwpOverrideName,
+					Namespace: defaultNamespace,
+					UID:       "1236",
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
@@ -1427,11 +1375,9 @@ var _ = Describe("Deployer", func() {
 
 			gatewayParamsOverrideWithoutStats = func() *kgateway.GatewayParameters {
 				return &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gwpOverrideName,
-						Namespace: defaultNamespace,
-						UID:       "1236",
-					},
+					Name:      gwpOverrideName,
+					Namespace: defaultNamespace,
+					UID:       "1236",
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Stats: &kgateway.StatsConfig{
@@ -1966,11 +1912,9 @@ var _ = Describe("Deployer", func() {
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
 				gw: &gwv1.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
 					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 					},
@@ -1995,10 +1939,8 @@ var _ = Describe("Deployer", func() {
 				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp: defaultGatewayParams(),
 				overrideGwp: &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gwpOverrideName,
-						Namespace: defaultNamespace,
-					},
+					Name:      gwpOverrideName,
+					Namespace: defaultNamespace,
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
@@ -2029,10 +1971,8 @@ var _ = Describe("Deployer", func() {
 				gw:         defaultGatewayWithGatewayParams(gwpOverrideName),
 				defaultGwp: defaultGatewayParams(),
 				overrideGwp: &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      gwpOverrideName,
-						Namespace: defaultNamespace,
-					},
+					Name:      gwpOverrideName,
+					Namespace: defaultNamespace,
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Service: &kgateway.Service{
@@ -2061,11 +2001,9 @@ var _ = Describe("Deployer", func() {
 			Entry("duplicate ports", &input{
 				dInputs: defaultDeployerInputs(),
 				gw: &gwv1.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
 					Spec: gwv1.GatewaySpec{
 						GatewayClassName: wellknown.DefaultGatewayClassName,
 						Listeners: []gwv1.Listener{
@@ -2219,11 +2157,9 @@ var _ = Describe("Deployer", func() {
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: defaultNamespace,
-						UID:       "1237",
-					},
+					Name:      wellknown.DefaultGatewayParametersName,
+					Namespace: defaultNamespace,
+					UID:       "1237",
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{},
@@ -2242,11 +2178,9 @@ var _ = Describe("Deployer", func() {
 				dInputs: defaultDeployerInputs(),
 				gw:      defaultGateway(),
 				defaultGwp: &kgateway.GatewayParameters{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: defaultNamespace,
-						UID:       "1237",
-					},
+					Name:      wellknown.DefaultGatewayParametersName,
+					Namespace: defaultNamespace,
+					UID:       "1237",
 					Spec: kgateway.GatewayParametersSpec{
 						Kube: &kgateway.KubernetesProxyConfig{
 							Deployment: &kgateway.ProxyDeployment{
@@ -2275,11 +2209,9 @@ var _ = Describe("Deployer", func() {
 		It("exposes all necessary ports", func() {
 			allNamespaces := gwv1.NamespacesFromAll
 			gw := &gwv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo",
-					Namespace: defaultNamespace,
-					UID:       "1235",
-				},
+				Name:      "foo",
+				Namespace: defaultNamespace,
+				UID:       "1235",
 				Spec: gwv1.GatewaySpec{
 					GatewayClassName: wellknown.DefaultGatewayClassName,
 					AllowedListeners: &gwv1.AllowedListeners{
@@ -2297,10 +2229,8 @@ var _ = Describe("Deployer", func() {
 			}
 
 			ls := &gwv1.ListenerSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ls",
-					Namespace: defaultNamespace,
-				},
+				Name:      "ls",
+				Namespace: defaultNamespace,
 				Spec: gwv1.ListenerSetSpec{
 					Listeners: []gwv1.ListenerEntry{
 						{
@@ -2365,11 +2295,9 @@ var _ = Describe("Deployer", func() {
 
 func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 	return &kgateway.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      wellknown.DefaultGatewayParametersName,
-			Namespace: defaultNamespace,
-			UID:       "1236",
-		},
+		Name:      wellknown.DefaultGatewayParametersName,
+		Namespace: defaultNamespace,
+		UID:       "1236",
 		Spec: kgateway.GatewayParametersSpec{
 			Kube: &kgateway.KubernetesProxyConfig{
 				Deployment: &kgateway.ProxyDeployment{
@@ -2512,14 +2440,12 @@ func fullyDefinedGatewayParameters() *kgateway.GatewayParameters {
 
 func generateLivenessProbe() *corev1.Probe {
 	return &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{
-					"wget",
-					"-O",
-					"/dev/null",
-					"127.0.0.1:19000/server_info",
-				},
+		Exec: &corev1.ExecAction{
+			Command: []string{
+				"wget",
+				"-O",
+				"/dev/null",
+				"127.0.0.1:19000/server_info",
 			},
 		},
 		InitialDelaySeconds: 3,
@@ -2530,11 +2456,9 @@ func generateLivenessProbe() *corev1.Probe {
 
 func generateStartupProbe() *corev1.Probe {
 	return &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			HTTPGet: &corev1.HTTPGetAction{
-				Path: "/ready",
-				Port: intstr.FromInt(8082),
-			},
+		HTTPGet: &corev1.HTTPGetAction{
+			Path: "/ready",
+			Port: intstr.FromInt(8082),
 		},
 		InitialDelaySeconds: 0,
 		PeriodSeconds:       1,
@@ -2546,11 +2470,9 @@ func generateStartupProbe() *corev1.Probe {
 
 func generateReadinessProbe() *corev1.Probe {
 	return &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			HTTPGet: &corev1.HTTPGetAction{
-				Path: "/ready",
-				Port: intstr.FromInt(8082),
-			},
+		HTTPGet: &corev1.HTTPGetAction{
+			Path: "/ready",
+			Port: intstr.FromInt(8082),
 		},
 		InitialDelaySeconds: 5,
 		PeriodSeconds:       10,
@@ -2582,11 +2504,9 @@ var _ = Describe("DeployObjs", func() {
 
 	newGatewaySource := func() *gwv1.Gateway {
 		gw := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-				UID:       "gateway-uid",
-			},
+			Name:      name,
+			Namespace: ns,
+			UID:       "gateway-uid",
 			Spec: gwv1.GatewaySpec{
 				GatewayClassName: wellknown.DefaultGatewayClassName,
 			},
@@ -2597,18 +2517,14 @@ var _ = Describe("DeployObjs", func() {
 
 	newGatewayService := func() *corev1.Service {
 		return &corev1.Service{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       wellknown.ServiceGVK.Kind,
-				APIVersion: wellknown.ServiceGVK.GroupVersion().String(),
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-				Labels: map[string]string{
-					wellknown.ManagedByLabel:        wellknown.DefaultManagedByValue,
-					wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
-					wellknown.GatewayNameLabel:      name,
-				},
+			Kind:       wellknown.ServiceGVK.Kind,
+			APIVersion: wellknown.ServiceGVK.GroupVersion().String(),
+			Name:       name,
+			Namespace:  ns,
+			Labels: map[string]string{
+				wellknown.ManagedByLabel:        wellknown.DefaultManagedByValue,
+				wellknown.GatewayClassNameLabel: wellknown.DefaultGatewayClassName,
+				wellknown.GatewayNameLabel:      name,
 			},
 			Spec: corev1.ServiceSpec{
 				Type: corev1.ServiceTypeLoadBalancer,
@@ -2622,9 +2538,9 @@ var _ = Describe("DeployObjs", func() {
 
 	It("skips patch if object is unchanged", func() {
 		cm := &corev1.ConfigMap{
-			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Data:       map[string]string{"foo": "bar"},
+			Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion(),
+			Name: name, Namespace: ns,
+			Data: map[string]string{"foo": "bar"},
 		}
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
 		d := getDeployer(fc, func(_ context.Context, client apiclient.Client, fieldManager string, gvr schema.GroupVersionResource, name string, namespace string, data []byte, subresources ...string) error {
@@ -2639,10 +2555,10 @@ var _ = Describe("DeployObjs", func() {
 
 	It("skips patch when only change is object status", func() {
 		pod1 := &corev1.Pod{
-			TypeMeta:   metav1.TypeMeta{Kind: gvk.Pod.Kind, APIVersion: gvk.Pod.GroupVersion()},
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "test:latest"}}},
-			Status:     corev1.PodStatus{Phase: corev1.PodPending},
+			Kind: gvk.Pod.Kind, APIVersion: gvk.Pod.GroupVersion(),
+			Name: name, Namespace: ns,
+			Spec:   corev1.PodSpec{Containers: []corev1.Container{{Name: "test", Image: "test:latest"}}},
+			Status: corev1.PodStatus{Phase: corev1.PodPending},
 		}
 		pod2 := pod1.DeepCopy()
 
@@ -2662,10 +2578,10 @@ var _ = Describe("DeployObjs", func() {
 	It("patches if object is different", func() {
 		testCtx := context.WithValue(ctx, deployObjsCtxKey{}, true)
 		cm := &corev1.ConfigMap{
-			TypeMeta: metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
+			Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion(),
 
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Data:       map[string]string{"foo": "bar"},
+			Name: name, Namespace: ns,
+			Data: map[string]string{"foo": "bar"},
 		}
 		fc := fake.NewClient(GinkgoT(), cm.DeepCopy())
 		cm.Data = map[string]string{"foo": "bar", "bar": "baz"}
@@ -2750,8 +2666,8 @@ var _ = Describe("DeployObjs", func() {
 	It("patches if object does not exist (IsNotFound error)", func() {
 		testCtx := context.WithValue(ctx, deployObjsCtxKey{}, true)
 		cm := &corev1.ConfigMap{
-			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+			Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion(),
+			Name: name, Namespace: ns,
 		}
 		fc := fake.NewClient(GinkgoT())
 		patched := false
@@ -2772,8 +2688,8 @@ var _ = Describe("DeployObjs", func() {
 		defer cancel()
 
 		cm := &corev1.ConfigMap{
-			TypeMeta:   metav1.TypeMeta{Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion()},
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+			Kind: gvk.ConfigMap.Kind, APIVersion: gvk.ConfigMap.GroupVersion(),
+			Name: name, Namespace: ns,
 		}
 		fc := fake.NewClient(GinkgoT())
 		patchStarted := make(chan struct{})

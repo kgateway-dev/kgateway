@@ -43,11 +43,9 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "Policy",
 			inputs: []any{
 				ir.PolicyWrapper{
-					ObjectSource: ir.ObjectSource{
-						Kind:      "Policy",
-						Name:      "test",
-						Namespace: testNamespace,
-					},
+					Kind:      "Policy",
+					Name:      "test",
+					Namespace: testNamespace,
 				},
 			},
 		},
@@ -58,11 +56,9 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "HTTPRoute",
 			inputs: []any{
 				&gwv1.HTTPRoute{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testName,
-						Namespace: testNamespace,
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      testName,
+					Namespace: testNamespace,
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
@@ -90,11 +86,9 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "TCPRoute",
 			inputs: []any{
 				&gwv1a2.TCPRoute{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testName,
-						Namespace: testNamespace,
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      testName,
+					Namespace: testNamespace,
 					Spec: gwv1a2.TCPRouteSpec{
 						CommonRouteSpec: gwv1a2.CommonRouteSpec{
 							ParentRefs: []gwv1a2.ParentReference{{
@@ -116,11 +110,9 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "TLSRoute",
 			inputs: []any{
 				&gwv1a2.TLSRoute{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testName,
-						Namespace: testNamespace,
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      testName,
+					Namespace: testNamespace,
 					Spec: gwv1a2.TLSRouteSpec{
 						CommonRouteSpec: gwv1a2.CommonRouteSpec{
 							ParentRefs: []gwv1a2.ParentReference{{
@@ -142,11 +134,9 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "GRPCRoute",
 			inputs: []any{
 				&gwv1.GRPCRoute{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testName,
-						Namespace: testNamespace,
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      testName,
+					Namespace: testNamespace,
 					Spec: gwv1.GRPCRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{{
@@ -173,11 +163,9 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "Gateway",
 			inputs: []any{
 				&gwv1.Gateway{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testGateway,
-						Namespace: testNamespace,
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      testGateway,
+					Namespace: testNamespace,
 					Spec: gwv1.GatewaySpec{
 						GatewayClassName: "kgateway",
 					},
@@ -191,12 +179,10 @@ func TestCollectionMetricEventHandler(t *testing.T) {
 			resource:  "XListenerSet",
 			inputs: []any{
 				&gwv1.ListenerSet{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      testName,
-						Namespace: testNamespace,
-						Labels:    map[string]string{"a": "b"},
-					},
+					TypeMeta:  metav1.TypeMeta{},
+					Name:      testName,
+					Namespace: testNamespace,
+					Labels:    map[string]string{"a": "b"},
 					Spec: gwv1.ListenerSetSpec{
 						ParentRef: gwv1.ParentGatewayReference{
 							Name:      testGateway,

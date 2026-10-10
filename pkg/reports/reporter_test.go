@@ -64,6 +64,38 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
 
+		It("should preserve listener conditions set externally", func() {
+			gw := gw()
+			foreign := metav1.Condition{
+				Type:   "gateway.kgateway.dev/SomeCondition",
+				Status: metav1.ConditionFalse,
+				Reason: "Seeded",
+			}
+			gw.Status.Listeners = []gwv1.ListenerStatus{{
+				Name: "http",
+				Conditions: []metav1.Condition{
+					foreign,
+					// owned by our reporter, so it must be replaced rather than preserved
+					{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: "Stale"},
+				},
+			}}
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(*gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(5), "4 from the report, 1 from the original status")
+			Expect(meta.FindStatusCondition(status.Listeners[0].Conditions, foreign.Type)).To(HaveValue(Equal(foreign)))
+			accepted := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+			Expect(accepted).NotTo(BeNil())
+			Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+		})
+
 		It("should set insecure frontend validation mode when configured on the default frontend TLS config", func() {
 			gw := gw()
 			gw.Spec.TLS = &gwv1.GatewayTLSConfig{
@@ -337,10 +369,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				reporter := reports.NewReporter(&rm)
 
 				route := &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route",
-						Namespace: "default",
-					},
+					Name:      "route",
+					Namespace: "default",
 					Spec: gwv1.HTTPRouteSpec{
 						CommonRouteSpec: gwv1.CommonRouteSpec{
 							ParentRefs: []gwv1.ParentReference{
@@ -384,10 +414,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				Expect(status.Parents[0].Conditions).To(HaveLen(3))
 			},
 			Entry("httproute", &gwv1.HTTPRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "route",
-					Namespace: "default",
-				},
+				Name:      "route",
+				Namespace: "default",
 				Spec: gwv1.HTTPRouteSpec{
 					CommonRouteSpec: gwv1.CommonRouteSpec{
 						ParentRefs: []gwv1.ParentReference{
@@ -747,6 +775,31 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
 
+		It("should preserve listener conditions set externally", func() {
+			ls := ls()
+			foreign := metav1.Condition{
+				Type:   "gateway.kgateway.dev/SomeCondition",
+				Status: metav1.ConditionFalse,
+				Reason: "Seeded",
+			}
+			ls.Status.Listeners = []gwv1.ListenerEntryStatus{{
+				Name:       "http",
+				Conditions: []metav1.Condition{foreign},
+			}}
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize ListenerSetReporter to mimic translation loop
+			reporter.ListenerSet(ls)
+
+			status := rm.BuildListenerSetStatus(*ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(5), "4 from the report, 1 from the original status")
+			Expect(meta.FindStatusCondition(status.Listeners[0].Conditions, foreign.Type)).To(HaveValue(Equal(foreign)))
+		})
+
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
 			ls := ls()
 			rm := reports.NewReportMap()
@@ -880,10 +933,8 @@ func fakeTranslate(reporter reporter.Reporter, obj client.Object) {
 
 func httpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -898,10 +949,8 @@ func httpRoute(conditions ...metav1.Condition) client.Object {
 
 func tcpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -916,10 +965,8 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -934,10 +981,8 @@ func tlsRoute(conditions ...metav1.Condition) client.Object {
 
 func tlsRouteV1(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -952,10 +997,8 @@ func tlsRouteV1(conditions ...metav1.Condition) client.Object {
 
 func grpcRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.GRPCRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route",
-			Namespace: "default",
-		},
+		Name:      "route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
 	if len(conditions) > 0 {
@@ -982,10 +1025,8 @@ func otherParentRef() *gwv1.ParentReference {
 
 func delegateeRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "child-route",
-			Namespace: "default",
-		},
+		Name:      "child-route",
+		Namespace: "default",
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRouteRef())
 	if len(conditions) > 0 {
@@ -1009,10 +1050,8 @@ func parentRouteRef() *gwv1.ParentReference {
 
 func gw() *gwv1.Gateway {
 	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "kgateway-gtw",
-		},
+		Namespace: "default",
+		Name:      "kgateway-gtw",
 	}
 	gw.Spec.Listeners = append(gw.Spec.Listeners, *listener())
 	return gw
@@ -1026,10 +1065,8 @@ func listener() *gwv1.Listener {
 
 func ls() *gwv1.ListenerSet {
 	ls := &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test",
-		},
+		Namespace: "default",
+		Name:      "test",
 	}
 	ls.Spec.Listeners = []gwv1.ListenerEntry{
 		{

@@ -9,7 +9,6 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -107,7 +106,7 @@ func (a *OverlayApplier) ApplyOverlays(objs []client.Object) ([]client.Object, e
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply overlay to %s/%s: %w", gvk.Kind, obj.GetName(), err)
 		}
-		objs[i] = patched
+		objs[i] = patched //nolint:gosec // G602: i comes from ranging over objs
 	}
 
 	// Create PDB if overlay is present
@@ -262,15 +261,11 @@ func deserializeToObject(data []byte, gvk schema.GroupVersionKind) (client.Objec
 func createPodDisruptionBudget(deployment *appsv1.Deployment, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
 	// Create base PDB with selector matching the Deployment
 	pdb := &policyv1.PodDisruptionBudget{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
-			Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployment.Name,
-			Namespace: deployment.Namespace,
-			Labels:    maps.Clone(deployment.GetLabels()),
-		},
+		APIVersion: wellknown.PodDisruptionBudgetGVK.GroupVersion().String(),
+		Kind:       wellknown.PodDisruptionBudgetGVK.Kind,
+		Name:       deployment.Name,
+		Namespace:  deployment.Namespace,
+		Labels:     maps.Clone(deployment.GetLabels()),
 		Spec: policyv1.PodDisruptionBudgetSpec{
 			Selector: deployment.Spec.Selector,
 		},
@@ -290,15 +285,11 @@ func createPodDisruptionBudget(deployment *appsv1.Deployment, overlay *shared.Ku
 func createHorizontalPodAutoscaler(deployment *appsv1.Deployment, overlay *shared.KubernetesResourceOverlay) (client.Object, error) {
 	// Create base HPA with scaleTargetRef pointing to the Deployment
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: wellknown.HorizontalPodAutoscalerGVK.GroupVersion().String(),
-			Kind:       wellknown.HorizontalPodAutoscalerGVK.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployment.Name,
-			Namespace: deployment.Namespace,
-			Labels:    maps.Clone(deployment.GetLabels()),
-		},
+		APIVersion: wellknown.HorizontalPodAutoscalerGVK.GroupVersion().String(),
+		Kind:       wellknown.HorizontalPodAutoscalerGVK.Kind,
+		Name:       deployment.Name,
+		Namespace:  deployment.Namespace,
+		Labels:     maps.Clone(deployment.GetLabels()),
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
 			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 				APIVersion: wellknown.DeploymentGVK.GroupVersion().String(),

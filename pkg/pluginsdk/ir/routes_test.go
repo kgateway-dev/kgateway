@@ -16,13 +16,11 @@ import (
 // makeTCPRoute constructs a TCPRoute with specified metadata.
 func makeTCPRoute(name, namespace, rv string, gen int64, uid types.UID) *gwv1a2.TCPRoute {
 	return &gwv1a2.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			ResourceVersion: rv,
-			Generation:      gen,
-			UID:             uid,
-		},
+		Name:            name,
+		Namespace:       namespace,
+		ResourceVersion: rv,
+		Generation:      gen,
+		UID:             uid,
 	}
 }
 

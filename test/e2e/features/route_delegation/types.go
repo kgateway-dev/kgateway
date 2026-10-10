@@ -19,36 +19,26 @@ var (
 // ref: basic.yaml
 var (
 	routeRoot = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "root",
-			Namespace: "infra",
-		},
+		Name:      "root",
+		Namespace: "infra",
 	}
 	routeTeam1 = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "svc1",
-			Namespace: "team1",
-		},
+		Name:      "svc1",
+		Namespace: "team1",
 	}
 	routeTeam2 = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "svc2",
-			Namespace: "team2",
-		},
+		Name:      "svc2",
+		Namespace: "team2",
 	}
 	routeParent1 = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "parent1",
-			Namespace: "infra",
-		},
+		Name:      "parent1",
+		Namespace: "infra",
 	}
 	routeParent1Host = "parent1.com"
 	routeParent2Host = "parent2.com"
 	routeParent2     = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "parent2",
-			Namespace: "infra",
-		},
+		Name:      "parent2",
+		Namespace: "infra",
 	}
 	pathTeam1 = "anything/team1/foo"
 	pathTeam2 = "anything/team2/foo"

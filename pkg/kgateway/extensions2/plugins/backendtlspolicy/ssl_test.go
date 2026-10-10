@@ -7,7 +7,6 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
@@ -43,10 +42,8 @@ func TestUpstreamTlsConfig(t *testing.T) {
 		{
 			name: "Basic config",
 			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-ca",
-					Namespace: "default",
-				},
+				Name:      "my-ca",
+				Namespace: "default",
 				Data: map[string]string{
 					"ca.crt": CA_CERT,
 				},
@@ -71,11 +68,9 @@ func TestUpstreamTlsConfig(t *testing.T) {
 		{
 			name: "Missing ca.crt in configmap",
 			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-ca",
-					Namespace: "default",
-				},
-				Data: map[string]string{},
+				Name:      "my-ca",
+				Namespace: "default",
+				Data:      map[string]string{},
 			},
 			sni:           "example.com",
 			expectedError: sslutils.ErrMissingCACertKey.Error(),
@@ -83,10 +78,8 @@ func TestUpstreamTlsConfig(t *testing.T) {
 		{
 			name: "Invalid ca.crt in configmap",
 			cm: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-ca",
-					Namespace: "default",
-				},
+				Name:      "my-ca",
+				Namespace: "default",
 				Data: map[string]string{
 					"ca.crt": "invalid-certificate-data",
 				},

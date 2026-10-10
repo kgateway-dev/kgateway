@@ -182,11 +182,9 @@ var _ e2e.NewSuiteFunc = NewStrictChurnSuite
 
 func NewStrictChurnSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &StrictChurnSuite{
-		LoadTestingSuite: LoadTestingSuite{
-			Suite:            suite.Suite{},
-			ctx:              ctx,
-			testInstallation: testInst,
-		},
+		Suite:            suite.Suite{},
+		ctx:              ctx,
+		testInstallation: testInst,
 	}
 }
 
@@ -261,10 +259,8 @@ func (s *StrictChurnSuite) TearDownSuite() {
 	// The nginx-shared ReferenceGrant outlives the per-run namespaces
 	// (nginx-shared belongs to the harness), so delete it explicitly.
 	_ = s.testInstallation.ClusterContext.Client.Delete(s.ctx, &gwv1b1.ReferenceGrant{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      referenceGrantName,
-			Namespace: common.SharedNginxNamespace,
-		},
+		Name:      referenceGrantName,
+		Namespace: common.SharedNginxNamespace,
 	})
 	// The shared nginx backend belongs to the harness, not this suite — do
 	// not delete it. The curl pod is per-suite (siblings re-apply it).
@@ -521,11 +517,9 @@ func (s *StrictChurnSuite) runChurnCycle(cycle int) {
 	svcName := fmt.Sprintf("churn-svc-%d", cycle)
 
 	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      svcName,
-			Namespace: simNS,
-			Labels:    map[string]string{"loadtest": "true", "churn": "true"},
-		},
+		Name:      svcName,
+		Namespace: simNS,
+		Labels:    map[string]string{"loadtest": "true", "churn": "true"},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{"app": svcName},
 			Ports: []corev1.ServicePort{{
@@ -537,14 +531,12 @@ func (s *StrictChurnSuite) runChurnCycle(cycle int) {
 	portName := "http"
 	protocol := corev1.ProtocolTCP
 	eps := &discoveryv1.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      svcName,
-			Namespace: simNS,
-			Labels: map[string]string{
-				"kubernetes.io/service-name": svcName,
-				"loadtest":                   "true",
-				"churn":                      "true",
-			},
+		Name:      svcName,
+		Namespace: simNS,
+		Labels: map[string]string{
+			"kubernetes.io/service-name": svcName,
+			"loadtest":                   "true",
+			"churn":                      "true",
 		},
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{{
@@ -614,9 +606,9 @@ func (s *StrictChurnSuite) startEndpointChurner(ctx context.Context) {
 			// slice can never wedge the rotation.
 			attempts++
 			patch := fmt.Sprintf(`[{"op":"replace","path":"/endpoints/0/addresses/0","value":%q}]`, ip)
-			eps := &discoveryv1.EndpointSlice{ObjectMeta: metav1.ObjectMeta{
+			eps := &discoveryv1.EndpointSlice{
 				Name: fmt.Sprintf("sim-service-%d", idx), Namespace: simNS,
-			}}
+			}
 			if err := s.testInstallation.ClusterContext.Client.Patch(ctx, eps,
 				client.RawPatch(types.JSONPatchType, []byte(patch))); err != nil {
 				if ctx.Err() != nil {
@@ -701,11 +693,9 @@ func (s *StrictChurnSuite) rollGateway(gateway string) {
 // will never have a ready endpoint.
 func (s *StrictChurnSuite) createStarvedRoute(gateway string) {
 	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "starved-svc",
-			Namespace: s.loadTestManager.testNamespace,
-			Labels:    map[string]string{"loadtest": "true"},
-		},
+		Name:      "starved-svc",
+		Namespace: s.loadTestManager.testNamespace,
+		Labels:    map[string]string{"loadtest": "true"},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{"app": "starved-no-such-pod"},
 			Ports: []corev1.ServicePort{{
@@ -736,11 +726,9 @@ func (s *StrictChurnSuite) buildChurnRoute(name, gateway, hostname, backendSvc, 
 		port = gwv1.PortNumber(nginxBackendPort)
 	}
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: s.loadTestManager.testNamespace,
-			Labels:    map[string]string{"loadtest": "true"},
-		},
+		Name:      name,
+		Namespace: s.loadTestManager.testNamespace,
+		Labels:    map[string]string{"loadtest": "true"},
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{Name: gwv1.ObjectName(gateway)}},
@@ -751,13 +739,9 @@ func (s *StrictChurnSuite) buildChurnRoute(name, gateway, hostname, backendSvc, 
 					Path: &gwv1.HTTPPathMatch{Type: &pathType, Value: &pathValue},
 				}},
 				BackendRefs: []gwv1.HTTPBackendRef{{
-					BackendRef: gwv1.BackendRef{
-						BackendObjectReference: gwv1.BackendObjectReference{
-							Name:      gwv1.ObjectName(backendSvc),
-							Namespace: &ns,
-							Port:      &port,
-						},
-					},
+					Name:      gwv1.ObjectName(backendSvc),
+					Namespace: &ns,
+					Port:      &port,
 				}},
 			}},
 		},
@@ -782,11 +766,9 @@ func (s *StrictChurnSuite) createReferenceGrants() {
 		common.SharedNginxNamespace,
 	} {
 		grant := &gwv1b1.ReferenceGrant{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      referenceGrantName,
-				Namespace: targetNS,
-				Labels:    map[string]string{"loadtest": "true"},
-			},
+			Name:      referenceGrantName,
+			Namespace: targetNS,
+			Labels:    map[string]string{"loadtest": "true"},
 			Spec: gwv1b1.ReferenceGrantSpec{
 				From: []gwv1b1.ReferenceGrantFrom{{
 					Group:     gwv1b1.Group(gwv1.GroupName),

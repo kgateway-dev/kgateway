@@ -7,9 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -29,7 +27,7 @@ func TestWithStatusRegistration(t *testing.T) {
 		return []reports.StatusKey{contribution.Target}
 	})
 	objects := krt.NewStaticCollection(nil, []*gwv1.Gateway{{
-		ObjectMeta: metav1.ObjectMeta{Name: "example", Namespace: "default"},
+		Name: "example", Namespace: "default",
 	}})
 	collections := statussync.NewStatusCollections()
 	writers := map[schema.GroupVersionKind]statussync.ResourceStatusSyncer{}
@@ -58,9 +56,7 @@ func TestWithStatusRegistration(t *testing.T) {
 			func(object *gwv1.Gateway) statussync.Resource {
 				return statussync.Resource{
 					GroupVersionKind: gvk,
-					NamespacedName: types.NamespacedName{
-						Name: object.Name, Namespace: object.Namespace,
-					},
+					Name:             object.Name, Namespace: object.Namespace,
 				}
 			},
 			in.KrtOpts.ToOptions("ExampleStatusReports")...,

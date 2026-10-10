@@ -2,7 +2,6 @@ package wellknown
 
 import (
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -174,9 +173,7 @@ var (
 	}
 
 	TCPRouteCRD = apiextv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: TCPRouteCRDName,
-		},
+		Name: TCPRouteCRDName,
 	}
 
 	ListenerSetGVK = schema.GroupVersionKind{

@@ -94,8 +94,7 @@ func conditionsForErrors(policy ir.PolicyAtt) []pluginreporter.PolicyCondition {
 	var resolvedRefsCondition *pluginreporter.PolicyCondition
 
 	for _, err := range policy.Errors {
-		var invalidKindErr *InvalidKindError
-		if errors.As(err, &invalidKindErr) {
+		if _, ok := errors.AsType[*InvalidKindError](err); ok {
 			resolvedRefsCondition = &pluginreporter.PolicyCondition{
 				Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 				Status:             metav1.ConditionFalse,
@@ -107,8 +106,7 @@ func conditionsForErrors(policy ir.PolicyAtt) []pluginreporter.PolicyCondition {
 			break
 		}
 
-		var invalidRefErr *InvalidCACertificateRefError
-		if errors.As(err, &invalidRefErr) {
+		if _, ok := errors.AsType[*InvalidCACertificateRefError](err); ok {
 			resolvedRefsCondition = &pluginreporter.PolicyCondition{
 				Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 				Status:             metav1.ConditionFalse,

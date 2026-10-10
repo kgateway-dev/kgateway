@@ -84,7 +84,7 @@ func TestRoutesFor(t *testing.T) {
 
 	routes := preRouteIndex(t, []any{
 		&gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: "http-route", Namespace: "default"},
+			Name: "http-route", Namespace: "default",
 			Spec: gwv1.HTTPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{{
@@ -97,7 +97,7 @@ func TestRoutesFor(t *testing.T) {
 			},
 		},
 		&gwv1.GRPCRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: "grpc-route", Namespace: "default"},
+			Name: "grpc-route", Namespace: "default",
 			Spec: gwv1.GRPCRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{{
@@ -311,10 +311,8 @@ func svc(ns string) *corev1.Service {
 		ns = "default"
 	}
 	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: ns,
-		},
+		Name:      "foo",
+		Namespace: ns,
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
@@ -327,10 +325,8 @@ func svc(ns string) *corev1.Service {
 
 func refGrant() *gwv1b1.ReferenceGrant {
 	return &gwv1b1.ReferenceGrant{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default2",
-			Name:      "foo",
-		},
+		Namespace: "default2",
+		Name:      "foo",
 		Spec: gwv1b1.ReferenceGrantSpec{
 			From: []gwv1b1.ReferenceGrantFrom{
 				{
@@ -357,10 +353,8 @@ func refGrant() *gwv1b1.ReferenceGrant {
 // Helper that creates a ReferenceGrant for Backend resources
 func refGrantWithBackend() *gwv1b1.ReferenceGrant {
 	return &gwv1b1.ReferenceGrant{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default2",
-			Name:      "backend-ref-grant",
-		},
+		Namespace: "default2",
+		Name:      "backend-ref-grant",
 		Spec: gwv1b1.ReferenceGrantSpec{
 			From: []gwv1b1.ReferenceGrantFrom{
 				{
@@ -385,10 +379,8 @@ func backend(ns string) *kgateway.Backend {
 		ns = "default"
 	}
 	return &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-backend",
-			Namespace: ns,
-		},
+		Name:      "test-backend",
+		Namespace: ns,
 		Spec: kgateway.BackendSpec{
 			Type: new(kgateway.BackendTypeStatic),
 			Static: &kgateway.StaticBackend{
@@ -411,24 +403,18 @@ func httpRouteWithBackendRef(refN, refNs string, port *gwv1.PortNumber) *gwv1.HT
 		ns = &n
 	}
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httproute",
-			Namespace: "default",
-		},
+		Name:      "httproute",
+		Namespace: "default",
 		Spec: gwv1.HTTPRouteSpec{
 			Rules: []gwv1.HTTPRouteRule{
 				{
 					BackendRefs: []gwv1.HTTPBackendRef{
 						{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Group:     new(gwv1.Group(wellknown.BackendGVK.Group)),
-									Kind:      new(gwv1.Kind(wellknown.BackendGVK.Kind)),
-									Name:      gwv1.ObjectName(refN),
-									Namespace: ns,
-									Port:      port,
-								},
-							},
+							Group:     new(gwv1.Group(wellknown.BackendGVK.Group)),
+							Kind:      new(gwv1.Kind(wellknown.BackendGVK.Kind)),
+							Name:      gwv1.ObjectName(refN),
+							Namespace: ns,
+							Port:      port,
 						},
 					},
 				},
@@ -484,22 +470,16 @@ func httpRouteWithSvcBackendRef(refNs string) *gwv1.HTTPRoute {
 	}
 	var port gwv1.PortNumber = 8080
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httproute",
-			Namespace: "default",
-		},
+		Name:      "httproute",
+		Namespace: "default",
 		Spec: gwv1.HTTPRouteSpec{
 			Rules: []gwv1.HTTPRouteRule{
 				{
 					BackendRefs: []gwv1.HTTPBackendRef{
 						{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Name:      gwv1.ObjectName("foo"),
-									Namespace: ns,
-									Port:      &port,
-								},
-							},
+							Name:      gwv1.ObjectName("foo"),
+							Namespace: ns,
+							Port:      &port,
 						},
 					},
 				},
@@ -516,20 +496,16 @@ func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
 	}
 	var port gwv1.PortNumber = 8080
 	return &gwv1a2.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tcproute",
-			Namespace: "default",
-		},
+		Name:      "tcproute",
+		Namespace: "default",
 		Spec: gwv1a2.TCPRouteSpec{
 			Rules: []gwv1a2.TCPRouteRule{
 				{
 					BackendRefs: []gwv1.BackendRef{
 						{
-							BackendObjectReference: gwv1.BackendObjectReference{
-								Name:      gwv1.ObjectName("foo"),
-								Namespace: ns,
-								Port:      &port,
-							},
+							Name:      gwv1.ObjectName("foo"),
+							Namespace: ns,
+							Port:      &port,
 						},
 					},
 				},
@@ -669,22 +645,16 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 					routeLabels[strconv.Itoa(i)] = "yes"
 				}
 				inputs = append(inputs, &gwv1.HTTPRoute{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "httproute-" + strconv.Itoa(i),
-						Namespace: "default",
-						Labels:    routeLabels,
-					},
+					Name:      "httproute-" + strconv.Itoa(i),
+					Namespace: "default",
+					Labels:    routeLabels,
 					Spec: gwv1.HTTPRouteSpec{
 						Rules: []gwv1.HTTPRouteRule{
 							{
 								BackendRefs: []gwv1.HTTPBackendRef{
 									{
-										BackendRef: gwv1.BackendRef{
-											BackendObjectReference: gwv1.BackendObjectReference{
-												Name: gwv1.ObjectName("foo"),
-												Port: new(gwv1.PortNumber(8080)),
-											},
-										},
+										Name: gwv1.ObjectName("foo"),
+										Port: new(gwv1.PortNumber(8080)),
 									},
 								},
 							},
@@ -696,14 +666,12 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 			for i := range tc.policies {
 				routeLabels := maps.Clone(routeLabels)
 				p := ir.PolicyWrapper{
-					ObjectSource: ir.ObjectSource{
-						Group:     wellknown.TrafficPolicyGVK.Group,
-						Kind:      wellknown.TrafficPolicyGVK.Kind,
-						Namespace: "default",
-						Name:      "policy-" + strconv.Itoa(i),
-					},
-					Policy:   &kgateway.TrafficPolicy{},
-					PolicyIR: fakePolicyIR{},
+					Group:     wellknown.TrafficPolicyGVK.Group,
+					Kind:      wellknown.TrafficPolicyGVK.Kind,
+					Namespace: "default",
+					Name:      "policy-" + strconv.Itoa(i),
+					Policy:    &kgateway.TrafficPolicy{},
+					PolicyIR:  fakePolicyIR{},
 				}
 				if tc.byLabel {
 					switch tc.selectionPolicy {

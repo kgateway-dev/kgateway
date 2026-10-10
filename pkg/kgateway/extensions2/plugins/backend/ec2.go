@@ -1125,8 +1125,7 @@ var ec2AuthErrorCodes = map[string]struct{}{
 // else is treated as a transient DiscoveryError. The returned message never includes
 // secret values.
 func classifyEc2DiscoveryError(err error) (reason string, message string) {
-	var credErr *ec2CredentialError
-	if errors.As(err, &credErr) {
+	if credErr, ok := errors.AsType[*ec2CredentialError](err); ok {
 		return string(kgateway.BackendReasonCredentialError), credErr.Error()
 	}
 	if code, awsMessage, ok := awsAPIErrorDetails(err); ok {

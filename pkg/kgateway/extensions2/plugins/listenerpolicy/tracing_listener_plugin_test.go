@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -456,15 +455,11 @@ func TestTracingConverter(t *testing.T) {
 				updateTracingConfig(&ir.HcmContext{
 					Gateway: ir.GatewayIR{
 						SourceObject: &ir.Gateway{
-							ObjectSource: ir.ObjectSource{
-								Namespace: "default",
-								Name:      "gw",
-							},
+							Namespace: "default",
+							Name:      "gw",
 							Obj: &gwv1.Gateway{
-								ObjectMeta: metav1.ObjectMeta{
-									UID:        "test-uid-1234",
-									Generation: 7,
-								},
+								UID:        "test-uid-1234",
+								Generation: 7,
 							},
 						},
 					},

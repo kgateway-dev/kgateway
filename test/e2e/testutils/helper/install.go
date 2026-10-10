@@ -42,7 +42,7 @@ func getLocalChartPath(rootDir string, chartName string, assetDir string) (strin
 		if err == nil {
 			return chartPath, nil
 		}
-		logger.Info("falling back to unpackaged Helm chart", "chart", chartName, "assetDir", testAssetDir, "error", err)
+		logger.Info("falling back to unpackaged Helm chart", "chart", chartName, "asset_dir", testAssetDir, "error", err)
 	}
 
 	chartDir := filepath.Join(rootDir, defaultHelmChartDir, chartName)

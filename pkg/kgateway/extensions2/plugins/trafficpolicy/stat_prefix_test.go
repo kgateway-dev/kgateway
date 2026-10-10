@@ -93,7 +93,7 @@ func TestApplyStatPrefix(t *testing.T) {
 	routeCtx := func(name, ns, rule string) *ir.RouteContext {
 		return &ir.RouteContext{
 			In: ir.HttpRouteRuleMatchIR{
-				Parent:   &ir.HttpRouteIR{ObjectSource: ir.ObjectSource{Name: name, Namespace: ns}},
+				Parent:   &ir.HttpRouteIR{Name: name, Namespace: ns},
 				RuleName: rule,
 			},
 		}

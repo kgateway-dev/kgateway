@@ -206,9 +206,9 @@ func TestOIDCConfigDiscoveryCache(t *testing.T) {
 func TestOIDCConfigDiscoveryFailureIsCached(t *testing.T) {
 	r := require.New(t)
 
-	var requestCount int64
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		requestCount.Add(1)
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
@@ -220,21 +220,21 @@ func TestOIDCConfigDiscoveryFailureIsCached(t *testing.T) {
 	r.Error(err)
 	r.Nil(cfg)
 	// 404 is unrecoverable, so exactly one request is made.
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
+	r.Equal(int64(1), requestCount.Load())
 
 	cfg, err = o.get(context.Background(), issuer)
 	r.Error(err)
 	r.Nil(cfg)
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount), "failed discovery should be served from cache")
+	r.Equal(int64(1), requestCount.Load(), "failed discovery should be served from cache")
 }
 
 func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	r := require.New(t)
 
 	// Track the number of HTTP requests reaching the server.
-	var requestCount int64
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		requestCount.Add(1)
 		// Simulate a slow upstream so concurrent callers overlap.
 		time.Sleep(50 * time.Millisecond)
 		config := oidcProviderConfig{
@@ -270,7 +270,7 @@ func TestOIDCConfigDiscoveryConcurrentDedup(t *testing.T) {
 	}
 
 	// Singleflight should have deduplicated all concurrent calls into exactly one HTTP request.
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount),
+	r.Equal(int64(1), requestCount.Load(),
 		"expected exactly 1 HTTP request, but singleflight did not deduplicate concurrent calls")
 }
 
@@ -618,9 +618,9 @@ func TestOIDCConfigDiscoveryRefreshLoopRecovers(t *testing.T) {
 func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 	r := require.New(t)
 
-	var requestCount int64
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		requestCount.Add(1)
 		config := oidcProviderConfig{
 			TokenEndpoint:         "https://example.com/token",
 			AuthorizationEndpoint: "https://example.com/auth",
@@ -646,11 +646,11 @@ func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 
 	_, err := o.get(context.Background(), issuer)
 	r.NoError(err)
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
+	r.Equal(int64(1), requestCount.Load())
 
 	// While referenced, a refresh pass re-discovers.
 	o.refreshOnce(context.Background())
-	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
+	r.Equal(int64(2), requestCount.Load())
 	_, cached := o.load(issuer)
 	r.True(cached)
 
@@ -660,9 +660,9 @@ func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 	_, cached = o.load(issuer)
 	r.False(cached, "issuer with no referencing GatewayExtension should be pruned")
 
-	countAfterPrune := atomic.LoadInt64(&requestCount)
+	countAfterPrune := requestCount.Load()
 	o.refreshOnce(context.Background())
-	r.Equal(countAfterPrune, atomic.LoadInt64(&requestCount), "pruned issuer should not be polled")
+	r.Equal(countAfterPrune, requestCount.Load(), "pruned issuer should not be polled")
 }
 
 // TestOIDCDiscoveryRequired pins the predicate that defines "this extension will call
@@ -784,9 +784,9 @@ func TestOIDCIssuerURIsSharedIssuer(t *testing.T) {
 func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	r := require.New(t)
 
-	var requestCount int64
+	var requestCount atomic.Int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		atomic.AddInt64(&requestCount, 1)
+		requestCount.Add(1)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(oidcProviderConfig{
 			TokenEndpoint:         "https://example.com/token",
@@ -810,11 +810,11 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 
 	_, err := o.get(context.Background(), issuer)
 	r.NoError(err)
-	r.Equal(int64(1), atomic.LoadInt64(&requestCount))
+	r.Equal(int64(1), requestCount.Load())
 
 	// While discovery is still required, the entry is refreshed.
 	o.refreshOnce(context.Background())
-	r.Equal(int64(2), atomic.LoadInt64(&requestCount))
+	r.Equal(int64(2), requestCount.Load())
 	_, cached := o.load(issuer)
 	r.True(cached)
 
@@ -828,7 +828,7 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	_, cached = o.load(issuer)
 	r.False(cached, "issuer should be pruned once no extension discovers from it")
 
-	countAfterPrune := atomic.LoadInt64(&requestCount)
+	countAfterPrune := requestCount.Load()
 	o.refreshOnce(context.Background())
-	r.Equal(countAfterPrune, atomic.LoadInt64(&requestCount), "pruned issuer should not be polled")
+	r.Equal(countAfterPrune, requestCount.Load(), "pruned issuer should not be polled")
 }

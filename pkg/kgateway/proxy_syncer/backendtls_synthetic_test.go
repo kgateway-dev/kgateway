@@ -46,14 +46,10 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	ctx := t.Context()
 
 	service := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "backend-service",
-			Namespace: "default",
-		},
+		APIVersion: "v1",
+		Kind:       "Service",
+		Name:       "backend-service",
+		Namespace:  "default",
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{Name: "https", Port: 443, TargetPort: intstr.FromInt32(8443)},
@@ -78,13 +74,11 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	backendTLSPolicies := krt.WrapClient(backendTLSPolicyClient, krtopts.ToOptions("BackendTLSPolicy")...)
 	policyCol := krt.NewCollection(backendTLSPolicies, func(kctx krt.HandlerContext, policy *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		return &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     wellknown.BackendTLSPolicyGVK.Group,
-				Kind:      wellknown.BackendTLSPolicyGVK.Kind,
-				Namespace: policy.Namespace,
-				Name:      policy.Name,
-			},
-			Policy: policy,
+			Group:     wellknown.BackendTLSPolicyGVK.Group,
+			Kind:      wellknown.BackendTLSPolicyGVK.Kind,
+			Namespace: policy.Namespace,
+			Name:      policy.Name,
+			Policy:    policy,
 			PolicyIR: backendTLSTestPolicyIR{
 				ct:           policy.CreationTimestamp.Time,
 				transportSNI: string(policy.Spec.Validation.Hostname),
@@ -158,23 +152,17 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 
 	older := time.Now()
 	policy1 := &gwv1.BackendTLSPolicy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       wellknown.BackendTLSPolicyGVK.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "backend-tls-older",
-			Namespace:         "default",
-			CreationTimestamp: metav1.NewTime(older),
-			Generation:        1,
-		},
+		APIVersion:        gwv1.GroupVersion.String(),
+		Kind:              wellknown.BackendTLSPolicyGVK.Kind,
+		Name:              "backend-tls-older",
+		Namespace:         "default",
+		CreationTimestamp: metav1.NewTime(older),
+		Generation:        1,
 		Spec: gwv1.BackendTLSPolicySpec{
 			TargetRefs: []gwv1.LocalPolicyTargetReferenceWithSectionName{{
-				LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{
-					Group: "",
-					Kind:  "Service",
-					Name:  "backend-service",
-				},
+				Group: "",
+				Kind:  "Service",
+				Name:  "backend-service",
 			}},
 			Validation: gwv1.BackendTLSPolicyValidation{
 				Hostname: "other.example.com",
@@ -185,23 +173,17 @@ func TestPerClientClustersUpdateWhenBackendTLSPolicyAddedLater(t *testing.T) {
 	require.NoError(t, err)
 
 	policy2 := &gwv1.BackendTLSPolicy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gwv1.GroupVersion.String(),
-			Kind:       wellknown.BackendTLSPolicyGVK.Kind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "backend-tls-newer",
-			Namespace:         "default",
-			CreationTimestamp: metav1.NewTime(older.Add(time.Second)),
-			Generation:        1,
-		},
+		APIVersion:        gwv1.GroupVersion.String(),
+		Kind:              wellknown.BackendTLSPolicyGVK.Kind,
+		Name:              "backend-tls-newer",
+		Namespace:         "default",
+		CreationTimestamp: metav1.NewTime(older.Add(time.Second)),
+		Generation:        1,
 		Spec: gwv1.BackendTLSPolicySpec{
 			TargetRefs: []gwv1.LocalPolicyTargetReferenceWithSectionName{{
-				LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{
-					Group: "",
-					Kind:  "Service",
-					Name:  "backend-service",
-				},
+				Group: "",
+				Kind:  "Service",
+				Name:  "backend-service",
 			}},
 			Validation: gwv1.BackendTLSPolicyValidation{
 				Hostname: "abc.example.com",

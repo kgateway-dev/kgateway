@@ -902,10 +902,8 @@ func (f *fakeEc2InstanceLister) ListInstances(_ context.Context, source ec2Crede
 
 func newEc2Backend(name, roleArn string, filters []kgateway.AwsTagFilter) *kgateway.Backend {
 	be := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-		},
+		Name:      name,
+		Namespace: "default",
 		Spec: kgateway.BackendSpec{
 			Aws: &kgateway.AwsBackend{
 				Region: "us-east-1",
@@ -963,17 +961,13 @@ func tagKeyValue(key, value string) kgateway.AwsTagFilter {
 
 func newTestAWSSecret(name, namespace, resourceVersion string) *ir.Secret {
 	return &ir.Secret{
-		ObjectSource: ir.ObjectSource{
-			Kind:      "Secret",
-			Namespace: namespace,
-			Name:      name,
-		},
+		Kind:      "Secret",
+		Namespace: namespace,
+		Name:      name,
 		Obj: &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:            name,
-				Namespace:       namespace,
-				ResourceVersion: resourceVersion,
-			},
+			Name:            name,
+			Namespace:       namespace,
+			ResourceVersion: resourceVersion,
 		},
 		Data: map[string][]byte{
 			"accessKey":    []byte("access"),
@@ -998,14 +992,12 @@ func newSecretIndexForTest(t *testing.T, secrets ...*corev1.Secret) *krtcollecti
 	secretIndex := krtcollections.NewSecretIndex(map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(secretCol, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 			return &ir.Secret{
-				ObjectSource: ir.ObjectSource{
-					Group:     "",
-					Kind:      "Secret",
-					Namespace: i.Namespace,
-					Name:      i.Name,
-				},
-				Obj:  i,
-				Data: i.Data,
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: i.Namespace,
+				Name:      i.Name,
+				Obj:       i,
+				Data:      i.Data,
 			}
 		}),
 	}, refgrants)

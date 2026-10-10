@@ -505,10 +505,8 @@ func GetHTTPRouteStatusError(
 			continue
 		}
 		r := gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      nns.Name,
-				Namespace: nns.Namespace,
-			},
+			Name:      nns.Name,
+			Namespace: nns.Namespace,
 		}
 		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
@@ -554,10 +552,8 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 	for nns := range reportsMap.TCPRoutes {
 		r := gwv1a2.TCPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      nns.Name,
-				Namespace: nns.Namespace,
-			},
+			Name:      nns.Name,
+			Namespace: nns.Namespace,
 		}
 		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
@@ -575,10 +571,8 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 	for nns := range reportsMap.TLSRoutes {
 		r := gwv1.TLSRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      nns.Name,
-				Namespace: nns.Namespace,
-			},
+			Name:      nns.Name,
+			Namespace: nns.Namespace,
 		}
 		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
@@ -596,10 +590,8 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 	for nns := range reportsMap.GRPCRoutes {
 		r := gwv1.GRPCRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      nns.Name,
-				Namespace: nns.Namespace,
-			},
+			Name:      nns.Name,
+			Namespace: nns.Namespace,
 		}
 		status := reportsMap.BuildRouteStatus(&r, wellknown.DefaultGatewayClassName)
 
@@ -617,10 +609,8 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 	for nns := range reportsMap.Gateways {
 		g := gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      nns.Name,
-				Namespace: nns.Namespace,
-			},
+			Name:      nns.Name,
+			Namespace: nns.Namespace,
 		}
 		status := reportsMap.BuildGWStatus(g, nil)
 		for _, c := range status.Conditions {
@@ -637,10 +627,8 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	for gvk, listenerSetsForGVK := range reportsMap.ListenerSets {
 		for ls := range listenerSetsForGVK {
 			l := gwv1.ListenerSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      ls.Name,
-					Namespace: ls.Namespace,
-				},
+				Name:      ls.Name,
+				Namespace: ls.Namespace,
 			}
 			l.SetGroupVersionKind(gvk)
 			status := reportsMap.BuildListenerSetStatus(l)
@@ -721,9 +709,7 @@ func (tc TestCase) Run(
 	}
 	for _, className := range gwClasses {
 		fakeClient.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: string(className),
-			},
+			Name: string(className),
 			Spec: gwv1.GatewayClassSpec{
 				ControllerName: wellknown.DefaultGatewayControllerName,
 			},
@@ -788,10 +774,8 @@ func (tc TestCase) Run(
 		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
 			testBackend,
 		}),
-		BackendInit: ir.BackendInit{
-			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-				return nil
-			},
+		InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+			return nil
 		},
 	}
 

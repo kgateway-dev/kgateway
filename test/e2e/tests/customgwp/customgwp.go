@@ -129,7 +129,7 @@ func Run(t *testing.T, factory e2e.InstallationFactory) {
 	testInstallation.InstallKgatewayFromLocalChart(ctx, t)
 
 	testInstallation.Assertions(t).EventuallyObjectsExist(ctx, &gwv1.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{Name: wellknown.DefaultGatewayClassName},
+		Name: wellknown.DefaultGatewayClassName,
 	})
 
 	if err := testInstallation.ActionsProvider().Kubectl().Apply(ctx, []byte(kgatewayGateway)); err != nil {

@@ -13,7 +13,6 @@ import (
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -117,10 +116,8 @@ func (r *controller) createOAuth2HMACSecret() error {
 	}
 
 	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      wellknown.OAuth2HMACSecret.Name,
-			Namespace: wellknown.OAuth2HMACSecret.Namespace,
-		},
+		Name:      wellknown.OAuth2HMACSecret.Name,
+		Namespace: wellknown.OAuth2HMACSecret.Namespace,
 		Data: map[string][]byte{
 			wellknown.OAuth2HMACSecretKey: secretKey,
 		},

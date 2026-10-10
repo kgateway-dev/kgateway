@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/test"
 	"istio.io/istio/pkg/util/smallset"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -47,11 +46,9 @@ func TestShouldUseDefaultGatewayParameters(t *testing.T) {
 	gwParams := emptyGatewayParameters()
 
 	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
+		Name:      "foo",
+		Namespace: defaultNamespace,
+		UID:       "1235",
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: wellknown.DefaultGatewayClassName,
 			Listeners: []gwv1.Listener{
@@ -78,15 +75,13 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 	gwc := defaultGatewayClass()
 	gwParams := emptyGatewayParameters()
 	extraGwParams := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Namespace: defaultNamespace},
+		Namespace: defaultNamespace,
 	}
 
 	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: defaultNamespace,
-			UID:       "1235",
-		},
+		Name:      "foo",
+		Namespace: defaultNamespace,
+		UID:       "1235",
 		Spec: gwv1.GatewaySpec{
 			Infrastructure: &gwv1.GatewayInfrastructure{
 				ParametersRef: &gwv1.LocalParametersReference{
@@ -112,9 +107,7 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 
 func defaultGatewayClass() *gwv1.GatewayClass {
 	return &gwv1.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: wellknown.DefaultGatewayClassName,
-		},
+		Name: wellknown.DefaultGatewayClassName,
 		Spec: gwv1.GatewayClassSpec{
 			ControllerName: wellknown.DefaultGatewayControllerName,
 			ParametersRef: &gwv1.ParametersReference{
@@ -129,11 +122,9 @@ func defaultGatewayClass() *gwv1.GatewayClass {
 
 func emptyGatewayParameters() *kgateway.GatewayParameters {
 	return &kgateway.GatewayParameters{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      wellknown.DefaultGatewayParametersName,
-			Namespace: defaultNamespace,
-			UID:       "1237",
-		},
+		Name:      wellknown.DefaultGatewayParametersName,
+		Namespace: defaultNamespace,
+		UID:       "1237",
 	}
 }
 

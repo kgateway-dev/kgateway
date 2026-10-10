@@ -231,11 +231,9 @@ var _ e2e.NewSuiteFunc = NewXdsFleetSuite
 
 func NewXdsFleetSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &XdsFleetSuite{
-		LoadTestingSuite: LoadTestingSuite{
-			Suite:            suite.Suite{},
-			ctx:              ctx,
-			testInstallation: testInst,
-		},
+		Suite:            suite.Suite{},
+		ctx:              ctx,
+		testInstallation: testInst,
 	}
 }
 
@@ -394,13 +392,13 @@ func (s *XdsFleetSuite) TearDownSuite() {
 	if fleetPodLocality || fleetEndpointPods {
 		// Nodes are cluster-scoped and outlive the namespace.
 		for i := range fleetZones * 2 {
-			node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: s.nodeName(i)}}
+			node := &corev1.Node{Name: s.nodeName(i)}
 			if err := s.testInstallation.ClusterContext.Client.Delete(s.ctx, node); err != nil {
 				s.T().Logf("fake node delete reported: %v", err)
 			}
 		}
 	}
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: s.testNamespace}}
+	ns := &corev1.Namespace{Name: s.testNamespace}
 	if err := s.testInstallation.ClusterContext.Client.Delete(s.ctx, ns); err != nil {
 		s.T().Logf("namespace delete reported: %v", err)
 	}
@@ -591,10 +589,10 @@ func (s *XdsFleetSuite) runFleetPhase(name string, mutate func(int), requireTran
 // ---- fleet construction ----
 
 func (s *XdsFleetSuite) createNamespace() {
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+	ns := &corev1.Namespace{
 		Name:   s.testNamespace,
 		Labels: map[string]string{"loadtest": "true"},
-	}}
+	}
 	err := s.testInstallation.ClusterContext.Client.Create(s.ctx, ns)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		s.Require().NoError(err, "should create namespace")
@@ -627,11 +625,9 @@ func (s *XdsFleetSuite) createGateways() {
 	start := time.Now()
 	s.parallelDo(len(s.gateways), func(i int) error {
 		gw := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      s.gateways[i],
-				Namespace: s.testNamespace,
-				Labels:    map[string]string{"loadtest": "true"},
-			},
+			Name:      s.gateways[i],
+			Namespace: s.testNamespace,
+			Labels:    map[string]string{"loadtest": "true"},
 			Spec: gwv1.GatewaySpec{
 				GatewayClassName: "kgateway",
 				Infrastructure: &gwv1.GatewayInfrastructure{
@@ -698,22 +694,16 @@ func (s *XdsFleetSuite) createRoutes() {
 		refs := make([]gwv1.HTTPBackendRef, 0, fleetBackendsPerRoute)
 		for _, b := range routeBackendsFor(gwIdx, routeIdx) {
 			refs = append(refs, gwv1.HTTPBackendRef{
-				BackendRef: gwv1.BackendRef{
-					BackendObjectReference: gwv1.BackendObjectReference{
-						Name: gwv1.ObjectName(fmt.Sprintf("fleet-svc-%d", b)),
-						Port: &port,
-					},
-				},
+				Name: gwv1.ObjectName(fmt.Sprintf("fleet-svc-%d", b)),
+				Port: &port,
 			})
 		}
 		prefix := gwv1.PathMatchPathPrefix
 		path := fmt.Sprintf("/r%d", routeIdx)
 		route := &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("fleet-rt-%d-%d", gwIdx, routeIdx),
-				Namespace: s.testNamespace,
-				Labels:    map[string]string{"loadtest": "true"},
-			},
+			Name:      fmt.Sprintf("fleet-rt-%d-%d", gwIdx, routeIdx),
+			Namespace: s.testNamespace,
+			Labels:    map[string]string{"loadtest": "true"},
 			Spec: gwv1.HTTPRouteSpec{
 				CommonRouteSpec: gwv1.CommonRouteSpec{
 					ParentRefs: []gwv1.ParentReference{{
@@ -803,11 +793,9 @@ func (s *XdsFleetSuite) createEndpointPods() {
 	s.parallelDo(len(refs), func(n int) error {
 		r := refs[n]
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      endpointPodName(r.svc, r.ep),
-				Namespace: s.testNamespace,
-				Labels:    map[string]string{"loadtest": "true", "app": fmt.Sprintf("fleet-svc-%d", r.svc)},
-			},
+			Name:      endpointPodName(r.svc, r.ep),
+			Namespace: s.testNamespace,
+			Labels:    map[string]string{"loadtest": "true", "app": fmt.Sprintf("fleet-svc-%d", r.svc)},
 			Spec: corev1.PodSpec{
 				// Offset by the endpoint index so one Service's endpoints land
 				// on different nodes rather than all on the same one.
@@ -833,11 +821,9 @@ func (s *XdsFleetSuite) createServicesAndEndpoints() {
 	s.parallelDo(fleetServices, func(i int) error {
 		name := fmt.Sprintf("fleet-svc-%d", i)
 		svc := &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: s.testNamespace,
-				Labels:    map[string]string{"loadtest": "true"},
-			},
+			Name:      name,
+			Namespace: s.testNamespace,
+			Labels:    map[string]string{"loadtest": "true"},
 			Spec: corev1.ServiceSpec{
 				ClusterIP: corev1.ClusterIPNone,
 				Ports: []corev1.ServicePort{{
@@ -868,13 +854,11 @@ func (s *XdsFleetSuite) createServicesAndEndpoints() {
 		proto := corev1.ProtocolTCP
 		portName := "http"
 		eps := &discoverykv1.EndpointSlice{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: s.testNamespace,
-				Labels: map[string]string{
-					discoverykv1.LabelServiceName: name,
-					"loadtest":                    "true",
-				},
+			Name:      name,
+			Namespace: s.testNamespace,
+			Labels: map[string]string{
+				discoverykv1.LabelServiceName: name,
+				"loadtest":                    "true",
 			},
 			AddressType: discoverykv1.AddressTypeIPv4,
 			Endpoints:   endpoints,
@@ -929,7 +913,7 @@ func (s *XdsFleetSuite) createFakeNodes() {
 	nodes := fleetZones * 2
 	for i := range nodes {
 		zone := fmt.Sprintf("zone-%d", i%fleetZones)
-		node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{
+		node := &corev1.Node{
 			Name: s.nodeName(i),
 			Labels: map[string]string{
 				"loadtest":                 "true",
@@ -937,7 +921,7 @@ func (s *XdsFleetSuite) createFakeNodes() {
 				corev1.LabelTopologyZone:   zone,
 				corev1.LabelHostname:       s.nodeName(i),
 			},
-		}}
+		}
 		s.Require().NoError(s.createIgnoreExists(node), "should create fake node %d", i)
 	}
 	s.T().Logf("created %d fake nodes across %d zones", nodes, fleetZones)
@@ -955,14 +939,12 @@ func (s *XdsFleetSuite) createFakePods() {
 	s.parallelDo(total, func(n int) error {
 		gwIdx, replica := n/fleetStreamsPerGateway, n%fleetStreamsPerGateway
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      s.podName(gwIdx, replica),
-				Namespace: s.testNamespace,
-				Labels: map[string]string{
-					"loadtest":                 "true",
-					wellknown.GatewayNameLabel: s.gateways[gwIdx],
-					"app.kubernetes.io/name":   s.gateways[gwIdx],
-				},
+			Name:      s.podName(gwIdx, replica),
+			Namespace: s.testNamespace,
+			Labels: map[string]string{
+				"loadtest":                 "true",
+				wellknown.GatewayNameLabel: s.gateways[gwIdx],
+				"app.kubernetes.io/name":   s.gateways[gwIdx],
 			},
 			Spec: corev1.PodSpec{
 				// A node no kubelet owns: the object exists, nothing runs.
@@ -1282,9 +1264,9 @@ func (s *XdsFleetSuite) churnEndpointSlice(i int) {
 	idx := i % fleetServices
 	ip := fmt.Sprintf("10.99.%d.%d", (i/250)%250, i%250+1)
 	patch := fmt.Sprintf(`[{"op":"replace","path":"/endpoints/0/addresses/0","value":%q}]`, ip)
-	eps := &discoverykv1.EndpointSlice{ObjectMeta: metav1.ObjectMeta{
+	eps := &discoverykv1.EndpointSlice{
 		Name: fmt.Sprintf("fleet-svc-%d", idx), Namespace: s.testNamespace,
-	}}
+	}
 	s.Require().NoError(s.testInstallation.ClusterContext.Client.Patch(s.ctx, eps,
 		client.RawPatch(types.JSONPatchType, []byte(patch))), "should patch EndpointSlice")
 }

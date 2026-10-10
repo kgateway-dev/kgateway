@@ -14,11 +14,9 @@ import (
 
 func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
 	route := &gwv1.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tcp-route",
-			Namespace: "default",
-			Labels:    map[string]string{"app": "test"},
-		},
+		Name:      "tcp-route",
+		Namespace: "default",
+		Labels:    map[string]string{"app": "test"},
 		Spec: gwv1.TCPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
@@ -29,10 +27,8 @@ func TestConvertTCPRouteV1ToV1Alpha2(t *testing.T) {
 			Rules: []gwv1.TCPRouteRule{{
 				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
-					BackendObjectReference: gwv1.BackendObjectReference{
-						Name: "backend",
-						Port: new(gwv1.PortNumber(8080)),
-					},
+					Name: "backend",
+					Port: new(gwv1.PortNumber(8080)),
 				}},
 			}},
 		},
@@ -75,7 +71,7 @@ func TestConvertTCPRouteV1ToV1Alpha2Nil(t *testing.T) {
 // See TestNormalizedTLSRoutesReportTheServedGroupVersionKind.
 func TestNormalizedTCPRoutesReportTheServedGroupVersionKind(t *testing.T) {
 	fromV1 := convertTCPRouteV1ToV1Alpha2(&gwv1.TCPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"},
+		Name: "route", Namespace: "default",
 	})
 	require.Equal(t, wellknown.TCPRouteV1GVK, fromV1.GetObjectKind().GroupVersionKind())
 	require.Equal(t, gwv1a2.GroupVersion.Version, wellknown.TCPRouteGVK.Version)

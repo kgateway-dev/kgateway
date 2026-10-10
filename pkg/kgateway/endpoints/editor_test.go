@@ -19,7 +19,7 @@ import (
 
 func TestEndpointInputsResolverBuildsReplacementWithStructuralSharing(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
-	backend.Obj = &metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"scope": "peered"}}}
+	backend.Obj = &metav1.PartialObjectMetadata{Labels: map[string]string{"scope": "peered"}}
 	baseEndpoints := ir.NewEndpointsForBackend(backend)
 	locality := ir.PodLocality{Region: "r", Zone: "z"}
 	baseEndpoints.Add(locality, editorTestEndpoint("10.0.0.1", "unchanged"))
@@ -85,7 +85,7 @@ func TestEndpointInputsResolverDeepCopiesLegacyMutableInputs(t *testing.T) {
 	groupKind := schema.GroupKind{Group: "example.io", Kind: "Policy"}
 	policyRef := &ir.AttachedPolicyRef{Name: "policy", Namespace: "ns"}
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
-	backend.Obj = &metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"scope": "peered"}}}
+	backend.Obj = &metav1.PartialObjectMetadata{Labels: map[string]string{"scope": "peered"}}
 	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
 		groupKind: {{
 			PolicyRef:    policyRef,
@@ -295,7 +295,7 @@ func TestReplaceEndpointsKeepsFoldedVersion(t *testing.T) {
 // CLA to every connected Envoy on every recompute.
 func TestNoOpRebuildReproducesTheSourceHash(t *testing.T) {
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 8080, "", "")
-	backend.Obj = &metav1.PartialObjectMetadata{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"scope": "peered"}}}
+	backend.Obj = &metav1.PartialObjectMetadata{Labels: map[string]string{"scope": "peered"}}
 	source := ir.NewEndpointsForBackend(backend)
 	source.Add(ir.PodLocality{Region: "r", Zone: "z1"}, editorTestEndpoint("10.0.0.1", "ep-1"))
 	source.Add(ir.PodLocality{Region: "r", Zone: "z2"}, editorTestEndpoint("10.0.0.2", "ep-2"))

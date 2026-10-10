@@ -49,10 +49,8 @@ var (
 	}
 
 	missingExtensionRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "missing-extension-route",
-			Namespace: "default",
-		},
+		Name:      "missing-extension-route",
+		Namespace: "default",
 	}
 	missingExtensionPolicy = metav1.ObjectMeta{
 		Name:      "missing-extension-policy",
@@ -60,10 +58,8 @@ var (
 	}
 
 	dualErrorRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dual-error-route",
-			Namespace: "default",
-		},
+		Name:      "dual-error-route",
+		Namespace: "default",
 	}
 	dualErrorInvalidConfigPolicy = metav1.ObjectMeta{
 		Name:      "dual-error-invalid-config-policy",
@@ -93,67 +89,47 @@ var (
 	gatewayPort = 8080
 
 	invalidPolicyRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-policy-route",
-			Namespace: "default",
-		},
+		Name:      "invalid-policy-route",
+		Namespace: "default",
 	}
 
 	invalidMatcherRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-matcher-route",
-			Namespace: "default",
-		},
+		Name:      "invalid-matcher-route",
+		Namespace: "default",
 	}
 
 	invalidConfigRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "invalid-config-route",
-			Namespace: "default",
-		},
+		Name:      "invalid-config-route",
+		Namespace: "default",
 	}
 
 	gatewayWideRoute8080 = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-8080",
-			Namespace: "default",
-		},
+		Name:      "route-8080",
+		Namespace: "default",
 	}
 	gatewayWideRoute8081 = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-8081",
-			Namespace: "default",
-		},
+		Name:      "route-8081",
+		Namespace: "default",
 	}
 	listenerAffectedRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-affected",
-			Namespace: "default",
-		},
+		Name:      "route-affected",
+		Namespace: "default",
 	}
 	listenerUnaffectedRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-unaffected",
-			Namespace: "default",
-		},
+		Name:      "route-unaffected",
+		Namespace: "default",
 	}
 
 	mergeAffectedRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-affected",
-			Namespace: "default",
-		},
+		Name:      "route-affected",
+		Namespace: "default",
 	}
 	mergeUnaffectedRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-collateral",
-			Namespace: "default",
-		},
+		Name:      "route-collateral",
+		Namespace: "default",
 	}
 	mergeIsolatedRoute = &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "route-isolated",
-			Namespace: "default",
-		},
+		Name:      "route-isolated",
+		Namespace: "default",
 	}
 )
