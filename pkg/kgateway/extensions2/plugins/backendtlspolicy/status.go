@@ -91,9 +91,9 @@ func BuildDesiredPolicyStatus(report *reports.PolicyReport, pol *gwv1.BackendTLS
 	}
 
 	// report.Ancestors is a map, so the loop above appends in Go's randomized iteration
-	// order. The status writer's merge sorts what it publishes, but direct callers — the
+	// order. The status writer's merge orders our new entries itself, but direct callers — the
 	// translator's golden output — consume this list as-is and would see it reorder run to
-	// run. Sort on the same key the merge and the shared policy builder use.
+	// run. Sort on the same key the shared policy builder uses.
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(reports.ParentString(a.AncestorRef), reports.ParentString(b.AncestorRef))
 	})

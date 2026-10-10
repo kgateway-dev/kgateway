@@ -581,9 +581,9 @@ func BuildRouteStatus(
 	// from its own authoritative read of the live object. existingStatus is still read
 	// above, for LastTransitionTime continuity.
 	//
-	// The sort is not redundant with the merge's: it makes this function's output
-	// deterministic for callers that consume the desired status directly, such as the
-	// golden-output translator tests.
+	// The sort only makes this function's output deterministic for callers that consume the
+	// desired status directly, such as the golden-output translator tests. It does not decide
+	// the published order: the merge keeps the live order and appends new entries.
 	//
 	// sort all parents for consistency with Equals and for Update
 	// match sorting semantics of istio/istio, see:
