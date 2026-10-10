@@ -1,1 +1,1 @@
-ghcr.io/kgateway-dev/envoy-wrapper:v2.4.0-main
+ghcr.io/kgateway-dev/envoy-wrapper:v2.5.0-main

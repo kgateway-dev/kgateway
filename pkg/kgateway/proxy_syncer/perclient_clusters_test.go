@@ -2,17 +2,24 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
@@ -257,4 +264,106 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 		c := storedClustersForClient(clusters, stable)[clustersTestBackend("b4").ClusterName()]
 		return c != nil && c.GetAltStatName() == lastProtocol
 	}, 5*time.Second, 10*time.Millisecond, "the stable client's payload must carry the last backend update")
+}
+
+// tunnelLifecycleTranslator uses AppProtocol for tunnel state and as the
+// credential, which it serves as a secret.
+func tunnelLifecycleTranslator() *irtranslator.BackendTranslator {
+	translator := clustersTestTranslator()
+	translator.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test.example.io", Kind: "Tunnel"}: {
+			ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+				switch in.AppProtocol {
+				case "":
+					return sdk.BaseClusterResources{}, nil
+				case "invalid":
+					return sdk.BaseClusterResources{}, errors.New("invalid tunnel")
+				}
+				name := "connect_tunnel_" + out.GetName()
+				return sdk.BaseClusterResources{
+					Listeners: []*envoylistenerv3.Listener{{Name: name}},
+					Secrets: []*envoytlsv3.Secret{{
+						Name: name + "/0",
+						Type: &envoytlsv3.Secret_GenericSecret{GenericSecret: &envoytlsv3.GenericSecret{
+							Secret: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_InlineString{InlineString: string(in.AppProtocol)}},
+						}},
+					}},
+				}, nil
+			},
+		},
+	}
+	return translator
+}
+
+// TestBackendListenerLifecycle checks delivery to all clients across tunnel
+// failure, credential rotation, detachment, and backend deletion.
+func TestBackendListenerLifecycle(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	clients := []ir.UniquelyConnectedClient{clustersTestClient("role-a"), clustersTestClient("role-b")}
+	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
+	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{clustersTestBackendWithProtocol("dest", "cred-1")}, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, tunnelLifecycleTranslator(), finalBackends, uccs)
+
+	name := clustersTestBackend("dest").ClusterName()
+	listenerName := "connect_tunnel_" + name
+	type state struct {
+		published bool
+		errored   bool
+		listener  bool
+		secret    string
+	}
+	type versions struct{ listeners, secrets uint64 }
+	observe := func(ucc ir.UniquelyConnectedClient) (state, versions) {
+		row := clusters.perClient.GetKey(ucc.ResourceName())
+		if row == nil {
+			return state{}, versions{}
+		}
+		_, published := row.clusters.Items[name]
+		s := state{published: published, errored: slices.Contains(row.erroredClusters, name)}
+		for _, l := range row.listeners.items {
+			s.listener = s.listener || l.BorrowForRead().GetName() == listenerName
+		}
+		for _, r := range row.secrets.items {
+			if secret := r.BorrowForRead(); secret.GetName() == listenerName+"/0" {
+				s.secret = secret.GetGenericSecret().GetSecret().GetInlineString()
+			}
+		}
+		return s, versions{listeners: row.listeners.hash, secrets: row.secrets.hash}
+	}
+	expect := func(step string, want state) map[string]versions {
+		t.Helper()
+		got := map[string]versions{}
+		for _, ucc := range clients {
+			var last state
+			require.Eventuallyf(t, func() bool {
+				last, got[ucc.ResourceName()] = observe(ucc)
+				return last == want
+			}, 5*time.Second, 10*time.Millisecond, "%s: client %s never reached %+v (last: %+v)", step, ucc.ResourceName(), want, last)
+		}
+		return got
+	}
+	update := func(appProtocol string) {
+		finalBackends.UpdateObject(clustersTestBackendWithProtocol("dest", appProtocol))
+	}
+
+	first := expect("valid", state{published: true, listener: true, secret: "cred-1"})
+
+	update("invalid")
+	expect("invalid", state{errored: true})
+
+	update("cred-2")
+	rotated := expect("rotated", state{published: true, listener: true, secret: "cred-2"})
+	for client, v := range rotated {
+		assert.Equal(t, first[client].listeners, v.listeners, "a credential change must not change the listener version for %s", client)
+		assert.NotEqual(t, first[client].secrets, v.secrets, "a credential change must change the secret version for %s", client)
+	}
+
+	update("")
+	expect("detached", state{published: true})
+
+	finalBackends.DeleteObject(clustersTestBackend("dest").ResourceName())
+	expect("deleted", state{})
 }

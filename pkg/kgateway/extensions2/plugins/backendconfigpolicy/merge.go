@@ -5,6 +5,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
+// mergePolicies merges BackendConfigPolicies in policy precedence order.
+func mergePolicies(pols []ir.PolicyAtt) ir.PolicyAtt {
+	return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
+}
+
 // mergeBackendConfigPolicies merges p2 into p1 field by field. BackendConfigPolicy
 // has an orthogonal field spec (connectTimeout, healthCheck, circuitBreakers,
 // upstreamProxyProtocol etc), so each top level field is merged independently
@@ -39,6 +44,7 @@ func mergeBackendConfigPolicies(
 		mergeDnsJitter,
 		mergeRespectDnsTtl,
 		mergeUpstreamProxyProtocol,
+		mergeTunnel,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -164,4 +170,13 @@ func mergeUpstreamProxyProtocol(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.Attache
 	}
 	p1.upstreamProxyProtocol = p2.upstreamProxyProtocol
 	mergeOrigins.SetOne("upstreamProxyProtocol", p2Ref, p2MergeOrigins)
+}
+
+// mergeTunnel keeps the proxy and credentials from the same policy.
+func mergeTunnel(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.tunnel, p2.tunnel, opts) {
+		return
+	}
+	p1.tunnel = p2.tunnel
+	mergeOrigins.SetOne("tunnel", p2Ref, p2MergeOrigins)
 }

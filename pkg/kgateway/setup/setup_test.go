@@ -709,7 +709,10 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) (xdsDump, error) {
 						errs = errors.Join(errs, fmt.Errorf("failed to unmarshal listener: %w", err))
 					}
 					listeners = append(listeners, &listener)
-					needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
+					// Tunnel listeners have no routes to wait for.
+					if listener.GetAddress().GetPipe() == nil {
+						needMoreListerners = needMoreListerners || (len(getroutesnames(&listener)) == 0)
+					}
 				}
 				if len(listeners) == 0 {
 					needMoreListerners = true

@@ -49,6 +49,7 @@ type ConfigBuilder struct {
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
+	listeners     []*envoylistenerv3.Listener
 	secrets       []*envoytlsv3.Secret
 	httpFilters   []*envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter
 }
@@ -74,6 +75,11 @@ func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
 // AddCluster adds a cluster to the builder.
 func (b *ConfigBuilder) AddCluster(cluster *envoyclusterv3.Cluster) {
 	b.clusters = append(b.clusters, cluster)
+}
+
+// AddListener adds a static listener to the bootstrap.
+func (b *ConfigBuilder) AddListener(listener *envoylistenerv3.Listener) {
+	b.listeners = append(b.listeners, listener)
 }
 
 // AddSecret adds a static secret to the bootstrap.
@@ -221,6 +227,7 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		Name:                 validationLocalClusterName,
 		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
 	})
+	staticResources.Listeners = append(staticResources.Listeners, b.listeners...)
 	if len(b.secrets) > 0 {
 		staticResources.Secrets = append(staticResources.Secrets, b.secrets...)
 	}

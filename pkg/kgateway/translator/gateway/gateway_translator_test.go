@@ -2885,6 +2885,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy with tunnel in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/tunnel.yaml"},
+			outputFile: "backendconfigpolicy/tunnel.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
 	t.Run("Multiple Backend Config Policies merged on same backend", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/merge-multiple-bcp.yaml"},
@@ -4062,6 +4075,12 @@ func TestValidation(t *testing.T) {
 			name:      "BackendConfigPolicy Invalid TLS Files Non-existent",
 			category:  "backendconfigpolicy",
 			inputFile: "invalid-tlsfiles-nonexistent.yaml",
+			minMode:   apisettings.ValidationStandard,
+		},
+		{
+			name:      "BackendConfigPolicy Invalid Tunnel",
+			category:  "backendconfigpolicy",
+			inputFile: "invalid-tunnel.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
