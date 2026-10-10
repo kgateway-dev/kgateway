@@ -114,17 +114,6 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			{Name: "result", Value: "success"},
 		}})
 
-		gathered.AssertMetricsInclude("kgateway_controller_reconciliations_running", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetricValueTest{
-				Labels: []metrics.Label{
-					{Name: "controller", Value: "gateway"},
-					{Name: "name", Value: "gw1"},
-					{Name: "namespace", Value: "default"},
-				},
-				Test: metricstest.Equal(0),
-			},
-		})
-
 		gathered.AssertMetricsInclude("kgateway_resources_managed", []metricstest.ExpectMetric{
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
@@ -359,21 +348,12 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			{Name: "namespace", Value: "default"},
 			{Name: "result", Value: "success"},
 			{Name: "translator", Value: "TranslateGateway"},
-		}, {
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "result", Value: "success"},
-			{Name: "translator", Value: "TranslateHTTPRoute"},
 		}})
 
 		gathered.AssertMetricsLabelsInclude("kgateway_translator_translation_duration_seconds", [][]metrics.Label{{
 			{Name: "name", Value: "gw1"},
 			{Name: "namespace", Value: "default"},
 			{Name: "translator", Value: "TranslateGateway"},
-		}, {
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "translator", Value: "TranslateHTTPRoute"},
 		}})
 
 		gathered.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")

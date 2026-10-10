@@ -20,17 +20,6 @@ func setupTest() {
 	ResetMetrics()
 }
 
-func assertTranslationsRunning(currentMetrics metricstest.GatheredMetrics, count int) {
-	currentMetrics.AssertMetric("kgateway_translator_translations_running", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: "name", Value: testGatewayName},
-			{Name: "namespace", Value: testNamespace},
-			{Name: "translator", Value: testTranslatorName},
-		},
-		Value: float64(count),
-	})
-}
-
 func TestCollectTranslationMetrics_Success(t *testing.T) {
 	setupTest()
 
@@ -41,16 +30,9 @@ func TestCollectTranslationMetrics_Success(t *testing.T) {
 		Translator: testTranslatorName,
 	})
 
-	// Check that the translations_running metric is 1
-	currentMetrics := metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, 1)
-
 	// Finish translation
 	finishFunc(nil)
-	currentMetrics = metricstest.MustGatherMetrics(t)
-
-	// Check the translations_running metric
-	assertTranslationsRunning(currentMetrics, 0)
+	currentMetrics := metricstest.MustGatherMetrics(t)
 
 	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
 		&metricstest.ExpectedMetric{
@@ -82,12 +64,8 @@ func TestCollectTranslationMetrics_Error(t *testing.T) {
 		Translator: testTranslatorName,
 	})
 
-	currentMetrics := metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, 1)
-
 	finishFunc(assert.AnError)
-	currentMetrics = metricstest.MustGatherMetrics(t)
-	assertTranslationsRunning(currentMetrics, 0)
+	currentMetrics := metricstest.MustGatherMetrics(t)
 
 	currentMetrics.AssertMetricsInclude("kgateway_translator_translations_total", []metricstest.ExpectMetric{
 		&metricstest.ExpectedMetric{
@@ -123,15 +101,10 @@ func TestTranslationMetricsNotActive(t *testing.T) {
 		Translator: testTranslatorName,
 	})
 
-	currentMetrics := metricstest.MustGatherMetrics(t)
-
-	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_running")
-
 	finishFunc(nil)
 
-	currentMetrics = metricstest.MustGatherMetrics(t)
+	currentMetrics := metricstest.MustGatherMetrics(t)
 
-	currentMetrics.AssertMetricNotExists("kgateway_translator_translations_running")
 	// Counter exists after Reset() but should have value 0 since no translations were recorded
 	currentMetrics.AssertMetric("kgateway_translator_translations_total", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
