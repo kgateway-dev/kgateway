@@ -36,6 +36,7 @@ type httpRouteConfigurationTranslator struct {
 	attachedPolicies ir.AttachedPolicies
 
 	routeConfigName           string
+	misdirectedRequestDomains []string
 	reporter                  reportssdk.Reporter
 	requireTlsOnVirtualHosts  bool
 	pluginPass                TranslationPassPlugins
@@ -51,6 +52,9 @@ const (
 	// directResponseActionBody is the body of the direct response action for replaced
 	// routes.
 	directResponseActionBody = `invalid route configuration detected and replaced with a direct response.`
+	// misdirectedRequestVhostSuffix is appended to the route config name to name the virtual
+	// host that rejects misdirected HTTPS requests.
+	misdirectedRequestVhostSuffix = "~misdirected-request"
 )
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
@@ -115,6 +119,9 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		return cfg
 	}
 	cfg.TypedPerFilterConfig = typedPerFilterConfigRoute.ToAnyMap()
+	if len(h.misdirectedRequestDomains) > 0 {
+		cfg.VirtualHosts = append(cfg.GetVirtualHosts(), misdirectedRequestVirtualHost(h.routeConfigName, h.misdirectedRequestDomains))
+	}
 
 	return cfg
 }
@@ -223,6 +230,28 @@ func setFallBackConfig(name, domain string) *envoyroutev3.VirtualHost {
 							InlineString: directResponseActionBody,
 						},
 					},
+				},
+			},
+		}},
+	}
+}
+
+// misdirectedRequestVirtualHost returns a virtual host that answers 421 (Misdirected Request)
+// for the given domains. Envoy prefers exact over wildcard domains, so it only receives
+// requests that no other virtual host in the route config claims.
+func misdirectedRequestVirtualHost(routeConfigName string, domains []string) *envoyroutev3.VirtualHost {
+	return &envoyroutev3.VirtualHost{
+		Name:    routeConfigName + misdirectedRequestVhostSuffix,
+		Domains: slices.Clone(domains),
+		Routes: []*envoyroutev3.Route{{
+			Match: &envoyroutev3.RouteMatch{
+				PathSpecifier: &envoyroutev3.RouteMatch_Prefix{
+					Prefix: "/",
+				},
+			},
+			Action: &envoyroutev3.Route_DirectResponse{
+				DirectResponse: &envoyroutev3.DirectResponseAction{
+					Status: http.StatusMisdirectedRequest,
 				},
 			},
 		}},

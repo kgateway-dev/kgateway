@@ -31,12 +31,6 @@ type GatewayClassInfo struct {
 // whether experimental Gateway API features are enabled in the running controller.
 func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures bool) []gwv1.SupportedFeature {
 	exemptFeatures := GetCommonExemptFeatures()
-	// backfill individual features that we don't support yet.
-	exemptFeatures.Insert(
-		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
-		// sharing the same port.
-		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
-	)
 	if !enableExperimentalGatewayAPIFeatures {
 		// TLSRoute and TLSRouteModeTerminate are standard as of Gateway API v1.5.
 		// TLSRouteModeMixed remains experimental and must not be advertised when

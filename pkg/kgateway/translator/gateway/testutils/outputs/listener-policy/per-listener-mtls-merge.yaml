@@ -123,6 +123,14 @@ Routes:
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - '*'
+    name: tenant-a-https~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 - ignorePortInHostMatching: true
   name: tenant-b-https
   virtualHosts:
@@ -137,6 +145,14 @@ Routes:
       route:
         cluster: kube_default_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - '*'
+    name: tenant-b-https~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     default/example-gateway:

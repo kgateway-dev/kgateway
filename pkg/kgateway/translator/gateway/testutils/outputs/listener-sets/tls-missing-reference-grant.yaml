@@ -221,8 +221,29 @@ Routes:
       route:
         cluster: kube_ls-2-ns_foo-svc_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - '*'
+    name: ls-2-ns/ls-2/tls-ls2~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 - ignorePortInHostMatching: true
   name: tls-gw
+  virtualHosts:
+  - domains:
+    - tls.example.com
+    name: tls-gw~tls_example_com
+    requireTls: ALL
+  - domains:
+    - '*'
+    name: tls-gw~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     default/example-gateway:

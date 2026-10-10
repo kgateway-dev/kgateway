@@ -104,6 +104,14 @@ Routes:
       route:
         cluster: kube_namespace-two_foo-svc_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+  - domains:
+    - '*'
+    name: namespace-two/ls-1/https-ls1~misdirected-request
+    routes:
+    - directResponse:
+        status: 421
+      match:
+        prefix: /
 Statuses:
   gateways:
     namespace-one/example-gateway:

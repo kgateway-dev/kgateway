@@ -139,10 +139,14 @@ type CustomEnvoyFilter struct {
 
 type HttpFilterChainIR struct {
 	FilterChainCommon
-	Vhosts                  []*VirtualHost
-	AttachedPolicies        AttachedPolicies
-	AttachedNetworkPolicies AttachedPolicies
-	CustomHTTPFilters       []CustomEnvoyFilter
+	Vhosts []*VirtualHost
+	// MisdirectedRequestDomains are the request hostnames this HTTPS filter chain must reject
+	// with 421 (Misdirected Request), because the Host does not belong to the listener selected
+	// by SNI. See GatewayHTTPSListenerDetectMisdirectedRequests.
+	MisdirectedRequestDomains []string
+	AttachedPolicies          AttachedPolicies
+	AttachedNetworkPolicies   AttachedPolicies
+	CustomHTTPFilters         []CustomEnvoyFilter
 }
 
 type TcpIR struct {
