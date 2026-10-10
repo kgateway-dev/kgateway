@@ -47,10 +47,20 @@ type Counter interface {
 	Metric
 	Inc(...Label)
 	Add(float64, ...Label)
+	// With returns the series for the provided labels. Resolving a series once
+	// and reusing it skips label validation and lookup on every update. The
+	// series is no longer exported after Reset or DeletePartialMatch removes it.
+	With(...Label) CounterSeries
 	// DeletePartialMatch deletes all series whose labels contain all of the
 	// provided label name-value pairs, returning the number of series removed.
 	DeletePartialMatch(...Label) int
 	Reset()
+}
+
+// CounterSeries is a single counter series with its label values bound.
+type CounterSeries interface {
+	Inc()
+	Add(float64)
 }
 
 // prometheusCounter implements the Counter interface using the prometheus library.
@@ -142,6 +152,11 @@ func (c *prometheusCounter) Add(value float64, labels ...Label) {
 	c.m.WithLabelValues(c.validateLabels(labels)...).Add(value)
 }
 
+// With returns the counter series for the provided labels.
+func (c *prometheusCounter) With(labels ...Label) CounterSeries {
+	return c.m.WithLabelValues(c.validateLabels(labels)...)
+}
+
 // Reset resets the counter to zero and makes the metric visible in metrics
 // gathering.
 func (c *prometheusCounter) Reset() {
@@ -156,10 +171,19 @@ func (c *prometheusCounter) Reset() {
 type Histogram interface {
 	Metric
 	Observe(float64, ...Label)
+	// With returns the series for the provided labels. Resolving a series once
+	// and reusing it skips label validation and lookup on every update. The
+	// series is no longer exported after Reset or DeletePartialMatch removes it.
+	With(...Label) HistogramSeries
 	// DeletePartialMatch deletes all series whose labels contain all of the
 	// provided label name-value pairs, returning the number of series removed.
 	DeletePartialMatch(...Label) int
 	Reset()
+}
+
+// HistogramSeries is a single histogram series with its label values bound.
+type HistogramSeries interface {
+	Observe(float64)
 }
 
 // prometheusHistogram implements the Histogram interface using the prometheus library.
@@ -217,6 +241,11 @@ func (h *prometheusHistogram) Observe(value float64, labels ...Label) {
 	h.m.WithLabelValues(h.validateLabels(labels)...).Observe(value)
 }
 
+// With returns the histogram series for the provided labels.
+func (h *prometheusHistogram) With(labels ...Label) HistogramSeries {
+	return h.m.WithLabelValues(h.validateLabels(labels)...)
+}
+
 // Reset resets the histogram to its initial state.
 func (h *prometheusHistogram) Reset() {
 	h.m.Reset()
@@ -228,10 +257,21 @@ type Gauge interface {
 	Set(float64, ...Label)
 	Add(float64, ...Label)
 	Sub(float64, ...Label)
+	// With returns the series for the provided labels. Resolving a series once
+	// and reusing it skips label validation and lookup on every update. The
+	// series is no longer exported after Reset or DeletePartialMatch removes it.
+	With(...Label) GaugeSeries
 	// DeletePartialMatch deletes all series whose labels contain all of the
 	// provided label name-value pairs, returning the number of series removed.
 	DeletePartialMatch(...Label) int
 	Reset()
+}
+
+// GaugeSeries is a single gauge series with its label values bound.
+type GaugeSeries interface {
+	Set(float64)
+	Add(float64)
+	Sub(float64)
 }
 
 // prometheusGauge implements the Gauge interface using the prometheus library.
@@ -293,6 +333,11 @@ func (g *prometheusGauge) Add(value float64, labels ...Label) {
 // Sub decrements the gauge by a given value.
 func (g *prometheusGauge) Sub(value float64, labels ...Label) {
 	g.m.WithLabelValues(g.validateLabels(labels)...).Sub(value)
+}
+
+// With returns the gauge series for the provided labels.
+func (g *prometheusGauge) With(labels ...Label) GaugeSeries {
+	return g.m.WithLabelValues(g.validateLabels(labels)...)
 }
 
 // Reset resets the gauge to zero.
