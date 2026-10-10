@@ -49,7 +49,7 @@ func TestTunnelHookAttributesErrorsToItsPolicy(t *testing.T) {
 // reuses a value cached for another proxy or header.
 func TestTunnelSecretNames(t *testing.T) {
 	names := func(proxyCluster string, headers ...gwv1.HTTPHeader) []string {
-		_, secrets := buildTunnelListener("connect_tunnel_test", proxyCluster, kgateway.Host{Host: "external.example.com", Port: 443}, headers)
+		_, secrets := buildTunnelListener("connect_tunnel_test", "@connect_tunnel_test", proxyCluster, kgateway.Host{Host: "external.example.com", Port: 443}, headers)
 		out := make([]string, 0, len(secrets))
 		for _, s := range secrets {
 			out = append(out, s.GetName())

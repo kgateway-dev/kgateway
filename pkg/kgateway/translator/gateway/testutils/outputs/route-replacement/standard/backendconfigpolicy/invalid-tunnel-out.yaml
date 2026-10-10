@@ -55,11 +55,11 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: kube_gwtest_egress-proxy_3128
-        statPrefix: connect_tunnel_ecd26dc88015dd7c
+        statPrefix: connect_tunnel_backend_gwtest_mixed-static_0
         tunnelingConfig:
           hostname: mixed.example.com:443
-  name: connect_tunnel_ecd26dc88015dd7c
-  statPrefix: connect_tunnel_ecd26dc88015dd7c
+  name: connect_tunnel_backend_gwtest_mixed-static_0
+  statPrefix: connect_tunnel_backend_gwtest_mixed-static_0
 - address:
     pipe:
       path: '@connect_tunnel_fb296e58d68f4850'
@@ -69,11 +69,11 @@ Listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: kube_gwtest_egress-proxy_3128
-        statPrefix: connect_tunnel_fb296e58d68f4850
+        statPrefix: connect_tunnel_backend_gwtest_valid_0
         tunnelingConfig:
           hostname: valid.example.com:443
-  name: connect_tunnel_fb296e58d68f4850
-  statPrefix: connect_tunnel_fb296e58d68f4850
+  name: connect_tunnel_backend_gwtest_valid_0
+  statPrefix: connect_tunnel_backend_gwtest_valid_0
 - address:
     socketAddress:
       address: '::'

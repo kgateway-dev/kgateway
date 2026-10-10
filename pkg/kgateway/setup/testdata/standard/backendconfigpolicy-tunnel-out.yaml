@@ -53,15 +53,15 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
         cluster: kube_gwtest_egress-proxy_3128
-        statPrefix: connect_tunnel_e0b310a976fdec47
+        statPrefix: connect_tunnel_backend_gwtest_external_0
         tunnelingConfig:
           formatters:
           - name: envoy.formatter.generic_secret
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.formatter.generic_secret.v3.GenericSecret
               secretConfigs:
-                connect_tunnel_e0b310a976fdec47/c6855ae7bfe9f72d:
-                  name: connect_tunnel_e0b310a976fdec47/c6855ae7bfe9f72d
+                connect_tunnel_backend_gwtest_external_0/3e90a4cb1a8f0177:
+                  name: connect_tunnel_backend_gwtest_external_0/3e90a4cb1a8f0177
                   sdsConfig:
                     ads: {}
                     resourceApiVersion: V3
@@ -69,10 +69,10 @@ listeners:
           - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
             header:
               key: Proxy-Authorization
-              value: '%SECRET(connect_tunnel_e0b310a976fdec47/c6855ae7bfe9f72d)%'
+              value: '%SECRET(connect_tunnel_backend_gwtest_external_0/3e90a4cb1a8f0177)%'
           hostname: external.example.com:443
-  name: connect_tunnel_e0b310a976fdec47
-  statPrefix: connect_tunnel_e0b310a976fdec47
+  name: connect_tunnel_backend_gwtest_external_0
+  statPrefix: connect_tunnel_backend_gwtest_external_0
 - address:
     socketAddress:
       address: '::'
