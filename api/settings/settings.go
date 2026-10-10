@@ -271,6 +271,12 @@ type Settings struct {
 	// when resource-type watches are open.
 	EnableOrderedAds bool `split_words:"true" default:"true"`
 
+	// ServiceLabelSelector is a Kubernetes label selector string used to filter which Services
+	// are included in discovery and sent to Envoy as clusters.
+	// Defaults to empty, which selects all services.
+	// Uses the same syntax as kubectl -l / --selector (e.g., "app=my-app,tier=frontend").
+	ServiceLabelSelector string `split_words:"true" default:""`
+
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
