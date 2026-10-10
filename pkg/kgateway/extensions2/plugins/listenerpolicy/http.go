@@ -38,25 +38,26 @@ const (
 )
 
 type HttpListenerPolicyIr struct {
-	upgradeConfigs             []*envoy_hcm.HttpConnectionManager_UpgradeConfig
-	useRemoteAddress           *bool
-	xffNumTrustedHops          *uint32
-	xffConfig                  *envoyxffv3.XffConfig
-	skipXffAppend              *bool
-	serverHeaderTransformation *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
-	serverName                 *string
-	streamIdleTimeout          *time.Duration
-	idleTimeout                *time.Duration
-	maxConnectionDuration      *time.Duration
-	http2ProtocolOptions       *envoycorev3.Http2ProtocolOptions
-	healthCheckPolicy          *healthcheckv3.HealthCheck
-	grpcStats                  *grpcstatsv3.FilterConfig
-	preserveHttp1HeaderCase    *bool
-	preserveExternalRequestId  *bool
-	generateRequestId          *bool
-	normalizePath              *bool
-	mergeSlashes               *bool
-	proxy100Continue           *bool
+	upgradeConfigs               []*envoy_hcm.HttpConnectionManager_UpgradeConfig
+	useRemoteAddress             *bool
+	xffNumTrustedHops            *uint32
+	xffConfig                    *envoyxffv3.XffConfig
+	skipXffAppend                *bool
+	serverHeaderTransformation   *envoy_hcm.HttpConnectionManager_ServerHeaderTransformation
+	serverName                   *string
+	streamIdleTimeout            *time.Duration
+	idleTimeout                  *time.Duration
+	maxConnectionDuration        *time.Duration
+	http2ProtocolOptions         *envoycorev3.Http2ProtocolOptions
+	healthCheckPolicy            *healthcheckv3.HealthCheck
+	grpcStats                    *grpcstatsv3.FilterConfig
+	preserveHttp1HeaderCase      *bool
+	preserveExternalRequestId    *bool
+	generateRequestId            *bool
+	normalizePath                *bool
+	mergeSlashes                 *bool
+	pathWithEscapedSlashesAction *envoy_hcm.HttpConnectionManager_PathWithEscapedSlashesAction
+	proxy100Continue             *bool
 	// For a better UX, we set the default serviceName for access logs to the envoy cluster name (`<gateway-name>.<gateway-namespace>`).
 	// Since the gateway name can only be determined during translation, the access log configs and policies
 	// are stored so that during translation, the default serviceName is set if not already provided
@@ -139,6 +140,10 @@ func (d *HttpListenerPolicyIr) Equals(in any) bool {
 	}
 
 	if !cmputils.PointerValsEqual(d.mergeSlashes, d2.mergeSlashes) {
+		return false
+	}
+
+	if !cmputils.PointerValsEqual(d.pathWithEscapedSlashesAction, d2.pathWithEscapedSlashesAction) {
 		return false
 	}
 
@@ -291,6 +296,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 
 	upgradeConfigs := convertUpgradeConfig(h)
 	serverHeaderTransformation := convertServerHeaderTransformation(h.ServerHeaderTransformation)
+	pathWithEscapedSlashesAction := convertPathWithEscapedSlashesAction(h.PathWithEscapedSlashesAction)
 	serverName := h.ServerName
 
 	// Convert streamIdleTimeout from metav1.Duration to time.Duration
@@ -438,6 +444,7 @@ func NewHttpListenerPolicy(krtctx krt.HandlerContext, commoncol *collections.Com
 		generateRequestId:             h.GenerateRequestId,
 		normalizePath:                 h.NormalizePath,
 		mergeSlashes:                  h.MergeSlashes,
+		pathWithEscapedSlashesAction:  pathWithEscapedSlashesAction,
 		proxy100Continue:              h.Proxy100Continue,
 		xffNumTrustedHops:             xffNumTrustedHops,
 		xffConfig:                     xffConfig,
@@ -494,6 +501,25 @@ func convertServerHeaderTransformation(transformation *kgateway.ServerHeaderTran
 	case kgateway.PassThroughServerHeaderTransformation:
 		val := envoy_hcm.HttpConnectionManager_PASS_THROUGH
 		return &val
+	default:
+		return nil
+	}
+}
+
+func convertPathWithEscapedSlashesAction(action *kgateway.PathWithEscapedSlashesAction) *envoy_hcm.HttpConnectionManager_PathWithEscapedSlashesAction {
+	if action == nil {
+		return nil
+	}
+
+	switch *action {
+	case kgateway.PathWithEscapedSlashesActionKeepUnchanged:
+		return new(envoy_hcm.HttpConnectionManager_KEEP_UNCHANGED)
+	case kgateway.PathWithEscapedSlashesActionRejectRequest:
+		return new(envoy_hcm.HttpConnectionManager_REJECT_REQUEST)
+	case kgateway.PathWithEscapedSlashesActionUnescapeAndRedirect:
+		return new(envoy_hcm.HttpConnectionManager_UNESCAPE_AND_REDIRECT)
+	case kgateway.PathWithEscapedSlashesActionUnescapeAndForward:
+		return new(envoy_hcm.HttpConnectionManager_UNESCAPE_AND_FORWARD)
 	default:
 		return nil
 	}
