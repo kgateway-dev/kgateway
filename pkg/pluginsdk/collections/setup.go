@@ -227,7 +227,12 @@ func (c *CommonCollections) InitCollections(
 	c.tcpRouteWriteGVRs = tcpRouteWriteGVRs
 	c.tlsRouteWriteGVRs = tlsRouteWriteGVRs
 
-	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
+	backendIndex := krtcollections.NewBackendIndex(
+		c.KrtOpts,
+		policies,
+		c.RefGrants,
+		krtcollections.WithServiceLabelSelector(string(c.Settings.ServiceLabelSelector)),
+	)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 

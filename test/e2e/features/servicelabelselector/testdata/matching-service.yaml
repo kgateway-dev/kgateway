@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: matching-service
+  namespace: default
+  labels:
+    e2e.kgateway.dev/discovery: enabled
+    e2e.kgateway.dev/excluded: "false"
+spec:
+  selector:
+    app.kubernetes.io/name: matching-service-backend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: matching-service-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: matching-service-backend
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.28.0
+      ports:
+        - name: http
+          containerPort: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: matching-service-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: service-label-selector
+  hostnames:
+    - matching-selector.example.com
+  rules:
+    - backendRefs:
+        - name: matching-service
+          port: 8080

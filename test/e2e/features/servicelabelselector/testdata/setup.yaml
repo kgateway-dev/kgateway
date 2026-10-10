@@ -1,0 +1,18 @@
+# The Gateway deliberately carries no infrastructure labels, so its proxy Service does not
+# match the controller's serviceLabelSelector. SetupSuite waits on Gateway status.addresses,
+# which the gateway controller derives from that Service: this pins that the controller's
+# own Service watch does not depend on the operator's selector.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: service-label-selector
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+      allowedRoutes:
+        namespaces:
+          from: Same

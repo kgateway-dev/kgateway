@@ -30,12 +30,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -77,6 +79,19 @@ func NewGatewayReconciler(
 	controllerExtension pluginsdk.GatewayControllerExtension,
 ) *gatewayReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
+	// This controller only acts on the ConfigMaps the deployer renders per proxy, which it
+	// enqueues through their owning Gateway. It must use the same selector as the translation
+	// collection's ConfigMap watch: kclient shares informers keyed on
+	// {type, labelSelector, fieldSelector}, so matching selectors means these two watches
+	// share one cache. Leaving this one unfiltered in LABELED mode would keep a second,
+	// cluster-wide ConfigMap cache and negate the setting entirely.
+	//
+	// The deployer stamps wellknown.WatchLabel on the ConfigMaps it renders so they are
+	// selected here too (see the envoy chart's configmap.yaml).
+	configMapFilter := filter
+	configMapFilter.LabelSelector = collections.WatchLabelSelector(cfg.CommonCollections.Settings.ConfigMapDiscoveryMode)
+	serviceFilter := filter
+	serviceFilter.LabelSelector = proxyServiceLabelSelector(cfg.CommonCollections.Settings.ServiceLabelSelector)
 	r := &gatewayReconciler{
 		deployer:            deployer,
 		gwParams:            gwParams,
@@ -87,10 +102,10 @@ func NewGatewayReconciler(
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
-		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
+		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, serviceFilter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
-		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
+		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, configMapFilter),
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.
@@ -566,4 +581,22 @@ func fetchGatewaysByGatewayClass(gw *gwv1.Gateway) types.NamespacedName {
 	return types.NamespacedName{
 		Name: string(gw.Spec.GatewayClassName),
 	}
+}
+
+// proxyServiceLabelSelector returns the label selector for this controller's Service watch.
+// The controller only acts on the Service the deployer renders per proxy: it enqueues the
+// owning Gateway and reads the Service to derive Gateway status.addresses.
+//
+// With no ServiceLabelSelector set, the translation collection's Service watch is unfiltered
+// too, and kclient shares informers keyed on {type, labelSelector, fieldSelector}, so an
+// unfiltered watch here costs nothing extra. With a selector set, matching it here could
+// miss proxy Services, since the operator's selector need not match the labels kgateway
+// renders, and an unfiltered watch would keep the cluster-wide cache the selector exists to
+// remove. Instead this selects on the managed-by label the envoy chart stamps on every
+// proxy Service, which is a second informer, but one sized by the number of Gateways.
+func proxyServiceLabelSelector(serviceLabelSelector apisettings.LabelSelector) string {
+	if serviceLabelSelector == "" {
+		return ""
+	}
+	return wellknown.ManagedByLabel + "=" + wellknown.DefaultManagedByValue
 }
