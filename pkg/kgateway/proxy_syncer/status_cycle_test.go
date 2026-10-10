@@ -114,7 +114,6 @@ func cycleRoute() *gwv1.HTTPRoute {
 		},
 		Status: gwv1.HTTPRouteStatus{RouteStatus: gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{
 			foreign("zzz-their-gw"),
-			foreign("aaa-their-gw"),
 			{
 				ParentRef:      cycleParentRef,
 				ControllerName: cycleController,
@@ -126,6 +125,7 @@ func cycleRoute() *gwv1.HTTPRoute {
 					LastTransitionTime: staleTime(),
 				}},
 			},
+			foreign("aaa-their-gw"),
 		}}},
 	}
 }
@@ -433,8 +433,8 @@ func TestStatusWritersConvergeAfterOneWrite(t *testing.T) {
 				for _, p := range live.Status.Parents {
 					names = append(names, p.ParentRef.Name)
 				}
-				require.Equal(t, []gwv1.ObjectName{"aaa-their-gw", "gw", "zzz-their-gw"}, names,
-					"the merge publishes one canonical order, including the parents we do not own")
+				require.Equal(t, []gwv1.ObjectName{"zzz-their-gw", "gw", "aaa-their-gw"}, names,
+					"the merge keeps the live order: ours is updated in place and no parent is moved")
 			},
 		},
 	}

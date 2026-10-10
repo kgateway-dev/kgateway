@@ -204,9 +204,9 @@ func BuildPolicyStatus(
 	//
 	// currentStatus is still read above, for LastTransitionTime continuity.
 	//
-	// The sort is not redundant with the merge's: it makes this function's output
-	// deterministic for callers that consume the desired status directly, such as the
-	// golden-output translator tests.
+	// The sort only makes this function's output deterministic for callers that consume the
+	// desired status directly, such as the golden-output translator tests. It does not decide
+	// the published order: the merge keeps the live order and appends new entries.
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})
