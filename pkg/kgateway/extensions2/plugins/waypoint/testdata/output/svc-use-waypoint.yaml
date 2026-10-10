@@ -58,7 +58,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: fc_http_5000_helloworld_infra
-        statPrefix: http
+        statPrefix: fc_http_5000_helloworld_infra
         useRemoteAddress: true
     name: fc_http_5000_helloworld_infra
   listenerFilters:
