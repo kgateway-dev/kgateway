@@ -317,6 +317,17 @@ type Settings struct {
 	// for Backend resources when AWS EC2 discovery is enabled.
 	AwsEc2RefreshInterval time.Duration `split_words:"true" default:"30s"`
 
+	// RouteChangeDebounce batches route changes before they reach Gateway translation: changes are delivered once
+	// no further change has arrived for this long. Every route change rebuilds the whole translation of each
+	// Gateway it attaches to, so batching a burst of changes saves a rebuild per change, at the cost of delaying
+	// each change by about this much. Set to 0 to deliver every route change immediately.
+	RouteChangeDebounce time.Duration `split_words:"true" default:"10ms"`
+
+	// RouteChangeDebounceMax bounds how long route changes can be held while new changes keep arriving.
+	// It is the main trade-off between translation work during a burst of route changes and how stale
+	// Gateway configuration and route status can get. Values below RouteChangeDebounce are raised to it.
+	RouteChangeDebounceMax time.Duration `split_words:"true" default:"100ms"`
+
 	PolicyMerge string `split_words:"true" default:"{}"`
 
 	// EnableWaypoint enables kgateway to translate istio waypoints

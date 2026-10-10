@@ -1246,7 +1246,11 @@ func NewRoutesIndex(
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
 	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
 
-	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
+	allRoutes := krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
+	// Gateway translation reads routes through this collection, so batching route changes here turns a burst of
+	// route updates into one Gateway rebuild per flush instead of one per route.
+	h.routes = newDebouncedCollection(allRoutes, globalSettings.RouteChangeDebounce, globalSettings.RouteChangeDebounceMax,
+		krtopts.Stop, krtopts.ToOptions("all-routes-debounced")...)
 
 	httpBySelector := krtpkg.UnnamedIndex(h.httpRoutes, func(i ir.HttpRouteIR) []HTTPRouteSelector {
 		value, ok := i.SourceObject.GetLabels()[apilabels.DelegationLabelSelector]
