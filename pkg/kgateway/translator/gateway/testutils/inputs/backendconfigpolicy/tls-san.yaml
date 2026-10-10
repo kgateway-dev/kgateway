@@ -54,6 +54,8 @@ spec:
     verifySubjectAltNames:
       - test.example.com
       - api.example.com
+      - spiffe://example.org/ns/default/sa/backend
+      - 10.0.0.1
     allowRenegotiation: true
 ---
 apiVersion: gateway.networking.k8s.io/v1
