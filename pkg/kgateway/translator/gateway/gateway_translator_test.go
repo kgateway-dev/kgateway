@@ -4041,6 +4041,12 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStrict,
 		},
 		{
+			name:      "ListenerPolicy Access Log Invalid",
+			category:  "listenerpolicy",
+			inputFile: "listener-policy-access-log-invalid.yaml",
+			minMode:   apisettings.ValidationStrict,
+		},
+		{
 			name:      "Gateway/Listener/Merge",
 			category:  "attachment",
 			inputFile: "gateway-listener-merge-invalid.yaml",

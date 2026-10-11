@@ -9,8 +9,12 @@ import (
 	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
@@ -251,21 +255,134 @@ func validateMatcherOnlyEnvoy(ctx context.Context, route *envoyroutev3.Route, v 
 
 // validateFullRoutes validates a set of complete route configurations in one Envoy invocation.
 func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, &envoyroutev3.RouteConfiguration{
+		VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "placeholder_vhost", Domains: []string{"*"}, Routes: routes}},
+	}, v)
+}
+
+// validateFullRouteConfiguration retains the final scope-level settings as well as
+// routes. Rebuilding only the routes loses inherited filter config and vhost rate limits.
+func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator) error {
+	return validateRouteConfigurationWithCaller(ctx, config, nil, v, validator.CallerRouteFull)
+}
+
+// validateRouteConfigurationWithCaller validates config served by the given network
+// filters, or by a synthetic HttpConnectionManager when there are none. Plugins emit
+// HTTP filters and HCM settings from state gathered while translating routes, so the
+// final filter chain is only known once routes are, and is validated along with them.
+func validateRouteConfigurationWithCaller(
+	ctx context.Context,
+	config *envoyroutev3.RouteConfiguration,
+	networkFilters []*envoylistenerv3.Filter,
+	v validator.Validator,
+	caller validator.ValidationCaller,
+) error {
 	builder := bootstrap.New()
+	if len(networkFilters) == 0 {
+		builder.SetRouteConfiguration(config)
+	} else {
+		inlined, err := inlineRouteConfiguration(networkFilters, config)
+		if err != nil {
+			return err
+		}
+		builder.SetNetworkFilters(inlined)
+	}
 	clusterNames := make([]string, 0)
 	// A batched route bootstrap can reference the same backend cluster from many routes.
 	// Track names here so validation adds only one stub Cluster per unique Envoy cluster name.
 	seenClusterNames := make(map[string]struct{})
-	for _, route := range routes {
-		builder.AddRoute(route)
-		clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
+	for _, vhost := range config.GetVirtualHosts() {
+		for _, route := range vhost.GetRoutes() {
+			clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
+		}
 	}
 	stubClusters := createStubClusters(clusterNames)
 	for _, cluster := range stubClusters {
 		builder.AddCluster(cluster)
 	}
 
-	return runValidation(ctx, v, builder, validator.CallerRouteFull)
+	return runValidation(ctx, v, builder, caller)
+}
+
+// inlineRouteConfiguration copies networkFilters with config in place of each HCM's RDS
+// reference, leaving the emitted filters untouched.
+func inlineRouteConfiguration(networkFilters []*envoylistenerv3.Filter, config *envoyroutev3.RouteConfiguration) ([]*envoylistenerv3.Filter, error) {
+	inlined := make([]*envoylistenerv3.Filter, 0, len(networkFilters))
+	for _, filter := range networkFilters {
+		if !filter.GetTypedConfig().MessageIs(&envoyhttp.HttpConnectionManager{}) {
+			inlined = append(inlined, filter)
+			continue
+		}
+		hcm := &envoyhttp.HttpConnectionManager{}
+		if err := filter.GetTypedConfig().UnmarshalTo(hcm); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal HttpConnectionManager: %w", err)
+		}
+		hcm.RouteSpecifier = &envoyhttp.HttpConnectionManager_RouteConfig{RouteConfig: config}
+		filter, err := NewFilterWithTypedConfig(filter.GetName(), hcm)
+		if err != nil {
+			return nil, err
+		}
+		inlined = append(inlined, filter)
+	}
+	return inlined, nil
+}
+
+// routeValidationScope preserves inherited configuration and named dependencies
+// while narrowing the routes under validation. It never edits the emitted config.
+type routeValidationScope struct {
+	config *envoyroutev3.RouteConfiguration
+	vhost  *envoyroutev3.VirtualHost
+}
+
+func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoyroutev3.RouteConfiguration {
+	config := cloneWithoutField(s.config, "virtual_hosts")
+	vhost := cloneWithoutField(s.vhost, "routes")
+	vhost.Routes = routes
+	config.VirtualHosts = []*envoyroutev3.VirtualHost{vhost}
+	return config
+}
+
+// cloneWithoutField excludes children before cloning, so isolating one route
+// does not copy every sibling. Build a separate message rather than modifying
+// the source or copying protobuf's internal synchronization state.
+func cloneWithoutField[T proto.Message](src T, excluded protoreflect.Name) T {
+	message := src.ProtoReflect()
+	shallow := message.New()
+	message.Range(func(field protoreflect.FieldDescriptor, value protoreflect.Value) bool {
+		if field.Name() != excluded {
+			shallow.Set(field, value)
+		}
+		return true
+	})
+	shallow.SetUnknown(message.GetUnknown())
+	return proto.CloneOf(shallow.Interface().(T))
+}
+
+func (s routeValidationScope) validate(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, s.configuration(routes), v)
+}
+
+func (s routeValidationScope) validateRoute(ctx context.Context, route *envoyroutev3.Route, v validator.Validator, mode apisettings.ValidationMode) error {
+	if err := validateRoutePreEnvoy(route, mode); err != nil {
+		return err
+	}
+	if mode != apisettings.ValidationStrict {
+		return nil
+	}
+	fullErr := s.validate(ctx, []*envoyroutev3.Route{route}, v)
+	if fullErr == nil {
+		return nil
+	}
+	// Shared settings have already passed validation with a neutral route. Retain
+	// them while distinguishing a bad matcher from a bad action or route override.
+	matcherRoute := &envoyroutev3.Route{
+		Name: route.GetName(), Match: route.GetMatch(),
+		Action: &envoyroutev3.Route_DirectResponse{DirectResponse: &envoyroutev3.DirectResponseAction{Status: 500}},
+	}
+	if err := validateRouteConfigurationWithCaller(ctx, s.configuration([]*envoyroutev3.Route{matcherRoute}), nil, v, validator.CallerRouteMatcher); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
+	}
+	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
 }
 
 func validateGeneratedMatcher(match *envoyroutev3.RouteMatch) (bool, error) {

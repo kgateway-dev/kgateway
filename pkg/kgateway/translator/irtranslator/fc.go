@@ -111,6 +111,24 @@ func (h *filterChainTranslator) computeHttpFilters(l ir.HttpFilterChainIR, lis i
 	return networkFilters
 }
 
+// fallbackHttpFilters returns a clean HCM for a filter chain whose computed filters
+// failed validation. It has no plugin filters or settings, only the terminal router,
+// and is paired with a route configuration that rejects all traffic.
+func (h *filterChainTranslator) fallbackHttpFilters(l ir.HttpFilterChainIR) ([]*envoylistenerv3.Filter, error) {
+	hcm := (&hcmNetworkFilterTranslator{listener: l, routeConfigName: h.routeConfigName}).initializeHCM()
+	hcm.HttpFilters = []*envoyhttp.HttpFilter{{
+		Name: wellknown.Router,
+		ConfigType: &envoyhttp.HttpFilter_TypedConfig{
+			TypedConfig: utils.MustMessageToAny(&routerv3.Router{}),
+		},
+	}}
+	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, hcm)
+	if err != nil {
+		return nil, err
+	}
+	return []*envoylistenerv3.Filter{hcmFilter}, nil
+}
+
 func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChainIR, lis ir.ListenerIR, listenerReporter sdkreporter.ListenerReporter) ([]*envoylistenerv3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
 		lis:               lis,
