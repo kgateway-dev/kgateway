@@ -17,21 +17,23 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-// UccWithEndpoints holds a CLA keyed by (client, backend). Equal results share
-// one interned proto across clients.
+// UccWithEndpoints holds a CLA keyed by client and endpoint resource name.
+// Backend CLAs are interned across clients; local-cluster CLAs are built per client.
 type UccWithEndpoints struct {
 	Client ir.UniquelyConnectedClient
-	// Endpoints holds the interned, read-only CLA. EndpointsHash combines endpoint
-	// content, plugin contributions, and load-balancing context into a 64-bit hash.
-	// KRT equality and EDS versioning assume no collisions; a collision across row
-	// revisions can leave stale endpoints. Interning separately confirms content equality.
-	// +noKrtEquals EndpointsHash is a 64-bit content hash standing in for the proto; collision-freedom is assumed, see above
+	// Endpoints holds a read-only CLA. For backend CLAs, EndpointsHash combines
+	// endpoint content, plugin contributions, and load-balancing context; for local
+	// clusters it hashes the generated CLA's identifying fields. KRT equality and
+	// EDS versioning assume no hash collisions. Backend interning separately
+	// confirms proto equality before sharing an instance.
+	// +noKrtEquals
 	Endpoints     sharedproto.Shared[*envoyendpointv3.ClusterLoadAssignment]
 	EndpointsHash uint64
 	endpointsName string
 	// resourceName caches the key used by KRT, avoiding an allocation
 	// per lookup for each client/backend pair.
-	// +noKrtEquals derived from Client and endpointsName, both of which are compared
+	// Derived from Client and endpointsName, both of which are compared.
+	// +noKrtEquals
 	resourceName string
 }
 
@@ -43,7 +45,7 @@ func (c UccWithEndpoints) ResourceName() string {
 	return c.resourceName
 }
 
-// uccEndpointsResourceName builds the cached (client, backend) key.
+// uccEndpointsResourceName builds the cached (client, endpoint resource) key.
 func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName string) string {
 	return client.ResourceName() + "/" + endpointsName
 }

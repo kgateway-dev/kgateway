@@ -74,7 +74,10 @@ type ProxySyncer struct {
 type GatewayXdsResources struct {
 	types.NamespacedName
 	// Clusters are items in the CDS response payload.
-	// +krtEqualsTodo include CDC resources in equality for diff detection
+	// Equals compares ClustersHash, the XOR of the cluster proto hashes from
+	// sliceToResourcesHash. Routes, Listeners, and Secrets each use a Version
+	// string derived from the corresponding resource set's hash.
+	// +noKrtEquals
 	Clusters     []envoycachetypes.ResourceWithTTL
 	ClustersHash uint64
 

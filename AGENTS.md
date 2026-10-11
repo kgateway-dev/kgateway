@@ -23,7 +23,7 @@ If you intend to include all source code, run `go` commands that accept `-tags` 
 ### IR Equals() Methods (STRICTLY ENFORCED)
 IRs output by KRT collections **must** implement `Equals(other T) bool`:
 - **Compare ALL fields** or mark with `// +noKrtEquals` (last line of comment)
-- `+krtEqualsTODO` exists only to track legacy gaps — never use it in new code
+- `+krtEqualsTodo` exists only to track legacy gaps — never use it in new code
 - **Never use `reflect.DeepEqual`** — flagged by the custom `krtequals` analyzer (external module wired up in `.custom-gcl.yml`, configured in `.golangci.yaml`)
 - Use proto equality helpers: `proto.Equal()`, not `==`
 - Unit test the `Equals` method

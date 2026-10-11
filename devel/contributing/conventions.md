@@ -19,8 +19,8 @@ See [API Conventions](/api/README.md) for more details about API conventions and
 ### IR Conventions
 
 - IRs that are outputs of a KRT collection must implement the `Equals` method.
-- Generally, all fields in the IR must be compared in the `Equals` method. If a field is intentionally omitted, add the `+noKrtEquals` marker in the last line of its leading comments. The `+krtEqualsTODO` marker exists only to track legacy gaps; do not use it in new code.
-- Ensure that the `Equals` method is unit tested. This has been a high-risk area for introducing bugs in the past.
+- Generally, all fields in the IR must be compared in the `Equals` method. If a field is intentionally omitted, add the `+noKrtEquals` marker in the last line of its leading comments, and say in the comment what *does* observe a change to that field (a version, a hash, or a companion field). The `+krtEqualsTodo` marker used to track legacy gaps; all of them have been resolved, so do not add new ones.
+- Ensure that the `Equals` method is unit tested. This has been a high-risk area for introducing bugs in the past. `test/testutils/equalstest` runs a mutation case per field and fails when a field is neither covered by a case nor listed as exempt; for an exempt field, add a test that proves the omission is safe by mutating it the way the collection really would.
 
 ## Testing conventions
 

@@ -297,8 +297,12 @@ type PolicyWrapper struct {
 	// Opaque to us other than metadata.
 	PolicyIR PolicyIR
 
-	// Where to attach the policy. This usually comes from the policy CRD.
-	// +krtEqualsTodo ensure target refs differences are surfaced in equality
+	// Where to attach the policy. Built-in producers derive this from the policy
+	// spec; examples/plugin uses a ConfigMap annotation. Equals relies on
+	// versionEquals(Policy): generation and metadata for versioned specs, or
+	// resourceVersion for objects such as ConfigMaps. Producers must keep target
+	// references tied to these source-object inputs.
+	// +noKrtEquals
 	TargetRefs []PolicyRef
 
 	// PrecedenceWeight specifies the weight of the policy as an integer value (negative values are allowed).
