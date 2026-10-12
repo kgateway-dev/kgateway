@@ -272,9 +272,11 @@ func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoy
 	return config
 }
 
-// cloneWithoutField excludes children before cloning, so isolating one route
-// does not copy every sibling. Build a separate message rather than modifying
-// the source or copying protobuf's internal synchronization state.
+// cloneWithoutField returns a new message whose fields alias src's, minus the
+// excluded field, so isolating one route copies neither its siblings nor the
+// shared settings. Callers may assign fields on the result but must not mutate
+// anything reachable through it; the copies here are only marshalled. Building a
+// new message avoids modifying src or copying protobuf's internal state.
 func cloneWithoutField[T proto.Message](src T, excluded protoreflect.Name) T {
 	message := src.ProtoReflect()
 	shallow := message.New()
@@ -285,7 +287,7 @@ func cloneWithoutField[T proto.Message](src T, excluded protoreflect.Name) T {
 		return true
 	})
 	shallow.SetUnknown(message.GetUnknown())
-	return proto.CloneOf(shallow.Interface().(T))
+	return shallow.Interface().(T)
 }
 
 func (s routeValidationScope) validate(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {

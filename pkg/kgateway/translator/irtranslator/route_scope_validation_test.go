@@ -515,8 +515,13 @@ func TestRouteValidationScopeDoesNotMutateSource(t *testing.T) {
 	before := proto.CloneOf(cfg)
 	scope := routeValidationScope{config: cfg, vhost: cfg.VirtualHosts[0]}
 	isolated := scope.configuration([]*envoyroutev3.Route{newRouteWithPrefix("/isolated")})
-	isolated.VirtualHosts[0].Domains[0] = "changed.example.com"
-	assert.True(t, proto.Equal(before, cfg), "isolating routes must not mutate or alias inherited source settings")
+	assert.True(t, proto.Equal(before, cfg), "isolating routes must not mutate the source")
+	// The scope shares inherited settings by reference; only assignments on the
+	// copies it builds are permitted, and those must not reach the source.
+	isolated.Name = "changed"
+	isolated.VirtualHosts[0].Name = "changed"
+	isolated.VirtualHosts[0].Domains = []string{"changed.example.com"}
+	assert.True(t, proto.Equal(before, cfg), "assigning fields on the isolated copy must not reach the source")
 }
 
 func BenchmarkRouteValidationScopeConfiguration(b *testing.B) {
