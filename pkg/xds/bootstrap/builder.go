@@ -39,6 +39,11 @@ FHW4vPA/rQpONzRjk0fch5/sMDzspQsf/EQpl++MT9X3QC0mCf1z8T2qzjn72SJ7
 yitqAQ59a80qeeQ8i3nAI5clnJtfDYwZV6gIO72hygBWWE5FMjWzGPCE
 -----END CERTIFICATE-----`
 
+// validationLocalClusterName names the placeholder local cluster. The proxy bootstrap always
+// sets cluster_manager.local_cluster_name, and Envoy rejects some configs without one, e.g.
+// local_cluster_rate_limit on the local rate limit filter (LocalRateLimit shareAcrossGateway).
+const validationLocalClusterName = "kgateway_validation_local_cluster"
+
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
 	filterConfigs ir.TypedFilterConfigMap
@@ -132,6 +137,14 @@ func hasSecretNamed(secrets []*envoytlsv3.Secret, name string) bool {
 	return false
 }
 
+// ValidatedClusters returns the bootstrap's static clusters without the placeholder local
+// cluster that Build always adds.
+func ValidatedClusters(bs *envoybootstrapv3.Bootstrap) []*envoyclusterv3.Cluster {
+	return slices.DeleteFunc(slices.Clone(bs.GetStaticResources().GetClusters()), func(c *envoyclusterv3.Cluster) bool {
+		return c.GetName() == validationLocalClusterName
+	})
+}
+
 // AddHttpFilter adds an HTTP filter to the HCM filter chain.
 func (b *ConfigBuilder) AddHttpFilter(filter *envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter) {
 	b.httpFilters = append(b.httpFilters, filter)
@@ -203,9 +216,11 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 			}},
 		}},
 	}
-	if len(b.clusters) > 0 {
-		staticResources.Clusters = b.clusters
-	}
+	// Envoy requires the local cluster to be defined as a static cluster.
+	staticResources.Clusters = append(slices.Clone(b.clusters), &envoyclusterv3.Cluster{
+		Name:                 validationLocalClusterName,
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
+	})
 	if len(b.secrets) > 0 {
 		staticResources.Secrets = append(staticResources.Secrets, b.secrets...)
 	}
@@ -217,6 +232,9 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		Node: &envoycorev3.Node{
 			Id:      "validation-node-id",
 			Cluster: "validation-cluster",
+		},
+		ClusterManager: &envoybootstrapv3.ClusterManager{
+			LocalClusterName: validationLocalClusterName,
 		},
 		StaticResources: staticResources,
 	}, nil
