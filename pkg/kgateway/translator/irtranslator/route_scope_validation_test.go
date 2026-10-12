@@ -571,3 +571,62 @@ func TestRouteValidationStubsMirrorClusters(t *testing.T) {
 	require.NoError(t, validateFullRouteConfiguration(t.Context(), cfg, v))
 	assert.ElementsMatch(t, []string{"primary", "route-mirror", "vhost-mirror", "config-mirror"}, stubbed)
 }
+
+// HTTPS virtual hosts carry no ParentRef; their route configuration is named for
+// the single listener that owns it. A replacement must still mark that listener
+// and name the policies whose settings were rejected.
+func TestHTTPSReplacementReportsFilterChainListener(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		reject func(*envoyroutev3.RouteConfiguration) bool
+		scope  string
+	}{
+		{
+			name:   "route configuration",
+			reject: func(cfg *envoyroutev3.RouteConfiguration) bool { return len(cfg.ResponseHeadersToAdd) > 0 },
+			scope:  `route configuration "https"`,
+		},
+		{
+			name: "virtual host",
+			reject: func(cfg *envoyroutev3.RouteConfiguration) bool {
+				return len(cfg.VirtualHosts) == 1 && len(cfg.VirtualHosts[0].RateLimits) > 0
+			},
+			scope: `virtual host "one"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
+				if tc.reject(routeConfigurationFromBootstrap(t, b)) {
+					return errors.New("rejected by envoy")
+				}
+				return nil
+			}}
+			h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
+			gateway := h.gw.SourceObject.Obj
+			h.gw.SourceObject.Listeners = []ir.Listener{{Parent: gateway, Listener: gwv1.Listener{Name: "https"}}}
+			h.routeConfigName = "https"
+			rm := reports.NewReportMap()
+			h.reporter = reports.NewReporter(&rm)
+			attachRouteConfigPass(h, routeConfigPassFunc{apply: func(cfg *envoyroutev3.RouteConfiguration) {
+				cfg.ResponseHeadersToAdd = []*envoycorev3.HeaderValueOption{{Header: &envoycorev3.HeaderValue{Key: "x-test", Value: "shared"}}}
+				cfg.VirtualHosts[0].RateLimits = []*envoyroutev3.RateLimit{{Stage: wrapperspb.UInt32(11)}}
+			}})
+			for gk, policies := range h.attachedPolicies.Policies {
+				policies[0].PolicyRef = &ir.AttachedPolicyRef{Kind: "TrafficPolicy", Namespace: "default", Name: "shared"}
+				h.attachedPolicies.Policies[gk] = policies
+			}
+			h.ComputeRouteConfiguration(t.Context(), scopeTestVirtualHosts())
+
+			report := rm.Gateway(gateway)
+			require.NotNil(t, report, "the HTTPS listener's Gateway must have a report")
+			listener := report.Listener(&gwv1.Listener{Name: "https"}).(*reports.ListenerReport)
+			condition := meta.FindStatusCondition(listener.Status.Conditions, string(gwv1.ListenerConditionAccepted))
+			require.NotNil(t, condition, "the HTTPS listener must report its replacement")
+			assert.Equal(t, metav1.ConditionFalse, condition.Status)
+			assert.Equal(t, string(reportssdk.ListenerReplacedReason), condition.Reason)
+			assert.Contains(t, condition.Message, tc.scope)
+			assert.Contains(t, condition.Message, "TrafficPolicy default/shared", "name the policy whose settings were rejected")
+			assert.Contains(t, condition.Message, "rejected by envoy")
+		})
+	}
+}

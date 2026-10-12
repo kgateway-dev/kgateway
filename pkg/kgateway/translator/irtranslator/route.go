@@ -262,6 +262,7 @@ type computedHTTPRoute struct {
 }
 
 type routeValidationContext struct {
+	vhosts          []computedVirtualHost
 	vhostsByPointer map[*envoyroutev3.VirtualHost]computedVirtualHost
 	vhostsByName    map[string]computedVirtualHost
 }
@@ -274,6 +275,7 @@ type vhostRouteValidationContext struct {
 
 func newRouteValidationContext(computedVhosts []computedVirtualHost) routeValidationContext {
 	ctx := routeValidationContext{
+		vhosts:          computedVhosts,
 		vhostsByPointer: make(map[*envoyroutev3.VirtualHost]computedVirtualHost, len(computedVhosts)),
 		vhostsByName:    make(map[string]computedVirtualHost, len(computedVhosts)),
 	}
@@ -597,9 +599,12 @@ func (h *httpRouteConfigurationTranslator) validateRouteBatchPreEnvoy(out *envoy
 func (h *httpRouteConfigurationTranslator) replaceInvalidRouteConfiguration(cfg *envoyroutev3.RouteConfiguration, validationCtx routeValidationContext, err error) {
 	h.logger.Error("route configuration validation failed", "error", err)
 	incRouteReplacementMetric(h.gw, err)
-	for _, cvh := range validationCtx.vhostsByPointer {
-		h.reportVirtualHostReplacement(cvh.in, err)
+	affected := make([]*ir.VirtualHost, 0, len(validationCtx.vhosts))
+	for _, cvh := range validationCtx.vhosts {
+		affected = append(affected, cvh.in)
 	}
+	policies := h.appliedPolicyNames(h.attachedPolicies, h.gw.AttachedHttpPolicies)
+	h.reportListenerReplacement(affected, replacementMessage(fmt.Sprintf("route configuration %q", h.routeConfigName), policies, err))
 	// Invalid shared fields must not survive the fallback.
 	proto.Reset(cfg)
 	cfg.Name = h.routeConfigName
@@ -679,7 +684,12 @@ func (h *httpRouteConfigurationTranslator) validateIsolatedVirtualHost(
 func (h *httpRouteConfigurationTranslator) replaceInvalidVirtualHost(virtualHost *ir.VirtualHost, out *envoyroutev3.VirtualHost, err error) *envoyroutev3.VirtualHost {
 	h.logger.Error("virtual host validation failed", "vhost", out.GetName(), "error", err)
 	incRouteReplacementMetric(h.gw, err)
-	h.reportVirtualHostReplacement(virtualHost, err)
+	sets := []ir.AttachedPolicies{h.attachedPolicies, h.gw.AttachedHttpPolicies}
+	if virtualHost != nil {
+		sets = append(sets, virtualHost.AttachedPolicies)
+	}
+	message := replacementMessage(fmt.Sprintf("virtual host %q", out.GetName()), h.appliedPolicyNames(sets...), err)
+	h.reportListenerReplacement([]*ir.VirtualHost{virtualHost}, message)
 	fallback := setFallBackConfig(out.GetName(), "*")
 	if len(out.GetDomains()) > 0 {
 		fallback.Domains = append([]string(nil), out.GetDomains()...)
@@ -687,17 +697,93 @@ func (h *httpRouteConfigurationTranslator) replaceInvalidVirtualHost(virtualHost
 	return fallback
 }
 
-func (h *httpRouteConfigurationTranslator) reportVirtualHostReplacement(virtualHost *ir.VirtualHost, err error) {
-	if h.reporter == nil || virtualHost == nil || virtualHost.ParentRef.Parent == nil {
+// reportListenerReplacement marks every listener whose traffic a replacement now
+// answers with a 500. HTTP virtual hosts carry their listener. HTTPS virtual hosts
+// do not, but an HTTPS route configuration belongs to exactly one listener, which
+// its name identifies, as in reportRouteConfigPolicyErrors.
+func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHosts []*ir.VirtualHost, message string) {
+	if h.reporter == nil {
 		return
 	}
-	reporter := virtualHost.ParentRef.GetParentReporter(h.reporter)
-	reporter.Listener(&virtualHost.ParentRef.Listener).SetCondition(reportssdk.ListenerCondition{
+	condition := reportssdk.ListenerCondition{
 		Type:    gwv1.ListenerConditionAccepted,
 		Status:  metav1.ConditionFalse,
 		Reason:  reportssdk.ListenerReplacedReason,
-		Message: err.Error(),
-	})
+		Message: message,
+	}
+	type listenerKey struct {
+		parent any
+		name   gwv1.SectionName
+	}
+	reported := make(map[listenerKey]struct{}, len(virtualHosts))
+	needFilterChainListener := len(virtualHosts) == 0
+	for _, virtualHost := range virtualHosts {
+		if virtualHost == nil || virtualHost.ParentRef.Parent == nil {
+			needFilterChainListener = true
+			continue
+		}
+		key := listenerKey{parent: virtualHost.ParentRef.Parent, name: virtualHost.ParentRef.Name}
+		if _, ok := reported[key]; ok {
+			continue
+		}
+		reported[key] = struct{}{}
+		virtualHost.ParentRef.GetParentReporter(h.reporter).Listener(&virtualHost.ParentRef.Listener).SetCondition(condition)
+	}
+	if !needFilterChainListener {
+		return
+	}
+	listener := findListenerForFilterChain(h.gw, h.routeConfigName)
+	if listener == nil {
+		return
+	}
+	if _, ok := reported[listenerKey{parent: listener.Parent, name: listener.Name}]; ok {
+		return
+	}
+	listener.GetParentReporter(h.reporter).ListenerName(string(listener.Name)).SetCondition(condition)
+}
+
+// replacementMessage names what was replaced and the policies whose settings it
+// inherited. Envoy's error describes the generated configuration, so without the
+// policy names a shared-settings rejection points at nothing the user wrote.
+func replacementMessage(subject string, policies []string, err error) string {
+	var b strings.Builder
+	b.WriteString(subject)
+	b.WriteString(" was replaced with a 500 direct response because Envoy rejected its configuration")
+	if len(policies) > 0 {
+		b.WriteString(" (settings from ")
+		b.WriteString(strings.Join(policies, ", "))
+		b.WriteString(")")
+	}
+	b.WriteString(": ")
+	b.WriteString(err.Error())
+	return b.String()
+}
+
+// appliedPolicyNames lists, in apply order, the attached policies a plugin applied:
+// those with a translation pass and no policy errors. Errored policies are reported
+// by their own path and were never applied.
+func (h *httpRouteConfigurationTranslator) appliedPolicyNames(sets ...ir.AttachedPolicies) []string {
+	var names []string
+	seen := make(map[string]struct{})
+	for _, set := range sets {
+		for _, gk := range set.ApplyOrderedGroupKinds() {
+			if h.pluginPass[gk] == nil {
+				continue
+			}
+			for _, pol := range set.Policies[gk] {
+				if pol.PolicyRef == nil || len(pol.Errors) > 0 {
+					continue
+				}
+				name := pol.PolicyRef.Kind + " " + pol.PolicyRef.Namespace + "/" + pol.PolicyRef.Name
+				if _, ok := seen[name]; ok {
+					continue
+				}
+				seen[name] = struct{}{}
+				names = append(names, name)
+			}
+		}
+	}
+	return names
 }
 
 func (h *httpRouteConfigurationTranslator) runVhostPlugins(
