@@ -537,3 +537,32 @@ func BenchmarkRouteValidationScopeConfiguration(b *testing.B) {
 		})
 	}
 }
+
+// Envoy rejects a mirror policy naming an unknown cluster ("unknown shadow
+// cluster"), so validation must stub mirror clusters at every scope. Without the
+// stubs, Strict mode replaced every rule with a RequestMirror filter with a 500.
+func TestRouteValidationStubsMirrorClusters(t *testing.T) {
+	mirror := func(cluster string) []*envoyroutev3.RouteAction_RequestMirrorPolicy {
+		return []*envoyroutev3.RouteAction_RequestMirrorPolicy{{Cluster: cluster}}
+	}
+	route := newRouteWithPrefix("/")
+	route.GetRoute().ClusterSpecifier = &envoyroutev3.RouteAction_Cluster{Cluster: "primary"}
+	route.GetRoute().RequestMirrorPolicies = mirror("route-mirror")
+	cfg := &envoyroutev3.RouteConfiguration{
+		RequestMirrorPolicies: mirror("config-mirror"),
+		VirtualHosts: []*envoyroutev3.VirtualHost{{
+			Name: "vhost", Domains: []string{"*"},
+			RequestMirrorPolicies: mirror("vhost-mirror"),
+			Routes:                []*envoyroutev3.Route{route},
+		}},
+	}
+	var stubbed []string
+	v := &routeMockValidator{validateFunc: func(_ context.Context, b *envoybootstrapv3.Bootstrap) error {
+		for _, cluster := range b.GetStaticResources().GetClusters() {
+			stubbed = append(stubbed, cluster.GetName())
+		}
+		return nil
+	}}
+	require.NoError(t, validateFullRouteConfiguration(t.Context(), cfg, v))
+	assert.ElementsMatch(t, []string{"primary", "route-mirror", "vhost-mirror", "config-mirror"}, stubbed)
+}

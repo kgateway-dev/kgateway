@@ -250,17 +250,7 @@ func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.Ro
 func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator, caller validator.ValidationCaller) error {
 	builder := bootstrap.New()
 	builder.SetRouteConfiguration(config)
-	clusterNames := make([]string, 0)
-	// A batched route bootstrap can reference the same backend cluster from many routes.
-	// Track names here so validation adds only one stub Cluster per unique Envoy cluster name.
-	seenClusterNames := make(map[string]struct{})
-	for _, vhost := range config.GetVirtualHosts() {
-		for _, route := range vhost.GetRoutes() {
-			clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
-		}
-	}
-	stubClusters := createStubClusters(clusterNames)
-	for _, cluster := range stubClusters {
+	for _, cluster := range createStubClusters(routeConfigurationClusterNames(config)) {
 		builder.AddCluster(cluster)
 	}
 
@@ -456,10 +446,12 @@ func createStubClusters(clusterNames []string) []*envoyclusterv3.Cluster {
 	return clusters
 }
 
-func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *envoyroutev3.Route) []string {
-	if route == nil {
-		return clusterNames
-	}
+// routeConfigurationClusterNames returns every cluster name Envoy resolves when it loads
+// the configuration, once each. Envoy rejects a mirror policy whose cluster is unknown
+// ("unknown shadow cluster"), so mirrors at every scope need stubs as well as route targets.
+func routeConfigurationClusterNames(config *envoyroutev3.RouteConfiguration) []string {
+	var clusterNames []string
+	seen := make(map[string]struct{})
 	appendClusterName := func(name string) {
 		if name == "" {
 			return
@@ -470,6 +462,23 @@ func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *
 		seen[name] = struct{}{}
 		clusterNames = append(clusterNames, name)
 	}
+	appendMirrorClusterNames := func(mirrors []*envoyroutev3.RouteAction_RequestMirrorPolicy) {
+		for _, mirror := range mirrors {
+			appendClusterName(mirror.GetCluster())
+		}
+	}
+	appendMirrorClusterNames(config.GetRequestMirrorPolicies())
+	for _, vhost := range config.GetVirtualHosts() {
+		appendMirrorClusterNames(vhost.GetRequestMirrorPolicies())
+		for _, route := range vhost.GetRoutes() {
+			appendRouteClusterNames(route, appendClusterName)
+			appendMirrorClusterNames(route.GetRoute().GetRequestMirrorPolicies())
+		}
+	}
+	return clusterNames
+}
+
+func appendRouteClusterNames(route *envoyroutev3.Route, appendClusterName func(string)) {
 	switch action := route.GetAction().(type) {
 	case *envoyroutev3.Route_Route:
 		if action.Route != nil {
@@ -485,5 +494,4 @@ func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *
 			}
 		}
 	}
-	return clusterNames
 }
