@@ -179,7 +179,7 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
-            ratelimit: ratelimit: missing reference grant'
+            ratelimit: denied/denied-ratelimit-ext: ratelimit: missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -227,7 +227,8 @@ Statuses:
           namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'ratelimit: ratelimit: missing reference grant'
+          message: 'ratelimit: denied/denied-ratelimit-ext: ratelimit: missing reference
+            grant'
           reason: Invalid
           status: "False"
           type: Accepted

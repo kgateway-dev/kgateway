@@ -382,7 +382,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/route-denied-policy:
-            extauth: failed to resolve ExtAuth gRPC backend: missing reference grant'
+            extauth: denied/denied-extauth-ext: failed to resolve ExtAuth gRPC backend:
+            missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -519,8 +520,8 @@ Statuses:
           sectionName: http
         conditions:
         - lastTransitionTime: null
-          message: 'extauth: failed to resolve ExtAuth gRPC backend: missing reference
-            grant'
+          message: 'extauth: denied/denied-extauth-ext: failed to resolve ExtAuth
+            gRPC backend: missing reference grant'
           reason: Invalid
           status: "False"
           type: Accepted
