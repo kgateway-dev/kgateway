@@ -121,8 +121,8 @@ func TestRoutesFor(t *testing.T) {
 	})
 	t.Run("debounced", func(t *testing.T) {
 		routes := preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{Stop: test.NewStop(t)}, apisettings.Settings{
-			RouteChangeDebounce:    time.Millisecond,
-			RouteChangeDebounceMax: 10 * time.Millisecond,
+			TranslationDebounce:    time.Millisecond,
+			TranslationDebounceMax: 10 * time.Millisecond,
 		})
 		require.Len(t, routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind), 2,
 			"routes should be indexed by parent as soon as the debounced index syncs")
