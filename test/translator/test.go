@@ -586,10 +586,10 @@ const (
 )
 
 // waitForEndpointsToSettle waits for the endpoint IR the goldens are built from to
-// quiesce. Endpoint IRs depend dynamically on pods and EndpointSlices, and HasSynced on
-// every collection does not imply the queue is empty: a dependency-triggered recompute
-// can still be in flight, so snapshotting right after HasSynced races with it and yields
-// nondeterministic endpoint output.
+// quiesce, and returns the settled view. Endpoint IRs depend dynamically on pods and
+// EndpointSlices, and HasSynced on every collection does not imply the queue is empty:
+// a dependency-triggered recompute can still be in flight, so snapshotting right after
+// HasSynced races with it and yields nondeterministic endpoint output.
 //
 // krt offers no drain barrier to wait on instead, and this is not only a test problem:
 // proxy_syncer gates its first snapshot on the same HasSynced signals, which is why it
@@ -597,11 +597,17 @@ const (
 // pkg/krtcollections/uniqueclients.go to keep a proxy's first watch out of that window.
 // Polling here mirrors that gap rather than hiding one.
 //
-// snapshot must produce the same view the test then translates - see
-// finalEndpointsSnapshot. Settling on the raw plugin-contributed collection instead
-// would miss both a backend arriving in BackendIndex and a policy attaching to one,
-// neither of which is visible in a raw endpoint row.
-func waitForEndpointsToSettle(t *testing.T, ctx context.Context, snapshot func() []ir.EndpointsForBackend) {
+// The caller translates the returned snapshot itself rather than recomputing it, so the
+// endpoints in the golden are exactly the ones that were observed to be stable. See
+// finalEndpointsSnapshot for why the snapshot is the policy-attached view: settling on
+// the raw plugin-contributed collection instead would miss both a backend arriving in
+// BackendIndex and a policy attaching to one, neither of which is visible in a raw
+// endpoint row.
+func waitForEndpointsToSettle(
+	t *testing.T,
+	ctx context.Context,
+	snapshot func() map[string]*ir.EndpointsForBackend,
+) map[string]*ir.EndpointsForBackend {
 	t.Helper()
 	prev := snapshot()
 	stable := 0
@@ -618,7 +624,7 @@ func waitForEndpointsToSettle(t *testing.T, ctx context.Context, snapshot func()
 		if endpointsEqual(prev, cur) {
 			stable++
 			if stable >= settlePolls {
-				return
+				return cur
 			}
 		} else {
 			stable = 0
@@ -628,33 +634,29 @@ func waitForEndpointsToSettle(t *testing.T, ctx context.Context, snapshot func()
 }
 
 // finalEndpointsSnapshot returns the endpoint IR that the endpoint goldens are
-// translated from: every policy-carrying backend's raw endpoints projected onto the
-// policy-attached backend, exactly as proxy_syncer's FinalBackendEndpoints collection
-// does it.
-func finalEndpointsSnapshot(commoncol *collections.CommonCollections) []ir.EndpointsForBackend {
-	var out []ir.EndpointsForBackend
+// translated from, keyed by backend resource name: every policy-carrying backend's raw
+// endpoints projected onto the policy-attached backend, exactly as proxy_syncer's
+// FinalBackendEndpoints collection does it.
+func finalEndpointsSnapshot(commoncol *collections.CommonCollections) map[string]*ir.EndpointsForBackend {
+	out := make(map[string]*ir.EndpointsForBackend)
 	for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 		for _, backend := range col.List() {
 			raw := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName()))
 			if ep := proxy_syncer.FinalBackendEndpoints(backend, raw); ep != nil {
-				out = append(out, *ep)
+				out[backend.ResourceName()] = ep
 			}
 		}
 	}
 	return out
 }
 
-func endpointsEqual(a, b []ir.EndpointsForBackend) bool {
+func endpointsEqual(a, b map[string]*ir.EndpointsForBackend) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	byName := make(map[string]ir.EndpointsForBackend, len(a))
-	for _, e := range a {
-		byName[e.ResourceName()] = e
-	}
-	for _, e := range b {
-		o, ok := byName[e.ResourceName()]
-		if !ok || !o.Equals(e) {
+	for name, ea := range a {
+		eb, ok := b[name]
+		if !ok || !ea.Equals(*eb) {
 			return false
 		}
 	}
@@ -955,8 +957,9 @@ func (tc TestCase) Run(
 	// Settling has to come after every HasSynced above: commoncol.Endpoints is a join
 	// over the endpoint collections contributed by all plugins, extra ones included, so
 	// quiescence measured before a plugin syncs can be quiescence of a partial join.
+	var settledEndpoints map[string]*ir.EndpointsForBackend
 	if extraConfig.IncludeEndpoints {
-		waitForEndpointsToSettle(t, ctx, func() []ir.EndpointsForBackend {
+		settledEndpoints = waitForEndpointsToSettle(t, ctx, func() map[string]*ir.EndpointsForBackend {
 			return finalEndpointsSnapshot(commoncol)
 		})
 	}
@@ -1070,12 +1073,11 @@ func (tc TestCase) Run(
 					// ServiceEntries, InferencePools. Preserve empty assignments: publishing
 					// them is required to clear stale endpoints from Envoy.
 					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS {
-						// commoncol.Endpoints holds the raw, pre-policy-attachment endpoint IR
-						// contributed by backend plugins. Project it onto the policy-attached
-						// backend the same way the syncer does, or the endpoint plugins run
-						// against empty AttachedPolicies and are all no-ops here.
-						raw := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName()))
-						if ep := proxy_syncer.FinalBackendEndpoints(backend, raw); ep != nil {
+						// settledEndpoints is the policy-attached endpoint IR (see
+						// finalEndpointsSnapshot), not the raw commoncol.Endpoints rows: those
+						// predate policy attachment, so the endpoint plugins would run against
+						// empty AttachedPolicies and all be no-ops here.
+						if ep, ok := settledEndpoints[backend.ResourceName()]; ok {
 							resolved := translator.ResolveEndpoints(krt.TestingDummyContext{}, ucc, *ep)
 							if cla := translator.BuildClusterLoadAssignment(ucc, resolved); cla != nil {
 								endpointAssignments = append(endpointAssignments, cla)
@@ -1134,19 +1136,6 @@ func translateBackendForGolden(
 		return perClient, nil
 	}
 	return base.Cluster, nil
-}
-
-func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("reading proxy file: %w", err)
-	}
-	var proxy irtranslator.TranslationResult
-
-	if err := testutils.UnmarshalAnyYaml(data, &proxy); err != nil {
-		return nil, fmt.Errorf("parsing proxy from file: %w", err)
-	}
-	return &proxy, nil
 }
 
 func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteConfiguration) map[string]struct{} {

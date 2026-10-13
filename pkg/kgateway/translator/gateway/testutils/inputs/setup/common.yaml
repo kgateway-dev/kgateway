@@ -3,11 +3,13 @@ apiVersion: v1
 metadata:
   name: gwtest
 ---
-# env test can't delete pods, so we create them once for all tests
-# changes here may need re-generation of all the output yamls.
+# Shared pods and nodes, carried over from the envtest setup (pkg/kgateway/setup/testdata/setup_yaml).
+# Changes here may need re-generation of all the output yamls.
 
-# needed for unique client set - xds requests will look like they are coming
-# from this pod
+# In the envtest setup, xDS requests came from this pod, so client-relative endpoint
+# prioritization used its labels and locality. The translator harness does not: it
+# translates endpoints for a fixed client with no labels and an empty locality (see
+# TestCase.Run), so this pod is only an ordinary pod here.
 apiVersion: v1
 kind: Pod
 metadata:
