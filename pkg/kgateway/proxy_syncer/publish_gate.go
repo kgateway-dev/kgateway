@@ -50,6 +50,12 @@ import (
 // withheld while any referenced cluster is MISSING (the #13868
 // make-before-break property). A controller-local cache miss alone cannot
 // prove a client is cold; the client-reported version can.
+// That withhold has its own last-resort bound (warmWithholdBound,
+// KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, minutes rather than seconds): a cluster
+// still missing that long after a restart is not translation catching up, and
+// holding longer would freeze the client's routes, listeners and
+// certificates until its proxy restarts. The perclient_warm_withheld_clients
+// gauge shows the clients currently held.
 //
 // The warm withhold deliberately does NOT extend to gaps that are only
 // underived CLAs (missingEndpointsReferenced). syncXds events only fire
@@ -87,6 +93,15 @@ type publishGate struct {
 	// before its bounded publish; 0 disables both bounds (withhold/hold until
 	// coherent, with no deadline). Written once at construction.
 	budget time.Duration
+	// warmWithholdBound is the last-resort bound on how long a warm client
+	// stays withheld while referenced clusters are missing from CDS
+	// (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND); 0 removes it. It only applies
+	// while budget is non-zero. Written before the gate is first used.
+	warmWithholdBound time.Duration
+	// warmWithheld counts, per gateway, the warm clients currently withheld
+	// (pendingFirstPublish.warmWithheldSince set), for the warm_withheld_clients
+	// gauge. Guarded by mu; created on first use.
+	warmWithheld map[resourceNameDetails]int
 	// checkConsistency runs Snapshot.Consistent() on every publish, recording
 	// (never withholding on) violations — an invariant monitor for test/CI
 	// environments (KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK). Written once at
@@ -107,6 +122,10 @@ type pendingFirstPublish struct {
 	missing          []string
 	missingEndpoints []string
 	timer            *time.Timer
+	// warmWithheldSince is when this episode first withheld a warm client at
+	// budget expiry; zero while not withheld. It persists across re-arms so
+	// the warm bound measures the whole episode.
+	warmWithheldSince time.Time
 }
 
 type pendingFlipRelease struct {
@@ -160,6 +179,7 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 		if st.timer != nil {
 			st.timer.Stop()
 		}
+		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
@@ -280,13 +300,41 @@ func (g *publishGate) firePending(
 		return
 	}
 	mode := boundedPublishFirstPublish
-	if hasPriorXDSVersion != nil && hasPriorXDSVersion(proxyKey) {
-		if len(st.missing) > 0 {
+	warm := hasPriorXDSVersion != nil && hasPriorXDSVersion(proxyKey)
+	switch {
+	case warm && len(st.missing) > 0:
+		now := time.Now()
+		if st.warmWithheldSince.IsZero() {
+			g.markWarmWithheldLocked(proxyKey, st, now)
+		}
+		withheldFor := now.Sub(st.warmWithheldSince)
+		if g.warmWithholdBound <= 0 || withheldFor < g.warmWithholdBound {
 			logger.Warn("first-publish budget expired, but client reported a prior xDS version and referenced clusters are missing; withholding deferred snapshot",
-				"proxy_key", proxyKey, "missing_clusters", st.missing, "missing_endpoint_clusters", st.missingEndpoints)
+				"proxy_key", proxyKey, "missing_clusters", st.missing, "missing_endpoint_clusters", st.missingEndpoints,
+				"withheld_for", withheldFor, "warm_withhold_bound", g.warmWithholdBound)
 			recordDeferredWithheld(proxyKey)
+			if g.warmWithholdBound > 0 {
+				// Re-arm without waiting for another deferred build: with
+				// static inputs none may ever arrive, and the bound must
+				// still be reached. Re-checking every budget also keeps the
+				// warm-truth publish prompt if the missing clusters appear
+				// while some endpoints are still underived.
+				st.snap = snap
+				st.timer = time.AfterFunc(min(g.budget, g.warmWithholdBound-withheldFor), func() {
+					g.firePending(ctx, cache, proxyKey, hasPriorXDSVersion)
+				})
+			}
 			return
 		}
+		// Withheld for the whole bound: whatever is missing is not translation
+		// catching up after a restart. Stop holding the client's routes,
+		// listeners and certificates for it; routes to the missing clusters
+		// fail until those clusters appear.
+		mode = boundedPublishWarmRelease
+		logger.Warn("warm client withheld for the full warm withhold bound; publishing deferred snapshot, routes to the missing clusters will fail until they appear",
+			"proxy_key", proxyKey, "missing_clusters", st.missing, "missing_endpoint_clusters", st.missingEndpoints,
+			"withheld_for", withheldFor)
+	case warm:
 		// Warm client, but every referenced cluster is present in CDS and
 		// the only gaps are clusters with underived CLAs: by now that is
 		// backlog or a plugin gap with no convergence guarantee (#14352),
@@ -294,7 +342,7 @@ func (g *publishGate) firePending(
 		mode = boundedPublishWarmTruth
 		logger.Warn("first-publish budget expired for warm client; remaining gaps are clusters with no derived endpoints, publishing their current truth",
 			"proxy_key", proxyKey, "missing_endpoint_clusters", st.missingEndpoints)
-	} else {
+	default:
 		logger.Warn("first-publish budget expired; publishing deferred snapshot so the client can start",
 			"proxy_key", proxyKey, "missing_clusters", st.missing, "missing_endpoint_clusters", st.missingEndpoints)
 	}
@@ -302,7 +350,42 @@ func (g *publishGate) firePending(
 		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
 		return
 	}
+	g.unmarkWarmWithheldLocked(proxyKey, st)
 	recordBoundedPublish(proxyKey, mode)
+}
+
+// markWarmWithheldLocked records that a warm client's episode started
+// withholding at now, for the warm bound and the warm_withheld_clients gauge.
+// Callers must hold g.mu.
+func (g *publishGate) markWarmWithheldLocked(proxyKey string, st *pendingFirstPublish, now time.Time) {
+	st.warmWithheldSince = now
+	g.adjustWarmWithheldLocked(proxyKey, +1)
+}
+
+// unmarkWarmWithheldLocked clears the warm-withheld mark when the episode
+// publishes or ends. Callers must hold g.mu.
+func (g *publishGate) unmarkWarmWithheldLocked(proxyKey string, st *pendingFirstPublish) {
+	if st.warmWithheldSince.IsZero() {
+		return
+	}
+	st.warmWithheldSince = time.Time{}
+	g.adjustWarmWithheldLocked(proxyKey, -1)
+}
+
+func (g *publishGate) adjustWarmWithheldLocked(proxyKey string, delta int) {
+	if g.warmWithheld == nil {
+		g.warmWithheld = make(map[resourceNameDetails]int)
+	}
+	cd := getDetailsFromXDSClientResourceName(proxyKey)
+	labels := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
+	n := g.warmWithheld[labels] + delta
+	if n <= 0 {
+		delete(g.warmWithheld, labels)
+		n = 0
+	} else {
+		g.warmWithheld[labels] = n
+	}
+	recordWarmWithheldClients(labels, n)
 }
 
 // publishHeldLocked publishes a snapshot whose route flip is held at the
@@ -390,6 +473,7 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 		if st.timer != nil {
 			st.timer.Stop()
 		}
+		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
