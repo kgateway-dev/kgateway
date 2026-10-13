@@ -417,7 +417,7 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	if _, ok := parent.(*gwv1.Gateway); ok {
 		return listenerName
 	}
-	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
+	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
 }
 
 // RouteKeyMatches reports whether key equals GenerateRouteKey(parent, listenerName)
