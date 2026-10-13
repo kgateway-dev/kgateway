@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/util/concurrent"
+	"istio.io/istio/pkg/util/sets"
 )
 
 // newDebouncedCollection mirrors src and delivers its changes in batches: a burst of changes reaches dependents as
@@ -48,36 +50,11 @@ func newDebouncedCollection[T any](
 		out.Reset(src.List())
 		close(seeded)
 
-		settle := time.NewTimer(window)
-		settle.Stop()
-		ceiling := time.NewTimer(maxDelay)
-		ceiling.Stop()
-		pending := false
-		flush := func() {
-			settle.Stop()
-			ceiling.Stop()
-			pending = false
+		var debouncer concurrent.Debouncer[struct{}]
+		debouncer.Run(dirty, stop, window, maxDelay, func(sets.Set[struct{}]) {
 			// Reset distributes every difference from the previous flush as one event set.
 			out.Reset(src.List())
-		}
-		for {
-			select {
-			case <-stop:
-				settle.Stop()
-				ceiling.Stop()
-				return
-			case <-dirty:
-				settle.Reset(window)
-				if !pending {
-					pending = true
-					ceiling.Reset(maxDelay)
-				}
-			case <-settle.C:
-				flush()
-			case <-ceiling.C:
-				flush()
-			}
-		}
+		})
 	}()
 	return out
 }
