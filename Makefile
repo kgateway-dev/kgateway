@@ -1143,9 +1143,11 @@ kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image an
 #	I explored using a special format of the wildcard to pass deployment:image,
 # 	but ran into some challenges with that pattern, while calling this target from another one.
 #	It could be a cool extension to support, but didn't feel pressing so I stopped
+# Container name for deployments whose container is not named after the deployment
+KIND_SET_IMAGE_CONTAINER_kgateway := controller
 kind-set-image-%:
 	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
-	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl set image deployment/$* $(or $(KIND_SET_IMAGE_CONTAINER_$*),$*)=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
 	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"kgateway-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
 
