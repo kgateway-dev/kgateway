@@ -94,6 +94,10 @@ type OAuth2Provider struct {
 	// discovery is retried, so a provider that is unreachable when the configuration is first discovered is picked up once
 	// it becomes reachable. Discovery stops once authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI
 	// (when JWT parsing is configured) are all set explicitly, since none of the discovered values are then used.
+	// Discovery is performed by the control plane rather than the proxy, and trusts the CA certificates of the
+	// BackendTLSPolicy attached to backendRef in addition to the system trust store, so an issuer served under a private
+	// or self-signed CA needs no additional trust configuration on the control plane. The issuer URI's own host is
+	// authenticated, since the control plane connects to it directly rather than through the proxy's cluster.
 	// +optional
 	//
 	// +kubebuilder:validation:Pattern=`^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$`
