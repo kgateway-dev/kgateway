@@ -39,8 +39,14 @@ FHW4vPA/rQpONzRjk0fch5/sMDzspQsf/EQpl++MT9X3QC0mCf1z8T2qzjn72SJ7
 yitqAQ59a80qeeQ8i3nAI5clnJtfDYwZV6gIO72hygBWWE5FMjWzGPCE
 -----END CERTIFICATE-----`
 
+// validationLocalClusterName names the placeholder local cluster. The proxy bootstrap always
+// sets cluster_manager.local_cluster_name, and Envoy rejects some configs without one, e.g.
+// local_cluster_rate_limit on the local rate limit filter (LocalRateLimit shareAcrossGateway).
+const validationLocalClusterName = "kgateway_validation_local_cluster"
+
 // ConfigBuilder helps construct a partial bootstrap config for validation.
 type ConfigBuilder struct {
+	routeConfig   *envoyroutev3.RouteConfiguration
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
@@ -64,6 +70,13 @@ func (b *ConfigBuilder) AddFilterConfig(name string, config proto.Message) {
 // AddRoute adds a route to the builder.
 func (b *ConfigBuilder) AddRoute(route *envoyroutev3.Route) {
 	b.routes = append(b.routes, route)
+}
+
+// SetRouteConfiguration supplies the complete configuration to validate, preserving
+// virtual-host and route-configuration fields. It takes precedence over AddRoute
+// and AddFilterConfig, which build a synthetic virtual host for partial validation.
+func (b *ConfigBuilder) SetRouteConfiguration(config *envoyroutev3.RouteConfiguration) {
+	b.routeConfig = config
 }
 
 // AddCluster adds a cluster to the builder.
@@ -132,6 +145,14 @@ func hasSecretNamed(secrets []*envoytlsv3.Secret, name string) bool {
 	return false
 }
 
+// ValidatedClusters returns the bootstrap's static clusters without the placeholder local
+// cluster that Build always adds.
+func ValidatedClusters(bs *envoybootstrapv3.Bootstrap) []*envoyclusterv3.Cluster {
+	return slices.DeleteFunc(slices.Clone(bs.GetStaticResources().GetClusters()), func(c *envoyclusterv3.Cluster) bool {
+		return c.GetName() == validationLocalClusterName
+	})
+}
+
 // AddHttpFilter adds an HTTP filter to the HCM filter chain.
 func (b *ConfigBuilder) AddHttpFilter(filter *envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter) {
 	b.httpFilters = append(b.httpFilters, filter)
@@ -149,13 +170,15 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 	if len(b.routes) > 0 {
 		vhost.Routes = b.routes
 	}
+	routeConfig := b.routeConfig
+	if routeConfig == nil {
+		routeConfig = &envoyroutev3.RouteConfiguration{VirtualHosts: []*envoyroutev3.VirtualHost{vhost}}
+	}
 
 	hcm := &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 		StatPrefix: "placeholder",
 		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoyroutev3.RouteConfiguration{
-				VirtualHosts: []*envoyroutev3.VirtualHost{vhost},
-			},
+			RouteConfig: routeConfig,
 		},
 	}
 
@@ -203,9 +226,11 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 			}},
 		}},
 	}
-	if len(b.clusters) > 0 {
-		staticResources.Clusters = b.clusters
-	}
+	// Envoy requires the local cluster to be defined as a static cluster.
+	staticResources.Clusters = append(slices.Clone(b.clusters), &envoyclusterv3.Cluster{
+		Name:                 validationLocalClusterName,
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
+	})
 	if len(b.secrets) > 0 {
 		staticResources.Secrets = append(staticResources.Secrets, b.secrets...)
 	}
@@ -217,6 +242,9 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		Node: &envoycorev3.Node{
 			Id:      "validation-node-id",
 			Cluster: "validation-cluster",
+		},
+		ClusterManager: &envoybootstrapv3.ClusterManager{
+			LocalClusterName: validationLocalClusterName,
 		},
 		StaticResources: staticResources,
 	}, nil
