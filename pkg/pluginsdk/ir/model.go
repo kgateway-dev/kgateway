@@ -236,10 +236,12 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte(objSrc.Name))
 	h.Write([]byte{0})
 	h.Write([]byte(objSrc.Namespace))
-	for k, v := range labels {
-		h.Write([]byte{0})
-		h.Write([]byte(k + "=" + v))
-	}
+	// Fold the labels in through HashLabels, which XORs a per-label hash and is therefore
+	// order-independent. Writing the label pairs straight into this hasher makes the result
+	// depend on Go's randomized map iteration order, so two identical backends hash
+	// differently and every recomputation of this collection looks like a change.
+	h.Write([]byte{0})
+	utils.HashUint64(h, utils.HashLabels(labels))
 	h.Write([]byte{0})
 	h.Write([]byte{byte(us.TrafficDistribution)})
 	upstreamHash := h.Sum64()

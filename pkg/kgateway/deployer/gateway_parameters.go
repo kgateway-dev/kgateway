@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
@@ -354,10 +353,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			},
 		},
 	}
-	if i := gw.Spec.Infrastructure; i != nil {
-		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
-		gtw.GatewayLabels = translateInfraMeta(i.Labels)
-	}
+	deployer.SetInfrastructureMetadataFromGateway(gw, gtw)
 	// construct the default values
 	vals := &deployer.HelmConfig{
 		Gateway: gtw,
@@ -451,15 +447,4 @@ func getGatewayClassFromGateway(cli kclient.Client[*gwv1.GatewayClass], gw *gwv1
 	}
 
 	return gwc, nil
-}
-
-func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
-	infra := make(map[string]string, len(meta))
-	for k, v := range meta {
-		if strings.HasPrefix(string(k), "gateway.networking.k8s.io/") {
-			continue // ignore this prefix to avoid conflicts
-		}
-		infra[string(k)] = string(v)
-	}
-	return infra
 }

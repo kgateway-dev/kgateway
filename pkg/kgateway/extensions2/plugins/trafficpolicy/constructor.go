@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -26,22 +27,57 @@ type TrafficPolicyConstructor struct {
 	commoncol         *collections.CommonCollections
 	gatewayExtensions krt.Collection[TrafficPolicyGatewayExtensionIR]
 	extBuilder        func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR
+
+	// sourceGroupKind is the identity a ReferenceGrant has to name to permit the
+	// cross-namespace references in TrafficPolicySpec. Empty means TrafficPolicy;
+	// see WithSourceGroupKind.
+	sourceGroupKind schema.GroupKind
+}
+
+// TrafficPolicyConstructorOption configures a TrafficPolicyConstructor.
+type TrafficPolicyConstructorOption func(*TrafficPolicyConstructor)
+
+// WithSourceGroupKind sets the identity that ReferenceGrants are evaluated against
+// for the cross-namespace references TrafficPolicySpec holds: API key and basic auth
+// secrets, secret-backed header values, and, in Strict mode, GatewayExtension
+// references.
+//
+// Defaults to gateway.kgateway.dev/TrafficPolicy
+func WithSourceGroupKind(gk schema.GroupKind) TrafficPolicyConstructorOption {
+	return func(c *TrafficPolicyConstructor) {
+		c.sourceGroupKind = gk
+	}
 }
 
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
+	opts ...TrafficPolicyConstructorOption,
 ) *TrafficPolicyConstructor {
 	extBuilder := TranslateGatewayExtensionBuilder(ctx, commoncol)
 	defaultExtBuilder := func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 		return extBuilder(krtctx, gExt)
 	}
 	gatewayExtensions := krt.NewCollection(commoncol.GatewayExtensions, defaultExtBuilder)
-	return &TrafficPolicyConstructor{
+	c := &TrafficPolicyConstructor{
 		commoncol:         commoncol,
 		gatewayExtensions: gatewayExtensions,
 		extBuilder:        extBuilder,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+// refGrantSource returns the source identity that ReferenceGrants are evaluated
+// against for references held by a TrafficPolicySpec in ns.
+func (c *TrafficPolicyConstructor) refGrantSource(ns string) krtcollections.From {
+	gk := c.sourceGroupKind
+	if gk.Empty() {
+		gk = wellknown.TrafficPolicyGVK.GroupKind()
+	}
+	return krtcollections.From{GroupKind: gk, Namespace: ns}
 }
 
 func (c *TrafficPolicyConstructor) ConstructIR(
@@ -81,7 +117,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	constructCompression(policyCR.Spec, &outSpec)
 
 	// Construct header modifiers specific IR
-	if err := constructHeaderModifiers(krtctx, policyCR, c.commoncol.Secrets, &outSpec); err != nil {
+	if err := constructHeaderModifiers(krtctx, policyCR, c.refGrantSource(policyCR.Namespace), c.commoncol.Secrets, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 	// Construct request mirror specific IR
@@ -111,7 +147,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	}
 
 	// Construct API key auth specific IR
-	if err := constructAPIKeyAuth(krtctx, policyCR, c.commoncol, &outSpec); err != nil {
+	if err := constructAPIKeyAuth(krtctx, policyCR, c.refGrantSource(policyCR.Namespace), c.commoncol, &outSpec); err != nil {
 		errors = append(errors, err)
 	}
 
@@ -131,7 +167,7 @@ func (c *TrafficPolicyConstructor) ConstructIR(
 	// Construct stat prefix specific IR
 	constructStatPrefix(policyCR.Spec, &outSpec)
 	// Construct basic auth specific IR
-	if err := constructBasicAuth(krtctx, policyCR, &outSpec, c.commoncol.Secrets); err != nil {
+	if err := constructBasicAuth(krtctx, policyCR, c.refGrantSource(policyCR.Namespace), &outSpec, c.commoncol.Secrets); err != nil {
 		errors = append(errors, err)
 	}
 
@@ -151,16 +187,14 @@ func (c *TrafficPolicyConstructor) FetchGatewayExtension(krtctx krt.HandlerConte
 
 	// In Strict mode, cross-namespace ExtensionRef requires a ReferenceGrant.
 	if c.commoncol.Settings.ReferenceGrantMode == apisettings.ReferenceGrantStrict {
-		if !c.commoncol.RefGrants.ReferenceAllowed(krtctx,
-			wellknown.TrafficPolicyGVK.GroupKind(),
-			ns,
-			ir.ObjectSource{
-				Group:     wellknown.GatewayExtensionGVK.Group,
-				Kind:      wellknown.GatewayExtensionGVK.Kind,
-				Namespace: string(namespace),
-				Name:      string(extensionRef.Name),
-			},
-		) {
+		from := c.refGrantSource(ns)
+		to := ir.ObjectSource{
+			Group:     wellknown.GatewayExtensionGVK.Group,
+			Kind:      wellknown.GatewayExtensionGVK.Kind,
+			Namespace: string(namespace),
+			Name:      string(extensionRef.Name),
+		}
+		if !c.commoncol.RefGrants.ReferenceAllowed(krtctx, from.GroupKind, from.Namespace, to) {
 			return nil, krtcollections.ErrMissingReferenceGrant
 		}
 	}

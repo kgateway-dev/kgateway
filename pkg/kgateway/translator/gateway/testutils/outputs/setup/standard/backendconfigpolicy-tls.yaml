@@ -110,6 +110,7 @@ Endpoints:
             address: 10.244.1.11
             portValue: 8080
     loadBalancingWeight: 1
+    locality: {}
 Listeners:
 - address:
     socketAddress:

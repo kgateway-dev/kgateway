@@ -208,7 +208,7 @@ type TrafficPolicySpec struct {
 	FaultInjection *FaultInjectionPolicy `json:"faultInjection,omitempty"`
 
 	// ACL configures IP-based access control for HTTP requests.
-	// Rules are evaluated using longest-prefix matching on the effictive client IP
+	// Rules are evaluated using longest-prefix matching on the effective client IP
 	// from envoy base on settings. See the UseRemoteAddress, XffTrustedCIDRs,
 	// XffNumTrustedHops settings under ListenerPolicy -> HttpSettings for details.
 	//
@@ -302,7 +302,6 @@ type ConnectConfig struct {
 }
 
 // URLRewrite specifies URL rewrite rules using regular expressions.
-// This allows more flexible and advanced path rewriting based on regex patterns.
 // +kubebuilder:validation:AtLeastOneOf=pathRegex
 type URLRewrite struct {
 	// Path specifies the path rewrite configuration.
@@ -475,11 +474,10 @@ type RateLimit struct {
 	Global *RateLimitPolicy `json:"global,omitempty"`
 }
 
-// LocalRateLimitPolicy represents a policy for local rate limiting.
-// It defines the configuration for rate limiting using a token bucket mechanism.
+// LocalRateLimitPolicy configures local rate limiting using a token bucket.
+// +kubebuilder:validation:XValidation:rule="!has(self.shareAcrossGateway) || !self.shareAcrossGateway || has(self.tokenBucket)",message="shareAcrossGateway requires tokenBucket to be set"
 type LocalRateLimitPolicy struct {
-	// TokenBucket represents the configuration for a token bucket local rate-limiting mechanism.
-	// It defines the parameters for controlling the rate at which requests are allowed.
+	// TokenBucket configures the local rate limiter's token bucket.
 	// +optional
 	TokenBucket *TokenBucket `json:"tokenBucket,omitempty"`
 
@@ -494,10 +492,21 @@ type LocalRateLimitPolicy struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	PercentEnforced *int32 `json:"percentEnforced,omitempty"`
+
+	// ShareAcrossGateway applies the token bucket to the Gateway as a whole rather than to each
+	// proxy replica individually. Each replica is given an even share of the bucket based on the
+	// current number of replicas of the Gateway, so the configured rate is the total rate admitted
+	// by all replicas combined. For example, with tokensPerFill=100 and fillInterval=1s, a Gateway
+	// with 4 replicas admits 25 requests per second per gateway. Because the allocation is divided,
+	// maxTokens must be greater than or equal to the number of replicas, otherwise no requests are
+	// admitted.
+	//
+	// Defaults to false.
+	// +optional
+	ShareAcrossGateway *bool `json:"shareAcrossGateway,omitempty"`
 }
 
-// TokenBucket defines the configuration for a token bucket rate-limiting mechanism.
-// It controls the rate at which tokens are generated and consumed for a specific operation.
+// TokenBucket configures the burst capacity and refill rate of a token bucket.
 type TokenBucket struct {
 	// MaxTokens specifies the maximum number of tokens that the bucket can hold.
 	// This value must be greater than or equal to 1.
@@ -508,7 +517,6 @@ type TokenBucket struct {
 
 	// TokensPerFill specifies the number of tokens added to the bucket during each fill interval.
 	// If not specified, it defaults to 1.
-	// This controls the steady-state rate of token generation.
 	// +optional
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
@@ -516,7 +524,6 @@ type TokenBucket struct {
 
 	// FillInterval defines the time duration between consecutive token fills.
 	// This value must be a valid duration string (e.g., "1s", "500ms").
-	// It determines the frequency of token replenishment.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
@@ -752,6 +759,8 @@ type LabelSelector struct {
 }
 
 // +kubebuilder:validation:ExactlyOneOf=maxRequestSize;disable
+// +kubebuilder:validation:XValidation:message="filterStage cannot be set when disable is set",rule="!(has(self.disable) && has(self.filterStage))"
+// +kubebuilder:validation:XValidation:message="filterStage.weight has no effect for buffer and must be 0: a filter chain carries at most one buffer filter, so there is nothing to break ties against",rule="!has(self.filterStage) || self.filterStage.weight == 0"
 type Buffer struct {
 	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
 	// Requests exceeding this size will receive HTTP 413.
@@ -764,6 +773,27 @@ type Buffer struct {
 	// Can be used to disable buffer policies applied at a higher level in the config hierarchy.
 	// +optional
 	Disable *shared.PolicyDisable `json:"disable,omitempty"`
+
+	// FilterStage sets the buffer filter's position in the HTTP filter chain.
+	// By default, it runs after authentication, authorization, and rate limiting.
+	// Place it before filters that read or hold the body, such as ext_proc or body
+	// transformations, to enforce maxRequestSize before those filters consume it.
+	// Earlier buffering uses memory even for requests that later filters reject.
+	//
+	// Placement affects every route on the listener. If policies request different
+	// stages, the earliest wins. Policies that only set disable do not affect
+	// placement. Per-route maxRequestSize and disable overrides still apply.
+	// Keep stages consistent or use separate listeners to avoid moving buffering
+	// earlier for other routes.
+	//
+	// Request decompressors stay ahead of the buffer so maxRequestSize applies to
+	// the decompressed body. Placing the buffer at Fault also moves decompression
+	// ahead of fault injection, CORS, and ext_proc filters staged at Fault for all
+	// routes on the listener.
+	//
+	// filterStage.weight must be 0.
+	// +optional
+	FilterStage *FilterStageSpec `json:"filterStage,omitempty"`
 }
 
 // Compression configures HTTP response compression and request decompression behavior.

@@ -14,6 +14,7 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       commonHttpProtocolOptions:
         idleTimeout: 10s
+        maxConnectionDuration: 600s
         maxHeadersCount: 15
         maxStreamDuration: 30s
       explicitHttpConfig:

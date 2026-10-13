@@ -68,7 +68,7 @@ func NewStatusSyncer(cfg StatusSyncerConfig, opts ...StatusSyncerOption) *Status
 	// once. It re-reads its registration set on every call, so it already covers the reducers
 	// the registrations below add and must not be appended again here.
 	for _, register := range optCfg.statusRegistrations {
-		register(StatusRegistrationInputs{
+		register(statussync.RegistrationInputs{
 			Collections:           syncer.statusCollections,
 			StatusContributions:   cfg.StatusContributions,
 			ContributionsByTarget: cfg.StatusContributionsByTarget,

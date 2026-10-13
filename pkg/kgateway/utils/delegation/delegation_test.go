@@ -75,6 +75,64 @@ func TestChildRouteCanAttachToParentRef(t *testing.T) {
 	}
 }
 
+func TestMatchingParentRef(t *testing.T) {
+	parent := types.NamespacedName{Name: "parent", Namespace: "default"}
+	gatewayRef := gwv1.ParentReference{Name: "gw", Namespace: new(gwv1.Namespace("infra"))}
+	withNamespace := gwv1.ParentReference{
+		Group:     new(gwv1.Group("gateway.networking.k8s.io")),
+		Kind:      new(gwv1.Kind("HTTPRoute")),
+		Name:      "parent",
+		Namespace: new(gwv1.Namespace("default")),
+	}
+	withoutNamespace := gwv1.ParentReference{
+		Group: new(gwv1.Group("gateway.networking.k8s.io")),
+		Kind:  new(gwv1.Kind("HTTPRoute")),
+		Name:  "parent",
+	}
+
+	testCases := []struct {
+		name            string
+		routeNamespace  string
+		routeParentRefs []gwv1.ParentReference
+		expectedRef     gwv1.ParentReference
+		expectedOK      bool
+	}{
+		{
+			name:           "no ParentRefs has no matching reference",
+			routeNamespace: "default",
+			expectedOK:     false,
+		},
+		{
+			name:            "explicit namespace is returned as written",
+			routeNamespace:  "default",
+			routeParentRefs: []gwv1.ParentReference{gatewayRef, withNamespace},
+			expectedRef:     withNamespace,
+			expectedOK:      true,
+		},
+		{
+			name:            "omitted namespace defaults to the route's namespace and is returned as written",
+			routeNamespace:  "default",
+			routeParentRefs: []gwv1.ParentReference{gatewayRef, withoutNamespace},
+			expectedRef:     withoutNamespace,
+			expectedOK:      true,
+		},
+		{
+			name:            "omitted namespace does not match a parent in another namespace",
+			routeNamespace:  "other",
+			routeParentRefs: []gwv1.ParentReference{withoutNamespace},
+			expectedOK:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ref, ok := MatchingParentRef(tc.routeNamespace, tc.routeParentRefs, parent)
+			assert.Equal(t, tc.expectedOK, ok)
+			assert.Equal(t, tc.expectedRef, ref)
+		})
+	}
+}
+
 func TestIsDelegatedRouteMatch(t *testing.T) {
 	testCases := []struct {
 		name     string

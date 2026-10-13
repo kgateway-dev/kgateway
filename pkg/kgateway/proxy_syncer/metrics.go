@@ -47,6 +47,17 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, resourceLabel},
 	)
+	// snapshotDeferredClients counts connected clients without a current snapshot
+	// row, including clients that have never received a snapshot. Brief increases
+	// occur during convergence; a sustained count indicates deferred configuration.
+	snapshotDeferredClients = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "deferred_clients",
+			Help:      "Connected xDS clients whose snapshot is currently withheld because per-client inputs are not ready",
+		},
+		[]string{gatewayLabel, namespaceLabel},
+	)
 )
 
 // snapshotResourcesMetricLabels defines the labels for XDS snapshot resources metrics.
@@ -134,4 +145,5 @@ func ResetMetrics() {
 	snapshotTransformsTotal.Reset()
 	snapshotTransformDuration.Reset()
 	snapshotResources.Reset()
+	snapshotDeferredClients.Reset()
 }

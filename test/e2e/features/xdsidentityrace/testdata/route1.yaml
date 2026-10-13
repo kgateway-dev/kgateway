@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xdsrace-route1
+  namespace: kgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: kgateway-base
+  hostnames:
+    - "xdsrace.example.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /route1
+      backendRefs:
+        # The shared backend deployed by the base TestKgateway setup in
+        # kgateway-base; this route only exists to force xDS pushes.
+        - name: backend
+          port: 80

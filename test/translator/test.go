@@ -271,9 +271,20 @@ func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOpti
 
 type ExtraPluginsFn func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []pluginsdk.Plugin
 
+// ExtraStatusSyncerOptionsFn returns the status pipeline options an extension passes to the
+// proxy syncer (setup.WithStatusSyncerOptions). It runs after PluginsFn and before the fake
+// client starts, so informer-backed collections it builds from commoncol's client are synced
+// before translation.
+type ExtraStatusSyncerOptionsFn func(ctx context.Context, commoncol *collections.CommonCollections) []proxy_syncer.StatusSyncerOption
+
 type ExtraConfig struct {
-	NewClientFn           func(*testing.T, ...client.Object) apiclient.Client
-	PluginsFn             ExtraPluginsFn
+	NewClientFn func(*testing.T, ...client.Object) apiclient.Client
+	PluginsFn   ExtraPluginsFn
+	// StatusSyncerOptionsFn supplies the extension's status pipeline options. The harness
+	// honors the policy target resolvers among them (proxy_syncer.WithPolicyTargetResolver),
+	// so policies targeting a missing object of an extension kind report TargetNotFound as
+	// they would in the controller; other options are ignored.
+	StatusSyncerOptionsFn ExtraStatusSyncerOptionsFn
 	Schemes               runtime.SchemeBuilder
 	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
 	IncludeEndpoints      bool
@@ -890,6 +901,11 @@ func (tc TestCase) Run(
 	plugins = append(plugins, extraPlugs...)
 	extensions := registry.MergePlugins(plugins...)
 
+	var statusSyncerOpts []proxy_syncer.StatusSyncerOption
+	if extraConfig.StatusSyncerOptionsFn != nil {
+		statusSyncerOpts = extraConfig.StatusSyncerOptionsFn(ctx, commoncol)
+	}
+
 	// A fake backend kind for fixtures that route to a plugin-contributed backend
 	// (inputs/backends/basic.yaml). Opt-in: the backend it contributes shows up in
 	// BackendsWithPolicy() for every gateway, so registering it unconditionally would
@@ -980,13 +996,25 @@ func (tc TestCase) Run(
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicyRequiringStatus() {
 			backendIRs = append(backendIRs, col.List()...)
 		}
-		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs, map[schema.GroupKind]struct{}{
-			wellknown.BackendTLSPolicyGVK.GroupKind(): {},
-		})
+		backendPolicyReports := proxy_syncer.GenerateBackendPolicyReport(backendIRs)
 
-		// Merge gateway reports with backend policy reports
+		// Merge gateway reports with backend policy reports. A policy can appear in both
+		// (BackendTLSPolicy reports Gateway ancestors from translation and target ancestors
+		// from the backend path), so union the ancestors rather than replacing the report.
 		mergedReports := reportsMap
-		maps.Copy(mergedReports.Policies, backendPolicyReports.Policies)
+		for key, backendReport := range backendPolicyReports.Policies {
+			if existing, ok := mergedReports.Policies[key]; ok && existing != nil && backendReport != nil {
+				maps.Copy(existing.Ancestors, backendReport.Ancestors)
+				continue
+			}
+			mergedReports.Policies[key] = backendReport
+		}
+
+		// Policies whose targetRefs do not resolve are reported by a third producer in the proxy
+		// syncer (see proxy_syncer/policy_target_status.go). A policy may have both a Gateway
+		// ancestor from translation and a TargetNotFound ancestor, so merge by ancestor rather
+		// than replacing the policy's report.
+		mergedReports.MergePolicyReports(proxy_syncer.GeneratePolicyTargetReports(commoncol, extensions, statusSyncerOpts...))
 
 		// Backend Accepted conditions are also generated outside gateway translation
 		// (see proxy_syncer's backendStatusReport singleton). Reproduce that here from
@@ -1028,14 +1056,11 @@ func (tc TestCase) Run(
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
-				cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, backend)
+				// Errored translations (including strict-mode validation failures) are
+				// skipped rather than failing the test: snapshotPerClient omits errored
+				// clusters from CDS, so the golden output must omit them too.
+				cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, backend)
 				if err != nil {
-					// TranslateBackend returns a blackhole cluster alongside the error, and
-					// the error is what production acts on: snapshotPerClient drops errored
-					// clusters from the per-client CDS snapshot (and their CLAs with them),
-					// so Envoy never sees the blackhole. Recording it here would pin output
-					// that is not published. Errors still reach the goldens as policy and
-					// backend statuses.
 					continue
 				}
 				if cluster != nil {
@@ -1051,7 +1076,8 @@ func (tc TestCase) Run(
 						// against empty AttachedPolicies and are all no-ops here.
 						raw := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName()))
 						if ep := proxy_syncer.FinalBackendEndpoints(backend, raw); ep != nil {
-							if cla, _, _ := translator.TranslateEndpoints(krt.TestingDummyContext{}, ucc, *ep); cla != nil {
+							resolved := translator.ResolveEndpoints(krt.TestingDummyContext{}, ucc, *ep)
+							if cla := translator.BuildClusterLoadAssignment(ucc, resolved); cla != nil {
 								endpointAssignments = append(endpointAssignments, cla)
 							}
 						}
@@ -1067,7 +1093,7 @@ func (tc TestCase) Run(
 						continue
 					}
 
-					cluster, err := t.TranslateBackend(ctx, krt.TestingDummyContext{}, ucc, &clone)
+					cluster, err := translateBackendForGolden(ctx, krt.TestingDummyContext{}, t, ucc, &clone)
 					if err != nil {
 						continue
 					}
@@ -1084,6 +1110,30 @@ func (tc TestCase) Run(
 	}
 
 	return results, nil
+}
+
+// translateBackendForGolden selects the base or per-client cluster using the
+// same translation contract as snapshot assembly. Errored translations return
+// no cluster because snapshotPerClient excludes errored rows from CDS.
+func translateBackendForGolden(
+	ctx context.Context,
+	kctx krt.HandlerContext,
+	backendTranslator *irtranslator.BackendTranslator,
+	ucc ir.UniquelyConnectedClient,
+	backend *ir.BackendObjectIR,
+) (*envoyclusterv3.Cluster, error) {
+	base := backendTranslator.TranslateBackendBase(krt.TestingDummyContext{}, ctx, backend)
+	if base.Error != nil {
+		return nil, base.Error
+	}
+	perClient, err := backendTranslator.ApplyPerClient(kctx, ctx, ucc, backend, base)
+	if err != nil {
+		return nil, err
+	}
+	if perClient != nil {
+		return perClient, nil
+	}
+	return base.Cluster, nil
 }
 
 func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {

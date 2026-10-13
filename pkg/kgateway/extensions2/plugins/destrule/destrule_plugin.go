@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"slices"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/api/networking/v1alpha3"
@@ -15,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -40,17 +43,48 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	}
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
-			gk: {
-				Name:                    "destrule",
-				PerClientProcessBackend: d.processBackend,
-				PerClientEditEndpoints:  d.processEndpoints,
-			},
+			gk: d.policyPlugin(),
 		},
 	}
 }
 
 type destrulePlugin struct {
 	destinationRulesIndex DestinationRuleIndex
+}
+
+// policyPlugin is the registration NewPlugin contributes. Tests check the
+// overlay against the inputs hash registered beside it, so both come from here.
+func (d *destrulePlugin) policyPlugin() sdk.PolicyPlugin {
+	return sdk.PolicyPlugin{
+		Name:                       "destrule",
+		PerClientClusterOverlay:    d.clusterOverlay,
+		OverlayInputsHash:          d.overlayInputsHash,
+		PerClientEditEndpoints:     d.processEndpoints,
+		PerClientEndpointsMayApply: d.endpointsMayApply,
+	}
+}
+
+// overlayInputsHash declares what clusterOverlay reads from the backend: the
+// canonical hostname, which selects the rules, and the port, which selects the
+// port-level traffic policy within the chosen rule. The rules themselves are
+// fetched, so KRT reruns the client when one changes.
+func (d *destrulePlugin) overlayInputsHash(in ir.BackendObjectIR) uint64 {
+	hasher := fnv.New64a()
+	utils.HashStringField(hasher, in.CanonicalHostname)
+	utils.HashUint64(hasher, uint64(in.GetPort())) //nolint:gosec // G115: a port number is never negative
+	return hasher.Sum64()
+}
+
+// endpointsMayApply reports whether a DestinationRule names the backend's host.
+//
+// endpointsMayApply rules a backend out of the per-client endpoint path when no
+// DestinationRule names its hostname at all. Which rule applies to a given client
+// is decided by the client's namespace and labels, so a backend with a rule for
+// its host keeps the per-client build; one with none has its inline CLA built
+// once on the shared base. The fetch registers the base's dependency on rules
+// for this host, so the first rule to appear moves the backend back.
+func (d *destrulePlugin) endpointsMayApply(kctx krt.HandlerContext, in ir.BackendObjectIR) bool {
+	return d.destinationRulesIndex.HasRulesForHost(kctx, in.CanonicalHostname)
 }
 
 // processEndpoints tries to find a destination rule
@@ -79,25 +113,37 @@ func (d *destrulePlugin) processEndpoints(
 	return hasher.Sum64()
 }
 
-func (d *destrulePlugin) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR, outCluster *envoyclusterv3.Cluster) {
+func (d *destrulePlugin) clusterOverlay(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
 	if destrule == nil {
-		return
+		return nil
 	}
 
 	trafficPolicy := getTrafficPolicy(destrule, uint32(in.GetPort())) //nolint:gosec // G115: BackendObjectIR port is int32 representing a port number, always in valid range
 	outlier := trafficPolicy.GetOutlierDetection()
 	if outlier == nil {
-		return
+		return nil
 	}
 
-	// All of the following are only applied when outlier detection is present
-	applyLocalityLbConfig(trafficPolicy, outCluster)
-	applyOutlierDetection(outlier, outCluster)
-	applyTCPKeepalive(trafficPolicy, outCluster)
+	return &sdk.ClusterOverlay{
+		Mutate: func(outCluster *envoyclusterv3.Cluster) {
+			applyLocalityLbConfig(trafficPolicy, outCluster)
+			applyOutlierDetection(outlier, outCluster)
+			applyTCPKeepalive(trafficPolicy, outCluster)
+		},
+	}
 }
 
 func applyLocalityLbConfig(trafficPolicy *v1alpha3.TrafficPolicy, outCluster *envoyclusterv3.Cluster) {
+	// A preceding waypoint overlay may have replaced EDS with an unweighted
+	// service VIP. Do not reintroduce locality weighting on that final inline
+	// assignment. STATIC backends with actual locality weights still use it.
+	if outCluster.GetType() == envoyclusterv3.Cluster_STATIC && outCluster.GetLoadAssignment() != nil &&
+		!slices.ContainsFunc(outCluster.GetLoadAssignment().GetEndpoints(), func(ep *envoyendpointv3.LocalityLbEndpoints) bool {
+			return ep.GetLoadBalancingWeight().GetValue() > 0
+		}) {
+		return
+	}
 	if getLocalityLbSetting(trafficPolicy) == nil {
 		return
 	}

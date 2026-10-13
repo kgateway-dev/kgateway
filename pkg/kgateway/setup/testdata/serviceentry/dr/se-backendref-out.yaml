@@ -33,6 +33,7 @@ endpoints:
             address: 255.0.0.1
             portValue: 80
     loadBalancingWeight: 1
+    locality: {}
     priority: 3
   - lbEndpoints:
     - endpoint:

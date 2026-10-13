@@ -56,6 +56,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					},
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
 						IdleTimeout:              new(metav1.Duration{Duration: 60 * time.Second}),
+						MaxConnectionDuration:    new(metav1.Duration{Duration: 10 * time.Minute}),
 						MaxHeadersCount:          new(int32(100)),
 						MaxStreamDuration:        new(metav1.Duration{Duration: 30 * time.Second}),
 						MaxRequestsPerConnection: new(int32(100)),
@@ -81,6 +82,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
 						CommonHttpProtocolOptions: &envoycorev3.HttpProtocolOptions{
 							IdleTimeout:              durationpb.New(60 * time.Second),
+							MaxConnectionDuration:    durationpb.New(10 * time.Minute),
 							MaxHeadersCount:          &wrapperspb.UInt32Value{Value: 100},
 							MaxStreamDuration:        durationpb.New(30 * time.Second),
 							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 100},

@@ -28,6 +28,7 @@ Clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
           arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
+          hostRewrite: 172.18.0.2:31566
       - name: envoy.filters.http.aws_request_signing
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
@@ -69,6 +70,7 @@ Clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.aws_lambda.v3.Config
           arn: arn:aws:lambda:us-east-1:000000000000:function:hello-function:$LATEST
+          hostRewrite: 172.18.0.2:31566
           payloadPassthrough: true
       - name: envoy.filters.http.aws_request_signing
         typedConfig:

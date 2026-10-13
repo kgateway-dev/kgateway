@@ -457,20 +457,21 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 
 func backendUpstreams(backendCol krt.Collection[*kgateway.Backend]) krt.Collection[ir.BackendObjectIR] {
 	return krt.NewCollection(backendCol, func(kctx krt.HandlerContext, backend *kgateway.Backend) *ir.BackendObjectIR {
-		// Create a BackendObjectIR IR representation from the given Backend.
-		// For static backends, use the port from the first host
-		var port int32 = 8080 // default port
-		if backend.Spec.Static != nil && len(backend.Spec.Static.Hosts) > 0 {
-			port = int32(backend.Spec.Static.Hosts[0].Port)
-		}
-
+		// Create a BackendObjectIR IR representation from the given Backend. Like the
+		// Backend plugin, register it at port 0: a backendRef to a Backend carries no
+		// port, so the lookup key must not include one.
 		backendIR := ir.NewBackendObjectIR(ir.ObjectSource{
 			Kind:      backendGk.Kind,
 			Group:     backendGk.Group,
 			Namespace: backend.Namespace,
 			Name:      backend.Name,
-		}, port, "", "")
+		}, 0, "", "")
 		backendIR.Obj = backend
+		if kinds, ok := backend.Labels[supportedRouteKindsLabel]; ok {
+			for kind := range strings.SplitSeq(kinds, ",") {
+				backendIR.SupportedRouteKinds = append(backendIR.SupportedRouteKinds, schema.GroupKind{Group: gwv1.GroupName, Kind: kind})
+			}
+		}
 		return &backendIR
 	})
 }
@@ -563,8 +564,9 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
 	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
 	services.WaitUntilSynced(nil)
+	backends.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
-	for !rtidx.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {
+	for !rtidx.HasSynced() || !upstreams.HasSynced() || !refgrants.HasSynced() || !policyCol.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
 	return rtidx

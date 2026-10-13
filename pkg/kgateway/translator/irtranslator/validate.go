@@ -31,6 +31,7 @@ var (
 
 	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
 	ValidRoutePatternError            = fmt.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	RedirectPathControlCharacterError = errors.New("must not contain NUL, CR or LF")
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
 		return fmt.Errorf("path [%s] cannot contain [%s]", s, invalid)
 	}
@@ -120,7 +121,7 @@ func validateEnvoyRoute(r *envoyroutev3.Route) error {
 	validatePath(match.GetPath(), &errs)
 	validatePath(match.GetPrefix(), &errs)
 	validatePath(match.GetPathSeparatedPrefix(), &errs)
-	validatePath(re.GetPathRedirect(), &errs)
+	validateRedirectPath(re.GetPathRedirect(), &errs)
 	validatePath(re.GetHostRedirect(), &errs)
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
@@ -153,6 +154,22 @@ func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWe
 func validatePath(path string, errs *[]error) {
 	if err := ValidateRoutePath(path); err != nil {
 		*errs = append(*errs, fmt.Errorf("the \"%s\" path is invalid: %w", path, err))
+	}
+}
+
+// validateRedirectPath validates an Envoy path_redirect. Unlike a match path or a prefix
+// rewrite, this is a redirect *target* rather than a path the proxy routes on, so the RFC
+// 3986 pchar rules in ValidateRoutePath do not govern it: it may carry a query string and a
+// fragment, and sequences such as "//" and "/../" are legal here - they matter for path
+// confusion only when matching, and Envoy has its own normalization (merge_slashes,
+// normalize_path) for that. Envoy constrains the field to ^[^\x00\n\r]*$ and nothing more,
+// so mirror exactly that; anything stricter rejects config the proxy would have accepted.
+//
+// The check is still worth making rather than deferring to Envoy: a violation makes Envoy
+// reject the entire RouteConfiguration, whereas failing here costs only the offending route.
+func validateRedirectPath(path string, errs *[]error) {
+	if strings.ContainsAny(path, "\x00\n\r") {
+		*errs = append(*errs, fmt.Errorf("the \"%q\" path is invalid: %w", path, RedirectPathControlCharacterError))
 	}
 }
 

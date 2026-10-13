@@ -1,0 +1,112 @@
+##################################################################################################
+# Locality weighting for endpoints without a locality.
+#
+# The test creates two WorkloadEntries for the ServiceEntry below, pointing at the echo-a and
+# echo-b pods, and gives only the echo-a one a locality. Both endpoints must receive traffic.
+#
+# The namespace is deliberately not ambient-captured, so Envoy's load balancing alone decides
+# which endpoint each request reaches. The echo pods do not carry the ServiceEntry's
+# workloadSelector labels, so the WorkloadEntries are the only endpoints.
+##################################################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: waypoint-locality-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locality-echo-a
+  namespace: waypoint-locality-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locality-echo-a
+  template:
+    metadata:
+      labels:
+        app: locality-echo-a
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: http-echo
+        image: gcr.io/solo-test-236622/http-echo:0.2.4
+        args:
+        - -text=echo-a
+        ports:
+        - containerPort: 5678
+          name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locality-echo-b
+  namespace: waypoint-locality-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locality-echo-b
+  template:
+    metadata:
+      labels:
+        app: locality-echo-b
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: http-echo
+        image: gcr.io/solo-test-236622/http-echo:0.2.4
+        args:
+        - -text=echo-b
+        ports:
+        - containerPort: 5678
+          name: http
+---
+apiVersion: networking.istio.io/v1
+kind: ServiceEntry
+metadata:
+  name: locality-se
+  namespace: waypoint-locality-ns
+spec:
+  hosts:
+  - locality.example.internal
+  location: MESH_INTERNAL
+  resolution: STATIC
+  ports:
+  - number: 8080
+    name: http
+    protocol: HTTP
+    targetPort: 5678
+  workloadSelector:
+    labels:
+      locality-test: lb
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: locality-gw
+  namespace: waypoint-locality-ns
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: locality-route
+  namespace: waypoint-locality-ns
+spec:
+  parentRefs:
+  - name: locality-gw
+  hostnames:
+  - locality.example
+  rules:
+  - backendRefs:
+    - name: locality.example.internal
+      group: networking.istio.io
+      kind: Hostname
+      port: 8080

@@ -440,31 +440,54 @@ func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name strin
 	return stdout + stderr, err
 }
 
-// GetPodsInNsWithLabel returns the pods in the specified namespace with the specified label
+// GetPodsInNsWithLabel returns the pods in the specified namespace with the specified label,
+// excluding pods that are terminating to avoid counting lingering pods from the last test
+// that are in the process of being deleted.
 func (c *Cli) GetPodsInNsWithLabel(ctx context.Context, namespace string, label string) ([]string, error) {
+	return c.getPodsInNsWithLabel(ctx, namespace, label, true)
+}
+
+// GetAllPodsInNsWithLabel is GetPodsInNsWithLabel including terminating pods.
+func (c *Cli) GetAllPodsInNsWithLabel(ctx context.Context, namespace string, label string) ([]string, error) {
+	return c.getPodsInNsWithLabel(ctx, namespace, label, false)
+}
+
+func (c *Cli) getPodsInNsWithLabel(ctx context.Context, namespace string, label string, excludeTerminating bool) ([]string, error) {
 	podStdOut := bytes.NewBuffer(nil)
 	podStdErr := bytes.NewBuffer(nil)
 
-	// Fetch the names of the pods with the given label
+	// deletionTimestamp renders as the empty string unless the pod is terminating
 	getPodNamesCmd := c.Command(ctx, "get", "pod", "-n", namespace,
-		"--selector", label, "--output", "jsonpath='{.items[*].metadata.name}'")
+		"--selector", label, "--output",
+		`jsonpath={range .items[*]}{.metadata.name}{"\t"}{.metadata.deletionTimestamp}{"\n"}{end}`)
 	err := getPodNamesCmd.WithStdout(podStdOut).WithStderr(podStdErr).Run().Cause()
 	if err != nil {
 		fmt.Printf("error running get pod names command: %v\n", err)
 	}
 
-	// Clean up and check the output
-	podNamesString := strings.Trim(podStdOut.String(), "'")
-	if podNamesString == "" {
-		if !c.quiet {
-			fmt.Printf("no %s pods found in namespace %s\n", label, namespace)
-		}
-		return []string{}, nil
+	podNames := selectPodNames(podStdOut.String(), excludeTerminating)
+	if len(podNames) == 0 && !c.quiet {
+		fmt.Printf("no %s pods found in namespace %s\n", label, namespace)
 	}
 
-	// Split the string on whitespace to get the pod names
-	podNames := strings.Fields(podNamesString)
 	return podNames, nil
+}
+
+// selectPodNames reads the "<name>\t<deletionTimestamp>" lines emitted by getPodsInNsWithLabel
+// and returns the names of the pods that should be reported.
+func selectPodNames(jsonpathOutput string, excludeTerminating bool) []string {
+	podNames := []string{}
+	for line := range strings.SplitSeq(jsonpathOutput, "\n") {
+		name, deletionTimestamp, _ := strings.Cut(strings.TrimSpace(line), "\t")
+		if name == "" {
+			continue
+		}
+		if excludeTerminating && deletionTimestamp != "" {
+			continue
+		}
+		podNames = append(podNames, name)
+	}
+	return podNames
 }
 
 func (c *Cli) GetLeaseHolder(ctx context.Context, namespace string, leaderElectionID string) (string, error) {

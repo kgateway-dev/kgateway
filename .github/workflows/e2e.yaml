@@ -22,7 +22,6 @@ jobs:
     name: Build End-to-End Images
     runs-on: ubuntu-22.04
     timeout-minutes: 45
-    if: ${{ !github.event.pull_request.draft }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Prep Go Runner
@@ -63,7 +62,6 @@ jobs:
     needs: build_e2e_images
     runs-on: ubuntu-22.04
     timeout-minutes: 60
-    if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
@@ -109,7 +107,7 @@ jobs:
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$'
+            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$|^TestKgateway$$/^XdsIdentityRace$$'
             localstack: 'false'
             ordered-ads: 'false'
           # May 29, 2026: ~5 minutes

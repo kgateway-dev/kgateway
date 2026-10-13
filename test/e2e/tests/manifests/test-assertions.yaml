@@ -1,0 +1,22 @@
+# This file defines Helm values that arm test-only assertions in the deployed control plane.
+#
+# These are NOT recommendations. Each one trades production behavior -- performance, or
+# surviving a bug rather than crashing on it -- for a loud, early failure in CI. That is the
+# opposite of the intent of common-recommendations.yaml, which documents how we tell users to
+# install kgateway, so assertions belong here instead.
+#
+# The e2e framework appends this file to the values of every kgateway install and upgrade it
+# performs, after the profile and the suite's own values, so no suite can opt out by accident.
+# A CI leg that needs to rule a timing-sensitive failure in or out can drop an assertion before
+# running the suite, the same way the ordered-ADS soak opts in, e.g.
+#
+#   yq -i 'del(.controller.extraEnv.ASSERT_SHARED_PROTO_IMMUTABILITY)' \
+#     test/e2e/tests/manifests/test-assertions.yaml
+
+controller:
+  extraEnv:
+    # Trip loudly (panic) if any code path mutates a Cluster/CLA proto that is shared across
+    # client snapshots (see pkg/kgateway/proxy_syncer/sharedproto). The re-hash this enables is
+    # the marshal cost the interning exists to avoid in production. Released binaries that
+    # predate the tripwire ignore the variable, so it is also safe on upgrade-from-release paths.
+    ASSERT_SHARED_PROTO_IMMUTABILITY: "true"
