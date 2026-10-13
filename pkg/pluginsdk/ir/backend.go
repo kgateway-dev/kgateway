@@ -97,6 +97,10 @@ const (
 	WebSocketAppProtocol AppProtocol = "ws"
 )
 
+// kubernetesWssAppProtocol is the GEP-1911 app protocol for WebSocket over TLS.
+// It is only valid on Services; TLS comes from a BackendTLSPolicy.
+const kubernetesWssAppProtocol = "kubernetes.io/wss"
+
 // ParseAppProtocol takes an app protocol string provided on a Backend or Kubernetes Service, and maps it
 // to one of the app protocol types supported by kgateway (http2, websocket, or default).
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
@@ -112,6 +116,8 @@ func ParseAppProtocol(appProtocol *string) AppProtocol {
 	case string(kgateway.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
 	case string(kgateway.AppProtocolKubernetesWs):
+		fallthrough
+	case kubernetesWssAppProtocol:
 		return WebSocketAppProtocol
 	default:
 		return DefaultAppProtocol

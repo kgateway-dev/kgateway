@@ -41,6 +41,12 @@ Clusters:
               -----END CERTIFICATE-----
       sni: other.example.com
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
 - connectTimeout: 5s
   name: test-backend-plugin_default_example-svc_80
 Listeners:
