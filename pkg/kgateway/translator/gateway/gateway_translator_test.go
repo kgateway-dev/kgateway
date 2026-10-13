@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
@@ -3814,7 +3815,7 @@ func TestSetupScenarios(t *testing.T) {
 		for _, input := range inputs {
 			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
 			require.NoError(t, err)
-			t.Run(strings.TrimSuffix(rel, ".yaml"), func(t *testing.T) {
+			t.Run(strings.TrimSuffix(filepath.ToSlash(rel), ".yaml"), func(t *testing.T) {
 				translatortest.TestTranslationWithExtraPlugins(t, ctx, []string{
 					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
 					input,
@@ -3845,7 +3846,7 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 		t,
 		ctx,
 		translatortest.NewScheme(runtime.SchemeBuilder{}),
-		translatortest.ExtraConfig{},
+		translatortest.ExtraConfig{IncludeEndpoints: true},
 		func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
 		},
@@ -3888,6 +3889,37 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 
 	assert.Equal(t, "client.example.com", requireGatewayClientCertificateCommonName(t, clusterOne))
 	assert.Equal(t, "client2.example.com", requireGatewayClientCertificateCommonName(t, clusterTwo))
+
+	// Each variant is an EDS cluster, so Envoy also needs a CLA under the
+	// variant's own name carrying the base Service's endpoints.
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultOne.Endpoints, expectedClusterOne))
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultTwo.Endpoints, expectedClusterTwo))
+	assert.Nil(t, findCLAByName(resultOne.Endpoints, expectedClusterTwo), "first gateway should not publish endpoints for second gateway variant")
+	assert.Nil(t, findCLAByName(resultTwo.Endpoints, expectedClusterOne), "second gateway should not publish endpoints for first gateway variant")
+}
+
+func findCLAByName(assignments []*envoyendpointv3.ClusterLoadAssignment, name string) *envoyendpointv3.ClusterLoadAssignment {
+	for _, cla := range assignments {
+		if cla.GetClusterName() == name {
+			return cla
+		}
+	}
+	return nil
+}
+
+func claAddressesFor(t *testing.T, assignments []*envoyendpointv3.ClusterLoadAssignment, name string) []string {
+	t.Helper()
+
+	cla := findCLAByName(assignments, name)
+	require.NotNil(t, cla, "expected a load assignment for cluster %s", name)
+	var addresses []string
+	for _, locality := range cla.GetEndpoints() {
+		for _, lbEndpoint := range locality.GetLbEndpoints() {
+			socket := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
+			addresses = append(addresses, fmt.Sprintf("%s:%d", socket.GetAddress(), socket.GetPortValue()))
+		}
+	}
+	return addresses
 }
 
 func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {

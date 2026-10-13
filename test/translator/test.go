@@ -1057,6 +1057,17 @@ func (tc TestCase) Run(
 		var clusters []*envoyclusterv3.Cluster
 		var endpointAssignments []*envoyendpointv3.ClusterLoadAssignment
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
+		// appendEndpoints translates ep for the cluster just appended. Preserve empty
+		// assignments: publishing them is required to clear stale endpoints from Envoy.
+		appendEndpoints := func(ep *ir.EndpointsForBackend) {
+			if ep == nil {
+				return
+			}
+			resolved := translator.ResolveEndpoints(krt.TestingDummyContext{}, ucc, *ep)
+			if cla := translator.BuildClusterLoadAssignment(ucc, resolved); cla != nil {
+				endpointAssignments = append(endpointAssignments, cla)
+			}
+		}
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				// Errored translations (including strict-mode validation failures) are
@@ -1070,19 +1081,13 @@ func (tc TestCase) Run(
 					clusters = append(clusters, cluster)
 					// Optionally translate EDS assignments so selected goldens cover endpoint
 					// derivation, for every backend kind that has endpoint IR - Services,
-					// ServiceEntries, InferencePools. Preserve empty assignments: publishing
-					// them is required to clear stale endpoints from Envoy.
+					// ServiceEntries, InferencePools.
 					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS {
 						// settledEndpoints is the policy-attached endpoint IR (see
 						// finalEndpointsSnapshot), not the raw commoncol.Endpoints rows: those
 						// predate policy attachment, so the endpoint plugins would run against
 						// empty AttachedPolicies and all be no-ops here.
-						if ep, ok := settledEndpoints[backend.ResourceName()]; ok {
-							resolved := translator.ResolveEndpoints(krt.TestingDummyContext{}, ucc, *ep)
-							if cla := translator.BuildClusterLoadAssignment(ucc, resolved); cla != nil {
-								endpointAssignments = append(endpointAssignments, cla)
-							}
-						}
+						appendEndpoints(settledEndpoints[backend.ResourceName()])
 					}
 				}
 			}
@@ -1099,8 +1104,20 @@ func (tc TestCase) Run(
 					if err != nil {
 						continue
 					}
-					if cluster != nil {
-						clusters = append(clusters, cluster)
+					if cluster == nil {
+						continue
+					}
+					clusters = append(clusters, cluster)
+					// The variant's EDS cluster needs its own CLA. Build it the way
+					// proxy_syncer's newGatewayBackendVariantEndpoints does - the base
+					// backend's endpoints under the clone's identity - then project it
+					// through FinalBackendEndpoints like every other backend.
+					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS {
+						if base := settledEndpoints[backend.ResourceName()]; base != nil {
+							variant := ir.NewEndpointsForBackend(clone)
+							variant.ReuseEndpointsFrom(base)
+							appendEndpoints(proxy_syncer.FinalBackendEndpoints(&clone, variant))
+						}
 					}
 				}
 			}
