@@ -264,6 +264,15 @@ image:
 # -- List of namespace selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway includes the selected namespaces in config discovery. For more information, see the docs https://kgateway.dev/docs/envoy/latest/install/advanced/#namespace-discovery.
 discoveryNamespaceSelectors: []
 
+# -- Kubernetes label selector restricting which Secrets kgateway watches, for example 'kgateway.dev/watch=true'. Empty (the default) watches every Secret in the discovered namespaces. This is an opt-in way to reduce control plane memory in clusters with many Secrets that kgateway never references: the selector is applied by the API server, so non-matching Secrets are never cached. Every Secret referenced by a Gateway, HTTPRoute or kgateway policy must match, or the reference is reported as not found. The OAuth2 HMAC Secret kgateway creates need not match.
+secretLabelSelector: ""
+
+# -- Kubernetes label selector restricting which ConfigMaps kgateway watches. Same semantics as secretLabelSelector. The per-proxy ConfigMaps kgateway renders for Gateways need not match.
+configMapLabelSelector: ""
+
+# -- Kubernetes label selector restricting which Services kgateway watches, for example 'kgateway.dev/watch=true' or 'team in (a,b)'. Empty (the default) watches every Service. The selector is applied by the API server, so non-matching Services cost no control plane memory, and because every watched Service becomes a backend it also bounds the number of clusters kgateway sends to Envoy. A route backendRef to a non-matching Service is reported as not found, and a non-matching Service is not matched as a waypoint. The proxy Services kgateway renders for Gateways need not match.
+serviceLabelSelector: ""
+
 # -- List of ServiceEntry exclusion label selectors (OR'ed): each entry can use 'matchLabels' or 'matchExpressions' (AND'ed within each entry if used together). Kgateway ignores matching ServiceEntries when building ServiceEntry backends and endpoints. Empty selector entries are rejected because they would match every ServiceEntry.
 serviceEntriesExclusionLabelSelectors: []
 

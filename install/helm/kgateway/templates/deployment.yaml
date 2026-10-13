@@ -149,6 +149,16 @@ spec:
               value: {{ .Values.discoveryNamespaceSelectors | toJson | quote }}
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
               value: {{ .Values.serviceEntriesExclusionLabelSelectors | toJson | quote }}
+            {{- range $field, $envVar := dict "secretLabelSelector" "KGW_SECRET_LABEL_SELECTOR" "configMapLabelSelector" "KGW_CONFIG_MAP_LABEL_SELECTOR" "serviceLabelSelector" "KGW_SERVICE_LABEL_SELECTOR" }}
+            {{- $selector := index $.Values $field }}
+            {{- if not (or (kindIs "invalid" $selector) (kindIs "string" $selector)) }}
+            {{- fail (printf "%s must be a string containing a Kubernetes label selector" $field) }}
+            {{- end }}
+            {{- with $selector }}
+            - name: {{ $envVar }}
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             - name: KGW_POLICY_MERGE
               value: {{ .Values.policyMerge | toJson | quote }}
             - name: KGW_VALIDATION_MODE

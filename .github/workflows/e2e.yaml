@@ -113,7 +113,7 @@ jobs:
           # May 29, 2026: ~5 minutes
           - cluster-name: 'cluster-eight'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
+            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestServiceLabelSelector$$|^TestKgateway$$/^FrontendTLS$$'
             localstack: 'false'
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-multi-install'

@@ -120,6 +120,10 @@ type BackendIndex struct {
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
 	krtopts   krtutil.KrtOptions
+
+	// serviceSelector, when set, is named in missing-Service errors; see
+	// SelectorNotFoundError.
+	serviceSelector WatchSelector
 }
 
 type backendKey struct {
@@ -133,12 +137,24 @@ func (b backendKey) String() string {
 	return b.ObjectSource.String() + ":" + strconv.Itoa(int(b.port))
 }
 
+// BackendIndexOption configures a BackendIndex.
+type BackendIndexOption func(*BackendIndex)
+
+// WithServiceLabelSelector names the active Service label selector in missing-Service errors.
+// The selector itself is applied by the Service informer, not here.
+func WithServiceLabelSelector(selector string) BackendIndexOption {
+	return func(i *BackendIndex) {
+		i.serviceSelector = ServiceWatchSelector(selector)
+	}
+}
+
 func NewBackendIndex(
 	krtopts krtutil.KrtOptions,
 	policies *PolicyIndex,
 	refgrants *RefGrantIndex,
+	opts ...BackendIndexOption,
 ) *BackendIndex {
-	return &BackendIndex{
+	index := &BackendIndex{
 		policies:                        policies,
 		refgrants:                       refgrants,
 		availableBackendsWithPolicyByGK: map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]{},
@@ -147,6 +163,10 @@ func NewBackendIndex(
 		gkAliases:                       map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:                         krtopts,
 	}
+	for _, opt := range opts {
+		opt(index)
+	}
+	return index
 }
 
 func (i *BackendIndex) HasSynced() bool {
@@ -360,7 +380,7 @@ func (i *BackendIndex) notFoundErr(kctx krt.HandlerContext, gk schema.GroupKind,
 	if gwport != nil && i.hasBackendNamed(kctx, gk, key) {
 		return &BackendPortNotFoundError{PortNotFoundObj: key, Port: int32(*gwport)}
 	}
-	return &NotFoundError{NotFoundObj: key}
+	return i.backendNotFoundError(key)
 }
 
 // hasBackendNamed reports whether any backend exists under key on any port, checking
@@ -440,10 +460,17 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	}
 
 	if out == nil {
-		return nil, &NotFoundError{NotFoundObj: key.ObjectSource}
+		return nil, i.backendNotFoundError(key.ObjectSource)
 	}
 
 	return out, nil
+}
+
+func (i *BackendIndex) backendNotFoundError(source ir.ObjectSource) error {
+	if source.GetGroupKind() != wellknown.ServiceGVK.GroupKind() {
+		return &NotFoundError{NotFoundObj: source}
+	}
+	return i.serviceSelector.notFound(NotFoundError{NotFoundObj: source})
 }
 
 func (i *BackendIndex) getBackendFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {

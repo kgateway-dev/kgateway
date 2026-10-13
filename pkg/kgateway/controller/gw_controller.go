@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/deployer"
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
@@ -77,6 +78,10 @@ func NewGatewayReconciler(
 	controllerExtension pluginsdk.GatewayControllerExtension,
 ) *gatewayReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
+	configMapFilter := filter
+	configMapFilter.LabelSelector = ownedObjectLabelSelector(cfg.CommonCollections.Settings.ConfigMapLabelSelector)
+	serviceFilter := filter
+	serviceFilter.LabelSelector = ownedObjectLabelSelector(cfg.CommonCollections.Settings.ServiceLabelSelector)
 	r := &gatewayReconciler{
 		deployer:            deployer,
 		gwParams:            gwParams,
@@ -87,10 +92,10 @@ func NewGatewayReconciler(
 		gwClient:         kclient.NewFilteredDelayed[*gwv1.Gateway](cfg.Client, gvr.KubernetesGateway, filter),
 		gwClassClient:    kclient.NewFilteredDelayed[*gwv1.GatewayClass](cfg.Client, gvr.GatewayClass, filter),
 		nsClient:         kclient.NewFiltered[*corev1.Namespace](cfg.Client, filter),
-		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, filter),
+		svcClient:        kclient.NewFiltered[*corev1.Service](cfg.Client, serviceFilter),
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
-		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, filter),
+		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, configMapFilter),
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.
@@ -566,4 +571,23 @@ func fetchGatewaysByGatewayClass(gw *gwv1.Gateway) types.NamespacedName {
 	return types.NamespacedName{
 		Name: string(gw.Spec.GatewayClassName),
 	}
+}
+
+// ownedObjectLabelSelector returns the label selector for this controller's Service and
+// ConfigMap watches, given the operator's selector for that kind. The controller only acts on
+// the objects the deployer renders per proxy: it enqueues the owning Gateway, and reads the
+// Service to derive Gateway status.addresses.
+//
+// With no operator selector set, the translation collection's watch is unfiltered too, and
+// kclient shares informers keyed on {type, labelSelector, fieldSelector}, so an unfiltered
+// watch here costs nothing extra. With a selector set, matching it here could miss proxy
+// objects, since the operator's selector need not match the labels kgateway renders, and an
+// unfiltered watch would keep the cluster-wide cache the selector exists to remove. Instead
+// this selects on the managed-by label the envoy chart stamps on every proxy object, which is
+// a second informer, but one sized by the number of Gateways.
+func ownedObjectLabelSelector(operatorSelector apisettings.LabelSelector) string {
+	if operatorSelector == "" {
+		return ""
+	}
+	return wellknown.ManagedByLabel + "=" + wellknown.DefaultManagedByValue
 }

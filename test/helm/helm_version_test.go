@@ -666,6 +666,13 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "label-selectors",
+		valuesYAML: `secretLabelSelector: kgateway.dev/watch=true
+configMapLabelSelector: "!excluded"
+serviceLabelSelector: "team in (a,b),tier!=batch"
+`,
+	},
+	{
 		name: "additional-labels",
 		valuesYAML: `commonLabels:
     extra-label-key: extra-label-value
@@ -887,6 +894,83 @@ controller:
   create: false
 `,
 	},
+}
+
+// labelSelectorValues maps each watch label selector Helm value to the env var it renders.
+var labelSelectorValues = map[string]string{
+	"secretLabelSelector":    "KGW_SECRET_LABEL_SELECTOR",
+	"configMapLabelSelector": "KGW_CONFIG_MAP_LABEL_SELECTOR",
+	"serviceLabelSelector":   "KGW_SERVICE_LABEL_SELECTOR",
+}
+
+func TestLabelSelectorEnvironmentVariables(t *testing.T) {
+	testCases := map[string]struct {
+		value           string
+		expected        string
+		expectedPresent bool
+	}{
+		"omitted by default": {},
+		"explicit empty value is omitted": {
+			value: `""`,
+		},
+		"renders equality selector": {
+			value:           `app=my-app,tier=frontend`,
+			expected:        "app=my-app,tier=frontend",
+			expectedPresent: true,
+		},
+		"preserves set-based selector": {
+			value:           `"app.kubernetes.io/name in (api,web),environment!=dev"`,
+			expected:        "app.kubernetes.io/name in (api,web),environment!=dev",
+			expectedPresent: true,
+		},
+	}
+
+	for field, envVar := range labelSelectorValues {
+		for name, tc := range testCases {
+			t.Run(field+"/"+name, func(t *testing.T) {
+				valuesYAML := ""
+				if tc.value != "" {
+					valuesYAML = field + ": " + tc.value + "\n"
+				}
+				deployment := findDeployment(t, renderHelmTemplate(t, "kgateway", valuesYAML, nil))
+				require.NotEmpty(t, deployment.Spec.Template.Spec.Containers)
+
+				var actual *string
+				for _, variable := range deployment.Spec.Template.Spec.Containers[0].Env {
+					if variable.Name == envVar {
+						actual = &variable.Value
+						break
+					}
+				}
+				if !tc.expectedPresent {
+					require.Nil(t, actual, "controller environment should omit %s", envVar)
+					return
+				}
+
+				require.NotNil(t, actual, "controller environment should include %s", envVar)
+				require.Equal(t, tc.expected, *actual)
+			})
+		}
+	}
+}
+
+func TestLabelSelectorsRejectNonStringHelmValues(t *testing.T) {
+	values := map[string]string{
+		"boolean": " true\n",
+		"number":  " 42\n",
+		"list":    "\n  - app=api\n",
+		"map":     "\n  app: api\n",
+	}
+
+	for field := range labelSelectorValues {
+		for kind, value := range values {
+			t.Run(field+"/"+kind, func(t *testing.T) {
+				_, stderr, err := runHelmTemplate(t, "kgateway", field+":"+value, nil)
+				require.Error(t, err)
+				require.Contains(t, stderr, field+" must be a string containing a Kubernetes label selector")
+			})
+		}
+	}
 }
 
 // TestHelmChartTemplate tests helm template output for the kgateway chart
