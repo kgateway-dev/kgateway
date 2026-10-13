@@ -351,3 +351,28 @@ func TestBackendObjectIRKrtEqualUsesEquals(t *testing.T) {
 	assert.True(t, krt.Equal(a, b), "value collections must compare with Equals")
 	assert.True(t, krt.Equal(&a, &b), "pointer collections must compare with Equals")
 }
+
+func TestSecretValidationRunsOncePerSecret(t *testing.T) {
+	invalid := errors.New("invalid")
+	calls := 0
+	validate := func() error {
+		calls++
+		return invalid
+	}
+
+	secret := Secret{
+		ObjectSource:  ObjectSource{Kind: "Secret", Namespace: "default", Name: "tls"},
+		TLSValidation: &SecretValidation{},
+	}
+	copied := secret
+	require.ErrorIs(t, secret.TLSValidation.Do(validate), invalid)
+	require.ErrorIs(t, copied.TLSValidation.Do(validate), invalid)
+	assert.Equal(t, 1, calls, "copies of a Secret should share one validation")
+	assert.True(t, secret.Equals(Secret{ObjectSource: secret.ObjectSource}), "Equals should ignore the cached validation")
+
+	calls = 0
+	var unset *SecretValidation
+	require.ErrorIs(t, unset.Do(validate), invalid)
+	require.ErrorIs(t, unset.Do(validate), invalid)
+	assert.Equal(t, 2, calls, "a nil SecretValidation should validate on every call")
+}

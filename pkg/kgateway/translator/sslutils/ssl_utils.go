@@ -86,6 +86,15 @@ func ValidateTlsSecretData(n, ns string, sslSecretData map[string][]byte) (clean
 	return cleanedCertChain, err
 }
 
+// ValidateTlsSecretIR validates secret's data as a TLS Secret. When the Secret carries a
+// TLSValidation, the validation runs once per Secret version and later calls return that result.
+func ValidateTlsSecretIR(secret *ir.Secret) error {
+	return secret.TLSValidation.Do(func() error {
+		_, err := ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data)
+		return err
+	})
+}
+
 func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {

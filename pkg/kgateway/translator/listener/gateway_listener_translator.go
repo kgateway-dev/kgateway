@@ -1053,9 +1053,8 @@ func translateTLSConfig(
 			continue
 		}
 
-		// The resulting sslconfig will still have to go through a real translation where we run through this again.
-		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
-		if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
+		// Only the validation result is used here; the IR carries the Secret's data as is.
+		if err := sslutils.ValidateTlsSecretIR(secret); err != nil {
 			certErr = errors.Join(certErr, err)
 			continue
 		}
