@@ -1,11 +1,15 @@
 package ir
 
 import (
+	"slices"
+
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 type Route interface {
@@ -26,13 +30,8 @@ var _ Route = &HttpRouteIR{}
 type HttpRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject metav1.Object
-	// Verbatim copy of SourceObject's spec.parentRefs, so the versionEquals(SourceObject)
-	// check in Equals (generation, labels, annotations, UID) already observes any change.
-	// +noKrtEquals
-	ParentRefs []gwv1.ParentReference
+	ParentRefs   []gwv1.ParentReference
 
-	// Verbatim copy of SourceObject's spec.hostnames; see ParentRefs above.
-	// +noKrtEquals
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
 	Rules            []HttpRouteRuleIR
@@ -75,6 +74,8 @@ func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// Compare those inputs through rulesEqual as well as the source object version.
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
+		parentRefsEqual(c.ParentRefs, in.ParentRefs) &&
+		slices.Equal(c.Hostnames, in.Hostnames) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		rulesEqual(c.Rules, in.Rules) &&
 		c.PrecedenceWeight == in.PrecedenceWeight &&
@@ -125,11 +126,8 @@ func rulesEqual(a, b []HttpRouteRuleIR) bool {
 var _ Route = &HttpRouteIR{}
 
 type TcpRouteIR struct {
-	ObjectSource `json:",inline"`
-	SourceObject *gwv1a2.TCPRoute
-	// Verbatim copy of SourceObject's spec.parentRefs, so the versionEquals(SourceObject)
-	// check in Equals already observes any change.
-	// +noKrtEquals
+	ObjectSource     `json:",inline"`
+	SourceObject     *gwv1a2.TCPRoute
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
@@ -150,6 +148,7 @@ func (c TcpRouteIR) ResourceName() string {
 func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
+		parentRefsEqual(c.ParentRefs, in.ParentRefs) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		backendsEqual(c.Backends, in.Backends)
 }
@@ -167,18 +166,27 @@ func backendsEqual(a, b []BackendRefIR) bool {
 	return true
 }
 
+// parentRefsEqual compares parent references field by field. Producers copy them from
+// the route spec today, but comparing them directly keeps route attachment correct even
+// if a producer later defaults or rewrites them without a source generation change.
+func parentRefsEqual(a, b []gwv1.ParentReference) bool {
+	return slices.EqualFunc(a, b, func(x, y gwv1.ParentReference) bool {
+		return x.Name == y.Name &&
+			cmputils.PointerValsEqual(x.Group, y.Group) &&
+			cmputils.PointerValsEqual(x.Kind, y.Kind) &&
+			cmputils.PointerValsEqual(x.Namespace, y.Namespace) &&
+			cmputils.PointerValsEqual(x.SectionName, y.SectionName) &&
+			cmputils.PointerValsEqual(x.Port, y.Port)
+	})
+}
+
 var _ Route = &TcpRouteIR{}
 
 type TlsRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject *gwv1a2.TLSRoute
-	// Verbatim copy of SourceObject's spec.parentRefs, so the versionEquals(SourceObject)
-	// check in Equals already observes any change.
-	// +noKrtEquals
-	ParentRefs []gwv1.ParentReference
+	ParentRefs   []gwv1.ParentReference
 
-	// Verbatim copy of SourceObject's spec.hostnames; see ParentRefs above.
-	// +noKrtEquals
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
@@ -199,6 +207,8 @@ func (c TlsRouteIR) ResourceName() string {
 func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
+		parentRefsEqual(c.ParentRefs, in.ParentRefs) &&
+		slices.Equal(c.Hostnames, in.Hostnames) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		backendsEqual(c.Backends, in.Backends)
 }

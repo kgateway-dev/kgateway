@@ -35,9 +35,10 @@ func baseHarnessGatewayExtensionIR() TrafficPolicyGatewayExtensionIR {
 }
 
 // TestHarnessTrafficPolicyGatewayExtensionIREquals pins that every field of the
-// extension IR participates in equality. Name matters because policy IRs embed a
-// *TrafficPolicyGatewayExtensionIR and delegate to this Equals, and the name
-// becomes the ext_proc/ext_authz filter name in the generated Envoy config.
+// extension IR participates in equality. Name is not cosmetic: Equals used to skip
+// it, yet policy IRs embed a *TrafficPolicyGatewayExtensionIR and delegate to this
+// Equals, and providerName() turns the name into the ext_proc/ext_authz filter name
+// and the per-route typed-config key.
 func TestHarnessTrafficPolicyGatewayExtensionIREquals(t *testing.T) {
 	cases := []equalstest.Case[TrafficPolicyGatewayExtensionIR]{
 		{
@@ -118,25 +119,19 @@ func TestHarnessTrafficPolicyGatewayExtensionIREquals(t *testing.T) {
 	)
 }
 
-// TestGatewayExtensionIREqualsDetectsNameAndFilterStageChanges checks that provider
-// names participate in equality and that FilterStage handles nil. Provider names
-// determine filter names in the generated Envoy configuration.
-func TestGatewayExtensionIREqualsDetectsNameAndFilterStageChanges(t *testing.T) {
-	a := baseHarnessGatewayExtensionIR()
-	b := baseHarnessGatewayExtensionIR()
-	b.Name = "default/renamed-extension"
+// TestGatewayExtensionIREqualsNilFilterStage covers what the harness cannot: an
+// unset FilterStage must equal another unset one and differ from a set one.
+func TestGatewayExtensionIREqualsNilFilterStage(t *testing.T) {
+	set := baseHarnessGatewayExtensionIR()
+	unset := baseHarnessGatewayExtensionIR()
+	unset.FilterStage = nil
 
-	if a.Equals(b) {
-		t.Error("Equals returned true for extensions that differ only by name; the name reaches Envoy as the filter name")
-	}
-
-	// FilterStage is compared without reflect.DeepEqual; nil handling must hold.
-	nilStage := baseHarnessGatewayExtensionIR()
-	nilStage.FilterStage = nil
-	if a.Equals(nilStage) {
+	if set.Equals(unset) || unset.Equals(set) {
 		t.Error("Equals returned true comparing a set FilterStage against nil")
 	}
-	if !nilStage.Equals(nilStage) {
+	alsoUnset := baseHarnessGatewayExtensionIR()
+	alsoUnset.FilterStage = nil
+	if !unset.Equals(alsoUnset) {
 		t.Error("Equals returned false for two extensions that both have a nil FilterStage")
 	}
 }

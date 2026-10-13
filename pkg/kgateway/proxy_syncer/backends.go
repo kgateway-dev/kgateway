@@ -131,8 +131,8 @@ func (c uccWithCluster) ResourceName() string {
 
 func (c uccWithCluster) Equals(in uccWithCluster) bool {
 	return c.Client.Equals(in.Client) &&
-		c.Name == in.Name &&
 		c.ClusterVersion == in.ClusterVersion &&
+		c.Name == in.Name &&
 		c.PerClientError == in.PerClientError &&
 		c.BackendSource == in.BackendSource &&
 		c.BackendGeneration == in.BackendGeneration &&

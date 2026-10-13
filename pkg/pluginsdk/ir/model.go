@@ -192,11 +192,10 @@ type EndpointsForBackend struct {
 	AttachedPolicies AttachedPolicies
 
 	// LbEps is summarized by epsEqualityHash and endpointCount, both compared by
-	// Equals. Add hashes locality, metadata labels, and the LbEndpoint proto;
-	// reuse/adoption methods preserve those contributions. The hash is order-independent.
-	// endpointCount detects additions/removals even when identical contributions
-	// cancel under XOR. Same-count hash collisions remain possible; equality assumes
-	// they do not occur. Writers must maintain these summaries rather than edit LbEps directly.
+	// Equals. Add hashes locality, metadata labels, and the LbEndpoint proto and sums
+	// the per-endpoint hashes, so the summary is order-independent and duplicates do
+	// not cancel; reuse/adoption methods preserve those contributions. Equality assumes
+	// no 64-bit collisions. Writers must maintain these summaries rather than edit LbEps directly.
 	// +noKrtEquals
 	LbEps                LocalityLbMap
 	ClusterName          string
@@ -211,7 +210,7 @@ type EndpointsForBackend struct {
 	epsEqualityHash   uint64
 	// endpointCount is the number of endpoints across all localities. The
 	// equality hash needs the empty/non-empty distinction, and it cannot be
-	// derived from epsEqualityHash: a non-empty set can xor to zero. Maintaining
+	// derived from epsEqualityHash: a non-empty set can sum to zero. Maintaining
 	// it here keeps every writer — Add, ReuseEndpointsFrom, AdoptEndpointsFrom —
 	// answering that question the same way.
 	endpointCount        int
@@ -348,9 +347,9 @@ func (e *EndpointsForBackend) ReuseEndpoint(l PodLocality, emd EndpointWithMd) {
 }
 
 func (e *EndpointsForBackend) addWithEndpointHash(l PodLocality, emd EndpointWithMd, endpointHash uint64) {
-	// xor it as we dont care about order - if we have the same endpoints in the same locality
-	// we are good.
-	e.epsEqualityHash ^= endpointHash
+	// Sum the contributions: the result is order-independent like XOR, but a
+	// duplicated endpoint does not cancel itself out, so [A, A] and [B, B] differ.
+	e.epsEqualityHash += endpointHash
 	emd.endpointEqualityHash = endpointHash
 	e.LbEps[l] = append(e.LbEps[l], emd)
 	e.endpointCount++

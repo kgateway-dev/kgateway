@@ -78,11 +78,7 @@ func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtens
 	if e.PrecedenceWeight != other.PrecedenceWeight {
 		return false
 	}
-	// FilterStageSpec is all scalars, so compare it by value rather than with
-	// reflect.DeepEqual, which is banned in Equals implementations.
-	if !cmputils.CompareWithNils(e.FilterStage, other.FilterStage, func(a, b *kgateway.FilterStageSpec) bool {
-		return *a == *b
-	}) {
+	if !cmputils.PointerValsEqual(e.FilterStage, other.FilterStage) {
 		return false
 	}
 

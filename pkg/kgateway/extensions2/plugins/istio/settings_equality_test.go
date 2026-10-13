@@ -2,9 +2,8 @@ package istio
 
 import "testing"
 
-// TestIstioSettingsEquals pins that the auto-mTLS flag participates in equality.
-// IstioSettings is served as a global PolicyIR, so if a settings change did not
-// register as a change, backends would keep the previous mTLS transport socket.
+// TestIstioSettingsEquals pins that the auto-mTLS flag participates in equality
+// now that Equals compares fields instead of using ==.
 func TestIstioSettingsEquals(t *testing.T) {
 	enabled := IstioSettings{EnableAutoMtls: true}
 	disabled := IstioSettings{EnableAutoMtls: false}

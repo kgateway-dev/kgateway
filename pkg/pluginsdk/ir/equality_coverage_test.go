@@ -1,8 +1,7 @@
 package ir
 
-// equality_coverage_test.go covers the IR types whose Equals implementations
-// deliberately omit fields. The tests model representative updates to those
-// fields together with the versions or hashes that Equals compares.
+// equality_coverage_test.go runs the equalstest harness over the IR types whose
+// Equals implementations used to have untracked field gaps.
 //
 // See test/testutils/equalstest for the harness API.
 
@@ -25,12 +24,6 @@ import (
 var errTestRuleResolution = errors.New("backend resolution failed")
 
 // MARK: routes
-
-// routeSpecFields lists the fields that are verbatim copies of the source
-// object's spec. They are exempt from direct comparison because any change to
-// them bumps the source object's generation, which versionEquals observes;
-// TestRouteIREqualsObservesSpecChangeViaGeneration proves that.
-var routeSpecFields = []string{"ParentRefs", "Hostnames"}
 
 // embeddedObjectSourceFields are the ObjectSource fields the harness flattens;
 // each test covers the embedding as a whole via an "ObjectSource" case.
@@ -96,6 +89,14 @@ func TestHarnessHttpRouteIREquals(t *testing.T) {
 			},
 		},
 		{
+			Field:  "ParentRefs",
+			Mutate: func(r *HttpRouteIR) { r.ParentRefs[0].Name = "other-gateway" },
+		},
+		{
+			Field:  "Hostnames",
+			Mutate: func(r *HttpRouteIR) { r.Hostnames = []string{"other.example.com"} },
+		},
+		{
 			Field: "AttachedPolicies",
 			Mutate: func(r *HttpRouteIR) {
 				r.AttachedPolicies.Policies[gk] = []PolicyAtt{baseHarnessPolicyAtt()}
@@ -124,7 +125,7 @@ func TestHarnessHttpRouteIREquals(t *testing.T) {
 		baseHarnessHttpRouteIR,
 		func(a, b HttpRouteIR) bool { return a.Equals(b) },
 		cases,
-		append(routeSpecFields, embeddedObjectSourceFields...),
+		embeddedObjectSourceFields,
 	)
 }
 
@@ -181,56 +182,6 @@ func TestHarnessHttpRouteIRRulesEquals(t *testing.T) {
 	}
 }
 
-// TestRouteIREqualsObservesSpecChangeViaGeneration is the evidence for the
-// +noKrtEquals markers on ParentRefs and Hostnames: the collections that build
-// these IRs copy both fields straight out of the spec, and the API server bumps
-// generation on any spec write, so versionEquals catches the change.
-func TestRouteIREqualsObservesSpecChangeViaGeneration(t *testing.T) {
-	t.Run("HttpRouteIR", func(t *testing.T) {
-		orig := baseHarnessHttpRouteIR()
-		// Model what transformHttpRoute produces after a spec edit: new hostnames and
-		// parentRefs, on an object whose generation has been bumped.
-		updated := baseHarnessHttpRouteIR()
-		obj := baseHarnessHTTPRouteObj()
-		obj.Generation = 2
-		obj.Spec.Hostnames = []gwv1.Hostname{"other.example.com"}
-		updated.SourceObject = obj
-		updated.Hostnames = []string{"other.example.com"}
-		updated.ParentRefs = []gwv1.ParentReference{{Name: "other-gateway"}}
-
-		if orig.Equals(updated) {
-			t.Error("Equals returned true for a route whose spec (and generation) changed")
-		}
-	})
-
-	t.Run("TlsRouteIR", func(t *testing.T) {
-		orig := baseHarnessTlsRouteIR()
-		updated := baseHarnessTlsRouteIR()
-		obj := baseHarnessTLSRouteObj()
-		obj.Generation = 2
-		updated.SourceObject = obj
-		updated.Hostnames = []string{"other.example.com"}
-		updated.ParentRefs = []gwv1.ParentReference{{Name: "other-gateway"}}
-
-		if orig.Equals(updated) {
-			t.Error("Equals returned true for a route whose spec (and generation) changed")
-		}
-	})
-
-	t.Run("TcpRouteIR", func(t *testing.T) {
-		orig := baseHarnessTcpRouteIR()
-		updated := baseHarnessTcpRouteIR()
-		obj := baseHarnessTCPRouteObj()
-		obj.Generation = 2
-		updated.SourceObject = obj
-		updated.ParentRefs = []gwv1.ParentReference{{Name: "other-gateway"}}
-
-		if orig.Equals(updated) {
-			t.Error("Equals returned true for a route whose spec (and generation) changed")
-		}
-	})
-}
-
 func baseHarnessTCPRouteObj() *gwv1a2.TCPRoute {
 	return &gwv1a2.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
@@ -274,6 +225,10 @@ func TestHarnessTcpRouteIREquals(t *testing.T) {
 			},
 		},
 		{
+			Field:  "ParentRefs",
+			Mutate: func(r *TcpRouteIR) { r.ParentRefs[0].Name = "other-gateway" },
+		},
+		{
 			Field: "AttachedPolicies",
 			Mutate: func(r *TcpRouteIR) {
 				r.AttachedPolicies.Policies[gk] = []PolicyAtt{baseHarnessPolicyAtt()}
@@ -290,7 +245,7 @@ func TestHarnessTcpRouteIREquals(t *testing.T) {
 		baseHarnessTcpRouteIR,
 		func(a, b TcpRouteIR) bool { return a.Equals(b) },
 		cases,
-		append([]string{"ParentRefs"}, embeddedObjectSourceFields...),
+		embeddedObjectSourceFields,
 	)
 }
 
@@ -341,6 +296,14 @@ func TestHarnessTlsRouteIREquals(t *testing.T) {
 			},
 		},
 		{
+			Field:  "ParentRefs",
+			Mutate: func(r *TlsRouteIR) { r.ParentRefs[0].Name = "other-gateway" },
+		},
+		{
+			Field:  "Hostnames",
+			Mutate: func(r *TlsRouteIR) { r.Hostnames = []string{"other.example.com"} },
+		},
+		{
 			Field: "AttachedPolicies",
 			Mutate: func(r *TlsRouteIR) {
 				r.AttachedPolicies.Policies[gk] = []PolicyAtt{baseHarnessPolicyAtt()}
@@ -357,19 +320,21 @@ func TestHarnessTlsRouteIREquals(t *testing.T) {
 		baseHarnessTlsRouteIR,
 		func(a, b TlsRouteIR) bool { return a.Equals(b) },
 		cases,
-		append(routeSpecFields, embeddedObjectSourceFields...),
+		embeddedObjectSourceFields,
 	)
 }
 
 // MARK: policy wrapper
 
+// baseHarnessPolicyObj models the examples/plugin case: a ConfigMap-backed
+// policy. ConfigMaps have no generation, so versionEquals compares resourceVersion.
 func baseHarnessPolicyObj() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       "my-policy",
-			Namespace:  "default",
-			UID:        "policy-uid-1",
-			Generation: 1,
+			Name:            "my-policy",
+			Namespace:       "default",
+			UID:             "policy-uid-1",
+			ResourceVersion: "1",
 		},
 	}
 }
@@ -382,10 +347,15 @@ func baseHarnessPolicyWrapper() PolicyWrapper {
 			Namespace: "default",
 			Name:      "my-policy",
 		},
-		Policy:           baseHarnessPolicyObj(),
-		Errors:           nil,
-		PolicyIR:         &harnessTestPolicyIR{val: "base"},
-		TargetRefs:       []PolicyRef{{Group: gwv1.GroupName, Kind: "HTTPRoute", Name: "my-route"}},
+		Policy:   baseHarnessPolicyObj(),
+		Errors:   nil,
+		PolicyIR: &harnessTestPolicyIR{val: "base"},
+		TargetRefs: []PolicyRef{{
+			Group:       gwv1.GroupName,
+			Kind:        "HTTPRoute",
+			Name:        "my-route",
+			MatchLabels: map[string]string{"app": "my-app"},
+		}},
 		PrecedenceWeight: 0,
 	}
 }
@@ -400,7 +370,7 @@ func TestHarnessPolicyWrapperEquals(t *testing.T) {
 			Field: "Policy",
 			Mutate: func(p *PolicyWrapper) {
 				obj := baseHarnessPolicyObj()
-				obj.Generation = 2
+				obj.ResourceVersion = "2"
 				p.Policy = obj
 			},
 		},
@@ -413,6 +383,12 @@ func TestHarnessPolicyWrapperEquals(t *testing.T) {
 			Mutate: func(p *PolicyWrapper) { p.PolicyIR = &harnessTestPolicyIR{val: "changed"} },
 		},
 		{
+			// The policy object's version is unchanged: targets resolved from
+			// somewhere other than the policy object must still be observed.
+			Field:  "TargetRefs",
+			Mutate: func(p *PolicyWrapper) { p.TargetRefs[0].Name = "other-route" },
+		},
+		{
 			Field:  "PrecedenceWeight",
 			Mutate: func(p *PolicyWrapper) { p.PrecedenceWeight = 7 },
 		},
@@ -423,28 +399,29 @@ func TestHarnessPolicyWrapperEquals(t *testing.T) {
 		baseHarnessPolicyWrapper,
 		func(a, b PolicyWrapper) bool { return a.Equals(b) },
 		cases,
-		// TargetRefs is derived from the policy spec's targetRefs/targetSelectors, so a
-		// change to it arrives with a generation bump; see the "Policy" case above and
-		// TestPolicyWrapperEqualsObservesTargetRefChangeViaGeneration.
-		append([]string{"TargetRefs"}, embeddedObjectSourceFields...),
+		embeddedObjectSourceFields,
 	)
 }
 
-// TestPolicyWrapperEqualsObservesTargetRefChangeViaGeneration is the evidence for
-// the +noKrtEquals marker on TargetRefs for policies whose targets come from
-// a CRD spec: editing that spec bumps generation. Annotation-derived targets
-// use the metadata/resourceVersion checks in versionEquals instead.
-func TestPolicyWrapperEqualsObservesTargetRefChangeViaGeneration(t *testing.T) {
-	orig := baseHarnessPolicyWrapper()
+func TestPolicyWrapperEqualsComparesTargetRefFields(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*PolicyRef)
+	}{
+		{name: "group", mutate: func(r *PolicyRef) { r.Group = "other.example.com" }},
+		{name: "kind", mutate: func(r *PolicyRef) { r.Kind = "Gateway" }},
+		{name: "section name", mutate: func(r *PolicyRef) { r.SectionName = "http" }},
+		{name: "match labels", mutate: func(r *PolicyRef) { r.MatchLabels["app"] = "other-app" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := baseHarnessPolicyWrapper()
+			mutated := baseHarnessPolicyWrapper()
+			tc.mutate(&mutated.TargetRefs[0])
 
-	updated := baseHarnessPolicyWrapper()
-	obj := baseHarnessPolicyObj()
-	obj.Generation = 2
-	updated.Policy = obj
-	updated.TargetRefs = []PolicyRef{{Group: gwv1.GroupName, Kind: "HTTPRoute", Name: "other-route"}}
-
-	if orig.Equals(updated) {
-		t.Error("Equals returned true for a policy whose targetRefs (and generation) changed")
+			if orig.Equals(mutated) {
+				t.Errorf("Equals returned true after changing the target ref %s", tc.name)
+			}
+		})
 	}
 }
 
@@ -453,10 +430,9 @@ func TestPolicyWrapperEqualsObservesTargetRefChangeViaGeneration(t *testing.T) {
 func baseHarnessSecretObj() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "my-secret",
-			Namespace: "default",
-			UID:       "secret-uid-1",
-			// Secrets carry no generation, so versionEquals compares resourceVersion.
+			Name:            "my-secret",
+			Namespace:       "default",
+			UID:             "secret-uid-1",
 			ResourceVersion: "1",
 		},
 		Data: map[string][]byte{"tls.key": []byte("original")},
@@ -490,6 +466,10 @@ func TestHarnessSecretEquals(t *testing.T) {
 				s.Obj = obj
 			},
 		},
+		{
+			Field:  "Data",
+			Mutate: func(s *Secret) { s.Data = map[string][]byte{"tls.key": []byte("rotated")} },
+		},
 	}
 
 	equalstest.Run(
@@ -497,49 +477,34 @@ func TestHarnessSecretEquals(t *testing.T) {
 		baseHarnessSecret,
 		func(a, b Secret) bool { return a.Equals(b) },
 		cases,
-		// Data is a verbatim copy of Obj's data; see TestSecretEqualsObservesDataChange.
-		append([]string{"Data"}, embeddedObjectSourceFields...),
+		embeddedObjectSourceFields,
 	)
 }
 
-// TestSecretEqualsObservesDataChange is the evidence for the +noKrtEquals marker
-// on Secret.Data: the API server bumps resourceVersion on every data write, and
-// versionEquals compares resourceVersion because Secrets have no generation.
-func TestSecretEqualsObservesDataChange(t *testing.T) {
-	orig := baseHarnessSecret()
-
-	// Model a rotated secret as the informer delivers it: new data, new resourceVersion.
-	rotatedObj := baseHarnessSecretObj()
-	rotatedObj.ResourceVersion = "2"
-	rotatedObj.Data = map[string][]byte{"tls.key": []byte("rotated")}
-	rotated := Secret{ObjectSource: orig.ObjectSource, Obj: rotatedObj, Data: rotatedObj.Data}
+// TestSecretEqualsObservesRotationUnderFixedGeneration covers a Secret created
+// with metadata.generation set: the API server keeps that generation across
+// updates, so versionEquals never consults resourceVersion and a key rotation
+// is visible only through Data.
+func TestSecretEqualsObservesRotationUnderFixedGeneration(t *testing.T) {
+	objWithGeneration := func(resourceVersion string, key string) *corev1.Secret {
+		obj := baseHarnessSecretObj()
+		obj.Generation = 1
+		obj.ResourceVersion = resourceVersion
+		obj.Data = map[string][]byte{"tls.key": []byte(key)}
+		return obj
+	}
+	src := baseHarnessSecret().ObjectSource
+	origObj := objWithGeneration("1", "original")
+	rotatedObj := objWithGeneration("2", "rotated")
+	orig := Secret{ObjectSource: src, Obj: origObj, Data: origObj.Data}
+	rotated := Secret{ObjectSource: src, Obj: rotatedObj, Data: rotatedObj.Data}
 
 	if orig.Equals(rotated) {
-		t.Error("Equals returned true for a secret whose data was rotated")
+		t.Error("Equals returned true for a rotated secret whose generation did not change")
 	}
 }
 
 // MARK: endpoints
-
-func harnessBackendForEndpoints(labels map[string]string) BackendObjectIR {
-	backend := NewBackendObjectIR(ObjectSource{
-		Kind:      "Service",
-		Namespace: "default",
-		Name:      "my-service",
-	}, 8080, "", "")
-	backend.Obj = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-service",
-			Namespace:       "default",
-			UID:             "svc-uid-1",
-			ResourceVersion: "1",
-			Labels:          labels,
-		},
-	}
-	backend.CanonicalHostname = "my-service.default.svc.cluster.local"
-	backend.TrafficDistribution = wellknown.TrafficDistributionAny
-	return backend
-}
 
 func harnessEndpoint(address string) EndpointWithMd {
 	return EndpointWithMd{
@@ -555,7 +520,7 @@ func harnessEndpoint(address string) EndpointWithMd {
 }
 
 func baseHarnessEndpointsForBackend() EndpointsForBackend {
-	eps := NewEndpointsForBackend(harnessBackendForEndpoints(map[string]string{
+	eps := NewEndpointsForBackend(backendWithLabelsForHashTest(map[string]string{
 		"app":     "my-app",
 		"version": "v1",
 		"tier":    "backend",
@@ -591,20 +556,6 @@ func TestHarnessEndpointsForBackendEquals(t *testing.T) {
 			Mutate: func(e *EndpointsForBackend) { e.LbEpsEqualityHash++ },
 		},
 		{
-			// BackendLabels is +noKrtEquals: NewEndpointsForBackend folds the labels into
-			// upstreamHash, so rebuilding from a relabelled backend must not compare equal.
-			Field: "BackendLabels",
-			Mutate: func(e *EndpointsForBackend) {
-				rebuilt := NewEndpointsForBackend(harnessBackendForEndpoints(map[string]string{
-					"app":     "my-app",
-					"version": "v2",
-					"tier":    "backend",
-				}))
-				rebuilt.Add(PodLocality{Region: "us-east-1", Zone: "us-east-1a"}, harnessEndpoint("10.0.0.1"))
-				*e = *rebuilt
-			},
-		},
-		{
 			// LbEps is +noKrtEquals: Add() maintains epsEqualityHash, which is compared.
 			Field: "LbEps",
 			Mutate: func(e *EndpointsForBackend) {
@@ -618,28 +569,15 @@ func TestHarnessEndpointsForBackendEquals(t *testing.T) {
 		baseHarnessEndpointsForBackend,
 		func(a, b EndpointsForBackend) bool { return a.Equals(b) },
 		cases,
-		// AttachedPolicies is +noKrtEquals. This fixture does not model policy
-		// versioning; newFinalBackendEndpoints folds it into LbEpsEqualityHash.
-		[]string{"AttachedPolicies"},
+		[]string{
+			// Folded into upstreamHash by NewEndpointsForBackend; see
+			// TestEndpointsForBackendEqualityHashCoversLabels.
+			"BackendLabels",
+			// Folded into LbEpsEqualityHash by newFinalBackendEndpoints; see
+			// TestFinalBackendEndpointsEqualsObservesPolicyChange in proxy_syncer.
+			"AttachedPolicies",
+		},
 	)
-}
-
-// TestHarnessEndpointsForBackendEqualityHashIsDeterministic checks that rebuilding
-// identical backend labels preserves equality despite randomized map iteration.
-func TestHarnessEndpointsForBackendEqualityHashIsDeterministic(t *testing.T) {
-	labels := map[string]string{
-		"a": "1", "b": "2", "c": "3", "d": "4", "e": "5",
-		"f": "6", "g": "7", "h": "8", "i": "9", "j": "10",
-	}
-
-	first := NewEndpointsForBackend(harnessBackendForEndpoints(labels))
-	for range 100 {
-		next := NewEndpointsForBackend(harnessBackendForEndpoints(labels))
-		if !first.Equals(*next) {
-			t.Fatalf("two identical EndpointsForBackend compared unequal: hash %d vs %d",
-				first.LbEpsEqualityHash, next.LbEpsEqualityHash)
-		}
-	}
 }
 
 // TestEndpointsForBackendEmptyCopyEquality documents that EmptyCopy drops the

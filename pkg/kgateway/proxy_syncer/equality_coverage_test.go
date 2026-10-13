@@ -17,12 +17,16 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils/equalstest"
 )
 
@@ -86,31 +90,10 @@ func TestHarnessUccWithClusterEquals(t *testing.T) {
 		baseUccWithCluster,
 		func(a, b uccWithCluster) bool { return a.Equals(b) },
 		cases,
-		// Cluster is +noKrtEquals: publishable content is covered by ClusterVersion; see
-		// TestUccWithClusterEqualsObservesClusterChangeViaVersion.
+		// Cluster is +noKrtEquals: publishable content is covered by ClusterVersion,
+		// which the TestBaseClusterVersion_* tests derive from real cluster changes.
 		[]string{"Cluster"},
-		equalstest.IncludeUnexported(),
 	)
-}
-
-// TestUccWithClusterEqualsObservesClusterChangeViaVersion checks that Equals
-// observes a changed proto through its version, using the successful overlay path's
-// HashProto scheme. Shared bases use baseClusterVersion instead.
-func TestUccWithClusterEqualsObservesClusterChangeViaVersion(t *testing.T) {
-	orig := baseUccWithCluster()
-
-	// Model a successful overlay returned by clustersForClient.
-	changedCluster := &envoyclusterv3.Cluster{
-		Name:           "cluster-a",
-		ConnectTimeout: durationSeconds(5),
-	}
-	changed := baseUccWithCluster()
-	changed.Cluster = sharedproto.Wrap(changedCluster)
-	changed.ClusterVersion = utils.HashProto(changedCluster)
-
-	if orig.Equals(changed) {
-		t.Error("Equals returned true for a cluster whose proto (and so ClusterVersion) changed")
-	}
 }
 
 // MARK: UccWithEndpoints
@@ -156,24 +139,29 @@ func TestHarnessUccWithEndpointsEquals(t *testing.T) {
 	)
 }
 
-// TestUccWithEndpointsEqualsObservesEndpointChangeViaHash checks that Equals
-// observes a changed EndpointsHash. This fixture uses HashProto; backend CLAs use
-// combineEndpointHash, and local-cluster CLAs use hashLocalClusterLoadAssignment.
-func TestUccWithEndpointsEqualsObservesEndpointChangeViaHash(t *testing.T) {
-	orig := baseUccWithEndpoints()
-
-	changedCla := &envoyendpointv3.ClusterLoadAssignment{
-		ClusterName: "cluster-a",
-		Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{
-			Priority: 1,
-		}},
+// TestUccWithEndpointsEqualsObservesEndpointChange builds EndpointsHash the way
+// the backend CLA collection does, from an EndpointsForBackend through
+// combineEndpointHash, and checks that an endpoint change alone is observed.
+func TestUccWithEndpointsEqualsObservesEndpointChange(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "default", Name: "svc-a"}, 80, "", "")
+	rowFor := func(address string) UccWithEndpoints {
+		eps := ir.NewEndpointsForBackend(backend)
+		eps.Add(ir.PodLocality{Region: "us-east-1"}, ir.EndpointWithMd{
+			LbEndpoint: &envoyendpointv3.LbEndpoint{
+				HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+					Endpoint: &envoyendpointv3.Endpoint{Hostname: address},
+				},
+			},
+		})
+		return UccWithEndpoints{
+			Client:        testUcc(),
+			EndpointsHash: combineEndpointHash(eps.LbEpsEqualityHash, 0, 0),
+			endpointsName: eps.ResourceName(),
+		}
 	}
-	changed := baseUccWithEndpoints()
-	changed.Endpoints = sharedproto.Wrap(changedCla)
-	changed.EndpointsHash = utils.HashProto(changedCla)
 
-	if orig.Equals(changed) {
-		t.Error("Equals returned true for endpoints whose CLA (and so EndpointsHash) changed")
+	if rowFor("10.0.0.1").Equals(rowFor("10.0.0.2")) {
+		t.Error("Equals returned true for endpoints whose address changed")
 	}
 }
 
@@ -252,7 +240,6 @@ func TestHarnessGatewayXdsResourcesEquals(t *testing.T) {
 		// Clusters is +noKrtEquals (covered by ClustersHash); Namespace/Name are the
 		// flattened fields of the embedded NamespacedName, covered by that case.
 		[]string{"Clusters", "Namespace", "Name"},
-		equalstest.IncludeUnexported(),
 	)
 }
 
@@ -280,8 +267,69 @@ func TestGatewayXdsResourcesEqualsObservesClusterChangeViaHash(t *testing.T) {
 	if orig.Equals(added) {
 		t.Error("Equals returned true after a cluster was added to the CDS payload")
 	}
+
+	// A pair of duplicates must not cancel out of the hash.
+	duplicated := baseGatewayXdsResources()
+	duplicated.Clusters, duplicated.ClustersHash = sliceToResourcesHash([]*envoyclusterv3.Cluster{
+		{Name: "extra-cluster"},
+		{Name: "second-cluster"},
+		{Name: "second-cluster"},
+	})
+	if orig.Equals(duplicated) {
+		t.Error("Equals returned true after a duplicated pair of clusters was added to the CDS payload")
+	}
 }
 
 func durationSeconds(s int64) *durationpb.Duration {
 	return durationpb.New(time.Duration(s) * time.Second)
+}
+
+// MARK: EndpointsForBackend
+
+// TestFinalBackendEndpointsEqualsObservesPolicyChange is the evidence for the
+// +noKrtEquals marker on EndpointsForBackend.AttachedPolicies: it runs
+// newFinalBackendEndpoints over backends that differ only in an attached
+// policy's generation and checks that the resulting rows compare unequal.
+func TestFinalBackendEndpointsEqualsObservesPolicyChange(t *testing.T) {
+	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
+
+	backendWithPolicyGen := func(gen int64) *ir.BackendObjectIR {
+		backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "default", Name: "svc-a"}, 80, "", "")
+		backend.AttachedPolicies = ir.AttachedPolicies{
+			Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}: {{
+					PolicyRef:  &ir.AttachedPolicyRef{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy", Name: "pol", Namespace: "default"},
+					Generation: gen,
+				}},
+			},
+		}
+		return &backend
+	}
+
+	finalRow := func(name string, backend *ir.BackendObjectIR) ir.EndpointsForBackend {
+		raw := ir.NewEndpointsForBackend(*backend)
+		raw.Add(ir.PodLocality{Region: "us-east-1"}, ir.EndpointWithMd{
+			LbEndpoint: &envoyendpointv3.LbEndpoint{
+				HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{
+					Endpoint: &envoyendpointv3.Endpoint{Hostname: "10.0.0.1"},
+				},
+			},
+		})
+		backends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{backend}, krtopts.ToOptions(name+"Backends")...)
+		rawEndpoints := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{*raw}, krtopts.ToOptions(name+"RawEndpoints")...)
+		final := newFinalBackendEndpoints(krtopts, backends, rawEndpoints)
+
+		var row *ir.EndpointsForBackend
+		require.Eventually(t, func() bool {
+			row = final.GetKey(backend.ResourceName())
+			return row != nil
+		}, 2*time.Second, 10*time.Millisecond)
+		return *row
+	}
+
+	gen1 := finalRow("Gen1", backendWithPolicyGen(1))
+	gen2 := finalRow("Gen2", backendWithPolicyGen(2))
+
+	require.False(t, gen1.Equals(gen2),
+		"a policy generation bump must change the final endpoints row even when the endpoints are unchanged")
 }

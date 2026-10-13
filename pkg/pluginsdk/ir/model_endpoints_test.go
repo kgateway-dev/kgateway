@@ -109,17 +109,14 @@ func TestReuseEndpointsFromDropsStaleLocalities(t *testing.T) {
 	}
 }
 
-func TestReuseEndpointsFromNonEmptyZeroHash(t *testing.T) {
-	// two identical (locality, endpoint) entries xor to a zero epsEqualityHash;
-	// a re-Add still produces hash(0, upstreamHash), so reuse must too.
+func TestReuseEndpointsFromDuplicateEndpoints(t *testing.T) {
+	// Two identical (locality, endpoint) entries must reuse to the same hash a
+	// re-Add produces.
 	base := NewEndpointsForBackend(epsBackend("svc"))
 	loc := PodLocality{Region: "us-east-1", Zone: "zone-a"}
 	emd := testEndpointWithMd(1)
 	base.Add(loc, emd)
 	base.Add(loc, emd)
-	if base.epsEqualityHash != 0 {
-		t.Fatalf("expected xor of identical endpoints to be 0, got %d", base.epsEqualityHash)
-	}
 
 	readded := NewEndpointsForBackend(epsBackend("svc-variant"))
 	readded.Add(loc, emd)
@@ -128,7 +125,7 @@ func TestReuseEndpointsFromNonEmptyZeroHash(t *testing.T) {
 	clone := NewEndpointsForBackend(epsBackend("svc-variant"))
 	clone.ReuseEndpointsFrom(base)
 	if clone.LbEpsEqualityHash != readded.LbEpsEqualityHash {
-		t.Fatalf("zero-hash non-empty reuse mismatch: reuse=%d readd=%d", clone.LbEpsEqualityHash, readded.LbEpsEqualityHash)
+		t.Fatalf("duplicate-endpoint reuse mismatch: reuse=%d readd=%d", clone.LbEpsEqualityHash, readded.LbEpsEqualityHash)
 	}
 }
 
@@ -414,5 +411,21 @@ func TestEndpointHashInputsUnchanged(t *testing.T) {
 				ty.Name(), got, want,
 			)
 		}
+	}
+}
+
+func TestDuplicatedEndpointSwapChangesEquality(t *testing.T) {
+	// A ServiceEntry can list the same address twice. Replacing [A, A] with
+	// [B, B] keeps the count, so only the content hash can tell them apart.
+	loc := PodLocality{Region: "us-east-1", Zone: "zone-a"}
+	before := NewEndpointsForBackend(epsBackend("svc"))
+	before.Add(loc, testEndpointWithMd(1))
+	before.Add(loc, testEndpointWithMd(1))
+	after := NewEndpointsForBackend(epsBackend("svc"))
+	after.Add(loc, testEndpointWithMd(2))
+	after.Add(loc, testEndpointWithMd(2))
+
+	if before.Equals(*after) {
+		t.Fatal("[A, A] and [B, B] must not compare equal")
 	}
 }
