@@ -388,6 +388,8 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger.Info("starting Proxy Syncer", "controller", s.controllerName)
+	// Set before the registrations below, which are the gate's only callers.
+	s.proxyTranslator.gate.warmWithholdBound = s.commonCols.Settings.PerClientWarmWithholdBound
 
 	// wait for krt collections to sync
 	logger.Info("waiting for cache to sync")
