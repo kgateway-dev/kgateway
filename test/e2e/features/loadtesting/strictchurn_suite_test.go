@@ -15,8 +15,8 @@ func TestRestoreControllerEnvVars(t *testing.T) {
 		Name: "KGW_VALIDATOR_MODE",
 		ValueFrom: &corev1.EnvVarSource{
 			ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "controller-env"},
-				Key:                  "validator-mode",
+				Name: "controller-env",
+				Key:  "validator-mode",
 			},
 		},
 	}

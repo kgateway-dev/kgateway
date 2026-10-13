@@ -107,12 +107,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 		tlsPolicyIR, err := translate(krtctx, i)
 
 		pol := &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{
-				Group:     backendTlsPolicyGroupKind.Group,
-				Kind:      backendTlsPolicyGroupKind.Kind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
+			Group:      backendTlsPolicyGroupKind.Group,
+			Kind:       backendTlsPolicyGroupKind.Kind,
+			Namespace:  i.Namespace,
+			Name:       i.Name,
 			Policy:     i,
 			PolicyIR:   tlsPolicyIR,
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(i.Spec.TargetRefs),
@@ -126,10 +124,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:           "BackendTLSPolicy",
-				Policies:       tlsPolicyCol,
-				ProcessBackend: processBackend,
-				MergePolicies:  MergePolicies,
+				Name:               "BackendTLSPolicy",
+				Policies:           tlsPolicyCol,
+				ProcessBackend:     processBackend,
+				ProcessBaseCluster: processBaseCluster,
+				MergePolicies:      MergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,

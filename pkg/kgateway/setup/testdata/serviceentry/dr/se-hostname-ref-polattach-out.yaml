@@ -45,6 +45,12 @@ clusters:
               -----END CERTIFICATE-----
       sni: se.example.com
   type: STATIC
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s

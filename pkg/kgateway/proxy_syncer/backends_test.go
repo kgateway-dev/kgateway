@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
@@ -226,9 +225,9 @@ func TestBaseEnvoyClusterEquals_SeesDeclaredOverlayInputs(t *testing.T) {
 	}
 	rowFor := func(labels map[string]string) baseEnvoyCluster {
 		backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-		backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		backend.Obj = &corev1.Service{
 			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: "1", Generation: 1, Labels: labels,
-		}}
+		}
 		return baseEnvoyCluster{
 			Name: "c", Cluster: cluster, ClusterVersion: 7,
 			OverlayInputsHash: translator.OverlayInputsHash(backend),

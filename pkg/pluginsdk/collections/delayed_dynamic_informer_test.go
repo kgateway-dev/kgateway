@@ -328,11 +328,9 @@ func makeCRDWithVersions(
 	require.True(t, ok)
 
 	err := extClient.Tracker().Add(&apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: resource.Resource + "." + resource.Group,
-			Annotations: map[string]string{
-				consts.BundleVersionAnnotation: bundleVersion,
-			},
+		Name: resource.Resource + "." + resource.Group,
+		Annotations: map[string]string{
+			consts.BundleVersionAnnotation: bundleVersion,
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: resource.Group,
@@ -346,11 +344,9 @@ func makeCRDWithVersions(
 	})
 	if apierrors.IsAlreadyExists(err) {
 		err = extClient.Tracker().Update(istiogvr.CustomResourceDefinition, &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: resource.Resource + "." + resource.Group,
-				Annotations: map[string]string{
-					consts.BundleVersionAnnotation: bundleVersion,
-				},
+			Name: resource.Resource + "." + resource.Group,
+			Annotations: map[string]string{
+				consts.BundleVersionAnnotation: bundleVersion,
 			},
 			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: resource.Group,

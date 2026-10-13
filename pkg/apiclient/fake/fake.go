@@ -171,11 +171,9 @@ func seedCRDs(t test.Failer, c kube.Client, gvrs []schema.GroupVersionResource) 
 		crd := crds[name]
 		if crd == nil {
 			crd = &apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-					Annotations: map[string]string{
-						consts.BundleVersionAnnotation: consts.BundleVersion,
-					},
+				Name: name,
+				Annotations: map[string]string{
+					consts.BundleVersionAnnotation: consts.BundleVersion,
 				},
 				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 					Group: gvr.Group,

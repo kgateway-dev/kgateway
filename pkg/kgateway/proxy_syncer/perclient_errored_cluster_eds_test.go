@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -213,8 +212,8 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-		NamespacedName: types.NamespacedName{Namespace: "jwt-test", Name: "gw"},
-		Listeners:      sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
+		Namespace: "jwt-test", Name: "gw",
+		Listeners: sliceToResources([]*envoylistenerv3.Listener{{Name: "listener"}}),
 		Routes: sliceToResources([]*envoyroutev3.RouteConfiguration{{
 			Name: "route-config",
 			VirtualHosts: []*envoyroutev3.VirtualHost{{

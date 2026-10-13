@@ -343,20 +343,16 @@ func selectedWorkloadFromEntry(
 		selectedBy: slices.Map(selectedBy, func(se seSelector) krt.Named {
 			return krt.NewNamed(se)
 		}),
-		LocalityPod: krtcollections.LocalityPod{
-			Named: krt.Named{
-				Name:      name,
-				Namespace: namespace,
-			},
-			Locality:        locality,
-			AugmentedLabels: labels,
-			Addresses:       []string{weSpec.GetAddress()},
-			// WorkloadEntry / inline endpoints have no pod readiness or termination
-			// concept; their health is managed by the remote cluster (e.g. cross-network
-			// endpoints), so treat them as ready and never filter them on local pod
-			// readiness/termination. Terminating is left at its false zero value.
-			Ready: true,
-		},
+		Name:            name,
+		Namespace:       namespace,
+		Locality:        locality,
+		AugmentedLabels: labels,
+		Addresses:       []string{weSpec.GetAddress()},
+		// WorkloadEntry / inline endpoints have no pod readiness or termination
+		// concept; their health is managed by the remote cluster (e.g. cross-network
+		// endpoints), so treat them as ready and never filter them on local pod
+		// readiness/termination. Terminating is left at its false zero value.
+		Ready: true,
 
 		weight:      weSpec.GetWeight(),
 		portMapping: weSpec.GetPorts(),

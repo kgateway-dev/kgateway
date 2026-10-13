@@ -120,11 +120,9 @@ func (s *testingSuite) podIP(selector string) string {
 func (s *testingSuite) createLocalityWorkloadEntry(name, address, locality string) {
 	labels := map[string]string{"locality-test": "lb"}
 	we := &istionetworkingv1.WorkloadEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: localityNamespace,
-			Labels:    labels,
-		},
+		Name:      name,
+		Namespace: localityNamespace,
+		Labels:    labels,
 		Spec: networking.WorkloadEntry{
 			Address:  address,
 			Labels:   labels,

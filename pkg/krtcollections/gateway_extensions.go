@@ -32,12 +32,10 @@ func NewGatewayExtensionsCollection(
 			logger.Error("error parsing precedence weight annotation; will default to 0", "resource_ref", ctrlclient.ObjectKeyFromObject(cr), "error", err)
 		}
 		gwExt := &ir.GatewayExtension{
-			ObjectSource: ir.ObjectSource{
-				Group:     wellknown.GatewayExtensionGVK.GroupKind().Group,
-				Kind:      wellknown.GatewayExtensionGVK.GroupKind().Kind,
-				Namespace: cr.Namespace,
-				Name:      cr.Name,
-			},
+			Group:            wellknown.GatewayExtensionGVK.GroupKind().Group,
+			Kind:             wellknown.GatewayExtensionGVK.GroupKind().Kind,
+			Namespace:        cr.Namespace,
+			Name:             cr.Name,
 			ExtAuth:          cr.Spec.ExtAuth,
 			ExtProc:          cr.Spec.ExtProc,
 			RateLimit:        cr.Spec.RateLimit,

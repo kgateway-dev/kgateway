@@ -139,8 +139,8 @@ func TestBuildDesiredPolicyStatusEmitsOnlyOwnedAncestors(t *testing.T) {
 	}
 
 	status := BuildDesiredPolicyStatus(rm.PolicyReport(key), &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
-		Status:     currentStatus,
+		Namespace: key.Namespace, Name: key.Name,
+		Status: currentStatus,
 	}, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, 1)
@@ -177,7 +177,7 @@ func TestBuildDesiredPolicyStatusLeavesAncestorCapToWriter(t *testing.T) {
 	}
 
 	status := BuildDesiredPolicyStatus(rm.PolicyReport(key), &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
+		Namespace: key.Namespace, Name: key.Name,
 	}, "kgateway.dev/kgateway")
 	require.NotNil(t, status)
 	require.Len(t, status.Ancestors, reports.MaxPolicyStatusAncestors+1)
@@ -218,7 +218,7 @@ func TestBuildDesiredPolicyStatusSuppressesTargetAncestors(t *testing.T) {
 			}
 		}
 		status := BuildDesiredPolicyStatus(rm.PolicyReport(key), &gwv1.BackendTLSPolicy{
-			ObjectMeta: metav1.ObjectMeta{Namespace: key.Namespace, Name: key.Name},
+			Namespace: key.Namespace, Name: key.Name,
 		}, "kgateway.dev/kgateway")
 		require.NotNil(t, status)
 		return status.Ancestors

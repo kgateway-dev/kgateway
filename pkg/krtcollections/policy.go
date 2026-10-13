@@ -399,13 +399,11 @@ func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.Gr
 	actualGks := i.gkAliases[gk]
 
 	key := backendKey{
-		port: port,
-		ObjectSource: ir.ObjectSource{
-			Group:     gk.Group,
-			Kind:      gk.Kind,
-			Namespace: n.Namespace,
-			Name:      n.Name,
-		},
+		port:      port,
+		Group:     gk.Group,
+		Kind:      gk.Kind,
+		Namespace: n.Namespace,
+		Name:      n.Name,
 	}
 
 	var didFetch bool
@@ -529,12 +527,10 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			}
 		}
 		ir := &ir.GatewayForDeployer{
-			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.GatewayKind,
-				Namespace: gw.Namespace,
-				Name:      gw.Name,
-			},
+			Group:          gwv1.GroupVersion.Group,
+			Kind:           wellknown.GatewayKind,
+			Namespace:      gw.Namespace,
+			Name:           gw.Name,
 			ControllerName: string(gwClass.Spec.ControllerName),
 			Ports:          smallset.New(ports.UnsortedList()...),
 		}
@@ -551,12 +547,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 
 		gwIR := &ir.Gateway{
-			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      wellknown.GatewayKind,
-				Namespace: gw.Namespace,
-				Name:      gw.Name,
-			},
+			Group:               gwv1.GroupVersion.Group,
+			Kind:                wellknown.GatewayKind,
+			Namespace:           gw.Namespace,
+			Name:                gw.Name,
 			Obj:                 gw,
 			Listeners:           make([]ir.Listener, 0, len(gw.Spec.Listeners)),
 			DeniedListenerSets:  map[schema.GroupVersionKind]ir.ListenerSets{},
@@ -630,12 +624,10 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			lsGVK := ls.GroupVersionKind()
 
 			lsIR := ir.ListenerSet{
-				ObjectSource: ir.ObjectSource{
-					Group:     lsGVK.Group,
-					Kind:      lsGVK.Kind,
-					Namespace: ls.Namespace,
-					Name:      ls.Name,
-				},
+				Group:     lsGVK.Group,
+				Kind:      lsGVK.Kind,
+				Namespace: ls.Namespace,
+				Name:      ls.Name,
 				Obj:       ls,
 				Listeners: make([]ir.Listener, 0),
 			}

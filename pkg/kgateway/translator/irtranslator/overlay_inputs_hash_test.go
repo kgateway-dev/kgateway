@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
@@ -20,10 +19,10 @@ import (
 // backing object carrying every field the whole-object fallback reads.
 func hashBackend() *ir.BackendObjectIR {
 	b := overlayBackend()
-	b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	b.Obj = &corev1.Service{
 		Namespace: "ns", Name: "name", UID: "uid", ResourceVersion: "1", Generation: 1,
 		Labels: map[string]string{"app": "name"},
-	}}
+	}
 	return b
 }
 

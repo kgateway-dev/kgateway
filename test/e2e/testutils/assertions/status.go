@@ -97,10 +97,8 @@ func (p *Provider) EventuallyHTTPRouteStatusContainsReason(
 		})
 
 		route := &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      routeName,
-				Namespace: routeNamespace,
-			},
+			Name:      routeName,
+			Namespace: routeNamespace,
 		}
 		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get httproute")

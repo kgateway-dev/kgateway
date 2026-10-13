@@ -9,7 +9,6 @@ import (
 	"istio.io/api/label"
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -86,11 +85,9 @@ func TestServiceEntryBackendIR_ReactsToSystemNamespaceNetwork(t *testing.T) {
 // with it.
 func TestBuildInlineEndpoints_SystemNamespaceNetwork(t *testing.T) {
 	se := &networkingclient.ServiceEntry{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        "inlined-se",
-			Namespace:   "gwtest",
-			Annotations: map[string]string{annotation.NetworkingTrafficDistribution.Name: "PreferNetwork"},
-		},
+		Name:        "inlined-se",
+		Namespace:   "gwtest",
+		Annotations: map[string]string{annotation.NetworkingTrafficDistribution.Name: "PreferNetwork"},
 		Spec: networking.ServiceEntry{
 			Hosts:      []string{"se.example.com"},
 			Location:   networking.ServiceEntry_MESH_INTERNAL,
@@ -122,7 +119,7 @@ func TestBuildInlineEndpoints_SystemNamespaceNetwork(t *testing.T) {
 // endpoints that get no network, not the system namespace network.
 func TestBuildInlineEndpoints_DNSHostsGetNoNetwork(t *testing.T) {
 	se := &networkingclient.ServiceEntry{
-		ObjectMeta: metav1.ObjectMeta{Name: "dns-se", Namespace: "gwtest"},
+		Name: "dns-se", Namespace: "gwtest",
 		Spec: networking.ServiceEntry{
 			Hosts:      []string{"se.example.com"},
 			Location:   networking.ServiceEntry_MESH_EXTERNAL,

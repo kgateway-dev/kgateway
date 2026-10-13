@@ -244,8 +244,8 @@ func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...Att
 // Prepend prepends the policies in l in the given to the policies in a.
 func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
 	// iterate in the reverse order so that the input order in l is preserved at the end
-	for i := len(l) - 1; i >= 0; i-- {
-		for k, v := range l[i].Policies {
+	for _, v := range slices.Backward(l) {
+		for k, v := range v.Policies {
 			if a.Policies == nil {
 				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
 			}

@@ -74,9 +74,7 @@ var (
 	}
 	proxyService    = &corev1.Service{ObjectMeta: proxyObjectMeta}
 	proxyDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gw",
-			Namespace: "default",
-		},
+		Name:      "gw",
+		Namespace: "default",
 	}
 )

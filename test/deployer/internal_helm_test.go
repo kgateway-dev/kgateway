@@ -791,12 +791,10 @@ func TestEnvtestRejectsLongLabelValue(t *testing.T) {
 
 	newDeployment := func(labelValue string) *appsv1.Deployment {
 		return &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "envtest-validation-probe",
-				Namespace: "default",
-				Labels: map[string]string{
-					"validation-probe": labelValue,
-				},
+			Name:      "envtest-validation-probe",
+			Namespace: "default",
+			Labels: map[string]string{
+				"validation-probe": labelValue,
 			},
 			Spec: appsv1.DeploymentSpec{
 				Selector: &metav1.LabelSelector{

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -15,11 +14,9 @@ import (
 
 func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 	route := &gwv1.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tls-route",
-			Namespace: "default",
-			Labels:    map[string]string{"app": "test"},
-		},
+		Name:      "tls-route",
+		Namespace: "default",
+		Labels:    map[string]string{"app": "test"},
 		Spec: gwv1.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
@@ -31,10 +28,8 @@ func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 			Rules: []gwv1.TLSRouteRule{{
 				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
-					BackendObjectReference: gwv1.BackendObjectReference{
-						Name: "backend",
-						Port: new(gwv1.PortNumber(443)),
-					},
+					Name: "backend",
+					Port: new(gwv1.PortNumber(443)),
 				}},
 			}},
 		},
@@ -69,11 +64,9 @@ func TestConvertTLSRouteV1ToV1Alpha2(t *testing.T) {
 
 func TestConvertTLSRouteV1Alpha3ToV1Alpha2(t *testing.T) {
 	route := &gwv1a3.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tls-route",
-			Namespace: "default",
-			Labels:    map[string]string{"app": "test"},
-		},
+		Name:      "tls-route",
+		Namespace: "default",
+		Labels:    map[string]string{"app": "test"},
 		Spec: gwv1.TLSRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
 				ParentRefs: []gwv1.ParentReference{{
@@ -85,10 +78,8 @@ func TestConvertTLSRouteV1Alpha3ToV1Alpha2(t *testing.T) {
 			Rules: []gwv1.TLSRouteRule{{
 				Name: new(gwv1.SectionName("rule-1")),
 				BackendRefs: []gwv1.BackendRef{{
-					BackendObjectReference: gwv1.BackendObjectReference{
-						Name: "backend",
-						Port: new(gwv1.PortNumber(443)),
-					},
+					Name: "backend",
+					Port: new(gwv1.PortNumber(443)),
 				}},
 			}},
 		},
@@ -124,12 +115,12 @@ func TestConvertTLSRouteV1Alpha3ToV1Alpha2(t *testing.T) {
 // candidate version's informer to work out which client could persist the object.
 func TestNormalizedTLSRoutesReportTheServedGroupVersionKind(t *testing.T) {
 	fromV1 := convertTLSRouteV1ToV1Alpha2(&gwv1.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"},
+		Name: "route", Namespace: "default",
 	})
 	require.Equal(t, wellknown.TLSRouteV1GVK, fromV1.GetObjectKind().GroupVersionKind())
 
 	fromV1Alpha3 := convertTLSRouteV1Alpha3ToV1Alpha2(&gwv1a3.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"},
+		Name: "route", Namespace: "default",
 	})
 	require.Equal(t, wellknown.TLSRouteV1Alpha3GVK, fromV1Alpha3.GetObjectKind().GroupVersionKind())
 

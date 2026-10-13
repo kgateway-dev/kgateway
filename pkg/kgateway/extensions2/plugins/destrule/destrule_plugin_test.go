@@ -12,7 +12,6 @@ import (
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/overlaytest"
@@ -35,7 +34,7 @@ func newDestrulePlugin(t *testing.T, drs ...DestinationRuleWrapper) *destrulePlu
 func destRule(name string, tp *v1alpha3.TrafficPolicy) DestinationRuleWrapper {
 	return DestinationRuleWrapper{
 		DestinationRule: &networkingclient.DestinationRule{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "ns"},
+			Name: name, Namespace: "ns",
 			Spec: v1alpha3.DestinationRule{
 				Host:          drHost,
 				TrafficPolicy: tp,
@@ -122,10 +121,10 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 	}))
 
 	backend := drBackend()
-	backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	backend.Obj = &corev1.Service{
 		Namespace: "ns", Name: "reviews", UID: "uid", ResourceVersion: "1",
 		Labels: map[string]string{"app": "reviews"},
-	}}
+	}
 
 	overlaytest.AssertInputsHashCoversOverlay(t, overlaytest.Case{
 		Plugin:  d.policyPlugin(),

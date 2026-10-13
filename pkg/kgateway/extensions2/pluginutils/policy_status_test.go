@@ -41,7 +41,7 @@ var policyGVK = schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Ki
 func policyResource() statussync.Resource {
 	return statussync.Resource{
 		GroupVersionKind: policyGVK,
-		NamespacedName:   types.NamespacedName{Namespace: testNamespace, Name: testPolicyName},
+		Namespace:        testNamespace, Name: testPolicyName,
 	}
 }
 
@@ -158,7 +158,7 @@ func newPolicyStatusFixture(
 
 func emptyPolicy() *gwv1.BackendTLSPolicy {
 	return &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{Name: testPolicyName, Namespace: testNamespace, ResourceVersion: "1"},
+		Name: testPolicyName, Namespace: testNamespace, ResourceVersion: "1",
 	}
 }
 

@@ -86,18 +86,14 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 		{Name: "labeled-ns", Labels: map[string]string{wellknown.IngressUseWaypointLabel: "true"}},
 	})
 	gateways := krt.NewStaticCollection(nil, []ir.Gateway{{
-		ObjectSource: ir.ObjectSource{
-			Group: wellknown.GatewayGVK.Group, Kind: wellknown.GatewayGVK.Kind,
-			Namespace: "ns", Name: gatewayName,
-		},
+		Group: wellknown.GatewayGVK.Group, Kind: wellknown.GatewayGVK.Kind,
+		Namespace: "ns", Name: gatewayName,
 		Obj: &gwv1.Gateway{Spec: gwv1.GatewaySpec{GatewayClassName: "kgateway"}},
 	}})
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1",
-			Labels: map[string]string{wellknown.IngressUseWaypointLabel: "true"},
-		},
-		Spec: corev1.ServiceSpec{ClusterIP: "10.0.0.1", ClusterIPs: []string{"10.0.0.1"}},
+		Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1",
+		Labels: map[string]string{wellknown.IngressUseWaypointLabel: "true"},
+		Spec:   corev1.ServiceSpec{ClusterIP: "10.0.0.1", ClusterIPs: []string{"10.0.0.1"}},
 	}
 	waypoint := types.NamespacedName{Namespace: "ns", Name: "waypoint"}
 	p := &PerClientProcessor{
@@ -105,8 +101,8 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 			waypointquery.ServiceKeyFromObject(service): waypoint,
 			// The renamed and moved services are attached too, so those
 			// mutations exercise the lookup key rather than a missing waypoint.
-			waypointquery.ServiceKeyFromObject(&corev1.Service{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "renamed"}}):     waypoint,
-			waypointquery.ServiceKeyFromObject(&corev1.Service{ObjectMeta: metav1.ObjectMeta{Namespace: "labeled-ns", Name: "svc"}}): waypoint,
+			waypointquery.ServiceKeyFromObject(&corev1.Service{Namespace: "ns", Name: "renamed"}):     waypoint,
+			waypointquery.ServiceKeyFromObject(&corev1.Service{Namespace: "labeled-ns", Name: "svc"}): waypoint,
 		}},
 		commonCols: &collections.CommonCollections{
 			Namespaces:   namespaces,
@@ -186,8 +182,8 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 // mutation's own reads are under test.
 func TestIngressUseWaypointClusterInputsHash_CoversApply(t *testing.T) {
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1"},
-		Spec:       corev1.ServiceSpec{ClusterIP: "10.0.0.1", ClusterIPs: []string{"10.0.0.1"}},
+		Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1",
+		Spec: corev1.ServiceSpec{ClusterIP: "10.0.0.1", ClusterIPs: []string{"10.0.0.1"}},
 	}
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
 	backend.Obj = service

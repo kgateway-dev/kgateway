@@ -18,7 +18,7 @@ import (
 
 func TestStatusContributionsFromReportMapSplitsAndTransfersOwnership(t *testing.T) {
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default", Generation: 7},
+		Name: "route", Namespace: "default", Generation: 7,
 	}
 	reportMap := NewReportMap()
 	reporter := NewReporter(&reportMap)
@@ -62,8 +62,8 @@ func TestStatusContributionKeyCoversEveryFieldEqualsCompares(t *testing.T) {
 
 func TestReduceStatusContributionsMergesPolicyAncestorsAcrossSources(t *testing.T) {
 	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
-	gw := ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"}}
-	backend := ParentRefKey{NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"}}
+	gw := ParentRefKey{Namespace: "default", Name: "gw"}
+	backend := ParentRefKey{Namespace: "default", Name: "backend"}
 
 	gatewayReport := NewReportMap()
 	gatewayReport.Policies[policy] = &PolicyReport{Ancestors: map[ParentRefKey]*AncestorRefReport{gw: {}}}
@@ -85,18 +85,18 @@ func TestReduceStatusContributionsMergesPolicyAncestorsAcrossSources(t *testing.
 // with nothing changing upstream.
 func TestReduceStatusContributionsIsDeterministicForSingleWriterKinds(t *testing.T) {
 	target := StatusKey{
-		GroupKind:      wellknown.GatewayGVK.GroupKind(),
-		NamespacedName: types.NamespacedName{Namespace: "default", Name: "gw"},
+		GroupKind: wellknown.GatewayGVK.GroupKind(),
+		Namespace: "default", Name: "gw",
 	}
 	first := StatusContribution{
-		Target:       target,
-		Source:       StatusSource{Kind: GatewayStatusSource, Name: "default/a"},
-		StatusReport: StatusReport{Gateway: &GatewayReport{attachedListenerSets: 1}},
+		Target:  target,
+		Source:  StatusSource{Kind: GatewayStatusSource, Name: "default/a"},
+		Gateway: &GatewayReport{attachedListenerSets: 1},
 	}
 	second := StatusContribution{
-		Target:       target,
-		Source:       StatusSource{Kind: GatewayStatusSource, Name: "default/b"},
-		StatusReport: StatusReport{Gateway: &GatewayReport{attachedListenerSets: 2}},
+		Target:  target,
+		Source:  StatusSource{Kind: GatewayStatusSource, Name: "default/b"},
+		Gateway: &GatewayReport{attachedListenerSets: 2},
 	}
 
 	forward := ReduceStatusContributions([]StatusContribution{first, second})
@@ -110,14 +110,14 @@ func TestReduceStatusContributionsIsDeterministicForSingleWriterKinds(t *testing
 
 func TestReduceStatusContributionsWarnsOnMultipleSingleWriterContributions(t *testing.T) {
 	target := StatusKey{
-		GroupKind:      wellknown.BackendGVK.GroupKind(),
-		NamespacedName: types.NamespacedName{Namespace: "default", Name: "backend"},
+		GroupKind: wellknown.BackendGVK.GroupKind(),
+		Namespace: "default", Name: "backend",
 	}
 	contribution := func(source string) StatusContribution {
 		return StatusContribution{
-			Target:       target,
-			Source:       StatusSource{Kind: BackendStatusSource, Name: source},
-			StatusReport: StatusReport{Backend: &BackendReport{}},
+			Target:  target,
+			Source:  StatusSource{Kind: BackendStatusSource, Name: source},
+			Backend: &BackendReport{},
 		}
 	}
 
@@ -163,10 +163,10 @@ func TestStatusReportEqualsUsesSemanticReportContents(t *testing.T) {
 			report.ListenerSet.listeners["http"].Status.AttachedRoutes++
 		},
 		"route parent": func(report *StatusReport) {
-			report.Route.Parents[ParentRefKey{NamespacedName: types.NamespacedName{Name: "other"}}] = &ParentRefReport{}
+			report.Route.Parents[ParentRefKey{Name: "other"}] = &ParentRefReport{}
 		},
 		"policy attachment": func(report *StatusReport) {
-			report.Policy.Ancestors[ParentRefKey{NamespacedName: types.NamespacedName{Name: "gateway"}}].AttachmentState = reporter.PolicyAttachmentStateMerged
+			report.Policy.Ancestors[ParentRefKey{Name: "gateway"}].AttachmentState = reporter.PolicyAttachmentStateMerged
 		},
 		"backend generation": func(report *StatusReport) {
 			report.Backend.observedGeneration++
@@ -191,7 +191,7 @@ func equalityStatusReport(transition time.Time) StatusReport {
 		ObservedGeneration: 1,
 		LastTransitionTime: metav1.NewTime(transition),
 	}
-	parent := ParentRefKey{NamespacedName: types.NamespacedName{Name: "gateway"}}
+	parent := ParentRefKey{Name: "gateway"}
 	return StatusReport{
 		Gateway: &GatewayReport{
 			conditions:           []metav1.Condition{condition},

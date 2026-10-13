@@ -25,7 +25,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -196,7 +195,7 @@ func TestBenchmarkResourceRestoration(t *testing.T) {
 		scheme := runtime.NewScheme()
 		require.NoError(t, appsv1.AddToScheme(scheme))
 		deployment := &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{Name: "controller", Namespace: "test"},
+			Name: "controller", Namespace: "test",
 			Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{Containers: []corev1.Container{
 				{Name: "controller", Resources: corev1.ResourceRequirements{
 					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("8Gi")},
@@ -222,8 +221,8 @@ func TestFleetOpenRetryPreservesPreviousConnection(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Force stream opens to fail deterministically.
 	fleet := &XdsFleetSuite{
-		LoadTestingSuite: LoadTestingSuite{ctx: ctx},
-		conns:            []*grpc.ClientConn{conn}, activeConn: conn, activeConnStreams: 1,
+		ctx:   ctx,
+		conns: []*grpc.ClientConn{conn}, activeConn: conn, activeConnStreams: 1,
 		xdsAddrs: []string{"localhost:0"},
 	}
 	defer func() {
@@ -248,8 +247,8 @@ func TestFleetCrashEmitsVerdictWithUnavailableMetrics(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, corev1.AddToScheme(scheme))
 	pod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "controller-pod", Namespace: "test"},
-		Status:     corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "controller", RestartCount: 2}}},
+		Name: "controller-pod", Namespace: "test",
+		Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{Name: "controller", RestartCount: 2}}},
 	}
 	kube := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(pod).WithObjects(pod).Build()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -269,10 +268,8 @@ func TestFleetCrashEmitsVerdictWithUnavailableMetrics(t *testing.T) {
 	require.NoError(t, err)
 	defer output.Close()
 	fleet := &XdsFleetSuite{
-		LoadTestingSuite: LoadTestingSuite{
-			ctx:              context.Background(),
-			testInstallation: &e2e.TestInstallation{ClusterContext: &cluster.Context{Client: kube}},
-		},
+		ctx:              context.Background(),
+		testInstallation: &e2e.TestInstallation{ClusterContext: &cluster.Context{Client: kube}},
 		installNamespace: "test", controllerDeployment: "controller",
 		gateways: []string{"gateway"}, metricsURL: server.URL, out: output,
 	}
@@ -365,8 +362,8 @@ func TestBenchmarkControllerSelectionUsesAppLabel(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, appsv1.AddToScheme(scheme))
 	controller := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{Name: "custom-controller", Namespace: "test", Labels: map[string]string{"app.kubernetes.io/name": "kgateway"}},
-		Spec:       appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "controller"}}}}},
+		Name: "custom-controller", Namespace: "test", Labels: map[string]string{"app.kubernetes.io/name": "kgateway"},
+		Spec: appsv1.DeploymentSpec{Template: corev1.PodTemplateSpec{Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "controller"}}}}},
 	}
 	decoy := controller.DeepCopy()
 	decoy.Name, decoy.Labels = "kgateway-decoy", nil

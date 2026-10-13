@@ -6,7 +6,6 @@ import (
 	"github.com/onsi/gomega"
 	authpb "istio.io/api/security/v1"
 	authcr "istio.io/client-go/pkg/apis/security/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type policyTestExpectation struct {
@@ -25,14 +24,10 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Single DENY policy",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deny-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "deny-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
@@ -49,14 +44,10 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Single ALLOW policy",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "allow-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "allow-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_ALLOW,
 				},
@@ -73,14 +64,10 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Single AUDIT policy",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "audit-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "audit-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_AUDIT,
 				},
@@ -97,14 +84,10 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Single CUSTOM policy",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "custom-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "custom-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_CUSTOM,
 				},
@@ -121,27 +104,19 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Duplicate DENY policies",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "duplicate-deny-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "duplicate-deny-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "duplicate-deny-policy", // Same name = duplicate
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "duplicate-deny-policy", // Same name = duplicate
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
@@ -158,27 +133,19 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Duplicate ALLOW policies",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "duplicate-allow-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "duplicate-allow-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_ALLOW,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "duplicate-allow-policy", // Same name = duplicate
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "duplicate-allow-policy", // Same name = duplicate
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_ALLOW,
 				},
@@ -195,27 +162,19 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Different namespaces - not duplicates",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "same-name-policy",
-					Namespace: "namespace-1",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "same-name-policy",
+				Namespace:  "namespace-1",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "same-name-policy", // Same name but different namespace
-					Namespace: "namespace-2",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "same-name-policy", // Same name but different namespace
+				Namespace:  "namespace-2",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
@@ -232,53 +191,37 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Mixed policy types",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "allow-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "allow-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_ALLOW,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "deny-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "deny-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "audit-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "audit-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_AUDIT,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "custom-policy",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "custom-policy",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_CUSTOM,
 				},
@@ -295,53 +238,37 @@ var separateAndDeduplicatePoliciesTests = []struct {
 		name: "Multiple duplicates of different types",
 		policies: []*authcr.AuthorizationPolicy{
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "dup-allow",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "dup-allow",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_ALLOW,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "dup-allow", // Duplicate
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "dup-allow", // Duplicate
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_ALLOW,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "dup-deny",
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "dup-deny",
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},
 			},
 			{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "AuthorizationPolicy",
-					APIVersion: "security.istio.io/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "dup-deny", // Duplicate
-					Namespace: "test-ns",
-				},
+				Kind:       "AuthorizationPolicy",
+				APIVersion: "security.istio.io/v1",
+				Name:       "dup-deny", // Duplicate
+				Namespace:  "test-ns",
 				Spec: authpb.AuthorizationPolicy{
 					Action: authpb.AuthorizationPolicy_DENY,
 				},

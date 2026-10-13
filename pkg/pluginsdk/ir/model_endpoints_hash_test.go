@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
@@ -16,13 +15,11 @@ func backendWithLabelsForHashTest(labels map[string]string) BackendObjectIR {
 		Name:      "my-service",
 	}, 8080, "", "")
 	backend.Obj = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "my-service",
-			Namespace:       "default",
-			UID:             "svc-uid-1",
-			ResourceVersion: "1",
-			Labels:          labels,
-		},
+		Name:            "my-service",
+		Namespace:       "default",
+		UID:             "svc-uid-1",
+		ResourceVersion: "1",
+		Labels:          labels,
 	}
 	backend.CanonicalHostname = "my-service.default.svc.cluster.local"
 	backend.TrafficDistribution = wellknown.TrafficDistributionAny

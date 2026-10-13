@@ -10,7 +10,6 @@ import (
 	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
@@ -99,8 +98,8 @@ func TestBaseRetranslatesWhenARuleForItsHostAppears(t *testing.T) {
 	// A rule for the host appears. The base must re-translate: its fetch through
 	// the index registered the dependency, and the answer changed.
 	rule := destrule.DestinationRuleWrapper{DestinationRule: &networkingclient.DestinationRule{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "rule"},
-		Spec:       v1alpha3.DestinationRule{Host: host},
+		Namespace: "ns", Name: "rule",
+		Spec: v1alpha3.DestinationRule{Host: host},
 	}}
 	rules.UpdateObject(rule)
 	require.Eventually(t, perClientCLA, 5*time.Second, 10*time.Millisecond,
@@ -108,8 +107,8 @@ func TestBaseRetranslatesWhenARuleForItsHostAppears(t *testing.T) {
 
 	// A rule for another host changes nothing: the dependency is keyed by host.
 	other := destrule.DestinationRuleWrapper{DestinationRule: &networkingclient.DestinationRule{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "other"},
-		Spec:       v1alpha3.DestinationRule{Host: "other.ns.svc.cluster.local"},
+		Namespace: "ns", Name: "other",
+		Spec: v1alpha3.DestinationRule{Host: "other.ns.svc.cluster.local"},
 	}}
 	rules.UpdateObject(other)
 	time.Sleep(50 * time.Millisecond)

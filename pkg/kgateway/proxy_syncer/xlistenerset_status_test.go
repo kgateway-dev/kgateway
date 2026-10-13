@@ -32,9 +32,7 @@ const legacyNamespace = "default"
 // protocol's default, so the injected status ports cover both.
 func legacyListenerSet() *gwv1.ListenerSet {
 	ls := &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "legacy-ls", Namespace: legacyNamespace, Generation: 3, ResourceVersion: "7",
-		},
+		Name: "legacy-ls", Namespace: legacyNamespace, Generation: 3, ResourceVersion: "7",
 		Spec: gwv1.ListenerSetSpec{
 			ParentRef: gwv1.ParentGatewayReference{Name: "gw"},
 			Listeners: []gwv1.ListenerEntry{

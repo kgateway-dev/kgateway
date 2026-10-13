@@ -12,7 +12,7 @@ import (
 
 func statusTestGateway() *gwv1.Gateway {
 	return &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default", Labels: map[string]string{"a": "b"}},
+		Name: "gw", Namespace: "default", Labels: map[string]string{"a": "b"},
 		Spec: gwv1.GatewaySpec{
 			GatewayClassName: "kgateway",
 			Listeners: []gwv1.Listener{{
@@ -31,7 +31,7 @@ func TestStatusSubresourceReactorPreservesEverythingButStatus(t *testing.T) {
 	InstallStatusSubresourceReactor(c.GatewayAPI().(*gatewayfake.Clientset))
 
 	_, err := c.GatewayAPI().GatewayV1().Gateways("default").UpdateStatus(ctx, &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
+		Name: "gw", Namespace: "default",
 		Status: gwv1.GatewayStatus{Conditions: []metav1.Condition{{
 			Type:   string(gwv1.GatewayConditionAccepted),
 			Status: metav1.ConditionTrue,

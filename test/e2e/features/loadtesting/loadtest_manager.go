@@ -48,12 +48,10 @@ func NewLoadTestManager(ctx context.Context, testInstallation *e2e.TestInstallat
 
 func (ltm *LoadTestManager) SetupTestInfrastructure() error {
 	testNS := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ltm.testNamespace,
-			Labels: map[string]string{
-				"loadtest":  "true",
-				"test-type": "kgateway-performance",
-			},
+		Name: ltm.testNamespace,
+		Labels: map[string]string{
+			"loadtest":  "true",
+			"test-type": "kgateway-performance",
 		},
 	}
 
@@ -62,13 +60,11 @@ func (ltm *LoadTestManager) SetupTestInfrastructure() error {
 	}
 
 	backendSvc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "loadtest-backend",
-			Namespace: ltm.testNamespace,
-			Labels: map[string]string{
-				"app":      "loadtest-backend",
-				"loadtest": "true",
-			},
+		Name:      "loadtest-backend",
+		Namespace: ltm.testNamespace,
+		Labels: map[string]string{
+			"app":      "loadtest-backend",
+			"loadtest": "true",
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{"app": "loadtest-backend"},
@@ -109,11 +105,9 @@ func (ltm *LoadTestManager) SetupSimulation(routeCount int, scenario string) err
 func (ltm *LoadTestManager) CreateGateways(gatewayNames []string) error {
 	for _, gatewayName := range gatewayNames {
 		gateway := &gwv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      gatewayName,
-				Namespace: ltm.testNamespace,
-				Labels:    map[string]string{"loadtest": "true"},
-			},
+			Name:      gatewayName,
+			Namespace: ltm.testNamespace,
+			Labels:    map[string]string{"loadtest": "true"},
 			Spec: gwv1.GatewaySpec{
 				GatewayClassName: "kgateway",
 				Listeners: []gwv1.Listener{
@@ -302,14 +296,12 @@ func (ltm *LoadTestManager) buildRoute(gatewayName string, routeIdx, batchStart 
 	}
 
 	return &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      routeName,
-			Namespace: ltm.testNamespace,
-			Labels: map[string]string{
-				"loadtest": "true",
-				"gateway":  gatewayName,
-				"batch":    strconv.Itoa(batchStart / GetOptimalBatchSize(1000)), // Use baseline batch size for labeling
-			},
+		Name:      routeName,
+		Namespace: ltm.testNamespace,
+		Labels: map[string]string{
+			"loadtest": "true",
+			"gateway":  gatewayName,
+			"batch":    strconv.Itoa(batchStart / GetOptimalBatchSize(1000)), // Use baseline batch size for labeling
 		},
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{
@@ -327,13 +319,9 @@ func (ltm *LoadTestManager) buildRoute(gatewayName string, routeIdx, batchStart 
 					},
 					BackendRefs: []gwv1.HTTPBackendRef{
 						{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Name:      gwv1.ObjectName(backendServiceName),
-									Namespace: func() *gwv1.Namespace { ns := gwv1.Namespace(backendNamespace); return &ns }(),
-									Port:      func() *gwv1.PortNumber { p := gwv1.PortNumber(80); return &p }(),
-								},
-							},
+							Name:      gwv1.ObjectName(backendServiceName),
+							Namespace: func() *gwv1.Namespace { ns := gwv1.Namespace(backendNamespace); return &ns }(),
+							Port:      func() *gwv1.PortNumber { p := gwv1.PortNumber(80); return &p }(),
 						},
 					},
 				},
@@ -550,10 +538,8 @@ func (ltm *LoadTestManager) GetSimulationMetrics() VClusterMetrics {
 
 	simMetrics := ltm.simulator.GetMetrics()
 	return VClusterMetrics{
-		BaseMetrics: BaseMetrics{
-			MemoryUsage: simMetrics.MemoryFootprint,
-			CPUUsage:    0.1,
-		},
+		MemoryUsage:       simMetrics.MemoryFootprint,
+		CPUUsage:          0.1,
 		Nodes:             simMetrics.TotalFakeNodes,
 		FakeNamespaces:    1,
 		FakeServices:      simMetrics.TotalFakeServices,
@@ -610,7 +596,7 @@ func (ltm *LoadTestManager) cleanupLoadTestNamespaces() error {
 
 func (ltm *LoadTestManager) deleteNamespace(name string) error {
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Name: name,
 	}
 	if err := ltm.testInstallation.ClusterContext.Client.Delete(ltm.ctx, namespace); err != nil && client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("failed to delete namespace %s: %w", name, err)

@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -14,12 +13,10 @@ import (
 
 func TestBuildGatewayBackendClientCertificateVariantsAndRewriteRoutes(t *testing.T) {
 	gateway := &ir.Gateway{
-		ObjectSource: ir.ObjectSource{
-			Group:     gwv1.GroupVersion.Group,
-			Kind:      "Gateway",
-			Namespace: "default",
-			Name:      "gw",
-		},
+		Group:     gwv1.GroupVersion.Group,
+		Kind:      "Gateway",
+		Namespace: "default",
+		Name:      "gw",
 	}
 	clientCertificate := &ir.GatewayBackendClientCertificateIR{
 		Certificate: ir.TLSCertificate{
@@ -39,12 +36,10 @@ func TestBuildGatewayBackendClientCertificateVariantsAndRewriteRoutes(t *testing
 
 	childRoute := &RouteInfo{
 		Object: &ir.HttpRouteIR{
-			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      "HTTPRoute",
-				Namespace: "default",
-				Name:      "child-route",
-			},
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      "HTTPRoute",
+			Namespace: "default",
+			Name:      "child-route",
 			Rules: []ir.HttpRouteRuleIR{
 				{
 					Backends: []ir.HttpBackendOrDelegate{
@@ -63,12 +58,10 @@ func TestBuildGatewayBackendClientCertificateVariantsAndRewriteRoutes(t *testing
 
 	parentRoute := &RouteInfo{
 		Object: &ir.HttpRouteIR{
-			ObjectSource: ir.ObjectSource{
-				Group:     gwv1.GroupVersion.Group,
-				Kind:      "HTTPRoute",
-				Namespace: "default",
-				Name:      "parent-route",
-			},
+			Group:     gwv1.GroupVersion.Group,
+			Kind:      "HTTPRoute",
+			Namespace: "default",
+			Name:      "parent-route",
 			Rules: []ir.HttpRouteRuleIR{
 				{
 					Backends: []ir.HttpBackendOrDelegate{
@@ -130,12 +123,10 @@ func testBackendObjectIR(name string, port int32) ir.BackendObjectIR {
 		Name:      name,
 	}, port, "", "kube")
 	backend.Obj = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       "default",
-			ResourceVersion: "1",
-			Generation:      1,
-		},
+		Name:            name,
+		Namespace:       "default",
+		ResourceVersion: "1",
+		Generation:      1,
 	}
 	return backend
 }

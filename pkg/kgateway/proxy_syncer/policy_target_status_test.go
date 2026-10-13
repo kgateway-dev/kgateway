@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -43,15 +42,13 @@ const policyTargetTestNS = "default"
 
 func trafficPolicyWrapper(name string, generation int64, refs ...ir.PolicyRef) ir.PolicyWrapper {
 	return ir.PolicyWrapper{
-		ObjectSource: ir.ObjectSource{
-			Group:     wellknown.TrafficPolicyGVK.Group,
-			Kind:      wellknown.TrafficPolicyGVK.Kind,
-			Namespace: policyTargetTestNS,
-			Name:      name,
-		},
-		Policy: &kgateway.TrafficPolicy{ObjectMeta: metav1.ObjectMeta{
+		Group:     wellknown.TrafficPolicyGVK.Group,
+		Kind:      wellknown.TrafficPolicyGVK.Kind,
+		Namespace: policyTargetTestNS,
+		Name:      name,
+		Policy: &kgateway.TrafficPolicy{
 			Name: name, Namespace: policyTargetTestNS, Generation: generation,
-		}},
+		},
 		PolicyIR:   policyTargetTestIR{},
 		TargetRefs: refs,
 	}
@@ -104,7 +101,7 @@ func serviceEntryRef(name string) ir.PolicyRef {
 
 // policyTargetGateway returns a Gateway in the test namespace with one HTTP listener per name.
 func policyTargetGateway(name string, listeners ...gwv1.SectionName) *gwv1.Gateway {
-	gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: policyTargetTestNS}}
+	gw := &gwv1.Gateway{Name: name, Namespace: policyTargetTestNS}
 	port := gwv1.PortNumber(80)
 	for _, l := range listeners {
 		gw.Spec.Listeners = append(gw.Spec.Listeners, gwv1.Listener{Name: l, Port: port, Protocol: gwv1.HTTPProtocolType})
@@ -134,27 +131,27 @@ func newPolicyTargetFixtureWithOptions(t *testing.T, opts []StatusSyncerOption, 
 		krtopts.ToOptions("Gateways")...)
 	ruleName := gwv1.SectionName("rule-a")
 	routes := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{{
-		ObjectMeta: metav1.ObjectMeta{Name: "route-a", Namespace: policyTargetTestNS},
-		Spec:       gwv1.HTTPRouteSpec{Rules: []gwv1.HTTPRouteRule{{Name: &ruleName}}},
+		Name: "route-a", Namespace: policyTargetTestNS,
+		Spec: gwv1.HTTPRouteSpec{Rules: []gwv1.HTTPRouteRule{{Name: &ruleName}}},
 	}}, krtopts.ToOptions("HTTPRoutes")...)
 	tcpRoutes := krt.NewStaticCollection(nil, []*gwv1a2.TCPRoute{{
-		ObjectMeta: metav1.ObjectMeta{Name: "tcp-a", Namespace: policyTargetTestNS},
+		Name: "tcp-a", Namespace: policyTargetTestNS,
 	}}, krtopts.ToOptions("TCPRoutes")...)
 	tlsRoutes := krt.NewStaticCollection(nil, []*gwv1a2.TLSRoute{{
-		ObjectMeta: metav1.ObjectMeta{Name: "tls-a", Namespace: policyTargetTestNS},
+		Name: "tls-a", Namespace: policyTargetTestNS,
 	}}, krtopts.ToOptions("TLSRoutes")...)
 	services := krt.NewStaticCollection(nil, []*corev1.Service{{
-		ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: policyTargetTestNS},
+		Name: "svc", Namespace: policyTargetTestNS,
 	}}, krtopts.ToOptions("Services")...)
 	// The normalized ListenerSet collection: a promoted object carries no GVK in TypeMeta,
 	// a legacy one is stamped XListenerSet by the converter.
 	legacy := &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{Name: "ls-legacy", Namespace: policyTargetTestNS},
-		Spec:       gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
+		Name: "ls-legacy", Namespace: policyTargetTestNS,
+		Spec: gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
 	}
 	legacy.SetGroupVersionKind(wellknown.XListenerSetGVK)
 	listenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{
-		{ObjectMeta: metav1.ObjectMeta{Name: "ls-promoted", Namespace: policyTargetTestNS}},
+		{Name: "ls-promoted", Namespace: policyTargetTestNS},
 		legacy,
 	}, krtopts.ToOptions("ListenerSets")...)
 	// A backend plugin exposing alias kinds, shaped like the serviceentry plugin: one backend per
@@ -328,8 +325,8 @@ func TestPolicyTargetStatusContributionsExtensionResolver(t *testing.T) {
 	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
 	extensionGK := schema.GroupKind{Group: "example.com", Kind: "ExtensionListenerSet"}
 	extensionListenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{{
-		ObjectMeta: metav1.ObjectMeta{Name: "els", Namespace: policyTargetTestNS},
-		Spec:       gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
+		Name: "els", Namespace: policyTargetTestNS,
+		Spec: gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}}},
 	}}, krtopts.ToOptions("ExtensionListenerSets")...)
 	extensionRef := func(name, section string) ir.PolicyRef {
 		return ir.PolicyRef{Group: extensionGK.Group, Kind: extensionGK.Kind, Name: name, SectionName: section}
@@ -374,7 +371,7 @@ func TestGeneratePolicyTargetReportsExtensionResolver(t *testing.T) {
 	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
 	extensionGK := schema.GroupKind{Group: "example.com", Kind: "ExtensionListenerSet"}
 	extensionListenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{{
-		ObjectMeta: metav1.ObjectMeta{Name: "els", Namespace: policyTargetTestNS},
+		Name: "els", Namespace: policyTargetTestNS,
 	}}, krtopts.ToOptions("ExtensionListenerSets")...)
 	missing := trafficPolicyWrapper("missing", 1,
 		ir.PolicyRef{Group: extensionGK.Group, Kind: extensionGK.Kind, Name: "els-typo"})
@@ -407,12 +404,10 @@ func TestGeneratePolicyTargetReportsExtensionResolver(t *testing.T) {
 // than stamping the report's generation the way the standard builder does.
 func TestPolicyTargetReportThroughBackendTLSPolicyBuilder(t *testing.T) {
 	const generation int64 = 7
-	btp := &gwv1.BackendTLSPolicy{ObjectMeta: metav1.ObjectMeta{Name: "btp", Namespace: policyTargetTestNS, Generation: generation}}
+	btp := &gwv1.BackendTLSPolicy{Name: "btp", Namespace: policyTargetTestNS, Generation: generation}
 	policy := ir.PolicyWrapper{
-		ObjectSource: ir.ObjectSource{
-			Group: wellknown.BackendTLSPolicyGVK.Group, Kind: wellknown.BackendTLSPolicyGVK.Kind,
-			Namespace: btp.Namespace, Name: btp.Name,
-		},
+		Group: wellknown.BackendTLSPolicyGVK.Group, Kind: wellknown.BackendTLSPolicyGVK.Kind,
+		Namespace: btp.Namespace, Name: btp.Name,
 		Policy:     btp,
 		PolicyIR:   policyTargetTestIR{},
 		TargetRefs: []ir.PolicyRef{serviceRef("missing")},
@@ -598,9 +593,9 @@ func runStatusSummaryRemoval(
 	cl := kclient.NewFiltered[*gwv1.BackendTLSPolicy](c, kclient.Filter{})
 	btps := krt.WrapClient(cl, krtopts.ToOptions("BackendTLSPolicies")...)
 	btp := &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{Name: "btp", Namespace: policyTargetTestNS, Generation: 1},
+		Name: "btp", Namespace: policyTargetTestNS, Generation: 1,
 		Spec: gwv1.BackendTLSPolicySpec{TargetRefs: []gwv1.LocalPolicyTargetReferenceWithSectionName{{
-			LocalPolicyTargetReference: gwv1.LocalPolicyTargetReference{Group: "", Kind: "Service", Name: "svc-late"},
+			Group: "", Kind: "Service", Name: "svc-late",
 		}}},
 	}
 	_, err := c.GatewayAPI().GatewayV1().BackendTLSPolicies(policyTargetTestNS).Create(context.Background(), btp, metav1.CreateOptions{})
@@ -612,10 +607,10 @@ func runStatusSummaryRemoval(
 	services := krt.NewStaticCollection[*corev1.Service](nil, nil, krtopts.ToOptions("Services")...)
 	policies := krt.NewCollection(btps, func(_ krt.HandlerContext, p *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		return &ir.PolicyWrapper{
-			ObjectSource: ir.ObjectSource{Group: gvk.Group, Kind: gvk.Kind, Namespace: p.Namespace, Name: p.Name},
-			Policy:       p,
-			PolicyIR:     policyTargetTestIR{},
-			TargetRefs:   pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(p.Spec.TargetRefs),
+			Group: gvk.Group, Kind: gvk.Kind, Namespace: p.Namespace, Name: p.Name,
+			Policy:     p,
+			PolicyIR:   policyTargetTestIR{},
+			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefsWithSectionNameV1(p.Spec.TargetRefs),
 		}
 	}, krtopts.ToOptions("BackendTLSPolicyWrappers")...)
 	targetContributions := policyTargetStatusContributions(policies,
@@ -672,7 +667,7 @@ func runStatusSummaryRemoval(
 
 	res := statussync.Resource{
 		GroupVersionKind: gvk,
-		NamespacedName:   types.NamespacedName{Namespace: btp.Namespace, Name: btp.Name},
+		Namespace:        btp.Namespace, Name: btp.Name,
 	}
 	live := func() []gwv1.PolicyAncestorStatus {
 		got, err := c.GatewayAPI().GatewayV1().BackendTLSPolicies(policyTargetTestNS).
@@ -701,7 +696,7 @@ func runStatusSummaryRemoval(
 		require.True(t, hasAncestor(live(), isGateway), "the Gateway ancestor should be written beside the summary")
 	}
 
-	services.UpdateObject(&corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "svc-late", Namespace: policyTargetTestNS}})
+	services.UpdateObject(&corev1.Service{Name: "svc-late", Namespace: policyTargetTestNS})
 	require.Eventually(t, func() bool {
 		writer.ApplyStatus(context.Background(), res)
 		return !hasAncestor(live(), isSummary)

@@ -14,7 +14,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -31,11 +30,9 @@ import (
 
 func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "backend-svc",
-			Namespace:  "default",
-			Generation: 1,
-		},
+		Name:       "backend-svc",
+		Namespace:  "default",
+		Generation: 1,
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{{
 				Port: 443,
@@ -43,21 +40,17 @@ func TestGatewayBackendVariantBackendsRetainBackendPolicies(t *testing.T) {
 		},
 	}
 	backendTLSPolicy := &gwv1.BackendTLSPolicy{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "backend-tls",
-			Namespace:  "default",
-			Generation: 1,
-		},
+		Name:       "backend-tls",
+		Namespace:  "default",
+		Generation: 1,
 	}
 	policyWrapper := ir.PolicyWrapper{
-		ObjectSource: ir.ObjectSource{
-			Group:     wellknown.BackendTLSPolicyGVK.Group,
-			Kind:      wellknown.BackendTLSPolicyKind,
-			Namespace: "default",
-			Name:      "backend-tls",
-		},
-		Policy:   backendTLSPolicy,
-		PolicyIR: &gatewayBackendVariantPolicyIR{},
+		Group:     wellknown.BackendTLSPolicyGVK.Group,
+		Kind:      wellknown.BackendTLSPolicyKind,
+		Namespace: "default",
+		Name:      "backend-tls",
+		Policy:    backendTLSPolicy,
+		PolicyIR:  &gatewayBackendVariantPolicyIR{},
 		TargetRefs: []ir.PolicyRef{{
 			Group: "",
 			Kind:  "Service",

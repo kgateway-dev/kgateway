@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	. "github.com/onsi/gomega"
@@ -88,8 +87,8 @@ func (s *testingSuite) SetupSuite() {
 
 	addr := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, proxyTestMeta.Name, proxyTestMeta.Namespace)
 	s.testGateway = common.Gateway{
-		NamespacedName: types.NamespacedName{Name: proxyTestMeta.Name, Namespace: proxyTestMeta.Namespace},
-		Address:        fmt.Sprintf("%s:%d", addr, gatewayTestPort),
+		Name: proxyTestMeta.Name, Namespace: proxyTestMeta.Namespace,
+		Address: fmt.Sprintf("%s:%d", addr, gatewayTestPort),
 	}
 }
 

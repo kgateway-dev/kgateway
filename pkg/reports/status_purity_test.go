@@ -21,11 +21,9 @@ func TestBuildGWStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	rep := NewReporter(&rm)
 
 	gw := &gwv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "gw",
-			Namespace:  "default",
-			Generation: 1,
-		},
+		Name:       "gw",
+		Namespace:  "default",
+		Generation: 1,
 		Spec: gwv1.GatewaySpec{
 			Listeners: []gwv1.Listener{{
 				Name:     "http",
@@ -59,11 +57,9 @@ func TestBuildRouteStatusDoesNotMutateReportMapEntry(t *testing.T) {
 		Namespace: new(gwv1.Namespace("default")),
 	}
 	route := &gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "route",
-			Namespace:  "default",
-			Generation: 1,
-		},
+		Name:       "route",
+		Namespace:  "default",
+		Generation: 1,
 		Spec: gwv1.HTTPRouteSpec{
 			CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: []gwv1.ParentReference{parentRef}},
 		},
@@ -109,7 +105,7 @@ func TestBuildBackendStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	rm := NewReportMap()
 	rep := NewReporter(&rm)
 	backend := &kgateway.Backend{
-		ObjectMeta: metav1.ObjectMeta{Name: "backend", Namespace: "default", Generation: 1},
+		Name: "backend", Namespace: "default", Generation: 1,
 	}
 
 	rep.Backend(backend).SetCondition(pluginreporter.BackendCondition{
@@ -130,7 +126,7 @@ func TestBuildListenerSetStatusDoesNotMutateReportMapEntry(t *testing.T) {
 	rm := NewReportMap()
 	rep := NewReporter(&rm)
 	listenerSet := &gwv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{Name: "listeners", Namespace: "default", Generation: 1},
+		Name: "listeners", Namespace: "default", Generation: 1,
 		Spec: gwv1.ListenerSetSpec{Listeners: []gwv1.ListenerEntry{{
 			Name:     "http",
 			Port:     80,

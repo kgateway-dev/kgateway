@@ -150,11 +150,9 @@ func TestBackendIrEqualsDetectsLambdaErrorOnlyChanges(t *testing.T) {
 
 	missingSecretIR := buildTranslateFunc(nil, newSecretIndexForTest(t), true)(krt.TestingDummyContext{}, backend)
 	invalidSecretIR := buildTranslateFunc(nil, newSecretIndexForTest(t, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            "lambda-secret",
-			Namespace:       "kgateway-base",
-			ResourceVersion: "1",
-		},
+		Name:            "lambda-secret",
+		Namespace:       "kgateway-base",
+		ResourceVersion: "1",
 		Data: map[string][]byte{
 			"token": []byte("sk-test-secret"),
 		},

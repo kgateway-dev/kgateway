@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -161,13 +160,13 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *tes
 	}
 
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-	backend.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	backend.Obj = &corev1.Service{
 		Namespace:       "ns",
 		Name:            "svc",
 		UID:             "svc-uid",
 		ResourceVersion: "1",
 		Generation:      1,
-	}}
+	}
 	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
 	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
@@ -182,14 +181,14 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *tes
 	}, 2*time.Second, 20*time.Millisecond)
 
 	updated := backend
-	updated.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	updated.Obj = &corev1.Service{
 		Namespace:       "ns",
 		Name:            "svc",
 		UID:             "svc-uid",
 		ResourceVersion: "2",
 		Generation:      1,
 		Labels:          map[string]string{overlayLabel: "true"},
-	}}
+	}
 	finalBackends.UpdateObject(&updated)
 
 	require.Eventually(t, func() bool {
@@ -199,13 +198,13 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *tes
 	}, 2*time.Second, 20*time.Millisecond)
 
 	removed := backend
-	removed.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+	removed.Obj = &corev1.Service{
 		Namespace:       "ns",
 		Name:            "svc",
 		UID:             "svc-uid",
 		ResourceVersion: "3",
 		Generation:      1,
-	}}
+	}
 	finalBackends.UpdateObject(&removed)
 
 	require.Eventually(t, func() bool {
@@ -326,10 +325,10 @@ func TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration(t *test
 	}
 
 	serviceAt := func(generation int64) *corev1.Service {
-		return &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		return &corev1.Service{
 			Namespace: "ns", Name: "svc", UID: "svc-uid",
 			ResourceVersion: strconv.FormatInt(generation, 10), Generation: generation,
-		}}
+		}
 	}
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
 	backend.Obj = serviceAt(1)
@@ -487,9 +486,9 @@ func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *te
 
 	serviceBackend := func(rv string, labels map[string]string) *ir.BackendObjectIR {
 		b := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-		b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		b.Obj = &corev1.Service{
 			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv, Labels: labels,
-		}}
+		}
 		return &b
 	}
 	backend := serviceBackend("1", nil)
@@ -565,9 +564,9 @@ func TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient(t *testing
 
 	serviceBackend := func(rv string) *ir.BackendObjectIR {
 		b := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
-		b.Obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{
+		b.Obj = &corev1.Service{
 			Namespace: "ns", Name: "svc", UID: "svc-uid", ResourceVersion: rv,
-		}}
+		}
 		return &b
 	}
 	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{serviceBackend("1")}, krtopts.ToOptions("FinalBackends")...)

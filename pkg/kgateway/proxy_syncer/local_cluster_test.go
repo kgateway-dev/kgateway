@@ -25,44 +25,36 @@ func TestNewPerClientLocalClusterEndpointsBuildsGatewayLocalities(t *testing.T) 
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{
 		{
-			Named: krt.Named{
-				Namespace: "ns",
-				Name:      "gw-zone-a",
-			},
-			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-a"},
+			Namespace: "ns",
+			Name:      "gw-zone-a",
+			Locality:  ir.PodLocality{Region: "region-1", Zone: "zone-a"},
 			AugmentedLabels: map[string]string{
 				wellknown.GatewayNameLabel: "gw",
 			},
 			Addresses: []string{"10.0.0.1"},
 		},
 		{
-			Named: krt.Named{
-				Namespace: "ns",
-				Name:      "gw-zone-b",
-			},
-			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-b"},
+			Namespace: "ns",
+			Name:      "gw-zone-b",
+			Locality:  ir.PodLocality{Region: "region-1", Zone: "zone-b"},
 			AugmentedLabels: map[string]string{
 				wellknown.GatewayNameLabel: "gw",
 			},
 			Addresses: []string{"10.0.0.2"},
 		},
 		{
-			Named: krt.Named{
-				Namespace: "ns",
-				Name:      "gw-zone-a-2",
-			},
-			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-a"},
+			Namespace: "ns",
+			Name:      "gw-zone-a-2",
+			Locality:  ir.PodLocality{Region: "region-1", Zone: "zone-a"},
 			AugmentedLabels: map[string]string{
 				wellknown.GatewayNameLabel: "gw",
 			},
 			Addresses: []string{"10.0.0.4"},
 		},
 		{
-			Named: krt.Named{
-				Namespace: "ns",
-				Name:      "other-gw",
-			},
-			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-c"},
+			Namespace: "ns",
+			Name:      "other-gw",
+			Locality:  ir.PodLocality{Region: "region-1", Zone: "zone-c"},
 			AugmentedLabels: map[string]string{
 				wellknown.GatewayNameLabel: "other",
 			},
@@ -121,11 +113,9 @@ func TestNewPerClientLocalClusterEndpointsUsesSafeClusterNameForLongGateways(t *
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{
 		{
-			Named: krt.Named{
-				Namespace: "ns",
-				Name:      "gw-zone-a",
-			},
-			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-a"},
+			Namespace: "ns",
+			Name:      "gw-zone-a",
+			Locality:  ir.PodLocality{Region: "region-1", Zone: "zone-a"},
 			AugmentedLabels: map[string]string{
 				wellknown.GatewayNameAnnotation: longGatewayName,
 				wellknown.GatewayNameLabel:      safeGatewayName,
@@ -162,11 +152,9 @@ func TestNewPerClientLocalClusterEndpointsSkipsUnknownClients(t *testing.T) {
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 	pods := krt.NewStaticCollection[krtcollections.LocalityPod](nil, []krtcollections.LocalityPod{
 		{
-			Named: krt.Named{
-				Namespace: "ns",
-				Name:      "gw-zone-a",
-			},
-			Locality: ir.PodLocality{Region: "region-1", Zone: "zone-a"},
+			Namespace: "ns",
+			Name:      "gw-zone-a",
+			Locality:  ir.PodLocality{Region: "region-1", Zone: "zone-a"},
 			AugmentedLabels: map[string]string{
 				wellknown.GatewayNameLabel: "gw",
 			},

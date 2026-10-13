@@ -106,9 +106,9 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 	for nn, report := range reportMap.Gateways {
 		if report != nil {
 			contributions = append(contributions, StatusContribution{
-				Target:       StatusKey{GroupKind: wellknown.GatewayGVK.GroupKind(), NamespacedName: nn},
-				Source:       source,
-				StatusReport: StatusReport{Gateway: report},
+				Target:  StatusKey{GroupKind: wellknown.GatewayGVK.GroupKind(), NamespacedName: nn},
+				Source:  source,
+				Gateway: report,
 			})
 		}
 	}
@@ -116,9 +116,9 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 		for nn, report := range byName {
 			if report != nil {
 				contributions = append(contributions, StatusContribution{
-					Target:       StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn},
-					Source:       source,
-					StatusReport: StatusReport{ListenerSet: report},
+					Target:      StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn},
+					Source:      source,
+					ListenerSet: report,
 				})
 			}
 		}
@@ -127,9 +127,9 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 		for nn, report := range reportsByName {
 			if report != nil {
 				contributions = append(contributions, StatusContribution{
-					Target:       StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn},
-					Source:       source,
-					StatusReport: StatusReport{Route: report},
+					Target: StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn},
+					Source: source,
+					Route:  report,
 				})
 			}
 		}
@@ -146,17 +146,17 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 					GroupKind:      schema.GroupKind{Group: key.Group, Kind: key.Kind},
 					NamespacedName: types.NamespacedName{Namespace: key.Namespace, Name: key.Name},
 				},
-				Source:       source,
-				StatusReport: StatusReport{Policy: report},
+				Source: source,
+				Policy: report,
 			})
 		}
 	}
 	for nn, report := range reportMap.Backends {
 		if report != nil {
 			contributions = append(contributions, StatusContribution{
-				Target:       StatusKey{GroupKind: wellknown.BackendGVK.GroupKind(), NamespacedName: nn},
-				Source:       source,
-				StatusReport: StatusReport{Backend: report},
+				Target:  StatusKey{GroupKind: wellknown.BackendGVK.GroupKind(), NamespacedName: nn},
+				Source:  source,
+				Backend: report,
 			})
 		}
 	}
