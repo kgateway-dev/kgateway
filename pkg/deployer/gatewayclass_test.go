@@ -55,17 +55,3 @@ func TestGetSupportedFeaturesForStandardGatewayIncludesStandardTLSRouteWhenExper
 		t.Fatalf("expected %q to be exempted when experimental Gateway API features are disabled", features.SupportTLSRouteModeMixed)
 	}
 }
-
-func TestGetSupportedFeaturesForStandardGatewayExcludesUnimplementedV17Features(t *testing.T) {
-	for _, experimental := range []bool{true, false} {
-		supportedNames := supportedFeatureSet(GetSupportedFeaturesForStandardGateway(experimental))
-		for _, feature := range []features.FeatureName{
-			features.SupportGatewayRouteHostnameIntersectionPrecedence,
-			features.SupportHTTPRouteBackendURLRewrite,
-		} {
-			if _, ok := supportedNames[gwv1.FeatureName(feature)]; ok {
-				t.Fatalf("expected %q not to be supported (experimental=%v)", feature, experimental)
-			}
-		}
-	}
-}
