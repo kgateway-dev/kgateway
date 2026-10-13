@@ -1,22 +1,24 @@
 package collections_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
-
-var watchLabel = map[string]string{wellknown.WatchLabel: wellknown.WatchLabelValue}
 
 func secretWithLabels(name string, lbls map[string]string) *corev1.Secret {
 	return &corev1.Secret{
@@ -32,19 +34,36 @@ func configMapWithLabels(name string, lbls map[string]string) *corev1.ConfigMap 
 	}
 }
 
-func TestWatchLabelSelector(t *testing.T) {
-	// The empty string is what leaves a watch unfiltered, so ALL must produce exactly that.
-	require.Empty(t, collections.WatchLabelSelector(apisettings.DiscoveryAll))
-	require.Empty(t, collections.WatchLabelSelector(""), "an unset mode must not narrow the watch")
-	require.Equal(t, "kgateway.dev/watch=true", collections.WatchLabelSelector(apisettings.DiscoveryLabeled))
+func listSecrets(t *testing.T, commoncol *collections.CommonCollections, names []string) []string {
+	t.Helper()
+	require.Eventually(t, commoncol.Secrets.HasSynced, 10*time.Second, 10*time.Millisecond,
+		"Secrets collection should sync")
+	got := make([]string, 0, len(names))
+	for _, name := range names {
+		secret, err := commoncol.Secrets.GetSecretWithoutRefGrant(krt.TestingDummyContext{}, name, "default")
+		if err == nil {
+			got = append(got, secret.Name)
+		}
+	}
+	return got
 }
 
-// TestDiscoveryModeNarrowsSecretAndConfigMapCollections asserts that LABELED reaches the
-// Secret and ConfigMap informers, so unlabeled objects never land in the caches whose size
-// the setting exists to bound.
-func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
-	allSecrets := []string{"labeled-secret", "unlabeled-secret", "opted-out-secret"}
-	allConfigMaps := []string{"labeled-cm", "unlabeled-cm", "opted-out-cm"}
+func listConfigMaps(commoncol *collections.CommonCollections, done <-chan struct{}) []string {
+	cmCol := commoncol.ConfigMaps.Collection()
+	cmCol.WaitUntilSynced(done)
+	got := []string{}
+	for _, cm := range cmCol.List() {
+		got = append(got, cm.Name)
+	}
+	return got
+}
+
+// TestLabelSelectorsNarrowSecretAndConfigMapCollections asserts that SecretLabelSelector and
+// ConfigMapLabelSelector reach the informers, so non-matching objects never land in the
+// caches whose size the settings exist to bound, and that each narrows only its own kind.
+func TestLabelSelectorsNarrowSecretAndConfigMapCollections(t *testing.T) {
+	allSecrets := []string{"watched-secret", "unlabeled-secret", "opted-out-secret"}
+	allConfigMaps := []string{"watched-cm", "unlabeled-cm", "opted-out-cm"}
 
 	tests := []struct {
 		name     string
@@ -55,55 +74,45 @@ func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
 	}{
 		{
 			name:           "unset watches everything",
-			settings:       apisettings.Settings{},
 			wantSecrets:    allSecrets,
 			wantConfigMaps: allConfigMaps,
 		},
 		{
-			name: "ALL watches everything",
+			name:           "Secret selector only narrows Secrets",
+			settings:       apisettings.Settings{SecretLabelSelector: "kgateway.dev/watch=true"},
+			wantSecrets:    []string{"watched-secret"},
+			wantConfigMaps: allConfigMaps,
+		},
+		{
+			name:           "ConfigMap selector only narrows ConfigMaps",
+			settings:       apisettings.Settings{ConfigMapLabelSelector: "kgateway.dev/watch=true"},
+			wantSecrets:    allSecrets,
+			wantConfigMaps: []string{"watched-cm"},
+		},
+		{
+			name: "set-based and non-existence selectors",
 			settings: apisettings.Settings{
-				SecretDiscoveryMode:    apisettings.DiscoveryAll,
-				ConfigMapDiscoveryMode: apisettings.DiscoveryAll,
+				SecretLabelSelector:    "kgateway.dev/watch in (true,false)",
+				ConfigMapLabelSelector: "!kgateway.dev/watch",
 			},
-			wantSecrets:    allSecrets,
-			wantConfigMaps: allConfigMaps,
-		},
-		{
-			name:           "LABELED Secrets only narrows Secrets",
-			settings:       apisettings.Settings{SecretDiscoveryMode: apisettings.DiscoveryLabeled},
-			wantSecrets:    []string{"labeled-secret"},
-			wantConfigMaps: allConfigMaps,
-		},
-		{
-			name:           "LABELED ConfigMaps only narrows ConfigMaps",
-			settings:       apisettings.Settings{ConfigMapDiscoveryMode: apisettings.DiscoveryLabeled},
-			wantSecrets:    allSecrets,
-			wantConfigMaps: []string{"labeled-cm"},
-		},
-		{
-			name: "LABELED for both",
-			settings: apisettings.Settings{
-				SecretDiscoveryMode:    apisettings.DiscoveryLabeled,
-				ConfigMapDiscoveryMode: apisettings.DiscoveryLabeled,
-			},
-			wantSecrets:    []string{"labeled-secret"},
-			wantConfigMaps: []string{"labeled-cm"},
+			wantSecrets:    []string{"watched-secret", "opted-out-secret"},
+			wantConfigMaps: []string{"unlabeled-cm"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
-			// An explicit "false" opts an object out without removing the label.
-			optedOut := map[string]string{wellknown.WatchLabel: "false"}
+			watched := map[string]string{"kgateway.dev/watch": "true"}
+			optedOut := map[string]string{"kgateway.dev/watch": "false"}
 
 			fakeClient := apifake.NewClient(
 				t,
 				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
-				secretWithLabels("labeled-secret", watchLabel),
+				secretWithLabels("watched-secret", watched),
 				secretWithLabels("unlabeled-secret", nil),
 				secretWithLabels("opted-out-secret", optedOut),
-				configMapWithLabels("labeled-cm", watchLabel),
+				configMapWithLabels("watched-cm", watched),
 				configMapWithLabels("unlabeled-cm", nil),
 				configMapWithLabels("opted-out-cm", optedOut),
 			)
@@ -118,24 +127,92 @@ func TestDiscoveryModeNarrowsSecretAndConfigMapCollections(t *testing.T) {
 			require.NoError(t, err)
 			fakeClient.RunAndWait(ctx.Done())
 
-			cmCol := commoncol.ConfigMaps.Collection()
-			cmCol.WaitUntilSynced(ctx.Done())
-			gotConfigMaps := make([]string, 0, len(tt.wantConfigMaps))
-			for _, cm := range cmCol.List() {
-				gotConfigMaps = append(gotConfigMaps, cm.Name)
-			}
-			require.ElementsMatch(t, tt.wantConfigMaps, gotConfigMaps)
+			require.ElementsMatch(t, tt.wantConfigMaps, listConfigMaps(commoncol, ctx.Done()))
+			require.ElementsMatch(t, tt.wantSecrets, listSecrets(t, commoncol, allSecrets))
+		})
+	}
+}
 
-			require.Eventually(t, commoncol.Secrets.HasSynced, 10*time.Second, 10*time.Millisecond,
-				"Secrets collection should sync")
-			gotSecrets := make([]string, 0, len(tt.wantSecrets))
-			for _, name := range allSecrets {
-				secret, err := commoncol.Secrets.GetSecretWithoutRefGrant(krt.TestingDummyContext{}, name, "default")
-				if err == nil {
-					gotSecrets = append(gotSecrets, secret.Name)
-				}
-			}
-			require.ElementsMatch(t, tt.wantSecrets, gotSecrets)
+// TestSecretLabelSelectorKeepsOAuth2HMACSecretVisible asserts that the OAuth2 HMAC Secret,
+// which kgateway creates and reads back through the Secrets collection, stays visible when the
+// operator's selector does not match it.
+func TestSecretLabelSelectorKeepsOAuth2HMACSecretVisible(t *testing.T) {
+	ctx := t.Context()
+	hmacNs := wellknown.OAuth2HMACSecret.Namespace
+	fakeClient := apifake.NewClient(
+		t,
+		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
+		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: hmacNs}},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: wellknown.OAuth2HMACSecret.Name, Namespace: hmacNs},
+			Data:       map[string][]byte{wellknown.OAuth2HMACSecretKey: []byte("key")},
+		},
+		secretWithLabels("unlabeled-secret", nil),
+	)
+
+	commoncol, err := collections.NewCommonCollections(
+		ctx,
+		krtutil.NewKrtOptions(ctx.Done(), nil),
+		fakeClient,
+		wellknown.DefaultGatewayControllerName,
+		apisettings.Settings{SecretLabelSelector: "team=a"},
+	)
+	require.NoError(t, err)
+	fakeClient.RunAndWait(ctx.Done())
+
+	require.Empty(t, listSecrets(t, commoncol, []string{"unlabeled-secret"}),
+		"the selector must still exclude other Secrets")
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		hmac, err := commoncol.Secrets.GetSecretWithoutRefGrant(krt.TestingDummyContext{},
+			wellknown.OAuth2HMACSecret.Name, hmacNs)
+		require.NoError(c, err)
+		require.Equal(c, []byte("key"), hmac.Data[wellknown.OAuth2HMACSecretKey])
+	}, 10*time.Second, 10*time.Millisecond, "the OAuth2 HMAC Secret must be visible")
+}
+
+// TestSelectorNotFoundDiagnostics asserts that a lookup miss on a narrowed Secret or ConfigMap
+// watch names the selector, and that an unfiltered watch keeps the plain error.
+func TestSelectorNotFoundDiagnostics(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		settings apisettings.Settings
+		wantMsg  string
+	}{
+		{
+			name:    "unfiltered",
+			wantMsg: "Secret default/missing not found",
+		},
+		{
+			name:     "narrowed",
+			settings: apisettings.Settings{SecretLabelSelector: "team=a", ConfigMapLabelSelector: "team=b"},
+			wantMsg:  `Secret default/missing not found; kgateway only watches Secrets matching label selector "team=a" (Helm value secretLabelSelector, KGW_SECRET_LABEL_SELECTOR); verify the Secret labels match the selector`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			fakeClient := apifake.NewClient(t, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}})
+			commoncol, err := collections.NewCommonCollections(
+				ctx,
+				krtutil.NewKrtOptions(ctx.Done(), nil),
+				fakeClient,
+				wellknown.DefaultGatewayControllerName,
+				tt.settings,
+			)
+			require.NoError(t, err)
+			fakeClient.RunAndWait(ctx.Done())
+			require.Eventually(t, commoncol.Secrets.HasSynced, 10*time.Second, 10*time.Millisecond)
+			require.Eventually(t, commoncol.ConfigMaps.HasSynced, 10*time.Second, 10*time.Millisecond)
+
+			_, err = commoncol.Secrets.GetSecretWithoutRefGrant(krt.TestingDummyContext{}, "missing", "default")
+			require.EqualError(t, err, tt.wantMsg)
+			var notFound *krtcollections.NotFoundError
+			require.ErrorAs(t, err, &notFound, "the selector error must still unwrap to NotFoundError")
+
+			_, err = commoncol.ConfigMaps.GetConfigMap(krt.TestingDummyContext{},
+				krtcollections.From{Namespace: "default"}, gwv1.ObjectReference{Name: "missing"})
+			var selectorErr *krtcollections.SelectorNotFoundError
+			require.Equal(t, tt.settings.ConfigMapLabelSelector != "", errors.As(err, &selectorErr), err.Error())
+			require.ErrorAs(t, err, &notFound)
 		})
 	}
 }
@@ -224,27 +301,40 @@ func TestServiceLabelSelectorNarrowsServices(t *testing.T) {
 	}
 }
 
-// TestNewCommonCollectionsRejectsInvalidServiceLabelSelector asserts that a malformed selector
-// fails construction before any client or informer is touched (the client here is nil),
-// rather than reaching the API server and leaving the Service informer unable to sync.
-func TestNewCommonCollectionsRejectsInvalidServiceLabelSelector(t *testing.T) {
-	for _, selector := range []apisettings.LabelSelector{
-		"app in (",
-		"app in api",
-		"app > api",
-		"app=front end",
-		"app=api,,tier=frontend",
-	} {
-		t.Run(string(selector), func(t *testing.T) {
-			_, err := collections.NewCommonCollections(
-				t.Context(),
-				krtutil.KrtOptions{},
-				nil,
-				"",
-				apisettings.Settings{ServiceLabelSelector: selector},
-			)
-			require.ErrorContains(t, err, "KGW_SERVICE_LABEL_SELECTOR")
-			require.ErrorContains(t, err, `invalid label selector "`+string(selector)+`"`)
-		})
+// TestNewCommonCollectionsRejectsInvalidLabelSelectors asserts that a malformed selector for any
+// of the three kinds fails construction before any client or informer is touched (the client
+// here is nil), rather than reaching the API server and leaving the informer unable to sync.
+func TestNewCommonCollectionsRejectsInvalidLabelSelectors(t *testing.T) {
+	kinds := map[string]func(apisettings.LabelSelector) apisettings.Settings{
+		"KGW_SECRET_LABEL_SELECTOR": func(s apisettings.LabelSelector) apisettings.Settings {
+			return apisettings.Settings{SecretLabelSelector: s}
+		},
+		"KGW_CONFIG_MAP_LABEL_SELECTOR": func(s apisettings.LabelSelector) apisettings.Settings {
+			return apisettings.Settings{ConfigMapLabelSelector: s}
+		},
+		"KGW_SERVICE_LABEL_SELECTOR": func(s apisettings.LabelSelector) apisettings.Settings {
+			return apisettings.Settings{ServiceLabelSelector: s}
+		},
+	}
+	for envVar, settingsFor := range kinds {
+		for _, selector := range []apisettings.LabelSelector{
+			"app in (",
+			"app in api",
+			"app > api",
+			"app=front end",
+			"app=api,,tier=frontend",
+		} {
+			t.Run(envVar+"/"+string(selector), func(t *testing.T) {
+				_, err := collections.NewCommonCollections(
+					t.Context(),
+					krtutil.KrtOptions{},
+					nil,
+					"",
+					settingsFor(selector),
+				)
+				require.ErrorContains(t, err, envVar)
+				require.ErrorContains(t, err, `invalid label selector "`+string(selector)+`"`)
+			})
+		}
 	}
 }

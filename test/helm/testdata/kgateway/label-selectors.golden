@@ -381,6 +381,10 @@ spec:
               value: "[]"
             - name: KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS
               value: "[]"
+            - name: KGW_CONFIG_MAP_LABEL_SELECTOR
+              value: "!excluded"
+            - name: KGW_SECRET_LABEL_SELECTOR
+              value: "kgateway.dev/watch=true"
             - name: KGW_SERVICE_LABEL_SELECTOR
               value: "team in (a,b),tier!=batch"
             - name: KGW_POLICY_MERGE

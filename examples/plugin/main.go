@@ -128,15 +128,15 @@ func ourPolicies(commoncol *collections.CommonCollections) krt.Collection[ir.Pol
 	// the krt debug page.
 
 	// Use the default discovery namespace filter to filter configmaps not in the list of discovery
-	// namespaces, and honor the install's ConfigMap discovery mode. A plugin that opens its own
+	// namespaces, and honor the install's ConfigMap label selector. A plugin that opens its own
 	// watch must apply the same label selector as the rest of kgateway: informers are shared per
 	// {type, labelSelector, fieldSelector}, so an unfiltered watch here would not reuse the
-	// narrowed cache, it would add a second cluster-wide one and negate configMapDiscoveryMode
+	// narrowed cache, it would add a second cluster-wide one and negate configMapLabelSelector
 	// entirely. Plugins that only need to read ConfigMaps should use commoncol.ConfigMaps instead
 	// of building their own client.
 	filter := kclient.Filter{
 		ObjectFilter:  commoncol.Client.ObjectFilter(),
-		LabelSelector: collections.WatchLabelSelector(commoncol.Settings.ConfigMapDiscoveryMode),
+		LabelSelector: string(commoncol.Settings.ConfigMapLabelSelector),
 	}
 
 	// get a configmap client going

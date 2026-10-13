@@ -784,9 +784,9 @@ func TestMissingServiceBackendReportsActiveDiscoverySelector(t *testing.T) {
 			backend := getBackends(routeIR)[0]
 			require.EqualError(t, backend.Err, expectedMessage)
 
-			var selectorErr *ServiceBackendNotFoundError
+			var selectorErr *SelectorNotFoundError
 			require.ErrorAs(t, backend.Err, &selectorErr)
-			require.Equal(t, selector, selectorErr.ServiceLabelSelector)
+			require.Equal(t, selector, selectorErr.Selector)
 
 			var notFoundErr *NotFoundError
 			require.ErrorAs(t, backend.Err, &notFoundErr)
@@ -801,7 +801,7 @@ func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
 		backend := getBackends(routeIR)[0]
 
 		require.EqualError(t, backend.Err, "Service default/foo not found")
-		var selectorErr *ServiceBackendNotFoundError
+		var selectorErr *SelectorNotFoundError
 		require.NotErrorAs(t, backend.Err, &selectorErr)
 	})
 
@@ -811,7 +811,7 @@ func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
 		backend := getBackends(routeIR)[0]
 
 		require.EqualError(t, backend.Err, "Backend default/missing-backend not found")
-		var selectorErr *ServiceBackendNotFoundError
+		var selectorErr *SelectorNotFoundError
 		require.NotErrorAs(t, backend.Err, &selectorErr)
 	})
 
@@ -834,9 +834,9 @@ func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				backend, err := resolve()
 				require.Nil(t, backend)
-				var selectorErr *ServiceBackendNotFoundError
+				var selectorErr *SelectorNotFoundError
 				require.ErrorAs(t, err, &selectorErr)
-				require.Equal(t, selector, selectorErr.ServiceLabelSelector)
+				require.Equal(t, selector, selectorErr.Selector)
 			})
 		}
 	})

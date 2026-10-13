@@ -56,8 +56,8 @@ func allEnvVarsSet() map[string]string {
 		"KGW_WORKLOAD_ENTRIES_EXCLUSION_LABELS":         "example.io/managed-by,example.io/other-key",
 		"KGW_ENABLE_ROUTE_SOURCE_METADATA":              "true",
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
-		"KGW_SECRET_DISCOVERY_MODE":                     string(DiscoveryLabeled),
-		"KGW_CONFIG_MAP_DISCOVERY_MODE":                 string(DiscoveryLabeled),
+		"KGW_SECRET_LABEL_SELECTOR":                     "kgateway.dev/watch=true",
+		"KGW_CONFIG_MAP_LABEL_SELECTOR":                 "!excluded",
 		"KGW_SERVICE_LABEL_SELECTOR":                    "team in (a,b)",
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 	}
@@ -118,8 +118,6 @@ func TestSettings(t *testing.T) {
 				GatewayClassParametersRefs:            GatewayClassParametersRefs{},
 				EnableAuthMetadata:                    false,
 				ServiceEntriesExclusionLabelSelectors: "[]",
-				SecretDiscoveryMode:                   DiscoveryAll,
-				ConfigMapDiscoveryMode:                DiscoveryAll,
 			},
 		},
 		{
@@ -161,8 +159,8 @@ func TestSettings(t *testing.T) {
 				EnableExperimentalGatewayAPIFeatures:  false,
 				WorkloadEntriesExclusionLabels:        "example.io/managed-by,example.io/other-key",
 				ServiceEntriesExclusionLabelSelectors: `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
-				SecretDiscoveryMode:                   DiscoveryLabeled,
-				ConfigMapDiscoveryMode:                DiscoveryLabeled,
+				SecretLabelSelector:                   "kgateway.dev/watch=true",
+				ConfigMapLabelSelector:                "!excluded",
 				ServiceLabelSelector:                  "team in (a,b)",
 				GatewayClassParametersRefs: GatewayClassParametersRefs{
 					"kgateway": {
@@ -281,8 +279,6 @@ func TestSettings(t *testing.T) {
 				EnableExperimentalGatewayAPIFeatures:  true,
 				GatewayClassParametersRefs:            GatewayClassParametersRefs{},
 				ServiceEntriesExclusionLabelSelectors: "[]",
-				SecretDiscoveryMode:                   DiscoveryAll,
-				ConfigMapDiscoveryMode:                DiscoveryAll,
 			},
 		},
 	}

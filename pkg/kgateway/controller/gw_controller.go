@@ -37,7 +37,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -79,19 +78,10 @@ func NewGatewayReconciler(
 	controllerExtension pluginsdk.GatewayControllerExtension,
 ) *gatewayReconciler {
 	filter := kclient.Filter{ObjectFilter: cfg.Client.ObjectFilter()}
-	// This controller only acts on the ConfigMaps the deployer renders per proxy, which it
-	// enqueues through their owning Gateway. It must use the same selector as the translation
-	// collection's ConfigMap watch: kclient shares informers keyed on
-	// {type, labelSelector, fieldSelector}, so matching selectors means these two watches
-	// share one cache. Leaving this one unfiltered in LABELED mode would keep a second,
-	// cluster-wide ConfigMap cache and negate the setting entirely.
-	//
-	// The deployer stamps wellknown.WatchLabel on the ConfigMaps it renders so they are
-	// selected here too (see the envoy chart's configmap.yaml).
 	configMapFilter := filter
-	configMapFilter.LabelSelector = collections.WatchLabelSelector(cfg.CommonCollections.Settings.ConfigMapDiscoveryMode)
+	configMapFilter.LabelSelector = ownedObjectLabelSelector(cfg.CommonCollections.Settings.ConfigMapLabelSelector)
 	serviceFilter := filter
-	serviceFilter.LabelSelector = proxyServiceLabelSelector(cfg.CommonCollections.Settings.ServiceLabelSelector)
+	serviceFilter.LabelSelector = ownedObjectLabelSelector(cfg.CommonCollections.Settings.ServiceLabelSelector)
 	r := &gatewayReconciler{
 		deployer:            deployer,
 		gwParams:            gwParams,
@@ -583,19 +573,20 @@ func fetchGatewaysByGatewayClass(gw *gwv1.Gateway) types.NamespacedName {
 	}
 }
 
-// proxyServiceLabelSelector returns the label selector for this controller's Service watch.
-// The controller only acts on the Service the deployer renders per proxy: it enqueues the
-// owning Gateway and reads the Service to derive Gateway status.addresses.
+// ownedObjectLabelSelector returns the label selector for this controller's Service and
+// ConfigMap watches, given the operator's selector for that kind. The controller only acts on
+// the objects the deployer renders per proxy: it enqueues the owning Gateway, and reads the
+// Service to derive Gateway status.addresses.
 //
-// With no ServiceLabelSelector set, the translation collection's Service watch is unfiltered
-// too, and kclient shares informers keyed on {type, labelSelector, fieldSelector}, so an
-// unfiltered watch here costs nothing extra. With a selector set, matching it here could
-// miss proxy Services, since the operator's selector need not match the labels kgateway
-// renders, and an unfiltered watch would keep the cluster-wide cache the selector exists to
-// remove. Instead this selects on the managed-by label the envoy chart stamps on every
-// proxy Service, which is a second informer, but one sized by the number of Gateways.
-func proxyServiceLabelSelector(serviceLabelSelector apisettings.LabelSelector) string {
-	if serviceLabelSelector == "" {
+// With no operator selector set, the translation collection's watch is unfiltered too, and
+// kclient shares informers keyed on {type, labelSelector, fieldSelector}, so an unfiltered
+// watch here costs nothing extra. With a selector set, matching it here could miss proxy
+// objects, since the operator's selector need not match the labels kgateway renders, and an
+// unfiltered watch would keep the cluster-wide cache the selector exists to remove. Instead
+// this selects on the managed-by label the envoy chart stamps on every proxy object, which is
+// a second informer, but one sized by the number of Gateways.
+func ownedObjectLabelSelector(operatorSelector apisettings.LabelSelector) string {
+	if operatorSelector == "" {
 		return ""
 	}
 	return wellknown.ManagedByLabel + "=" + wellknown.DefaultManagedByValue

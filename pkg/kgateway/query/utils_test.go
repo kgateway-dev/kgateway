@@ -22,13 +22,13 @@ func (r *conditionRecorder) SetCondition(condition reporter.RouteCondition) {
 
 func TestProcessBackendErrorPreservesServiceSelectorDiagnostic(t *testing.T) {
 	recorder := &conditionRecorder{}
-	err := &krtcollections.ServiceBackendNotFoundError{
+	err := &krtcollections.SelectorNotFoundError{
 		NotFound: &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{
 			Kind:      "Service",
 			Namespace: "default",
 			Name:      "api",
 		}},
-		ServiceLabelSelector: "exposure=public",
+		WatchSelector: krtcollections.ServiceWatchSelector("exposure=public"),
 	}
 
 	ProcessBackendError(err, recorder)
