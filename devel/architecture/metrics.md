@@ -16,6 +16,8 @@ The underlying implementation is based on [github.com/prometheus/client_golang/p
   * The default namespace of "kgateway" will be used if no namespace is provided. This will likely be the correct namespace.
 * When passing labels to methods such as `Add(...)` or `Set(...)`, consider creating a struct to hold the label values with a method to convert it into a slice of Labels. This improves readability and ensures that any missed labels are present with a default ("") value.
   * See [`resourceMetricLabels`](/pkg/krtcollections/metrics/metrics.go) for an example.
+* On hot paths, resolve a series once with `With(...)` and reuse it, which skips label validation and lookup on every update. A series removed by `Reset()` or `DeletePartialMatch(...)` is no longer exported, so drop any reused series at the same time.
+  * See [`CollectTranslationMetrics`](/pkg/kgateway/translator/metrics/metrics.go) for an example.
 * Follow the [Prometheus Metric and Label Naming Guide](https://prometheus.io/docs/practices/naming/) when possible.
   * `promlinter` is now used in static code analysis to validate metric names, types, and metadata.
 * The metrics package supports an `Active() bool` method with the underlying value evaluated at startup, and can not be meaningfully changed during execution.

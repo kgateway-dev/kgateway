@@ -339,6 +339,84 @@ func TestGaugeRegistrationPanic(t *testing.T) {
 	})
 }
 
+func TestCounterWith(t *testing.T) {
+	setupTestRegistry()
+
+	counter := NewCounter(CounterOpts{
+		Name: "test_total",
+		Help: "A test counter metric",
+	}, []string{"label1", "label2"})
+
+	labels := []Label{
+		{Name: "label1", Value: "value1"},
+		{Name: "label2", Value: "value2"},
+	}
+
+	// Labels are provided in a different order than defined.
+	series := counter.With(labels[1], labels[0])
+	series.Inc()
+	series.Add(2.0)
+	counter.Inc(labels...)
+
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetric("kgateway_test_total", &metricstest.ExpectedMetric{
+		Labels: labels,
+		Value:  4.0,
+	})
+}
+
+func TestHistogramWith(t *testing.T) {
+	setupTestRegistry()
+
+	histogram := NewHistogram(HistogramOpts{
+		Name: "test_duration_seconds",
+		Help: "A test histogram metric",
+	}, []string{"label1", "label2"})
+
+	labels := []Label{
+		{Name: "label1", Value: "value1"},
+		{Name: "label2", Value: "value2"},
+	}
+
+	// Labels are provided in a different order than defined.
+	histogram.With(labels[1], labels[0]).Observe(1.5)
+	histogram.Observe(2.5, labels...)
+
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetricLabels("kgateway_test_duration_seconds", labels)
+	gathered.AssertMetricHistogramValue("kgateway_test_duration_seconds", metricstest.HistogramMetricOutput{
+		SampleCount: 2,
+		SampleSum:   4.0,
+	})
+}
+
+func TestGaugeWith(t *testing.T) {
+	setupTestRegistry()
+
+	gauge := NewGauge(GaugeOpts{
+		Name: "tests",
+		Help: "A test gauge metric",
+	}, []string{"label1", "label2"})
+
+	labels := []Label{
+		{Name: "label1", Value: "value1"},
+		{Name: "label2", Value: "value2"},
+	}
+
+	// Labels are provided in a different order than defined.
+	series := gauge.With(labels[1], labels[0])
+	series.Set(10.0)
+	series.Add(5.0)
+	series.Sub(3.0)
+	gauge.Add(1.0, labels...)
+
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetric("kgateway_tests", &metricstest.ExpectedMetric{
+		Labels: labels,
+		Value:  13.0,
+	})
+}
+
 func TestGetPromCollector(t *testing.T) {
 	setupTestRegistry()
 

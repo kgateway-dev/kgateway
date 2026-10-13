@@ -144,3 +144,93 @@ func TestTranslationMetricsNotActive(t *testing.T) {
 	})
 	currentMetrics.AssertMetricNotExists("kgateway_translator_translation_duration_seconds")
 }
+
+func translationsTotalValue(currentMetrics metricstest.GatheredMetrics, namespace, result string) float64 {
+	return currentMetrics.MustGetMetricValueByLabels("kgateway_translator_translations_total", []metrics.Label{
+		{Name: "name", Value: testGatewayName},
+		{Name: "namespace", Value: namespace},
+		{Name: "result", Value: result},
+		{Name: "translator", Value: testTranslatorName},
+	})
+}
+
+func TestCollectTranslationMetrics_RepeatedCalls(t *testing.T) {
+	setupTest()
+
+	labels := TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	}
+	otherLabels := labels
+	otherLabels.Namespace = "other-namespace"
+
+	for range 3 {
+		CollectTranslationMetrics(labels)(nil)
+	}
+	CollectTranslationMetrics(labels)(assert.AnError)
+	for range 2 {
+		CollectTranslationMetrics(otherLabels)(nil)
+	}
+
+	currentMetrics := metricstest.MustGatherMetrics(t)
+	assert.Equal(t, 3.0, translationsTotalValue(currentMetrics, testNamespace, "success"))
+	assert.Equal(t, 1.0, translationsTotalValue(currentMetrics, testNamespace, "error"))
+	assert.Equal(t, 2.0, translationsTotalValue(currentMetrics, "other-namespace", "success"))
+	currentMetrics.AssertMetrics("kgateway_translator_translations_running", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: testNamespace},
+				{Name: "translator", Value: testTranslatorName},
+			},
+			Value: 0,
+		},
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "name", Value: testGatewayName},
+				{Name: "namespace", Value: "other-namespace"},
+				{Name: "translator", Value: testTranslatorName},
+			},
+			Value: 0,
+		},
+	})
+}
+
+func TestCollectTranslationMetrics_AfterReset(t *testing.T) {
+	setupTest()
+
+	labels := TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	}
+
+	CollectTranslationMetrics(labels)(nil)
+	ResetMetrics()
+
+	// Series resolved before the reset are no longer exported, so they must not be reused.
+	finishFunc := CollectTranslationMetrics(labels)
+	currentMetrics := metricstest.MustGatherMetrics(t)
+	assertTranslationsRunning(currentMetrics, 1)
+
+	finishFunc(nil)
+	currentMetrics = metricstest.MustGatherMetrics(t)
+	assertTranslationsRunning(currentMetrics, 0)
+	assert.Equal(t, 1.0, translationsTotalValue(currentMetrics, testNamespace, "success"))
+	currentMetrics.AssertHistogramPopulated("kgateway_translator_translation_duration_seconds")
+}
+
+func BenchmarkCollectTranslationMetrics(b *testing.B) {
+	setupTest()
+	labels := TranslatorMetricLabels{
+		Name:       testGatewayName,
+		Namespace:  testNamespace,
+		Translator: testTranslatorName,
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		CollectTranslationMetrics(labels)(nil)
+	}
+}
