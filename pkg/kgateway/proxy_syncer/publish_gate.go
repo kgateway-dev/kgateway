@@ -479,6 +479,26 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 	g.cancelFlipReleaseLocked(proxyKey)
 }
 
+// disconnectedRunner runs fn only while no xDS stream is connected under a
+// client key, excluding stream admission while fn runs. Satisfied by
+// krtcollections.XDSClientState.
+type disconnectedRunner interface {
+	RunIfDisconnected(resourceName string, fn func()) bool
+}
+
+// reclaimDeparted clears a departed client's snapshot cache entry and reports
+// whether it did. It holds the gate lock, which every publish holds, and
+// clears only through clients.RunIfDisconnected: ClearSnapshot also drops the
+// node's open watches, so clearing after a reconnecting stream was admitted
+// would strand that stream with no watch for the next SetSnapshot to answer.
+func (g *publishGate) reclaimDeparted(cache envoycache.SnapshotCache, proxyKey string, clients disconnectedRunner) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return clients.RunIfDisconnected(proxyKey, func() {
+		cache.ClearSnapshot(proxyKey)
+	})
+}
+
 // snapshotConsistencyError checks the dynamic graph together with the gateway's
 // known bootstrap EDS cluster. The bootstrap cluster is absent from CDS, but its
 // CLA is intentionally published for clients that have subscribed to it.

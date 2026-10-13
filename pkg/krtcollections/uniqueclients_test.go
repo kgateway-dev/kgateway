@@ -788,3 +788,43 @@ func TestNormalizeGatewayRole(t *testing.T) {
 		})
 	}
 }
+
+func TestUniqueClientsRunIfDisconnected(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+	newRequest := func() *envoy_service_discovery_v3.DiscoveryRequest {
+		return &envoy_service_discovery_v3.DiscoveryRequest{
+			Node: &envoycorev3.Node{
+				Id: "podname.ns",
+				Metadata: &structpb.Struct{Fields: map[string]*structpb.Value{
+					xds.RoleKey: structpb.NewStringValue(role),
+				}},
+			},
+		}
+	}
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+
+	g.Expect(cb.OnStreamRequest(1, newRequest())).To(Succeed())
+	ran := false
+	g.Expect(state.RunIfDisconnected(role, func() { ran = true })).To(BeFalse())
+	g.Expect(ran).To(BeFalse(), "fn must not run while a stream is connected under the identity")
+
+	cb.OnStreamClosed(1, nil)
+	g.Expect(state.RunIfDisconnected(role, func() { ran = true })).To(BeTrue())
+	g.Expect(ran).To(BeTrue(), "fn must run once the identity's last stream has closed")
+
+	// A stream connecting while fn runs is admitted only after fn returns.
+	admitted := make(chan error, 1)
+	g.Expect(state.RunIfDisconnected(role, func() {
+		go func() { admitted <- cb.OnStreamRequest(2, newRequest()) }()
+		g.Consistently(admitted, "100ms").ShouldNot(Receive(), "stream admission must wait for fn")
+	})).To(BeTrue())
+	g.Eventually(admitted, "1s").Should(Receive(BeNil()))
+	g.Expect(state.RunIfDisconnected(role, func() {})).To(BeFalse())
+}
