@@ -41,6 +41,11 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		features.GatewayAddressRoutabilityClusterFeature,
 		features.GatewayListenerFiltersFeature,
 		features.ClusterTrustBundleFeature,
+		// Gateway API v1.7 standard features that are not implemented yet: hostname
+		// intersection precedence across routes attached to the same hostname, and
+		// URLRewrite filters on backendRefs.
+		features.GatewayRouteHostnameIntersectionPrecedenceFeature,
+		features.HTTPRouteBackendURLRewriteFeature,
 	)
 	if !enableExperimentalGatewayAPIFeatures {
 		// TLSRoute and TLSRouteModeTerminate are standard as of Gateway API v1.5.
