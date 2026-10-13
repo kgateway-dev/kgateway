@@ -26,6 +26,12 @@ const (
 	// longer would keep the client's route/listener/secret updates pinned
 	// (#14352).
 	boundedPublishFlipRelease = "flip_release"
+	// boundedPublishWarmRelease marks a warm client published after staying
+	// withheld, with referenced clusters missing from CDS, for the whole warm
+	// withhold bound (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND): the missing clusters
+	// were not translation catching up, and holding longer would freeze the
+	// client's config until its proxy restarts.
+	boundedPublishWarmRelease = "warm_release"
 
 	withheldReasonPriorXDSVersion = "prior_xds_version"
 )
@@ -69,6 +75,19 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
+	snapshotPerClientWarmWithheldClients = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "perclient_warm_withheld_clients",
+			Help: "Warm clients (they reported a prior accepted xDS version, so " +
+				"they may be serving config from an earlier stream) currently " +
+				"withheld because referenced clusters are missing from CDS. " +
+				"While withheld a client receives no updates at all, including " +
+				"certificate rotations. A client that stays here is released at " +
+				"KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, or never if that is 0.",
+		},
+		[]string{gatewayLabel, namespaceLabel},
+	)
 	snapshotPerClientBoundedPublishesTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
@@ -83,7 +102,10 @@ var (
 				"frozen its config indefinitely (#14352). mode=flip_release: a " +
 				"held route flip published because its newly-referenced cluster " +
 				"never became ready; the affected routes fail until it does, and " +
-				"pinned route/listener/secret updates resume.",
+				"pinned route/listener/secret updates resume. mode=warm_release: a " +
+				"warm client withheld for the whole warm withhold bound " +
+				"(KGW_PER_CLIENT_WARM_WITHHOLD_BOUND) because referenced clusters " +
+				"were missing from CDS; routes to them fail until they appear.",
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationModeLabel},
 	)
@@ -112,7 +134,9 @@ var (
 				"reconnect or controller restart instead of publishing routes that " +
 				"would NC (#13868). Warm clients whose only gaps are clusters with " +
 				"no derived CLA are published instead (bounded_publishes_total, " +
-				"mode=warm_truth).",
+				"mode=warm_truth). Counted once per budget expiry while withheld; " +
+				"after KGW_PER_CLIENT_WARM_WITHHOLD_BOUND the client is published " +
+				"(bounded_publishes_total, mode=warm_release).",
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationReasonLabel},
 	)
@@ -177,6 +201,15 @@ func recordBoundedPublish(proxyKey string, mode string) {
 		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
 		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
 		metrics.Label{Name: publicationModeLabel, Value: mode},
+	)
+}
+
+// recordWarmWithheldClients publishes the number of warm clients currently
+// withheld for one gateway.
+func recordWarmWithheldClients(labels resourceNameDetails, n int) {
+	snapshotPerClientWarmWithheldClients.Set(float64(n),
+		metrics.Label{Name: gatewayLabel, Value: labels.Gateway},
+		metrics.Label{Name: namespaceLabel, Value: labels.Namespace},
 	)
 }
 

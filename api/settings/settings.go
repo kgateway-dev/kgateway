@@ -351,7 +351,8 @@ type Settings struct {
 	//     its listeners and becomes Ready instead of crash-looping; routes
 	//     to still-unready clusters return 503 until they cohere. Clients
 	//     that reported a prior accepted xDS version on connect are warm:
-	//     they stay withheld while referenced clusters are missing from CDS,
+	//     they stay withheld while referenced clusters are missing from CDS
+	//     (for at most PerClientWarmWithholdBound),
 	//     but publish at expiry when the only gaps are clusters whose
 	//     endpoints were never derived (by then that is translation backlog
 	//     or a plugin gap with no convergence guarantee, and withholding
@@ -366,6 +367,23 @@ type Settings struct {
 	// recreates the crash loop the bound exists to prevent. A value of 0
 	// disables all bounds: clients wait for coherence with no deadline.
 	PerClientPublishBudget time.Duration `split_words:"true" default:"15s"`
+
+	// PerClientWarmWithholdBound is the last-resort bound on how long a warm
+	// client (one that reported a prior accepted xDS version on connect, so it
+	// may still be serving config from an earlier stream) stays withheld
+	// because referenced clusters are missing from CDS. Withholding keeps
+	// routes the proxy is serving from failing with no cluster, but a cluster
+	// that never appears would otherwise freeze the client's config, including
+	// certificate rotations, until the proxy restarts. Once a warm client has
+	// been withheld this long, the latest deferred snapshot is published
+	// anyway; routes to the missing clusters fail until they appear.
+	//
+	// Keep it well above the longest time translation takes to catch up after
+	// a controller restart: a bound shorter than that fails warm routes on
+	// every restart. Only applies while PerClientPublishBudget is non-zero. A
+	// value of 0 removes the bound: warm clients stay withheld until the
+	// missing clusters appear.
+	PerClientWarmWithholdBound time.Duration `split_words:"true" default:"10m"`
 
 	// XdsSnapshotConsistencyCheck runs go-control-plane's Snapshot.Consistent()
 	// on every per-client xDS snapshot immediately before it is published,
