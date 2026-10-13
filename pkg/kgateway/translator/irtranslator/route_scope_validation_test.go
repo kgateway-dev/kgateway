@@ -569,7 +569,8 @@ func TestRouteValidationStubsMirrorClusters(t *testing.T) {
 		return nil
 	}}
 	require.NoError(t, validateFullRouteConfiguration(t.Context(), cfg, v))
-	assert.ElementsMatch(t, []string{"primary", "route-mirror", "vhost-mirror", "config-mirror"}, stubbed)
+	// Subset, not an exact match: the bootstrap builder may add clusters of its own.
+	assert.Subset(t, stubbed, []string{"primary", "route-mirror", "vhost-mirror", "config-mirror"})
 }
 
 // HTTPS virtual hosts carry no ParentRef; their route configuration is named for
