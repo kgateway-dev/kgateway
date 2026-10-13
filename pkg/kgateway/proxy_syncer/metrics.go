@@ -153,4 +153,5 @@ func ResetMetrics() {
 	snapshotPerClientBoundedPublishesTotal.Reset()
 	snapshotPerClientDeferredWithheldTotal.Reset()
 	snapshotPerClientInconsistentTotal.Reset()
+	snapshotPerClientReclaimedTotal.Reset()
 }

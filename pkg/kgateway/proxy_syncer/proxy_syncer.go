@@ -57,6 +57,9 @@ type ProxySyncer struct {
 	proxyTranslator ProxyTranslator
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
+	// clientState is the synchronous xDS connection state behind uniqueClients;
+	// the snapshot reclaimer decides through it whether a client is still gone.
+	clientState krtcollections.XDSClientState
 
 	statusContributions         krt.Collection[reports.StatusContribution]
 	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
@@ -210,6 +213,7 @@ func NewProxySyncer(
 		apiClient:                  client,
 		proxyTranslator:            NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck),
 		uniqueClients:              uniqueClients,
+		clientState:                xdsClientState,
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
 		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
@@ -426,6 +430,26 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 	}, false)
 
+	// Reclaim the SnapshotCache entries of departed clients (see
+	// snapshotReclaimer). The connected-client collection schedules and cancels
+	// reclaims; whether the client is still gone is decided when the grace
+	// period ends, against the synchronous connection state.
+	if s.clientState != nil {
+		reclaimer := newSnapshotReclaimer(func(resourceName string) bool {
+			return s.proxyTranslator.gate.reclaimDeparted(s.proxyTranslator.xdsCache, resourceName, s.clientState)
+		})
+		s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
+			for _, e := range events {
+				name := e.Latest().ResourceName()
+				if e.Event == controllers.EventDelete {
+					reclaimer.clientDeparted(name)
+				} else {
+					reclaimer.clientConnected(name)
+				}
+			}
+		}, true)
+	}
+
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
 			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
@@ -449,10 +473,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// again, while a client that stayed connected still runs what
 				// was published on its connection.
 				//
-				// Known leak: the SnapshotCache entry for a departed UCC is
-				// never cleared and accumulates over the controller's
-				// lifetime. Pre-existing behavior; reclaiming these entries
-				// is a separate follow-up (#14307).
+				// Entries of truly-departed clients, which surface here
+				// indistinguishably from transient deletes, are reclaimed by
+				// the snapshotReclaimer registered above.
 				name := e.Latest().ResourceName()
 				s.proxyTranslator.clientSnapshotDeleted(name, s.uniqueClients.GetKey(name) != nil)
 			}
