@@ -1670,6 +1670,9 @@ func weight(w *int32) uint32 {
 }
 
 func ToAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts) ir.AttachedPolicies {
+	if len(policies) == 0 {
+		return ir.AttachedPolicies{}
+	}
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -1783,6 +1786,9 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 		// Validate all CA certificate references
 		validCARefs := make([]gwv1.ObjectReference, 0)
 		for _, ref := range frontendTLS.Default.Validation.CACertificateRefs {
+			// Normalize "core" to "" before validating and storing the ref, so the
+			// listener translator later resolves it as a core ConfigMap/Secret.
+			ref.Group = gwv1.Group(emptyIfCore(string(ref.Group)))
 			if err := validateCAReferenceType(ref); err != nil {
 				result.DefaultError = errors.Join(result.DefaultError, err)
 			} else {
@@ -1806,6 +1812,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 			// Validate all CA certificate references
 			validCARefs := make([]gwv1.ObjectReference, 0)
 			for _, ref := range portConfig.TLS.Validation.CACertificateRefs {
+				ref.Group = gwv1.Group(emptyIfCore(string(ref.Group)))
 				if err := validateCAReferenceType(ref); err != nil {
 					result.PortErrors[portConfig.Port] = errors.Join(result.PortErrors[portConfig.Port], err)
 				} else {
