@@ -336,3 +336,9 @@ func TestWarmWithhold_ClientStateReportsColdProxies(t *testing.T) {
 	_, ok := state.(coldStreamReader)
 	assert.True(t, ok)
 }
+
+// Publication tests model connected clients; their snapshots cannot be reclaimed.
+func (*mutablePriorXDS) RunIfDisconnected(string, func()) bool { return false }
+
+// Publication tests model connected clients; their snapshots cannot be reclaimed.
+func (sharedKeyClients) RunIfDisconnected(string, func()) bool { return false }

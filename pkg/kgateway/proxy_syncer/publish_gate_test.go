@@ -881,3 +881,6 @@ func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
 	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, refsOf(routesB))
 	assert.Equal(t, 2, walks)
 }
+
+// Publication tests model connected clients; their snapshots cannot be reclaimed.
+func (stubPriorXDS) RunIfDisconnected(string, func()) bool { return false }

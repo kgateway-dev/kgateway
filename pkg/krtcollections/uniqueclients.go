@@ -179,9 +179,17 @@ type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.K
 // config accepted on a previous stream even though this controller has not
 // published to it (reconnect, controller restart). The mark belongs to the
 // resource name, so it covers every stream sharing it, and lasts until the
-// last of them closes.
+// last stream that reported held config closes.
+//
+// RunIfDisconnected runs fn only while no stream is connected under
+// resourceName, and reports whether it ran. Stream admission is excluded for
+// the duration, so a stream connecting concurrently is admitted either before
+// the check (fn does not run) or after fn returns. go-control-plane creates a
+// stream's watches only after its request callback admits it, so fn cannot
+// interleave with them either.
 type XDSClientState interface {
 	HasPriorXDSVersion(resourceName string) bool
+	RunIfDisconnected(resourceName string, fn func()) bool
 }
 
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
@@ -569,6 +577,28 @@ func (x *callbacksCollection) hasColdStreamSince(resourceName string, d time.Dur
 		}
 	}
 	return false
+}
+
+// RunIfDisconnected implements XDSClientState. Before the collection is built
+// no stream can have been admitted, so fn runs.
+func (x *callbacks) RunIfDisconnected(resourceName string, fn func()) bool {
+	c := x.collection.Load()
+	if c == nil {
+		fn()
+		return true
+	}
+	return c.runIfDisconnected(resourceName, fn)
+}
+
+// runIfDisconnected holds the write lock that add() takes to admit a stream.
+func (x *callbacksCollection) runIfDisconnected(resourceName string, fn func()) bool {
+	x.stateLock.Lock()
+	defer x.stateLock.Unlock()
+	if x.uniqClientsCount[resourceName] > 0 {
+		return false
+	}
+	fn()
+	return true
 }
 
 func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
