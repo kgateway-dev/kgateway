@@ -6,6 +6,9 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/util/concurrent"
 	"istio.io/istio/pkg/util/sets"
+
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 // newDebouncedCollection mirrors src and delivers its changes in batches: a burst of changes reaches dependents as
@@ -57,6 +60,16 @@ func newDebouncedCollection[T any](
 		})
 	}()
 	return out
+}
+
+// debounceForTranslation batches changes to a translation input as configured by the translation debounce settings.
+func debounceForTranslation[T any](
+	c krt.Collection[T],
+	krtopts krtutil.KrtOptions,
+	settings apisettings.Settings,
+	name string,
+) krt.Collection[T] {
+	return newDebouncedCollection(c, settings.TranslationDebounce, settings.TranslationDebounceMax, krtopts.Stop, krtopts.ToOptions(name)...)
 }
 
 // seededSyncer reports synced once src has synced and the mirror has been seeded from it.

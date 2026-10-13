@@ -126,6 +126,10 @@ func TestRoutesFor(t *testing.T) {
 		})
 		require.Len(t, routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind), 2,
 			"routes should be indexed by parent as soon as the debounced index syncs")
+		require.NotNil(t, routes.FetchHttp(krt.TestingDummyContext{}, "default", "http-route"),
+			"delegation lookups by name should read the debounced HTTPRoutes")
+		require.Len(t, routes.FetchHTTPRoutesBySelector(krt.TestingDummyContext{}, HTTPRouteSelector{Namespace: "default"}), 1,
+			"delegation lookups by selector should read the debounced HTTPRoutes")
 	})
 }
 
