@@ -168,7 +168,10 @@ func (m *referencedClustersMemo) get(
 // new routes publish as-is even with never-ready gaps — used by the gate's
 // flip-release bound so a steady-state-unready reference cannot pin the
 // client's route/listener/secret updates forever (#14352).
-func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool) (*envoycache.Snapshot, []string) {
+// lastPublished answers for assignments copied from the published snapshot
+// with the hash each was last published under (eds_set_version.go). The last
+// result holds the contributions of the composed EDS set.
+func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 
@@ -230,6 +233,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	// its cluster) for carryRefs missing from the new build.
 	newClusters := composed.Resources[envoycachetypes.Cluster]
 	newEndpoints := composed.Resources[envoycachetypes.Endpoint]
+	edsHashes := snapWrap.endpointHashes
 	oldEndpoints := published.GetResourcesAndTTL(envoyresourcev3.EndpointType)
 	erroredSet := stringSet(snapWrap.erroredClusters)
 	expiredSet := stringSet(snapWrap.expiredCarry)
@@ -291,7 +295,6 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		}
 		if oldCla, ok := oldEndpoints[claName]; ok {
 			endpointItems[claName] = oldCla
-			carryHash ^= utils.HashProto(oldCla.Resource)
 		}
 	}
 	if len(carried) > 0 {
@@ -300,12 +303,13 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			Version: fmt.Sprintf("%s-carry-%d", newClusters.Version, carryHash),
 			Items:   clusterItems,
 		}
+		// The carried assignments keep the contribution they were published
+		// under, so the composed set is versioned like a direct publication.
+		edsHashes = endpointSetHashes(endpointItems, snapWrap.endpointHashes, lastPublished)
 		composed.Resources[envoycachetypes.Endpoint] = envoycache.Resources{
-			Items: endpointItems,
+			Version: endpointSetVersion(edsHashes),
+			Items:   endpointItems,
 		}
-		composed.Resources[envoycachetypes.Endpoint] = versionEndpointResources(
-			composed.Resources[envoycachetypes.Endpoint], nil,
-			endpointClusterDigests(composed.Resources[envoycachetypes.Cluster], nil))
 		logger.Debug("carried forward previously-published clusters",
 			"proxy_key", snapWrap.proxyKey,
 			"carried", carried,
@@ -313,7 +317,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	}
 	deps.apply(composed)
 
-	return composed, heldBlocking
+	return composed, heldBlocking, edsHashes
 }
 
 func cloneResourceItems(items map[string]envoycachetypes.ResourceWithTTL) map[string]envoycachetypes.ResourceWithTTL {

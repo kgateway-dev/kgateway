@@ -52,6 +52,11 @@ type XdsSnapWrapper struct {
 	// row. Sorted.
 	// +noKrtEquals
 	expiredCarry []string
+	// endpointHashes maps each assignment in snap to the hash it is versioned
+	// by (eds_set_version.go); the publish gate remembers it for carry-forward.
+	// Folded into the EDS version compared by Equals.
+	// +noKrtEquals
+	endpointHashes map[string]uint64
 }
 
 // deferred reports whether some referenced cluster was unready at build

@@ -289,12 +289,10 @@ func (f *erroredClusterFixture) endpointsFor(name string, localities int) UccWit
 		})
 	}
 
-	cla := &envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps}
 	return UccWithEndpoints{
 		Client:        f.ucc,
-		Endpoints:     sharedproto.Wrap(cla),
+		Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps}),
 		EndpointsHash: hash,
-		ContentHash:   contentHashOf(cla),
 		endpointsName: name,
 	}
 }
