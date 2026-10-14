@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"time"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -81,11 +82,32 @@ func (s *ProxyTranslator) syncXds(
 	}
 }
 
-// hasPriorXDSVersion reports whether the client reported a prior accepted xDS
-// version on connect — i.e. it may already be serving traffic even though this
-// controller has no local snapshot for it (reconnect / controller restart).
+// hasPriorXDSVersion reports whether publication should treat the client as
+// warm: some stream under the key reported config it already holds, so it may
+// be serving traffic even though this controller has no local snapshot for it
+// (reconnect / controller restart).
+//
+// Proxies can share a key (pod locality off). A proxy under the key that never
+// received config has no listeners until the shared snapshot publishes, so
+// once one has waited a full budget the key is treated as cold: a pod that
+// crash-loops for lack of config is worse than warm routes failing on the
+// clusters that are still missing.
 func (s *ProxyTranslator) hasPriorXDSVersion(proxyKey string) bool {
-	return s.xdsClientState != nil && s.xdsClientState.HasPriorXDSVersion(proxyKey)
+	if s.xdsClientState == nil || !s.xdsClientState.HasPriorXDSVersion(proxyKey) {
+		return false
+	}
+	if cold, ok := s.xdsClientState.(coldStreamReader); ok && cold.HasColdStreamSince(proxyKey, s.gate.budget) {
+		return false
+	}
+	return true
+}
+
+// coldStreamReader reports whether a proxy that holds no config from an earlier
+// stream has been connected under a key for at least d. Satisfied by the
+// krtcollections client state; kept apart from priorXDSVersionReader so test
+// doubles that only model warmth need not implement it.
+type coldStreamReader interface {
+	HasColdStreamSince(resourceName string, d time.Duration) bool
 }
 
 // publishedReferencedClusters returns the dataplane-referenced cluster set of
