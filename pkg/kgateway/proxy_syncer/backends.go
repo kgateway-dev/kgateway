@@ -180,6 +180,11 @@ type clustersWithErrors struct {
 	erroredClusters     []string
 	erroredClustersHash uint64
 	clustersHash        uint64
+	// clusterVersions maps each published cluster name to its ClusterVersion, the
+	// per-row equality hash clustersHash folds, so a filter that drops clusters
+	// can version what survives without digesting a proto (emission_filter.go).
+	// +noKrtEquals folded into clustersHash
+	clusterVersions map[string]uint64
 	// perClientErrors are the rows whose Error was produced for this client
 	// alone, sorted by cluster name; the status projection reads them. Base
 	// errors are attributed from the base rows instead, once rather than once
@@ -378,6 +383,7 @@ func clustersForClient(
 // the status projection.
 func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithCluster) *clustersWithErrors {
 	clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(rows))
+	clusterVersions := make(map[string]uint64, len(rows))
 	var (
 		listeners           baseResources[*envoylistenerv3.Listener]
 		secrets             baseResources[*envoytlsv3.Secret]
@@ -407,6 +413,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		listeners.hash ^= c.Listeners.hash
 		secrets.items = append(secrets.items, c.Secrets.items...)
 		secrets.hash ^= c.Secrets.hash
+		clusterVersions[c.Name] = c.ClusterVersion
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
 	// Base rows arrive in map order; sort so Equals compares like with like.
@@ -418,6 +425,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		secrets:             secrets,
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
+		clusterVersions:     clusterVersions,
 		erroredClustersHash: erroredClustersHash,
 		perClientErrors:     perClientErrors,
 		resourceName:        ucc.ResourceName(),
