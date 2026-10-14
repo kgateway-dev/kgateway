@@ -2062,6 +2062,17 @@ func assertSnapshotCoherent(t *testing.T, snap *envoycache.Snapshot) {
 	}
 }
 
+// filterEndpointsForClusters is filterEndpointsForEDSNames for the endpoint
+// names the given clusters require, resolved from scratch.
+func filterEndpointsForClusters(
+	clusters envoycache.Resources,
+	endpoints envoycache.Resources,
+	contentHashes map[string]uint64,
+	digest uint64,
+) (envoycache.Resources, map[string]struct{}, uint64) {
+	return filterEndpointsForEDSNames(requiredEDSNames{base: edsNamesOf(clusters.Items)}, endpoints, contentHashes, digest)
+}
+
 // filterEndpointResourcesForClusters is filterEndpointsForClusters for a set
 // with no precomputed digests.
 func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints envoycache.Resources) (envoycache.Resources, map[string]struct{}) {

@@ -132,9 +132,10 @@ func snapshotPerClient(
 		if ucc.KnowsLocalCluster {
 			bootstrapEndpoint, _, _ = ucc.LocalClusterInfo()
 		}
-		endpointRes, synthesizedEndpoints, endpointsDigest := filterEndpointsForClusters(
-			clusterResources, clientEndpointResources.endpoints,
-			clientEndpointResources.contentHashes, clientEndpointResources.digest, bootstrapEndpoint)
+		requiredEDS := clientRequiredEDSNames(clustersForUcc, listenerRouteSnapshot.Clusters, clusterResources.Items, bootstrapEndpoint)
+		endpointRes, synthesizedEndpoints, endpointsDigest := filterEndpointsForEDSNames(
+			requiredEDS, clientEndpointResources.endpoints,
+			clientEndpointResources.contentHashes, clientEndpointResources.digest)
 		edsVersion := edsVersionInputs{
 			endpoints:     endpointsDigest,
 			clusters:      clustersForUcc.edsClustersDigest,
@@ -323,7 +324,7 @@ func findMissingReferencedClusters(
 // findMissingReferencedEndpointResources reports the referenced EDS clusters
 // whose ClusterLoadAssignment was not derived by the per-client endpoints
 // collection — i.e. their CLA in the snapshot is a synthesized empty
-// placeholder (see filterEndpointsForClusters). Whether such a
+// placeholder (see filterEndpointsForEDSNames). Whether such a
 // backend has endpoints is UNKNOWN — per-client derivation lag for kube
 // Services (whose endpoints transform emits a row for every resolvable
 // port, even sliceless ones like ExternalName), or a plugin that
@@ -340,6 +341,10 @@ func findMissingReferencedEndpointResources(
 	synthesizedEndpoints map[string]struct{},
 	erroredClusters []string,
 ) []string {
+	if len(synthesizedEndpoints) == 0 {
+		// Only a synthesized CLA can make a referenced cluster missing here.
+		return []string{}
+	}
 	erroredClusterSet := stringSet(erroredClusters)
 
 	missingEndpointClusters := make([]string, 0, len(referencedClusters))
@@ -493,7 +498,7 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 	collectProtoClusterReferences(msg.Interface(), referencedClusters)
 }
 
-// filterEndpointsForClusters returns the EDS resource set that exactly
+// filterEndpointsForEDSNames returns the EDS resource set that exactly
 // matches the EDS clusters in the same CDS snapshot: it drops CLAs for STATIC
 // clusters and for EDS clusters no longer in CDS (Envoy requests EDS resources
 // from CDS, so a stale CLA can make the ADS cache refuse named EDS responses),
@@ -518,51 +523,48 @@ func collectProtoClusterReferencesFromValue(v protoreflect.Value, referencedClus
 // itself when nothing was filtered, else a fold over the result that reads
 // each assignment's content digest from contentHashes and marshals only those
 // it lacks (synthesized empties, or every item when contentHashes is nil).
-func filterEndpointsForClusters(
-	clusters envoycache.Resources,
+//
+// required is the set of endpoint names the snapshot's clusters need (see
+// clientRequiredEDSNames). When the input set is exactly that set, the common
+// case, it only looks names up and allocates nothing.
+func filterEndpointsForEDSNames(
+	required requiredEDSNames,
 	endpoints envoycache.Resources,
 	contentHashes map[string]uint64,
 	digest uint64,
-	bootstrapEndpoints ...string,
 ) (envoycache.Resources, map[string]struct{}, uint64) {
-	requiredEndpointNames := make(map[string]struct{})
-	for _, item := range clusters.Items {
-		if endpointName, requiresEndpointResource := endpointResourceNameForCluster(item); requiresEndpointResource {
-			requiredEndpointNames[endpointName] = struct{}{}
+	kept := 0
+	for name, item := range endpoints.Items {
+		if isCLA(item) && required.has(name) {
+			kept++
 		}
 	}
-	for _, name := range bootstrapEndpoints {
-		if name != "" {
-			requiredEndpointNames[name] = struct{}{}
-		}
+	// Every kept name is required and names are distinct, so equal counts
+	// mean every required name is covered too.
+	if kept == len(endpoints.Items) && kept == required.len() {
+		return endpoints, nil, digest
 	}
-	covered := make(map[string]struct{}, len(requiredEndpointNames))
-	filteredEndpoints := make([]envoycachetypes.ResourceWithTTL, 0, len(endpoints.Items))
-	for _, item := range endpoints.Items {
-		cla, ok := item.Resource.(*envoyendpointv3.ClusterLoadAssignment)
-		if !ok {
-			continue
+	filteredEndpoints := make([]envoycachetypes.ResourceWithTTL, 0, required.len())
+	for name, item := range endpoints.Items {
+		if isCLA(item) && required.has(name) {
+			filteredEndpoints = append(filteredEndpoints, item)
 		}
-		if _, required := requiredEndpointNames[cla.GetClusterName()]; !required {
-			continue
-		}
-		filteredEndpoints = append(filteredEndpoints, item)
-		covered[cla.GetClusterName()] = struct{}{}
 	}
 	// Synthesize empty assignments for EDS clusters that have no derived CLA
 	// so the published snapshot stays EDS-consistent.
 	synthesized := make(map[string]struct{})
-	for name := range requiredEndpointNames {
-		if _, ok := covered[name]; ok {
-			continue
+	synthesize := func(names map[string]struct{}) {
+		for name := range names {
+			if isCLA(endpoints.Items[name]) {
+				continue
+			}
+			empty := &envoyendpointv3.ClusterLoadAssignment{ClusterName: name}
+			filteredEndpoints = append(filteredEndpoints, envoycachetypes.ResourceWithTTL{Resource: empty})
+			synthesized[name] = struct{}{}
 		}
-		empty := &envoyendpointv3.ClusterLoadAssignment{ClusterName: name}
-		filteredEndpoints = append(filteredEndpoints, envoycachetypes.ResourceWithTTL{Resource: empty})
-		synthesized[name] = struct{}{}
 	}
-	if len(synthesized) == 0 && len(filteredEndpoints) == len(endpoints.Items) {
-		return endpoints, nil, digest
-	}
+	synthesize(required.base)
+	synthesize(required.extra)
 	var filteredDigest uint64
 	for _, item := range filteredEndpoints {
 		name := envoycache.GetResourceName(item.Resource)
@@ -573,6 +575,83 @@ func filterEndpointsForClusters(
 		filteredDigest ^= edsEntryDigest(name, contentHash)
 	}
 	return envoycache.NewResourcesWithTTL(strconv.FormatUint(filteredDigest, 10), filteredEndpoints), synthesized, filteredDigest
+}
+
+func isCLA(item envoycachetypes.ResourceWithTTL) bool {
+	_, ok := item.Resource.(*envoyendpointv3.ClusterLoadAssignment)
+	return ok
+}
+
+// requiredEDSNames is the set of endpoint resource names a client's CDS
+// payload requires: base plus the names in extra, which never repeat a name
+// in base. base is usually the per-client cluster row's set, held by
+// reference rather than copied into a new set on every snapshot build; it
+// must not be written to.
+type requiredEDSNames struct {
+	base  map[string]struct{}
+	extra map[string]struct{}
+}
+
+func (r requiredEDSNames) has(name string) bool {
+	if _, ok := r.base[name]; ok {
+		return true
+	}
+	_, ok := r.extra[name]
+	return ok
+}
+
+func (r requiredEDSNames) len() int {
+	return len(r.base) + len(r.extra)
+}
+
+// with returns r plus names, skipping empty ones. It never writes to base,
+// but may add to extra in place, so use only the returned value.
+func (r requiredEDSNames) with(names ...string) requiredEDSNames {
+	for _, name := range names {
+		if name == "" || r.has(name) {
+			continue
+		}
+		if r.extra == nil {
+			r.extra = make(map[string]struct{})
+		}
+		r.extra[name] = struct{}{}
+	}
+	return r
+}
+
+// edsNamesOf resolves the endpoint resource names a set of clusters requires.
+func edsNamesOf(clusters map[string]envoycachetypes.ResourceWithTTL) map[string]struct{} {
+	names := make(map[string]struct{}, len(clusters))
+	for _, item := range clusters {
+		if name, eds := endpointResourceNameForCluster(item); eds {
+			names[name] = struct{}{}
+		}
+	}
+	return names
+}
+
+// clientRequiredEDSNames resolves the endpoint names a client's merged CDS
+// payload requires, starting from the set the cluster row already resolved.
+// extraClusters are the gateway translation's own clusters, which the
+// snapshot merges over the row's by name; merged is that merged payload.
+func clientRequiredEDSNames(
+	row *clustersWithErrors,
+	extraClusters []envoycachetypes.ResourceWithTTL,
+	merged map[string]envoycachetypes.ResourceWithTTL,
+	bootstrapEndpoint string,
+) requiredEDSNames {
+	required := requiredEDSNames{base: row.edsNames}
+	for _, item := range extraClusters {
+		if _, shadows := row.clusters.Items[envoycache.GetResourceName(item.Resource)]; shadows {
+			// The gateway's cluster replaces a row cluster, and maybe the
+			// endpoint name the row resolved for it; resolve from scratch.
+			return requiredEDSNames{base: edsNamesOf(merged)}.with(bootstrapEndpoint)
+		}
+		if name, eds := endpointResourceNameForCluster(item); eds {
+			required = required.with(name)
+		}
+	}
+	return required.with(bootstrapEndpoint)
 }
 
 // edsVersionInputs are the digests a client's EDS version is folded from. The

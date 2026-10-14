@@ -167,6 +167,11 @@ type clustersWithErrors struct {
 	// edsClustersDigest folds the published EDS clusters' versions for EDS
 	// versioning; see edsVersionInputs.
 	edsClustersDigest uint64
+	// edsNames is the set of endpoint resource names the clusters in clusters
+	// require, resolved once here so the snapshot step does not re-derive it
+	// from every cluster proto on each build. Read-only once built.
+	// +noKrtEquals derived from clusters, which clustersHash covers
+	edsNames map[string]struct{}
 	// perClientErrors are the rows whose Error was produced for this client
 	// alone, sorted by cluster name; the status projection reads them. Base
 	// errors are attributed from the base rows instead, once rather than once
@@ -346,6 +351,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		erroredClusters     []string
 		perClientErrors     []uccWithCluster
 	)
+	edsNames := make(map[string]struct{}, len(rows))
 	for _, c := range rows {
 		if c.Error != nil {
 			erroredClusters = append(erroredClusters, c.Name)
@@ -364,16 +370,23 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		resource := c.Cluster.ResourceWithTTL()
 		clustersProto = append(clustersProto, resource)
 		clustersHash ^= c.ClusterVersion
-		if _, eds := endpointResourceNameForCluster(resource); eds {
+		if edsName, eds := endpointResourceNameForCluster(resource); eds {
 			edsClustersDigest ^= edsEntryDigest(c.Name, c.ClusterVersion)
+			edsNames[edsName] = struct{}{}
 		}
 	}
-	clustersVersion := strconv.FormatUint(clustersHash, 10)
+	clusters := envoycache.NewResourcesWithTTL(strconv.FormatUint(clustersHash, 10), clustersProto)
+	if len(clusters.Items) != len(clustersProto) {
+		// Two rows shared a name and the payload kept only one of them, so the
+		// set built above may name an endpoint resource nothing published needs.
+		edsNames = edsNamesOf(clusters.Items)
+	}
 	// Base rows arrive in map order; sort so Equals compares like with like.
 	slices.SortFunc(perClientErrors, func(a, b uccWithCluster) int { return cmp.Compare(a.Name, b.Name) })
 
 	return &clustersWithErrors{
-		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
+		clusters:            clusters,
+		edsNames:            edsNames,
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
 		edsClustersDigest:   edsClustersDigest,
