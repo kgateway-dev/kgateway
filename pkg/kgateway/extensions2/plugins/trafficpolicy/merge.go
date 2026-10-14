@@ -1047,13 +1047,13 @@ func defaultMerge[T any](
 	}
 
 	switch opts.Strategy {
-	case policy.AugmentedDeepMerge, policy.OverridableDeepMerge:
+	case policy.AugmentedDeepMerge:
 		if p1Field != nil {
 			return
 		}
 		fallthrough // can override p1 if it is unset
 
-	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge:
+	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge, policy.OverridableDeepMerge:
 		// p1's field now aliases p2's IR, which is shared KRT output: a later deep merge
 		// into p1 must copy before writing. See the note on copyForMerge.
 		accessor.Set(&p1.spec, p2Field)

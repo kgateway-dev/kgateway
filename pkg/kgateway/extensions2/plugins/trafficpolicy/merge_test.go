@@ -10,6 +10,7 @@ import (
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -102,6 +103,45 @@ func TestMergeRequestMirror(t *testing.T) {
 	})
 }
 
+// TestDefaultMergeDeepMergeStrategies verifies that fields handled by defaultMerge
+// honor the deep-merge preference direction (see #14802): prefer-child
+// (AugmentedDeepMerge) keeps p1's value, prefer-parent (OverridableDeepMerge) lets p2 win.
+func TestDefaultMergeDeepMergeStrategies(t *testing.T) {
+	p2Ref := &ir.AttachedPolicyRef{Name: "p2", Namespace: "default"}
+	literal := func(s string) *TrafficPolicy {
+		return &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithLiteral(s)}}
+	}
+
+	tests := []struct {
+		name     string
+		strategy policy.MergeStrategy
+		p1, p2   *TrafficPolicy
+		want     string // expected literal; empty means requestMirror must be nil
+	}{
+		{"AugmentedDeep keeps p1", policy.AugmentedDeepMerge, literal("p1"), literal("p2"), "p1"},
+		{"OverridableDeep p2 overrides p1", policy.OverridableDeepMerge, literal("p1"), literal("p2"), "p2"},
+		{"OverridableShallow p2 overrides p1", policy.OverridableShallowMerge, literal("p1"), literal("p2"), "p2"},
+		{"AugmentedDeep fills unset p1", policy.AugmentedDeepMerge, &TrafficPolicy{}, literal("p2"), "p2"},
+		{"OverridableDeep fills unset p1", policy.OverridableDeepMerge, &TrafficPolicy{}, literal("p2"), "p2"},
+		{"OverridableDeep keeps p1 when p2 unset", policy.OverridableDeepMerge, literal("p1"), &TrafficPolicy{}, "p1"},
+		{"OverridableDeep both unset", policy.OverridableDeepMerge, &TrafficPolicy{}, &TrafficPolicy{}, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			origins := ir.MergeOrigins{}
+			MergeTrafficPolicies(tc.p1, tc.p2, p2Ref, nil, policy.MergeOptions{Strategy: tc.strategy}, origins, TrafficPolicyMergeOpts{})
+
+			if tc.want == "" {
+				assert.Nil(t, tc.p1.spec.requestMirror)
+				return
+			}
+			require.NotNil(t, tc.p1.spec.requestMirror)
+			require.NotNil(t, tc.p1.spec.requestMirror.hostRewriteLiteral)
+			assert.Equal(t, tc.want, *tc.p1.spec.requestMirror.hostRewriteLiteral)
+		})
+	}
+}
+
 // TestMergePoliciesDoesNotMutateSourceIRs covers the delegated-route shape from
 // test/e2e/features/route_delegation: one child route reached through two parents with
 // different inherited-policy-priority annotations.
@@ -140,6 +180,31 @@ func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
 		require.True(t, ok, "merged PolicyIr should be a *TrafficPolicy")
 		return out
 	}
+
+	t.Run("defaultMerge honors DeepMergePreferParent", func(t *testing.T) {
+		newPolicy := func(d time.Duration) *TrafficPolicy {
+			return &TrafficPolicy{spec: trafficPolicySpecIr{
+				timeouts: &timeoutsIR{routeTimeout: durationpb.New(d)},
+			}}
+		}
+		child := newPolicy(60 * time.Second)
+		parent := newPolicy(5 * time.Second)
+
+		merged := translate(child, parent, apiannotations.DeepMergePreferParent, "")
+		require.NotNil(t, merged.spec.timeouts, "merged policy must retain timeouts")
+		assert.Equal(t, 5*time.Second, merged.spec.timeouts.routeTimeout.AsDuration(),
+			"DeepMergePreferParent: parent timeout (5s) must override child timeout (60s)")
+
+		// the source IRs must not be mutated by the merge
+		assert.Equal(t, 60*time.Second, child.spec.timeouts.routeTimeout.AsDuration())
+		assert.Equal(t, 5*time.Second, parent.spec.timeouts.routeTimeout.AsDuration())
+
+		// prefer-child must still keep the child's value
+		merged = translate(newPolicy(60*time.Second), newPolicy(5*time.Second), apiannotations.DeepMergePreferChild, "")
+		require.NotNil(t, merged.spec.timeouts)
+		assert.Equal(t, 60*time.Second, merged.spec.timeouts.routeTimeout.AsDuration(),
+			"DeepMergePreferChild: child timeout must win")
+	})
 
 	t.Run("transformation", func(t *testing.T) {
 		setOrigin := func(t *testing.T, value string) *TrafficPolicy {
