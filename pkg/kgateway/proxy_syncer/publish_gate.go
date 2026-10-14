@@ -56,6 +56,10 @@ import (
 // holding longer would freeze the client's routes, listeners and
 // certificates until its proxy restarts. The perclient_warm_withheld_clients
 // gauge shows the clients currently held.
+// A reconnect resumes the episode rather than restarting the bound. And when
+// proxies share a key (pod locality off), a proxy under it that holds no config
+// lifts the withhold once it has waited a budget: it has no listeners until the
+// shared snapshot publishes (see ProxyTranslator.hasPriorXDSVersion).
 //
 // The warm withhold deliberately does NOT extend to gaps that are only
 // underived CLAs (missingEndpointsReferenced). syncXds events only fire
@@ -102,6 +106,13 @@ type publishGate struct {
 	// (pendingFirstPublish.warmWithheldSince set), for the warm_withheld_clients
 	// gauge. Guarded by mu; created on first use.
 	warmWithheld map[resourceNameDetails]int
+	// warmEpisodes keeps, per client key, when a withheld warm client's episode
+	// started, across the client's departure: a proxy that reconnects resumes
+	// its episode instead of restarting the bound, so a connection that resets
+	// more often than the bound is still released. Entries expire once the
+	// departure is older than the bound, and any publish removes them. Guarded
+	// by mu; created on first use.
+	warmEpisodes map[string]warmEpisode
 	// checkConsistency runs Snapshot.Consistent() on every publish, recording
 	// (never withholding on) violations — an invariant monitor for test/CI
 	// environments (KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK). Written once at
@@ -126,6 +137,12 @@ type pendingFirstPublish struct {
 	// budget expiry; zero while not withheld. It persists across re-arms so
 	// the warm bound measures the whole episode.
 	warmWithheldSince time.Time
+}
+
+// warmEpisode is a withheld warm client's episode, kept across a departure.
+type warmEpisode struct {
+	since      time.Time
+	departedAt time.Time
 }
 
 type pendingFlipRelease struct {
@@ -161,6 +178,8 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 			recordInconsistentSnapshot(proxyKey)
 		}
 	}
+	// A published client is no longer withheld; a later episode starts fresh.
+	delete(g.warmEpisodes, proxyKey)
 	return cache.SetSnapshot(ctx, proxyKey, snap)
 }
 
@@ -313,17 +332,21 @@ func (g *publishGate) firePending(
 				"proxy_key", proxyKey, "missing_clusters", st.missing, "missing_endpoint_clusters", st.missingEndpoints,
 				"withheld_for", withheldFor, "warm_withhold_bound", g.warmWithholdBound)
 			recordDeferredWithheld(proxyKey)
+			// Re-check every budget without waiting for another deferred
+			// build: with static inputs none may ever arrive. The check
+			// reaches the bound, publishes the warm truth promptly if the
+			// missing clusters appear while some endpoints are still
+			// underived, and publishes once the key stops being warm (its
+			// warm streams closed, or a proxy holding no config has waited a
+			// budget under it).
+			next := g.budget
 			if g.warmWithholdBound > 0 {
-				// Re-arm without waiting for another deferred build: with
-				// static inputs none may ever arrive, and the bound must
-				// still be reached. Re-checking every budget also keeps the
-				// warm-truth publish prompt if the missing clusters appear
-				// while some endpoints are still underived.
-				st.snap = snap
-				st.timer = time.AfterFunc(min(g.budget, g.warmWithholdBound-withheldFor), func() {
-					g.firePending(ctx, cache, proxyKey, hasPriorXDSVersion)
-				})
+				next = min(next, g.warmWithholdBound-withheldFor)
 			}
+			st.snap = snap
+			st.timer = time.AfterFunc(next, func() {
+				g.firePending(ctx, cache, proxyKey, hasPriorXDSVersion)
+			})
 			return
 		}
 		// Withheld for the whole bound: whatever is missing is not translation
@@ -359,6 +382,12 @@ func (g *publishGate) firePending(
 // Callers must hold g.mu.
 func (g *publishGate) markWarmWithheldLocked(proxyKey string, st *pendingFirstPublish, now time.Time) {
 	st.warmWithheldSince = now
+	if ep, ok := g.warmEpisodes[proxyKey]; ok {
+		delete(g.warmEpisodes, proxyKey)
+		if g.warmWithholdBound > 0 && now.Sub(ep.departedAt) < g.warmWithholdBound {
+			st.warmWithheldSince = ep.since
+		}
+	}
 	g.adjustWarmWithheldLocked(proxyKey, +1)
 }
 
@@ -473,6 +502,7 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 		if st.timer != nil {
 			st.timer.Stop()
 		}
+		g.rememberWarmEpisodeLocked(proxyKey, st.warmWithheldSince)
 		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
@@ -504,4 +534,23 @@ func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error 
 	}}
 	checked.Resources[envoycachetypes.Cluster] = clusters
 	return checked.Consistent()
+}
+
+// rememberWarmEpisodeLocked keeps a departing warm client's episode start so a
+// reconnect resumes it (see warmEpisodes). Without a bound there is nothing to
+// resume. Callers must hold g.mu.
+func (g *publishGate) rememberWarmEpisodeLocked(proxyKey string, since time.Time) {
+	if since.IsZero() || g.warmWithholdBound <= 0 {
+		return
+	}
+	now := time.Now()
+	if g.warmEpisodes == nil {
+		g.warmEpisodes = make(map[string]warmEpisode)
+	}
+	for key, ep := range g.warmEpisodes {
+		if now.Sub(ep.departedAt) >= g.warmWithholdBound {
+			delete(g.warmEpisodes, key)
+		}
+	}
+	g.warmEpisodes[proxyKey] = warmEpisode{since: since, departedAt: now}
 }

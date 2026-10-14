@@ -76,12 +76,19 @@ type ConnectedClient struct {
 	// already-augmented) one, or augmentation compounds and every ACK looks
 	// like an identity change.
 	originalRole string
+	// connectedAt is when the stream was admitted.
+	connectedAt time.Time
+	// priorXDSVersion records that a request on this stream reported config the
+	// proxy already held from an earlier stream (a reconnect, or a proxy that
+	// outlived a controller restart).
+	priorXDSVersion bool
 }
 
 func newConnectedClient(uniqueClientName, originalRole string) ConnectedClient {
 	return ConnectedClient{
 		uniqueClientName: uniqueClientName,
 		originalRole:     originalRole,
+		connectedAt:      time.Now(),
 	}
 }
 
@@ -113,8 +120,12 @@ type callbacksCollection struct {
 	// cluster once every stream currently in that bucket has confirmed it, or the same
 	// full-EDS-withholding this file exists to prevent reappears for the still-old siblings.
 	knownLocalClusterBySid map[int64]bool
-	priorXDSVersions       map[string]struct{}
-	stateLock              sync.RWMutex
+	// priorXDSVersions counts, per resource name, the connected streams that
+	// reported config the proxy already held. It is per stream, not a flag per
+	// name: when replicas share a name (pod locality off), the name must stop
+	// being warm once the streams that reported held config have closed.
+	priorXDSVersions map[string]int
+	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
 }
@@ -205,7 +216,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 			uniqClientsCount:       make(map[string]uint64),
 			uniqClients:            make(map[string]ir.UniquelyConnectedClient),
 			knownLocalClusterBySid: make(map[int64]bool),
-			priorXDSVersions:       make(map[string]struct{}),
+			priorXDSVersions:       make(map[string]int),
 			trigger:                trigger,
 		}
 
@@ -265,6 +276,13 @@ func (x *callbacksCollection) del(sid int64) *ir.UniquelyConnectedClient {
 	delete(x.knownLocalClusterBySid, sid)
 	if ok {
 		resourceName := c.uniqueClientName
+		if c.priorXDSVersion {
+			if n := x.priorXDSVersions[resourceName] - 1; n > 0 {
+				x.priorXDSVersions[resourceName] = n
+			} else {
+				delete(x.priorXDSVersions, resourceName)
+			}
+		}
 		current := x.uniqClientsCount[resourceName]
 		x.uniqClientsCount[resourceName] = current - 1
 		if current == 1 {
@@ -472,7 +490,7 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	}
 	x.observeLocalClusterRequest(sid, ucc, r)
 	if hasPriorXDSVersion(r) {
-		x.markPriorXDSVersion(ucc)
+		x.markPriorXDSVersion(sid, ucc)
 	}
 
 	nodeMd := r.GetNode().GetMetadata()
@@ -507,10 +525,18 @@ func hasPriorXDSVersion(r *envoy_service_discovery_v3.DiscoveryRequest) bool {
 	return r.GetResponseNonce() == "" && r.GetVersionInfo() != ""
 }
 
-func (x *callbacksCollection) markPriorXDSVersion(resourceName string) {
+// markPriorXDSVersion records that stream sid reported held config. Each
+// stream counts once toward its resource name.
+func (x *callbacksCollection) markPriorXDSVersion(sid int64, resourceName string) {
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
-	x.priorXDSVersions[resourceName] = struct{}{}
+	c, ok := x.clients[sid]
+	if !ok || c.priorXDSVersion {
+		return
+	}
+	c.priorXDSVersion = true
+	x.clients[sid] = c
+	x.priorXDSVersions[resourceName]++
 }
 
 func (x *callbacks) HasPriorXDSVersion(resourceName string) bool {
@@ -524,8 +550,33 @@ func (x *callbacks) HasPriorXDSVersion(resourceName string) bool {
 func (x *callbacksCollection) hasPriorXDSVersion(resourceName string) bool {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
-	_, ok := x.priorXDSVersions[resourceName]
-	return ok
+	return x.priorXDSVersions[resourceName] > 0
+}
+
+// HasColdStreamSince reports whether a stream that reported no held config
+// has been connected under resourceName for at least d. When proxies share a
+// name, such a proxy has no listeners until the shared snapshot publishes, so
+// publication uses this to stop withholding on behalf of its warm siblings.
+// It scans the connected streams, so call it only at publication deadlines,
+// not per request.
+func (x *callbacks) HasColdStreamSince(resourceName string, d time.Duration) bool {
+	c := x.collection.Load()
+	if c == nil {
+		return false
+	}
+	return c.hasColdStreamSince(resourceName, d)
+}
+
+func (x *callbacksCollection) hasColdStreamSince(resourceName string, d time.Duration) bool {
+	x.stateLock.RLock()
+	defer x.stateLock.RUnlock()
+	cutoff := time.Now().Add(-d)
+	for _, c := range x.clients {
+		if c.uniqueClientName == resourceName && !c.priorXDSVersion && !c.connectedAt.After(cutoff) {
+			return true
+		}
+	}
+	return false
 }
 
 func (x *callbacksCollection) getClients() []ir.UniquelyConnectedClient {
