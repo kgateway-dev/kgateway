@@ -270,7 +270,7 @@ func TestMergeBackendResources(t *testing.T) {
 		{Resource: &envoylistenerv3.Listener{Name: "http", StatPrefix: "gateway"}},
 	})
 	withBackendListener := func(statPrefix string) envoycache.Resources {
-		return mergeBackendResources(gateway, wrapBaseResources([]*envoylistenerv3.Listener{{Name: "connect_tunnel_dest", StatPrefix: statPrefix}}))
+		return mergeBackendResources(gateway, wrapBaseResources([]*envoylistenerv3.Listener{{Name: "tunnel_dest", StatPrefix: statPrefix}}))
 	}
 
 	g := gomega.NewWithT(t)
@@ -279,7 +279,7 @@ func TestMergeBackendResources(t *testing.T) {
 
 	merged := withBackendListener("first")
 	g.Expect(merged.Items).To(gomega.HaveKey("http"))
-	g.Expect(merged.Items).To(gomega.HaveKey("connect_tunnel_dest"))
+	g.Expect(merged.Items).To(gomega.HaveKey("tunnel_dest"))
 	g.Expect(merged.Version).ToNot(gomega.Equal(gateway.Version), "adding resources must change the version")
 	g.Expect(withBackendListener("second").Version).ToNot(gomega.Equal(merged.Version),
 		"a changed backend resource must change the version")

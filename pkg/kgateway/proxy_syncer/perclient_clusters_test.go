@@ -279,7 +279,7 @@ func tunnelLifecycleTranslator() *irtranslator.BackendTranslator {
 				case "invalid":
 					return sdk.BaseClusterResources{}, errors.New("invalid tunnel")
 				}
-				name := "connect_tunnel_" + out.GetName()
+				name := "tunnel_" + out.GetName()
 				return sdk.BaseClusterResources{
 					Listeners: []*envoylistenerv3.Listener{{Name: name}},
 					Secrets: []*envoytlsv3.Secret{{
@@ -308,7 +308,7 @@ func TestBackendListenerLifecycle(t *testing.T) {
 	clusters := NewPerClientEnvoyClusters(ctx, krtopts, tunnelLifecycleTranslator(), finalBackends, uccs)
 
 	name := clustersTestBackend("dest").ClusterName()
-	listenerName := "connect_tunnel_" + name
+	listenerName := "tunnel_" + name
 	type state struct {
 		published bool
 		errored   bool

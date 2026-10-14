@@ -33,7 +33,7 @@ import (
 )
 
 // connectTunnelPrefix starts the names of a tunnel's listener, socket, and secrets.
-const connectTunnelPrefix = "connect_tunnel_"
+const connectTunnelPrefix = "tunnel_"
 
 // newTunnelHook generates CONNECT listeners, resolving proxies after policy
 // attachment to avoid a KRT dependency cycle.

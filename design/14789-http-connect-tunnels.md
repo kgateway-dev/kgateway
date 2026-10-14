@@ -131,10 +131,10 @@ BackendConfigPolicy's hook:
    keepalive, socket options or source address, upstream PROXY protocol, and
    active health checks.
 4. Rewrites the destination cluster to `STATIC` with one pipe endpoint,
-   `@connect_tunnel_<hash>`, whose `hostname` is the destination host, for
+   `@tunnel_<hash>`, whose `hostname` is the destination host, for
    `autoHostRewrite`. The hash is FNV-64a of the cluster name, which keeps the
    socket path within its 108-byte limit.
-5. Returns a listener on that socket, named `connect_tunnel_<cluster name>` so
+5. Returns a listener on that socket, named `tunnel_<cluster name>` so
    its stats and secrets identify the backend, whose TCP proxy has a
    `tunneling_config` with the destination `host:port` and points at the proxy
    cluster. Each CONNECT header value is returned as an SDS generic secret, which
@@ -157,36 +157,36 @@ load_assignment:
   - lb_endpoints:
     - endpoint:
         hostname: api.example.com
-        address: {pipe: {path: "@connect_tunnel_4f73a2c1d09e8b65"}}
+        address: {pipe: {path: "@tunnel_4f73a2c1d09e8b65"}}
 ---
 # Generated listener
-name: connect_tunnel_backend_default_api_0
-stat_prefix: connect_tunnel_backend_default_api_0
-address: {pipe: {path: "@connect_tunnel_4f73a2c1d09e8b65"}}
+name: tunnel_backend_default_api_0
+stat_prefix: tunnel_backend_default_api_0
+address: {pipe: {path: "@tunnel_4f73a2c1d09e8b65"}}
 filter_chains:
 - filters:
   - name: envoy.filters.network.tcp_proxy
     typed_config:
       "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-      stat_prefix: connect_tunnel_backend_default_api_0
+      stat_prefix: tunnel_backend_default_api_0
       cluster: kube_default_egress-proxy_3128
       tunneling_config:
         hostname: api.example.com:443
         headers_to_add:
         - header:
             key: Proxy-Authorization
-            value: "%SECRET(connect_tunnel_backend_default_api_0/9c1e5b7a20d4f386)%"
+            value: "%SECRET(tunnel_backend_default_api_0/9c1e5b7a20d4f386)%"
         formatters:
         - name: envoy.formatter.generic_secret
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.formatter.generic_secret.v3.GenericSecret
             secret_configs:
-              connect_tunnel_backend_default_api_0/9c1e5b7a20d4f386:
-                name: connect_tunnel_backend_default_api_0/9c1e5b7a20d4f386
+              tunnel_backend_default_api_0/9c1e5b7a20d4f386:
+                name: tunnel_backend_default_api_0/9c1e5b7a20d4f386
                 sds_config: {ads: {}, resource_api_version: V3}
 ---
 # Generated secret
-name: connect_tunnel_backend_default_api_0/9c1e5b7a20d4f386
+name: tunnel_backend_default_api_0/9c1e5b7a20d4f386
 generic_secret:
   secret: {inline_string: "<header value>"}
 ```
