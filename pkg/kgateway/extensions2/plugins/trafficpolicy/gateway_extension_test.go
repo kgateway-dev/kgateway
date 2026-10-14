@@ -8,9 +8,19 @@ import (
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
+	k8splugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/kubernetes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 func TestBuildStringListMatcher(t *testing.T) {
@@ -164,4 +174,87 @@ func TestBuildRateLimitFilterRuntimeKeysAreScopedByProviderNotDomain(t *testing.
 
 	assert.NotEqual(t, filterA.FilterEnforced.RuntimeKey, filterB.FilterEnforced.RuntimeKey,
 		"same-domain providers must still get distinct runtime keys so one provider's override can't clobber another's")
+}
+
+// TestGatewayExtensionExtAuthEmitsFilterStateStats is the regression test for
+// https://github.com/kgateway-dev/kgateway/issues/14790. Envoy only populates
+// ExtAuthzLoggingInfo (e.g. latency_us for access logs) when emit_filter_state_stats
+// is set, so gatewayExtensionBuilder must set it on both the gRPC and HTTP paths.
+// It drives the real KRT collection, failing if the flag is dropped from either branch,
+// and pins the filter name that doubles as the %FILTER_STATE() key.
+func TestGatewayExtensionExtAuthEmitsFilterStateStats(t *testing.T) {
+	ctx := t.Context()
+
+	backendRef := gwv1.BackendRef{
+		BackendObjectReference: gwv1.BackendObjectReference{
+			Kind: new(gwv1.Kind("Service")),
+			Name: "ext-authz",
+			Port: new(gwv1.PortNumber(9000)),
+		},
+	}
+	grpcExt := &kgateway.GatewayExtension{
+		ObjectMeta: metav1.ObjectMeta{Name: "grpc-extauth", Namespace: "default"},
+		Spec: kgateway.GatewayExtensionSpec{
+			Type: new(kgateway.GatewayExtensionTypeExtAuth),
+			ExtAuth: &kgateway.ExtAuthProvider{
+				GrpcService:   &kgateway.ExtGrpcService{BackendRef: backendRef},
+				StatusOnError: 403,
+			},
+		},
+	}
+	httpExt := &kgateway.GatewayExtension{
+		ObjectMeta: metav1.ObjectMeta{Name: "http-extauth", Namespace: "default"},
+		Spec: kgateway.GatewayExtensionSpec{
+			Type: new(kgateway.GatewayExtensionTypeExtAuth),
+			ExtAuth: &kgateway.ExtAuthProvider{
+				HttpService:   &kgateway.ExtHttpService{BackendRef: backendRef},
+				StatusOnError: 403,
+			},
+		},
+	}
+
+	fakeClient := apifake.NewClient(t, grpcExt, httpExt,
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{Name: "ext-authz", Namespace: "default"},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{{Port: 9000, TargetPort: intstr.FromInt32(9000)}},
+			},
+		},
+	)
+
+	settings := apisettings.Settings{}
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+	commoncol, err := collections.NewCommonCollections(
+		ctx, krtopts, fakeClient, wellknown.DefaultGatewayControllerName, settings,
+	)
+	require.NoError(t, err)
+	// The kubernetes plugin contributes Service-backed Backends, which the
+	// extauth backendRefs above resolve against.
+	commoncol.InitPlugins(ctx, k8splugin.NewPlugin(ctx, commoncol), settings)
+
+	// The OIDC discoverer is unused on the extauth path; it is never started.
+	discoverer := newOIDCProviderConfigDiscoverer(func() []string { return nil })
+	extensions := krt.NewCollection(commoncol.GatewayExtensions, gatewayExtensionBuilder(ctx, commoncol, discoverer))
+
+	fakeClient.RunAndWait(ctx.Done())
+	require.Eventually(t, func() bool {
+		return commoncol.HasSynced() && commoncol.BackendIndex.HasSynced() && extensions.HasSynced()
+	}, 10*time.Second, 50*time.Millisecond, "collections should sync")
+
+	for _, name := range []string{"grpc-extauth", "http-extauth"} {
+		key := krt.Named{Name: name, Namespace: "default"}.ResourceName()
+		var got *TrafficPolicyGatewayExtensionIR
+		// EventuallyWithT reports the last translation error rather than only a timeout,
+		// so a consistent failure shows its cause.
+		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			got = extensions.GetKey(key)
+			require.NotNil(c, got, "extension %q should be translated", key)
+			require.NoError(c, got.Err, "extension %q should translate without error", key)
+		}, 10*time.Second, 50*time.Millisecond, "extension %q should translate without error", key)
+		require.NotNil(t, got.ExtAuth, "extension %q should produce an ExtAuthz filter", key)
+		require.True(t, got.ExtAuth.GetEmitFilterStateStats(),
+			"extension %q must set emit_filter_state_stats so ext-auth latency can be access-logged", key)
+		require.Equal(t, "ext_auth/"+key, extAuthFilterName(providerName(got)),
+			"filter name pins the %FILTER_STATE() key for extension %q", key)
+	}
 }
