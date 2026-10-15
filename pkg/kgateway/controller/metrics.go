@@ -41,11 +41,9 @@ var (
 )
 
 func init() {
-	// Only the gateway controller's series name a Gateway; gatewayclass series name a
-	// cluster-scoped GatewayClass.
-	gatewayController := metrics.Label{Name: controllerNameLabel, Value: "gateway"}
-	metrics.RegisterGatewayScoped(reconciliationsTotal, namespaceLabel, nameLabel, gatewayController)
-	metrics.RegisterGatewayScoped(reconcileDuration, namespaceLabel, nameLabel, gatewayController)
+	// GatewayClass series have no namespace, so the sweep keeps them.
+	metrics.RegisterGatewayScoped(reconciliationsTotal, namespaceLabel, nameLabel)
+	metrics.RegisterGatewayScoped(reconcileDuration, namespaceLabel, nameLabel)
 }
 
 // collectReconciliationMetrics is called at the start of a controller reconciliation

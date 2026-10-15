@@ -64,21 +64,22 @@ var setupLog = ctrl.Log.WithName("setup")
 const metricsSweepInterval = time.Minute
 
 // newMetricsSweeper returns a sweeper that checks series against the namespaces and
-// Gateways in the informer cache, and whether those caches have synced.
+// Gateways in the informer cache.
 func newMetricsSweeper(
 	namespaces krt.Collection[krtcollections.NamespaceMetadata],
 	gateways krt.Collection[*gwv1.Gateway],
-) (pkgmetrics.Sweeper, func() bool) {
+) pkgmetrics.Sweeper {
 	return pkgmetrics.Sweeper{
-			NamespaceExists: func(namespace string) bool {
-				return namespaces.GetKey(namespace) != nil
-			},
-			GatewayExists: func(namespace, name string) bool {
-				return gateways.GetKey(namespace+"/"+name) != nil
-			},
-		}, func() bool {
+		NamespaceExists: func(namespace string) bool {
+			return namespaces.GetKey(namespace) != nil
+		},
+		GatewayExists: func(namespace, name string) bool {
+			return gateways.GetKey(namespace+"/"+name) != nil
+		},
+		HasSynced: func() bool {
 			return namespaces.HasSynced() && gateways.HasSynced()
-		}
+		},
+	}
 }
 
 type StartConfig struct {
@@ -166,8 +167,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	metrics.StartResourceSyncMetricsProcessing(ctx)
 
 	// Remove the metric series of Gateways and namespaces that no longer exist.
-	sweeper, sweeperSynced := newMetricsSweeper(cfg.CommonCollections.Namespaces, cfg.CommonCollections.RawGateways)
-	go sweeper.Run(ctx, metricsSweepInterval, sweeperSynced)
+	go newMetricsSweeper(cfg.CommonCollections.Namespaces, cfg.CommonCollections.RawGateways).Run(ctx, metricsSweepInterval)
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")

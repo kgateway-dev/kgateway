@@ -8,19 +8,20 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// PartialDeleter is a metric whose series can be removed by partial label match.
+// SeriesDeleter is a metric whose series can be removed by their full label set.
 // Counter, Histogram, and Gauge all satisfy it.
-type PartialDeleter interface {
+type SeriesDeleter interface {
 	Metric
-	DeletePartialMatch(...Label) int
+	Delete(...Label) bool
 }
 
 // scopedMetric is a metric whose series each belong to one Kubernetes object, identified
 // by its namespace label and, for objects other than namespaces, its name label.
 type scopedMetric struct {
-	m              PartialDeleter
+	m              SeriesDeleter
 	namespaceLabel string
 	// nameLabel is empty for a metric scoped to a namespace only.
 	nameLabel string
@@ -38,7 +39,7 @@ var (
 // namespaceLabel and nameLabel, so a sweep removes them once the Gateway no longer
 // exists. If match is set, only series carrying those label values are swept.
 // It panics if m lacks any of the labels, which is a programming error caught at init.
-func RegisterGatewayScoped(m PartialDeleter, namespaceLabel, nameLabel string, match ...Label) {
+func RegisterGatewayScoped(m SeriesDeleter, namespaceLabel, nameLabel string, match ...Label) {
 	register(scopedMetric{m: m, namespaceLabel: namespaceLabel, nameLabel: nameLabel, match: match})
 }
 
@@ -47,7 +48,7 @@ func RegisterGatewayScoped(m PartialDeleter, namespaceLabel, nameLabel string, m
 // Kubernetes removes a Namespace only after everything in it is gone, so this suits any
 // metric whose label names the namespace of the object it describes.
 // It panics if m lacks namespaceLabel.
-func RegisterNamespaceScoped(m PartialDeleter, namespaceLabel string) {
+func RegisterNamespaceScoped(m SeriesDeleter, namespaceLabel string) {
 	register(scopedMetric{m: m, namespaceLabel: namespaceLabel})
 }
 
@@ -84,24 +85,19 @@ type Sweeper struct {
 	NamespaceExists func(namespace string) bool
 	// GatewayExists reports whether the Gateway exists.
 	GatewayExists func(namespace, name string) bool
+	// HasSynced reports whether the caches behind NamespaceExists and GatewayExists have
+	// synced. Run skips passes until then, since every series would look stale against
+	// caches that are still empty.
+	HasSynced func() bool
 }
 
-// Run sweeps every interval until ctx is done. It skips passes until hasSynced returns
-// true, since every series would look stale against caches that are still empty.
-func (s Sweeper) Run(ctx context.Context, interval time.Duration, hasSynced func() bool) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if Active() && hasSynced() {
-				s.Sweep()
-			}
+// Run sweeps every interval until ctx is done.
+func (s Sweeper) Run(ctx context.Context, interval time.Duration) {
+	wait.UntilWithContext(ctx, func(context.Context) {
+		if Active() && s.HasSynced() {
+			s.Sweep()
 		}
-	}
+	}, interval)
 }
 
 // Sweep removes the series of every registered metric whose object no longer exists,
@@ -112,18 +108,52 @@ func (s Sweeper) Sweep() int {
 
 	deleted := 0
 	for _, sm := range scoped {
-		for _, key := range seriesKeys(sm) {
-			if s.exists(sm, key) {
-				continue
+		for _, labels := range s.staleSeries(sm) {
+			if sm.m.Delete(labels...) {
+				deleted++
 			}
-			labels := append([]Label{{Name: sm.namespaceLabel, Value: key.namespace}}, sm.match...)
-			if sm.nameLabel != "" {
-				labels = append(labels, Label{Name: sm.nameLabel, Value: key.name})
-			}
-			deleted += sm.m.DeletePartialMatch(labels...)
 		}
 	}
 	return deleted
+}
+
+// staleSeries returns the label sets of sm's series whose object no longer exists.
+func (s Sweeper) staleSeries(sm scopedMetric) [][]Label {
+	ch := make(chan prometheus.Metric, 1024)
+	go func() {
+		GetPromCollector(sm.m).Collect(ch)
+		close(ch)
+	}()
+
+	exists := map[objectKey]bool{}
+	var stale [][]Label
+	for m := range ch {
+		var out dto.Metric
+		if err := m.Write(&out); err != nil {
+			continue
+		}
+		pairs := out.GetLabel()
+		if !matches(pairs, sm.match) {
+			continue
+		}
+		key := objectKey{
+			namespace: labelValue(pairs, sm.namespaceLabel),
+			name:      labelValue(pairs, sm.nameLabel),
+		}
+		live, ok := exists[key]
+		if !ok {
+			live = s.exists(sm, key)
+			exists[key] = live
+		}
+		if !live {
+			labels := make([]Label, 0, len(pairs))
+			for _, p := range pairs {
+				labels = append(labels, Label{Name: p.GetName(), Value: p.GetValue()})
+			}
+			stale = append(stale, labels)
+		}
+	}
+	return stale
 }
 
 func (s Sweeper) exists(sm scopedMetric, key objectKey) bool {
@@ -142,36 +172,6 @@ type objectKey struct {
 	name      string
 }
 
-// seriesKeys returns the distinct objects that sm currently exports series for.
-func seriesKeys(sm scopedMetric) []objectKey {
-	ch := make(chan prometheus.Metric)
-	go func() {
-		GetPromCollector(sm.m).Collect(ch)
-		close(ch)
-	}()
-
-	seen := map[objectKey]struct{}{}
-	var keys []objectKey
-	for m := range ch {
-		var out dto.Metric
-		if err := m.Write(&out); err != nil {
-			continue
-		}
-		if !matches(out.GetLabel(), sm.match) {
-			continue
-		}
-		key := objectKey{
-			namespace: labelValue(out.GetLabel(), sm.namespaceLabel),
-			name:      labelValue(out.GetLabel(), sm.nameLabel),
-		}
-		if _, ok := seen[key]; !ok {
-			seen[key] = struct{}{}
-			keys = append(keys, key)
-		}
-	}
-	return keys
-}
-
 func matches(pairs []*dto.LabelPair, match []Label) bool {
 	for _, l := range match {
 		if labelValue(pairs, l.Name) != l.Value {
@@ -182,9 +182,6 @@ func matches(pairs []*dto.LabelPair, match []Label) bool {
 }
 
 func labelValue(pairs []*dto.LabelPair, name string) string {
-	if name == "" {
-		return ""
-	}
 	for _, p := range pairs {
 		if p.GetName() == name {
 			return p.GetValue()

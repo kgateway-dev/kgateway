@@ -80,6 +80,14 @@ type resourceMetricLabels struct {
 	Resource  string
 }
 
+func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: parentLabel, Value: r.Parent},
+		{Name: namespaceLabel, Value: r.Namespace},
+		{Name: resourceLabel, Value: r.Resource},
+	}
+}
+
 // managedCounts is the source of truth for resourcesManaged, which is always written with
 // Set: the metrics sweeper may delete a namespace's series while delete events for its
 // resources are still queued, and a relative update would then corrupt the series of a
@@ -98,39 +106,11 @@ func addResourcesManaged(labels resourceMetricLabels, delta int) {
 	count := managedCounts.counts[labels] + delta
 	if count == 0 {
 		delete(managedCounts.counts, labels)
-		resourcesManaged.DeletePartialMatch(labels.toMetricsLabels()...)
+		resourcesManaged.Delete(labels.toMetricsLabels()...)
 		return
 	}
 	managedCounts.counts[labels] = count
 	resourcesManaged.Set(float64(count), labels.toMetricsLabels()...)
-}
-
-// dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. Nothing ends it
-// otherwise: pending syncs are keyed by Gateway name, so the next sync of a Gateway with
-// the same name in another namespace would end it and record its series again.
-func dropResourceXDSSync(details ResourceSyncDetails) {
-	startTimes.Lock()
-	defer startTimes.Unlock()
-
-	byNamespace := startTimes.times[details.Gateway][snapshotResourceType]
-	delete(byNamespace[details.Namespace], details.ResourceName)
-	if len(byNamespace[details.Namespace]) == 0 {
-		delete(byNamespace, details.Namespace)
-	}
-	if len(byNamespace) == 0 {
-		delete(startTimes.times[details.Gateway], snapshotResourceType)
-	}
-	if len(startTimes.times[details.Gateway]) == 0 {
-		delete(startTimes.times, details.Gateway)
-	}
-}
-
-func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
-	return []metrics.Label{
-		{Name: parentLabel, Value: r.Parent},
-		{Name: namespaceLabel, Value: r.Namespace},
-		{Name: resourceLabel, Value: r.Resource},
-	}
 }
 
 // ResourceSyncStartTime represents the start time of a resource sync.
@@ -233,6 +213,34 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.times[details.Gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
 }
 
+// dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. A Gateway whose
+// translation produced no snapshot has a sync that nothing ends, so it would otherwise be
+// held forever, and the first sync of a Gateway recreated with the same name would record
+// its age.
+func dropResourceXDSSync(details ResourceSyncDetails) {
+	startTimes.Lock()
+	defer startTimes.Unlock()
+
+	deleteStartTimeLocked(details.Gateway, snapshotResourceType, details.Namespace, details.ResourceName)
+}
+
+// deleteStartTimeLocked removes a pending sync and any map left empty by its removal.
+// The caller must hold startTimes.
+func deleteStartTimeLocked(gateway, resourceType, namespace, resourceName string) {
+	byType := startTimes.times[gateway]
+	byNamespace := byType[resourceType]
+	delete(byNamespace[namespace], resourceName)
+	if len(byNamespace[namespace]) == 0 {
+		delete(byNamespace, namespace)
+	}
+	if len(byNamespace) == 0 {
+		delete(byType, resourceType)
+	}
+	if len(byType) == 0 {
+		delete(startTimes.times, gateway)
+	}
+}
+
 // EndResourceXDSSync records the end time of an XDS snapshot sync.
 // Returns true if the sync was added to the channel, false if the channel is full.
 // If the channel is full, an error is logged to call attention to the issue.
@@ -274,58 +282,22 @@ func endResourceSync(syncInfo *syncStartInfo) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		return
-	}
-
-	if startTimes.times[syncInfo.details.Gateway] == nil {
-		return
-	}
-
+	// Pending syncs are keyed by Gateway name, so end only those of this Gateway's
+	// namespace, not those of a Gateway with the same name in another namespace.
 	rt := snapshotResourceType
-	resourceTypeStartTimes, exists := startTimes.times[syncInfo.details.Gateway][rt]
-	if !exists {
-		return
-	}
+	for resourceName, st := range startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace] {
+		xdsSnapshotSyncsTotal.Inc(
+			metrics.Label{Name: gatewayLabel, Value: st.Gateway},
+			metrics.Label{Name: namespaceLabel, Value: st.Namespace},
+		)
 
-	deleteResources := map[string]map[string]struct{}{}
+		xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
+			metrics.Label{Name: gatewayLabel, Value: st.Gateway},
+			metrics.Label{Name: namespaceLabel, Value: st.Namespace},
+		)
 
-	for _, namespaceStartTimes := range resourceTypeStartTimes {
-		for resourceName, st := range namespaceStartTimes {
-			xdsSnapshotSyncsTotal.Inc(
-				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-			)
-
-			xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-			)
-
-			if deleteResources[st.Namespace] == nil {
-				deleteResources[st.Namespace] = map[string]struct{}{}
-			}
-
-			deleteResources[st.Namespace][resourceName] = struct{}{}
-		}
-	}
-
-	for namespace, resources := range deleteResources {
-		for resourceName := range resources {
-			delete(startTimes.times[syncInfo.details.Gateway][rt][namespace], resourceName)
-
-			if len(startTimes.times[syncInfo.details.Gateway][rt][namespace]) == 0 {
-				delete(startTimes.times[syncInfo.details.Gateway][rt], namespace)
-			}
-
-			if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
-				delete(startTimes.times[syncInfo.details.Gateway], rt)
-			}
-
-			if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
-				delete(startTimes.times, syncInfo.details.Gateway)
-			}
-		}
+		// Deleting entries of a map while ranging over it is safe.
+		deleteStartTimeLocked(syncInfo.details.Gateway, rt, st.Namespace, resourceName)
 	}
 }
 

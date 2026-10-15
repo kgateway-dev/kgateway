@@ -407,32 +407,9 @@ func TestResourcesManagedDeletedAtZero(t *testing.T) {
 		[][]metrics.Label{managed("other", "HTTPRoute")})
 }
 
-// gatewaySeries returns the label sets of the named metric's series for gateway.
-func gatewaySeries(t *testing.T, name, gateway string) []map[string]string {
-	t.Helper()
-	families, err := metrics.Registry().Gather()
-	assert.NoError(t, err)
-	var out []map[string]string
-	for _, mf := range families {
-		if mf.GetName() != name {
-			continue
-		}
-		for _, m := range mf.GetMetric() {
-			labels := map[string]string{}
-			for _, l := range m.GetLabel() {
-				labels[l.GetName()] = l.GetValue()
-			}
-			if labels["gateway"] == gateway {
-				out = append(out, labels)
-			}
-		}
-	}
-	return out
-}
-
 func TestGatewayDeleteDropsPendingXDSSync(t *testing.T) {
 	setupTest()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	t.Cleanup(cancel)
 	StartResourceSyncMetricsProcessing(ctx)
 
@@ -445,15 +422,9 @@ func TestGatewayDeleteDropsPendingXDSSync(t *testing.T) {
 
 	// The next sync of the same-name Gateway ends only its own pending sync.
 	EndResourceXDSSync(ResourceSyncDetails{Gateway: "gw", Namespace: "live", ResourceType: "Gateway", ResourceName: "gw"})
-	syncedNamespaces := func() map[string]bool {
-		out := map[string]bool{}
-		for _, labels := range gatewaySeries(t, "kgateway_xds_snapshot_syncs_total", "gw") {
-			out[labels["namespace"]] = true
-		}
-		return out
-	}
-	assert.Eventually(t, func() bool { return syncedNamespaces()["live"] }, time.Second, 10*time.Millisecond,
-		"the live Gateway's sync should be recorded")
-	assert.Equal(t, map[string]bool{"live": true}, syncedNamespaces(),
-		"the deleted Gateway's pending sync must not be ended by the live one's")
+	// Only the live Gateway's sync is recorded, not the deleted Gateway's pending one.
+	metricstest.MustGatherMetricsContext(ctx, t, "kgateway_xds_snapshot_sync_duration_seconds").
+		AssertMetricsLabels("kgateway_xds_snapshot_sync_duration_seconds", [][]metrics.Label{
+			{{Name: "gateway", Value: "gw"}, {Name: "namespace", Value: "live"}},
+		})
 }
