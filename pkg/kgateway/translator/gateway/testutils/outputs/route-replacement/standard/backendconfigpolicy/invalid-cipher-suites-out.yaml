@@ -28,8 +28,6 @@ Clusters:
           tlsMaximumProtocolVersion: TLSv1_3
           tlsMinimumProtocolVersion: TLSv1_2
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

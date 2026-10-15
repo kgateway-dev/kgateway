@@ -18,8 +18,6 @@ Clusters:
             hostname: example.com
           hostname: example.com
   name: backend_default_static-backend_0
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

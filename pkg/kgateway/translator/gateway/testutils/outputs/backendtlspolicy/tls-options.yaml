@@ -98,8 +98,6 @@ Clusters:
           verifyCertificateHash:
           - 7D86C6654C8229364ECFE4D4964C69410090AE09E9B4D0C9B2AD7854175AD51D
       sni: example2.com
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyapikeyauthv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
@@ -68,6 +69,7 @@ type translationResult struct {
 	Listeners     []*envoylistenerv3.Listener
 	ExtraClusters []*envoyclusterv3.Cluster
 	Clusters      []*envoyclusterv3.Cluster
+	Endpoints     []*envoyendpointv3.ClusterLoadAssignment
 	Secrets       []*envoytlsv3.Secret
 	Statuses      *Statuses
 }
@@ -111,6 +113,14 @@ func (tr *translationResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		result["Clusters"] = clusters
+	}
+
+	if len(tr.Endpoints) > 0 {
+		endpoints, err := marshalProtoMessages(tr.Endpoints, m)
+		if err != nil {
+			return nil, err
+		}
+		result["Endpoints"] = endpoints
 	}
 
 	if len(tr.Secrets) > 0 {
@@ -202,6 +212,21 @@ func (tr *translationResult) UnmarshalJSON(data []byte) error {
 		}
 	}
 
+	if endpointsData, ok := result["Endpoints"]; ok {
+		var endpoints []json.RawMessage
+		if err := json.Unmarshal(endpointsData, &endpoints); err != nil {
+			return err
+		}
+		tr.Endpoints = make([]*envoyendpointv3.ClusterLoadAssignment, len(endpoints))
+		for i, endpointData := range endpoints {
+			endpoint := &envoyendpointv3.ClusterLoadAssignment{}
+			if err := m.Unmarshal(endpointData, endpoint); err != nil {
+				return err
+			}
+			tr.Endpoints[i] = endpoint
+		}
+	}
+
 	if secretsData, ok := result["Secrets"]; ok {
 		var secrets []json.RawMessage
 		if err := json.Unmarshal(secretsData, &secrets); err != nil {
@@ -262,6 +287,11 @@ type ExtraConfig struct {
 	StatusSyncerOptionsFn ExtraStatusSyncerOptionsFn
 	Schemes               runtime.SchemeBuilder
 	GVKToStructuralSchema map[schema.GroupVersionKind]*apiserverschema.Structural
+	IncludeEndpoints      bool
+	// RegisterTestBackendPlugin registers the fake "test-backend-plugin" backend kind
+	// and one backend of that kind (default/example-svc:80). Set it only for fixtures
+	// that route to that kind; its cluster otherwise lands in every golden.
+	RegisterTestBackendPlugin bool
 }
 
 func NewScheme(extraSchemes runtime.SchemeBuilder) *runtime.Scheme {
@@ -313,11 +343,13 @@ func TestTranslationWithExtraPlugins(
 	// sort the output and print it
 	result.Proxy = sortProxy(result.Proxy)
 	result.Clusters = sortClusters(result.Clusters)
+	result.Endpoints = sortEndpoints(result.Endpoints)
 	output := &translationResult{
 		Routes:        result.Proxy.Routes,
 		Listeners:     result.Proxy.Listeners,
 		ExtraClusters: result.Proxy.ExtraClusters,
 		Clusters:      result.Clusters,
+		Endpoints:     result.Endpoints,
 		Secrets:       result.Proxy.Secrets,
 		Statuses:      buildStatusesFromReports(result.ReportsMap, result.Gateways, result.ListenerSets),
 	}
@@ -334,17 +366,18 @@ func TestTranslationWithExtraPlugins(
 		os.WriteFile(outputFile, outputYaml, 0o644) //nolint:gosec // G306: Golden test file can be readable
 	}
 
-	gotProxy, err := compareProxy(outputFile, result.Proxy)
-	r.Emptyf(gotProxy, "unexpected diff in proxy output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing proxy output")
+	expected := &translationResult{}
+	err = ReadYamlFile(outputFile, expected)
+	r.NoError(err, "error reading golden output file")
 
-	gotClusters, err := compareClusters(outputFile, result.Clusters)
-	r.Emptyf(gotClusters, "unexpected diff in clusters output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing clusters output")
-
-	gotStatuses, err := compareStatuses(outputFile, output.Statuses)
-	r.Emptyf(gotStatuses, "unexpected diff in statuses output; actual result: %s", outputYaml)
-	r.NoError(err, "error comparing statuses output")
+	r.Emptyf(compareProxy(expected, result.Proxy),
+		"unexpected diff in proxy output; actual result: %s", outputYaml)
+	r.Emptyf(compareClusters(expected.Clusters, result.Clusters),
+		"unexpected diff in clusters output; actual result: %s", outputYaml)
+	r.Emptyf(compareEndpoints(expected.Endpoints, result.Endpoints),
+		"unexpected diff in endpoints output; actual result: %s", outputYaml)
+	r.Emptyf(compareStatuses(expected.Statuses, output.Statuses),
+		"unexpected diff in statuses output; actual result: %s", outputYaml)
 }
 
 type TestCase struct {
@@ -358,12 +391,15 @@ type ActualTestResult struct {
 	ListenerSets  map[types.NamespacedName]*gwv1.ListenerSet
 	PolicyPlugins map[schema.GroupKind]pluginsdk.PolicyPlugin
 	Clusters      []*envoyclusterv3.Cluster
+	Endpoints     []*envoyendpointv3.ClusterLoadAssignment
 }
 
-func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
-	expectedProxy, err := ReadProxyFromFile(expectedFile)
-	if err != nil {
-		return "", err
+func compareProxy(expected *translationResult, actualProxy *irtranslator.TranslationResult) string {
+	expectedProxy := &irtranslator.TranslationResult{
+		Routes:        expected.Routes,
+		Listeners:     expected.Listeners,
+		ExtraClusters: expected.ExtraClusters,
+		Secrets:       expected.Secrets,
 	}
 
 	// Sort credentials by client name to ensure deterministic comparison
@@ -371,7 +407,7 @@ func compareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		return x.Client < y.Client
 	}
 
-	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs()), nil
+	return cmp.Diff(sortProxy(expectedProxy), sortProxy(actualProxy), protocmp.Transform(), protocmp.SortRepeated(credentialSortFn), cmpopts.EquateNaNs())
 }
 
 func sortProxy(proxy *irtranslator.TranslationResult) *irtranslator.TranslationResult {
@@ -468,14 +504,9 @@ func sortCredentialsInAny(config *anypb.Any) {
 	}
 }
 
-func compareClusters(expectedFile string, actualClusters []*envoyclusterv3.Cluster) (string, error) {
-	expectedOutput := &translationResult{}
-	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
-		return "", err
-	}
-
+func compareClusters(expectedClusters, actualClusters []*envoyclusterv3.Cluster) string {
 	// Sort both expected and actual clusters by name and compare
-	return cmp.Diff(sortClusters(expectedOutput.Clusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs()), nil
+	return cmp.Diff(sortClusters(expectedClusters), sortClusters(actualClusters), protocmp.Transform(), cmpopts.EquateNaNs())
 }
 
 func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster {
@@ -485,7 +516,25 @@ func sortClusters(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster 
 	slices.SortFunc(clusters, func(a, b *envoyclusterv3.Cluster) int {
 		return stdcmp.Compare(a.GetName(), b.GetName())
 	})
+	// Deliberately no sorting inside a load assignment. Locality order within a CLA
+	// is an invariant of the translation, not an artifact: endpoints.sortedLocalities
+	// exists so an inline CLA - part of the cluster's content hash, and therefore of
+	// the CDS version - does not get republished and re-warmed on every recompute.
+	// Re-sorting here would make that regression invisible to every golden.
 	return clusters
+}
+
+func compareEndpoints(expectedEndpoints, actualEndpoints []*envoyendpointv3.ClusterLoadAssignment) string {
+	return cmp.Diff(sortEndpoints(expectedEndpoints), sortEndpoints(actualEndpoints), protocmp.Transform(), cmpopts.EquateNaNs())
+}
+
+// sortEndpoints orders the CLAs themselves; the locality groups inside each one are
+// left exactly as translated, for the reason given in sortClusters.
+func sortEndpoints(endpoints []*envoyendpointv3.ClusterLoadAssignment) []*envoyendpointv3.ClusterLoadAssignment {
+	slices.SortFunc(endpoints, func(a, b *envoyendpointv3.ClusterLoadAssignment) int {
+		return stdcmp.Compare(a.GetClusterName(), b.GetClusterName())
+	})
+	return endpoints
 }
 
 func ReadYamlFile(file string, out any) error {
@@ -524,6 +573,94 @@ func GetHTTPRouteStatusError(
 		}
 	}
 	return nil
+}
+
+const (
+	// settlePolls is how many consecutive unchanged snapshots count as quiescence.
+	settlePolls = 3
+	// settleInterval is the gap between snapshots. Every scenario pays at least
+	// settlePolls * settleInterval, so keep it small: the point is to yield to
+	// queued krt work, not to wait out a fixed duration.
+	settleInterval = 5 * time.Millisecond
+	settleTimeout  = 10 * time.Second
+)
+
+// waitForEndpointsToSettle waits for the endpoint IR the goldens are built from to
+// quiesce, and returns the settled view. Endpoint IRs depend dynamically on pods and
+// EndpointSlices, and HasSynced on every collection does not imply the queue is empty:
+// a dependency-triggered recompute can still be in flight, so snapshotting right after
+// HasSynced races with it and yields nondeterministic endpoint output.
+//
+// krt offers no drain barrier to wait on instead, and this is not only a test problem:
+// proxy_syncer gates its first snapshot on the same HasSynced signals, which is why it
+// carries both the deferral in perclient.go and the first-connect delay in
+// pkg/krtcollections/uniqueclients.go to keep a proxy's first watch out of that window.
+// Polling here mirrors that gap rather than hiding one.
+//
+// The caller translates the returned snapshot itself rather than recomputing it, so the
+// endpoints in the golden are exactly the ones that were observed to be stable. See
+// finalEndpointsSnapshot for why the snapshot is the policy-attached view: settling on
+// the raw plugin-contributed collection instead would miss both a backend arriving in
+// BackendIndex and a policy attaching to one, neither of which is visible in a raw
+// endpoint row.
+func waitForEndpointsToSettle(
+	t *testing.T,
+	ctx context.Context,
+	snapshot func() map[string]*ir.EndpointsForBackend,
+) map[string]*ir.EndpointsForBackend {
+	t.Helper()
+	prev := snapshot()
+	stable := 0
+	timeout := time.After(settleTimeout)
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context ended while waiting for endpoints to settle: %v", ctx.Err())
+		case <-timeout:
+			t.Fatalf("endpoints collection did not settle within %s", settleTimeout)
+		case <-time.After(settleInterval):
+		}
+		cur := snapshot()
+		if endpointsEqual(prev, cur) {
+			stable++
+			if stable >= settlePolls {
+				return cur
+			}
+		} else {
+			stable = 0
+		}
+		prev = cur
+	}
+}
+
+// finalEndpointsSnapshot returns the endpoint IR that the endpoint goldens are
+// translated from, keyed by backend resource name: every policy-carrying backend's raw
+// endpoints projected onto the policy-attached backend, exactly as proxy_syncer's
+// FinalBackendEndpoints collection does it.
+func finalEndpointsSnapshot(commoncol *collections.CommonCollections) map[string]*ir.EndpointsForBackend {
+	out := make(map[string]*ir.EndpointsForBackend)
+	for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
+		for _, backend := range col.List() {
+			raw := krt.FetchOne(krt.TestingDummyContext{}, commoncol.Endpoints, krt.FilterKey(backend.ResourceName()))
+			if ep := proxy_syncer.FinalBackendEndpoints(backend, raw); ep != nil {
+				out[backend.ResourceName()] = ep
+			}
+		}
+	}
+	return out
+}
+
+func endpointsEqual(a, b map[string]*ir.EndpointsForBackend) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for name, ea := range a {
+		eb, ok := b[name]
+		if !ok || !ea.Equals(*eb) {
+			return false
+		}
+	}
+	return true
 }
 
 func GetPolicyStatusError(
@@ -771,28 +908,33 @@ func (tc TestCase) Run(
 		statusSyncerOpts = extraConfig.StatusSyncerOptionsFn(ctx, commoncol)
 	}
 
-	// needed for the Plugin Backend test (backend-plugin/gateway.yaml)
-	gk := schema.GroupKind{
-		Group: "",
-		Kind:  "test-backend-plugin",
-	}
-	extensions.ContributesPolicies[gk] = pluginsdk.PolicyPlugin{
-		Name: "test-backend-plugin",
-	}
-	testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
-		Kind:      "test-backend-plugin",
-		Namespace: "default",
-		Name:      "example-svc",
-	}, 80, "", "")
-	extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
-		Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
-			testBackend,
-		}),
-		BackendInit: ir.BackendInit{
-			InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
-				return nil
+	// A fake backend kind for fixtures that route to a plugin-contributed backend
+	// (inputs/backends/basic.yaml). Opt-in: the backend it contributes shows up in
+	// BackendsWithPolicy() for every gateway, so registering it unconditionally would
+	// put a cluster that belongs to the harness into every golden in every suite.
+	if extraConfig.RegisterTestBackendPlugin {
+		gk := schema.GroupKind{
+			Group: "",
+			Kind:  "test-backend-plugin",
+		}
+		extensions.ContributesPolicies[gk] = pluginsdk.PolicyPlugin{
+			Name: "test-backend-plugin",
+		}
+		testBackend := ir.NewBackendObjectIR(ir.ObjectSource{
+			Kind:      "test-backend-plugin",
+			Namespace: "default",
+			Name:      "example-svc",
+		}, 80, "", "")
+		extensions.ContributesBackends[gk] = pluginsdk.BackendPlugin{
+			Backends: krt.NewStaticCollection(nil, []ir.BackendObjectIR{
+				testBackend,
+			}),
+			BackendInit: ir.BackendInit{
+				InitEnvoyBackend: func(ctx context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+					return nil
+				},
 			},
-		},
+		}
 	}
 
 	commoncol.InitPlugins(ctx, extensions, *settings)
@@ -811,6 +953,15 @@ func (tc TestCase) Run(
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
 	for i, plug := range extraPlugs {
 		kubeclient.WaitForCacheSync(fmt.Sprintf("extra-%d", i), ctx.Done(), plug.HasSynced)
+	}
+	// Settling has to come after every HasSynced above: commoncol.Endpoints is a join
+	// over the endpoint collections contributed by all plugins, extra ones included, so
+	// quiescence measured before a plugin syncs can be quiescence of a partial join.
+	var settledEndpoints map[string]*ir.EndpointsForBackend
+	if extraConfig.IncludeEndpoints {
+		settledEndpoints = waitForEndpointsToSettle(t, ctx, func() map[string]*ir.EndpointsForBackend {
+			return finalEndpointsSnapshot(commoncol)
+		})
 	}
 
 	results := make(map[types.NamespacedName]ActualTestResult)
@@ -909,7 +1060,19 @@ func (tc TestCase) Run(
 		ctx := context.Background()
 		t := translator.GetBackendTranslator()
 		var clusters []*envoyclusterv3.Cluster
+		var endpointAssignments []*envoyendpointv3.ClusterLoadAssignment
 		referencedClusters := extractRouteConfigurationClusterNames(xdsSnap.Routes)
+		// appendEndpoints translates ep for the cluster just appended. Preserve empty
+		// assignments: publishing them is required to clear stale endpoints from Envoy.
+		appendEndpoints := func(ep *ir.EndpointsForBackend) {
+			if ep == nil {
+				return
+			}
+			resolved := translator.ResolveEndpoints(krt.TestingDummyContext{}, ucc, *ep)
+			if cla := translator.BuildClusterLoadAssignment(ucc, resolved); cla != nil {
+				endpointAssignments = append(endpointAssignments, cla)
+			}
+		}
 		for _, col := range commoncol.BackendIndex.BackendsWithPolicy() {
 			for _, backend := range col.List() {
 				// Errored translations (including strict-mode validation failures) are
@@ -921,6 +1084,16 @@ func (tc TestCase) Run(
 				}
 				if cluster != nil {
 					clusters = append(clusters, cluster)
+					// Optionally translate EDS assignments so selected goldens cover endpoint
+					// derivation, for every backend kind that has endpoint IR - Services,
+					// ServiceEntries, InferencePools.
+					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS {
+						// settledEndpoints is the policy-attached endpoint IR (see
+						// finalEndpointsSnapshot), not the raw commoncol.Endpoints rows: those
+						// predate policy attachment, so the endpoint plugins would run against
+						// empty AttachedPolicies and all be no-ops here.
+						appendEndpoints(settledEndpoints[backend.ResourceName()])
+					}
 				}
 				// snapshotPerClient merges generated resources into LDS and SDS.
 				xdsSnap.Listeners = append(xdsSnap.Listeners, base.Listeners...)
@@ -939,8 +1112,20 @@ func (tc TestCase) Run(
 					if err != nil {
 						continue
 					}
-					if cluster != nil {
-						clusters = append(clusters, cluster)
+					if cluster == nil {
+						continue
+					}
+					clusters = append(clusters, cluster)
+					// The variant's EDS cluster needs its own CLA. Build it the way
+					// proxy_syncer's newGatewayBackendVariantEndpoints does - the base
+					// backend's endpoints under the clone's identity - then project it
+					// through FinalBackendEndpoints like every other backend.
+					if extraConfig.IncludeEndpoints && cluster.GetType() == envoyclusterv3.Cluster_EDS {
+						if base := settledEndpoints[backend.ResourceName()]; base != nil {
+							variant := ir.NewEndpointsForBackend(clone)
+							variant.ReuseEndpointsFrom(base)
+							appendEndpoints(proxy_syncer.FinalBackendEndpoints(&clone, variant))
+						}
 					}
 					xdsSnap.Listeners = append(xdsSnap.Listeners, base.Listeners...)
 					xdsSnap.Secrets = append(xdsSnap.Secrets, base.Secrets...)
@@ -949,6 +1134,7 @@ func (tc TestCase) Run(
 		}
 		r := results[gwNN]
 		r.Clusters = clusters
+		r.Endpoints = endpointAssignments
 		results[gwNN] = r
 	}
 
@@ -978,19 +1164,6 @@ func translateBackendForGolden(
 		return perClient, base, nil
 	}
 	return base.Cluster, base, nil
-}
-
-func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("reading proxy file: %w", err)
-	}
-	var proxy irtranslator.TranslationResult
-
-	if err := testutils.UnmarshalAnyYaml(data, &proxy); err != nil {
-		return nil, fmt.Errorf("parsing proxy from file: %w", err)
-	}
-	return &proxy, nil
 }
 
 func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteConfiguration) map[string]struct{} {

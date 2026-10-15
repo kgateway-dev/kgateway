@@ -23,8 +23,6 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: from-btp.example.com
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

@@ -19,8 +19,6 @@ Clusters:
         maxStreamDuration: 30s
       explicitHttpConfig:
         httpProtocolOptions: {}
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

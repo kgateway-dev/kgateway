@@ -17,8 +17,6 @@ Clusters:
       resourceApiVersion: V3
   name: istio-se_infra_se-headless_se-headless.example.com_9000
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:

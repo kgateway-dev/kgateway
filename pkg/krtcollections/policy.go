@@ -1678,6 +1678,9 @@ func weight(w *int32) uint32 {
 }
 
 func ToAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts) ir.AttachedPolicies {
+	if len(policies) == 0 {
+		return ir.AttachedPolicies{}
+	}
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
