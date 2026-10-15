@@ -12,31 +12,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
-
-// reconciledGateways returns the namespace/name of every Gateway with a reconcile series.
-func reconciledGateways(t *testing.T) []string {
-	t.Helper()
-	families, err := metrics.Registry().Gather()
-	require.NoError(t, err)
-	var out []string
-	for _, mf := range families {
-		if mf.GetName() != "kgateway_controller_reconciliations_total" {
-			continue
-		}
-		for _, m := range mf.GetMetric() {
-			labels := map[string]string{}
-			for _, l := range m.GetLabel() {
-				labels[l.GetName()] = l.GetValue()
-			}
-			if labels[controllerNameLabel] == "gateway" {
-				out = append(out, labels[namespaceLabel]+"/"+labels[nameLabel])
-			}
-		}
-	}
-	return out
-}
 
 func TestMetricsSweeperUsesInformerCaches(t *testing.T) {
 	ResetMetrics()
@@ -48,14 +26,20 @@ func TestMetricsSweeperUsesInformerCaches(t *testing.T) {
 		[]krtcollections.NamespaceMetadata{{Name: "ns"}}, krtopts.ToOptions("Namespaces")...)
 	gateways := krt.NewStaticCollection[*gwv1.Gateway](nil,
 		[]*gwv1.Gateway{{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "live"}}}, krtopts.ToOptions("Gateways")...)
-	sweeper, synced := newMetricsSweeper(namespaces, gateways)
-	require.True(t, synced(), "the sweeper should run once both caches have synced")
+	sweeper := newMetricsSweeper(namespaces, gateways)
+	require.True(t, sweeper.HasSynced(), "the sweeper should run once both caches have synced")
 
 	for _, name := range []string{"live", "deleted"} {
 		collectReconciliationMetrics("gateway", types.NamespacedName{Namespace: "ns", Name: name})(nil)
 	}
+	collectReconciliationMetrics("gatewayclass", types.NamespacedName{Name: "class"})(nil)
 	sweeper.Sweep()
 
-	require.Equal(t, []string{"ns/live"}, reconciledGateways(t),
-		"the sweep should keep the series of a Gateway in the cache and remove the others")
+	// The sweep keeps the series of a Gateway in the cache and of the cluster-scoped
+	// GatewayClass, and removes the others. ResetMetrics leaves a series with empty labels.
+	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_controller_reconciliations_total", [][]metrics.Label{
+		{{Name: controllerNameLabel, Value: ""}, {Name: nameLabel, Value: ""}, {Name: namespaceLabel, Value: ""}, {Name: resultLabel, Value: ""}},
+		{{Name: controllerNameLabel, Value: "gateway"}, {Name: nameLabel, Value: "live"}, {Name: namespaceLabel, Value: "ns"}, {Name: resultLabel, Value: "success"}},
+		{{Name: controllerNameLabel, Value: "gatewayclass"}, {Name: nameLabel, Value: "class"}, {Name: namespaceLabel, Value: ""}, {Name: resultLabel, Value: "success"}},
+	})
 }

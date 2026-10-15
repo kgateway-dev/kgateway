@@ -47,6 +47,9 @@ type Counter interface {
 	Metric
 	Inc(...Label)
 	Add(float64, ...Label)
+	// Delete deletes the series with exactly the provided labels, reporting whether
+	// it existed.
+	Delete(...Label) bool
 	// DeletePartialMatch deletes all series whose labels contain all of the
 	// provided label name-value pairs, returning the number of series removed.
 	DeletePartialMatch(...Label) int
@@ -126,6 +129,12 @@ func (c *prometheusCounter) validateLabels(labels []Label) []string {
 	return validateLabels(c, labels)
 }
 
+// Delete deletes the series with exactly the provided labels, reporting whether it
+// existed.
+func (c *prometheusCounter) Delete(labels ...Label) bool {
+	return c.m.Delete(toPrometheusLabels(labels))
+}
+
 // DeletePartialMatch deletes all series whose labels contain all of the provided
 // label name-value pairs.
 func (c *prometheusCounter) DeletePartialMatch(labels ...Label) int {
@@ -156,6 +165,9 @@ func (c *prometheusCounter) Reset() {
 type Histogram interface {
 	Metric
 	Observe(float64, ...Label)
+	// Delete deletes the series with exactly the provided labels, reporting whether
+	// it existed.
+	Delete(...Label) bool
 	// DeletePartialMatch deletes all series whose labels contain all of the
 	// provided label name-value pairs, returning the number of series removed.
 	DeletePartialMatch(...Label) int
@@ -206,6 +218,12 @@ func (h *prometheusHistogram) validateLabels(labels []Label) []string {
 	return validateLabels(h, labels)
 }
 
+// Delete deletes the series with exactly the provided labels, reporting whether it
+// existed.
+func (h *prometheusHistogram) Delete(labels ...Label) bool {
+	return h.m.Delete(toPrometheusLabels(labels))
+}
+
 // DeletePartialMatch deletes all series whose labels contain all of the provided
 // label name-value pairs.
 func (h *prometheusHistogram) DeletePartialMatch(labels ...Label) int {
@@ -228,6 +246,9 @@ type Gauge interface {
 	Set(float64, ...Label)
 	Add(float64, ...Label)
 	Sub(float64, ...Label)
+	// Delete deletes the series with exactly the provided labels, reporting whether
+	// it existed.
+	Delete(...Label) bool
 	// DeletePartialMatch deletes all series whose labels contain all of the
 	// provided label name-value pairs, returning the number of series removed.
 	DeletePartialMatch(...Label) int
@@ -272,6 +293,12 @@ func (c *prometheusGauge) Labels() []string {
 // validateLabels validates a slice of Label values for the gauge metric.
 func (g *prometheusGauge) validateLabels(labels []Label) []string {
 	return validateLabels(g, labels)
+}
+
+// Delete deletes the series with exactly the provided labels, reporting whether it
+// existed.
+func (g *prometheusGauge) Delete(labels ...Label) bool {
+	return g.m.Delete(toPrometheusLabels(labels))
 }
 
 // DeletePartialMatch deletes all series whose labels contain all of the provided
