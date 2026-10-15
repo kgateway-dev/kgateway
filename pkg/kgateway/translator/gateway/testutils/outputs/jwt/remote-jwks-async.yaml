@@ -19,8 +19,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_remote-jwks_8080
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -63,6 +61,7 @@ Listeners:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
                             providers:
                               jwt-ext_default_async-provider:
+                                failedStatusInMetadata: failed_status
                                 issuer: https://dev.example.com
                                 payloadInMetadata: payload
                                 remoteJwks:
@@ -118,7 +117,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80

@@ -1,0 +1,18 @@
+---
+# Exposes the localstack gateway on port 443 so Envoy's assume-role credential
+# provider can reach it: Envoy hardcodes the STS endpoint to
+# https://sts.<region>.amazonaws.com:443, so the test remaps that hostname to
+# this service's cluster IP (via pod hostAliases) and localstack terminates the
+# TLS connection itself on its multiplexed HTTP/HTTPS gateway port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: localstack-sts
+  namespace: localstack
+spec:
+  selector:
+    app.kubernetes.io/name: localstack
+  ports:
+    - name: https
+      port: 443
+      targetPort: 4566

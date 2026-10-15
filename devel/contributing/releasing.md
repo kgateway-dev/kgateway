@@ -129,12 +129,18 @@ Use the "Run workflow" drop-down in the right corner of the page to dispatch a r
 - Select the branch to release from
   - Minor release: Select the `main` branch.
   - Patch release: Select the release branch, e.g. `v2.3.x`, that will be patched.
-- Enter the version for the release to create, e.g. `v2.0.3`. This will trigger
-  the release process and result in a new GitHub release, [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3)
-  for example.
-- Click on the "validate release" option, which bootstraps an environment from the
-  generated artifacts and runs the conformance suite against that deployed environment.
-- The workflow automatically generates release notes and publishes them with the GitHub release. If you need to preview them locally, see [Generating Release Notes](#generating-release-notes) below.
+- Enter the version for the release to create, e.g. `v2.0.3`. Must be a `v`-prefixed semver with no
+  build metadata (a `+` suffix is rejected because the version doubles as an image/chart tag). This
+  will trigger the release process and result in a new GitHub release,
+  [v2.0.3](https://github.com/kgateway-dev/kgateway/releases/tag/v2.0.3) for example.
+- Optionally enable "Run load tests" to exercise the load suite against the staged artifacts. Its results do not gate the release.
+- Leave "Allow missing previous version" unchecked unless the release is deliberately skipping a version.
+
+The workflow builds and stages the images under a non-semver tag, runs the container-structure and
+Gateway API conformance checks against that staged copy, and only if they pass does it promote the
+images to the published tag and push the charts + create the GitHub release. A dispatch for a version
+that already exists (as a git tag or GitHub release) fails fast and refuses to republish, so a completed
+release can't be clobbered by a re-run — the re-run errors out instead.
 
 The workflow generates release notes automatically (see [Release Notes](#release-notes) below).
 Once the workflow completes, review the release notes on the GitHub release and edit the description
@@ -142,8 +148,9 @@ if anything was miscategorized.
 
 ## Release Notes
 
-The Release workflow runs `make release-notes` automatically and feeds the output to GoReleaser, so no
-manual step is required when cutting a release. Under the hood it invokes
+The Release workflow runs `make release-notes` automatically and the publish job wraps the output with
+the welcome header and installation/quickstart footer (from `hack/release-notes/`) before creating the
+GitHub release, so no manual step is required when cutting a release. Under the hood it invokes
 [`hack/generate-release-notes.sh`](../../hack/generate-release-notes.sh), which:
 
 - Finds all PR numbers from commit messages between the previous tag and the new release

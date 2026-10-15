@@ -8,7 +8,6 @@ import (
 	extensiondynamicmodulev3 "github.com/envoyproxy/go-control-plane/envoy/extensions/dynamic_modules/v3"
 	envoy_api_key_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/api_key_auth/v3"
 	envoy_basic_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/basic_auth/v3"
-	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	envoy_csrf_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	dynamicmodulesv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_modules/v3"
@@ -114,6 +113,7 @@ type trafficPolicySpecIr struct {
 	faultInjection   *faultInjectionIR
 	httpACL          *httpACLIR
 	statPrefix       *statPrefixIR
+	httpUpgrade      *httpUpgradeIR
 }
 
 func (d *TrafficPolicy) CreationTime() time.Time {
@@ -207,6 +207,9 @@ func (d *TrafficPolicy) Equals(in any) bool {
 	if !d.spec.statPrefix.Equals(d2.spec.statPrefix) {
 		return false
 	}
+	if !d.spec.httpUpgrade.Equals(d2.spec.httpUpgrade) {
+		return false
+	}
 	return true
 }
 
@@ -241,6 +244,7 @@ func (p *TrafficPolicy) Validate() error {
 	validators = append(validators, p.spec.httpACL.Validate)
 	validators = append(validators, p.spec.internalRedirect.Validate)
 	validators = append(validators, p.spec.statPrefix.Validate)
+	validators = append(validators, p.spec.httpUpgrade.Validate)
 	for _, validator := range validators {
 		if err := validator(); err != nil {
 			return err
@@ -272,7 +276,7 @@ type trafficPolicyPluginGwPass struct {
 	// (most-specific) policy owns the whole block and later ones skip. Route names are unique within a
 	// pass, so the name is a safe key.
 	requestMirrorConfigured map[string]struct{}
-	bufferInChain           map[string]*bufferv3.Buffer
+	bufferInChain           map[string]*bufferChainEntry
 	compressorInChain       map[string][]compressorEntry
 	decompressorInChain     map[string][]decompressorEntry
 	basicAuthInChain        map[string]*envoy_basic_auth_v3.BasicAuth
@@ -667,13 +671,15 @@ func (p *trafficPolicyPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.
 		stagedFilters = append(stagedFilters, filter)
 	}
 
-	// Register Buffer immediately before Rustformation so its per-route request
-	// limit is established before a body-parsing transformation buffers data.
-	if f := p.bufferInChain[fcc.FilterChainName]; f != nil {
+	// Register the chain's single Buffer filter. It defaults to sitting immediately before
+	// Rustformation so its per-route request limit is established before a body-parsing
+	// transformation buffers data, and `buffer.filterStage` moves it earlier for chains that need
+	// the limit to enforce ahead of another body-reading filter.
+	if entry := p.bufferInChain[fcc.FilterChainName]; entry != nil {
 		filter := filters.MustNewStagedFilter(
 			bufferFilterName,
-			f,
-			filters.RelativeToStage(filters.AcceptedStage, -2),
+			entry.buffer,
+			entry.filterStage(),
 		)
 		filter.Filter.Disabled = true
 		stagedFilters = append(stagedFilters, filter)
@@ -832,6 +838,8 @@ func (p *trafficPolicyPluginGwPass) handlePerRoutePolicies(
 
 	// Apply route-level tracing overrides
 	p.handleRouteTracing(spec, out)
+
+	applyHTTPUpgrade(spec.httpUpgrade, action)
 }
 
 func applyRetryPolicy(retry *retryIR, out *envoyroutev3.Route) {

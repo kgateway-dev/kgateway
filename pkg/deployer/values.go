@@ -82,6 +82,7 @@ type HelmGateway struct {
 	// envoy bootstrap values
 	DnsResolver                       *HelmDnsResolver `json:"dnsResolver,omitempty"`
 	EnableReadinessProbeProxyProtocol *bool            `json:"enableReadinessProbeProxyProtocol,omitempty"`
+	MaxDownstreamConnections          *int64           `json:"maxDownstreamConnections,omitempty"`
 
 	// xds values
 	Xds *HelmXds `json:"xds,omitempty"`

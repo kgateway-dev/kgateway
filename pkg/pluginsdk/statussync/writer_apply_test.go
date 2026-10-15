@@ -62,7 +62,7 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 		// The writer reads the collection that would have enqueued the route, never the
 		// client it writes through.
 		Current: CollectionSource(routes),
-		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+		Desired: func(Resource, *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{{
 				ParentRef:      gwv1.ParentReference{Name: "gw"},
 				ControllerName: ourController,
@@ -185,7 +185,7 @@ func TestApplyStatusReadsTheCollectionNotTheWriteClient(t *testing.T) {
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name:    "httpRoute",
 		Current: CollectionSource(routes),
-		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+		Desired: func(Resource, *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{{
 				ParentRef:      gwv1.ParentReference{Name: "gw"},
 				ControllerName: ourController,

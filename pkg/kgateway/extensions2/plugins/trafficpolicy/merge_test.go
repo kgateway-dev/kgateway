@@ -6,6 +6,7 @@ import (
 	"time"
 
 	envoymatchingv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	bufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	envoy_ext_authz_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -308,6 +309,117 @@ func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
 				"%s: parent IR must be unchanged after merging", prio)
 		}
 	})
+}
+
+func TestMergeHTTPUpgradeAndBufferConflictUsesHigherPriorityField(t *testing.T) {
+	p2Ref := &ir.AttachedPolicyRef{Name: "second-policy", Namespace: "default"}
+	httpUpgrade := &httpUpgradeIR{}
+	buffer := &bufferIR{perRoute: &bufferv3.BufferPerRoute{
+		Override: &bufferv3.BufferPerRoute_Buffer{Buffer: &bufferv3.Buffer{}},
+	}}
+
+	merge := func(p1, p2 *TrafficPolicy, strategy policy.MergeStrategy) {
+		MergeTrafficPolicies(p1, p2, p2Ref, nil, policy.MergeOptions{Strategy: strategy}, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+	}
+
+	t.Run("unrelated parent does not remove buffer", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{buffer: buffer}}
+		p2 := &TrafficPolicy{}
+
+		merge(p1, p2, policy.OverridableShallowMerge)
+
+		assert.Same(t, buffer, p1.spec.buffer)
+		assert.Nil(t, p1.spec.httpUpgrade)
+	})
+
+	t.Run("HTTP upgrade prevents lower-priority buffer inheritance", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{buffer: buffer}}
+
+		merge(p1, p2, policy.AugmentedShallowMerge)
+
+		assert.Same(t, httpUpgrade, p1.spec.httpUpgrade)
+		assert.Nil(t, p1.spec.buffer)
+	})
+
+	t.Run("buffer prevents lower-priority HTTP upgrade inheritance", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{buffer: buffer}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}}
+
+		merge(p1, p2, policy.AugmentedShallowMerge)
+
+		assert.Same(t, buffer, p1.spec.buffer)
+		assert.Nil(t, p1.spec.httpUpgrade)
+	})
+
+	t.Run("preferred parent buffer overrides child HTTP upgrade", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{buffer: buffer}}
+
+		merge(p1, p2, policy.OverridableShallowMerge)
+
+		assert.Same(t, buffer, p1.spec.buffer)
+		assert.Nil(t, p1.spec.httpUpgrade)
+	})
+
+	t.Run("preferred parent HTTP upgrade overrides child buffer", func(t *testing.T) {
+		p1 := &TrafficPolicy{spec: trafficPolicySpecIr{buffer: buffer}}
+		p2 := &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}}
+
+		merge(p1, p2, policy.OverridableShallowMerge)
+
+		assert.Same(t, httpUpgrade, p1.spec.httpUpgrade)
+		assert.Nil(t, p1.spec.buffer)
+	})
+}
+
+func TestMergeHTTPUpgradeAllowsDisabledBuffer(t *testing.T) {
+	p2Ref := &ir.AttachedPolicyRef{Name: "second-policy", Namespace: "default"}
+	httpUpgrade := &httpUpgradeIR{}
+	disabledBuffer := &bufferIR{perRoute: &bufferv3.BufferPerRoute{
+		Override: &bufferv3.BufferPerRoute_Disabled{Disabled: true},
+	}}
+
+	tests := []struct {
+		name     string
+		p1       *TrafficPolicy
+		p2       *TrafficPolicy
+		strategy policy.MergeStrategy
+	}{
+		{
+			name:     "augmented merge with existing disabled buffer",
+			p1:       &TrafficPolicy{spec: trafficPolicySpecIr{buffer: disabledBuffer}},
+			p2:       &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}},
+			strategy: policy.AugmentedShallowMerge,
+		},
+		{
+			name:     "augmented merge with existing HTTP upgrade",
+			p1:       &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}},
+			p2:       &TrafficPolicy{spec: trafficPolicySpecIr{buffer: disabledBuffer}},
+			strategy: policy.AugmentedShallowMerge,
+		},
+		{
+			name:     "overridable merge with existing disabled buffer",
+			p1:       &TrafficPolicy{spec: trafficPolicySpecIr{buffer: disabledBuffer}},
+			p2:       &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}},
+			strategy: policy.OverridableShallowMerge,
+		},
+		{
+			name:     "overridable merge with existing HTTP upgrade",
+			p1:       &TrafficPolicy{spec: trafficPolicySpecIr{httpUpgrade: httpUpgrade}},
+			p2:       &TrafficPolicy{spec: trafficPolicySpecIr{buffer: disabledBuffer}},
+			strategy: policy.OverridableShallowMerge,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			MergeTrafficPolicies(tt.p1, tt.p2, p2Ref, nil, policy.MergeOptions{Strategy: tt.strategy}, ir.MergeOrigins{}, TrafficPolicyMergeOpts{})
+
+			assert.Same(t, disabledBuffer, tt.p1.spec.buffer)
+			assert.Same(t, httpUpgrade, tt.p1.spec.httpUpgrade)
+		})
+	}
 }
 
 func TestMergeHttpACL(t *testing.T) {

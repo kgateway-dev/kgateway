@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_gwtest_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -33,7 +31,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080
@@ -58,7 +56,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https
-        statPrefix: http
+        statPrefix: https_8443_https
         useRemoteAddress: true
     name: https
   name: listener~8443
@@ -83,7 +81,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~9090
-        statPrefix: http
+        statPrefix: http_9090
         useRemoteAddress: true
     name: listener~9090
   name: listener~9090
@@ -108,7 +106,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: gwtest/test-listenerset/https-additional
-        statPrefix: http
+        statPrefix: https_9443_gwtest_test-listenerset_https-additional
         useRemoteAddress: true
     name: gwtest/test-listenerset/https-additional
   name: listener~9443

@@ -5,18 +5,22 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -27,13 +31,29 @@ import (
 	backendplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type translatorTestCase struct {
-	inputFiles []string
-	outputFile string
-	gwNN       types.NamespacedName
+	inputFiles  []string
+	outputFile  string
+	gwNN        types.NamespacedName
+	extraConfig translatortest.ExtraConfig
+}
+
+// pinVersion fixes the reported kgateway version for the duration of a test.
+// version.Version reaches translation output through the OTel access-log resource
+// attributes (see access_logging_converter.go), so without it a golden recorded from
+// a locally stamped build would not match one recorded in CI.
+//
+// It writes a package-level global, which is only safe because nothing in this package
+// calls t.Parallel().
+func pinVersion(t *testing.T) {
+	t.Helper()
+	prev := version.Version
+	version.Version = "v1.0.0-ci1"
+	t.Cleanup(func() { version.Version = prev })
 }
 
 func TestBasic(t *testing.T) {
@@ -42,11 +62,7 @@ func TestBasic(t *testing.T) {
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
-		prevVersion := version.Version
-		version.Version = "v1.0.0-ci1"
-		defer func() {
-			version.Version = prevVersion
-		}()
+		pinVersion(t)
 
 		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -61,7 +77,7 @@ func TestBasic(t *testing.T) {
 			inputFiles = append(inputFiles, filepath.Join(dir, "testutils/inputs/", input))
 		}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
+		translatortest.TestTranslationWithExtraPlugins(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.extraConfig, settingOpts...)
 	}
 
 	t.Run("gateway with no routes should not add empty filter chain", func(t *testing.T) {
@@ -112,6 +128,19 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/basic.yaml"},
 			outputFile: "frontendtlsconfig/basic.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// Same as basic.yaml, but the caCertificateRefs spell the core API group as
+	// "core" instead of "". The output must be identical to basic.yaml.
+	t.Run("gateway with FrontendTLSConfig and core group CA certificate refs", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/core-group.yaml"},
+			outputFile: "frontendtlsconfig/core-group.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -294,6 +323,19 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("httproute with backend ref to an undefined port reports correctly", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backends/backend-ref-port-not-found.yaml"},
+			outputFile: "backends/backend-ref-port-not-found.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.EnableIstioIntegration = true
 		})
 	})
 
@@ -607,6 +649,33 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+		})
+	})
+
+	t.Run("TrafficPolicy with local rate limiting shared across the gateway", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-share-across-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	// Envoy rejects local_cluster_rate_limit unless the bootstrap names a local cluster, so the
+	// strict validation bootstrap must set one like the proxy bootstrap does, or the targeted
+	// route rule is replaced with a 500.
+	t.Run("TrafficPolicy with local rate limiting shared across the gateway in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/local-rate-limit-share-across-gateway.yaml"},
+			outputFile: "traffic-policy/local-rate-limit-share-across-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
 		})
 	})
 
@@ -942,6 +1011,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"traffic-policy/buffer-route.yaml"},
 			outputFile: "traffic-policy/buffer-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with buffer filter stage", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/buffer-filter-stage.yaml"},
+			outputFile: "traffic-policy/buffer-filter-stage.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		})
+	})
+
+	t.Run("TrafficPolicy with HTTP upgrades attached to route", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/http-upgrade-route.yaml"},
+			outputFile: "traffic-policy/http-upgrade-route.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1288,6 +1379,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcproute referencing an HTTP-only backend kind reports InvalidKind", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/unsupported-backend-kind.yaml"},
+			outputFile: "tcp-routing/unsupported-backend-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tcproute referencing an unrestricted backend kind resolves", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/static-backend.yaml"},
+			outputFile: "tcp-routing/static-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with multiple backend services", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/multi-backend.yaml"},
@@ -1347,6 +1460,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/invalid-backend.yaml"},
 			outputFile: "tls-routing/invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute referencing an HTTP-only backend kind reports InvalidKind", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/unsupported-backend-kind.yaml"},
+			outputFile: "tls-routing/unsupported-backend-kind.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute referencing an unrestricted backend kind resolves", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/static-backend.yaml"},
+			outputFile: "tls-routing/static-backend.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1439,6 +1574,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+			// the fixture routes to a backend of the fake plugin-contributed kind
+			extraConfig: translatortest.ExtraConfig{RegisterTestBackendPlugin: true},
 		})
 	})
 
@@ -1522,6 +1659,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// The golden deliberately emits NO cluster for the invalid Backend, even
+	// though the route still names it. That is what makes the rest of the
+	// fixture work: route replacement already puts
+	// clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR on the route, and that
+	// only fires when the cluster is genuinely absent. Emitting an endpointless
+	// STATIC cluster instead — as translation did before backends were split
+	// into a shared base and per-client overlays — left the cluster present, so
+	// the declared 500 was dead config and a request got 503 (no healthy
+	// upstream) from an empty cluster. The name is still carried in the errored
+	// set, so publication treats it as failed-closed rather than as a missing
+	// reference to wait for.
 	t.Run("Priority groups backend with non-static member reports error", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/priority_groups_aws_error.yaml"},
@@ -1559,6 +1707,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendtlspolicy/tls.yaml"},
 			outputFile: "backendtlspolicy/tls.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy with TLS extension options", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/tls-options.yaml"},
+			outputFile: "backendtlspolicy/tls-options.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -1609,6 +1768,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendtlspolicy/tls-san.yaml"},
 			outputFile: "backendtlspolicy/tls-san.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend TLS Policy on unrouted targets", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendtlspolicy/unrouted.yaml"},
+			outputFile: "backendtlspolicy/unrouted.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2115,6 +2285,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with normalizePath false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/normalize-path-false.yaml"},
+			outputFile: "listener-policy-http/normalize-path-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with mergeSlashes false", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/merge-slashes-false.yaml"},
+			outputFile: "listener-policy-http/merge-slashes-false.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with defaultHostForHttp10", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/default-host-for-http10.yaml"},
@@ -2229,6 +2421,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/max-requests-per-connection-merge-conflict.yaml"},
 			outputFile: "listener-policy-http/max-requests-per-connection-merge-conflict.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with grpcStats statsForAllMethods and enableUpstreamStats", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/grpc-stats.yaml"},
+			outputFile: "listener-policy-http/grpc-stats.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with grpcStats methodAllowlist", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/grpc-stats-method-allowlist.yaml"},
+			outputFile: "listener-policy-http/grpc-stats-method-allowlist.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2821,6 +3035,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("listener set and gateway with allowedListeners selector unset", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-sets/allowed-listeners-selector-unset.yaml"},
+			outputFile: "listener-sets/allowed-listeners-selector-unset.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("listener set and gateway with an invalid allowedListeners selector", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-sets/allowed-listeners-selector-invalid.yaml"},
+			outputFile: "listener-sets/allowed-listeners-selector-invalid.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("listener set accepted with rejected individual listener", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-sets/accepted-ls-rejected-listener.yaml"},
@@ -3140,6 +3376,23 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// Runs the same inputs through a real Envoy in strict mode. A redirect target is validated
+	// by Envoy itself against RedirectAction.path_redirect's own constraint, so if that
+	// constraint is ever tightened upstream, the targets in this fixture start failing here
+	// instead of silently reaching users as a rejected RouteConfiguration.
+	t.Run("HTTP RequestRedirect filter in strict mode", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/request-redirect.yaml"},
+			outputFile: "http-routing/request-redirect.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "test",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ValidationMode = apisettings.ValidationStrict
+		})
+	})
+
 	t.Run("HTTP RequestRedirect filter multiple listeners listener-scoped port", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/request-redirect-multi-listener.yaml"},
@@ -3426,10 +3679,54 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("JWT Policy using remote JWKS with custom timeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/remote-jwks-timeout.yaml"},
+			outputFile: "jwt/remote-jwks-timeout.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with clock skew", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/clock-skew.yaml"},
+			outputFile: "jwt/clock-skew.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with cache", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/cache.yaml"},
+			outputFile: "jwt/cache.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("JWT Policy with validation mode AllowMissing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"jwt/gateway-validation-mode.yaml"},
 			outputFile: "jwt/gateway-validation-mode.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("JWT Policy with validation mode AllowMissingOrFailed", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"jwt/gateway-validation-mode-allow-missing-or-failed.yaml"},
+			outputFile: "jwt/gateway-validation-mode-allow-missing-or-failed.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3460,15 +3757,85 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+// setupStructuralSchemas returns the structural schemas for kgateway's CRDs plus the
+// Gateway API's, so fixtures get the same CRD defaulting, pruning and validation an API
+// server would apply. TestCase.Run defaults to kgateway's CRDs alone, which leaves
+// Gateway API defaults (HTTPCORSFilter.maxAge, for one) unapplied - fine for fixtures
+// written against this harness, wrong for the setup fixtures, whose goldens were
+// recorded through a real API server.
+func setupStructuralSchemas(t *testing.T) map[schema.GroupVersionKind]*apiserverschema.Structural {
+	t.Helper()
+
+	schemas, err := testutils.GetStructuralSchemasForAllCharts()
+	require.NoError(t, err, "failed to load kgateway CRD schemas")
+
+	gwAPIDir, err := testutils.GetGatewayAPICRDDir()
+	require.NoError(t, err, "failed to locate Gateway API CRDs")
+	gwAPISchemas, err := testutils.GetStructuralSchemas(gwAPIDir)
+	require.NoError(t, err, "failed to load Gateway API CRD schemas")
+
+	maps.Copy(schemas, gwAPISchemas)
+	return schemas
+}
+
+// TestSetupScenarios covers the fixtures migrated from the envtest-based scenario tests in
+// pkg/kgateway/setup. Each fixture YAML under testutils/inputs/setup/<group>/ defines a gateway
+// named http-gw-for-test in namespace gwtest; testutils/inputs/setup/common.yaml provides the
+// shared pods/nodes the fixtures rely on for endpoints (mirroring setup's testdata/setup_yaml).
+func TestSetupScenarios(t *testing.T) {
+	ctx := t.Context()
+	dir := fsutils.MustGetThisDir()
+
+	pinVersion(t)
+	structuralSchemas := setupStructuralSchemas(t)
+
+	groups := []struct {
+		name        string
+		settingOpts []translatortest.SettingsOpts
+	}{
+		{name: "standard"},
+		{name: "experimental", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		}}},
+		{name: "listenerbind/v4", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
+		}}},
+		{name: "listenerbind/v6", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = true
+		}}},
+		{name: "autodns", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
+		}}},
+	}
+
+	for _, g := range groups {
+		inputs, err := filepath.Glob(filepath.Join(dir, "testutils/inputs/setup", g.name, "*.yaml"))
+		require.NoError(t, err)
+		require.NotEmpty(t, inputs, "no input files found for group %s", g.name)
+		for _, input := range inputs {
+			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
+			require.NoError(t, err)
+			t.Run(strings.TrimSuffix(filepath.ToSlash(rel), ".yaml"), func(t *testing.T) {
+				translatortest.TestTranslationWithExtraPlugins(t, ctx, []string{
+					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
+					input,
+				}, filepath.Join(dir, "testutils/outputs", rel), types.NamespacedName{
+					Namespace: "gwtest",
+					Name:      "http-gw-for-test",
+				}, translatortest.ExtraConfig{
+					IncludeEndpoints:      true,
+					GVKToStructuralSchema: structuralSchemas,
+				}, g.settingOpts...)
+			})
+		}
+	}
+}
+
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
 	ctx := t.Context()
 
 	dir := fsutils.MustGetThisDir()
-	prevVersion := version.Version
-	version.Version = "v1.0.0-ci1"
-	defer func() {
-		version.Version = prevVersion
-	}()
+	pinVersion(t)
 
 	tc := translatortest.TestCase{
 		InputFiles: []string{
@@ -3479,7 +3846,7 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 		t,
 		ctx,
 		translatortest.NewScheme(runtime.SchemeBuilder{}),
-		translatortest.ExtraConfig{},
+		translatortest.ExtraConfig{IncludeEndpoints: true},
 		func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
 		},
@@ -3522,6 +3889,37 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 
 	assert.Equal(t, "client.example.com", requireGatewayClientCertificateCommonName(t, clusterOne))
 	assert.Equal(t, "client2.example.com", requireGatewayClientCertificateCommonName(t, clusterTwo))
+
+	// Each variant is an EDS cluster, so Envoy also needs a CLA under the
+	// variant's own name carrying the base Service's endpoints.
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultOne.Endpoints, expectedClusterOne))
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultTwo.Endpoints, expectedClusterTwo))
+	assert.Nil(t, findCLAByName(resultOne.Endpoints, expectedClusterTwo), "first gateway should not publish endpoints for second gateway variant")
+	assert.Nil(t, findCLAByName(resultTwo.Endpoints, expectedClusterOne), "second gateway should not publish endpoints for first gateway variant")
+}
+
+func findCLAByName(assignments []*envoyendpointv3.ClusterLoadAssignment, name string) *envoyendpointv3.ClusterLoadAssignment {
+	for _, cla := range assignments {
+		if cla.GetClusterName() == name {
+			return cla
+		}
+	}
+	return nil
+}
+
+func claAddressesFor(t *testing.T, assignments []*envoyendpointv3.ClusterLoadAssignment, name string) []string {
+	t.Helper()
+
+	cla := findCLAByName(assignments, name)
+	require.NotNil(t, cla, "expected a load assignment for cluster %s", name)
+	var addresses []string
+	for _, locality := range cla.GetEndpoints() {
+		for _, lbEndpoint := range locality.GetLbEndpoints() {
+			socket := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
+			addresses = append(addresses, fmt.Sprintf("%s:%d", socket.GetAddress(), socket.GetPortValue()))
+		}
+	}
+	return addresses
 }
 
 func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {
@@ -3859,6 +4257,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Child matches parent via parentRefs", func(t *testing.T) {
 		test(t, "basic_parentref_match.yaml")
+	})
+
+	t.Run("Child matches same-namespace parent via parentRefs without namespace", func(t *testing.T) {
+		test(t, "basic_parentref_match_same_namespace.yaml")
 	})
 
 	t.Run("Child doesn't match parent via parentRefs", func(t *testing.T) {

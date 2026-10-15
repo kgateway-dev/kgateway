@@ -97,7 +97,7 @@ func TestRegisterResourceByObjectGVKPreservesMixedSourceKinds(t *testing.T) {
 
 	sources := NewStatusCollections()
 	queue := &recordingQueue{}
-	RegisterResourceByObjectGVK(sources, fallback, col)
+	registerResourceByObjectGVK(sources, fallback, col)
 	sources.SetQueue(queue)
 
 	require.Equal(t, actual, queue.awaitResources(t, 1)[0].GroupVersionKind)

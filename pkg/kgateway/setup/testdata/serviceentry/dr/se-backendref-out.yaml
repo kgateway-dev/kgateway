@@ -33,6 +33,7 @@ endpoints:
             address: 255.0.0.1
             portValue: 80
     loadBalancingWeight: 1
+    locality: {}
     priority: 3
   - lbEndpoints:
     - endpoint:
@@ -103,7 +104,7 @@ listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080

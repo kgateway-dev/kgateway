@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"helm.sh/helm/v3/pkg/chart"
 	"istio.io/istio/pkg/kube/kclient"
@@ -354,10 +353,7 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			},
 		},
 	}
-	if i := gw.Spec.Infrastructure; i != nil {
-		gtw.GatewayAnnotations = translateInfraMeta(i.Annotations)
-		gtw.GatewayLabels = translateInfraMeta(i.Labels)
-	}
+	deployer.SetInfrastructureMetadataFromGateway(gw, gtw)
 	// construct the default values
 	vals := &deployer.HelmConfig{
 		Gateway: gtw,
@@ -375,99 +371,15 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 		return vals, nil
 	}
 
-	// The security contexts may need to be updated if privileged ports are used.
-	// This may affect both the PodSecurityContext and the SecurityContexts for the containers defined in gwParam
-	// Note: this call may populate the PodSecurityContext and SecurityContext fields in the gateway parameters if they are null,
-	// so this needs to happen before those kubeProxyConfig fields are extracted to local variables.
-	deployer.UpdateSecurityContexts(gwParam.Spec.Kube, vals.Gateway.Ports)
-
 	// extract all the custom values from the GatewayParameters
-	// (note: if we add new fields to GatewayParameters, they will
-	// need to be plumbed through here as well)
-
-	kubeProxyConfig := gwParam.Spec.Kube
-	deployConfig := kubeProxyConfig.GetDeployment()
-	podConfig := kubeProxyConfig.GetPodTemplate()
-	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
-	svcConfig := kubeProxyConfig.GetService()
-	svcAccountConfig := kubeProxyConfig.GetServiceAccount()
-	istioConfig := kubeProxyConfig.GetIstio()
-
-	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
-	statsConfig := kubeProxyConfig.GetStats()
-	istioContainerConfig := istioConfig.GetIstioProxyContainer()
-
-	gateway := vals.Gateway
-
-	// deployment values
-	if deployConfig.GetReplicas() != nil {
-		gateway.ReplicaCount = new(uint32(*deployConfig.GetReplicas())) // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	if err := deployer.ApplyKubernetesProxyConfigValues(vals.Gateway, gwParam.Spec.Kube, k.inputs.IstioAutoMtlsEnabled); err != nil {
+		return nil, err
 	}
-	gateway.Strategy = deployConfig.GetStrategy()
 
-	// service values
-	gateway.Service = deployer.GetServiceValues(svcConfig)
 	// Extract loadBalancerIP from Gateway.spec.addresses and set it on the service if service type is LoadBalancer
-	if err := deployer.SetLoadBalancerIPFromGateway(gw, gateway.Service); err != nil {
+	if err := deployer.SetLoadBalancerIPFromGateway(gw, vals.Gateway.Service); err != nil {
 		return nil, err
 	}
-	// serviceaccount values
-	gateway.ServiceAccount = deployer.GetServiceAccountValues(svcAccountConfig)
-	// pod template values
-	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
-	gateway.ExtraPodLabels = podConfig.GetExtraLabels()
-	gateway.ImagePullSecrets = podConfig.GetImagePullSecrets()
-	gateway.PodSecurityContext = podConfig.GetSecurityContext()
-	gateway.NodeSelector = podConfig.GetNodeSelector()
-	gateway.Affinity = podConfig.GetAffinity()
-	gateway.Tolerations = podConfig.GetTolerations()
-	gateway.StartupProbe = podConfig.GetStartupProbe()
-	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
-	gateway.LivenessProbe = podConfig.GetLivenessProbe()
-	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
-	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
-	gateway.TopologySpreadConstraints = podConfig.GetTopologySpreadConstraints()
-	gateway.ExtraVolumes = podConfig.GetExtraVolumes()
-	gateway.PriorityClassName = podConfig.GetPriorityClassName()
-
-	gateway.DataPlaneType = deployer.DataPlaneEnvoy
-	gateway.LogFormat = envoyContainerConfig.GetBootstrap().GetLogFormat()
-	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
-	gateway.LogLevel = logLevel
-	compLogLevels := envoyContainerConfig.GetBootstrap().GetComponentLogLevels()
-	compLogLevelStr, err := deployer.ComponentLogLevelsToString(compLogLevels)
-	if err != nil {
-		return nil, err
-	}
-	gateway.ComponentLogLevel = &compLogLevelStr
-
-	// Extract DNS resolver configuration
-	dnsResolverConfig := envoyContainerConfig.GetBootstrap().GetDnsResolver()
-	if dnsResolverConfig != nil {
-		var udpMaxQueries *int32
-		if maybeMaxQ := ptr.Deref(dnsResolverConfig.GetUdpMaxQueries(), 0); maybeMaxQ > 0 {
-			udpMaxQueries = &maybeMaxQ
-		}
-		gateway.DnsResolver = &deployer.HelmDnsResolver{
-			UdpMaxQueries: udpMaxQueries,
-		}
-	}
-
-	gateway.EnableReadinessProbeProxyProtocol = envoyContainerConfig.GetBootstrap().GetEnableReadinessProbeProxyProtocol()
-
-	gateway.Resources = envoyContainerConfig.GetResources()
-	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
-	gateway.Image = deployer.GetImageValues(envoyContainerConfig.GetImage())
-	gateway.ExtraArgs = envoyContainerConfig.GetExtraArgs()
-	gateway.Env = envoyContainerConfig.GetEnv()
-	gateway.ExtraVolumeMounts = envoyContainerConfig.ExtraVolumeMounts
-
-	// istio values
-	gateway.Istio = deployer.GetIstioValues(k.inputs.IstioAutoMtlsEnabled, istioConfig)
-	gateway.SdsContainer = deployer.GetSdsContainerValues(sdsContainerConfig)
-	gateway.IstioContainer = deployer.GetIstioContainerValues(istioContainerConfig)
-
-	gateway.Stats = deployer.GetStatsValues(statsConfig)
 
 	return vals, nil
 }
@@ -535,15 +447,4 @@ func getGatewayClassFromGateway(cli kclient.Client[*gwv1.GatewayClass], gw *gwv1
 	}
 
 	return gwc, nil
-}
-
-func translateInfraMeta[K ~string, V ~string](meta map[K]V) map[string]string {
-	infra := make(map[string]string, len(meta))
-	for k, v := range meta {
-		if strings.HasPrefix(string(k), "gateway.networking.k8s.io/") {
-			continue // ignore this prefix to avoid conflicts
-		}
-		infra[string(k)] = string(v)
-	}
-	return infra
 }

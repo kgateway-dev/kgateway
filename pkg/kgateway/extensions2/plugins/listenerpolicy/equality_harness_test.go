@@ -14,6 +14,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytracev3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	grpcstatsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_stats/v3"
 	healthcheckv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyxffv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/original_ip_detection/xff/v3"
@@ -39,6 +40,7 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		serverHeaderTransformation: new(envoy_hcm.HttpConnectionManager_OVERWRITE),
 		streamIdleTimeout:          new(5 * time.Second),
 		idleTimeout:                new(30 * time.Second),
+		maxConnectionDuration:      new(10 * time.Minute),
 		http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
 			MaxConcurrentStreams: wrapperspb.UInt32(100),
 		},
@@ -46,6 +48,8 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		preserveHttp1HeaderCase:   new(true),
 		preserveExternalRequestId: new(true),
 		generateRequestId:         new(true),
+		normalizePath:             new(true),
+		mergeSlashes:              new(true),
 		proxy100Continue:          new(true),
 		accessLogConfig:           []proto.Message{wrapperspb.String("access-log")},
 		accessLogPolicies: []kgateway.AccessLog{
@@ -116,6 +120,12 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).idleTimeout = new(60 * time.Second) },
 		},
 		{
+			Field: "maxConnectionDuration",
+			Mutate: func(d **HttpListenerPolicyIr) {
+				(*d).maxConnectionDuration = new(20 * time.Minute)
+			},
+		},
+		{
 			Field: "http2ProtocolOptions",
 			Mutate: func(d **HttpListenerPolicyIr) {
 				(*d).http2ProtocolOptions = &envoycorev3.Http2ProtocolOptions{MaxConcurrentStreams: wrapperspb.UInt32(200)}
@@ -125,6 +135,12 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 			Field: "healthCheckPolicy",
 			Mutate: func(d **HttpListenerPolicyIr) {
 				(*d).healthCheckPolicy = &healthcheckv3.HealthCheck{PassThroughMode: wrapperspb.Bool(true)}
+			},
+		},
+		{
+			Field: "grpcStats",
+			Mutate: func(d **HttpListenerPolicyIr) {
+				(*d).grpcStats = &grpcstatsv3.FilterConfig{EnableUpstreamStats: true}
 			},
 		},
 		{
@@ -138,6 +154,14 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "generateRequestId",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).generateRequestId = new(false) },
+		},
+		{
+			Field:  "normalizePath",
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).normalizePath = new(false) },
+		},
+		{
+			Field:  "mergeSlashes",
+			Mutate: func(d **HttpListenerPolicyIr) { (*d).mergeSlashes = new(false) },
 		},
 		{
 			Field: "proxy100Continue",

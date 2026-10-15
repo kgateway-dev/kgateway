@@ -126,8 +126,6 @@ Clusters:
               -----END CERTIFICATE-----
       sni: example.com
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -150,7 +148,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -262,6 +260,44 @@ Statuses:
           group: gateway.networking.k8s.io
           kind: Gateway
           name: example-gateway
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+    BackendTLSPolicy/default/tls-policy-secret-ref:
+      ancestors:
+      - ancestorRef:
+          group: ""
+          kind: Service
+          name: backend-service
+          namespace: default
+        conditions:
+        - lastTransitionTime: null
+          message: Resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Policy accepted
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway.dev/kgateway
+    BackendTLSPolicy/default/tls-policy2:
+      ancestors:
+      - ancestorRef:
+          group: gateway.kgateway.dev
+          kind: Backend
+          name: backend2
           namespace: default
         conditions:
         - lastTransitionTime: null

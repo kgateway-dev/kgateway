@@ -57,7 +57,7 @@ builds:
       - arm64
 dockers:
   - image_templates:
-      - &controller_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+      - &controller_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}-arm64"
     use: buildx
     dockerfile: &controller_dockerfile cmd/kgateway/Dockerfile
     goos: linux
@@ -75,7 +75,7 @@ dockers:
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
-      - &controller_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+      - &controller_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}-amd64"
     use: buildx
     dockerfile: *controller_dockerfile
     goos: linux
@@ -93,7 +93,7 @@ dockers:
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
-      - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+      - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}-arm64"
     use: buildx
     dockerfile: &sds_dockerfile cmd/sds/Dockerfile
     goos: linux
@@ -107,7 +107,7 @@ dockers:
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
-      - &sds_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+      - &sds_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}-amd64"
     use: buildx
     dockerfile: *sds_dockerfile
     goos: linux
@@ -121,7 +121,7 @@ dockers:
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
-      - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+      - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}-arm64"
     use: buildx
     dockerfile: &envoyinit_dockerfile cmd/envoyinit/Dockerfile
     goos: linux
@@ -141,7 +141,7 @@ dockers:
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
   - image_templates:
-      - &envoyinit_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+      - &envoyinit_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}-amd64"
     use: buildx
     dockerfile: *envoyinit_dockerfile
     goos: linux
@@ -161,62 +161,22 @@ dockers:
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--pull{{ else }}--progress=auto{{ end }}'
       - '{{ if isEnvSet "DOCKER_NO_CACHE" }}--no-cache{{ else }}--progress=auto{{ end }}'
 docker_manifests:
-  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}"
     image_templates:
       - *controller_arm_image
       - *controller_amd_image
-  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}"
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}"
     image_templates:
       - *sds_arm_image
       - *sds_amd_image
-  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}"
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.ARTIFACT_TAG }}"
     image_templates:
       - *envoyinit_arm_image
       - *envoyinit_amd_image
+# This pipeline only builds and pushes images. The release workflow's publish job creates the
+# GitHub release, git tag, and release notes itself (wrapping the changelog with the header/footer
+# templates in hack/release-notes/), so goreleaser must never create a release or changelog.
 changelog:
-  # Disable auto-generated changelog from git commits.
-  # For real releases, we use --release-notes flag with our custom script output.
-  # For main branch builds, we skip changelog entirely (same as release).
-  disable: '{{ if isEnvSet "GORELEASER_DISABLE_RELEASE" }}{{ .Env.GORELEASER_DISABLE_RELEASE }}{{ else }}false{{ end }}'
+  disable: true
 release:
-  disable: '{{ if isEnvSet "GORELEASER_DISABLE_RELEASE" }}{{ .Env.GORELEASER_DISABLE_RELEASE }}{{ else }}false{{ end }}'
-  prerelease: "auto"
-  mode: "replace"
-  replace_existing_artifacts: true
-  target_commitish: "{{ .FullCommit }}"
-  header: |
-    {{ if eq .Env.VERSION "v2.4.0-main" }}
-    🚀 Rolling main build of kgateway!
-    ---
-    It includes the latest changes but may be unstable. Use it for testing and providing feedback.
-    {{ else }}
-    🎉 Welcome to the {{ .Env.VERSION }} release of the kgateway project!
-    ---
-    {{ end }}
-  footer: |
-    ## Installation
-
-    The kgateway project is available as a Helm chart and docker images.
-
-    ### Helm Charts
-
-    The Helm charts are available at:
-    * [{{ .Env.VANITY_REGISTRY }}/charts/kgateway]({{ .Env.VANITY_REGISTRY }}/charts/kgateway).
-
-    ### Docker Images
-
-    The docker images are available at:
-
-    - {{ .Env.VANITY_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
-    - {{ .Env.VANITY_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
-    - {{ .Env.VANITY_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
-
-    ## Quickstart
-
-    Try installing this release:
-    ```
-    helm install kgateway-crds oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway-crds --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
-    helm install kgateway oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }} --namespace kgateway-system --create-namespace
-    ```
-
-    For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).
+  disable: true

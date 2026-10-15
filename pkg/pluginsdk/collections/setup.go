@@ -145,15 +145,7 @@ func (c *CommonCollections) InitCollections(
 		}
 	}
 
-	var tcproutes krt.Collection[*gwv1a2.TCPRoute]
-	switch len(tcpRouteCollections) {
-	case 0:
-		tcproutes = krt.NewStaticCollection[*gwv1a2.TCPRoute](nil, nil, c.KrtOpts.ToOptions("disable/TCPRoute")...)
-	case 1:
-		tcproutes = tcpRouteCollections[0]
-	default:
-		tcproutes = krt.JoinCollection(tcpRouteCollections, c.KrtOpts.ToOptions("TCPRoute")...)
-	}
+	tcproutes := joinRouteCollections(tcpRouteCollections, c.KrtOpts, "TCPRoute")
 
 	// As for TCPRoute above: one selection drives both the watches and the status writers.
 	// TLSRoute is standard as of Gateway API v1.5; pre-v1 versions stay behind the
@@ -217,15 +209,8 @@ func (c *CommonCollections) InitCollections(
 		}
 	}
 
-	var tlsRoutes krt.Collection[*gwv1a2.TLSRoute]
-	switch len(tlsRouteCollections) {
-	case 0:
-		tlsRoutes = krt.NewStaticCollection[*gwv1a2.TLSRoute](nil, nil, c.KrtOpts.ToOptions("disable/TLSRoute")...)
-	case 1:
-		tlsRoutes = tlsRouteCollections[0]
-	default:
-		tlsRoutes = krt.JoinCollection(tlsRouteCollections, c.KrtOpts.ToOptions("TLSRoute")...)
-	}
+	tlsRoutes := joinRouteCollections(tlsRouteCollections, c.KrtOpts, "TLSRoute")
+
 	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
 

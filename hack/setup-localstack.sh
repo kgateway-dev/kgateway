@@ -13,6 +13,8 @@ function install_localstack() {
   $HELM repo update
 
   $HELM upgrade -i --create-namespace localstack localstack-repo/localstack --version 0.6.26 --namespace localstack -f ${ROOT_DIR}/localstack-values.yaml
+  # `kubectl wait` fails immediately when no pod matches yet, so let the rollout create it first
+  kubectl rollout status deployment/localstack --namespace localstack --timeout=120s
   kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=localstack -n localstack --timeout=120s
 }
 

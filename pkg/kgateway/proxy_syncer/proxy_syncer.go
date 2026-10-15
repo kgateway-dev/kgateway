@@ -58,12 +58,14 @@ type ProxySyncer struct {
 
 	statusContributions         krt.Collection[reports.StatusContribution]
 	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
-	gatewayStatusSnapshots      krt.Collection[GatewayStatusSnapshot]
 	mostXdsSnapshots            krt.Collection[GatewayXdsResources]
 	perclientSnapCollection     krt.Collection[XdsSnapWrapper]
 
 	statusCollections *statussync.StatusCollections
 	statusWriters     map[schema.GroupVersionKind]statussync.ResourceStatusSyncer
+
+	// extraPolicyTargetResolvers are the resolvers registered with WithPolicyTargetResolver.
+	extraPolicyTargetResolvers policyTargetResolvers
 
 	waitForSync []cache.InformerSynced
 	ready       atomic.Bool
@@ -98,16 +100,15 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.Secrets.Version == in.Secrets.Version
 }
 
-// GatewayStatusSnapshot is the status-only projection of one Gateway
-// translation. Keeping it separate prevents status-only changes from
-// invalidating the xDS projection.
+// GatewayStatusSnapshot is the status-only half of one Gateway translation. Keeping it a
+// separate field of gatewayTranslationOutput, with its own Equals, is what stops a
+// status-only change from invalidating the xDS projection derived from the same output.
+//
+// It is not itself a KRT collection element -- gatewayStatusContributions unpacks it straight
+// out of the translation output -- so it needs no ResourceName.
 type GatewayStatusSnapshot struct {
 	types.NamespacedName
 	Contributions []reports.StatusContribution
-}
-
-func (r GatewayStatusSnapshot) ResourceName() string {
-	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
 }
 
 func (r GatewayStatusSnapshot) Equals(other GatewayStatusSnapshot) bool {
@@ -184,15 +185,18 @@ func NewProxySyncer(
 	commonCols *collections.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 	validator validator.Validator,
+	opts ...StatusSyncerOption,
 ) *ProxySyncer {
+	optCfg := processStatusSyncerOptions(opts...)
 	return &ProxySyncer{
-		controllerName:  controllerName,
-		commonCols:      commonCols,
-		apiClient:       client,
-		proxyTranslator: NewProxyTranslator(xdsCache),
-		uniqueClients:   uniqueClients,
-		translator:      translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
-		plugins:         mergedPlugins,
+		controllerName:             controllerName,
+		commonCols:                 commonCols,
+		apiClient:                  client,
+		proxyTranslator:            NewProxyTranslator(xdsCache),
+		uniqueClients:              uniqueClients,
+		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
+		plugins:                    mergedPlugins,
+		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
 	}
 }
 
@@ -263,15 +267,12 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	s.mostXdsSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayXdsResources {
 		return &output.Xds
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
-	s.gatewayStatusSnapshots = krt.NewCollection(translationOutputs, func(_ krt.HandlerContext, output gatewayTranslationOutput) *GatewayStatusSnapshot {
-		return &output.Status
-	}, krtopts.ToOptions("GatewayStatusSnapshots")...)
-
 	epPerClient := NewPerClientEnvoyEndpoints(
 		krtopts,
 		s.uniqueClients,
 		newFinalBackendEndpoints(krtopts, finalBackends, allEndpoints),
-		s.translator.TranslateEndpoints,
+		s.translator.ResolveEndpoints,
+		s.translator.BuildClusterLoadAssignment,
 	)
 	localClusterEpPerClient := NewPerClientLocalClusterEndpoints(
 		krtopts,
@@ -295,18 +296,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		localClusterEpPerClient,
 	)
 
-	excludedPolicyKinds := make(map[schema.GroupKind]struct{})
-	for gk, plugin := range s.plugins.ContributesPolicies {
-		if plugin.PolicyStatusFromGatewayReports {
-			excludedPolicyKinds[gk] = struct{}{}
-		}
-	}
-
-	backendPolicyContributions := backendPolicyStatusContributions(
-		finalBackendsWithPolicyStatus,
-		excludedPolicyKinds,
-		krtopts,
-	)
+	backendPolicyContributions := backendPolicyStatusContributions(finalBackendsWithPolicyStatus, krtopts)
 
 	// Backend status is reduced per Backend. Indexed cluster and plugin-condition
 	// dependencies ensure one client's error only recomputes its owning Backend.
@@ -321,18 +311,34 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 	}
 	backendContributions := backendStatusContributions(
 		kgwBackendCol,
-		clustersPerClient.clusters,
+		clustersPerClient.StatusClusters(),
 		kgwBackendExtraConditions,
 		krtopts,
 	)
 
+	// Gateway and Backend translation only ever report on policies that attached to
+	// something. A policy whose targetRef names a missing object attaches nowhere, so this
+	// producer checks every policy's own targetRefs and reports the unresolved ones. See
+	// policy_target_status.go.
+	var policyCols []krt.Collection[ir.PolicyWrapper]
+	for _, plugin := range s.plugins.ContributesPolicies {
+		if plugin.Policies != nil {
+			policyCols = append(policyCols, plugin.Policies)
+		}
+	}
+	allPolicies := krt.JoinCollection(policyCols, krtopts.ToOptions("PolicyTargetPolicies")...)
+	policyTargetContributions := policyTargetStatusContributions(allPolicies,
+		newPolicyTargetResolvers(s.commonCols, s.plugins.ContributesBackends, s.extraPolicyTargetResolvers), krtopts)
+
 	// All status paths now meet as independently keyed contributions. Policy
-	// ancestors from Gateway and Backend translation naturally reduce under the
-	// same policy key without a competing singleton writer.
+	// ancestors from Gateway translation, Backend translation, and targetRef
+	// resolution naturally reduce under the same policy key without a competing
+	// singleton writer.
 	s.statusContributions = krt.JoinCollection([]krt.Collection[reports.StatusContribution]{
-		gatewayStatusContributions(s.gatewayStatusSnapshots, krtopts),
+		gatewayStatusContributions(translationOutputs, krtopts),
 		backendPolicyContributions,
 		backendContributions,
+		policyTargetContributions,
 	}, krtopts.ToOptions("StatusContributions")...)
 
 	s.waitForSync = []cache.InformerSynced{
