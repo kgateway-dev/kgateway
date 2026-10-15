@@ -52,12 +52,13 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
-	// clusterScopingTransitionsTotal counts the emitted-set changes that needed
-	// a window to be safe, by which window.
+	// clusterScopingTransitionsTotal counts the clusters whose emitted-set change
+	// needed a window to be safe, by which window. Each cluster counts once per
+	// window it enters, not once per publish while the window is open.
 	//
 	// These are expected during route churn, not faults. What is worth watching
-	// is the ratio to route updates: a fleet where nearly every publish holds is
-	// a fleet paying reference-ahead latency on most route edits, which is a
+	// is the rate: a fleet whose route edits keep landing on never-sent clusters
+	// is a fleet paying reference-ahead latency on most of them, which is a
 	// reason to shorten the window rather than a bug.
 	clusterScopingTransitionsTotal = metrics.NewCounter(
 		metrics.CounterOpts{
@@ -74,8 +75,9 @@ const (
 	transitionDereferenceGraced = "dereference_graced"
 	// transitionDereferencePruned is one actually removed once its window closed.
 	transitionDereferencePruned = "dereference_pruned"
-	// transitionReferenceAheadHeld is a route update held so a newly-emitted
-	// cluster could be delivered first.
+	// transitionReferenceAheadHeld is a newly-emitted cluster delivered ahead of
+	// the route update that named it; a retarget onto n new clusters counts n,
+	// like the de-reference transitions count clusters.
 	transitionReferenceAheadHeld = "reference_ahead_held"
 )
 
