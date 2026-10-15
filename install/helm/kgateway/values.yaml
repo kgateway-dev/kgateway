@@ -304,7 +304,6 @@ validation:
   #    RE2 regex, is dropped instead of replaced. This reduces the risk that Envoy NACKs the update,
   #    but does not prevent all NACKs, because the complete generated configuration is not validated.
   #    Strict mode does not keep a previous version of an invalid route.
-  #    Strict mode is not yet supported with Rustformation.
   #    Default is "standard".
   level: standard
 
