@@ -34,7 +34,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tenant-a-https
-        statPrefix: http
+        statPrefix: https_8443_tenant-a-https
         useRemoteAddress: true
     name: tenant-a-https
     transportSocket:
@@ -73,7 +73,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tenant-b-https
-        statPrefix: http
+        statPrefix: https_8443_tenant-b-https
         useRemoteAddress: true
     name: tenant-b-https
     transportSocket:

@@ -34,7 +34,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-valid-secret
-        statPrefix: http
+        statPrefix: https_444_https-valid-secret
         useRemoteAddress: true
     name: https-valid-secret
     transportSocket:

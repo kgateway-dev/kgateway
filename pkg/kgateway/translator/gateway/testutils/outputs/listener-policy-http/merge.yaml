@@ -79,7 +79,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: listener~8080
         serverHeaderTransformation: APPEND_IF_ABSENT
-        statPrefix: http
+        statPrefix: http_8080
         streamIdleTimeout: 30s
         tracing:
           customTags:

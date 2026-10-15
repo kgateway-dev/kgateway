@@ -36,7 +36,7 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.request_id.uuid.v3.UuidRequestIdConfig
             packTraceReason: true
             useRequestIdForTraceSampling: true
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   metadata:
