@@ -300,9 +300,11 @@ validation:
   #    It does not run Envoy, so configuration that only Envoy can reject, such as an invalid RE2 regex in a
   #    route matcher, is still sent; Envoy then NACKs the update and keeps its last accepted route configuration.
   #    Strict also runs targeted Envoy validation, such as for routes, clusters, and security-related policies,
-  #    and replaces routes that fail with a direct 500 response. This reduces the risk that Envoy NACKs the update,
+  #    and replaces routes that fail with a direct 500 response. A rule with an invalid matcher, such as an invalid
+  #    RE2 regex, is dropped instead of replaced. This reduces the risk that Envoy NACKs the update,
   #    but does not prevent all NACKs, because the complete generated configuration is not validated.
-  #    It does not keep a previous version of an invalid route.
+  #    Strict mode does not keep a previous version of an invalid route.
+  #    Strict mode is not yet supported with Rustformation.
   #    Default is "standard".
   level: standard
 
