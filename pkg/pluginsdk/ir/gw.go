@@ -210,9 +210,6 @@ func (a AttachedPolicies) Equals(b AttachedPolicies) bool {
 
 // Append appends the policies in l in the given order to the policies in a.
 func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
-	if a.Policies == nil {
-		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-	}
 	for _, l := range l {
 		for k, v := range l.Policies {
 			if a.Policies == nil {
@@ -225,11 +222,11 @@ func (a *AttachedPolicies) Append(l ...AttachedPolicies) {
 
 // Append appends the policies in l in the given order to the policies in a.
 func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...AttachedPolicies) {
-	if a.Policies == nil {
-		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-	}
 	for _, l := range l {
 		for k, v := range l.Policies {
+			if a.Policies == nil {
+				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+			}
 			// Copy before mutating: v aliases the source AttachedPolicies, which is
 			// KRT collection output shared across translations (e.g. a delegating parent
 			// route shared by all its delegatee children). Mutating it in place corrupts
@@ -246,12 +243,12 @@ func (a *AttachedPolicies) AppendWithPriority(HierarchicalPriority int, l ...Att
 
 // Prepend prepends the policies in l in the given to the policies in a.
 func (a *AttachedPolicies) Prepend(hierarchicalPriority int, l ...AttachedPolicies) {
-	if a.Policies == nil {
-		a.Policies = make(map[schema.GroupKind][]PolicyAtt)
-	}
 	// iterate in the reverse order so that the input order in l is preserved at the end
 	for i := len(l) - 1; i >= 0; i-- {
 		for k, v := range l[i].Policies {
+			if a.Policies == nil {
+				a.Policies = make(map[schema.GroupKind][]PolicyAtt)
+			}
 			// Copy before mutating: see AppendWithPriority. v also backs the result, so
 			// without a copy the append below could write into the shared source's array.
 			cp := make([]PolicyAtt, len(v))

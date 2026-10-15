@@ -145,6 +145,7 @@ func TestOIDCConfigDiscovery(t *testing.T) {
 				if tt.errorContains != "" {
 					r.Contains(err.Error(), tt.errorContains)
 				}
+				r.Contains(err.Error(), issuer+wellKnownOpenIDConfPath, "the error should name the discovery URL")
 				r.Nil(config)
 				return
 			}
@@ -295,6 +296,88 @@ func TestOIDCConfigDiscoveryInvalidIssuerURL(t *testing.T) {
 	o.refreshOnce(context.Background())
 	_, cached = o.load(invalidIssuer)
 	r.False(cached, "refresh should not resurrect a malformed issuer URI")
+}
+
+// TestOIDCConfigDiscoveryErrorMasksCredentials asserts a discovery failure names the discovery
+// URL without leaking the password from the issuer URI, whether the provider answers with an
+// error status or cannot be reached at all.
+func TestOIDCConfigDiscoveryErrorMasksCredentials(t *testing.T) {
+	tests := []struct {
+		name string
+		// closeServer makes discovery fail in the transport rather than on the status code.
+		closeServer   bool
+		errorContains string
+	}{
+		{
+			name:          "unexpected status code",
+			errorContains: "client:xxxxx@",
+		},
+		{
+			name:          "transport failure",
+			closeServer:   true,
+			errorContains: "client:***@",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := require.New(t)
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			}))
+			defer server.Close()
+			if tt.closeServer {
+				server.Close()
+			}
+
+			issuerURL, err := url.Parse(server.URL)
+			r.NoError(err)
+			issuerURL.User = url.UserPassword("client", "s3cret")
+			issuer := issuerURL.String()
+			o := newTestDiscoverer(issuer)
+
+			_, err = o.get(context.Background(), issuer)
+			r.Error(err)
+			r.Contains(err.Error(), tt.errorContains+issuerURL.Host+wellKnownOpenIDConfPath)
+			r.NotContains(err.Error(), "s3cret", "the password should be masked")
+		})
+	}
+}
+
+func TestRedactURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		rawURL   string
+		expected string
+	}{
+		{
+			name:     "no userinfo",
+			rawURL:   "https://idp.example.com/tenant/.well-known/openid-configuration",
+			expected: "https://idp.example.com/tenant/.well-known/openid-configuration",
+		},
+		{
+			name:     "password is masked",
+			rawURL:   "https://client:s3cret@idp.example.com/tenant",
+			expected: "https://client:xxxxx@idp.example.com/tenant",
+		},
+		{
+			name:     "query is kept",
+			rawURL:   "https://idp.example.com/tenant/v2.0/.well-known/openid-configuration?p=b2c_1_signin",
+			expected: "https://idp.example.com/tenant/v2.0/.well-known/openid-configuration?p=b2c_1_signin",
+		},
+		{
+			name:     "invalid URL",
+			rawURL:   "://invalid-url",
+			expected: "<invalid URL>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, redactURL(tt.rawURL))
+		})
+	}
 }
 
 // TestOIDCConfigDiscoveryFailureBacksOff asserts consecutive failures are retried with an

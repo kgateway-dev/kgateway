@@ -36,14 +36,6 @@ var (
 		},
 		[]string{nameLabel, namespaceLabel, translatorNameLabel},
 	)
-	translationsRunning = metrics.NewGauge(
-		metrics.GaugeOpts{
-			Subsystem: translatorSubsystem,
-			Name:      "translations_running",
-			Help:      "Current number of translations running",
-		},
-		[]string{nameLabel, namespaceLabel, translatorNameLabel},
-	)
 )
 
 type TranslatorMetricLabels struct {
@@ -70,8 +62,6 @@ func CollectTranslationMetrics(labels TranslatorMetricLabels) func(error) {
 
 	start := time.Now()
 
-	translationsRunning.Add(1, labels.toMetricsLabels()...)
-
 	return func(err error) {
 		duration := time.Since(start)
 
@@ -85,8 +75,6 @@ func CollectTranslationMetrics(labels TranslatorMetricLabels) func(error) {
 		translationsTotal.Inc(append(labels.toMetricsLabels(),
 			metrics.Label{Name: resultLabel, Value: result},
 		)...)
-
-		translationsRunning.Sub(1, labels.toMetricsLabels()...)
 	}
 }
 
@@ -95,5 +83,4 @@ func CollectTranslationMetrics(labels TranslatorMetricLabels) func(error) {
 func ResetMetrics() {
 	translationsTotal.Reset()
 	translationDuration.Reset()
-	translationsRunning.Reset()
 }

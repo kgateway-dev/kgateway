@@ -147,23 +147,6 @@ func TestTrafficDistribution(t *testing.T) {
 	runScenario(t, "testdata/traffic_distribution", st)
 }
 
-func TestWithStandardSettings(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/standard", st)
-}
-
-func TestWithExperimentalFeaturesSettings(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	st.EnableExperimentalGatewayAPIFeatures = true
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/experimental", st)
-}
-
 func TestWithIstioAutomtlsSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	st.EnableIstioIntegration = true
@@ -174,32 +157,25 @@ func TestWithIstioAutomtlsSettings(t *testing.T) {
 	runScenario(t, "testdata/istio_mtls", st)
 }
 
-func TestWithBindIpv6(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	st.ListenerBindIpv6 = true
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/listenerbind/v6", st)
-}
-
-func TestWithBindIpv4(t *testing.T) {
-	st, err := envtestutil.BuildSettings()
-	st.ListenerBindIpv6 = false
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
-	runScenario(t, "testdata/listenerbind/v4", st)
-}
-
-func TestWithAutoDns(t *testing.T) {
+// TestWithStandardSettings keeps two scenarios on the real control plane after the bulk
+// of testdata/standard moved to TestSetupScenarios in the gateway translator package.
+// Do not migrate these two; the translator harness cannot reproduce either:
+//
+//   - happypath is the ADS canary. It is the only remaining plain-Envoy scenario whose
+//     xDS comes off a live stream, so it covers snapshotPerClient's snapshot assembly,
+//     the local-cluster EDS subscription (omitting that cluster name withholds the whole
+//     EDS response, backend endpoints included), and dump stability - testScenario
+//     requires two identical dumps via retry.Converge(2).
+//   - extauth-gw-and-route-disable serves its HTTPRoute as v1beta1. kgateway watches
+//     only v1, so translating it at all depends on the API server's conversion; the fake
+//     client in the translator harness drops the route and the gateway reports
+//     attachedRoutes: 0.
+func TestWithStandardSettings(t *testing.T) {
 	st, err := envtestutil.BuildSettings()
 	if err != nil {
 		t.Fatalf("can't get settings %v", err)
 	}
-	st.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
-
-	runScenario(t, "testdata/autodns", st)
+	runScenario(t, "testdata/standard", st)
 }
 
 func TestPolicyUpdate(t *testing.T) {
@@ -409,6 +385,9 @@ spec:
 	})
 }
 
+// runScenario runs golden-file scenarios that need a live control plane (istio integration).
+// Pure-translation scenarios live with the translator tests instead: see TestSetupScenarios
+// in pkg/kgateway/translator/gateway (inputs under testutils/inputs/setup).
 func runScenario(t *testing.T, scenarioDir string, globalSettings *apisettings.Settings) {
 	setupEnvTestAndRun(t, globalSettings, func(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, client istiokube.CLIClient, xdsPort int) {
 		// list all yamls in test data

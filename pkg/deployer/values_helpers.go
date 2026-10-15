@@ -416,6 +416,7 @@ func ApplyKubernetesProxyConfigValues(gateway *HelmGateway, cfg *kgateway.Kubern
 	}
 
 	gateway.EnableReadinessProbeProxyProtocol = envoyContainerConfig.GetBootstrap().GetEnableReadinessProbeProxyProtocol()
+	gateway.MaxDownstreamConnections = envoyContainerConfig.GetBootstrap().GetMaxDownstreamConnections()
 
 	gateway.Resources = envoyContainerConfig.GetResources()
 	gateway.SecurityContext = envoyContainerConfig.GetSecurityContext()
