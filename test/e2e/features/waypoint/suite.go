@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/stretchr/testify/suite"
@@ -150,16 +151,23 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 	}, controllerDeploymentOriginal)
 	s.Assert().NoError(err, "has controller deployment")
 
-	// add the environment variable to the modified controller deployment
+	// set the environment variable on the modified controller deployment, replacing
+	// the entry the chart may already render (e.g. KGW_INGRESS_USE_WAYPOINTS)
 	envVarToAdd := corev1.EnvVar{
 		Name:  name,
 		Value: value,
 	}
 	controllerDeployModified := controllerDeploymentOriginal.DeepCopy()
-	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = append(
-		controllerDeployModified.Spec.Template.Spec.Containers[0].Env,
-		envVarToAdd,
-	)
+	env := controllerDeployModified.Spec.Template.Spec.Containers[0].Env
+	idx := slices.IndexFunc(env, func(e corev1.EnvVar) bool { return e.Name == name })
+	var originalEnvVar *corev1.EnvVar
+	if idx >= 0 {
+		originalEnvVar = env[idx].DeepCopy()
+		env[idx] = envVarToAdd
+	} else {
+		env = append(env, envVarToAdd)
+	}
+	controllerDeployModified.Spec.Template.Spec.Containers[0].Env = env
 
 	// patch the deployment
 	controllerDeployModified.ResourceVersion = ""
@@ -183,16 +191,27 @@ func (s *testingSuite) setDeploymentEnvVariable(name, value string) {
 		err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, controllerDeploymentOriginal, client.MergeFrom(controllerDeployModified))
 		s.Require().NoError(err)
 
-		// make sure the env var is removed
-		s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerDoesNotContainEnvVar(
-			s.ctx,
-			controllerNamespace,
-			metav1.ListOptions{
-				LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
-			},
-			helpers.KgatewayContainerName,
-			envVarToAdd.Name,
-		)
+		// make sure the env var is back to its original value, or removed if it wasn't set
+		listOpts := metav1.ListOptions{
+			LabelSelector: defaults.WellKnownAppLabel + "=kgateway",
+		}
+		if originalEnvVar != nil {
+			s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerContainsEnvVar(
+				s.ctx,
+				controllerNamespace,
+				listOpts,
+				helpers.KgatewayContainerName,
+				*originalEnvVar,
+			)
+		} else {
+			s.testInstallation.AssertionsT(s.T()).EventuallyPodContainerDoesNotContainEnvVar(
+				s.ctx,
+				controllerNamespace,
+				listOpts,
+				helpers.KgatewayContainerName,
+				envVarToAdd.Name,
+			)
+		}
 	})
 
 	// wait for pods to be running again, since controller deployment was patched
