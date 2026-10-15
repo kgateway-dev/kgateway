@@ -141,3 +141,25 @@ func TestMultipleResourcesAndStreams(t *testing.T) {
 		})
 	}
 }
+
+func TestActiveRejectsSurviveSweepOfRecreatedGateway(t *testing.T) {
+	resetMetrics()
+	cb := newLogNackCallback()
+
+	// A proxy of the old Gateway rejects a resource, then the Gateway is deleted and swept.
+	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom"})))
+	kmetrics.Sweeper{
+		NamespaceExists: func(string) bool { return true },
+		GatewayExists:   func(string, string) bool { return false },
+	}.Sweep()
+	metricstest.MustGatherMetrics(t).AssertMetricNotExists("kgateway_envoy_xds_rejects_active")
+
+	// The Gateway is recreated under the same name. The old stream closes and a new one rejects.
+	cb.OnStreamClosed(1, nil)
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{expectedGauge(0, typeURL)})
+
+	require.NoError(t, cb.OnStreamRequest(2, dr(fullType, &status.Status{Message: "boom"})))
+	gathered = metricstest.MustGatherMetrics(t)
+	gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{expectedGauge(1, typeURL)})
+}
