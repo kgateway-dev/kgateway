@@ -23,7 +23,7 @@ permissions:
 
 env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.3.5
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action@sha256:71ad04ab2f8798be47870f9b18817ad317c2f8f2f97aa6726ba10d5578bc174a # v2.6.0
   # Severity used to report a scan target that this repository does not have.
   # Forks routinely track a subset of the release branches and do not publish
   # release images, so a gap there is expected; on the repository that cuts
@@ -141,9 +141,11 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Run source scanner
-        uses: google/osv-scanner-action/osv-scanner-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+        uses: docker://ghcr.io/google/osv-scanner-action@sha256:71ad04ab2f8798be47870f9b18817ad317c2f8f2f97aa6726ba10d5578bc174a # v2.6.0
+        env:
+          GOTOOLCHAIN: auto
         with:
-          scan-args: |-
+          args: |-
             --output=results.json
             --format=json
             --no-call-analysis=go
@@ -153,9 +155,10 @@ jobs:
         continue-on-error: true
 
       - name: Convert source results to SARIF
-        uses: google/osv-scanner-action/osv-reporter-action@c51854704019a247608d928f370c98740469d4b5 # v2.3.5
+        uses: docker://ghcr.io/google/osv-scanner-action@sha256:71ad04ab2f8798be47870f9b18817ad317c2f8f2f97aa6726ba10d5578bc174a # v2.6.0
         with:
-          scan-args: |-
+          entrypoint: /root/osv-reporter
+          args: |-
             --output=results.sarif
             --new=results.json
             --gh-annotations=false
