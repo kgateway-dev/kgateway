@@ -23,7 +23,7 @@ permissions:
 
 env:
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
-  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.5.0
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner-action:v2.6.0
   # Severity used to report a scan target that this repository does not have.
   # Forks routinely track a subset of the release branches and do not publish
   # release images, so a gap there is expected; on the repository that cuts
