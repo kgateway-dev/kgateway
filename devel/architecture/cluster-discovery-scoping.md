@@ -102,13 +102,13 @@ routing updates.
 | `kgateway_xds_cluster_scoping_emitted_clusters` | gauge | Backend clusters published to a client after scoping. |
 | `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | Clusters withheld because nothing references them. |
 | `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 when a gateway reverted to emit-all. Worth an alert. |
-| `kgateway_xds_cluster_scoping_transitions_total` | counter | Emitted-set changes that needed a window, by `transition`. |
+| `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters. |
 
 `dropped_clusters` at zero with scoping on means the deployment routes to
-everything it discovers and has nothing to gain here. A high ratio of
-`transitions_total{transition="reference_ahead_held"}` to route updates means
-most route edits are paying the hold, which is a reason to shorten the window
-rather than a fault.
+everything it discovers and has nothing to gain here. A steadily rising
+`transitions_total{transition="reference_ahead_held"}` means route edits keep
+landing on clusters the proxy has never been sent, each paying the hold once,
+which is a reason to shorten the window rather than a fault.
 
 ## What changes for users
 

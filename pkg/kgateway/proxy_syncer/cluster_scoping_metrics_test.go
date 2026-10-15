@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
@@ -88,4 +90,27 @@ func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 		},
 		Value: 1,
 	})
+}
+
+// TestReferenceAheadTransitionsAreCountedOncePerCluster: a retarget onto
+// clusters the proxy has never been sent counts each such cluster once, the
+// way the de-reference transitions count clusters, and does not count the
+// publish that releases the hold.
+func TestReferenceAheadTransitionsAreCountedOncePerCluster(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	clusterScopingTransitionsTotal.Reset() // series persist across tests in this package
+
+	pt := newReferenceAheadTranslator(t, time.Hour)
+	ctx := t.Context()
+
+	pt.syncXds(ctx, routedClusterWrapperV("v1", "old"))
+	pt.syncXds(ctx, routedClusterWrapperV("v2", "old", "new-a", "new-b"))
+
+	held := metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+		{Name: gatewayLabel, Value: "unknown"},
+		{Name: namespaceLabel, Value: "unknown"},
+		{Name: transitionLabel, Value: transitionReferenceAheadHeld},
+	})
+	assert.Equal(t, float64(2), held, "two never-sent clusters, one held update: count the clusters, once each")
 }
