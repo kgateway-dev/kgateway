@@ -251,10 +251,11 @@ func TestResourceSync(t *testing.T) {
 	setupTest()
 
 	details := ResourceSyncDetails{
-		Gateway:      "test-gateway",
-		Namespace:    "test-namespace",
-		ResourceType: "Gateway",
-		ResourceName: "test-gateway",
+		Gateway:          "test-gateway",
+		GatewayNamespace: "test-namespace",
+		Namespace:        "test-namespace",
+		ResourceType:     "Gateway",
+		ResourceName:     "test-gateway",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -263,12 +264,7 @@ func TestResourceSync(t *testing.T) {
 	StartResourceSyncMetricsProcessing(ctx)
 
 	// Test for resource status sync metrics.
-	StartResourceStatusSync(ResourceSyncDetails{
-		Gateway:      details.Gateway,
-		Namespace:    details.Namespace,
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-	})
+	StartResourceStatusSync(details)
 
 	EndResourceStatusSync(details)
 
@@ -282,6 +278,7 @@ func TestResourceSync(t *testing.T) {
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
 				{Name: "gateway", Value: details.Gateway},
+				{Name: "gateway_namespace", Value: details.GatewayNamespace},
 				{Name: "namespace", Value: details.Namespace},
 				{Name: "resource", Value: details.ResourceType},
 			},
@@ -293,6 +290,7 @@ func TestResourceSync(t *testing.T) {
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
 				{Name: "gateway", Value: details.Gateway},
+				{Name: "gateway_namespace", Value: details.GatewayNamespace},
 				{Name: "namespace", Value: details.Namespace},
 				{Name: "resource", Value: details.ResourceType},
 			},
@@ -302,6 +300,7 @@ func TestResourceSync(t *testing.T) {
 
 	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
 		{Name: "gateway", Value: details.Gateway},
+		{Name: "gateway_namespace", Value: details.GatewayNamespace},
 		{Name: "namespace", Value: details.Namespace},
 		{Name: "resource", Value: details.ResourceType},
 	}})
@@ -477,21 +476,32 @@ func TestGatewayDeleteDropsPendingXDSSync(t *testing.T) {
 func TestSweepRemovesStatusSyncsOfDeletedGateway(t *testing.T) {
 	setupTest()
 
-	statusSync := func(resourceType, name string) ResourceSyncDetails {
-		return ResourceSyncDetails{Gateway: "gw", Namespace: "ns", ResourceType: resourceType, ResourceName: name}
+	gateway := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "ns"}}
+	route := func(name string, ref gwv1.ParentReference) *gwv1.HTTPRoute {
+		return &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "routes"},
+			Spec:       gwv1.HTTPRouteSpec{CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: []gwv1.ParentReference{ref}}},
+		}
 	}
-	StartResourceStatusSync(statusSync("Gateway", "gw"))
-	StartResourceStatusSync(statusSync("HTTPRoute", "r"))
+	toGateway := route("to-gateway", gwv1.ParentReference{Name: "gw", Namespace: new(gwv1.Namespace("ns"))})
+	toListenerSet := route("to-listenerset", gwv1.ParentReference{Name: "ls", Kind: new(gwv1.Kind("ListenerSet"))})
 
-	// The Gateway is gone but its namespace stays. A route's series names only its
-	// parentRef, which may be a Gateway in another namespace, so it stays too.
+	GetResourceMetricEventHandler[*gwv1.Gateway]()(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &gateway})
+	routeHandler := GetResourceMetricEventHandler[*gwv1.HTTPRoute]()
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &toGateway})
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &toListenerSet})
+
+	// The Gateway is gone but every namespace stays. Its own series and those of a route
+	// in another namespace attached to it go with it. A route attached to a ListenerSet
+	// names no Gateway namespace, so it stays until its own namespace is deleted.
 	metrics.Sweeper{
 		NamespaceExists: func(string) bool { return true },
 		GatewayExists:   func(string, string) bool { return false },
 	}.Sweep()
+
 	// ResetMetrics leaves a series with empty labels.
 	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_resources_status_syncs_started_total", [][]metrics.Label{
-		{{Name: "gateway", Value: ""}, {Name: "namespace", Value: ""}, {Name: "resource", Value: ""}},
-		{{Name: "gateway", Value: "gw"}, {Name: "namespace", Value: "ns"}, {Name: "resource", Value: "HTTPRoute"}},
+		{{Name: "gateway", Value: ""}, {Name: "gateway_namespace", Value: ""}, {Name: "namespace", Value: ""}, {Name: "resource", Value: ""}},
+		{{Name: "gateway", Value: "ls"}, {Name: "gateway_namespace", Value: ""}, {Name: "namespace", Value: "routes"}, {Name: "resource", Value: "HTTPRoute"}},
 	})
 }
