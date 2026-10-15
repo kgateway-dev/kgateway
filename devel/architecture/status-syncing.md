@@ -327,13 +327,7 @@ late kind is recoverable, a hung cache barrier is not.
 **Policy plugins** implement `PolicyPlugin.RegisterPolicyStatus`. For a CRD
 with a standard `gwv1.PolicyStatus` built by the standard builder, use
 `pluginutils.RegisterPolicyStatus`. A plugin with its own desired-status
-builder uses `RegisterPolicyStatusWithBuilder` and states **explicitly**
-whether its conditions use the standard Valid/Pending vocabulary
-(`StandardConditionErrorMetric`) or its own (`NoConditionErrorMetric` — e.g.
-BackendTLSPolicy, whose Gateway API `PolicyReasonAccepted` would grade as
-permanently failing under the standard rubric). The two questions are
-independent, which is why they are separate parameters rather than inferred
-from each other.
+builder, such as BackendTLSPolicy, uses `RegisterPolicyStatusWithBuilder`.
 
 **Downstream resource types** use
 `proxy_syncer.WithStatusRegistration(func(statussync.RegistrationInputs))`.

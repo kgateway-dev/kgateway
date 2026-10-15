@@ -656,7 +656,7 @@ func runStatusSummaryRemoval(
 		func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
 			return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 		},
-		buildDesired, pluginutils.NoConditionErrorMetric,
+		buildDesired,
 	)(sdk.PolicyStatusInputs{
 		Collections:           statusCollections,
 		StatusContributions:   contributions,

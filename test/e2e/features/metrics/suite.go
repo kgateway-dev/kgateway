@@ -328,21 +328,6 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			},
 		})
 
-		gathered.AssertMetricsLabelsInclude("kgateway_status_syncer_status_syncs_total", [][]metrics.Label{{
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "result", Value: "success"},
-			{Name: "syncer", Value: "GatewayStatusSyncer"},
-		}})
-
-		gathered.AssertMetricsLabelsInclude("kgateway_status_syncer_status_sync_duration_seconds", [][]metrics.Label{{
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-			{Name: "syncer", Value: "GatewayStatusSyncer"},
-		}})
-
-		gathered.AssertHistogramPopulated("kgateway_status_syncer_status_sync_duration_seconds")
-
 		gathered.AssertMetricsLabelsInclude("kgateway_translator_translations_total", [][]metrics.Label{{
 			{Name: "name", Value: "gw1"},
 			{Name: "namespace", Value: "default"},

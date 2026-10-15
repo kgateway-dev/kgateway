@@ -100,8 +100,8 @@ type Writer[O controllers.ComparableObject, S any] struct {
 
 	// OnSync, when set, is called once per ApplyStatus invocation for which Desired returns
 	// true. current is the last object read from the collection and status the last merged
-	// status. Used to record status sync metrics.
-	OnSync func(res Resource, current O, status S, took time.Duration, err error)
+	// status. Used to close the resource's status sync metrics.
+	OnSync func(res Resource, current O, status S, err error)
 }
 
 var _ ResourceStatusSyncer = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
@@ -194,7 +194,6 @@ type attemptOutcome[O controllers.ComparableObject, S any] struct {
 }
 
 func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
-	start := time.Now()
 	// Log fields are passed inline rather than bound with logger.With: With clones the handler
 	// and preformats the attrs whatever the level, and the two dominant outcomes here are the
 	// debug-only "nothing to do" skips, on every informer event of every registered kind.
@@ -259,7 +258,7 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 			"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
 	}
 	if last.has && w.OnSync != nil {
-		w.OnSync(obj, last.current, last.merged, time.Since(start), err)
+		w.OnSync(obj, last.current, last.merged, err)
 	}
 }
 
