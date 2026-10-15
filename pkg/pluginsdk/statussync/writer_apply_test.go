@@ -72,7 +72,7 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 		}),
 		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-		OnSync: func(_ Resource, _ *gwv1.HTTPRoute, _ gwv1.RouteStatus, _ time.Duration, err error) {
+		OnSync: func(_ Resource, _ *gwv1.HTTPRoute, _ gwv1.RouteStatus, err error) {
 			result.calls.Add(1)
 			if err != nil {
 				result.lastErr.Store(err)
