@@ -63,6 +63,24 @@ var setupLog = ctrl.Log.WithName("setup")
 // metricsSweepInterval bounds how long a deleted Gateway or namespace keeps its metric series.
 const metricsSweepInterval = time.Minute
 
+// newMetricsSweeper returns a sweeper that checks series against the namespaces and
+// Gateways in the informer cache, and whether those caches have synced.
+func newMetricsSweeper(
+	namespaces krt.Collection[krtcollections.NamespaceMetadata],
+	gateways krt.Collection[*gwv1.Gateway],
+) (pkgmetrics.Sweeper, func() bool) {
+	return pkgmetrics.Sweeper{
+			NamespaceExists: func(namespace string) bool {
+				return namespaces.GetKey(namespace) != nil
+			},
+			GatewayExists: func(namespace, name string) bool {
+				return gateways.GetKey(namespace+"/"+name) != nil
+			},
+		}, func() bool {
+			return namespaces.HasSynced() && gateways.HasSynced()
+		}
+}
+
 type StartConfig struct {
 	Manager                  manager.Manager
 	ControllerName           string
@@ -148,17 +166,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	metrics.StartResourceSyncMetricsProcessing(ctx)
 
 	// Remove the metric series of Gateways and namespaces that no longer exist.
-	commoncol := cfg.CommonCollections
-	go pkgmetrics.Sweeper{
-		NamespaceExists: func(namespace string) bool {
-			return commoncol.Namespaces.GetKey(namespace) != nil
-		},
-		GatewayExists: func(namespace, name string) bool {
-			return commoncol.RawGateways.GetKey(namespace+"/"+name) != nil
-		},
-	}.Run(ctx, metricsSweepInterval, func() bool {
-		return commoncol.Namespaces.HasSynced() && commoncol.RawGateways.HasSynced()
-	})
+	sweeper, sweeperSynced := newMetricsSweeper(cfg.CommonCollections.Namespaces, cfg.CommonCollections.RawGateways)
+	go sweeper.Run(ctx, metricsSweepInterval, sweeperSynced)
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
