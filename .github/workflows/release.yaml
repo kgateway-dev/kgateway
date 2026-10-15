@@ -232,7 +232,7 @@ jobs:
       # pushes directly, and PR runs consume nothing, so skip the upload off the release path.
       - name: Upload packaged charts
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: helm-charts
           path: _test/*.tgz
@@ -292,7 +292,7 @@ jobs:
 
       - name: Setup Buildx
         if: ${{ needs.setup.outputs.floating_version != '' }}
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       # This repackages rather than pushing the helm job's .tgz, so these are not the bytes
       # anything validated. Fine here: a rolling build is not a release.
@@ -367,7 +367,7 @@ jobs:
 
       - name: Upload release notes
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-notes
           path: _output/RELEASE_NOTES.md
@@ -402,7 +402,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: "docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8" # v4.2.0
+      - uses: "docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1" # v4.4.0
         with:
           # Pin the binfmt/QEMU emulator to a specific version. The action caches
           # the emulator image (`cache-image: true`) under a key derived from the
@@ -415,7 +415,7 @@ jobs:
           # A versioned tag gives a version-specific cache key (sidestepping the
           # poisoned `latest` cache) and a QEMU build that contains the upstream fix.
           image: tonistiigi/binfmt:qemu-v10.2.3
-      - uses: "docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c" # v4.2.0
+      - uses: "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069" # v4.4.1
 
       - name: Disable Docker cache for releases
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
@@ -482,7 +482,7 @@ jobs:
       # per-release binary tarballs + checksums every prior release carried.
       - name: Upload release binaries
         if: ${{ needs.setup.outputs.needs_release == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-binaries
           path: |
@@ -607,7 +607,7 @@ jobs:
           registry: ${{ env.IMAGE_REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: "docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c" # v4.2.0
+      - uses: "docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069" # v4.4.1
 
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | go tool helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
@@ -626,19 +626,19 @@ jobs:
       # so pushing first risks re-pushing images and then dying on an expired artifact, leaving a
       # half-published version no re-run can finish. Keep every download ahead of every push.
       - name: Download the validated charts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: helm-charts
           path: _test
 
       - name: Download release notes
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-notes
           path: _output
 
       - name: Download release binaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-binaries
           path: dist
