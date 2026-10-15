@@ -1,9 +1,7 @@
 package proxy_syncer
 
 import (
-	"errors"
 	"fmt"
-	"time"
 
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
@@ -14,12 +12,10 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 
-	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
@@ -184,7 +180,7 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 				return &kgateway.Backend{ObjectMeta: om, Status: st}
 			}),
 		GetStatus: func(o *kgateway.Backend) kgateway.BackendStatus { return o.Status },
-		OnSync:    simpleStatusMetricsHook[*kgateway.Backend, kgateway.BackendStatus]("BackendStatusSyncer", wellknown.BackendGVK.Kind),
+		OnSync:    simpleStatusMetricsHook[*kgateway.Backend, kgateway.BackendStatus](wellknown.BackendGVK.Kind),
 	})
 
 	policyStatusInputs := plug.PolicyStatusInputs{
@@ -326,7 +322,7 @@ func routeWriter[R, W controllers.ComparableObject](
 			desired.Parents = statussync.MergeRouteParentStatuses(controllerName, getStatus(current).Parents, desired.Parents)
 			return desired
 		},
-		OnSync: routeStatusMetricsHook(gvk.Kind, controllerName, parentRefs),
+		OnSync: routeStatusMetricsHook(gvk.Kind, parentRefs),
 	}
 }
 
@@ -349,130 +345,47 @@ func mergeGatewayStatusAddresses(current *gwv1.Gateway, desired gwv1.GatewayStat
 	return desired
 }
 
-// The Accepted/Programmed condition types and the reasons considered healthy, used to
-// derive the status-sync error result the previous syncer reported.
-var (
-	gatewayConditionTypes = []string{
-		string(gwv1.GatewayConditionAccepted),
-		string(gwv1.GatewayConditionProgrammed),
-	}
-	gatewayAcceptedReasons = []string{
-		string(gwv1.GatewayReasonAccepted),
-		string(gwv1.GatewayReasonProgrammed),
-		string(gwv1.GatewayReasonPending),
-	}
-	listenerSetConditionTypes = []string{
-		string(gwv1.ListenerSetConditionAccepted),
-		string(gwv1.ListenerSetConditionProgrammed),
-	}
-	listenerSetAcceptedReasons = []string{
-		string(gwv1.ListenerSetReasonAccepted),
-		string(gwv1.ListenerSetReasonProgrammed),
-		string(gwv1.ListenerSetReasonPending),
-	}
-)
-
-// gatewayStatusOnSync records status sync metrics for Gateways, deriving an error
-// result from invalid Accepted/Programmed condition reasons like the previous syncer did.
-func gatewayStatusOnSync(res statussync.Resource, _ *gwv1.Gateway, status gwv1.GatewayStatus, took time.Duration, err error) {
-	statusErr := statussync.ConditionError(err, status.Conditions,
-		gatewayConditionTypes, gatewayAcceptedReasons, "invalid gateway condition")
-	statussync.RecordStatusSyncOutcome(
-		statussync.SyncMetricLabels{
-			Name:      res.Name,
-			Namespace: res.Namespace,
-			Syncer:    "GatewayStatusSyncer",
-		},
-		kmetrics.ResourceSyncDetails{
-			Namespace:    res.Namespace,
-			Gateway:      res.Name,
-			ResourceType: wellknown.GatewayKind,
-			ResourceName: res.Name,
-		},
-		took, err, statusErr)
+// gatewayStatusOnSync closes a Gateway's resource status sync once its status is written.
+func gatewayStatusOnSync(res statussync.Resource, _ *gwv1.Gateway, _ gwv1.GatewayStatus, err error) {
+	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
+		Namespace:    res.Namespace,
+		Gateway:      res.Name,
+		ResourceType: wellknown.GatewayKind,
+		ResourceName: res.Name,
+	})
 }
 
-// routeStatusMetricsHook records per-parent-gateway status sync metrics for routes,
-// deriving an error result from invalid route conditions like the previous syncer did.
+// routeStatusMetricsHook closes a route's resource status sync for each of its parent
+// Gateways once its status is written.
 func routeStatusMetricsHook[T controllers.ComparableObject](
 	kind string,
-	controllerName string,
 	parentRefs func(T) []gwv1.ParentReference,
-) func(res statussync.Resource, current T, status gwv1.RouteStatus, took time.Duration, err error) {
-	return func(res statussync.Resource, current T, status gwv1.RouteStatus, took time.Duration, err error) {
-		// Every emitter below is a no-op while metrics are disabled, so skip the scan and
-		// the allocations entirely rather than building them for nothing on each write.
-		if !metrics.Active() {
-			return
-		}
-		// Allocated on the first invalid condition: routes are healthy in the common case.
-		var statusErrByGateway map[string]error
-		setStatusErr := func(gwName string, statusErr error) {
-			if statusErrByGateway == nil {
-				statusErrByGateway = map[string]error{}
-			}
-			statusErrByGateway[gwName] = statusErr
-		}
-		for _, ps := range status.Parents {
-			// status is the merged status, so it also carries parents owned by other
-			// controllers. Their conditions are not ours to report on.
-			if string(ps.ControllerName) != controllerName {
-				continue
-			}
-			gwName := string(ps.ParentRef.Name)
-			for _, cond := range ps.Conditions {
-				switch {
-				case cond.Type == string(gwv1.RouteConditionPartiallyInvalid) && cond.Status == metav1.ConditionTrue:
-					setStatusErr(gwName, errors.New("partially invalid route condition"))
-				case cond.Type == conditions.KgatewayConditionProgrammed && cond.Status != metav1.ConditionTrue:
-					setStatusErr(gwName, errors.New("invalid route condition"))
-				case cond.Type == string(gwv1.RouteConditionAccepted) &&
-					cond.Reason != string(gwv1.RouteReasonAccepted) &&
-					cond.Reason != string(gwv1.RouteReasonPending):
-					setStatusErr(gwName, errors.New("invalid route condition"))
-				}
-			}
-		}
-
+) func(res statussync.Resource, current T, status gwv1.RouteStatus, err error) {
+	return func(res statussync.Resource, current T, _ gwv1.RouteStatus, err error) {
 		if controllers.IsNil(current) {
 			return
 		}
 		for _, pr := range parentRefs(current) {
-			gwName := string(pr.Name)
-			statussync.RecordStatusSyncOutcome(
-				statussync.SyncMetricLabels{
-					Name:      gwName,
-					Namespace: res.Namespace,
-					Syncer:    "RouteStatusSyncer",
-				},
-				kmetrics.ResourceSyncDetails{
-					Namespace:    res.Namespace,
-					Gateway:      gwName,
-					ResourceType: kind,
-					ResourceName: res.Name,
-				},
-				took, err, errors.Join(err, statusErrByGateway[gwName]))
+			statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
+				Namespace:    res.Namespace,
+				Gateway:      string(pr.Name),
+				ResourceType: kind,
+				ResourceName: res.Name,
+			})
 		}
 	}
 }
 
-// simpleStatusMetricsHook records status sync metrics keyed by the resource itself
-// (used for kinds that are not parented by a Gateway).
-func simpleStatusMetricsHook[T controllers.ComparableObject, S any](syncer, kind string) func(res statussync.Resource, current T, status S, took time.Duration, err error) {
-	return func(res statussync.Resource, _ T, _ S, took time.Duration, err error) {
-		statussync.RecordStatusSyncOutcome(
-			statussync.SyncMetricLabels{
-				Name:      res.Name,
-				Namespace: res.Namespace,
-				Syncer:    syncer,
-			},
-			kmetrics.ResourceSyncDetails{
-				Namespace:    res.Namespace,
-				Gateway:      "",
-				ResourceType: kind,
-				ResourceName: res.Name,
-			},
-			took, err, err)
+// simpleStatusMetricsHook closes the resource status sync of a kind that is not parented
+// by a Gateway once its status is written.
+func simpleStatusMetricsHook[T controllers.ComparableObject, S any](kind string) func(res statussync.Resource, current T, status S, err error) {
+	return func(res statussync.Resource, _ T, _ S, err error) {
+		statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
+			Namespace:    res.Namespace,
+			Gateway:      "",
+			ResourceType: kind,
+			ResourceName: res.Name,
+		})
 	}
 }
 
@@ -525,34 +438,24 @@ func listenerSetDesired(
 	}
 }
 
-// listenerSetStatusOnSync records status sync metrics for either ListenerSet flavor,
-// deriving an error result from invalid Accepted/Programmed condition reasons like the
-// previous syncer did.
-func listenerSetStatusOnSync(res statussync.Resource, current *gwv1.ListenerSet, status gwv1.ListenerSetStatus, took time.Duration, err error) {
-	statusErr := statussync.ConditionError(err, status.Conditions,
-		listenerSetConditionTypes, listenerSetAcceptedReasons, "invalid listener condition")
+// listenerSetStatusOnSync closes the resource status sync of either ListenerSet flavor once
+// its status is written.
+func listenerSetStatusOnSync(res statussync.Resource, current *gwv1.ListenerSet, _ gwv1.ListenerSetStatus, err error) {
 	parentName := ""
 	if !controllers.IsNil(current) {
 		parentName = string(current.Spec.ParentRef.Name)
 	}
-	statussync.RecordStatusSyncOutcome(
-		statussync.SyncMetricLabels{
-			Name:      parentName,
-			Namespace: res.Namespace,
-			Syncer:    "ListenerSetStatusSyncer",
-		},
-		kmetrics.ResourceSyncDetails{
-			Namespace: res.Namespace,
-			Gateway:   parentName,
-			// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
-			// series under the legacy value "XListenerSet", not two -- which is also why
-			// both writers share this hook. This must stay byte-identical to the value the
-			// *gwv1.ListenerSet arm in krtcollections/metrics derives at sync start:
-			// ResourceType is part of the start/end join key, so renaming either site alone
-			// leaves every listener set sync permanently open. See the TODO there for the
-			// coordinated rename.
-			ResourceType: "XListenerSet",
-			ResourceName: res.Name,
-		},
-		took, err, statusErr)
+	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
+		Namespace: res.Namespace,
+		Gateway:   parentName,
+		// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
+		// series under the legacy value "XListenerSet", not two -- which is also why
+		// both writers share this hook. This must stay byte-identical to the value the
+		// *gwv1.ListenerSet arm in krtcollections/metrics derives at sync start:
+		// ResourceType is part of the start/end join key, so renaming either site alone
+		// leaves every listener set sync permanently open. See the TODO there for the
+		// coordinated rename.
+		ResourceType: "XListenerSet",
+		ResourceName: res.Name,
+	})
 }
