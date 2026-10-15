@@ -83,7 +83,8 @@ type resourceMetricLabels struct {
 // managedCounts is the source of truth for resourcesManaged, which is always written with
 // Set: the metrics sweeper may delete a namespace's series while delete events for its
 // resources are still queued, and a relative update would then corrupt the series of a
-// namespace recreated with that name.
+// namespace recreated with that name. A series whose count reaches zero is deleted, so a
+// deleted parent in a namespace that stays does not leave one behind.
 var managedCounts = struct {
 	sync.Mutex
 	counts map[resourceMetricLabels]int
@@ -97,10 +98,31 @@ func addResourcesManaged(labels resourceMetricLabels, delta int) {
 	count := managedCounts.counts[labels] + delta
 	if count == 0 {
 		delete(managedCounts.counts, labels)
-	} else {
-		managedCounts.counts[labels] = count
+		resourcesManaged.DeletePartialMatch(labels.toMetricsLabels()...)
+		return
 	}
+	managedCounts.counts[labels] = count
 	resourcesManaged.Set(float64(count), labels.toMetricsLabels()...)
+}
+
+// dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. Nothing ends it
+// otherwise: pending syncs are keyed by Gateway name, so the next sync of a Gateway with
+// the same name in another namespace would end it and record its series again.
+func dropResourceXDSSync(details ResourceSyncDetails) {
+	startTimes.Lock()
+	defer startTimes.Unlock()
+
+	byNamespace := startTimes.times[details.Gateway][snapshotResourceType]
+	delete(byNamespace[details.Namespace], details.ResourceName)
+	if len(byNamespace[details.Namespace]) == 0 {
+		delete(byNamespace, details.Namespace)
+	}
+	if len(byNamespace) == 0 {
+		delete(startTimes.times[details.Gateway], snapshotResourceType)
+	}
+	if len(startTimes.times[details.Gateway]) == 0 {
+		delete(startTimes.times, details.Gateway)
+	}
 }
 
 func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
@@ -464,21 +486,22 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				})
 			}
 		case controllers.EventUpdate:
+			// Apply the net change, so an update that keeps a parent does not delete and
+			// re-create its series as the count passes through zero.
+			deltas := make(map[resourceMetricLabels]int, len(namesOld)+len(names))
 			for _, name := range namesOld {
-				addResourcesManaged(resourceMetricLabels{
-					Parent:    name,
-					Namespace: namespaceOld,
-					Resource:  resourceType,
-				}, -1)
+				deltas[resourceMetricLabels{Parent: name, Namespace: namespaceOld, Resource: resourceType}]--
+			}
+			for _, name := range names {
+				deltas[resourceMetricLabels{Parent: name, Namespace: namespace, Resource: resourceType}]++
+			}
+			for labels, delta := range deltas {
+				if delta != 0 {
+					addResourcesManaged(labels, delta)
+				}
 			}
 
 			for _, name := range names {
-				addResourcesManaged(resourceMetricLabels{
-					Parent:    name,
-					Namespace: namespace,
-					Resource:  resourceType,
-				}, 1)
-
 				startResourceSync(ResourceSyncDetails{
 					Gateway:      name,
 					Namespace:    namespace,
@@ -494,12 +517,16 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					Resource:  resourceType,
 				}, -1)
 
-				startResourceSync(ResourceSyncDetails{
+				details := ResourceSyncDetails{
 					Gateway:      name,
 					Namespace:    namespace,
 					ResourceType: resourceType,
 					ResourceName: resourceName,
-				})
+				}
+				if resourceType == wellknown.GatewayKind {
+					// A deleted Gateway gets no further XDS sync.
+					dropResourceXDSSync(details)
+				}
 			}
 		}
 	}

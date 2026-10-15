@@ -369,3 +369,91 @@ func TestResourcesManagedSurvivesSweepOfRecreatedNamespace(t *testing.T) {
 
 	metricstest.MustGatherMetrics(t).AssertMetric("kgateway_resources_managed", managed(1))
 }
+
+func TestResourcesManagedDeletedAtZero(t *testing.T) {
+	setupTest()
+
+	gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "ns"}}
+	moved := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "r", Namespace: "ns"},
+		Spec: gwv1.HTTPRouteSpec{CommonRouteSpec: gwv1.CommonRouteSpec{
+			ParentRefs: []gwv1.ParentReference{{Name: "gw"}},
+		}},
+	}
+	movedTo := moved.DeepCopy()
+	movedTo.Spec.ParentRefs[0].Name = "other"
+	gwHandler := GetResourceMetricEventHandler[*gwv1.Gateway]()
+	routeHandler := GetResourceMetricEventHandler[*gwv1.HTTPRoute]()
+	managed := func(parent, resource string) []metrics.Label {
+		return []metrics.Label{
+			{Name: "namespace", Value: "ns"},
+			{Name: "parent", Value: parent},
+			{Name: "resource", Value: resource},
+		}
+	}
+
+	gwHandler(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &gw})
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &moved})
+	// An update that keeps its parent leaves the series in place.
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventUpdate, Old: &moved, New: &moved})
+	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_resources_managed",
+		[][]metrics.Label{managed("gw", "Gateway"), managed("gw", "HTTPRoute")})
+
+	// A deleted Gateway and a route moved to another parent leave no zero series in a
+	// namespace that stays.
+	gwHandler(krt.Event[*gwv1.Gateway]{Event: controllers.EventDelete, Old: &gw})
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventUpdate, Old: &moved, New: &movedTo})
+	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_resources_managed",
+		[][]metrics.Label{managed("other", "HTTPRoute")})
+}
+
+// gatewaySeries returns the label sets of the named metric's series for gateway.
+func gatewaySeries(t *testing.T, name, gateway string) []map[string]string {
+	t.Helper()
+	families, err := metrics.Registry().Gather()
+	assert.NoError(t, err)
+	var out []map[string]string
+	for _, mf := range families {
+		if mf.GetName() != name {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			labels := map[string]string{}
+			for _, l := range m.GetLabel() {
+				labels[l.GetName()] = l.GetValue()
+			}
+			if labels["gateway"] == gateway {
+				out = append(out, labels)
+			}
+		}
+	}
+	return out
+}
+
+func TestGatewayDeleteDropsPendingXDSSync(t *testing.T) {
+	setupTest()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	StartResourceSyncMetricsProcessing(ctx)
+
+	deleted := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "deleted"}}
+	live := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "live"}}
+	handler := GetResourceMetricEventHandler[*gwv1.Gateway]()
+	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &deleted})
+	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &live})
+	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventDelete, Old: &deleted})
+
+	// The next sync of the same-name Gateway ends only its own pending sync.
+	EndResourceXDSSync(ResourceSyncDetails{Gateway: "gw", Namespace: "live", ResourceType: "Gateway", ResourceName: "gw"})
+	syncedNamespaces := func() map[string]bool {
+		out := map[string]bool{}
+		for _, labels := range gatewaySeries(t, "kgateway_xds_snapshot_syncs_total", "gw") {
+			out[labels["namespace"]] = true
+		}
+		return out
+	}
+	assert.Eventually(t, func() bool { return syncedNamespaces()["live"] }, time.Second, 10*time.Millisecond,
+		"the live Gateway's sync should be recorded")
+	assert.Equal(t, map[string]bool{"live": true}, syncedNamespaces(),
+		"the deleted Gateway's pending sync must not be ended by the live one's")
+}
