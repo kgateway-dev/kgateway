@@ -43,8 +43,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_gwtest_egress-proxy_3128
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
