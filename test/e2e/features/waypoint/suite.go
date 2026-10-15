@@ -119,8 +119,8 @@ func (s *testingSuite) SetupSuite() {
 	// The ServiceEntry test requires Istio integration to watch ServiceEntry resources
 	s.setDeploymentEnvVariable("KGW_ENABLE_ISTIO_INTEGRATION", "true")
 
-	// If it's a suite testing with KGW_INGRESS_USE_WAYPOINTS disabled (enabled by default),
-	// we set the env var in the controller deployment for the tests
+	// If it's a suite testing with KGW_INGRESS_USE_WAYPOINTS disabled (the Helm value
+	// waypoint.enabled turns it on), we set the env var in the controller deployment for the tests
 	if !s.ingressUseWaypoint {
 		s.setDeploymentEnvVariable("KGW_INGRESS_USE_WAYPOINTS", "false")
 	}

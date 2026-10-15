@@ -286,7 +286,7 @@ gatewayClassParametersRefs: {}
 #     extProc: DeepMerge
 policyMerge: {}
 
-# -- Enable the ingress-use-waypoint integration. Ingress traffic to Services and ServiceEntries labeled istio.io/ingress-use-waypoint=true is sent through their Istio ambient waypoint.
+# -- Enable the ingress-use-waypoint integration (sets KGW_INGRESS_USE_WAYPOINTS). Ingress traffic to Services and ServiceEntries labeled istio.io/ingress-use-waypoint=true is sent through their Istio ambient waypoint.
 waypoint:
   enabled: false
 

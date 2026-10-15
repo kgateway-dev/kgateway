@@ -34,9 +34,6 @@ var VirtualWaypointGK = schema.GroupKind{
 // clusters with the backend addresses (VIPs) as endpoints, so the ztunnel
 // redirects the ingress traffic to the waypoint.
 func NewPlugin(commonCols *collections.CommonCollections) sdk.Plugin {
-	if !commonCols.Settings.IngressUseWaypoints {
-		return sdk.Plugin{}
-	}
 	waypointQueries := waypointquery.NewQueries(commonCols)
 	pcp := &PerClientProcessor{
 		waypointQueries: waypointQueries,
@@ -50,9 +47,8 @@ func NewPlugin(commonCols *collections.CommonCollections) sdk.Plugin {
 	}
 }
 
-// policyPlugin is the registration NewPlugin contributes when ingress-use-waypoint
-// is enabled. Tests check the overlay against the inputs hash registered beside
-// it, so both come from here.
+// policyPlugin is the registration NewPlugin contributes. Tests check the
+// overlay against the inputs hash registered beside it, so both come from here.
 func (t *PerClientProcessor) policyPlugin() sdk.PolicyPlugin {
 	return sdk.PolicyPlugin{
 		Name:                    "waypoint",

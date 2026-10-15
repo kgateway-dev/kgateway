@@ -118,7 +118,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	var gatedPlugins []sdk.Plugin
 	// Add the ingress-use-waypoint plugin if enabled
-	if cfg.SetupOpts.GlobalSettings.EnableWaypoint {
+	if cfg.SetupOpts.GlobalSettings.IngressUseWaypoints {
 		setupLog.Info("adding the waypoint plugin")
 		gatedPlugins = append(gatedPlugins, waypoint.NewPlugin(cfg.CommonCollections))
 	}
