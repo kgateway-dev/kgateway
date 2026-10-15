@@ -1054,7 +1054,7 @@ func translateTLSConfig(
 		}
 
 		// Only the validation result is used here; the IR carries the Secret's data as is.
-		if err := sslutils.ValidateTlsSecretIR(secret); err != nil {
+		if err := secret.ValidateTLS(); err != nil {
 			certErr = errors.Join(certErr, err)
 			continue
 		}

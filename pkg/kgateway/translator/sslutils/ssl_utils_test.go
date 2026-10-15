@@ -5,9 +5,6 @@ import (
 
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/util/cert"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -269,36 +266,4 @@ func TestSplitFakeYamlArray(t *testing.T) {
 			assert.ElementsMatch(t, tc.expected, actual, "input: %s, expected: %v, got %v", tc.input, tc.expected, actual)
 		})
 	}
-}
-
-func TestValidateTlsSecretIR(t *testing.T) {
-	certPEM, keyPEM, err := cert.GenerateSelfSignedCertKey("example.com", nil, nil)
-	require.NoError(t, err)
-	tlsSecret := func(data map[string][]byte, validation *ir.SecretValidation) *ir.Secret {
-		return &ir.Secret{
-			ObjectSource:  ir.ObjectSource{Kind: "Secret", Namespace: "default", Name: "tls"},
-			Data:          data,
-			TLSValidation: validation,
-		}
-	}
-	valid := map[string][]byte{corev1.TLSCertKey: certPEM, corev1.TLSPrivateKeyKey: keyPEM}
-	invalid := map[string][]byte{corev1.TLSCertKey: []byte("not a cert"), corev1.TLSPrivateKeyKey: keyPEM}
-
-	t.Run("without a cached validation, every call validates", func(t *testing.T) {
-		assert.NoError(t, ValidateTlsSecretIR(tlsSecret(valid, nil)))
-		assert.ErrorIs(t, ValidateTlsSecretIR(tlsSecret(invalid, nil)), ErrInvalidTlsSecret)
-	})
-
-	t.Run("with a cached validation, only the first call validates", func(t *testing.T) {
-		secret := tlsSecret(valid, &ir.SecretValidation{})
-		require.NoError(t, ValidateTlsSecretIR(secret))
-		allocs := testing.AllocsPerRun(10, func() {
-			_ = ValidateTlsSecretIR(secret)
-		})
-		assert.Zero(t, allocs, "later calls should not parse the certificate again")
-
-		secret = tlsSecret(invalid, &ir.SecretValidation{})
-		require.ErrorIs(t, ValidateTlsSecretIR(secret), ErrInvalidTlsSecret)
-		assert.ErrorIs(t, ValidateTlsSecretIR(secret), ErrInvalidTlsSecret, "the cached result should keep the error")
-	})
 }

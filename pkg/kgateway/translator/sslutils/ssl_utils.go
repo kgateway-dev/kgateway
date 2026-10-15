@@ -1,7 +1,6 @@
 package sslutils
 
 import (
-	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -26,11 +25,9 @@ const (
 )
 
 var (
-	ErrInvalidTlsSecret = errors.New("invalid TLS secret")
+	ErrInvalidTlsSecret = ir.ErrInvalidTlsSecret
 
-	InvalidTlsSecretError = func(n, ns string, err error) error {
-		return fmt.Errorf("%w %s/%s: %w", ErrInvalidTlsSecret, ns, n, err)
-	}
+	InvalidTlsSecretError = ir.InvalidTlsSecretError
 
 	NoCertificateFoundError = errors.New("no certificate information found")
 
@@ -68,59 +65,6 @@ var (
 	}
 	ErrMissingCaCertificateRefGrant = errors.New("missing CA certificate reference grant")
 )
-
-// ValidateTlsSecret and return a cleaned cert
-func ValidateTlsSecret(sslSecret *corev1.Secret) (cleanedCertChain string, err error) {
-	return ValidateTlsSecretData(sslSecret.Name, sslSecret.Namespace, sslSecret.Data)
-}
-
-func ValidateTlsSecretData(n, ns string, sslSecretData map[string][]byte) (cleanedCertChain string, err error) {
-	certChain := string(sslSecretData[corev1.TLSCertKey])
-	privateKey := string(sslSecretData[corev1.TLSPrivateKeyKey])
-	rootCa := string(sslSecretData[corev1.ServiceAccountRootCAKey])
-
-	cleanedCertChain, err = cleanedSslKeyPair(certChain, privateKey, rootCa)
-	if err != nil {
-		err = InvalidTlsSecretError(n, ns, err)
-	}
-	return cleanedCertChain, err
-}
-
-// ValidateTlsSecretIR validates secret's data as a TLS Secret. When the Secret carries a
-// TLSValidation, the validation runs once per Secret version and later calls return that result.
-func ValidateTlsSecretIR(secret *ir.Secret) error {
-	return secret.TLSValidation.Do(func() error {
-		_, err := ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data)
-		return err
-	})
-}
-
-func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
-	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
-	if (certChain == "") && (privateKey == "") && (rootCa != "") {
-		return certChain, nil
-	}
-
-	// validate that the cert and key are a valid pair
-	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
-	if err != nil {
-		return "", err
-	}
-
-	// validate that the parsed piece is valid
-	// this is still faster than a call out to openssl despite this second parsing pass of the cert
-	// pem parsing in go is permissive while envoy is not
-	// this might not be needed once we have larger envoy validation
-	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
-	if err != nil {
-		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with kgateway pkg.
-		return "", err
-	}
-	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
-	cleanedChain = string(cleanedChainBytes)
-
-	return cleanedChain, err
-}
 
 // GetCACertFromConfigMap validates and extracts the ca.crt string from a ConfigMap
 func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {

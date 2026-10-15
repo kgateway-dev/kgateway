@@ -15,7 +15,6 @@ import (
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
@@ -67,7 +66,7 @@ func TestSecretTLSValidationFollowsSecretUpdates(t *testing.T) {
 		first = getSecret()
 		return first != nil
 	}, 10*time.Second, 10*time.Millisecond, "the Secret should be in the collection")
-	require.NoError(t, sslutils.ValidateTlsSecretIR(first))
+	require.NoError(t, first.ValidateTLS())
 	assert.Same(t, first.TLSValidation, getSecret().TLSValidation, "an unchanged Secret should keep its cached validation")
 
 	updateSecret(tlsSecret("2", []byte("not a cert")))
@@ -75,12 +74,12 @@ func TestSecretTLSValidationFollowsSecretUpdates(t *testing.T) {
 		secret := getSecret()
 		return secret != nil && secret.Obj.GetResourceVersion() == "2"
 	}, 10*time.Second, 10*time.Millisecond, "the update should reach the collection")
-	assert.ErrorIs(t, sslutils.ValidateTlsSecretIR(getSecret()), sslutils.ErrInvalidTlsSecret, "the invalid update should be validated again")
+	assert.ErrorIs(t, getSecret().ValidateTLS(), ir.ErrInvalidTlsSecret, "the invalid update should be validated again")
 
 	updateSecret(tlsSecret("3", certPEM))
 	require.Eventually(t, func() bool {
 		secret := getSecret()
 		return secret != nil && secret.Obj.GetResourceVersion() == "3"
 	}, 10*time.Second, 10*time.Millisecond, "the update should reach the collection")
-	assert.NoError(t, sslutils.ValidateTlsSecretIR(getSecret()), "the fixed Secret should be validated again")
+	assert.NoError(t, getSecret().ValidateTLS(), "the fixed Secret should be validated again")
 }

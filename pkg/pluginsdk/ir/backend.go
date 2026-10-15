@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
@@ -455,28 +454,12 @@ type Secret struct {
 	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
 
-	// TLSValidation keeps the result of validating Data as a TLS Secret, so the listeners
-	// that reference this Secret validate it once instead of once each. Copies of a Secret
-	// share it. The Secret collection builds a new Secret for each version of the object,
-	// so a changed Secret is validated again. When nil, every validation runs in full.
+	// TLSValidation keeps the result of ValidateTLS, so the listeners that reference this
+	// Secret validate it once instead of once each. Copies of a Secret share it. The Secret
+	// collection builds a new Secret for each version of the object, so a changed Secret is
+	// validated again. When nil, ValidateTLS checks on every call.
 	// +noKrtEquals derived from Data
 	TLSValidation *SecretValidation
-}
-
-// SecretValidation runs one validation of a Secret's data and keeps the result.
-type SecretValidation struct {
-	once sync.Once
-	err  error
-}
-
-// Do runs validate on the first call and returns that result on every call.
-// A nil SecretValidation runs validate on every call.
-func (v *SecretValidation) Do(validate func() error) error {
-	if v == nil {
-		return validate()
-	}
-	v.once.Do(func() { v.err = validate() })
-	return v.err
 }
 
 func (c Secret) ResourceName() string {
