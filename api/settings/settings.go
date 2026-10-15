@@ -244,15 +244,11 @@ type Settings struct {
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
 
-	// WaypointLocalBinding will make the waypoint bind to a loopback address,
-	// so that only the zTunnel can make connections to it. This requires the zTunnel
-	// shipped with Istio 1.26.0+.
-	WaypointLocalBinding bool `split_words:"true" default:"false"`
-
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
 	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation and
 	// istio.io/ingress-use-waypoint=true label will be redirected through a waypoint proxy.
 	// The feature is enabled by default and can be disabled by setting this to false.
+	// It only takes effect when EnableWaypoint is also set.
 	IngressUseWaypoints bool `split_words:"true" default:"true"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
@@ -319,7 +315,9 @@ type Settings struct {
 
 	PolicyMerge string `split_words:"true" default:"{}"`
 
-	// EnableWaypoint enables kgateway to translate istio waypoints
+	// EnableWaypoint enables the ingress-use-waypoint integration, which sends
+	// ingress traffic for backends labeled istio.io/ingress-use-waypoint=true
+	// through their Istio waypoint. See IngressUseWaypoints.
 	EnableWaypoint bool `split_words:"true" default:"false"`
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs

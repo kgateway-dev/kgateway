@@ -270,9 +270,8 @@ serviceEntriesExclusionLabelSelectors: []
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
-#    The default GatewayClasses managed by kgateway are:
+#    The default GatewayClass managed by kgateway is:
 #    - kgateway
-#    - kgateway-waypoint
 #    Example:
 #    gatewayClassParametersRefs:
 #      kgateway:
@@ -287,7 +286,7 @@ gatewayClassParametersRefs: {}
 #     extProc: DeepMerge
 policyMerge: {}
 
-# -- Enable the waypoint integration. This enables kgateway to translate istio waypoints and use kgateway as a waypoint in an Istio Ambient service mesh setup.
+# -- Enable the ingress-use-waypoint integration. Ingress traffic to Services and ServiceEntries labeled istio.io/ingress-use-waypoint=true is sent through their Istio ambient waypoint.
 waypoint:
   enabled: false
 

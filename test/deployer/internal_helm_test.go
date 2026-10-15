@@ -684,24 +684,6 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
-			Name:                        "waypoint gateway with istio enabled",
-			InputFile:                   "istio-enabled-waypoint",
-			HelmValuesGeneratorOverride: istioOverride,
-			Validate: func(t *testing.T, outputYaml string) {
-				t.Helper()
-				assert.Contains(t, outputYaml, "name: sds",
-					"sds container should be present when istio is enabled")
-				assert.Contains(t, outputYaml, "name: istio-proxy",
-					"istio-proxy container should be present when istio is enabled")
-				// Waypoint-specific: ClusterIP service type
-				assert.Contains(t, outputYaml, "type: ClusterIP",
-					"waypoint should have ClusterIP service type")
-				// Waypoint-specific: port 15008 for HBONE
-				assert.Contains(t, outputYaml, "port: 15008",
-					"waypoint should have port 15008 for HBONE")
-			},
-		},
-		{
 			Name:      "gateway with name exactly 63 characters",
 			InputFile: "long-gateway-name-exactly-63-chars",
 			Validate: func(t *testing.T, outputYaml string) {
@@ -750,9 +732,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 	}
 
 	tester := DeployerTester{
-		ControllerName:    wellknown.DefaultGatewayControllerName,
-		ClassName:         wellknown.DefaultGatewayClassName,
-		WaypointClassName: wellknown.DefaultWaypointClassName,
+		ControllerName: wellknown.DefaultGatewayControllerName,
+		ClassName:      wellknown.DefaultGatewayClassName,
 	}
 
 	dir := fsutils.MustGetThisDir()

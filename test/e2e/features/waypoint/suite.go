@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	"istio.io/api/label"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,9 +61,9 @@ func NewIngressTestingSuite(ctx context.Context, testInst *e2e.TestInstallation)
 
 // SetupSuite provides common objects used by all tests:
 // * Create an ambient captured Namespace - `testNamespace`
-// * Deploy a kgateway-waypoint using a Gateway resource - `gwName`
+// * Deploy an Istio waypoint using a Gateway resource - `gwName`
 // * Deploy server (Services, Pods) - `svc-a`, `svc-b`
-// * Deploy client (Pods) - `client-a`
+// * Deploy client (Pods) - `curl`
 func (s *testingSuite) SetupSuite() {
 	// must apply the ns first
 	err := s.testInstallation.ClusterContext.Cli.ApplyFilePath(s.ctx, nsYAML)
@@ -91,7 +92,6 @@ func (s *testingSuite) SetupSuite() {
 		{"app", "svc-a"},
 		{"app", "svc-b"},
 		{"app", "curl"},
-		{"app", "notcurl"},
 		{"gateway.networking.k8s.io/gateway-name", gwName},
 	}
 	for _, app := range wantApps {
@@ -116,7 +116,7 @@ func (s *testingSuite) SetupSuite() {
 		}
 	}
 
-	// Waypoint tests require Istio integration to watch ServiceEntry resources
+	// The ServiceEntry test requires Istio integration to watch ServiceEntry resources
 	s.setDeploymentEnvVariable("KGW_ENABLE_ISTIO_INTEGRATION", "true")
 
 	// If it's a suite testing with KGW_INGRESS_USE_WAYPOINTS disabled (enabled by default),
@@ -216,5 +216,15 @@ func (s *testingSuite) applyOrFail(fileName string, namespace string) {
 }
 
 func (s *testingSuite) setNamespaceWaypointOrFail(ns string) {
-	s.useWaypointLabelForTest("ns", ns, "")
+	testutils.Cleanup(s.T(), func() {
+		err := s.testInstallation.ClusterContext.Cli.UnsetLabel(s.ctx, "ns", ns, "", label.IoIstioUseWaypoint.Name)
+		if err != nil {
+			// this could break other tests, so fail here
+			s.FailNow("failed removing label", err)
+		}
+	})
+	err := s.testInstallation.ClusterContext.Cli.SetLabel(s.ctx, "ns", ns, "", label.IoIstioUseWaypoint.Name, gwName)
+	if err != nil {
+		s.FailNow("failed applying label", err)
+	}
 }

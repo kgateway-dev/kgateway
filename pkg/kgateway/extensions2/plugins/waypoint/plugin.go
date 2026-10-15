@@ -13,11 +13,9 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint/waypointquery"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -30,51 +28,26 @@ var VirtualWaypointGK = schema.GroupKind{
 	Kind:  "waypoint",
 }
 
-func NewPlugin(
-	ctx context.Context,
-	commonCols *collections.CommonCollections,
-	waypointGatewayClassName string,
-) sdk.Plugin {
-	queries := query.NewData(
-		commonCols,
-	)
-	waypointQueries := waypointquery.NewQueries(
-		commonCols,
-		queries,
-	)
-	plugin := sdk.Plugin{
-		ContributesGwTranslator: func(gw *gwv1.Gateway) sdk.KGwTranslator {
-			if string(gw.Spec.GatewayClassName) != waypointGatewayClassName {
-				return nil
-			}
-
-			return NewTranslator(queries, waypointQueries, commonCols.Settings)
-		},
-		ExtraHasSynced: func() bool {
-			return waypointQueries.HasSynced()
-		},
+// NewPlugin returns the ingress-use-waypoint plugin. For ambient-captured
+// clients, it rewrites the clusters of backends labeled
+// istio.io/ingress-use-waypoint=true that have a waypoint attached into STATIC
+// clusters with the backend addresses (VIPs) as endpoints, so the ztunnel
+// redirects the ingress traffic to the waypoint.
+func NewPlugin(commonCols *collections.CommonCollections) sdk.Plugin {
+	if !commonCols.Settings.IngressUseWaypoints {
+		return sdk.Plugin{}
 	}
-
-	// If ingress use waypoints is enabled, we need to process the backends per client. Depending
-	// on the gateway class of the client, we will either add an EDS cluster or a static cluster.
-	// The static cluster will be used to redirect the traffic to the waypoint service by using the
-	// backend addresses (VIPs) as the endpoints. This will cause the traffic from the ingress to be
-	// redirected to the waypoint by the ztunnel.
+	waypointQueries := waypointquery.NewQueries(commonCols)
 	pcp := &PerClientProcessor{
-		waypointQueries:          waypointQueries,
-		commonCols:               commonCols,
-		waypointGatewayClassName: waypointGatewayClassName,
+		waypointQueries: waypointQueries,
+		commonCols:      commonCols,
 	}
-	if commonCols.Settings.IngressUseWaypoints {
-		plugin.ContributesPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
-			// TODO: Currently endpoints are still being added to an EDS CLA out of this plugin.
-			// Contributing a PerClientProcessEndpoints function can return an empty CLA but
-			// it is still redundant.
+	return sdk.Plugin{
+		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			VirtualWaypointGK: pcp.policyPlugin(),
-		}
+		},
+		ExtraHasSynced: waypointQueries.HasSynced,
 	}
-
-	return plugin
 }
 
 // policyPlugin is the registration NewPlugin contributes when ingress-use-waypoint
@@ -102,16 +75,15 @@ func (t *PerClientProcessor) overlayInputsHash(in ir.BackendObjectIR) uint64 {
 }
 
 type PerClientProcessor struct {
-	waypointQueries          waypointquery.WaypointQueries
-	commonCols               *collections.CommonCollections
-	waypointGatewayClassName string
+	waypointQueries waypointquery.WaypointQueries
+	commonCols      *collections.CommonCollections
 }
 
 func (t *PerClientProcessor) clusterOverlay(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR) *sdk.ClusterOverlay {
 	// Cheap UCC-only filter first: if the ucc doesn't have the
 	// ambient.istio.io/redirection=enabled annotation, nothing this plugin does
-	// can affect the output. Skipping here avoids the expensive Gateway
-	// FetchOne below for the dominant case (most UCCs are not ambient).
+	// can affect the output. Skipping here avoids the KRT lookups below for
+	// the dominant case (most UCCs are not ambient).
 	if val, ok := ucc.Labels[istioannot.AmbientRedirection.Name]; !ok || val != "enabled" {
 		return nil
 	}
@@ -119,24 +91,6 @@ func (t *PerClientProcessor) clusterOverlay(kctx krt.HandlerContext, ctx context
 	// Cheap backend filter next: skip backends (and their namespaces/aliases)
 	// that aren't opted in to ingress-use-waypoint.
 	if !HasIngressUseWaypointLabel(kctx, t.commonCols, in) {
-		return nil
-	}
-
-	// If the ucc has a waypoint gateway class we will let it have an EDS cluster
-	// First try the annotation (for long gateway names > 63 chars), then fall back to the label
-	gwName := ucc.Labels[wellknown.GatewayNameAnnotation]
-	if gwName == "" {
-		gwName = ucc.Labels[wellknown.GatewayNameLabel]
-	}
-	gwKey := ir.ObjectSource{
-		Group:     wellknown.GatewayGVK.GroupKind().Group,
-		Kind:      wellknown.GatewayGVK.GroupKind().Kind,
-		Name:      gwName,
-		Namespace: ucc.Namespace,
-	}
-	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))
-	if gwir == nil || gwir.Obj == nil || string(gwir.Obj.Spec.GatewayClassName) == t.waypointGatewayClassName {
-		// no op
 		return nil
 	}
 
