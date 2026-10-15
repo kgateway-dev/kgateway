@@ -36,7 +36,7 @@ Name|Version|License
 [go.uber.org/mock](https://go.uber.org/mock)|v0.6.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.28.0|MIT License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20260218203240-3dfff04db8fa|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.23.0|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.24.0|BSD 3-clause "New" or "Revised" License
 [x/time](https://golang.org/x/time)|v0.15.0|BSD 3-clause "New" or "Revised" License
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20260803160001-6ac0973c030d|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.83.2|Apache License 2.0
