@@ -40,6 +40,14 @@ var (
 	)
 )
 
+func init() {
+	// Only the gateway controller's series name a Gateway; gatewayclass series name a
+	// cluster-scoped GatewayClass.
+	gatewayController := metrics.Label{Name: controllerNameLabel, Value: "gateway"}
+	metrics.RegisterGatewayScoped(reconciliationsTotal, namespaceLabel, nameLabel, gatewayController)
+	metrics.RegisterGatewayScoped(reconcileDuration, namespaceLabel, nameLabel, gatewayController)
+}
+
 // collectReconciliationMetrics is called at the start of a controller reconciliation
 // function to begin metrics collection and returns a function called at the end to
 // complete metrics recording.

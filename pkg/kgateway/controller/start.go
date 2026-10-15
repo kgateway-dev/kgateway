@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"istio.io/istio/pkg/kube/krt"
@@ -30,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
+	pkgmetrics "github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -57,6 +59,9 @@ type SetupOpts struct {
 }
 
 var setupLog = ctrl.Log.WithName("setup")
+
+// metricsSweepInterval bounds how long a deleted Gateway or namespace keeps its metric series.
+const metricsSweepInterval = time.Minute
 
 type StartConfig struct {
 	Manager                  manager.Manager
@@ -141,6 +146,19 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// Begin background processing of resource sync metrics.
 	// This only effects metrics in the resources subsystem and is not required for other metrics.
 	metrics.StartResourceSyncMetricsProcessing(ctx)
+
+	// Remove the metric series of Gateways and namespaces that no longer exist.
+	commoncol := cfg.CommonCollections
+	go pkgmetrics.Sweeper{
+		NamespaceExists: func(namespace string) bool {
+			return commoncol.Namespaces.GetKey(namespace) != nil
+		},
+		GatewayExists: func(namespace, name string) bool {
+			return commoncol.RawGateways.GetKey(namespace+"/"+name) != nil
+		},
+	}.Run(ctx, metricsSweepInterval, func() bool {
+		return commoncol.Namespaces.HasSynced() && commoncol.RawGateways.HasSynced()
+	})
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")

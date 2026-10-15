@@ -90,6 +90,19 @@ var (
 	}, nil)
 )
 
+func init() {
+	// A Gateway's snapshot syncs carry the Gateway's own namespace.
+	metrics.RegisterGatewayScoped(xdsSnapshotSyncsTotal, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(xdsSnapshotSyncDuration, namespaceLabel, gatewayLabel)
+
+	// These carry the namespace of the route or policy and only the name of its parent, so
+	// they identify no Gateway and are removed with the namespace.
+	metrics.RegisterNamespaceScoped(resourcesManaged, namespaceLabel)
+	metrics.RegisterNamespaceScoped(resourcesStatusSyncsStartedTotal, namespaceLabel)
+	metrics.RegisterNamespaceScoped(resourcesStatusSyncsCompletedTotal, namespaceLabel)
+	metrics.RegisterNamespaceScoped(resourcesStatusSyncDuration, namespaceLabel)
+}
+
 type resourceMetricLabels struct {
 	Parent    string
 	Namespace string

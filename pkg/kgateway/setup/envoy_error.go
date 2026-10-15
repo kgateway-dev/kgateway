@@ -37,6 +37,11 @@ var (
 		}, []string{gwNamespaceLabel, gwNameLabel, typeURLLabel})
 )
 
+func init() {
+	metrics.RegisterGatewayScoped(xdsRejectsTotal, gwNamespaceLabel, gwNameLabel)
+	metrics.RegisterGatewayScoped(xdsRejectsCurrent, gwNamespaceLabel, gwNameLabel)
+}
+
 type resourceKey struct {
 	Namespace       string
 	Name            string
