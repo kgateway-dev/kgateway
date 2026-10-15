@@ -68,6 +68,19 @@ KRT collection is modified.
 metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.HTTPRoute]())
 ```
 
+### `kgateway_envoy_xds_nack_resends_suppressed_total` Metric
+
+This counter records when a NACK matches the response sent on its stream and the
+snapshot still has the rejected version, so kgateway suppresses the immediate
+resend and waits for a snapshot change. The `type_url` label contains the full
+xDS resource type URL. ACKs, uncorrelated NACKs, and NACKs for an older snapshot
+do not increment it.
+
+An increment indicates that kgateway prevented a resend of rejected configuration;
+it does not mean the rejection was resolved or count every retry that would have
+occurred without suppression. Use `kgateway_envoy_xds_rejects_active` to monitor
+active rejections and the NACK logs to investigate their cause.
+
 ### `kgateway_resources_updates_dropped_total` Metric
 * This metric is never emitted under normal operating circumstances.
 * It counts the number of times the background processing of resources metrics had to drop an update because the channel buffer was full.
