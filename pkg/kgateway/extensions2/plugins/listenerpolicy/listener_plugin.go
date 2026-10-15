@@ -408,6 +408,9 @@ func (p *listenerPolicyPluginGwPass) ApplyHCM(
 	if policy.mergeSlashes != nil {
 		out.MergeSlashes = *policy.mergeSlashes
 	}
+	if policy.pathWithEscapedSlashesAction != nil {
+		out.PathWithEscapedSlashesAction = *policy.pathWithEscapedSlashesAction
+	}
 	if policy.proxy100Continue != nil {
 		out.Proxy_100Continue = *policy.proxy100Continue
 	}

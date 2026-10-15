@@ -2802,6 +2802,20 @@ spec:
                           the original, unnormalized request path.
                           See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-normalize-path
                         type: boolean
+                      pathWithEscapedSlashesAction:
+                        description: |-
+                          PathWithEscapedSlashesAction determines how the connection manager handles requests whose
+                          path contains escaped slash sequences (%2F, %2f, %5C, %5c). This runs before path
+                          normalization and slash merging. If unset, Envoy's implementation specific default applies,
+                          which is currently KeepUnchanged: the escaped sequences are passed through to routing as-is,
+                          so a request for /foo%2Fbar does not match a /foo/ prefix.
+                          See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-path-with-escaped-slashes-action
+                        enum:
+                        - KeepUnchanged
+                        - RejectRequest
+                        - UnescapeAndRedirect
+                        - UnescapeAndForward
+                        type: string
                       preserveExternalRequestId:
                         description: |-
                           PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for
@@ -6132,6 +6146,20 @@ spec:
                                 the original, unnormalized request path.
                                 See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-normalize-path
                               type: boolean
+                            pathWithEscapedSlashesAction:
+                              description: |-
+                                PathWithEscapedSlashesAction determines how the connection manager handles requests whose
+                                path contains escaped slash sequences (%2F, %2f, %5C, %5c). This runs before path
+                                normalization and slash merging. If unset, Envoy's implementation specific default applies,
+                                which is currently KeepUnchanged: the escaped sequences are passed through to routing as-is,
+                                so a request for /foo%2Fbar does not match a /foo/ prefix.
+                                See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-path-with-escaped-slashes-action
+                              enum:
+                              - KeepUnchanged
+                              - RejectRequest
+                              - UnescapeAndRedirect
+                              - UnescapeAndForward
+                              type: string
                             preserveExternalRequestId:
                               description: |-
                                 PreserveExternalRequestId determines whether the connection manager will keep the x-request-id header if passed for
