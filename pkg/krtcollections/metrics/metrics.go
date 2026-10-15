@@ -80,6 +80,29 @@ type resourceMetricLabels struct {
 	Resource  string
 }
 
+// managedCounts is the source of truth for resourcesManaged, which is always written with
+// Set: the metrics sweeper may delete a namespace's series while delete events for its
+// resources are still queued, and a relative update would then corrupt the series of a
+// namespace recreated with that name.
+var managedCounts = struct {
+	sync.Mutex
+	counts map[resourceMetricLabels]int
+}{counts: map[resourceMetricLabels]int{}}
+
+// addResourcesManaged adjusts the count of managed resources for labels and publishes it.
+func addResourcesManaged(labels resourceMetricLabels, delta int) {
+	managedCounts.Lock()
+	defer managedCounts.Unlock()
+
+	count := managedCounts.counts[labels] + delta
+	if count == 0 {
+		delete(managedCounts.counts, labels)
+	} else {
+		managedCounts.counts[labels] = count
+	}
+	resourcesManaged.Set(float64(count), labels.toMetricsLabels()...)
+}
+
 func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
 	return []metrics.Label{
 		{Name: parentLabel, Value: r.Parent},
@@ -427,11 +450,11 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 		switch eventType {
 		case controllers.EventAdd:
 			for _, name := range names {
-				resourcesManaged.Add(1, resourceMetricLabels{
+				addResourcesManaged(resourceMetricLabels{
 					Parent:    name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, 1)
 
 				startResourceSync(ResourceSyncDetails{
 					Gateway:      name,
@@ -442,19 +465,19 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case controllers.EventUpdate:
 			for _, name := range namesOld {
-				resourcesManaged.Sub(1, resourceMetricLabels{
+				addResourcesManaged(resourceMetricLabels{
 					Parent:    name,
 					Namespace: namespaceOld,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, -1)
 			}
 
 			for _, name := range names {
-				resourcesManaged.Add(1, resourceMetricLabels{
+				addResourcesManaged(resourceMetricLabels{
 					Parent:    name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, 1)
 
 				startResourceSync(ResourceSyncDetails{
 					Gateway:      name,
@@ -465,11 +488,11 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case controllers.EventDelete:
 			for _, name := range names {
-				resourcesManaged.Sub(1, resourceMetricLabels{
+				addResourcesManaged(resourceMetricLabels{
 					Parent:    name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, -1)
 
 				startResourceSync(ResourceSyncDetails{
 					Gateway:      name,
@@ -489,6 +512,10 @@ func ResetMetrics() {
 	xdsSnapshotSyncDuration.Reset()
 	resourcesManaged.Reset()
 	resourcesUpdatesDroppedTotal.Reset()
+
+	managedCounts.Lock()
+	managedCounts.counts = map[resourceMetricLabels]int{}
+	managedCounts.Unlock()
 
 	startTimes.Lock()
 	defer startTimes.Unlock()
