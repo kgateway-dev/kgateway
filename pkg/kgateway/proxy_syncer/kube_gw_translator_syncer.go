@@ -101,9 +101,15 @@ func publishedReferencedClusters(published envoycache.ResourceSnapshot) map[stri
 //     client holds (the gate settles synthesized CLAs at publish time);
 //   - otherwise some gap is a newly-referenced cluster that has never been
 //     ready: routes, listeners, and secrets are held at their published
-//     versions (so nothing flips onto the unready cluster), the held routes'
-//     cluster/CLA dependencies are carried forward, and the new CDS/EDS —
-//     including the warming cluster — still goes out.
+//     versions (so nothing flips onto the unready cluster), every published
+//     cluster the build lacks is carried forward with its CLA (the held
+//     configuration's whole dependency closure, filter-called clusters
+//     included), and the new CDS/EDS — including the warming cluster — still
+//     goes out.
+//
+// A carried cluster's CLA is taken from the published snapshot unless the
+// build already has that assignment for another cluster sharing its EDS
+// service_name; the built assignment is then kept.
 //
 // The second return value lists the flip-blocking clusters when the hold was
 // applied, nil otherwise. holdFlips=false composes the released form — the
@@ -140,10 +146,16 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	composed := &envoycache.Snapshot{}
 	*composed = *snapWrap.snap
 
-	// carryRefs are the references whose cluster/CLA pairs must exist in the
-	// composed snapshot: the published routes' references when the flip is
-	// held (those routes stay live), plus any previously-published missing
-	// clusters on the truth path.
+	// carryRefs are the clusters whose cluster/CLA pairs must exist in the
+	// composed snapshot. While the flip is held, that is every cluster the
+	// published snapshot has: the held routes and listeners are exactly the
+	// published ones, so their whole dependency closure is the published CDS --
+	// route targets, and also the clusters their filters call (ext_authz,
+	// ext_proc, JWKS, OAuth2, rate limit, access log). Carrying only the routes'
+	// targets would let a build that stops naming such a cluster remove it while
+	// the held listener still calls it. The hold is bounded by the flip-release
+	// timer, so the extra clusters are carried for at most a budget. On the
+	// truth path, only previously-published missing clusters are carried.
 	carryRefs := make(map[string]struct{})
 	var heldBlocking []string
 	if holdFlips && len(flipBlocking) > 0 {
@@ -161,7 +173,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			"flip_blocking", flipBlocking,
 		)
 		recordFlipHeld(snapWrap.proxyKey)
-		for name := range publishedRefs {
+		for name := range oldClusters {
 			carryRefs[name] = struct{}{}
 		}
 		heldBlocking = flipBlocking
@@ -218,6 +230,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		carryHash ^= utils.HashString(name) ^ utils.HashProto(old.Resource)
 		claName, requiresEndpointResource := endpointResourceNameForCluster(old)
 		if !requiresEndpointResource {
+			continue
+		}
+		if _, built := endpointItems[claName]; built {
+			// Another cluster in this build already requires this assignment
+			// (an EDS service_name shared between clusters): keep the build's
+			// assignment. Replacing it with the published copy would serve stale
+			// endpoints to the cluster that was built, under a version that
+			// claims the built content.
 			continue
 		}
 		if oldCla, ok := oldEndpoints[claName]; ok {
