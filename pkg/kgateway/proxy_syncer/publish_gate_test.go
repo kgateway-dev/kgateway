@@ -749,3 +749,32 @@ func TestCarryOfAMissingClusterIsBounded(t *testing.T) {
 	assert.Equal(t, float64(1), g.MustGetMetricValueByLabels("kgateway_xds_snapshot_perclient_bounded_publishes_total",
 		labelsWith("mode", boundedPublishCarryExpired)))
 }
+
+// Resolving a deferred build finds the published routing targets by walking
+// the published listeners' filter chains, under the gate's single lock. The
+// walk is memoized by the identity of the published routes and listeners, so
+// builds that keep them reuse it, while different routing config, even under
+// a reused version label, is walked afresh.
+func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
+	memo := &referencedClustersMemo{}
+	routesA := routeResourcesForClusters("cluster-a")
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	walks := 0
+	refsOf := func(routes envoycache.Resources) map[string]struct{} {
+		return memo.get(routes.Items, listeners.Items, func() map[string]struct{} {
+			walks++
+			return collectReferencedClusters(routes, listeners)
+		})
+	}
+
+	first := refsOf(routesA)
+	again := refsOf(routesA)
+	assert.Equal(t, map[string]struct{}{"cluster-a": {}}, first)
+	assert.Equal(t, first, again)
+	assert.Equal(t, 1, walks, "the same routing config is walked once")
+
+	routesB := routeResourcesForClusters("cluster-b")
+	routesB.Version = routesA.Version // a reused label must not alias different content
+	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, refsOf(routesB))
+	assert.Equal(t, 2, walks)
+}
