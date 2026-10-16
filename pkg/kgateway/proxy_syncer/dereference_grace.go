@@ -21,6 +21,10 @@ type dereferenceState struct {
 	// closes; nothing else recomputes it merely because time passed.
 	wrap  XdsSnapWrapper
 	timer *time.Timer
+	// epoch identifies the latest arming. A callback whose timer was
+	// re-armed or cancelled after it started acts only if both its state and
+	// its epoch are still current.
+	epoch uint64
 }
 
 // graceDereferencedClusters decides which of the currently-published clusters a
@@ -134,8 +138,10 @@ func (g *publishGate) armDereferenceTimerLocked(
 	if state.timer != nil {
 		state.timer.Stop()
 	}
+	state.epoch++
+	epoch := state.epoch
 	state.timer = time.AfterFunc(in, func() {
-		g.fireDereferencePrune(ctx, cache, proxyKey)
+		g.fireDereferencePrune(ctx, cache, proxyKey, state, epoch)
 	})
 }
 
@@ -150,13 +156,19 @@ func (g *publishGate) cancelDereferenceTimerLocked(proxyKey string) {
 
 // fireDereferencePrune re-publishes the client's latest snapshot now that a
 // grace window has closed, under the same lock as every other publication, so
-// pruning cannot race a coherent publish.
-func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string) {
+// pruning cannot race a coherent publish. It acts only for the arming that
+// scheduled it: a callback already waiting on the lock when its timer was
+// re-armed or cancelled, or its state replaced, does nothing.
+func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, state *dereferenceState, epoch uint64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	state := g.dereferenced[proxyKey]
-	if state == nil {
-		return // every graced cluster was re-referenced while the timer was in flight
+	if g.dereferenced[proxyKey] != state || state.epoch != epoch {
+		return // superseded: re-armed, cancelled, or every graced cluster was re-referenced
+	}
+	if state.wrap.snap == nil {
+		// Defensive: every arming stores the build it re-publishes.
+		g.cancelDereferenceTimerLocked(proxyKey)
+		return
 	}
 	published := g.connectionSnapshotLocked(cache, proxyKey)
 	if published == nil {

@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -391,4 +392,70 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 	assert.True(t, snapshotReferencesCluster(served, "cluster-old"),
 		"a flip onto an unready cluster stays held until it is ready or the (1h) release bound, not the 80ms grace")
 	assert.False(t, snapshotReferencesCluster(served, "cluster-new"))
+}
+
+// A flip release can grace clusters its routes stopped naming. It must arm the
+// prune that removes them, storing the build to re-publish; before, it created
+// the grace state without either, so the clusters lingered until a later build,
+// and a stale prune callback that found that state dereferenced its nil build.
+func TestFlipReleaseArmsTheGracePrune(t *testing.T) {
+	pt := newGraceTestTranslator(t, 100*time.Millisecond)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	build := func(version, routeTo string, clusters ...string) XdsSnapWrapper {
+		w := clusterWrapperV(version, clusters...)
+		w.snap.Resources[envoycachetypes.Listener] = listeners
+		w.snap.Resources[envoycachetypes.Route] = routeResourcesForClusters(routeTo)
+		return w
+	}
+	pt.syncXds(ctx, build("v0", "cluster-old", "cluster-old"))
+
+	pf := &pendingFlipRelease{wrap: build("v1", "cluster-new", "cluster-new")}
+	pt.gate.mu.Lock()
+	pt.gate.cancelDereferenceTimerLocked(publishGateTestClient)
+	pt.gate.pendingFlips[publishGateTestClient] = pf
+	pt.gate.mu.Unlock()
+	pt.gate.fireFlipRelease(ctx, pt.xdsCache, publishGateTestClient, pf)
+
+	pt.gate.mu.Lock()
+	st := pt.gate.dereferenced[publishGateTestClient]
+	require.NotNil(t, st, "the release graced cluster-old")
+	assert.NotNil(t, st.timer, "the prune is armed")
+	assert.NotNil(t, st.wrap.snap, "with the build it re-publishes")
+	pt.gate.mu.Unlock()
+	require.Contains(t, publishedClusterNames(t, pt), "cluster-old")
+
+	require.Eventually(t, func() bool {
+		return !slices.Contains(publishedClusterNames(t, pt), "cluster-old")
+	}, 2*time.Second, 10*time.Millisecond, "cluster-old is removed when its grace closes")
+}
+
+// A prune callback that was already waiting on the gate lock when its timer was
+// re-armed or cancelled must do nothing: its state or epoch is no longer
+// current.
+func TestStaleGracePruneCallbackDoesNothing(t *testing.T) {
+	pt := newGraceTestTranslator(t, time.Hour)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, clusterWrapperV("v1", "kept", "going"))
+	pt.syncXds(ctx, clusterWrapperV("v2", "kept"))
+	pt.gate.mu.Lock()
+	state := pt.gate.dereferenced[publishGateTestClient]
+	require.NotNil(t, state)
+	staleEpoch := state.epoch
+	pt.gate.mu.Unlock()
+
+	pt.syncXds(ctx, clusterWrapperV("v3", "kept")) // re-arms: a new epoch
+	assert.NotPanics(t, func() { pt.gate.fireDereferencePrune(ctx, pt.xdsCache, publishGateTestClient, state, staleEpoch) })
+	assert.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
+	assert.Contains(t, publishedClusterNames(t, pt), "going", "a stale callback must not prune")
+
+	pt.gate.mu.Lock()
+	pt.gate.cancelDereferenceTimerLocked(publishGateTestClient)
+	pt.gate.dereferenced[publishGateTestClient] = &dereferenceState{since: map[string]time.Time{"going": time.Now()}}
+	pt.gate.mu.Unlock()
+	assert.NotPanics(t, func() { pt.gate.fireDereferencePrune(ctx, pt.xdsCache, publishGateTestClient, state, state.epoch) },
+		"a callback whose state was replaced must not touch the new one")
 }
