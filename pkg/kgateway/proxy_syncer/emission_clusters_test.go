@@ -9,14 +9,19 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoygrpcaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	sfsvalue "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/set_filter_state/v3"
 	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	sfsnetwork "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/set_filter_state/v3"
+	envoysniclusterv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
@@ -114,10 +119,11 @@ func TestEmissionSetCollectsDeclarativeRouteTargets(t *testing.T) {
 }
 
 // TestEmissionSetReportsRequestTimeSelectors pins the guard on all three arms of
-// the cluster_specifier oneof that choose a destination per request. Each makes
-// the whole gateway unfilterable, because the candidates it may select are named
-// nowhere: pruning them does not 503, it silently sends every affected request to
-// the plugin's fallback.
+// the cluster_specifier oneof that choose a destination per request, and on the
+// weighted-cluster entries and mirror policies that read their cluster from a
+// header. Each makes the whole gateway unfilterable, because the candidates it
+// may select are named nowhere: pruning them does not 503, it silently sends
+// every affected request to the plugin's fallback.
 func TestEmissionSetReportsRequestTimeSelectors(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -142,6 +148,24 @@ func TestEmissionSetReportsRequestTimeSelectors(t *testing.T) {
 				},
 			}},
 			expected: `inline_cluster_specifier_plugin "inline-picker"`,
+		},
+		{
+			name: "weighted cluster entry naming its cluster by header",
+			action: &envoyroutev3.RouteAction{ClusterSpecifier: &envoyroutev3.RouteAction_WeightedClusters{
+				WeightedClusters: &envoyroutev3.WeightedCluster{Clusters: []*envoyroutev3.WeightedCluster_ClusterWeight{
+					{Name: "backend", Weight: wrapperspb.UInt32(1)},
+					{ClusterHeader: "x-weighted-target", Weight: wrapperspb.UInt32(1)},
+				}},
+			}},
+			expected: `cluster_header "x-weighted-target"`,
+		},
+		{
+			name: "mirror policy naming its cluster by header",
+			action: &envoyroutev3.RouteAction{
+				ClusterSpecifier:      &envoyroutev3.RouteAction_Cluster{Cluster: "backend"},
+				RequestMirrorPolicies: []*envoyroutev3.RouteAction_RequestMirrorPolicy{{ClusterHeader: "x-mirror-target"}},
+			},
+			expected: `cluster_header "x-mirror-target"`,
 		},
 	}
 
@@ -263,4 +287,63 @@ func listenersWithAncillaryClusters(t *testing.T) envoycache.Resources {
 	}})
 	require.NotEmpty(t, listeners.Items)
 	return listeners
+}
+
+// A network filter can override the cluster a TcpProxy connects to through
+// filter state, so the TcpProxy's own cluster is not the whole candidate set.
+func TestEmissionSetReportsTcpProxyClusterOverrides(t *testing.T) {
+	tcpProxy := &envoylistenerv3.Filter{
+		Name: envoywellknown.TCPProxy,
+		ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustMessageToAny(t, &envoytcpv3.TcpProxy{
+			StatPrefix:       "tcp",
+			ClusterSpecifier: &envoytcpv3.TcpProxy_Cluster{Cluster: "backend"},
+		})},
+	}
+	listenerWith := func(override proto.Message) envoycache.Resources {
+		return sliceToResources([]*envoylistenerv3.Listener{{
+			Name: "tcp",
+			FilterChains: []*envoylistenerv3.FilterChain{{Filters: []*envoylistenerv3.Filter{
+				{Name: "override", ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustMessageToAny(t, override)}},
+				tcpProxy,
+			}}},
+		}})
+	}
+
+	for name, tc := range map[string]struct {
+		override proto.Message
+		expected []string
+	}{
+		"sni_cluster": {&envoysniclusterv3.SniCluster{}, []string{"sni_cluster"}},
+		"set_filter_state writing the TcpProxy cluster": {&sfsnetwork.Config{OnNewConnection: []*sfsvalue.FilterStateValue{{
+			Key: &sfsvalue.FilterStateValue_ObjectKey{ObjectKey: "envoy.tcp_proxy.cluster"},
+		}}}, []string{`filter_state "envoy.tcp_proxy.cluster"`}},
+		"set_filter_state writing another key": {&sfsnetwork.Config{OnNewConnection: []*sfsvalue.FilterStateValue{{
+			Key: &sfsvalue.FilterStateValue_ObjectKey{ObjectKey: "io.istio.peer_principal"},
+		}}}, []string{}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			emission := collectReferencedClustersForEmission(envoycache.Resources{}, listenerWith(tc.override))
+			assert.Equal(t, tc.expected, emission.Unresolvable)
+			assert.Contains(t, emission.Names, "backend")
+		})
+	}
+}
+
+// Every arm of RouteAction.cluster_specifier is either declarative (the walk
+// sees its names) or a request-time selector collectUnresolvableSelectors
+// reports. An arm added by a go-control-plane bump is reported as unknown, and
+// this test fails so that someone decides which it is.
+func TestRouteActionClusterSpecifierArmsAreClassified(t *testing.T) {
+	oneof := (&envoyroutev3.RouteAction{}).ProtoReflect().Descriptor().Oneofs().ByName("cluster_specifier")
+	require.NotNil(t, oneof)
+	var arms []string
+	for i := 0; i < oneof.Fields().Len(); i++ {
+		arms = append(arms, string(oneof.Fields().Get(i).Name()))
+	}
+	assert.ElementsMatch(t, []string{
+		// declarative
+		"cluster", "weighted_clusters",
+		// request-time selectors
+		"cluster_header", "cluster_specifier_plugin", "inline_cluster_specifier_plugin",
+	}, arms)
 }
