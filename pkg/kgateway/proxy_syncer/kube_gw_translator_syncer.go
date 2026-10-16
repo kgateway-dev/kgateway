@@ -64,7 +64,7 @@ func (s *ProxyTranslator) syncXds(
 		// The whole decision runs under the gate lock so it cannot race the
 		// gate's expiring budget timers (see resolveDeferred).
 		if err := s.gate.resolveDeferred(ctx, s.xdsCache, snapWrap); err != nil {
-			logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+			logPublishFailure(proxyKey, err)
 		}
 		return
 	}
@@ -79,7 +79,7 @@ func (s *ProxyTranslator) syncXds(
 	if err := s.gate.publish(ctx, s.xdsCache, snapWrap); err != nil {
 		// A rejected snapshot leaves the client on its previous config; surface
 		// it rather than silently dropping the update.
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 	}
 }
 

@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -166,6 +167,18 @@ type publishGate struct {
 	// snapshotWithdrawn (the row went away, the connection did not) keeps
 	// them.
 	published map[string]struct{}
+	// connGen is, per client key, the connection generation the gate's state
+	// for the key belongs to: adopted from fence when the client's connection
+	// starts (connectionStarted), zero for clients whose state reports no
+	// connection starts. setSnapshot installs only while it is still the key's
+	// generation.
+	connGen map[string]uint64
+	// fence orders cache installs against connection starts; it has its own
+	// lock (see connectionFence).
+	fence connectionFence
+	// beforeInstall, set only by tests, runs under mu just before setSnapshot
+	// installs, to hold a publisher at that point.
+	beforeInstall func(proxyKey string)
 }
 
 type pendingFirstPublish struct {
@@ -267,7 +280,13 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 			recordInconsistentSnapshot(proxyKey)
 		}
 	}
-	if err := cache.SetSnapshot(ctx, proxyKey, snap); err != nil {
+	if g.beforeInstall != nil {
+		g.beforeInstall(proxyKey)
+	}
+	if err := g.fence.install(ctx, cache, proxyKey, g.connGen[proxyKey], snap); err != nil {
+		if errors.Is(err, errConnectionSuperseded) {
+			return err // computed for the client's previous connection
+		}
 		// go-control-plane installs the snapshot before answering the
 		// node's open watches, and only answering can fail (the context
 		// ended). Later requests are answered from the installed snapshot,
@@ -534,7 +553,7 @@ func (g *publishGate) firePending(
 			"proxy_key", proxyKey, "missing_clusters", wrap.missingReferenced, "missing_endpoint_clusters", wrap.missingEndpointsReferenced)
 	}
 	if err := g.setSnapshot(ctx, cache, proxyKey, wrap.snap, wrap.synthesizedEndpoints); err != nil {
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 		return
 	}
 	g.unmarkWarmWithheldLocked(proxyKey, st)
@@ -671,7 +690,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
 		"proxy_key", proxyKey, "flip_blocking", pf.blocking)
 	if err := g.setSnapshot(ctx, cache, proxyKey, released, pf.wrap.synthesizedEndpoints); err != nil {
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 		return
 	}
 	recordBoundedPublish(proxyKey, boundedPublishFlipRelease)
@@ -696,6 +715,21 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 	g.withdrawLocked(proxyKey)
 	delete(g.published, proxyKey)
 	delete(g.carriedSince, proxyKey)
+}
+
+// connectionStarted begins the client's new connection in the gate (the
+// connection-start hook, after the fence started it). It first forgets the
+// previous connection, as clientDeparted does, and only then adopts the key's
+// new generation: in between, a publish is rejected by the fence rather than
+// installed with the previous connection's state.
+func (g *publishGate) connectionStarted(proxyKey string) {
+	g.clientDeparted(proxyKey)
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.connGen == nil {
+		g.connGen = make(map[string]uint64)
+	}
+	g.connGen[proxyKey] = g.fence.current(proxyKey)
 }
 
 // snapshotWithdrawn handles a client whose wrapper row was deleted while it
@@ -746,6 +780,10 @@ func (g *publishGate) reclaimDeparted(cache envoycache.SnapshotCache, proxyKey s
 	defer g.mu.Unlock()
 	return clients.RunIfDisconnected(proxyKey, func() {
 		cache.ClearSnapshot(proxyKey)
+		// Nothing of the connection is left; a returning client starts a new
+		// generation (generations are never reused).
+		g.fence.forget(proxyKey)
+		delete(g.connGen, proxyKey)
 	})
 }
 
@@ -1020,7 +1058,7 @@ func (g *publishGate) fireCarryExpiry(ctx context.Context, cache envoycache.Snap
 		return // defensive: a reset connection cancels the timer
 	}
 	if err := g.resolveDeferredLocked(ctx, cache, ce.wrap); err != nil {
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 	}
 }
 
