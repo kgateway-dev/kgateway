@@ -31,6 +31,7 @@ import (
 
 type httpRouteConfigurationTranslator struct {
 	gw               ir.GatewayIR
+	chainListeners   filterChainListeners
 	listener         ir.ListenerIR
 	fc               ir.FilterChainCommon
 	attachedPolicies ir.AttachedPolicies
@@ -92,7 +93,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
+		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.chainListeners, h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
 				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
@@ -732,7 +733,7 @@ func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHost
 	if !needFilterChainListener {
 		return
 	}
-	listener := findListenerForFilterChain(h.gw, h.routeConfigName)
+	listener := h.chainListeners[h.routeConfigName]
 	if listener == nil {
 		return
 	}
