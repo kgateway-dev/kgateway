@@ -27,7 +27,7 @@ var (
 		metrics.CounterOpts{
 			Subsystem: envoyXdsSubsystem,
 			Name:      "reconnect_responses_total",
-			Help:      "Number of times a reconnecting proxy's first endpoint request was answered although it already held the current version",
+			Help:      "Number of reconnecting proxies' first endpoint requests whose held version was cleared, so the current or next snapshot answers them even at that version",
 		}, []string{typeURLLabel})
 )
 
@@ -242,7 +242,7 @@ func (s *watchPolicy) CreateWatch(req *envoycache.Request, sub envoycache.Subscr
 			// Clear the held version so the current or next snapshot answers.
 			fresh := proto.Clone(req).(*discoveryv3.DiscoveryRequest)
 			fresh.VersionInfo = ""
-			xdsReconnectResponses.Inc(metrics.Label{Name: typeURLLabel, Value: req.GetTypeUrl()})
+			xdsReconnectResponses.Inc(metrics.Label{Name: typeURLLabel, Value: rejectionTypeURL(req.GetTypeUrl())})
 			envoyLogger.Debug("answering a reconnecting proxy's first endpoint request regardless of its held version",
 				"node", s.hasher.ID(req.GetNode()), "held_version", req.GetVersionInfo())
 			return s.SnapshotCache.CreateWatch(fresh, sub, ch)

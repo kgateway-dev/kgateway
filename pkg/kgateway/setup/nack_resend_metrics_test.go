@@ -62,3 +62,31 @@ func TestNackResendsSuppressedMetric(t *testing.T) {
 		}
 	}
 }
+
+// Every reconnecting proxy's first endpoint request counts once, under the same
+// type_url values as the rejects metrics; a cold request and an ACK do not.
+func TestReconnectResponsesMetric(t *testing.T) {
+	const metricName = "kgateway_envoy_xds_reconnect_responses_total"
+	xdsReconnectResponses.Reset()
+	t.Cleanup(xdsReconnectResponses.Reset)
+	metricLabels := []metrics.Label{{Name: typeURLLabel, Value: rejectionTypeURL(envoyresource.EndpointType)}}
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, false, true)
+	node := &envoycorev3.Node{Id: "node"}
+	watch := func(req *discoveryv3.DiscoveryRequest) {
+		t.Helper()
+		cancel, err := policy.CreateWatch(req, streamv3.NewSotwSubscription(nil, true), make(chan envoycache.Response, 1))
+		require.NoError(t, err)
+		if cancel != nil {
+			t.Cleanup(cancel)
+		}
+	}
+
+	watch(&discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{"c"}})
+	watch(&discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{"c"}, VersionInfo: "1", ResponseNonce: "1"})
+	xdsReconnectResponses.Add(0, metricLabels...)
+	require.Equal(t, float64(0), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(metricName, metricLabels),
+		"a cold request and an ACK are not reconnects")
+
+	watch(&discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{"c"}, VersionInfo: "1"})
+	require.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(metricName, metricLabels))
+}
