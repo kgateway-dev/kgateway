@@ -162,6 +162,10 @@ They do not show when Envoy receives, accepts or applies them.
   * `carry_expired`: a published client stopped being carried a referenced
     cluster that stayed missing from CDS for the warm withhold bound. Routes to it
     fail until it reappears.
+  * `reference_ahead`: with `REFERENCED` cluster discovery, a hold kept only so a
+    newly emitted cluster reaches the client ahead of the route that names it was
+    released at the budget before that window (`KGW_CLUSTER_REFERENCE_AHEAD`)
+    closed. A hold whose window closes first ends as designed and is not counted.
 * `flip_release`, `warm_release` and `carry_expired` mean some routes are
   failing; they are the modes to alert on.
 
