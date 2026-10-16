@@ -69,6 +69,7 @@ type reconnectFixture struct {
 	gateways  krt.StaticCollection[GatewayXdsResources]
 	backends  krt.StaticCollection[reconnectBackend]
 	snapshots krt.Collection[XdsSnapWrapper]
+	endpoints krt.Collection[UccWithEndpoints]
 	cache     *recordingCache
 	listeners envoycache.Resources
 	stall     atomic.Bool
@@ -116,6 +117,7 @@ func newReconnectFixture(t *testing.T, routeTargets []string, backendNames []str
 		endpoints: endpointRows,
 		index:     krtpkg.UnnamedIndex(endpointRows, func(ep UccWithEndpoints) []string { return []string{ep.Client.ResourceName()} }),
 	}
+	f.endpoints = endpointRows
 
 	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs, f.gateways, endpoints, PerClientEnvoyClusters{perClient: perClient})
 	f.cache = &recordingCache{SnapshotCache: newTestSnapshotCache(t), node: f.ucc.ResourceName()}
@@ -153,6 +155,10 @@ func (f *reconnectFixture) reconnect(t *testing.T, whileAway func()) int {
 	t.Helper()
 	f.uccs.DeleteObject(f.ucc.ResourceName())
 	require.Eventually(t, func() bool { return len(f.snapshots.List()) == 0 }, 2*time.Second, 5*time.Millisecond)
+	// Let the endpoint transform observe departure before stalling its rebuild.
+	// Otherwise a quick reconnect can retain the old rows and skip the missing
+	// endpoint window this fixture is meant to exercise.
+	require.Eventually(t, func() bool { return len(f.endpoints.List()) == 0 }, 2*time.Second, 5*time.Millisecond)
 	if whileAway != nil {
 		whileAway()
 	}
