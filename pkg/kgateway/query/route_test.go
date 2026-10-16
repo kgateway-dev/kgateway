@@ -2,6 +2,8 @@ package query_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -290,5 +292,49 @@ func TestRouteKeyMatches(t *testing.T) {
 					"RouteKeyMatches(%q, %T, %q) must agree with GenerateRouteKey %q", key, p, ln, want)
 			}
 		}
+	}
+}
+
+// UniqueRouteName is the Envoy route name that policies and stats key on, so it must stay
+// byte-identical to the fmt.Sprintf format it replaced.
+func TestUniqueRouteNameMatchesSprintfFormat(t *testing.T) {
+	sprintfName := func(kind, name, namespace string, ruleIdx, matchIdx int, ruleName string) string {
+		if ruleName == "" {
+			return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(kind), name, namespace, ruleIdx, matchIdx)
+		}
+		return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(kind), name, namespace, ruleIdx, matchIdx, ruleName)
+	}
+
+	kinds := []string{"HTTPRoute", "GRPCRoute", "TCPRoute", "TLSRoute", "CustomRoute", "lowercaseroute", "ÜnicodeRoute", ""}
+	indexes := [][2]int{{0, 0}, {1, 9}, {10, 99}, {100, 12345}}
+	for _, kind := range kinds {
+		for _, ruleName := range []string{"", "rule-a"} {
+			for _, idx := range indexes {
+				route := &query.RouteInfo{
+					Object: &ir.HttpRouteIR{
+						ObjectSource: ir.ObjectSource{Kind: kind, Name: "my-route", Namespace: "my-ns"},
+					},
+				}
+				want := sprintfName(kind, "my-route", "my-ns", idx[0], idx[1], ruleName)
+				assert.Equal(t, want, route.UniqueRouteName(idx[0], idx[1], ruleName),
+					"kind %q, rule name %q, indexes %v", kind, ruleName, idx)
+			}
+		}
+	}
+}
+
+func BenchmarkUniqueRouteName(b *testing.B) {
+	route := &query.RouteInfo{
+		Object: &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{Kind: "HTTPRoute", Name: "ls-12-route-7", Namespace: "bench-ns-31"},
+		},
+	}
+	for _, ruleName := range []string{"", "rule-a"} {
+		b.Run(fmt.Sprintf("ruleName=%q", ruleName), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				_ = route.UniqueRouteName(3, 1, ruleName)
+			}
+		})
 	}
 }

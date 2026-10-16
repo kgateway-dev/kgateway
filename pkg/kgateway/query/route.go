@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -89,12 +90,30 @@ func (r *RouteInfo) Clone() *RouteInfo {
 }
 
 // UniqueRouteName returns a unique name for the route based on the route kind, name, namespace,
-// and the given indexes.
+// and the given indexes: <kind>-<name>-<namespace>-<ruleIdx>-<matchIdx>[-<ruleName>], with the
+// kind lowercased. It runs once per route match on every Gateway translation, so it concatenates
+// instead of formatting, which costs a single allocation for the result.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int, ruleName string) string {
+	kind := lowerRouteKind(r.GetKind())
 	if ruleName == "" {
-		return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
+		return kind + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx, ruleName)
+	return kind + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx) + "-" + ruleName
+}
+
+// lowerRouteKind is strings.ToLower without its allocation for the route kinds kgateway translates.
+func lowerRouteKind(kind string) string {
+	switch kind {
+	case wellknown.HTTPRouteKind:
+		return "httproute"
+	case wellknown.GRPCRouteKind:
+		return "grpcroute"
+	case wellknown.TCPRouteKind:
+		return "tcproute"
+	case wellknown.TLSRouteKind:
+		return "tlsroute"
+	}
+	return strings.ToLower(kind)
 }
 
 // GetRouteChain recursively resolves all backends for the given route object.

@@ -1,6 +1,8 @@
 package reports
 
 import (
+	"cmp"
+	"hash/maphash"
 	"slices"
 	"strings"
 
@@ -89,8 +91,8 @@ func (c StatusContribution) Equals(other StatusContribution) bool {
 // StatusContributionsFromReportMap splits a translation-local ReportMap into
 // independently keyed status contributions. It transfers ownership of the
 // report fragments to the returned contributions; callers must not mutate the
-// input afterward. The result is deterministically sorted without formatting
-// keys in the comparator.
+// input afterward. The result is in the deterministic order sortStatusContributions
+// documents.
 func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) []StatusContribution {
 	listenerSetCount := 0
 	for _, byName := range reportMap.ListenerSets {
@@ -161,14 +163,67 @@ func StatusContributionsFromReportMap(source StatusSource, reportMap ReportMap) 
 		}
 	}
 
-	slices.SortFunc(contributions, compareStatusContributions)
+	sortStatusContributions(contributions)
 	return contributions
+}
+
+// contributionOrderSeed is fixed for the life of the process, so sortStatusContributions orders
+// the same targets the same way on every translation. The order is not stable across restarts,
+// which nothing needs: it only lets gatewayTranslationOutput.Equals compare two translations
+// element by element.
+var contributionOrderSeed = maphash.MakeSeed()
+
+type contributionOrderKey struct {
+	hash  uint64
+	index int32
+}
+
+// sortStatusContributions orders contributions by a hash of their target, falling back to
+// compareStatusContributions on a hash collision, so the order is deterministic. This runs on one
+// contribution per translated route on every Gateway translation, and sorting the contributions
+// themselves by their full identity spent its time comparing namespace and name strings and
+// swapping 136-byte structs, write barriers included. Sorting compact (hash, index) keys and then
+// moving each contribution once into place costs about half as much.
+func sortStatusContributions(contributions []StatusContribution) {
+	keys := make([]contributionOrderKey, len(contributions))
+	for i := range contributions {
+		keys[i] = contributionOrderKey{
+			hash:  maphash.Comparable(contributionOrderSeed, contributions[i].Target),
+			index: int32(i), //nolint:gosec // G115: one translation never has 2^31 status owners
+		}
+	}
+	slices.SortFunc(keys, func(a, b contributionOrderKey) int {
+		if c := cmp.Compare(a.hash, b.hash); c != 0 {
+			return c
+		}
+		return compareStatusContributions(contributions[a.index], contributions[b.index])
+	})
+
+	// Position i takes the contribution at keys[i].index. Walking each cycle of that permutation
+	// once, and marking its keys visited, moves every contribution exactly once.
+	for start := range keys {
+		if keys[start].index < 0 {
+			continue
+		}
+		displaced := contributions[start]
+		i := start
+		for {
+			next := int(keys[i].index)
+			keys[i].index = -1
+			if next == start {
+				contributions[i] = displaced
+				break
+			}
+			contributions[i] = contributions[next]
+			i = next
+		}
+	}
 }
 
 // compareStatusContributions orders contributions by their complete identity, so no ties
 // remain and a stable sort is not needed. The comparisons are chained rather than passed to
 // cmp.Or because cmp.Or is an ordinary variadic call: it would run all six on every
-// comparison, and this sorts one entry per translated route on every Gateway translation.
+// comparison.
 func compareStatusContributions(a, b StatusContribution) int {
 	if c := strings.Compare(a.Target.Group, b.Target.Group); c != 0 {
 		return c

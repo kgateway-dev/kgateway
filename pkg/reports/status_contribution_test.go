@@ -2,12 +2,17 @@ package reports
 
 import (
 	"bytes"
+	"cmp"
+	"fmt"
+	"hash/maphash"
 	"log/slog"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -31,6 +36,79 @@ func TestStatusContributionsFromReportMapSplitsAndTransfersOwnership(t *testing.
 	require.Equal(t, types.NamespacedName{Namespace: "default", Name: "route"}, contribution.Target.NamespacedName)
 	require.Same(t, reportMap.HTTPRoutes[contribution.Target.NamespacedName], contribution.Route,
 		"splitting transfers ownership without cloning every report")
+}
+
+// gatewayTranslationOutput.Equals compares contributions element by element, so the order must
+// not depend on map iteration, and applying the sorted permutation in place must neither drop nor
+// duplicate a contribution.
+func TestStatusContributionsFromReportMapOrderIsDeterministic(t *testing.T) {
+	reportMap := NewReportMap()
+	var want []StatusKey
+	addRoute := func(routes map[types.NamespacedName]*RouteReport, gvk schema.GroupVersionKind, nn types.NamespacedName) {
+		routes[nn] = &RouteReport{}
+		want = append(want, StatusKey{GroupKind: gvk.GroupKind(), NamespacedName: nn})
+	}
+	for i := range 100 {
+		nn := types.NamespacedName{Namespace: fmt.Sprintf("ns-%d", i%7), Name: fmt.Sprintf("route-%d", i)}
+		addRoute(reportMap.HTTPRoutes, wellknown.HTTPRouteGVK, nn)
+		// The same name under another kind is a distinct target.
+		addRoute(reportMap.GRPCRoutes, wellknown.GRPCRouteGVK, nn)
+	}
+	reportMap.TCPRoutes[types.NamespacedName{Namespace: "default", Name: "skipped"}] = nil
+	gw := types.NamespacedName{Namespace: "default", Name: "gw"}
+	reportMap.Gateways[gw] = &GatewayReport{}
+	want = append(want, StatusKey{GroupKind: wellknown.GatewayGVK.GroupKind(), NamespacedName: gw})
+	policy := reporter.PolicyKey{Group: "example.io", Kind: "Policy", Namespace: "default", Name: "policy"}
+	reportMap.Policies[policy] = &PolicyReport{}
+	want = append(want, StatusKey{
+		GroupKind:      schema.GroupKind{Group: policy.Group, Kind: policy.Kind},
+		NamespacedName: types.NamespacedName{Namespace: policy.Namespace, Name: policy.Name},
+	})
+
+	targets := func() []StatusKey {
+		contributions := StatusContributionsFromReportMap(StatusSource{Kind: GatewayStatusSource, Name: "default/gw"}, reportMap)
+		got := make([]StatusKey, 0, len(contributions))
+		for _, contribution := range contributions {
+			got = append(got, contribution.Target)
+		}
+		return got
+	}
+	first := targets()
+	require.ElementsMatch(t, want, first, "every non-nil report yields exactly one contribution")
+	require.True(t, slices.IsSortedFunc(first, func(a, b StatusKey) int {
+		return cmp.Compare(maphash.Comparable(contributionOrderSeed, a), maphash.Comparable(contributionOrderSeed, b))
+	}), "contributions are ordered by target hash")
+	// Map iteration order is randomized per range, so repeat to catch an order that leaks it.
+	for range 20 {
+		require.Equal(t, first, targets())
+	}
+}
+
+// BenchmarkStatusContributionsFromReportMap mirrors one translation of a Gateway with 2,500
+// ListenerSets and 40,000 HTTPRoutes across 50 namespaces. Each key gets its own string
+// allocations, as objects decoded from the API server do.
+func BenchmarkStatusContributionsFromReportMap(b *testing.B) {
+	reportMap := NewReportMap()
+	reportMap.Gateways[types.NamespacedName{Namespace: "gateway", Name: "gw"}] = &GatewayReport{}
+	listenerSets := map[types.NamespacedName]*ListenerSetReport{}
+	reportMap.ListenerSets[wellknown.ListenerSetGVK] = listenerSets
+	for ns := range 50 {
+		for ls := range 50 {
+			listenerSets[types.NamespacedName{Namespace: fmt.Sprintf("bench-%d", ns), Name: fmt.Sprintf("ls-%d", ls)}] = &ListenerSetReport{}
+			for route := range 16 {
+				reportMap.HTTPRoutes[types.NamespacedName{
+					Namespace: fmt.Sprintf("bench-%d", ns),
+					Name:      fmt.Sprintf("ls-%d-route-%d", ls, route),
+				}] = &RouteReport{}
+			}
+		}
+	}
+	source := StatusSource{Kind: GatewayStatusSource, Name: "gateway/gw"}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		StatusContributionsFromReportMap(source, reportMap)
+	}
 }
 
 // The KRT key and Equals must agree on what identity is. A field compared by Equals but
