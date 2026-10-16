@@ -753,6 +753,113 @@ func TestCarryOfAMissingClusterIsBounded(t *testing.T) {
 		labelsWith("mode", boundedPublishCarryExpired)))
 }
 
+// carryTestBuild is a snapshot whose routes target routeTargets and whose CDS
+// and EDS hold clusters, for the carry-expiry tests.
+func carryTestBuild(t *testing.T, version string, routeTargets []string, clusters ...string) *envoycache.Snapshot {
+	t.Helper()
+	ucc := newTestUcc(publishGateTestClient)
+	snap := &envoycache.Snapshot{}
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	listeners.Version = version
+	snap.Resources[envoycachetypes.Listener] = listeners
+	routes := routeResourcesForClusters(routeTargets...)
+	routes.Version = "rds-" + version
+	snap.Resources[envoycachetypes.Route] = routes
+	var clusterItems, endpointItems []envoycachetypes.ResourceWithTTL
+	var hash uint64
+	for _, name := range clusters {
+		hash += 2
+		clusterItems = append(clusterItems, edsClusterForClient(ucc, name, hash-1).Cluster.ResourceWithTTL())
+		endpointItems = append(endpointItems, endpointsForClient(ucc, name, hash).Endpoints.ResourceWithTTL())
+	}
+	snap.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-"+version, clusterItems)
+	snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-"+version, endpointItems)
+	return snap
+}
+
+// With no build after the one that started carrying a cluster, the bound is
+// still enforced: a backend deleted while routes still name it is a quiet
+// input, and nothing else would ever re-resolve the client.
+func TestCarryExpiresWithoutAnotherBuild(t *testing.T) {
+	ResetMetrics()
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	pt.gate.warmWithholdBound = 20 * time.Millisecond
+	ctx := context.Background()
+	routed := []string{"cluster-a", "cluster-b"}
+
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap: carryTestBuild(t, "v2", routed, "cluster-a"), proxyKey: publishGateTestClient,
+		missingReferenced: []string{"cluster-b"},
+	})
+	require.Contains(t, servedSnapshot(t, pt).Resources[envoycachetypes.Cluster].Items, "cluster-b", "a lagging cluster is carried")
+
+	require.Eventually(t, func() bool {
+		_, carried := servedSnapshot(t, pt).Resources[envoycachetypes.Cluster].Items["cluster-b"]
+		return !carried
+	}, 2*time.Second, 5*time.Millisecond, "the carry ends at the bound with no further input")
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "v2", served.GetVersion(resourcev3.ListenerType), "the latest build is what is re-published")
+	_, hasCLA := endpointCount(served, "cluster-b")
+	assert.False(t, hasCLA, "the cluster's endpoints go with it")
+	g := metricstest.MustGatherMetrics(t)
+	assert.Equal(t, float64(1), g.MustGetMetricValueByLabels("kgateway_xds_snapshot_perclient_bounded_publishes_total",
+		labelsWith("mode", boundedPublishCarryExpired)))
+}
+
+// A carry expiry re-publishes the client's latest build only. Once a later
+// build has superseded the one that carried, the expiry must not bring the
+// older one back.
+func TestCarryExpiryNeverRepublishesAnOlderBuild(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	pt.gate.warmWithholdBound = 20 * time.Millisecond
+	ctx := context.Background()
+
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", []string{"cluster-a", "cluster-b"}, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap: carryTestBuild(t, "v2", []string{"cluster-a", "cluster-b"}, "cluster-a"), proxyKey: publishGateTestClient,
+		missingReferenced: []string{"cluster-b"},
+	})
+	// The route stops naming the missing cluster: a coherent build.
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", []string{"cluster-a"}, "cluster-a"), proxyKey: publishGateTestClient})
+
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType), "the superseded build is not re-published")
+}
+
+// A held flip carries its whole published closure, but not a cluster that has
+// been carried for the bound: publishing it again would make it look freshly
+// carried to the next build, which would carry it for another full bound.
+func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	pt.gate.warmWithholdBound = 50 * time.Millisecond
+	ctx := context.Background()
+
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", []string{"cluster-a", "cluster-b"}, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap: carryTestBuild(t, "v2", []string{"cluster-a", "cluster-b"}, "cluster-a"), proxyKey: publishGateTestClient,
+		missingReferenced: []string{"cluster-b"},
+	})
+	pt.gate.mu.Lock()
+	pt.gate.cancelCarryExpiryLocked(publishGateTestClient) // let the held build below be the one that expires it
+	pt.gate.mu.Unlock()
+	time.Sleep(60 * time.Millisecond)
+
+	// Past the bound, a build that also moves a route onto a cluster the
+	// client has never had: the flip is held, with its published closure.
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap:              carryTestBuild(t, "v3", []string{"cluster-a", "cluster-b", "cluster-new"}, "cluster-a"),
+		proxyKey:          publishGateTestClient,
+		missingReferenced: []string{"cluster-b", "cluster-new"},
+	})
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "v2", served.GetVersion(resourcev3.ListenerType), "the flip onto the new cluster is held")
+	assert.Contains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-a", "the held closure is carried")
+	assert.NotContains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-b", "but not a cluster carried for the bound")
+	_, hasCLA := endpointCount(served, "cluster-b")
+	assert.False(t, hasCLA)
+}
+
 // Resolving a deferred build finds the published routing targets by walking
 // the published listeners' filter chains, under the gate's single lock. The
 // walk is memoized by the identity of the published routes and listeners, so
