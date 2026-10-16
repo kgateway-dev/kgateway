@@ -111,33 +111,94 @@ func TestDefaultMergeDeepMergeStrategies(t *testing.T) {
 	literal := func(s string) *TrafficPolicy {
 		return &TrafficPolicy{spec: trafficPolicySpecIr{requestMirror: requestMirrorIRWithLiteral(s)}}
 	}
+	empty := func() *TrafficPolicy {
+		return &TrafficPolicy{}
+	}
 
 	tests := []struct {
-		name     string
-		strategy policy.MergeStrategy
-		p1, p2   *TrafficPolicy
-		want     string // expected literal; empty means requestMirror must be nil
+		name       string
+		strategy   policy.MergeStrategy
+		p1, p2     func() *TrafficPolicy
+		want       string // expected literal; empty means requestMirror must be nil
+		wantOrigin bool   // whether origins for "requestMirror" should record p2Ref
 	}{
-		{"AugmentedDeep keeps p1", policy.AugmentedDeepMerge, literal("p1"), literal("p2"), "p1"},
-		{"OverridableDeep p2 overrides p1", policy.OverridableDeepMerge, literal("p1"), literal("p2"), "p2"},
-		{"OverridableShallow p2 overrides p1", policy.OverridableShallowMerge, literal("p1"), literal("p2"), "p2"},
-		{"AugmentedDeep fills unset p1", policy.AugmentedDeepMerge, &TrafficPolicy{}, literal("p2"), "p2"},
-		{"OverridableDeep fills unset p1", policy.OverridableDeepMerge, &TrafficPolicy{}, literal("p2"), "p2"},
-		{"OverridableDeep keeps p1 when p2 unset", policy.OverridableDeepMerge, literal("p1"), &TrafficPolicy{}, "p1"},
-		{"OverridableDeep both unset", policy.OverridableDeepMerge, &TrafficPolicy{}, &TrafficPolicy{}, ""},
+		{
+			name:       "AugmentedDeep keeps p1",
+			strategy:   policy.AugmentedDeepMerge,
+			p1:         func() *TrafficPolicy { return literal("p1") },
+			p2:         func() *TrafficPolicy { return literal("p2") },
+			want:       "p1",
+			wantOrigin: false,
+		},
+		{
+			name:       "OverridableDeep p2 overrides p1",
+			strategy:   policy.OverridableDeepMerge,
+			p1:         func() *TrafficPolicy { return literal("p1") },
+			p2:         func() *TrafficPolicy { return literal("p2") },
+			want:       "p2",
+			wantOrigin: true,
+		},
+		{
+			name:       "OverridableShallow p2 overrides p1",
+			strategy:   policy.OverridableShallowMerge,
+			p1:         func() *TrafficPolicy { return literal("p1") },
+			p2:         func() *TrafficPolicy { return literal("p2") },
+			want:       "p2",
+			wantOrigin: true,
+		},
+		{
+			name:       "AugmentedDeep fills unset p1",
+			strategy:   policy.AugmentedDeepMerge,
+			p1:         empty,
+			p2:         func() *TrafficPolicy { return literal("p2") },
+			want:       "p2",
+			wantOrigin: true,
+		},
+		{
+			name:       "OverridableDeep fills unset p1",
+			strategy:   policy.OverridableDeepMerge,
+			p1:         empty,
+			p2:         func() *TrafficPolicy { return literal("p2") },
+			want:       "p2",
+			wantOrigin: true,
+		},
+		{
+			name:       "OverridableDeep keeps p1 when p2 unset",
+			strategy:   policy.OverridableDeepMerge,
+			p1:         func() *TrafficPolicy { return literal("p1") },
+			p2:         empty,
+			want:       "p1",
+			wantOrigin: false,
+		},
+		{
+			name:       "OverridableDeep both unset",
+			strategy:   policy.OverridableDeepMerge,
+			p1:         empty,
+			p2:         empty,
+			want:       "",
+			wantOrigin: false,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			p1 := tc.p1()
+			p2 := tc.p2()
 			origins := ir.MergeOrigins{}
-			MergeTrafficPolicies(tc.p1, tc.p2, p2Ref, nil, policy.MergeOptions{Strategy: tc.strategy}, origins, TrafficPolicyMergeOpts{})
+			MergeTrafficPolicies(p1, p2, p2Ref, nil, policy.MergeOptions{Strategy: tc.strategy}, origins, TrafficPolicyMergeOpts{})
 
 			if tc.want == "" {
-				assert.Nil(t, tc.p1.spec.requestMirror)
-				return
+				assert.Nil(t, p1.spec.requestMirror)
+			} else {
+				require.NotNil(t, p1.spec.requestMirror)
+				require.NotNil(t, p1.spec.requestMirror.hostRewriteLiteral)
+				assert.Equal(t, tc.want, *p1.spec.requestMirror.hostRewriteLiteral)
 			}
-			require.NotNil(t, tc.p1.spec.requestMirror)
-			require.NotNil(t, tc.p1.spec.requestMirror.hostRewriteLiteral)
-			assert.Equal(t, tc.want, *tc.p1.spec.requestMirror.hostRewriteLiteral)
+
+			if tc.wantOrigin {
+				assert.Equal(t, []string{p2Ref.ID()}, origins.Get("requestMirror"))
+			} else {
+				assert.Empty(t, origins.Get("requestMirror"))
+			}
 		})
 	}
 }
@@ -199,11 +260,13 @@ func TestMergePoliciesDoesNotMutateSourceIRs(t *testing.T) {
 		assert.Equal(t, 60*time.Second, child.spec.timeouts.routeTimeout.AsDuration())
 		assert.Equal(t, 5*time.Second, parent.spec.timeouts.routeTimeout.AsDuration())
 
-		// prefer-child must still keep the child's value
-		merged = translate(newPolicy(60*time.Second), newPolicy(5*time.Second), apiannotations.DeepMergePreferChild, "")
+		// sequential merge of the same child with prefer-child must keep child's value
+		// and verify that repeated merging did not mutate child
+		merged = translate(child, parent, apiannotations.DeepMergePreferChild, "")
 		require.NotNil(t, merged.spec.timeouts)
 		assert.Equal(t, 60*time.Second, merged.spec.timeouts.routeTimeout.AsDuration(),
 			"DeepMergePreferChild: child timeout must win")
+		assert.Equal(t, 60*time.Second, child.spec.timeouts.routeTimeout.AsDuration())
 	})
 
 	t.Run("transformation", func(t *testing.T) {

@@ -1051,7 +1051,7 @@ func defaultMerge[T any](
 		if p1Field != nil {
 			return
 		}
-		fallthrough // can override p1 if it is unset
+		fallthrough // fall back to p2 if p1 is unset
 
 	case policy.AugmentedShallowMerge, policy.OverridableShallowMerge, policy.OverridableDeepMerge:
 		// p1's field now aliases p2's IR, which is shared KRT output: a later deep merge
