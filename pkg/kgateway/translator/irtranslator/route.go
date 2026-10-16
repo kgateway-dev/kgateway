@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -1138,12 +1138,15 @@ func isDefaultPathConnectMatch(match gwv1.HTTPRouteMatch) bool {
 	return pathType == gwv1.PathMatchPathPrefix && pathValue == "/"
 }
 
-var separatedPathRegex = regexp.MustCompile("^[^?#]+[^?#/]$")
-
 func isValidPathSeparated(path string) bool {
 	// see envoy docs:
 	//	Expect the value to not contain "?" or "#" and not to end in "/"
-	return separatedPathRegex.MatchString(path)
+	// Envoy enforces this as ^[^?#]+[^?#/]$, which also requires at least two characters.
+	if path == "" || path[len(path)-1] == '/' || strings.ContainsAny(path, "?#") {
+		return false
+	}
+	_, size := utf8.DecodeRuneInString(path)
+	return size < len(path)
 }
 
 func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoyroutev3.RouteMatch) {

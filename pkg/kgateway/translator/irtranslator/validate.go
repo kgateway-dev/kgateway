@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -28,8 +27,13 @@ var (
 	// validCharacterRegex pattern based off RFC 3986 similar to kubernetes-sigs/gateway-api implementation
 	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
-
-	validPathRegex = regexp.MustCompile(validPathRegexCharacters)
+	// validPathChars holds the bytes validPathRegexCharacters accepts outside a %XX escape.
+	validPathChars = func() (set [256]bool) {
+		for _, c := range []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/:@._~!$&'()*+,=;-") {
+			set[c] = true
+		}
+		return set
+	}()
 
 	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
 	ValidRoutePatternError            = fmt.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
@@ -182,12 +186,34 @@ func validatePrefixRewrite(rewrite string, errs *[]error) {
 }
 
 // ValidatePrefixRewrite will validate the rewrite using url.Parse. Then it will evaluate the Path of the rewrite.
+// A rewrite that url.Parse would return unchanged as the Path skips the parse.
 func ValidatePrefixRewrite(s string) error {
+	if parsesToItsOwnPath(s) {
+		return ValidateRoutePath(s)
+	}
 	u, err := url.Parse(s)
 	if err != nil {
 		return err
 	}
 	return ValidateRoutePath(u.Path)
+}
+
+// parsesToItsOwnPath reports whether url.Parse(s) succeeds with Path == s. That holds when s
+// is empty or is rooted at a single "/" (so it has no scheme or authority) and contains no
+// escape, query, fragment or control byte.
+func parsesToItsOwnPath(s string) bool {
+	if s == "" {
+		return true
+	}
+	if s[0] != '/' || strings.HasPrefix(s, "//") {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; c < ' ' || c == 0x7f || c == '%' || c == '?' || c == '#' {
+			return false
+		}
+	}
+	return true
 }
 
 // ValidateRoutePath will validate a string for all characters according to RFC 3986
@@ -197,7 +223,7 @@ func ValidateRoutePath(s string) error {
 	if s == "" {
 		return nil
 	}
-	if !validPathRegex.Match([]byte(s)) {
+	if !hasOnlyValidPathChars(s) {
 		return ValidRoutePatternError
 	}
 	for _, invalid := range invalidPathSequences {
@@ -211,6 +237,26 @@ func ValidateRoutePath(s string) error {
 		}
 	}
 	return nil
+}
+
+// hasOnlyValidPathChars reports whether s matches validPathRegexCharacters: every byte is in
+// validPathChars or starts a "%" followed by two hex digits. It runs for every route on every
+// translation, which makes the regex engine's backtracking too costly here.
+func hasOnlyValidPathChars(s string) bool {
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case validPathChars[c]:
+		case c == '%' && i+2 < len(s) && isHexDigit(s[i+1]) && isHexDigit(s[i+2]):
+			i += 2
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func isHexDigit(c byte) bool {
+	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F'
 }
 
 // runValidation executes the common validation sequence: build bootstrap, marshal to JSON, and validate.
