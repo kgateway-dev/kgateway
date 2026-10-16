@@ -7,13 +7,21 @@ import (
 
 // snapshotReclaimGracePeriod is how long a client identity must remain
 // departed before its xDS snapshot cache entry is reclaimed. The grace period
-// absorbs reconnect flaps: an Envoy whose stream resets (network blip, xDS
-// LB rebalance) re-identifies with the same resource name within seconds, and
-// reclaiming eagerly would make it wait for a fresh publish instead of being
-// served the cached snapshot immediately.
+// absorbs reconnect flaps: an Envoy whose stream resets (network blip) usually
+// re-identifies with the same resource name within a second or two, and is
+// then answered from the cached entry instead of waiting for a fresh publish.
+//
+// It is short because that entry is also served to a client returning later,
+// and the gate does not trust it (connectionSnapshotLocked): a client that
+// spent the interval on another controller replica holds newer config, so the
+// entry rolls it back until this replica's first publish to it, which a
+// deferred build may withhold for up to the first-publish budget, or the warm
+// withhold bound. The grace caps how old an entry a returning client can be
+// served; once it is reclaimed, the client waits for that first publish while
+// keeping the config it holds.
 //
 // Variable rather than const so tests can shorten it.
-var snapshotReclaimGracePeriod = 60 * time.Second
+var snapshotReclaimGracePeriod = 5 * time.Second
 
 // snapshotReclaimer clears SnapshotCache entries of clients that have left
 // the connected set and stayed gone for a grace period.
