@@ -52,6 +52,19 @@ func (g *publishGate) graceDereferencedClustersLocked(
 
 	publishedClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 	state := g.dereferenced[proxyKey]
+	if state != nil {
+		// A record outlives its cluster when the carry declined to keep it (it
+		// errored, and errored clusters are never resurrected): the cluster is
+		// gone from the client, but its record would keep the state, and the
+		// timer that re-publishes state.wrap, alive past later publishes that
+		// never refreshed it, and would deny the cluster's next genuine
+		// de-reference its window. Records exist only for published clusters.
+		for name := range state.since {
+			if _, stillPublished := publishedClusters[name]; !stillPublished {
+				delete(state.since, name)
+			}
+		}
+	}
 
 	var graced map[string]struct{}
 	var soonest time.Duration
