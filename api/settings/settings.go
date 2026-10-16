@@ -379,11 +379,16 @@ type Settings struct {
 	// been withheld this long, the latest deferred snapshot is published
 	// anyway; routes to the missing clusters fail until they appear.
 	//
+	// The same bound limits how long an already-published client keeps being
+	// sent the last config of a referenced cluster that went missing from CDS
+	// (carried forward as make-before-break): past it the cluster is dropped,
+	// so endpoints that old are not served indefinitely.
+	//
 	// Keep it well above the longest time translation takes to catch up after
 	// a controller restart: a bound shorter than that fails warm routes on
 	// every restart. Only applies while PerClientPublishBudget is non-zero. A
 	// value of 0 removes the bound: warm clients stay withheld until the
-	// missing clusters appear.
+	// missing clusters appear, and missing clusters are carried indefinitely.
 	PerClientWarmWithholdBound time.Duration `split_words:"true" default:"10m"`
 
 	// XdsSnapshotConsistencyCheck checks every per-client xDS snapshot
