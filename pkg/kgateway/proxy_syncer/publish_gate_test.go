@@ -548,23 +548,22 @@ func TestSettleSynthesizedEndpoints(t *testing.T) {
 	}
 
 	t.Run("published on this connection", func(t *testing.T) {
-		settled := settleSynthesizedEndpoints(build, synthesized, published, false)
+		settled := settleSynthesizedEndpoints(build, synthesized, published)
 		assert.Equal(t, map[string]int{"cluster-known": 1, "cluster-new": 0, "cluster-derived": 0}, served(settled),
 			"known endpoints are republished, a cluster published without a CLA is left alone, a new cluster gets its empty CLA, derived truth is untouched")
 		assert.NotEqual(t, build.GetVersion(resourcev3.EndpointType), settled.GetVersion(resourcev3.EndpointType))
 		assert.Len(t, build.Resources[envoycachetypes.Endpoint].Items, 4, "the built snapshot must not be mutated")
 		assert.NoError(t, snapshotConsistencyError(publishGateTestClient, settled))
 	})
-	t.Run("first publish to a warm client", func(t *testing.T) {
-		settled := settleSynthesizedEndpoints(build, synthesized, nil, true)
+	t.Run("first publish on a connection", func(t *testing.T) {
+		// Warm or cold alike: a reconnecting proxy keeps the endpoints it holds,
+		// and a new proxy waits for the rows instead of going Ready with zero
+		// hosts behind clusters whose rows are still being built.
+		settled := settleSynthesizedEndpoints(build, synthesized, nil)
 		assert.Equal(t, map[string]int{"cluster-derived": 0}, served(settled),
-			"a warm client may hold endpoints from an earlier stream, so synthesized CLAs are left out")
-	})
-	t.Run("first publish to a cold client", func(t *testing.T) {
-		assert.Same(t, build, settleSynthesizedEndpoints(build, synthesized, nil, false),
-			"a cold client holds nothing, so synthesized CLAs publish as-is")
+			"synthesized CLAs whose rows are on their way are left out of a connection's first publish")
 	})
 	t.Run("nothing synthesized", func(t *testing.T) {
-		assert.Same(t, build, settleSynthesizedEndpoints(build, nil, published, true))
+		assert.Same(t, build, settleSynthesizedEndpoints(build, nil, published))
 	})
 }
