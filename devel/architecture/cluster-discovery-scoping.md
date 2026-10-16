@@ -54,6 +54,15 @@ the wire on the still-open RDS watch, ahead of its destination.
 `KGW_CLUSTER_REFERENCE_AHEAD` holds routes, listeners and secrets at the
 versions the client already has while the new cluster goes out, then releases.
 
+The window is per cluster and starts when the cluster is first sent; being in the
+published snapshot only means it was installed for delivery, so a rebuild inside
+the window (the new backend's own endpoints arriving, say) keeps holding. Every
+cluster new to the proxy counts, not only route targets: a listener that starts
+calling a new ext_authz, ext_proc, rate limit or JWKS cluster waits for it too.
+Builds that are deferred for an unrelated reason are held the same way. While
+held, the published routes and listeners are still the ones in force, so every
+cluster they name stays published with them, whatever the de-reference grace.
+
 **Removing a destination.** Envoy is delivered CDS before RDS, so dropping a
 cluster in the same snapshot as the route that stopped naming it sends the
 removal first. `KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster published for a
@@ -64,15 +73,23 @@ Ordered ADS does not substitute for either window: it fixes CDS before RDS,
 which is the wrong order for removals, and it does not close the ACK-skew
 window for additions.
 
+Both windows are elapsed time, not acknowledgements: an update Envoy rejects, or
+one parked behind a slow stream, can outlast them. Size them above the fleet's
+worst-case propagation.
+
 ## When scoping turns itself off
 
-A route can pick its destination at request time — from a header, or from a
-cluster specifier plugin whose script composes a name — out of a set the
-configuration never enumerates. No walk over the generated protos can find those
-candidates.
+A route can pick its destination at request time — from a header (on the route,
+on a weighted-cluster entry, or on a mirror policy), or from a cluster specifier
+plugin whose script composes a name — out of a set the configuration never
+enumerates. A TcpProxy's cluster can be overridden through filter state (the
+`sni_cluster` filter, or `set_filter_state` writing `envoy.tcp_proxy.cluster`).
+No walk over the generated protos can find those candidates, nor the clusters
+inside a `typed_config` the controller cannot decode, nor behind a
+`cluster_specifier` kind it does not know.
 
-Such a gateway reverts to emitting every cluster, and
-`kgateway_xds_cluster_scoping_disabled_gateways` goes to 1 for it. Detection
+Such a gateway reverts to emitting every cluster, a warning is logged when it
+does, and `kgateway_xds_cluster_scoping_disabled_gateways` goes to 1 for it. Detection
 matters more than it looks: a plugin like that usually falls back when its
 computed cluster is absent, so pruning a candidate does not produce a visible
 503 — every affected request quietly goes somewhere else instead. The metric is
@@ -84,16 +101,18 @@ what turns that into something you can alert on.
 | --- | --- | --- |
 | `KGW_CLUSTER_DISCOVERY_MODE` | `ALL` | `REFERENCED` scopes CDS/EDS to referenced clusters. `ALL` is the pre-existing behavior. |
 | `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` removes immediately and accepts the race. |
-| `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long a route update onto a newly-emitted cluster is held. `0` publishes both together and accepts the blip. |
+| `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long a cluster new to a proxy is delivered ahead of the configuration that names it. `0` publishes both together and accepts the blip. |
 
 Both windows are ignored in `ALL` mode, where no cluster is ever de-referenced
 and none is ever new to a client. With `ALL` set, nothing in this feature runs:
 the emitted set is not computed, no filtering happens, and the publish path is
 the one that existed before the feature.
 
-The reference-ahead hold is additionally bounded by
-`KGW_PER_CLIENT_PUBLISH_BUDGET`, so a misconfigured window cannot pin a client's
-routing updates.
+A hold is additionally bounded by `KGW_PER_CLIENT_PUBLISH_BUDGET` from when it
+began, so neither a misconfigured window nor a stream of new clusters can pin a
+client's routing updates. A hold the budget cuts short is counted as
+`kgateway_xds_snapshot_perclient_bounded_publishes_total{mode="reference_ahead"}`;
+one whose windows close first is not a bounded publish.
 
 ## Metrics
 
@@ -103,6 +122,9 @@ routing updates.
 | `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | Clusters withheld because nothing references them. |
 | `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 when a gateway reverted to emit-all. Worth an alert. |
 | `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters. |
+
+The three gauges are removed when a gateway's last connected proxy goes away, so
+a deleted gateway does not keep a `disabled_gateways` alert firing.
 
 `dropped_clusters` at zero with scoping on means the deployment routes to
 everything it discovers and has nothing to gain here. A steadily rising
