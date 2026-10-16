@@ -478,12 +478,15 @@ type Settings struct {
 	//
 	// REFERENCED is what shrinks config_dump and per-proxy stats cardinality on
 	// clusters with many Services and few routed ones. It is experimental: a
-	// route retarget publishes the new cluster in the same coherent snapshot as
-	// the route that names it, and Envoy does not necessarily apply CDS before
-	// RDS within one snapshot, so a retarget can briefly 503 NC where ALL never
-	// would. The transition graces that close that window are separate work;
-	// until then, treat this as a trade of a transient retarget blip for a
-	// permanently smaller data plane.
+	// cluster now enters and leaves a proxy's CDS as configuration starts and
+	// stops naming it, and Envoy does not necessarily apply CDS before RDS
+	// within one snapshot, so either transition could briefly 503 NC where ALL
+	// never would. Two windows close that: ClusterReferenceAhead delivers a new
+	// cluster before the configuration that names it, and
+	// ClusterDereferenceGrace keeps a de-referenced one until the configuration
+	// that stopped naming it has landed. Both are elapsed time, not
+	// acknowledgements: each must exceed the fleet's worst-case propagation. A
+	// gateway whose routes pick a destination at request time stays unscoped.
 	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
 
 	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays
@@ -499,9 +502,13 @@ type Settings struct {
 	// 0 removes immediately and accepts the race.
 	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
 
-	// ClusterReferenceAhead is how long a route update that retargets onto a
-	// newly-emitted cluster is held back, in REFERENCED mode only, so the
-	// cluster is delivered first.
+	// ClusterReferenceAhead is how long a cluster new to a proxy is delivered
+	// ahead of the configuration that names it, in REFERENCED mode only: the
+	// proxy's routes, listeners and secrets stay at the versions it has until
+	// every new cluster they name has been sent for this long. Each cluster's
+	// window starts when it is first sent, and every cluster counts, not only
+	// route targets (a listener that starts calling a new ext_authz cluster
+	// waits for it too).
 	//
 	// Publishing both in one coherent snapshot is not enough. Envoy does not
 	// necessarily apply CDS before RDS within a snapshot, and after a CDS
@@ -514,8 +521,9 @@ type Settings struct {
 	//
 	// The cost is route-edit latency, but only for edits that introduce a
 	// destination the proxy has never seen. 0 publishes cluster and route
-	// together and accepts the blip. The hold is additionally bounded by
-	// PerClientPublishBudget, so a misconfigured window cannot pin updates.
+	// together and accepts the blip. A hold is additionally bounded by
+	// PerClientPublishBudget from when it began, so a misconfigured window, or
+	// a stream of new clusters, cannot pin updates.
 	ClusterReferenceAhead time.Duration `split_words:"true" default:"2s"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
