@@ -6,6 +6,7 @@ import (
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/onsi/gomega"
@@ -98,6 +99,15 @@ func TestSnapshotConsistencyChecksBootstrapWithoutHidingOtherGaps(t *testing.T) 
 	unlistedRoute.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a")
 	if err := snapshotConsistencyError(ucc.ResourceName(), unlistedRoute); err == nil {
 		t.Fatal("a RouteConfiguration no listener names must fail consistency")
+	}
+	missingRoute := &envoycache.Snapshot{}
+	missingRoute.Resources[envoycachetypes.Listener] = sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	if err := snapshotConsistencyError(ucc.ResourceName(), missingRoute); err == nil {
+		t.Fatal("a listener naming a RouteConfiguration the snapshot lacks must fail consistency")
+	}
+	missingRoute.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a")
+	if err := snapshotConsistencyError(ucc.ResourceName(), missingRoute); err != nil {
+		t.Fatalf("a listener whose RouteConfiguration is published is consistent: %v", err)
 	}
 }
 

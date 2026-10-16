@@ -206,8 +206,9 @@ func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, p
 // snapshot cache. It first settles the snapshot's synthesized CLAs against
 // what the client already holds (settleSynthesizedEndpoints). With
 // checkConsistency enabled it then verifies that the snapshot publishes no
-// resource its other resources do not reference, which the publication paths
-// maintain by construction; a violation is recorded and logged but the
+// resource its other resources do not reference, and that every
+// RouteConfiguration its listeners name is present, which the publication
+// paths maintain by construction; a violation is recorded and logged but the
 // snapshot is still published (a publish-blocking check would reintroduce
 // unbounded withholds). Callers must hold g.mu.
 func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, snap *envoycache.Snapshot, synthesized []string) error {
@@ -647,9 +648,14 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 // the one intended exception: its CLA is published without a dynamic cluster
 // to clients that subscribed to it.
 //
-// The converse, an EDS cluster without a CLA, is not reported: Envoy keeps
-// the cluster's current endpoints when its CLA is absent, which is how a
-// client keeps endpoints that have not been derived yet (see
+// It also reports a listener that names a RouteConfiguration the snapshot
+// lacks. No publication path leaves one out on purpose (a held flip keeps
+// routes and listeners at the same published build), and Envoy warms such a
+// listener until RDS answers, then serves it with no routes.
+//
+// The converse for EDS, an EDS cluster without a CLA, is not reported: Envoy
+// keeps the cluster's current endpoints when its CLA is absent, which is how
+// a client keeps endpoints that have not been derived yet (see
 // settleSynthesizedEndpoints).
 func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error {
 	references := envoycache.GetAllResourceReferences(snap.Resources)
@@ -668,11 +674,26 @@ func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error 
 			unreferenced = append(unreferenced, "RouteConfiguration "+name)
 		}
 	}
-	if len(unreferenced) == 0 {
-		return nil
+	var missing []string
+	for name := range references[envoyresourcev3.RouteType] {
+		if _, ok := snap.Resources[envoycachetypes.Route].Items[name]; !ok {
+			missing = append(missing, "RouteConfiguration "+name)
+		}
 	}
-	slices.Sort(unreferenced)
-	return fmt.Errorf("snapshot publishes resources no other resource references: %v", unreferenced)
+	switch {
+	case len(unreferenced) == 0 && len(missing) == 0:
+		return nil
+	case len(missing) == 0:
+		slices.Sort(unreferenced)
+		return fmt.Errorf("snapshot publishes resources no other resource references: %v", unreferenced)
+	case len(unreferenced) == 0:
+		slices.Sort(missing)
+		return fmt.Errorf("snapshot lacks resources its listeners name: %v", missing)
+	default:
+		slices.Sort(unreferenced)
+		slices.Sort(missing)
+		return fmt.Errorf("snapshot publishes resources no other resource references: %v; and lacks resources its listeners name: %v", unreferenced, missing)
+	}
 }
 
 // rememberWarmEpisodeLocked keeps a departing warm client's episode start so a
