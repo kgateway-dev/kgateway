@@ -250,15 +250,23 @@ func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState krtcol
 // withhold for the first-publish budget or the warm withhold bound. Instead:
 //
 //   - while the stream is being admitted, before any watch exists for it and
-//     with no other stream of the key connected, the old entry is cleared, so
-//     the stream's requests wait for a publish rather than being answered from
-//     it; nothing else can be answered from it, since no stream of the key
-//     remains;
-//   - once admitted, the gate forgets the previous connection, and the
-//     client's current build, if it has one, is published to the new
-//     connection. A reconnect too quick for the connected-client collection to
-//     notice produces no new snapshot row, so without this the stream would
-//     wait for the next config change.
+//     with no other stream of the key connected, the fence starts a new
+//     connection generation and clears the old entry, so the stream's requests
+//     wait for a publish rather than being answered from it; nothing else can
+//     be answered from it, since no stream of the key remains;
+//   - a publish computed for the previous connection, including one already
+//     holding the gate lock when the stream arrived, is rejected by the fence
+//     rather than installed after the clear (see connectionFence);
+//   - once admitted, the gate forgets the previous connection, adopts the new
+//     generation, and the client's current build, if it has one, is published
+//     to the new connection. A reconnect too quick for the connected-client
+//     collection to notice produces no new snapshot row, so without this the
+//     stream would wait for the next config change.
+//
+// Only the first stream of a key starts a connection. A further stream that
+// shares the key joins the connection already running: the key's entry is the
+// one published to that connection, so it is served as it is, and it is never
+// cleared under streams that are connected.
 //
 // currentRow returns the client's current snapshot row, or nil.
 func (t ProxyTranslator) registerConnectionStartHooks(ctx context.Context, state krtcollections.XDSClientState, currentRow func(proxyKey string) *XdsSnapWrapper) bool {
@@ -268,10 +276,10 @@ func (t ProxyTranslator) registerConnectionStartHooks(ctx context.Context, state
 	}
 	hooks.SetConnectionStartHooks(
 		func(proxyKey string) {
-			t.xdsCache.ClearSnapshot(proxyKey)
+			t.gate.fence.start(t.xdsCache, proxyKey)
 		},
 		func(proxyKey string) {
-			t.gate.clientDeparted(proxyKey) // nothing has been published to this connection
+			t.gate.connectionStarted(proxyKey)
 			if row := currentRow(proxyKey); row != nil {
 				t.syncXds(ctx, *row)
 			}
