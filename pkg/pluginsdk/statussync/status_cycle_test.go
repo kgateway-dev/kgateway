@@ -80,14 +80,13 @@ func TestStatusCollectionEnqueueWriteNoopCycle(t *testing.T) {
 		Merge: func(current *gwv1.HTTPRoute, d gwv1.RouteStatus) gwv1.RouteStatus {
 			return gwv1.RouteStatus{Parents: MergeRouteParentStatuses(controllerName, current.Status.Parents, d.Parents)}
 		},
-		OnSync: func(res Resource, current *gwv1.HTTPRoute, status gwv1.RouteStatus, err error) {
-			require.NoError(t, err, "status sync must not error")
-			syncs.Add(1)
-		},
 	}
 
 	pool := NewWorkerPool(ctx, func(ctx context.Context, res Resource) {
-		writer.ApplyStatus(ctx, res)
+		if result, ok := writer.apply(ctx, res); ok {
+			require.NotEqual(t, writeResultError, result, "status write must not fail")
+			syncs.Add(1)
+		}
 	}, 2)
 	var pushes atomic.Int32
 	sc := NewStatusCollections()

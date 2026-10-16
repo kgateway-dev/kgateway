@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
@@ -96,14 +95,6 @@ func RegisterPolicyStatusWithBuilder[T controllers.ComparableObject](
 			Merge: func(current T, desired gwv1.PolicyStatus) gwv1.PolicyStatus {
 				desired.Ancestors = statussync.MergePolicyAncestorStatuses(controllerName, getStatus(current).Ancestors, desired.Ancestors)
 				return desired
-			},
-			OnSync: func(res statussync.Resource, _ T, _ gwv1.PolicyStatus, err error) {
-				statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-					Namespace:    res.Namespace,
-					Gateway:      "",
-					ResourceType: gvk.Kind,
-					ResourceName: res.Name,
-				})
 			},
 		})
 	}

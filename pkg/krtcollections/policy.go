@@ -27,7 +27,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -609,19 +608,6 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			}
 			return strings.Compare(nnsString(a), nnsString(b))
 		})
-
-		// Start the resource sync metrics for all ListenerSets before they are processed,
-		// so they do not have staggered start times.
-		for _, ls := range listenerSets {
-			metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-				Namespace: ls.Namespace,
-				Gateway:   gw.GetName(),
-				// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
-				// follow-up cleanup so dashboards, tests, and emitters can be updated together.
-				ResourceType: "XListenerSet",
-				ResourceName: ls.Name,
-			})
-		}
 
 		for _, ls := range listenerSets {
 			if ls.GroupVersionKind().Empty() {
