@@ -130,18 +130,25 @@ extension name the plugin puts in `cluster_specifier_plugin`, in either its
 referenced or inline form), which exact cluster names to keep, and which name
 prefixes to keep for candidates that cannot be enumerated ahead of time.
 
-Three rules are worth knowing. An **empty prefix is rejected**: it would
+A claim's names and prefixes **belong to its selectors**: they are kept only in
+a gateway whose configuration uses one of them. Claims are collected once for
+the whole controller, so this is what keeps one plugin's candidates out of
+gateways that never use it. A claim with no selectors therefore keeps nothing,
+and an error is logged; a cluster a plugin needs whatever the routes say belongs
+in the resources its translation pass adds, which scoping never filters.
+
+Three more rules are worth knowing. An **empty prefix is rejected**: it would
 re-admit the entire inventory while still reporting the gateway as scoped, which
 is worse than reverting because it is invisible. A claim **accounts for its
 selectors only if it keeps somewhere for them to go** — at least one name or
 prefix, and no rejected prefix — because accounting for a selector while keeping
 none of its candidates would prune exactly the clusters it computes; otherwise
-its selectors stay unaccounted and an error is logged. And **only cluster
-specifier plugins can be claimed**: a cluster-header selector's destination is
-whatever the client sends, so nothing a plugin declares can bound it, and the
-other fallbacks above (filter-state overrides, undecodable typed configs,
-unknown specifier kinds) are not something a claim describes; such gateways stay
-unscoped.
+the claim contributes nothing, its selectors stay unaccounted, and an error is
+logged. And **only cluster specifier plugins can be claimed**: a cluster-header
+selector's destination is whatever the client sends, so nothing a plugin
+declares can bound it, and the other fallbacks above (filter-state overrides,
+undecodable typed configs, unknown specifier kinds) are not something a claim
+describes; such gateways stay unscoped.
 
 Claims are collected once, when the controller starts, before its caches sync,
 and hold for its lifetime: derive them from how the plugin names the clusters it
