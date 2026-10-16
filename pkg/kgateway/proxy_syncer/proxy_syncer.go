@@ -55,6 +55,9 @@ type ProxySyncer struct {
 
 	apiClient       apiclient.Client
 	proxyTranslator ProxyTranslator
+	// scoping is resolved once, at construction: it carries the plugins'
+	// cluster emission claims, collected a single time.
+	scoping clusterScoping
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
 	// clientState is the synchronous xDS connection state behind uniqueClients;
@@ -219,12 +222,14 @@ func NewProxySyncer(
 		// own StartConfig silently lose this protection otherwise.
 		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget, and departed proxies' snapshots are never reclaimed")
 	}
+	scoping := clusterScopingFrom(commonCols.Settings, mergedPlugins.ContributesPolicies)
 	return &ProxySyncer{
 		controllerName: controllerName,
 		commonCols:     commonCols,
 		apiClient:      client,
 		proxyTranslator: NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck,
-			clusterScopingFrom(commonCols.Settings, mergedPlugins.ContributesPolicies)),
+			scoping),
+		scoping:                    scoping,
 		uniqueClients:              uniqueClients,
 		clientState:                xdsClientState,
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
@@ -362,9 +367,9 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	s.translator.Init(ctx)
 
-	// Resolved once: every path this feature touches asks scoping.ScopesClusters(),
-	// and with it false none of them do anything.
-	scoping := clusterScopingFrom(s.commonCols.Settings, s.plugins.ContributesPolicies)
+	// Resolved once, at construction: every path this feature touches asks
+	// scoping.ScopesClusters(), and with it false none of them do anything.
+	scoping := s.scoping
 	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
 		// with controllerName matching s.controllerName (envoy controller). The filtering happens

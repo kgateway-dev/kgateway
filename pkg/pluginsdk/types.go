@@ -176,8 +176,11 @@ type ClusterEmissionClaim struct {
 	NamePrefixes []string
 }
 
-// ClaimEmittedClusters is called once per translation to collect a plugin's
-// ClusterEmissionClaim. Return the zero value when the plugin routes only to
+// ClaimEmittedClusters is called once, when the proxy syncer is built and
+// before its caches have synced, to collect a plugin's ClusterEmissionClaim.
+// The claim holds for the controller's lifetime, so derive it from what the
+// plugin knows statically (how it names the clusters it computes), not from
+// cluster state. Return the zero value when the plugin routes only to
 // destinations the configuration names, which is the usual case and requires
 // nothing of a plugin author.
 type ClaimEmittedClusters func() ClusterEmissionClaim
