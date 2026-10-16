@@ -235,7 +235,9 @@ type coldStreamReader interface {
 // connectionSnapshotLocked returns the snapshot the gate last published to the
 // client on its current connection, or nil if it has published none. A cache
 // entry left over from an earlier connection is ignored: it says nothing about
-// what the client runs now. Callers must hold g.mu.
+// what the client runs now. (With connection-start hooks, such an entry is also
+// cleared before the new connection is answered; see
+// registerConnectionStartHooks.) Callers must hold g.mu.
 func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, proxyKey string) envoycache.ResourceSnapshot {
 	if _, ok := g.published[proxyKey]; !ok {
 		return nil
