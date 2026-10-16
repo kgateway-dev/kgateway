@@ -154,11 +154,21 @@ func (g *publishGate) cancelDereferenceTimerLocked(proxyKey string) {
 	}
 }
 
-// fireDereferencePrune re-publishes the client's latest snapshot now that a
-// grace window has closed, under the same lock as every other publication, so
+// fireDereferencePrune re-publishes the client's latest build now that a grace
+// window has closed, under the same lock as every other publication, so
 // pruning cannot race a coherent publish. It acts only for the arming that
 // scheduled it: a callback already waiting on the lock when its timer was
 // re-armed or cancelled, or its state replaced, does nothing.
+//
+// The build goes through the same path a new build of its kind takes
+// (publishBuildLocked), so the prune makes the whole hold decision again
+// rather than a narrower one of its own. A held flip stays held for whichever
+// reason holds it: an unready cluster, which re-resolving the build finds,
+// and also a cluster still inside its reference-ahead window, which only the
+// reference-ahead check sees. Releasing either here would send routes onto a
+// cluster before the hold meant them to go, at a de-reference grace that has
+// nothing to do with it. The expired clusters drop out the same way they do
+// for a new build, and the path re-arms the prune for any window still open.
 func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, state *dereferenceState, epoch uint64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -170,27 +180,25 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
-	published := g.connectionSnapshotLocked(cache, proxyKey)
-	if published == nil {
+	if g.connectionSnapshotLocked(cache, proxyKey) == nil {
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
-
-	wrap := state.wrap
-	graced, soonest := g.graceDereferencedClustersLocked(
-		proxyKey, published, wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
-	// Keep a held flip held: its own bound (the flip release) decides when it
-	// goes out. Re-resolving with holds disabled would release it at this
-	// grace instead, onto a cluster that may still be unready.
-	holding := g.pendingFlips[proxyKey] != nil
-	resolved, _, edsHashes := resolveDeferredPerCluster(wrap, published, holding, graced, g.lastPublishedEDSLocked(proxyKey))
-	logger.Debug("de-reference grace elapsed; re-publishing without the expired clusters",
-		"proxy_key", proxyKey, "still_graced", len(graced))
-	if err := g.setSnapshot(ctx, cache, proxyKey, resolved, wrap.synthesizedEndpoints, edsHashes); err != nil {
+	logger.Debug("de-reference grace elapsed; re-publishing the latest build without the expired clusters", "proxy_key", proxyKey)
+	if err := g.publishBuildLocked(ctx, cache, state.wrap); err != nil {
 		logPublishFailure(proxyKey, err)
-		return
 	}
-	g.armDereferenceTimerLocked(ctx, cache, proxyKey, wrap, soonest)
+}
+
+// publishBuildLocked publishes a build through the path a new build of its
+// kind takes: per-cluster resolution for a deferred build, the transition
+// graces for a coherent one. Timers that re-publish a stored build use it, so
+// every publication makes the same hold decision. Callers must hold g.mu.
+func (g *publishGate) publishBuildLocked(ctx context.Context, cache envoycache.SnapshotCache, wrap XdsSnapWrapper) error {
+	if wrap.deferred() {
+		return g.resolveDeferredLocked(ctx, cache, wrap)
+	}
+	return g.publishWithTransitionGracesLocked(ctx, cache, wrap)
 }
 
 // retainsDereferenced reports whether any cluster can outlive its last
@@ -213,11 +221,21 @@ func (g *publishGate) publishWithTransitionGraces(
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	// A new build, like those publish and resolveDeferred take.
+	// A new build, like those publish and resolveDeferred take. The timers
+	// that re-publish a stored build go straight to the Locked form.
 	if !g.beginBuildLocked(snapWrap) {
 		return nil
 	}
+	return g.publishWithTransitionGracesLocked(ctx, cache, snapWrap)
+}
 
+// publishWithTransitionGracesLocked is publishWithTransitionGraces for callers
+// that hold g.mu.
+func (g *publishGate) publishWithTransitionGracesLocked(
+	ctx context.Context,
+	cache envoycache.SnapshotCache,
+	snapWrap XdsSnapWrapper,
+) error {
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Never published: there is nothing to carry forward, and nothing can
