@@ -182,7 +182,6 @@ func snapshotPerClient(
 		}
 		slices.Sort(snap.synthesizedEndpoints)
 		snap.erroredClusters = slices.Sorted(slices.Values(clustersForUcc.erroredClusters))
-		snap.referencedClusters = listenerRouteSnapshot.ReferencedClusters
 		snap.proxyKey = ucc.ResourceName()
 		snap.scopesClusters = scoping.ScopesClusters()
 		snap.endpointHashes = endpointHashes

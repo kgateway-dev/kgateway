@@ -37,11 +37,6 @@ type XdsSnapWrapper struct {
 	// findMissingReferencedEndpointResources). Derived empty CLAs are excluded
 	// (#14352). Sorted.
 	missingEndpointsReferenced []string
-	// referencedClusters is the dataplane-referenced cluster set of this build,
-	// carried so publication can identify newly referenced clusters. Computed
-	// once per gateway; changes reach Equals through route/listener versions.
-	// +noKrtEquals
-	referencedClusters map[string]struct{}
 	// synthesizedEndpoints lists every EDS resource whose CLA in snap is a
 	// synthesized empty standing in for a per-client row that is still being
 	// built (some backend derives endpoints for it), referenced or not. The

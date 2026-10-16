@@ -222,10 +222,7 @@ func (g *publishGate) publishWithTransitionGraces(
 	// Holding routes, listeners and secrets at their published versions
 	// publishes the new cluster's CDS by itself, and the existing flip-release
 	// timer sends the route once the window closes.
-	var newlyEmitted []string
-	if g.holdsReferenceAhead() {
-		newlyEmitted = newlyEmittedReferences(snapWrap, published)
-	}
+	newlyEmitted, _ := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, time.Now())
 
 	if len(graced) == 0 && len(newlyEmitted) == 0 {
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)

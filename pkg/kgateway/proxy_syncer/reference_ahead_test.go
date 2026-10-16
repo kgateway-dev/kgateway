@@ -14,15 +14,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-// routedClusterWrapperV is a coherent build whose routes reference exactly the
-// clusters it emits: the shape a retarget produces.
+// routedClusterWrapperV is a coherent build whose configuration names exactly
+// the clusters it emits: the shape a retarget produces in REFERENCED mode.
 func routedClusterWrapperV(version string, clusters ...string) XdsSnapWrapper {
-	wrap := clusterWrapperV(version, clusters...)
-	wrap.referencedClusters = make(map[string]struct{}, len(clusters))
-	for _, name := range clusters {
-		wrap.referencedClusters[name] = struct{}{}
-	}
-	return wrap
+	return clusterWrapperV(version, clusters...)
 }
 
 func newReferenceAheadTranslator(t *testing.T, ahead time.Duration) *ProxyTranslator {
@@ -95,28 +90,47 @@ func TestReferenceAheadDoesNotHoldARetargetOntoAnAlreadySentCluster(t *testing.T
 		"a retarget between clusters the client already has must not be held")
 }
 
-// TestNewlyEmittedReferencesIgnoresTheBlackhole: routes whose backends fail
-// resolution target the blackhole cluster. Holding on it would delay exactly
-// the configurations that are already broken.
-func TestNewlyEmittedReferencesIgnoresTheBlackhole(t *testing.T) {
-	wrap := routedClusterWrapperV("v1", wellknown.BlackholeClusterName)
+// TestReferenceAheadIgnoresTheBlackhole: routes whose backends fail resolution
+// target the blackhole cluster. Holding on it would delay exactly the
+// configurations that are already broken.
+func TestReferenceAheadIgnoresTheBlackhole(t *testing.T) {
+	g := newPublishGate(0, false, nil, scopedClustersWithReferenceAhead(time.Minute))
 	published := &envoycache.Snapshot{}
 	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v0", nil)
 
-	assert.Empty(t, newlyEmittedReferences(wrap, published))
+	ahead, _ := g.referenceAheadLocked(publishGateTestClient, routedClusterWrapperV("v1", wellknown.BlackholeClusterName), published, time.Now())
+	assert.Empty(t, ahead)
 }
 
-// TestNewlyEmittedReferencesIgnoresClustersAbsentFromTheBuild: a referenced
-// cluster missing from this build is the deferred path's case, and it is
-// already held there. Reporting it here too would hold it twice, on two
-// different windows.
-func TestNewlyEmittedReferencesIgnoresClustersAbsentFromTheBuild(t *testing.T) {
-	wrap := routedClusterWrapperV("v1", "present")
-	wrap.referencedClusters["absent"] = struct{}{}
+// TestReferenceAheadWindowIsPerCluster: a cluster stays held for its whole
+// window from when it was first sent, even once it is in the published
+// snapshot, and a cluster first sent later gets its own window.
+func TestReferenceAheadWindowIsPerCluster(t *testing.T) {
+	g := newPublishGate(0, false, nil, scopedClustersWithReferenceAhead(time.Minute))
 	published := &envoycache.Snapshot{}
-	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v0", nil)
+	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v0", []envoycachetypes.ResourceWithTTL{
+		{Resource: edsClusterProto("old")},
+	})
+	start := time.Now()
 
-	assert.Equal(t, []string{"present"}, newlyEmittedReferences(wrap, published))
+	ahead, longest := g.referenceAheadLocked(publishGateTestClient, routedClusterWrapperV("v1", "old", "first"), published, start)
+	assert.Equal(t, []string{"first"}, ahead)
+	assert.Equal(t, time.Minute, longest)
+
+	// "first" is now published, but has had it for 20s of its minute.
+	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v1", []envoycachetypes.ResourceWithTTL{
+		{Resource: edsClusterProto("old")}, {Resource: edsClusterProto("first")},
+	})
+	ahead, longest = g.referenceAheadLocked(publishGateTestClient, routedClusterWrapperV("v2", "old", "first", "second"), published, start.Add(20*time.Second))
+	assert.Equal(t, []string{"first", "second"}, ahead)
+	assert.Equal(t, time.Minute, longest, "the hold lasts until the last window closes")
+
+	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v2", []envoycachetypes.ResourceWithTTL{
+		{Resource: edsClusterProto("old")}, {Resource: edsClusterProto("first")}, {Resource: edsClusterProto("second")},
+	})
+	ahead, longest = g.referenceAheadLocked(publishGateTestClient, routedClusterWrapperV("v3", "old", "first", "second"), published, start.Add(70*time.Second))
+	assert.Equal(t, []string{"second"}, ahead, "first's window closed; second's has 10s left")
+	assert.Equal(t, 10*time.Second, longest)
 }
 
 // TestReferenceAheadHoldIsBoundedByTheBudget: the window paces delivery, the
@@ -135,4 +149,36 @@ func TestReferenceAheadHoldIsBoundedByTheBudget(t *testing.T) {
 		return publishedListenerVersionOf(t, pt) == "v2"
 	}, 2*time.Second, 5*time.Millisecond,
 		"a reference-ahead window longer than the budget must still release at the budget")
+}
+
+// A rebuild inside the window, such as the new backend's endpoints arriving,
+// must keep the routes held: the cluster being in the published snapshot only
+// means it was installed for delivery.
+func TestReferenceAheadHoldSurvivesARebuildInsideTheWindow(t *testing.T) {
+	pt := newReferenceAheadTranslator(t, 150*time.Millisecond)
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedClusterWrapperV("v1", "old"))
+	pt.syncXds(ctx, routedClusterWrapperV("v2", "old", "new"))
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
+
+	rebuilt := routedClusterWrapperV("v3", "old", "new")
+	rebuilt.snap.Resources[envoycachetypes.Endpoint].Version = "v3-endpoints"
+	pt.syncXds(ctx, rebuilt)
+	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the routes stay held for the new cluster's window")
+
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v3" }, 2*time.Second, 5*time.Millisecond)
+}
+
+// A cluster new to the client that only a listener filter names (an ext_authz
+// server, say) is delivered ahead of the listener update too.
+func TestReferenceAheadHoldsForAClusterOnlyAFilterNames(t *testing.T) {
+	pt := newReferenceAheadTranslator(t, time.Hour)
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedClusterWrapperV("v1", "backend"))
+	pt.syncXds(ctx, clusterWrapperV("v2", "backend", "authz"))
+
+	assert.Contains(t, publishedClusterNames(t, pt), "authz", "the new cluster is delivered")
+	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the listener that calls it waits")
 }
