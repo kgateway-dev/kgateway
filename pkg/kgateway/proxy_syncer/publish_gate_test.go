@@ -567,3 +567,57 @@ func TestSettleSynthesizedEndpoints(t *testing.T) {
 		assert.Same(t, build, settleSynthesizedEndpoints(build, nil, published))
 	})
 }
+
+// A client whose snapshot row is deleted while it stays connected (a
+// GatewayClass deleted and recreated, a route lookup error) still runs what
+// was published on its connection. When the row returns lagging a cluster
+// the client serves, that cluster is carried, not dropped by a bounded first
+// publish; a client that really departed starts over.
+func TestSnapshotRowFlapKeepsConnectionState(t *testing.T) {
+	ucc := newTestUcc(publishGateTestClient)
+	full := func() *envoycache.Snapshot {
+		snap := &envoycache.Snapshot{}
+		snap.Resources[envoycachetypes.Listener] = sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+		snap.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a", "cluster-b")
+		snap.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-1", []envoycachetypes.ResourceWithTTL{
+			edsClusterForClient(ucc, "cluster-a", 1).Cluster.ResourceWithTTL(),
+			edsClusterForClient(ucc, "cluster-b", 2).Cluster.ResourceWithTTL(),
+		})
+		snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-1", []envoycachetypes.ResourceWithTTL{
+			endpointsForClient(ucc, "cluster-a", 3).Endpoints.ResourceWithTTL(),
+			endpointsForClient(ucc, "cluster-b", 4).Endpoints.ResourceWithTTL(),
+		})
+		return snap
+	}
+	lagging := func() XdsSnapWrapper {
+		snap := full()
+		snap.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-2", []envoycachetypes.ResourceWithTTL{
+			edsClusterForClient(ucc, "cluster-a", 1).Cluster.ResourceWithTTL(),
+		})
+		snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-2", []envoycachetypes.ResourceWithTTL{
+			endpointsForClient(ucc, "cluster-a", 3).Endpoints.ResourceWithTTL(),
+		})
+		return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient, missingReferenced: []string{"cluster-b"}}
+	}
+	ctx := context.Background()
+
+	t.Run("row deleted while connected", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, time.Hour)
+		pt.syncXds(ctx, XdsSnapWrapper{snap: full(), proxyKey: publishGateTestClient})
+		pt.clientSnapshotDeleted(publishGateTestClient, true)
+		pt.syncXds(ctx, lagging())
+		served := servedSnapshot(t, pt)
+		assert.NotEqual(t, "cds-1", served.GetVersion(resourcev3.ClusterType), "the returning row is resolved and published at once")
+		assert.Contains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-b", "the cluster the client serves is carried")
+		n, ok := endpointCount(served, "cluster-b")
+		assert.True(t, ok && n == 1, "and so are its endpoints")
+	})
+	t.Run("client departed", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, time.Hour)
+		pt.syncXds(ctx, XdsSnapWrapper{snap: full(), proxyKey: publishGateTestClient})
+		pt.clientSnapshotDeleted(publishGateTestClient, false)
+		pt.syncXds(ctx, lagging())
+		assert.Equal(t, "cds-1", servedSnapshot(t, pt).GetVersion(resourcev3.ClusterType),
+			"a returning client goes through first publish; nothing is resolved against its previous connection")
+	})
+}
