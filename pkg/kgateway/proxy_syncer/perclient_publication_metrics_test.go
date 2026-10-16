@@ -183,3 +183,35 @@ func TestPublicationMetrics_CarriedClusters(t *testing.T) {
 		},
 	})
 }
+
+// first_publish_pending_clients counts a client while its first publish on the
+// connection is withheld, and stops when it publishes, by a coherent build or
+// at the budget, or leaves.
+func TestPublicationMetrics_FirstPublishPending(t *testing.T) {
+	const metricName = "kgateway_xds_snapshot_perclient_first_publish_pending_clients"
+	ctx := context.Background()
+	pending := func() float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(metricName, unknownLabels)
+	}
+
+	ResetMetrics()
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	pt.syncXds(ctx, deferredWrapperV("v1"))
+	require.Equal(t, float64(1), pending(), "withheld from its first publish")
+	pt.syncXds(ctx, deferredWrapperV("v2"))
+	require.Equal(t, float64(1), pending(), "one client, however many deferred builds")
+	pt.syncXds(ctx, coherentWrapperV("v3"))
+	require.Equal(t, float64(0), pending(), "published")
+
+	bounded := newPublishGateTestTranslator(t, false, 30*time.Millisecond)
+	bounded.syncXds(ctx, deferredWrapperV("v1"))
+	require.Equal(t, float64(1), pending())
+	require.Eventually(t, func() bool { return pending() == 0 }, 2*time.Second, 5*time.Millisecond, "published at the budget")
+
+	departed := newPublishGateTestTranslator(t, false, time.Hour)
+	departed.syncXds(ctx, deferredWrapperV("v1"))
+	require.Equal(t, float64(1), pending())
+	departed.gate.clientDeparted(publishGateTestClient)
+	require.Equal(t, float64(0), pending(), "left before its first publish")
+}
