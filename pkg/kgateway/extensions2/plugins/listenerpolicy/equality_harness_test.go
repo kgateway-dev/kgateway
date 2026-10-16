@@ -44,14 +44,15 @@ func baseHarnessHttpListenerPolicyIr() *HttpListenerPolicyIr {
 		http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{
 			MaxConcurrentStreams: wrapperspb.UInt32(100),
 		},
-		healthCheckPolicy:         &healthcheckv3.HealthCheck{PassThroughMode: wrapperspb.Bool(false)},
-		preserveHttp1HeaderCase:   new(true),
-		preserveExternalRequestId: new(true),
-		generateRequestId:         new(true),
-		normalizePath:             new(true),
-		mergeSlashes:              new(true),
-		proxy100Continue:          new(true),
-		accessLogConfig:           []proto.Message{wrapperspb.String("access-log")},
+		healthCheckPolicy:            &healthcheckv3.HealthCheck{PassThroughMode: wrapperspb.Bool(false)},
+		preserveHttp1HeaderCase:      new(true),
+		preserveExternalRequestId:    new(true),
+		generateRequestId:            new(true),
+		normalizePath:                new(true),
+		mergeSlashes:                 new(true),
+		pathWithEscapedSlashesAction: new(envoy_hcm.HttpConnectionManager_UNESCAPE_AND_REDIRECT),
+		proxy100Continue:             new(true),
+		accessLogConfig:              []proto.Message{wrapperspb.String("access-log")},
 		accessLogPolicies: []kgateway.AccessLog{
 			{FileSink: &kgateway.FileSink{Path: "/dev/stdout"}},
 		},
@@ -162,6 +163,12 @@ func TestHarnessHttpListenerPolicyIrEquals(t *testing.T) {
 		{
 			Field:  "mergeSlashes",
 			Mutate: func(d **HttpListenerPolicyIr) { (*d).mergeSlashes = new(false) },
+		},
+		{
+			Field: "pathWithEscapedSlashesAction",
+			Mutate: func(d **HttpListenerPolicyIr) {
+				(*d).pathWithEscapedSlashesAction = new(envoy_hcm.HttpConnectionManager_REJECT_REQUEST)
+			},
 		},
 		{
 			Field: "proxy100Continue",
