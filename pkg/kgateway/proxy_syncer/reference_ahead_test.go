@@ -229,3 +229,50 @@ func TestReferenceAheadAppliesToDeferredBuilds(t *testing.T) {
 	assert.Contains(t, publishedClusterNames(t, pt), "authz")
 	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the configuration naming the new cluster waits for it")
 }
+
+// Each hold reason keeps its own deadline. A reference-ahead hold (short
+// window) that is joined by a flip onto an unready cluster must not release
+// that flip at the reference-ahead window: the unready cluster gets its budget.
+func TestHoldDeadlinePerReason_UnreadyFlipOutlastsTheAheadWindow(t *testing.T) {
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 600*time.Millisecond, true,
+		scopedClustersWithReferenceAhead(50*time.Millisecond))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "old", "new")) // reference-ahead hold
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
+
+	unready := routedBuild(t, "v3", "unready", "old", "new", "unready")
+	unready.missingEndpointsReferenced = []string{"unready"}
+	unready.synthesizedEndpoints = []string{"unready"}
+	pt.syncXds(ctx, unready)
+
+	time.Sleep(250 * time.Millisecond) // well past the 50ms window
+	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the unready flip is held for its budget, not the window")
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v3" }, 2*time.Second, 10*time.Millisecond,
+		"the budget still releases it")
+}
+
+// And the other way round: an unready-cluster hold whose cluster becomes ready
+// while a reference-ahead window is open releases at that window, not at the
+// budget the unready hold armed.
+func TestHoldDeadlinePerReason_ReadyFlipReleasesAtTheAheadWindow(t *testing.T) {
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true,
+		scopedClustersWithReferenceAhead(100*time.Millisecond))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	unready := routedBuild(t, "v2", "new", "old", "new")
+	unready.missingEndpointsReferenced = []string{"new"}
+	unready.synthesizedEndpoints = []string{"new"}
+	pt.syncXds(ctx, unready)
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
+
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "old", "new")) // endpoints derived
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v3" }, 2*time.Second, 10*time.Millisecond,
+		"once only the reference-ahead window holds, it releases at the window, not the 1h budget")
+}
