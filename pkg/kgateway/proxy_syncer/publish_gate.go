@@ -123,6 +123,13 @@ type publishGate struct {
 	// departure is older than the bound, and any publish removes them. Guarded
 	// by mu; created on first use.
 	warmEpisodes map[string]warmEpisode
+	// coldEpisodes does the same for the first-publish budget: a client whose
+	// connection (or snapshot row) resets more often than the budget resumes
+	// its first-publish episode instead of restarting it, so it still gets
+	// its bounded first publish. Entries expire once the departure is older
+	// than the budget, and any publish removes them. Guarded by mu; created on
+	// first use.
+	coldEpisodes map[string]warmEpisode
 	// checkConsistency verifies every publish, recording (never withholding
 	// on) violations — an invariant monitor for test/CI environments
 	// (KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK). Written once at construction.
@@ -148,11 +155,15 @@ type pendingFirstPublish struct {
 	// publishes or stays withheld. A nil wrap.snap means nothing is pending.
 	wrap  XdsSnapWrapper
 	timer *time.Timer
+	// since is when the first-publish episode started; the budget runs from
+	// it, across brief departures (see coldEpisodes).
+	since time.Time
 	// Preserve the warm withhold start across budget rechecks.
 	warmWithheldSince time.Time
 }
 
-// warmEpisode preserves the withhold start across a brief departure.
+// warmEpisode preserves an episode's start across a brief departure (used for
+// both the warm withhold and the first-publish budget).
 type warmEpisode struct {
 	since      time.Time
 	departedAt time.Time
@@ -226,7 +237,8 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 	if err := cache.SetSnapshot(ctx, proxyKey, snap); err != nil {
 		return err
 	}
-	// A successful publish ends the warm withhold episode.
+	// A successful publish ends the first-publish and warm withhold episodes.
+	delete(g.coldEpisodes, proxyKey)
 	delete(g.warmEpisodes, proxyKey)
 	g.published[proxyKey] = struct{}{}
 	return nil
@@ -311,10 +323,17 @@ func (g *publishGate) offerColdLocked(
 	proxyKey := snapWrap.proxyKey
 	st := g.pending[proxyKey]
 	if st == nil {
-		st = &pendingFirstPublish{}
+		now := time.Now()
+		st = &pendingFirstPublish{since: now}
+		if ep, ok := g.coldEpisodes[proxyKey]; ok {
+			delete(g.coldEpisodes, proxyKey)
+			if now.Sub(ep.departedAt) < g.budget {
+				st.since = ep.since
+			}
+		}
 		g.pending[proxyKey] = st
 		logger.Info("withholding first publish until referenced clusters are ready or the budget expires",
-			"proxy_key", proxyKey, "budget", g.budget,
+			"proxy_key", proxyKey, "budget", g.budget, "remaining", max(0, g.budget-now.Sub(st.since)),
 			"missing_clusters", snapWrap.missingReferenced,
 			"missing_endpoint_clusters", snapWrap.missingEndpointsReferenced,
 		)
@@ -323,7 +342,7 @@ func (g *publishGate) offerColdLocked(
 	if st.timer != nil {
 		return // already armed; it will publish the latest wrapper
 	}
-	st.timer = time.AfterFunc(g.budget, func() {
+	st.timer = time.AfterFunc(max(0, g.budget-time.Since(st.since)), func() {
 		g.firePending(ctx, cache, proxyKey, st)
 	})
 }
@@ -571,6 +590,7 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 		if st.timer != nil {
 			st.timer.Stop()
 		}
+		g.rememberColdEpisodeLocked(proxyKey, st.since)
 		g.rememberWarmEpisodeLocked(proxyKey, st.warmWithheldSince)
 		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
@@ -715,6 +735,25 @@ func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error 
 		slices.Sort(missing)
 		return fmt.Errorf("snapshot publishes resources no other resource references: %v; and lacks resources its listeners name: %v", unreferenced, missing)
 	}
+}
+
+// rememberColdEpisodeLocked keeps a departing unpublished client's
+// first-publish episode start so a reconnect resumes it (see coldEpisodes).
+// Callers must hold g.mu.
+func (g *publishGate) rememberColdEpisodeLocked(proxyKey string, since time.Time) {
+	if since.IsZero() || g.budget <= 0 {
+		return
+	}
+	now := time.Now()
+	if g.coldEpisodes == nil {
+		g.coldEpisodes = make(map[string]warmEpisode)
+	}
+	for key, ep := range g.coldEpisodes {
+		if now.Sub(ep.departedAt) >= g.budget {
+			delete(g.coldEpisodes, key)
+		}
+	}
+	g.coldEpisodes[proxyKey] = warmEpisode{since: since, departedAt: now}
 }
 
 // rememberWarmEpisodeLocked keeps a departing warm client's episode start so a

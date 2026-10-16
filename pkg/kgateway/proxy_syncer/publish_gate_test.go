@@ -621,3 +621,38 @@ func TestSnapshotRowFlapKeepsConnectionState(t *testing.T) {
 			"a returning client goes through first publish; nothing is resolved against its previous connection")
 	})
 }
+
+// A cold client whose connection resets more often than the first-publish
+// budget resumes its episode on reconnect instead of restarting it, so it
+// still gets its bounded first publish; one that stays away longer than the
+// budget starts a fresh episode.
+func TestFirstPublish_BudgetResumesAcrossBriefDepartures(t *testing.T) {
+	const budget = 400 * time.Millisecond
+	ctx := context.Background()
+	published := func(pt *ProxyTranslator) bool {
+		_, err := pt.xdsCache.GetSnapshot(publishGateTestClient)
+		return err == nil
+	}
+
+	t.Run("brief departure resumes", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, budget)
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		time.Sleep(budget * 3 / 4)
+		pt.gate.clientDeparted(publishGateTestClient)
+		pt.syncXds(ctx, deferredWrapperV("v2"))
+		require.Eventually(t, func() bool { return published(pt) }, budget*5/8, 5*time.Millisecond,
+			"the episode's remaining budget, not a fresh one, bounds the first publish after a reconnect")
+		assert.Equal(t, "v2", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
+	})
+	t.Run("long departure restarts", func(t *testing.T) {
+		pt := newPublishGateTestTranslator(t, false, budget)
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		time.Sleep(budget / 4)
+		pt.gate.clientDeparted(publishGateTestClient)
+		time.Sleep(budget * 5 / 4)
+		pt.syncXds(ctx, deferredWrapperV("v2"))
+		time.Sleep(budget / 2)
+		assert.False(t, published(pt), "a client gone for longer than the budget starts a fresh episode")
+		require.Eventually(t, func() bool { return published(pt) }, budget, 5*time.Millisecond)
+	})
+}
