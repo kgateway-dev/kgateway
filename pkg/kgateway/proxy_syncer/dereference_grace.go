@@ -167,7 +167,11 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 	wrap := state.wrap
 	graced, soonest := g.graceDereferencedClustersLocked(
 		proxyKey, published, wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
-	resolved, _, edsHashes := resolveDeferredPerCluster(wrap, published, false, graced, g.lastPublishedEDSLocked(proxyKey))
+	// Keep a held flip held: its own bound (the flip release) decides when it
+	// goes out. Re-resolving with holds disabled would release it at this
+	// grace instead, onto a cluster that may still be unready.
+	holding := g.pendingFlips[proxyKey] != nil
+	resolved, _, edsHashes := resolveDeferredPerCluster(wrap, published, holding, graced, g.lastPublishedEDSLocked(proxyKey))
 	logger.Debug("de-reference grace elapsed; re-publishing without the expired clusters",
 		"proxy_key", proxyKey, "still_graced", len(graced))
 	if err := g.setSnapshot(ctx, cache, proxyKey, resolved, wrap.synthesizedEndpoints, edsHashes); err != nil {
