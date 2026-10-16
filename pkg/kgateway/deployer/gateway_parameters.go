@@ -261,7 +261,6 @@ func (k *kgatewayParameters) getDefaultGatewayParametersWithFlag(gw *gwv1.Gatewa
 			ControllerName:             string(gwc.Spec.ControllerName),
 			ClassName:                  gwc.GetName(),
 			ImageInfo:                  k.inputs.ImageInfo,
-			WaypointClassName:          k.inputs.WaypointGatewayClassName,
 			OmitDefaultSecurityContext: omitDefaultSecurityContext,
 		})
 	}
@@ -317,7 +316,6 @@ func (k *kgatewayParameters) mergeWithDefaults(gwc *gwv1.GatewayClass, gwp *kgat
 		ControllerName:             string(gwc.Spec.ControllerName),
 		ClassName:                  gwc.GetName(),
 		ImageInfo:                  k.inputs.ImageInfo,
-		WaypointClassName:          k.inputs.WaypointGatewayClassName,
 		OmitDefaultSecurityContext: omitDefaultSecurityContext,
 	})
 	if err != nil {

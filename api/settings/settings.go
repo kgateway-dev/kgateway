@@ -242,16 +242,11 @@ type Settings struct {
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
 
-	// WaypointLocalBinding will make the waypoint bind to a loopback address,
-	// so that only the zTunnel can make connections to it. This requires the zTunnel
-	// shipped with Istio 1.26.0+.
-	WaypointLocalBinding bool `split_words:"true" default:"false"`
-
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
-	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation and
-	// istio.io/ingress-use-waypoint=true label will be redirected through a waypoint proxy.
-	// The feature is enabled by default and can be disabled by setting this to false.
-	IngressUseWaypoints bool `split_words:"true" default:"true"`
+	// When enabled, ingress traffic from ambient-captured gateways (the
+	// ambient.istio.io/redirection=enabled annotation) to Services and ServiceEntries
+	// labeled istio.io/ingress-use-waypoint=true is sent through their Istio waypoint.
+	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
 	// Defaults to "info" if not set.
@@ -316,9 +311,6 @@ type Settings struct {
 	AwsEc2RefreshInterval time.Duration `split_words:"true" default:"30s"`
 
 	PolicyMerge string `split_words:"true" default:"{}"`
-
-	// EnableWaypoint enables kgateway to translate istio waypoints
-	EnableWaypoint bool `split_words:"true" default:"false"`
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`

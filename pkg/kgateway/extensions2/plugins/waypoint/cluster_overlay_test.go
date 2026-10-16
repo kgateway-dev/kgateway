@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/waypoint/waypointquery"
@@ -72,26 +71,17 @@ func (f fakeWaypointQueries) GetServiceWaypoint(_ krt.HandlerContext, _ context.
 // TestOverlayInputsHash_CoversClusterOverlayInputs checks the declaration the
 // plugin registers beside its overlay: every backend field whose change moves
 // the overlay's output must move the hash. The fixture is a Service the overlay
-// applies to for an ambient client behind a non-waypoint Gateway. The
-// ingress-use-waypoint label, the namespace (whose own label is consulted when
-// the object's is absent), the name (which keys the waypoint lookup), the
-// clusterIPs (inlined into the STATIC cluster) and the port all change the
-// output. The clusterIPs are the case that motivated the declaration: a core
+// applies to for an ambient client. The ingress-use-waypoint label, the
+// namespace (whose own label is consulted when the object's is absent), the
+// name (which keys the waypoint lookup), the clusterIPs (inlined into the
+// STATIC cluster) and the port all change the output. The clusterIPs are the case that motivated the declaration: a core
 // Service converted single- to dual-stack moves nothing else the framework
 // compares.
 func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
-	const gatewayName = "ingress"
 	namespaces := krt.NewStaticCollection(nil, []krtcollections.NamespaceMetadata{
 		{Name: "ns"},
 		{Name: "labeled-ns", Labels: map[string]string{wellknown.IngressUseWaypointLabel: "true"}},
 	})
-	gateways := krt.NewStaticCollection(nil, []ir.Gateway{{
-		ObjectSource: ir.ObjectSource{
-			Group: wellknown.GatewayGVK.Group, Kind: wellknown.GatewayGVK.Kind,
-			Namespace: "ns", Name: gatewayName,
-		},
-		Obj: &gwv1.Gateway{Spec: gwv1.GatewaySpec{GatewayClassName: "kgateway"}},
-	}})
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "svc", UID: "uid", ResourceVersion: "1",
@@ -109,10 +99,8 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 			waypointquery.ServiceKeyFromObject(&corev1.Service{ObjectMeta: metav1.ObjectMeta{Namespace: "labeled-ns", Name: "svc"}}): waypoint,
 		}},
 		commonCols: &collections.CommonCollections{
-			Namespaces:   namespaces,
-			GatewayIndex: &krtcollections.GatewayIndex{Gateways: gateways},
+			Namespaces: namespaces,
 		},
-		waypointGatewayClassName: "istio-waypoint",
 	}
 
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
@@ -121,7 +109,6 @@ func TestOverlayInputsHash_CoversClusterOverlayInputs(t *testing.T) {
 
 	ambient := ir.NewUniquelyConnectedClient("role", "ns", map[string]string{
 		istioannot.AmbientRedirection.Name: "enabled",
-		wellknown.GatewayNameLabel:         gatewayName,
 	}, ir.PodLocality{})
 	plain := ir.NewUniquelyConnectedClient("role", "ns", nil, ir.PodLocality{})
 

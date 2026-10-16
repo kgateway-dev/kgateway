@@ -564,6 +564,12 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "waypoint-enabled",
+		valuesYAML: `waypoint:
+  enabled: true
+`,
+	},
+	{
 		name: "admin-bind-address",
 		valuesYAML: `controller:
   admin:

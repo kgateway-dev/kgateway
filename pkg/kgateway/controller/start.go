@@ -62,7 +62,6 @@ type StartConfig struct {
 	Manager                  manager.Manager
 	ControllerName           string
 	GatewayClassName         string
-	WaypointGatewayClassName string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	GatewayClassInfos        map[string]*deployer.GatewayClassInfo
 
@@ -118,10 +117,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("initializing kgateway extensions")
 
 	var gatedPlugins []sdk.Plugin
-	// Add the waypoint plugin if enabled
-	if cfg.SetupOpts.GlobalSettings.EnableWaypoint {
+	// Add the ingress-use-waypoint plugin if enabled
+	if cfg.SetupOpts.GlobalSettings.IngressUseWaypoints {
 		setupLog.Info("adding the waypoint plugin")
-		gatedPlugins = append(gatedPlugins, waypoint.NewPlugin(ctx, cfg.CommonCollections, cfg.WaypointGatewayClassName))
+		gatedPlugins = append(gatedPlugins, waypoint.NewPlugin(cfg.CommonCollections))
 	}
 	// Append the gatedPlugins to the ExtraPlugins
 	if len(gatedPlugins) != 0 {
@@ -263,7 +262,6 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		DiscoveryNamespaceFilter: c.cfg.Client.ObjectFilter(),
 		CommonCollections:        c.commoncol,
 		GatewayClassName:         c.cfg.GatewayClassName,
-		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
@@ -298,7 +296,6 @@ func (c *ControllerBuilder) HasSynced() bool {
 func GetDefaultClassInfo(
 	globalSettings *apisettings.Settings,
 	gatewayClassName,
-	waypointGatewayClassName,
 	controllerName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo,
 ) map[string]*deployer.GatewayClassInfo {
@@ -313,19 +310,6 @@ func GetDefaultClassInfo(
 		SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
 	}
 	applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
-	// Only enable waypoint gateway class if it's enabled in the settings and the name isn't empty
-	if globalSettings.EnableWaypoint && waypointGatewayClassName != "" {
-		classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{
-				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
-			},
-			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
-		}
-		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides)
-	}
 	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
 }

@@ -42,7 +42,6 @@ package kgateway
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=serviceentries,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=workloadentries,verbs=get;list;watch
-// +kubebuilder:rbac:groups=security.istio.io,resources=authorizationpolicies,verbs=get;list;watch
 
 // Leases for leader election
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update

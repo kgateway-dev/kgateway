@@ -27,7 +27,6 @@ type Options struct {
 
 	GatewayControllerName    string
 	GatewayClassName         string
-	WaypointGatewayClassName string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	ExtraPlugins             func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	// HelmValuesGeneratorOverride allows replacing the default helm values generation logic.
@@ -58,7 +57,6 @@ func New(opts Options) (setup.Server, error) {
 		setup.WithHelmValuesGeneratorOverride(opts.HelmValuesGeneratorOverride),
 		setup.WithGatewayControllerName(opts.GatewayControllerName),
 		setup.WithGatewayClassName(opts.GatewayClassName),
-		setup.WithWaypointClassName(opts.WaypointGatewayClassName),
 		setup.WithAdditionalGatewayClasses(opts.AdditionalGatewayClasses),
 		setup.WithExtraXDSCallbacks(opts.ExtraXDSCallbacks),
 		setup.WithRestConfig(opts.RestConfig),
