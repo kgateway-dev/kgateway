@@ -116,7 +116,7 @@ func TestNackCorrelationRejectsUnrelatedRequests(t *testing.T) {
 			if scenario == "unassociated clone" {
 				req = proto.Clone(req).(*discoveryv3.DiscoveryRequest)
 			}
-			version, ok := policy.rejectedVersion(req)
+			version, _, ok := policy.rejectedVersion(req)
 			require.Equal(t, scenario == "matching", ok)
 			if ok {
 				require.Equal(t, "rejected", version)
@@ -146,14 +146,14 @@ func TestNackRequestAssociationsAreBoundedAndReleased(t *testing.T) {
 		require.NoError(t, policy.onStreamRequest(1, last))
 		require.Len(t, policy.pending, 1, "requests skipped before CreateWatch must not accumulate")
 	}
-	_, ok := policy.rejectedVersion(first)
+	_, _, ok := policy.rejectedVersion(first)
 	require.False(t, ok)
 	second := nackRequest(node, "1")
 	require.NoError(t, policy.onStreamRequest(2, second))
 	policy.onStreamClosed(1, node)
 	require.Len(t, policy.streams, 1)
 	require.Len(t, policy.pending, 1)
-	version, ok := policy.rejectedVersion(second)
+	version, _, ok := policy.rejectedVersion(second)
 	require.True(t, ok)
 	require.Equal(t, "v", version)
 	require.Empty(t, policy.pending)
