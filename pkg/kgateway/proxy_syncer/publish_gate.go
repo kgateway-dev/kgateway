@@ -235,7 +235,16 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 		}
 	}
 	if err := cache.SetSnapshot(ctx, proxyKey, snap); err != nil {
-		return err
+		// go-control-plane installs the snapshot before answering the
+		// node's open watches, and only answering can fail (the context
+		// ended). Later requests are answered from the installed snapshot,
+		// so the bookkeeping below follows installation: an error here must
+		// not leave an episode, gauge or flip bound behind for a snapshot
+		// the cache already serves.
+		if installed, getErr := cache.GetSnapshot(proxyKey); getErr != nil || installed != envoycache.ResourceSnapshot(snap) {
+			return err
+		}
+		logger.Error("installed xds snapshot but failed to answer open watches", "proxy_key", proxyKey, "error", err)
 	}
 	// A successful publish ends the first-publish and warm withhold episodes.
 	delete(g.coldEpisodes, proxyKey)

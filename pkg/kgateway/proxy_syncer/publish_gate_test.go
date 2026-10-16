@@ -656,3 +656,47 @@ func TestFirstPublish_BudgetResumesAcrossBriefDepartures(t *testing.T) {
 		require.Eventually(t, func() bool { return published(pt) }, budget, 5*time.Millisecond)
 	})
 }
+
+// installThenFailCache installs every snapshot and then reports the error
+// go-control-plane returns when it cannot answer an open watch.
+type installThenFailCache struct {
+	envoycache.SnapshotCache
+}
+
+func (c installThenFailCache) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
+	if err := c.SnapshotCache.SetSnapshot(ctx, node, snapshot); err != nil {
+		return err
+	}
+	return context.Canceled
+}
+
+// A snapshot the cache installed is what the client is served from then on,
+// even if answering an open watch failed, so the gate's bookkeeping follows
+// the installation: the bounded first publish counts as published, and a
+// held flip still gets its release bound.
+func TestSetSnapshotErrorAfterInstallKeepsBookkeeping(t *testing.T) {
+	ctx := context.Background()
+	newTranslator := func(budget time.Duration) *ProxyTranslator {
+		pt := NewProxyTranslator(installThenFailCache{newTestSnapshotCache(t)}, stubPriorXDS{}, budget, true)
+		return &pt
+	}
+	t.Run("bounded first publish", func(t *testing.T) {
+		pt := newTranslator(10 * time.Millisecond)
+		pt.syncXds(ctx, deferredWrapperV("v1"))
+		require.Eventually(t, func() bool {
+			pt.gate.mu.Lock()
+			defer pt.gate.mu.Unlock()
+			_, published := pt.gate.published[publishGateTestClient]
+			return published
+		}, 2*time.Second, 5*time.Millisecond, "the installed bounded publish counts as published on this connection")
+	})
+	t.Run("held flip", func(t *testing.T) {
+		pt := newTranslator(time.Hour)
+		t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+		_, flipWrap := flipHoldFixture(t, pt)
+		pt.syncXds(ctx, flipWrap)
+		pt.gate.mu.Lock()
+		defer pt.gate.mu.Unlock()
+		assert.NotNil(t, pt.gate.pendingFlips[publishGateTestClient], "the installed hold still gets its release bound")
+	})
+}
