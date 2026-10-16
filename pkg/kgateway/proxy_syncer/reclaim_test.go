@@ -160,13 +160,15 @@ func openClusterWatch(t *testing.T, cache envoycache.SnapshotCache, node string)
 	return responses
 }
 
+// The caches below run in ADS mode, as the controller's does: ADS orders and
+// filters responses, so the watch behavior these cases pin must hold there.
 func TestReclaimDeparted(t *testing.T) {
 	const node = "c1"
 	v2, err := envoycache.NewSnapshot("v2", map[envoyresourcev3.Type][]envoycachetypes.Resource{envoyresourcev3.ClusterType: {}})
 	require.NoError(t, err)
 
 	t.Run("connected client keeps its entry and its watches", func(t *testing.T) {
-		cache := envoycache.NewSnapshotCache(false, envoycache.IDHash{}, nil)
+		cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 		responses := openClusterWatch(t, cache, node)
 
 		gate := newPublishGateTestTranslator(t, false, 0).gate
@@ -184,7 +186,7 @@ func TestReclaimDeparted(t *testing.T) {
 	})
 
 	t.Run("departed client's entry is cleared", func(t *testing.T) {
-		cache := envoycache.NewSnapshotCache(false, envoycache.IDHash{}, nil)
+		cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 		snap, err := envoycache.NewSnapshot("v1", map[envoyresourcev3.Type][]envoycachetypes.Resource{envoyresourcev3.ClusterType: {}})
 		require.NoError(t, err)
 		require.NoError(t, cache.SetSnapshot(context.Background(), node, snap))
@@ -198,7 +200,7 @@ func TestReclaimDeparted(t *testing.T) {
 	// Why the clear must be excluded from stream admission: ClearSnapshot also
 	// drops open watches, so a clear that misses a connected stream strands it.
 	t.Run("clearing under a connected stream strands its watch", func(t *testing.T) {
-		cache := envoycache.NewSnapshotCache(false, envoycache.IDHash{}, nil)
+		cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 		responses := openClusterWatch(t, cache, node)
 
 		cache.ClearSnapshot(node)
