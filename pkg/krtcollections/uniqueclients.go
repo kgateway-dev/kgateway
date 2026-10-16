@@ -126,10 +126,22 @@ type callbacksCollection struct {
 	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
+	// hooks are the connection-start hooks registered on the owning
+	// callbacks (SetConnectionStartHooks); nil in collections built without
+	// one.
+	hooks *atomic.Pointer[connectionStartHooks]
+}
+
+// connectionStartHooks run when a client key's first stream is admitted; see
+// ConnectionStartHooks.
+type connectionStartHooks struct {
+	admitting func(resourceName string)
+	admitted  func(resourceName string)
 }
 
 type callbacks struct {
 	collection         atomic.Pointer[callbacksCollection]
+	hooks              atomic.Pointer[connectionStartHooks]
 	streamIDToPeerInfo sync.Map
 	xdsAuth            bool
 }
@@ -192,6 +204,27 @@ type XDSClientState interface {
 	RunIfDisconnected(resourceName string, fn func()) bool
 }
 
+// ConnectionStartHooks is implemented by the XDSClientState returned from
+// NewUniquelyConnectedClients. A client key's connection starts when its first
+// stream is admitted: its connected-stream count goes from zero to one, after
+// it had none (a new client, or one returning after its last stream closed).
+//
+// SetConnectionStartHooks registers two hooks for that moment. admitting runs
+// while stream admission is excluded, so no other stream of the key can be
+// connected, and before go-control-plane creates any watch for the stream;
+// it must be quick and must not take locks that are held while calling into
+// this state. admitted runs after admission, outside that exclusion, and still
+// before the stream's first request is answered. Register before streams
+// connect; a later call replaces the hooks.
+type ConnectionStartHooks interface {
+	SetConnectionStartHooks(admitting, admitted func(resourceName string))
+}
+
+// SetConnectionStartHooks implements ConnectionStartHooks.
+func (x *callbacks) SetConnectionStartHooks(admitting, admitted func(resourceName string)) {
+	x.hooks.Store(&connectionStartHooks{admitting: admitting, admitted: admitted})
+}
+
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
 
@@ -223,6 +256,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBuilder {
 			knownLocalClusterBySid: make(map[int64]bool),
 			priorXDSVersions:       make(map[string]int),
 			trigger:                trigger,
+			hooks:                  &callbacks.hooks,
 		}
 
 		callbacks.collection.Store(col)
@@ -345,7 +379,7 @@ func (x *callbacksCollection) deriveClientIdentity(r *envoy_service_discovery_v3
 	return &ucc, nil
 }
 
-func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream bool, err error) {
+func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) (ucName string, newStream, connectionStarted bool, err error) {
 	// Identity is re-derived from current pod state on EVERY request, not just
 	// the first. A stream's first request can race the pod/node informers
 	// (controller start is exactly when every Envoy reconnects), freezing an
@@ -414,14 +448,14 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 			// change) is indistinguishable from a healthy request.
 			x.logger.Debug("xds client identity re-derivation failed; keeping established identity",
 				"client", c.uniqueClientName, "error", derr)
-			return c.uniqueClientName, false, nil
+			return c.uniqueClientName, false, false, nil
 		}
 		if c.uniqueClientName != ucc.ResourceName() {
 			x.logger.Info("xds client identity changed; closing stream so the client re-identifies",
 				"old", c.uniqueClientName, "new", ucc.ResourceName())
-			return "", false, fmt.Errorf("xds client identity changed from %q to %q", c.uniqueClientName, ucc.ResourceName())
+			return "", false, false, fmt.Errorf("xds client identity changed from %q to %q", c.uniqueClientName, ucc.ResourceName())
 		}
-		return c.uniqueClientName, false, nil
+		return c.uniqueClientName, false, false, nil
 	}
 
 	// The version gate runs before derivation errors are surfaced: during
@@ -430,10 +464,10 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	// connected" log — must not be masked behind generic "pod not found"
 	// rejections.
 	if err := logAndCheckEnvoyVersion(x.logger, r.GetNode()); err != nil {
-		return "", false, err
+		return "", false, false, err
 	}
 	if derr != nil {
-		return "", false, derr
+		return "", false, false, derr
 	}
 	x.logger.Debug("adding xds client", "locality", ucc.Locality, "ns", ucc.Namespace, "labels", ucc.Labels, "role", ucc.Role)
 	// TODO: modify request to include the label that are relevant for the client?
@@ -452,8 +486,13 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 	if currentUnique == 0 {
 		x.uniqClients[ucc.ResourceName()] = *ucc
+		// The key's connection starts. Still holding the lock, so no other
+		// stream of the key is admitted while the hook runs.
+		if h := x.connectionStartHooks(); h != nil && h.admitting != nil {
+			h.admitting(ucc.ResourceName())
+		}
 	}
-	return c.uniqueClientName, true, nil
+	return c.uniqueClientName, true, currentUnique == 0, nil
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -476,8 +515,15 @@ func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.Dis
 	return c.newStream(sid, r, peerInfo)
 }
 
+func (x *callbacksCollection) connectionStartHooks() *connectionStartHooks {
+	if x.hooks == nil {
+		return nil
+	}
+	return x.hooks.Load()
+}
+
 func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest, peer peerInfo) error {
-	ucc, isNewStream, err := x.add(sid, r, peer)
+	ucc, isNewStream, connectionStarted, err := x.add(sid, r, peer)
 	if err != nil {
 		x.logger.Debug("error processing xds client", "error", err)
 		return err
@@ -509,6 +555,9 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 		// that bucket's derived KnowsLocalCluster (it starts as an unconfirmed member), so
 		// recompute on every new stream, not only isNewUCC.
 		x.trigger.TriggerRecomputation()
+	}
+	if h := x.connectionStartHooks(); connectionStarted && h != nil && h.admitted != nil {
+		h.admitted(ucc)
 	}
 	if delay := xdsFirstConnectDelay(); isNewStream && delay > 0 {
 		// See xdsFirstConnectDelay: give per-client translation a head start
