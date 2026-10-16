@@ -6,6 +6,8 @@ import (
 	"slices"
 
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	sfsvalue "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/set_filter_state/v3"
+	envoysniclusterv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -131,15 +133,23 @@ func addCandidate(candidates map[string]struct{}, s string) {
 	candidates[s] = struct{}{}
 }
 
-// collectUnresolvableSelectors records route actions that choose their
-// destination at request time, from a set the configuration never enumerates.
+// tcpProxyClusterFilterStateKey is the filter state object a network filter can
+// set to override the cluster a TcpProxy connects to.
+const tcpProxyClusterFilterStateKey = "envoy.tcp_proxy.cluster"
+
+// collectUnresolvableSelectors records configuration that chooses a
+// destination cluster at request or connection time, from a set the
+// configuration never enumerates.
 //
 // A cluster-header route reads the name from a request header. A cluster
 // specifier plugin, referenced or inline, runs a script that typically composes
 // a name from a prefix, a request value and a port, so no candidate appears in
 // the generated protos at all — only a declarative fallback, if the plugin has
 // one. Widening the walk cannot reach these: the prefix is a fragment inside one
-// string blob, not a name.
+// string blob, not a name. The same holds for a weighted-cluster entry or a
+// mirror policy that reads its cluster from a header, and for a TcpProxy whose
+// cluster a network filter overrides through filter state (the sni_cluster
+// filter, or set_filter_state writing envoy.tcp_proxy.cluster).
 //
 // Detection matters more than it first appears. Such a plugin usually checks
 // whether its computed cluster exists and falls back when it does not, so
@@ -147,23 +157,41 @@ func addCandidate(candidates map[string]struct{}, s string) {
 // quietly lands on the fallback instead. Reporting the selector is what turns
 // silent misrouting into a visible, metric-bearing loss of the optimization.
 //
-// All three oneof arms are named explicitly rather than matched by exclusion,
-// so a new declarative arm does not silently disable filtering, and so the
-// inline arm — the easiest to overlook — cannot be dropped by accident.
+// Every arm of the cluster_specifier oneof is classified explicitly, and an arm
+// this code does not know is reported too: a go-control-plane bump that adds a
+// request-time arm must not silently prune its candidates. Over-reporting only
+// costs the optimization; TestRouteActionClusterSpecifierArmsAreClassified
+// makes a new arm a deliberate decision.
 func collectUnresolvableSelectors(msg proto.Message, unresolvable map[string]struct{}) {
-	action, ok := msg.(*envoyroutev3.RouteAction)
-	if !ok {
-		return
-	}
-
-	switch action.GetClusterSpecifier().(type) {
-	case *envoyroutev3.RouteAction_ClusterHeader:
-		unresolvable[fmt.Sprintf("cluster_header %q", action.GetClusterHeader())] = struct{}{}
-	case *envoyroutev3.RouteAction_ClusterSpecifierPlugin:
-		unresolvable[fmt.Sprintf("cluster_specifier_plugin %q", action.GetClusterSpecifierPlugin())] = struct{}{}
-	case *envoyroutev3.RouteAction_InlineClusterSpecifierPlugin:
-		name := action.GetInlineClusterSpecifierPlugin().GetExtension().GetName()
-		unresolvable[fmt.Sprintf("inline_cluster_specifier_plugin %q", name)] = struct{}{}
+	switch m := msg.(type) {
+	case *envoyroutev3.RouteAction:
+		switch spec := m.GetClusterSpecifier().(type) {
+		case nil, *envoyroutev3.RouteAction_Cluster, *envoyroutev3.RouteAction_WeightedClusters:
+			// Declarative: the walk sees every name.
+		case *envoyroutev3.RouteAction_ClusterHeader:
+			unresolvable[fmt.Sprintf("cluster_header %q", m.GetClusterHeader())] = struct{}{}
+		case *envoyroutev3.RouteAction_ClusterSpecifierPlugin:
+			unresolvable[fmt.Sprintf("cluster_specifier_plugin %q", m.GetClusterSpecifierPlugin())] = struct{}{}
+		case *envoyroutev3.RouteAction_InlineClusterSpecifierPlugin:
+			name := m.GetInlineClusterSpecifierPlugin().GetExtension().GetName()
+			unresolvable[fmt.Sprintf("inline_cluster_specifier_plugin %q", name)] = struct{}{}
+		default:
+			unresolvable[fmt.Sprintf("cluster_specifier %T", spec)] = struct{}{}
+		}
+	case *envoyroutev3.WeightedCluster_ClusterWeight:
+		if header := m.GetClusterHeader(); header != "" {
+			unresolvable[fmt.Sprintf("cluster_header %q", header)] = struct{}{}
+		}
+	case *envoyroutev3.RouteAction_RequestMirrorPolicy:
+		if header := m.GetClusterHeader(); header != "" {
+			unresolvable[fmt.Sprintf("cluster_header %q", header)] = struct{}{}
+		}
+	case *envoysniclusterv3.SniCluster:
+		unresolvable["sni_cluster"] = struct{}{}
+	case *sfsvalue.FilterStateValue:
+		if m.GetObjectKey() == tcpProxyClusterFilterStateKey {
+			unresolvable[fmt.Sprintf("filter_state %q", tcpProxyClusterFilterStateKey)] = struct{}{}
+		}
 	}
 }
 
