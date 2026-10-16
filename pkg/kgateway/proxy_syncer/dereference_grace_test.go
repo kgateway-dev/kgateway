@@ -343,3 +343,52 @@ func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 	n, ok := endpointCount(served, "cluster-b")
 	assert.True(t, ok && n == 1, "cluster-b keeps its derived endpoints")
 }
+
+// Pruning an expired grace re-publishes the latest build. If that build's
+// flip is held, it must stay held until it is ready or its own release bound
+// fires, not go out at the (shorter) grace.
+func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true,
+		scopedClustersWithGrace(80*time.Millisecond))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+	ucc := newTestUcc(publishGateTestClient)
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+
+	published := &envoycache.Snapshot{}
+	published.Resources[envoycachetypes.Listener] = listeners
+	published.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-old", "cluster-gone")
+	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-old", []envoycachetypes.ResourceWithTTL{
+		edsClusterForClient(ucc, "cluster-old", 1).Cluster.ResourceWithTTL(),
+		edsClusterForClient(ucc, "cluster-gone", 5).Cluster.ResourceWithTTL(),
+	})
+	published.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-old", []envoycachetypes.ResourceWithTTL{
+		endpointsForClient(ucc, "cluster-old", 2).Endpoints.ResourceWithTTL(),
+		endpointsForClient(ucc, "cluster-gone", 6).Endpoints.ResourceWithTTL(),
+	})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient})
+
+	// The routes now name cluster-new (endpoints not derived yet, so the flip
+	// is held) and no longer name cluster-gone (graced for 80ms).
+	flip := &envoycache.Snapshot{}
+	flip.Resources[envoycachetypes.Listener] = listeners
+	flip.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-new")
+	flip.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-new", []envoycachetypes.ResourceWithTTL{
+		edsClusterForClient(ucc, "cluster-new", 3).Cluster.ResourceWithTTL(),
+	})
+	flip.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-new", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "cluster-new"}},
+	})
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap: flip, proxyKey: publishGateTestClient,
+		missingEndpointsReferenced: []string{"cluster-new"}, synthesizedEndpoints: []string{"cluster-new"},
+	})
+	require.True(t, snapshotReferencesCluster(servedSnapshot(t, pt), "cluster-old"), "the flip is held")
+
+	time.Sleep(300 * time.Millisecond) // the grace prune has run
+	served := servedSnapshot(t, pt)
+	assert.True(t, snapshotReferencesCluster(served, "cluster-old"),
+		"a flip onto an unready cluster stays held until it is ready or the (1h) release bound, not the 80ms grace")
+	assert.False(t, snapshotReferencesCluster(served, "cluster-new"))
+}
