@@ -11,7 +11,6 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	istioslices "istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -46,10 +45,11 @@ type TranslationResult struct {
 // Translate IR to gateway. IR is self contained, so no need for krt context
 func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sdkreporter.Reporter) TranslationResult {
 	pass := t.newPass(reporter)
+	chainListeners := newFilterChainListeners(gw)
 	var res TranslationResult
 
 	for _, l := range gw.Listeners {
-		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
+		outListener, routes := t.computeListener(ctx, pass, gw, chainListeners, l, reporter)
 		// Envoy rejects listeners with no filter chains; skip adding such listeners.
 		if outListener == nil || len(outListener.GetFilterChains()) == 0 {
 			originalListenerName := findOriginalListenerName(gw, l)
@@ -82,17 +82,27 @@ func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 	return ""
 }
 
-// findListenerForFilterChain returns the Gateway API listener that owns a filter chain
-// named for exactly one listener, as HTTPS chains are. Plain HTTP chains merge every
-// listener on a port, so their names match none and the result is nil.
-func findListenerForFilterChain(gw ir.GatewayIR, filterChainName string) *ir.Listener {
-	return istioslices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
-		return query.RouteKeyMatches(filterChainName, l.Parent, string(l.Name))
-	})
+// filterChainListeners maps the name of a filter chain named for exactly one Gateway
+// API listener, as HTTPS chains are, to that listener. Plain HTTP chains merge every
+// listener on a port, so their names match none. Translate builds it once per Gateway:
+// a scan per filter chain is quadratic in the number of listeners.
+type filterChainListeners map[string]*ir.Listener
+
+func newFilterChainListeners(gw ir.GatewayIR) filterChainListeners {
+	listeners := gw.SourceObject.Listeners
+	byName := make(filterChainListeners, len(listeners))
+	for i := range listeners {
+		name := query.GenerateRouteKey(listeners[i].Parent, string(listeners[i].Name))
+		// Keep the first listener with a name, as a scan in listener order would.
+		if _, ok := byName[name]; !ok {
+			byName[name] = &listeners[i]
+		}
+	}
+	return byName
 }
 
-func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
-	listener := findListenerForFilterChain(gw, filterChainName)
+func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, chainListeners filterChainListeners, filterChainName string) sdkreporter.ListenerReporter {
+	listener := chainListeners[filterChainName]
 	if listener == nil {
 		// This should never happen, but keep this as a safeguard.
 		return reporter.Gateway(gw.SourceObject.Obj).ListenerName(filterChainName)
@@ -100,10 +110,23 @@ func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, f
 	return listener.GetParentReporter(reporter).ListenerName(string(listener.Name))
 }
 
+// ComputeListener translates one of gw's listeners. Translate calls computeListener
+// instead, to share one filterChainListeners across all of them.
 func (t *Translator) ComputeListener(
 	ctx context.Context,
 	pass TranslationPassPlugins,
 	gw ir.GatewayIR,
+	lis ir.ListenerIR,
+	reporter sdkreporter.Reporter,
+) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
+	return t.computeListener(ctx, pass, gw, newFilterChainListeners(gw), lis, reporter)
+}
+
+func (t *Translator) computeListener(
+	ctx context.Context,
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	chainListeners filterChainListeners,
 	lis ir.ListenerIR,
 	reporter sdkreporter.Reporter,
 ) (*envoylistenerv3.Listener, []*envoyroutev3.RouteConfiguration) {
@@ -138,6 +161,7 @@ func (t *Translator) ComputeListener(
 		// compute routes
 		hr := httpRouteConfigurationTranslator{
 			gw:                        gw,
+			chainListeners:            chainListeners,
 			listener:                  lis,
 			routeConfigName:           hfc.FilterChainName,
 			fc:                        hfc.FilterChainCommon,
@@ -167,7 +191,7 @@ func (t *Translator) ComputeListener(
 		// compute chains
 
 		// TODO: make sure that all matchers are unique
-		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainName)
+		rl := getReporterForFilterChain(gw, reporter, chainListeners, hfc.FilterChainName)
 		fc := fct.initFilterChain(hfc.FilterChainCommon)
 		fc.Filters = fct.computeHttpFilters(hfc, lis, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
@@ -191,7 +215,7 @@ func (t *Translator) ComputeListener(
 	}
 
 	for _, tfc := range lis.TcpFilterChain {
-		rl := getReporterForFilterChain(gw, reporter, tfc.FilterChainName)
+		rl := getReporterForFilterChain(gw, reporter, chainListeners, tfc.FilterChainName)
 		fc := fct.initFilterChain(tfc.FilterChainCommon)
 		fc.Filters = fct.computeTcpFilters(tfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
