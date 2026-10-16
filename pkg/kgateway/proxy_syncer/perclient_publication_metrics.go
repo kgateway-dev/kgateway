@@ -117,7 +117,8 @@ var (
 			Help: "Total per-client snapshots that, immediately before " +
 				"publication, carried an EDS or RDS resource that no CDS or LDS " +
 				"resource in the same snapshot references (go-control-plane " +
-				"withholds an ADS response carrying an unrequested resource). " +
+				"withholds an ADS response carrying an unrequested resource), " +
+				"or a listener naming a RouteConfiguration the snapshot lacks. " +
 				"Only recorded when KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK is " +
 				"enabled (test/CI environments); the snapshot is still " +
 				"published. The publication paths maintain consistency by " +

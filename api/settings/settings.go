@@ -389,8 +389,9 @@ type Settings struct {
 	// XdsSnapshotConsistencyCheck checks every per-client xDS snapshot
 	// immediately before it is published for an EDS or RDS resource that no
 	// CDS or LDS resource of the same snapshot references (go-control-plane
-	// withholds an ADS response that carries an unrequested resource),
-	// recording violations in the
+	// withholds an ADS response that carries an unrequested resource) and for
+	// a listener naming a RouteConfiguration the snapshot lacks, recording
+	// violations in the
 	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total counter and
 	// the error log. The snapshot is still published either way: the check is
 	// an invariant monitor for test and CI environments (any increment is a

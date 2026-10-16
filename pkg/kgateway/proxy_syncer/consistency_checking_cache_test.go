@@ -11,7 +11,8 @@ import (
 // published by any test — including intermediate publishes no assertion looks
 // at, and publishes fired from the gate's budget timers — is checked for
 // resources no other resource of the snapshot references (every EDS resource
-// must match a CDS reference, every RDS resource an LDS reference; see
+// must match a CDS reference, every RDS resource an LDS reference) and for
+// RouteConfigurations a listener names but the snapshot lacks (see
 // snapshotConsistencyError).
 //
 // Accounting for the known bootstrap local cluster, this is a universal
@@ -45,7 +46,7 @@ func (c *consistencyCheckingCache) SetSnapshot(ctx context.Context, node string,
 	if !ok {
 		c.t.Errorf("published snapshot for %q is %T, not *envoycache.Snapshot", node, snapshot)
 	} else if err := snapshotConsistencyError(node, snap); err != nil {
-		c.t.Errorf("published snapshot for %q publishes unreferenced resources: %v", node, err)
+		c.t.Errorf("published snapshot for %q is inconsistent: %v", node, err)
 	}
 	return c.SnapshotCache.SetSnapshot(ctx, node, snapshot)
 }
