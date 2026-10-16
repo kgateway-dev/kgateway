@@ -228,6 +228,16 @@ func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
 	return len(backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]) > 0
 }
 
+// HasTLS reports whether a BackendConfigPolicy attachment configures TLS origination.
+// policyIr is expected to be the PolicyIr of a PolicyAtt for this GroupKind (e.g. from
+// backend.AttachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]); callers
+// outside this package can't inspect BackendConfigPolicyIR's fields directly since they're
+// private, so this is exported specifically to answer that one question.
+func HasTLS(policyIr ir.PolicyIR) bool {
+	pol, ok := policyIr.(*BackendConfigPolicyIR)
+	return ok && pol.tlsConfig != nil
+}
+
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.connectTimeout != nil {
