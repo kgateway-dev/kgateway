@@ -117,6 +117,11 @@ type publishGate struct {
 	// (pendingFirstPublish.warmWithheldSince set), for the warm_withheld_clients
 	// gauge. Guarded by mu; created on first use.
 	warmWithheld map[resourceNameDetails]int
+	// firstPublishPending counts, per gateway, the clients whose first publish
+	// on their connection is being withheld (pendingFirstPublish.counted), for
+	// the first_publish_pending_clients gauge. Guarded by mu; created on first
+	// use.
+	firstPublishPending map[resourceNameDetails]int
 	// warmEpisodes keeps, per client key, when a withheld warm client's episode
 	// started, across the client's departure: a proxy that reconnects resumes
 	// its episode instead of restarting the bound, so a connection that resets
@@ -166,6 +171,9 @@ type pendingFirstPublish struct {
 	since time.Time
 	// Preserve the warm withhold start across budget rechecks.
 	warmWithheldSince time.Time
+	// counted records that the client is in firstPublishPending: from the
+	// entry's creation until its first publish or its end.
+	counted bool
 }
 
 // warmEpisode preserves an episode's start across a brief departure (used for
@@ -275,6 +283,7 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 			st.timer.Stop()
 		}
 		g.unmarkWarmWithheldLocked(proxyKey, st)
+		g.unmarkFirstPublishPendingLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
@@ -348,6 +357,8 @@ func (g *publishGate) offerColdLocked(
 			}
 		}
 		g.pending[proxyKey] = st
+		st.counted = true
+		g.adjustFirstPublishPendingLocked(proxyKey, +1)
 		logger.Info("withholding first publish until referenced clusters are ready or the budget expires",
 			"proxy_key", proxyKey, "budget", g.budget, "remaining", max(0, g.budget-now.Sub(st.since)),
 			"missing_clusters", snapWrap.missingReferenced,
@@ -458,6 +469,7 @@ func (g *publishGate) firePending(
 		return
 	}
 	g.unmarkWarmWithheldLocked(proxyKey, st)
+	g.unmarkFirstPublishPendingLocked(proxyKey, st)
 	recordBoundedPublish(proxyKey, mode)
 }
 
@@ -483,6 +495,33 @@ func (g *publishGate) unmarkWarmWithheldLocked(proxyKey string, st *pendingFirst
 	}
 	st.warmWithheldSince = time.Time{}
 	g.adjustWarmWithheldLocked(proxyKey, -1)
+}
+
+// unmarkFirstPublishPendingLocked takes the client out of the
+// first_publish_pending_clients gauge when its first publish goes out or its
+// pending entry ends. Callers must hold g.mu.
+func (g *publishGate) unmarkFirstPublishPendingLocked(proxyKey string, st *pendingFirstPublish) {
+	if !st.counted {
+		return
+	}
+	st.counted = false
+	g.adjustFirstPublishPendingLocked(proxyKey, -1)
+}
+
+func (g *publishGate) adjustFirstPublishPendingLocked(proxyKey string, delta int) {
+	if g.firstPublishPending == nil {
+		g.firstPublishPending = make(map[resourceNameDetails]int)
+	}
+	cd := getDetailsFromXDSClientResourceName(proxyKey)
+	labels := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
+	n := g.firstPublishPending[labels] + delta
+	if n <= 0 {
+		delete(g.firstPublishPending, labels)
+		n = 0
+	} else {
+		g.firstPublishPending[labels] = n
+	}
+	recordFirstPublishPendingClients(labels, n)
 }
 
 func (g *publishGate) adjustWarmWithheldLocked(proxyKey string, delta int) {
@@ -610,6 +649,7 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 		g.rememberColdEpisodeLocked(proxyKey, st.since)
 		g.rememberWarmEpisodeLocked(proxyKey, st.warmWithheldSince)
 		g.unmarkWarmWithheldLocked(proxyKey, st)
+		g.unmarkFirstPublishPendingLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)

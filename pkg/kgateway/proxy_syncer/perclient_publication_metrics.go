@@ -93,6 +93,20 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
+	snapshotPerClientFirstPublishPendingClients = metrics.NewGauge(
+		metrics.GaugeOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "perclient_first_publish_pending_clients",
+			Help: "Clients whose first publish on their current connection is " +
+				"being withheld because referenced clusters are not ready, cold " +
+				"or warm. Until it goes out such a client has nothing from this " +
+				"connection: a new proxy has no listeners and is not Ready. A cold " +
+				"client is published at KGW_PER_CLIENT_PUBLISH_BUDGET; a warm one " +
+				"can stay withheld up to KGW_PER_CLIENT_WARM_WITHHOLD_BOUND (see " +
+				"perclient_warm_withheld_clients).",
+		},
+		[]string{gatewayLabel, namespaceLabel},
+	)
 	snapshotPerClientBoundedPublishesTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
@@ -218,6 +232,15 @@ func recordBoundedPublish(proxyKey string, mode string) {
 
 // recordWarmWithheldClients publishes the number of warm clients currently
 // withheld for one gateway.
+// recordFirstPublishPendingClients publishes the number of clients of one
+// gateway whose first publish on their connection is withheld.
+func recordFirstPublishPendingClients(labels resourceNameDetails, n int) {
+	snapshotPerClientFirstPublishPendingClients.Set(float64(n),
+		metrics.Label{Name: gatewayLabel, Value: labels.Gateway},
+		metrics.Label{Name: namespaceLabel, Value: labels.Namespace},
+	)
+}
+
 func recordWarmWithheldClients(labels resourceNameDetails, n int) {
 	snapshotPerClientWarmWithheldClients.Set(float64(n),
 		metrics.Label{Name: gatewayLabel, Value: labels.Gateway},
