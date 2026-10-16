@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,6 +83,9 @@ var proxyObjectMeta = metav1.ObjectMeta{
 type testingSuite struct {
 	*base.BaseTestingSuite
 	activeCase *base.TestCase
+	// invariantBaseline holds the xDS invariant counters as the active test
+	// began, so AfterTest blames the test only for what it added.
+	invariantBaseline xdsInvariantCounters
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -98,6 +102,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // BaseTestingSuite deletes the registered manifests without imposing a resource
 // deletion order, including after an assertion fails.
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	s.invariantBaseline = s.scrapeXdsInvariantCounters()
 	s.activeCase = &base.TestCase{Manifests: []string{setupManifest}}
 	s.TestCases[testName] = s.activeCase
 	s.BaseTestingSuite.BeforeTest(suiteName, testName)
@@ -294,17 +299,34 @@ func (s *testingSuite) TestSteadyStateEmptyBackendSurvivesControllerRestart() {
 	s.assertGatewayEventuallyServes(hostName, oldBody)
 }
 
-// assertNoXdsInvariantViolations scrapes the controller's metrics endpoint
-// and fails if either xDS invariant counter recorded a violation:
+// xdsInvariants are the controller counters that only move on a kgateway
+// bug, with what an increment means:
 //
 //   - kgateway_xds_snapshot_perclient_inconsistent_snapshots_total: a
-//     published snapshot failed Snapshot.Consistent() (recorded because the
+//     published snapshot carried a resource nothing in it references, or a
+//     listener named a RouteConfiguration it lacks (recorded because the
 //     install runs with KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK);
-//   - kgateway_xds_nacks_total: a client rejected a published response and is
-//     serving older config than the control plane believes.
-//
-// Both counters only materialize on the first violation, so absence passes.
-func (s *testingSuite) assertNoXdsInvariantViolations() {
+//   - kgateway_envoy_xds_rejects_total: a client rejected a published
+//     response and is serving older config than the control plane believes.
+var xdsInvariants = map[string]string{
+	"kgateway_xds_snapshot_perclient_inconsistent_snapshots_total": "the controller published an inconsistent per-client snapshot",
+	"kgateway_envoy_xds_rejects_total":                             "a client NACKed a published xDS response and is serving older config",
+}
+
+// xdsInvariantCounters is one scrape of the xdsInvariants counters, summed
+// over their label sets, and the lines that contributed.
+type xdsInvariantCounters struct {
+	// startTime is the controller's process_start_time_seconds; counters
+	// reset when it changes.
+	startTime string
+	totals    map[string]float64
+	lines     map[string][]string
+}
+
+// scrapeXdsInvariantCounters reads the xdsInvariants counters from the
+// controller's metrics endpoint. Counters only materialize on their first
+// increment, so an absent counter reads as zero.
+func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
 	metricsService := metav1.ObjectMeta{
 		Name:      "kgateway-metrics",
 		Namespace: s.TestInstallation.Metadata.InstallNamespace,
@@ -324,21 +346,43 @@ func (s *testingSuite) assertNoXdsInvariantViolations() {
 	body, err := io.ReadAll(response.Body)
 	s.Require().NoError(err, "can read controller metrics body")
 
-	violations := map[string]string{
-		"kgateway_xds_snapshot_perclient_inconsistent_snapshots_total": "the controller published a snapshot that failed Snapshot.Consistent()",
-		"kgateway_xds_nacks_total":                                     "a client NACKed a published xDS response and is serving older config",
-	}
+	counters := xdsInvariantCounters{totals: map[string]float64{}, lines: map[string][]string{}}
 	for line := range strings.SplitSeq(string(body), "\n") {
-		for metric, description := range violations {
-			if !strings.HasPrefix(line, metric) {
-				continue
-			}
-			fields := strings.Fields(line)
-			if len(fields) < 2 || fields[len(fields)-1] == "0" {
-				continue
-			}
+		fields := strings.Fields(line)
+		if len(fields) < 2 || strings.HasPrefix(line, "#") {
+			continue
+		}
+		name, _, _ := strings.Cut(fields[0], "{")
+		if name == "process_start_time_seconds" {
+			counters.startTime = fields[len(fields)-1]
+			continue
+		}
+		if _, ok := xdsInvariants[name]; !ok {
+			continue
+		}
+		value, err := strconv.ParseFloat(fields[len(fields)-1], 64)
+		s.Require().NoError(err, "can parse metric sample %q", line)
+		counters.totals[name] += value
+		counters.lines[name] = append(counters.lines[name], line)
+	}
+	return counters
+}
+
+// assertNoXdsInvariantViolations fails if any xdsInvariants counter grew
+// during the test. Other suites share the controller and may provoke NACKs
+// on purpose, so only the growth since BeforeTest counts; if the controller
+// restarted in between (its process start time changed), every count since
+// the restart is the test's.
+func (s *testingSuite) assertNoXdsInvariantViolations() {
+	now := s.scrapeXdsInvariantCounters()
+	baseline := s.invariantBaseline
+	if baseline.startTime != now.startTime {
+		baseline = xdsInvariantCounters{}
+	}
+	for metric, description := range xdsInvariants {
+		if grew := now.totals[metric] - baseline.totals[metric]; grew > 0 {
 			s.Require().Failf("xds invariant violated",
-				"%s; this is a kgateway bug: %s", description, line)
+				"%s (%v new); this is a kgateway bug:\n%s", description, grew, strings.Join(now.lines[metric], "\n"))
 		}
 	}
 }
