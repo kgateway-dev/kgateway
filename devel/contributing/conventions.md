@@ -20,7 +20,7 @@ See [API Conventions](/api/README.md) for more details about API conventions and
 
 - IRs that are outputs of a KRT collection must implement the `Equals` method.
 - Generally, all fields in the IR must be compared in the `Equals` method. If a field is intentionally omitted, add the `+noKrtEquals` marker in the last line of its leading comments, and say in the comment what *does* observe a change to that field (a version, a hash, or a companion field). The `+krtEqualsTodo` marker is retired: `make analyze` fails if it appears.
-- Ensure that the `Equals` method is unit tested. This has been a high-risk area for introducing bugs in the past. `test/testutils/equalstest` runs a mutation case per field and fails when a field is neither covered by a case nor listed as exempt; for an exempt field, add a test that proves the omission is safe by mutating it the way the collection really would.
+- Ensure that the `Equals` method is unit tested. This has been a high-risk area for introducing bugs in the past. `test/testutils/equalstest` runs a mutation case per field and fails when an exported field is neither covered by a case nor listed as exempt (pass `equalstest.IncludeUnexported()` to hold unexported fields to the same rule); for an exempt field, add a test that proves the omission is safe by mutating it the way the collection really would.
 
 ## Testing conventions
 

@@ -562,6 +562,28 @@ func TestHarnessEndpointsForBackendEquals(t *testing.T) {
 				e.Add(PodLocality{Region: "us-east-1", Zone: "us-east-1b"}, harnessEndpoint("10.0.0.2"))
 			},
 		},
+		// The unexported summaries are what the BackendLabels and LbEps exemptions
+		// rely on, so each must be compared on its own.
+		{
+			Field:  "upstreamHash",
+			Mutate: func(e *EndpointsForBackend) { e.upstreamHash++ },
+		},
+		{
+			Field:  "epsEqualityHash",
+			Mutate: func(e *EndpointsForBackend) { e.epsEqualityHash++ },
+		},
+		{
+			Field:  "endpointCount",
+			Mutate: func(e *EndpointsForBackend) { e.endpointCount++ },
+		},
+		{
+			Field:  "foldedVersionHash",
+			Mutate: func(e *EndpointsForBackend) { e.foldedVersionHash++ },
+		},
+		{
+			Field:  "hasFoldedVersionHash",
+			Mutate: func(e *EndpointsForBackend) { e.hasFoldedVersionHash = !e.hasFoldedVersionHash },
+		},
 	}
 
 	equalstest.Run(
@@ -577,6 +599,7 @@ func TestHarnessEndpointsForBackendEquals(t *testing.T) {
 			// TestFinalBackendEndpointsEqualsObservesPolicyChange in proxy_syncer.
 			"AttachedPolicies",
 		},
+		equalstest.IncludeUnexported(),
 	)
 }
 

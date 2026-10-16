@@ -323,7 +323,7 @@ func TestFinalBackendEndpointsEqualsObservesPolicyChange(t *testing.T) {
 		require.Eventually(t, func() bool {
 			row = final.GetKey(backend.ResourceName())
 			return row != nil
-		}, 2*time.Second, 10*time.Millisecond)
+		}, 2*time.Second, 10*time.Millisecond, "final endpoints row for %s (%s) never appeared", backend.ResourceName(), name)
 		return *row
 	}
 
