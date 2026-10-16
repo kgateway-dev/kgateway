@@ -210,3 +210,24 @@ func TestReclaimDeparted(t *testing.T) {
 		}
 	})
 }
+
+// A publish that lands after the client left (a build queued behind its
+// departure) re-creates the entry a reclaim may already have cleared; the
+// gate re-arms the reclaim, so that entry is reclaimed too.
+func TestReclaim_PublishAfterDepartureRearms(t *testing.T) {
+	shortenReclaimGrace(t, 20*time.Millisecond)
+	const node = "c1"
+	pt := newPublishGateTestTranslator(t, false, 0)
+	reclaimer := newSnapshotReclaimer(func(name string) bool {
+		return pt.gate.reclaimDeparted(pt.xdsCache, name, stubConnections{})
+	})
+	pt.gate.afterPublish = reclaimer.clientDeparted // the client is no longer in the connected set
+
+	snap, err := envoycache.NewSnapshot("v1", map[envoyresourcev3.Type][]envoycachetypes.Resource{envoyresourcev3.ClusterType: {}})
+	require.NoError(t, err)
+	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{proxyKey: node, snap: snap}))
+	require.Eventually(t, func() bool {
+		_, err := pt.xdsCache.GetSnapshot(node)
+		return err != nil
+	}, 2*time.Second, 5*time.Millisecond, "the entry the late publish re-created must be reclaimed")
+}
