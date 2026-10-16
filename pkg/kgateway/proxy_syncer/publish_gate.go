@@ -461,15 +461,25 @@ func (g *publishGate) resolveDeferredLocked(
 	snapWrap = g.boundCarryLocked(snapWrap, published, time.Now())
 	// Retain clusters this build stopped emitting, briefly, so the route update
 	// that de-referenced them reaches Envoy before they disappear.
+	now := time.Now()
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
-		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, time.Now())
+		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, now)
+	// A deferred build can introduce a cluster new to the client too (a
+	// retarget published alongside an unrelated gap); it needs delivering
+	// ahead of the configuration that names it as much as a coherent one.
+	newlyEmitted, _ := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
 	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
-	if len(heldBlocking) > 0 {
+	switch {
+	case len(heldBlocking) > 0:
 		// The held snapshot still publishes (CDS/EDS keep flowing); the
 		// gate additionally arms the flip-release bound for the episode.
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, edsHashes, false)
-	} else {
+	case len(newlyEmitted) > 0:
+		held, aheadHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
+		recordFlipHeld(snapWrap.proxyKey)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, newlyEmitted, aheadHashes, true)
+	default:
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
 	}
 	// Arm after publishing: publishLocked and publishHeldLocked cancel the carry

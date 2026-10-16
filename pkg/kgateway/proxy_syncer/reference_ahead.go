@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"maps"
 	"slices"
 	"time"
 
@@ -101,6 +102,30 @@ func (g *publishGate) referenceAheadLocked(
 // False leaves every publication path exactly as it was, which is what an
 // operator gets by setting the window to 0 and accepting the retarget blip.
 func (g *publishGate) holdsReferenceAhead() bool { return g.referenceAhead > 0 }
+
+// referenceAheadHoldLocked composes a reference-ahead hold for snapWrap: the
+// build's clusters and endpoints go out, while its routes, listeners and
+// secrets stay at the versions the client has. Those held routes and listeners
+// are the published ones, so their whole dependency closure is carried with
+// them, as the deferred path's hold does: every published cluster the build
+// lacks, including the ones their filters call (ext_authz, ext_proc, JWKS,
+// OAuth2, rate limit). Without that, a build that also stops naming a cluster
+// would remove it while the held configuration still uses it, and only a
+// de-reference grace, which may be 0, would cover the gap. Errored clusters
+// are still never carried. Callers must hold g.mu.
+func (g *publishGate) referenceAheadHoldLocked(
+	snapWrap XdsSnapWrapper,
+	published envoycache.ResourceSnapshot,
+	graced map[string]struct{},
+) (*envoycache.Snapshot, map[string]uint64) {
+	closure := make(map[string]struct{}, len(graced))
+	maps.Copy(closure, graced)
+	for name := range published.GetResourcesAndTTL(envoyresourcev3.ClusterType) {
+		closure[name] = struct{}{}
+	}
+	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, closure, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+	return holdRoutingTypes(resolved, published), edsHashes
+}
 
 // holdRoutingTypes returns snap with its routes, listeners and secrets pinned
 // at the versions the client already has, leaving clusters and endpoints as
