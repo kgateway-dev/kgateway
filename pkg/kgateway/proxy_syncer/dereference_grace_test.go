@@ -237,3 +237,49 @@ func TestGraceDereferencedClustersDropsExpiredEntries(t *testing.T) {
 	assert.Empty(t, graced, "past the window the cluster stops being published")
 	assert.Zero(t, soonest, "with nothing graced there is nothing left to wake up for")
 }
+
+// A graced cluster that errors is not carried (fail closed), so it leaves the
+// client. Its grace record must go with it: left behind, it kept the state and
+// its timer alive past later publishes, and the timer then re-published the
+// build that armed it over a newer one.
+func TestDereferenceGraceForgetsAClusterTheCarryDropped(t *testing.T) {
+	pt := newGraceTestTranslator(t, 100*time.Millisecond)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, clusterWrapperV("v1", "kept", "now-errored"))
+	b2 := clusterWrapperV("v2", "kept")
+	b2.erroredClusters = []string{"now-errored"}
+	pt.syncXds(ctx, b2)
+	b3 := clusterWrapperV("v3", "kept")
+	b3.erroredClusters = []string{"now-errored"}
+	pt.syncXds(ctx, b3)
+	require.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
+
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType),
+		"a grace timer must never re-publish an older build over a newer one")
+	pt.gate.mu.Lock()
+	defer pt.gate.mu.Unlock()
+	assert.Nil(t, pt.gate.dereferenced[publishGateTestClient], "no record may outlive the cluster it was kept for")
+}
+
+// The same stale record used to deny the cluster's next genuine de-reference
+// its window: by then the record was older than the grace, so the cluster was
+// pruned at once.
+func TestDereferenceGraceGivesARecoveredClusterAFreshWindow(t *testing.T) {
+	pt := newGraceTestTranslator(t, 100*time.Millisecond)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, clusterWrapperV("v1", "kept", "flaky"))
+	b2 := clusterWrapperV("v2", "kept")
+	b2.erroredClusters = []string{"flaky"}
+	pt.syncXds(ctx, b2)
+	time.Sleep(250 * time.Millisecond)
+
+	pt.syncXds(ctx, clusterWrapperV("v3", "kept", "flaky")) // recovered, referenced again
+	require.Contains(t, publishedClusterNames(t, pt), "flaky")
+	pt.syncXds(ctx, clusterWrapperV("v4", "kept")) // de-referenced for real
+	assert.Contains(t, publishedClusterNames(t, pt), "flaky", "a de-referenced cluster keeps its full window")
+}
