@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"istio.io/istio/pkg/config/labels"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/ptr"
 	"istio.io/istio/pkg/slices"
@@ -482,6 +483,8 @@ type GatewayIndexConfig struct {
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
 	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwv1.ListenerSet]
+	listenerSetSpecs                      krt.Collection[specVersion[*gwv1.ListenerSet]]
+	listenerSetSpecsByParentRef           krt.Index[TargetRefIndexKey, specVersion[*gwv1.ListenerSet]]
 }
 
 func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption) *GatewayIndex {
@@ -493,9 +496,43 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 		return h
 	}
 
-	h.Gateways = krt.NewCollection(config.Gateways, config.gatewaysForEnvoyTransformationFunc(&config), config.KrtOpts.ToOptions("gateways")...)
+	// The Envoy transformation reads only the spec and metadata of Gateways and ListenerSets,
+	// so feed it from projections that drop status-only writes. Otherwise every status write
+	// re-runs it over all of the Gateway's ListenerSets, only for Gateway.Equals to discard
+	// the result.
+	config.listenerSetSpecs = specVersions(config.ListenerSets, config.KrtOpts.ToOptions("ListenerSetSpecs")...)
+	config.listenerSetSpecsByParentRef = krtpkg.UnnamedIndex(config.listenerSetSpecs, func(in specVersion[*gwv1.ListenerSet]) []TargetRefIndexKey {
+		return listenerSetParentRefKeys(in.obj)
+	})
+	gatewaySpecs := specVersions(config.Gateways, config.KrtOpts.ToOptions("GatewaySpecs")...)
+	envoyTransformation := config.gatewaysForEnvoyTransformationFunc(&config)
+	h.Gateways = krt.NewCollection(gatewaySpecs, func(kctx krt.HandlerContext, gw specVersion[*gwv1.Gateway]) *ir.Gateway {
+		return envoyTransformation(kctx, gw.obj)
+	}, config.KrtOpts.ToOptions("gateways")...)
 
 	return h
+}
+
+// specVersion wraps a source object so that KRT compares it with ir.VersionEquals rather than
+// by value. A status-only write bumps resourceVersion but leaves generation, labels and
+// annotations alone, so a collection of specVersion drops it instead of notifying dependents.
+// The wrapped object is the one from the last change that did notify them.
+type specVersion[T controllers.Object] struct {
+	obj T
+}
+
+func (s specVersion[T]) ResourceName() string {
+	return krt.GetKey(s.obj)
+}
+
+func (s specVersion[T]) Equals(in specVersion[T]) bool {
+	return ir.VersionEquals(s.obj, in.obj)
+}
+
+func specVersions[T controllers.Object](objs krt.Collection[T], opts ...krt.CollectionOption) krt.Collection[specVersion[T]] {
+	return krt.NewCollection(objs, func(_ krt.HandlerContext, obj T) *specVersion[T] {
+		return &specVersion[T]{obj: obj}
+	}, opts...)
 }
 
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
@@ -586,12 +623,15 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
+		listenerSetSpecs := krt.Fetch(kctx, config.listenerSetSpecs, krt.FilterIndex(config.listenerSetSpecsByParentRef, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
+		listenerSets := slices.Map(listenerSetSpecs, func(ls specVersion[*gwv1.ListenerSet]) *gwv1.ListenerSet {
+			return ls.obj
+		})
 
 		// Sort by listener precedence
 		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
