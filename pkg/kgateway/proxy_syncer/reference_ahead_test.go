@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
 // routedClusterWrapperV is a coherent build whose configuration names exactly
@@ -275,4 +276,39 @@ func TestHoldDeadlinePerReason_ReadyFlipReleasesAtTheAheadWindow(t *testing.T) {
 	pt.syncXds(ctx, routedBuild(t, "v3", "new", "old", "new")) // endpoints derived
 	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v3" }, 2*time.Second, 10*time.Millisecond,
 		"once only the reference-ahead window holds, it releases at the window, not the 1h budget")
+}
+
+// A hold kept only for reference-ahead windows ends as designed when they
+// close; it is not a bounded publish. One the budget cut short is, under its
+// own mode, not flip_release (which means a cluster never became ready).
+func TestReferenceAheadReleaseIsNotABudgetExpiry(t *testing.T) {
+	const metricName = "kgateway_xds_snapshot_perclient_bounded_publishes_total"
+	ctx := context.Background()
+	reset := func() {
+		ResetMetrics()
+		for _, mode := range []string{boundedPublishFlipRelease, boundedPublishReferenceAhead} {
+			snapshotPerClientBoundedPublishesTotal.Add(0, labelsWith("mode", mode)...)
+		}
+	}
+	bounded := func(mode string) float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(metricName, labelsWith("mode", mode))
+	}
+
+	reset()
+	pt := newReferenceAheadTranslator(t, 30*time.Millisecond)
+	pt.syncXds(ctx, routedClusterWrapperV("v1", "old"))
+	pt.syncXds(ctx, routedClusterWrapperV("v2", "old", "new"))
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v2" }, 2*time.Second, 5*time.Millisecond)
+	assert.Zero(t, bounded(boundedPublishFlipRelease), "a window closing is not a cluster that never became ready")
+	assert.Zero(t, bounded(boundedPublishReferenceAhead), "nor a budget expiry")
+
+	reset()
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 30*time.Millisecond, true, scopedClustersWithReferenceAhead(time.Hour))
+	capped := &translator
+	capped.syncXds(ctx, routedClusterWrapperV("v1", "old"))
+	capped.syncXds(ctx, routedClusterWrapperV("v2", "old", "new"))
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, capped) == "v2" }, 2*time.Second, 5*time.Millisecond)
+	assert.Equal(t, float64(1), bounded(boundedPublishReferenceAhead), "the budget cutting a window short is counted, under its own mode")
+	assert.Zero(t, bounded(boundedPublishFlipRelease))
 }

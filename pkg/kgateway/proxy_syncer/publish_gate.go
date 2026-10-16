@@ -255,9 +255,11 @@ type pendingFlipRelease struct {
 	unreadySince time.Time
 	timer        *time.Timer
 	// deadline is when the timer fires; epoch identifies its arming, so a
-	// callback that started before a re-arm does nothing.
+	// callback that started before a re-arm does nothing. capped records that
+	// the budget from since cut the reasons' own deadline short.
 	deadline time.Time
 	epoch    uint64
+	capped   bool
 }
 
 func newPublishGate(budget time.Duration, checkConsistency bool, clientState krtcollections.XDSClientState, scoping clusterScoping) *publishGate {
@@ -793,7 +795,8 @@ func (g *publishGate) publishHeldLocked(
 	} else if pf.unreadySince.IsZero() {
 		pf.unreadySince = now
 	}
-	deadline, bounded := g.flipReleaseDeadline(pf, now, aheadFor)
+	deadline, capped, bounded := g.flipReleaseDeadline(pf, now, aheadFor)
+	pf.capped = capped
 	if !bounded {
 		// Bound disabled: hold until the flip resolves.
 		if pf.timer != nil {
@@ -814,13 +817,12 @@ func (g *publishGate) publishHeldLocked(
 // open window closes). The routing types are released together, so the hold
 // lasts until the later of the two -- but never past the budget from the
 // episode's start, so no stream of reasons can pin a client's routing updates
-// indefinitely. It reports false when nothing bounds the hold: an unready
-// cluster with the budget disabled.
-func (g *publishGate) flipReleaseDeadline(pf *pendingFlipRelease, now time.Time, aheadFor time.Duration) (time.Time, bool) {
-	var deadline time.Time
+// indefinitely. capped reports that this cap applied; bounded is false when
+// nothing bounds the hold: an unready cluster with the budget disabled.
+func (g *publishGate) flipReleaseDeadline(pf *pendingFlipRelease, now time.Time, aheadFor time.Duration) (deadline time.Time, capped, bounded bool) {
 	if len(pf.blocking) > 0 {
 		if g.budget <= 0 {
-			return time.Time{}, false
+			return time.Time{}, false, false
 		}
 		deadline = pf.unreadySince.Add(g.budget)
 	}
@@ -831,10 +833,10 @@ func (g *publishGate) flipReleaseDeadline(pf *pendingFlipRelease, now time.Time,
 	}
 	if g.budget > 0 {
 		if limit := pf.since.Add(g.budget); deadline.After(limit) {
-			deadline = limit
+			return limit, true, true
 		}
 	}
-	return deadline, true
+	return deadline, false, true
 }
 
 // armFlipReleaseLocked (re)arms pf's release for deadline. An unchanged
@@ -893,8 +895,23 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
 	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
-	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
-		"proxy_key", proxyKey, "flip_blocking", pf.blocking)
+	// A hold held only for reference-ahead windows ends as designed when the
+	// last window closes: nothing failed, so it is neither a warning nor a
+	// bounded publish, unless the budget cut a window short.
+	mode := boundedPublishFlipRelease
+	switch {
+	case len(pf.blocking) > 0:
+		logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
+			"proxy_key", proxyKey, "flip_blocking", pf.blocking)
+	case pf.capped:
+		mode = boundedPublishReferenceAhead
+		logger.Warn("reference-ahead window outlasted the publish budget; publishing the held configuration before its new clusters' windows closed",
+			"proxy_key", proxyKey, "reference_ahead", pf.ahead)
+	default:
+		mode = ""
+		logger.Debug("reference-ahead windows closed; publishing the held configuration",
+			"proxy_key", proxyKey, "reference_ahead", pf.ahead)
+	}
 	if err := g.setSnapshot(ctx, cache, proxyKey, released, pf.wrap.synthesizedEndpoints, edsHashes); err != nil {
 		logPublishFailure(proxyKey, err)
 		return
@@ -903,7 +920,9 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	// other publish that graces, arm the prune that removes them, or they
 	// linger until some later build.
 	g.armDereferenceTimerLocked(ctx, cache, proxyKey, pf.wrap, soonestExpiry)
-	recordBoundedPublish(proxyKey, boundedPublishFlipRelease)
+	if mode != "" {
+		recordBoundedPublish(proxyKey, mode)
+	}
 	g.armCarryExpiryLocked(ctx, cache, pf.wrap)
 }
 
