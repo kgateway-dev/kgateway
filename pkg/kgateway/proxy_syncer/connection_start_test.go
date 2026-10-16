@@ -79,14 +79,15 @@ func (f *connectionStartFixture) served() (string, bool) {
 	return snap.GetVersion(resourcev3.ListenerType), true
 }
 
-// openListenerWatch opens the listener watch a newly connected stream's first
-// request creates.
-func (f *connectionStartFixture) openListenerWatch(t *testing.T) chan envoycache.Response {
+// openListenerWatch opens the listener watch of a stream that holds version
+// (empty for a newly connected stream's first request).
+func (f *connectionStartFixture) openListenerWatch(t *testing.T, version string) chan envoycache.Response {
 	t.Helper()
 	responses := make(chan envoycache.Response, 1)
 	_, err := f.cache.CreateWatch(&envoydiscoveryv3.DiscoveryRequest{
-		Node:    &envoycorev3.Node{Id: f.role},
-		TypeUrl: resourcev3.ListenerType,
+		Node:        &envoycorev3.Node{Id: f.role},
+		TypeUrl:     resourcev3.ListenerType,
+		VersionInfo: version,
 	}, envoystreamv3.NewSotwSubscription(nil, true), responses)
 	require.NoError(t, err)
 	return responses
@@ -176,7 +177,7 @@ func TestPublishRacingAReconnectIsNotInstalled(t *testing.T) {
 
 	_, ok = f.served()
 	assert.False(t, ok, "the publish computed for the previous connection must not be installed")
-	responses := f.openListenerWatch(t)
+	responses := f.openListenerWatch(t, "")
 	select {
 	case r := <-responses:
 		t.Fatalf("the new stream's first watch was answered with %q; it must wait for this connection's first publish", r.GetResponseVersion())
@@ -211,4 +212,48 @@ func TestStreamJoiningAConnectedKeyKeepsItsEntry(t *testing.T) {
 	version, ok = f.served()
 	require.True(t, ok)
 	assert.Equal(t, "v2", version, "publishes install while any stream of the key stays connected")
+}
+
+// A build that waited in the event queue while the client's row moved on must
+// not be published. The connection-start hook publishes a returning client's
+// current row as soon as its stream is admitted, ahead of the queue; the older
+// build arriving afterwards would replace it on the new connection and answer
+// the new stream's watch with the older config.
+func TestDelayedBuildDoesNotRollBackANewConnection(t *testing.T) {
+	f := newConnectionStartFixture(t)
+	ctx := t.Context()
+	f.translator.gate.currentBuild = func(string) *XdsSnapWrapper { return f.current.Load() }
+
+	v1 := f.build("v1")
+	f.current.Store(&v1)
+	f.connect(t, 1)
+	version, ok := f.served()
+	require.True(t, ok)
+	require.Equal(t, "v1", version)
+
+	// The row moves on to v2 while v1's event is still queued, and the proxy
+	// reconnects: the new connection is published the current row.
+	v2 := f.build("v2")
+	f.current.Store(&v2)
+	f.closeStream(1)
+	f.connect(t, 2)
+	version, ok = f.served()
+	require.True(t, ok)
+	require.Equal(t, "v2", version)
+	responses := f.openListenerWatch(t, "v2")
+
+	// The queued v1 event finally reaches the gate.
+	f.translator.syncXds(ctx, v1)
+	version, _ = f.served()
+	assert.Equal(t, "v2", version, "a superseded build must not replace the current one")
+	select {
+	case r := <-responses:
+		t.Fatalf("the new stream's watch was answered with %q", r.GetResponseVersion())
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	// v2's own event publishes as usual.
+	f.translator.syncXds(ctx, v2)
+	version, _ = f.served()
+	assert.Equal(t, "v2", version)
 }
