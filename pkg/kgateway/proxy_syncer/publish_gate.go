@@ -201,6 +201,10 @@ type publishGate struct {
 	// published under in the snapshot now in the cache (eds_set_version.go).
 	publishedEDS map[string]map[string]uint64
 	dereferenced map[string]*dereferenceState
+	// aheadSent records, per client, when each cluster still inside its
+	// reference-ahead window was first sent (referenceAheadLocked).
+	// clientDeparted removes a client's records.
+	aheadSent map[string]map[string]time.Time
 }
 
 type pendingFirstPublish struct {
@@ -256,6 +260,7 @@ func newPublishGate(budget time.Duration, checkConsistency bool, clientState krt
 		published:        make(map[string]struct{}),
 		publishedEDS:     make(map[string]map[string]uint64),
 		dereferenced:     make(map[string]*dereferenceState),
+		aheadSent:        make(map[string]map[string]time.Time),
 	}
 }
 
@@ -837,6 +842,7 @@ func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	delete(g.published, proxyKey)
 	delete(g.carriedSince, proxyKey)
 	delete(g.publishedEDS, proxyKey)
+	delete(g.aheadSent, proxyKey)
 }
 
 // connectionStarted begins the client's new connection in the gate (the
