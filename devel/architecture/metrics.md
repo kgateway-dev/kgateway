@@ -73,7 +73,9 @@ metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.
 
 This counter records when a NACK matches the response sent on its stream and the
 snapshot still has the rejected version, so kgateway suppresses the immediate
-resend and waits for a snapshot change. The `type_url` label takes the same
+resend and waits for a snapshot change, or for a retry delay that starts at 1s
+and doubles to 1m while the same version keeps being rejected; the retried
+response, rejected again, counts again. The `type_url` label takes the same
 values as on `kgateway_envoy_xds_rejects_total` and
 `kgateway_envoy_xds_rejects_active` (the type URL without its
 `type.googleapis.com/` prefix), so the series join on it. ACKs, uncorrelated

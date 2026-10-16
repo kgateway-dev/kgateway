@@ -6,6 +6,7 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -201,4 +202,75 @@ func nackSnapshot(version string) *envoycache.Snapshot {
 	return snapshotFor(allADSVersions(version),
 		[]*envoyclusterv3.Cluster{testCluster(adsTestCluster)},
 		[]*envoyroutev3.RouteConfiguration{testRouteConfig(adsTestRoute, adsTestCluster)})
+}
+
+// shortenNackRetry makes the parked-NACK retry fire quickly. Tests using it
+// must not run in parallel.
+func shortenNackRetry(t *testing.T, base, maximum time.Duration) {
+	t.Helper()
+	origBase, origMax := nackRetryBase, nackRetryMax
+	nackRetryBase, nackRetryMax = base, maximum
+	t.Cleanup(func() { nackRetryBase, nackRetryMax = origBase, origMax })
+}
+
+// A parked NACK is not parked forever: with the snapshot unchanged, the
+// rejected response is offered again after the retry delay, so a transient
+// rejection recovers without waiting for an unrelated change. A snapshot change
+// still answers at once.
+func TestParkedNackIsRetried(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
+			shortenNackRetry(t, 100*time.Millisecond, time.Second)
+			h := newNackHarness(t, ordered)
+			h.setSnapshot(nackSnapshot("1"))
+			h.subscribe(envoyresource.ClusterType)
+			first := h.receiveType(envoyresource.ClusterType, "1")
+
+			h.nack(first, "")
+			again := h.receiveType(envoyresource.ClusterType, "1")
+			require.NotEqual(t, first.GetNonce(), again.GetNonce(), "the retry is a new response")
+
+			// Rejected again: parked again, and a correction still goes out at once.
+			h.nack(again, "")
+			h.waitForOpenWatches(1)
+			h.setSnapshot(nackSnapshot("2"))
+			h.receiveType(envoyresource.ClusterType, "2")
+		})
+	}
+}
+
+// Consecutive rejections of one version double the delay up to the maximum, so
+// a config that keeps failing is re-sent at a bounded rate rather than spun;
+// the delay starts over for a different version.
+func TestNackRetryDelayBacksOff(t *testing.T) {
+	shortenNackRetry(t, time.Second, 10*time.Second)
+	require.Equal(t, time.Second, nackRetryDelay(1))
+	require.Equal(t, 2*time.Second, nackRetryDelay(2))
+	require.Equal(t, 8*time.Second, nackRetryDelay(4))
+	require.Equal(t, 10*time.Second, nackRetryDelay(5))
+	require.Equal(t, 10*time.Second, nackRetryDelay(1000))
+
+	policy := newNackResendSuppressor(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{})
+	node := &envoycorev3.Node{Id: "node"}
+	respond := func(nonce, version string) {
+		policy.onStreamResponse(t.Context(), 1, &discoveryv3.DiscoveryRequest{Node: node}, &discoveryv3.DiscoveryResponse{TypeUrl: envoyresource.ClusterType, Nonce: nonce, VersionInfo: version})
+	}
+	reject := func(nonce string) time.Duration {
+		t.Helper()
+		req := nackRequest(node, nonce)
+		require.NoError(t, policy.onStreamRequest(1, req))
+		_, retryIn, ok := policy.rejectedVersion(req)
+		require.True(t, ok)
+		return retryIn
+	}
+	require.NoError(t, policy.onStreamRequest(1, &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}))
+	respond("1", "bad")
+	require.Equal(t, time.Second, reject("1"))
+	respond("2", "bad")
+	require.Equal(t, 2*time.Second, reject("2"), "the same version rejected again backs off")
+	respond("3", "also-bad")
+	require.Equal(t, time.Second, reject("3"), "a different version starts over")
+	require.NoError(t, policy.onStreamRequest(1, &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType, VersionInfo: "also-bad", ResponseNonce: "3"}))
+	respond("4", "also-bad")
+	require.Equal(t, time.Second, reject("4"), "an ACK starts over")
 }

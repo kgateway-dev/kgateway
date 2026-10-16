@@ -277,8 +277,11 @@ type Settings struct {
 	// answer every NACK with the same rejected response and the two sides spin
 	// at whatever rate the proxy can reject. With this enabled a NACK of the
 	// current snapshot version parks the proxy's watch until the snapshot
-	// changes; a NACK that arrives after the snapshot already changed is
-	// answered immediately. Rejections are still logged and counted.
+	// changes, or until a retry delay passes: the rejected response is then
+	// offered again, so a transient rejection recovers, with the delay doubling
+	// from 1s to 1m while the same version keeps being rejected. A NACK that
+	// arrives after the snapshot already changed is answered immediately.
+	// Rejections are still logged and counted.
 	XdsSuppressNackResend bool `split_words:"true" default:"true"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
