@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -346,4 +347,33 @@ func TestRouteActionClusterSpecifierArmsAreClassified(t *testing.T) {
 		// request-time selectors
 		"cluster_header", "cluster_specifier_plugin", "inline_cluster_specifier_plugin",
 	}, arms)
+}
+
+// A typed config the binary cannot decode (its Go type is not linked in, as a
+// downstream plugin's own extension might not be) can name clusters the walk
+// never sees, so it makes the gateway unfilterable instead of letting them be
+// pruned.
+func TestEmissionSetReportsUndecodableTypedConfig(t *testing.T) {
+	hcm := &envoyhttpv3.HttpConnectionManager{
+		StatPrefix: "http",
+		HttpFilters: []*envoyhttpv3.HttpFilter{{
+			Name: "example.opaque",
+			ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{TypedConfig: &anypb.Any{
+				TypeUrl: "type.googleapis.com/example.v1.NotLinked",
+				Value:   []byte{0x0a, 0x07, 'b', 'a', 'c', 'k', 'e', 'n', 'd'},
+			}},
+		}},
+	}
+	listeners := sliceToResources([]*envoylistenerv3.Listener{{
+		Name: "http",
+		FilterChains: []*envoylistenerv3.FilterChain{{Filters: []*envoylistenerv3.Filter{{
+			Name:       envoywellknown.HTTPConnectionManager,
+			ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustMessageToAny(t, hcm)},
+		}}}},
+	}})
+
+	emission := collectReferencedClustersForEmission(envoycache.Resources{}, listeners)
+
+	assert.False(t, emission.Filterable())
+	assert.Equal(t, []string{`undecodable typed_config "type.googleapis.com/example.v1.NotLinked"`}, emission.Unresolvable)
 }
