@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -699,4 +700,52 @@ func TestSetSnapshotErrorAfterInstallKeepsBookkeeping(t *testing.T) {
 		defer pt.gate.mu.Unlock()
 		assert.NotNil(t, pt.gate.pendingFlips[publishGateTestClient], "the installed hold still gets its release bound")
 	})
+}
+
+// A published client keeps being sent the last config of a referenced cluster
+// that went missing from CDS (make-before-break), but not past the warm
+// withhold bound: after it the cluster is dropped and routes to it fail,
+// rather than serving endpoints that old indefinitely.
+func TestCarryOfAMissingClusterIsBounded(t *testing.T) {
+	ResetMetrics()
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	pt.gate.warmWithholdBound = 100 * time.Millisecond
+	ucc := newTestUcc(publishGateTestClient)
+	ctx := context.Background()
+	build := func(version string, clusters ...string) *envoycache.Snapshot {
+		snap := &envoycache.Snapshot{}
+		listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+		listeners.Version = version
+		snap.Resources[envoycachetypes.Listener] = listeners
+		snap.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a", "cluster-b")
+		var clusterItems, endpointItems []envoycachetypes.ResourceWithTTL
+		var hash uint64
+		for _, name := range clusters {
+			hash += 2
+			clusterItems = append(clusterItems, edsClusterForClient(ucc, name, hash-1).Cluster.ResourceWithTTL())
+			endpointItems = append(endpointItems, endpointsForClient(ucc, name, hash).Endpoints.ResourceWithTTL())
+		}
+		snap.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-"+version, clusterItems)
+		snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-"+version, endpointItems)
+		return snap
+	}
+	lagging := func(version string) XdsSnapWrapper {
+		return XdsSnapWrapper{snap: build(version, "cluster-a"), proxyKey: publishGateTestClient, missingReferenced: []string{"cluster-b"}}
+	}
+
+	pt.syncXds(ctx, XdsSnapWrapper{snap: build("v1", "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, lagging("v2"))
+	require.Contains(t, servedSnapshot(t, pt).Resources[envoycachetypes.Cluster].Items, "cluster-b", "a lagging cluster is carried")
+
+	time.Sleep(150 * time.Millisecond)
+	pt.syncXds(ctx, lagging("v3"))
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "v3", served.GetVersion(resourcev3.ListenerType))
+	assert.NotContains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-b", "past the bound it is no longer carried")
+	_, hasCLA := endpointCount(served, "cluster-b")
+	assert.False(t, hasCLA, "nor are its endpoints")
+
+	g := metricstest.MustGatherMetrics(t)
+	assert.Equal(t, float64(1), g.MustGetMetricValueByLabels("kgateway_xds_snapshot_perclient_bounded_publishes_total",
+		labelsWith("mode", boundedPublishCarryExpired)))
 }

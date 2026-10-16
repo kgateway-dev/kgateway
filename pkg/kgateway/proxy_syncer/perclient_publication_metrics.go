@@ -32,6 +32,11 @@ const (
 	// were not translation catching up, and holding longer would freeze the
 	// client's config until its proxy restarts.
 	boundedPublishWarmRelease = "warm_release"
+	// boundedPublishCarryExpired marks a published client stopped being
+	// carried a referenced cluster missing from CDS after the warm withhold
+	// bound: the cluster's last config is no longer served and routes to it
+	// fail until it reappears.
+	boundedPublishCarryExpired = "carry_expired"
 
 	withheldReasonPriorXDSVersion = "prior_xds_version"
 )
@@ -106,7 +111,10 @@ var (
 				"pinned route/listener/secret updates resume. mode=warm_release: a " +
 				"warm client withheld for the whole warm withhold bound " +
 				"(KGW_PER_CLIENT_WARM_WITHHOLD_BOUND) because referenced clusters " +
-				"were missing from CDS; routes to them fail until they appear.",
+				"were missing from CDS; routes to them fail until they appear. " +
+				"mode=carry_expired: a published client stopped being carried a " +
+				"referenced cluster that stayed missing from CDS for the warm " +
+				"withhold bound; routes to it fail until it reappears.",
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationModeLabel},
 	)

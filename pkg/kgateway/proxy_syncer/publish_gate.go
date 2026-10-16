@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"sync"
 	"time"
@@ -123,6 +124,11 @@ type publishGate struct {
 	// departure is older than the bound, and any publish removes them. Guarded
 	// by mu; created on first use.
 	warmEpisodes map[string]warmEpisode
+	// carriedSince records, per client, since when each referenced cluster
+	// missing from the builds has been carried forward from the snapshot the
+	// client was published (boundCarryLocked). Guarded by mu; created on
+	// first use.
+	carriedSince map[string]map[string]time.Time
 	// coldEpisodes does the same for the first-publish budget: a client whose
 	// connection (or snapshot row) resets more often than the budget resumes
 	// its first-publish episode instead of restarting it, so it still gets
@@ -307,6 +313,7 @@ func (g *publishGate) resolveDeferred(
 		g.offerColdLocked(ctx, cache, snapWrap)
 		return nil
 	}
+	snapWrap = g.boundCarryLocked(snapWrap, published, time.Now())
 	resolved, heldBlocking := resolveDeferredPerCluster(snapWrap, published, true)
 	if len(heldBlocking) > 0 {
 		// The held snapshot still publishes (CDS/EDS keep flowing); the
@@ -549,7 +556,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 	if published == nil {
 		return // nothing published to resolve against; nothing was held
 	}
-	released, _ := resolveDeferredPerCluster(pf.wrap, published, false)
+	released, _ := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false)
 	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
 		"proxy_key", proxyKey, "flip_blocking", pf.blocking)
 	if err := g.setSnapshot(ctx, cache, proxyKey, released, pf.wrap.synthesizedEndpoints); err != nil {
@@ -576,6 +583,7 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 	defer g.mu.Unlock()
 	g.withdrawLocked(proxyKey)
 	delete(g.published, proxyKey)
+	delete(g.carriedSince, proxyKey)
 }
 
 // snapshotWithdrawn handles a client whose wrapper row was deleted while it
@@ -744,6 +752,79 @@ func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error 
 		slices.Sort(missing)
 		return fmt.Errorf("snapshot publishes resources no other resource references: %v; and lacks resources its listeners name: %v", unreferenced, missing)
 	}
+}
+
+// boundCarryLocked bounds how long a referenced cluster missing from the
+// builds is carried forward from the snapshot the client was published.
+//
+// Carrying keeps the client's last config for a cluster whose translation is
+// lagging (make-before-break), but nothing else ends it: a cluster whose
+// backend is gone while routes still name it would be served its last cluster
+// and endpoints forever, and endpoint addresses that old can belong to other
+// workloads by then. After the warm withhold bound (the gate's existing bound
+// on "a referenced cluster missing from CDS is not coming back") the cluster is
+// no longer carried and routes to it fail until it reappears. The returned
+// wrapper lists only the missing clusters still carried; the bound, like every
+// other, applies only while the publish budget is non-zero. Callers must hold
+// g.mu.
+func (g *publishGate) boundCarryLocked(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, now time.Time) XdsSnapWrapper {
+	key := snapWrap.proxyKey
+	if g.budget <= 0 || g.warmWithholdBound <= 0 {
+		delete(g.carriedSince, key)
+		return snapWrap
+	}
+	publishedClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
+	missing := stringSet(snapWrap.missingReferenced)
+	since := g.carriedSince[key]
+	for name := range since {
+		_, stillMissing := missing[name]
+		_, carryable := publishedClusters[name]
+		if !stillMissing || !carryable {
+			delete(since, name) // it came back, or it is no longer there to carry
+		}
+	}
+	var expired map[string]struct{}
+	var carriedFor time.Duration
+	for name := range missing {
+		if _, carryable := publishedClusters[name]; !carryable {
+			continue
+		}
+		start, recorded := since[name]
+		if !recorded {
+			if since == nil {
+				since = make(map[string]time.Time)
+				if g.carriedSince == nil {
+					g.carriedSince = make(map[string]map[string]time.Time)
+				}
+				g.carriedSince[key] = since
+			}
+			since[name] = now
+			continue
+		}
+		if age := now.Sub(start); age >= g.warmWithholdBound {
+			if expired == nil {
+				expired = make(map[string]struct{})
+			}
+			expired[name] = struct{}{}
+			delete(since, name)
+			carriedFor = max(carriedFor, age)
+		}
+	}
+	if len(since) == 0 {
+		delete(g.carriedSince, key)
+	}
+	if len(expired) == 0 {
+		return snapWrap
+	}
+	logger.Warn("referenced clusters missing from CDS for the whole warm withhold bound; no longer carrying their last published config, routes to them fail until they reappear",
+		"proxy_key", key, "clusters", slices.Sorted(maps.Keys(expired)), "carried_for", carriedFor)
+	recordBoundedPublish(key, boundedPublishCarryExpired)
+	bounded := snapWrap
+	bounded.missingReferenced = slices.DeleteFunc(slices.Clone(snapWrap.missingReferenced), func(name string) bool {
+		_, gone := expired[name]
+		return gone
+	})
+	return bounded
 }
 
 // rememberColdEpisodeLocked keeps a departing unpublished client's
