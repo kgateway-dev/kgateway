@@ -542,5 +542,4 @@ func endpointsMatchClusters(clusters envoycache.Resources, endpoints envoycache.
 		}
 	}
 	return true
-
 }
