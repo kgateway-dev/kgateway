@@ -40,6 +40,8 @@ func filterClustersToEmitted(
 		return clusters, clusterVersions, false
 	}
 
+	// Only the claims of selectors this gateway uses keep anything here.
+	kept := claims.keptFor(emitted.RequestTimeSelectors)
 	retained := make(map[string]envoycachetypes.ResourceWithTTL, len(clusters.Items))
 	retainedVersions := make(map[string]uint64, len(clusterVersions))
 	for name, item := range clusters.Items {
@@ -48,7 +50,7 @@ func filterClustersToEmitted(
 		// whole point of a claim, and it covers the plugin's own placeholder
 		// cluster, which stops being named the moment its feature is doing its
 		// job and would otherwise be the first thing pruned.
-		if !referenced && !claims.claims(name) {
+		if !referenced && !kept.claims(name) {
 			continue
 		}
 		retained[name] = item

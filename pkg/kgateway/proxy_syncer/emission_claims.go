@@ -8,20 +8,28 @@ import (
 )
 
 // emissionClaims is every plugin's ClusterEmissionClaim, resolved once at
-// startup into the three questions the emission path actually asks: is this
-// selector accounted for, is this cluster claimed, and how broad are the claims.
+// startup into the two questions the emission path asks: is this selector
+// accounted for, and which clusters do a gateway's selectors keep.
 //
-// Claims are plugin-global rather than per-gateway. A plugin's selector only
-// appears in a gateway whose routes use it, so applying the claim wherever that
-// selector appears is already per-gateway in effect, and a gateway that never
-// uses the plugin is untouched.
+// A claim's destinations belong to its selectors: they are kept only in a
+// gateway whose configuration uses one of them. Claims are collected once for
+// the whole controller, so keeping them everywhere would widen every scoped
+// gateway's emitted set by every plugin's candidates, gateways that never use
+// the plugin included. Tied to their selectors, they are per-gateway exactly
+// where the plugin is.
 type emissionClaims struct {
-	// accountedSelectors are cluster specifier plugin extension names some
-	// plugin claimed. A gateway keeps scoping when every request-time selector
-	// in its configuration is in here.
-	accountedSelectors map[string]struct{}
-	names              map[string]struct{}
-	prefixes           []string
+	// bySelector maps each accounted cluster specifier plugin extension name
+	// to the destinations kept for it, merged across the claims naming it. A
+	// gateway keeps scoping when every request-time selector in its
+	// configuration is in here.
+	bySelector map[string]*claimedDestinations
+}
+
+// claimedDestinations are the clusters claims keep for a selector: exact names,
+// and names starting with one of the prefixes.
+type claimedDestinations struct {
+	names    map[string]struct{}
+	prefixes []string
 }
 
 // collectEmissionClaims gathers claims from every contributed policy plugin.
@@ -36,26 +44,27 @@ type emissionClaims struct {
 // at least one name or prefix, and no prefix that had to be dropped. Accounting
 // for a selector while keeping none of its candidates would prune exactly the
 // clusters it computes, and its plugin would quietly fall back on every
-// request, the failure claims exist to prevent. Such a claim's selectors stay
-// unaccounted, so their gateways stay unscoped; its valid names and prefixes
-// are still kept.
+// request, the failure claims exist to prevent. Such a claim contributes
+// nothing: its selectors stay unaccounted, so the gateways that use them stay
+// unscoped and emit everything anyway.
+//
+// A claim with no selectors keeps nothing either, since its destinations would
+// apply in no gateway. A cluster a plugin needs whatever the routes say belongs
+// in the resources its translation pass adds (ResourcesToAdd), which scoping
+// never filters.
 func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
-	claims := emissionClaims{
-		accountedSelectors: map[string]struct{}{},
-		names:              map[string]struct{}{},
-	}
+	claims := emissionClaims{bySelector: map[string]*claimedDestinations{}}
 	for gk, policyPlugin := range policies {
 		if policyPlugin.ClaimEmittedClusters == nil {
 			continue
 		}
 		claim := policyPlugin.ClaimEmittedClusters()
-		destinations, droppedPrefix := 0, false
+		var names, prefixes []string
+		droppedPrefix := false
 		for _, name := range claim.Names {
-			if name == "" {
-				continue
+			if name != "" {
+				names = append(names, name)
 			}
-			claims.names[name] = struct{}{}
-			destinations++
 		}
 		for _, prefix := range claim.NamePrefixes {
 			if prefix == "" {
@@ -64,10 +73,16 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 				droppedPrefix = true
 				continue
 			}
-			claims.prefixes = append(claims.prefixes, prefix)
-			destinations++
+			prefixes = append(prefixes, prefix)
 		}
-		if len(claim.Selectors) > 0 && (destinations == 0 || droppedPrefix) {
+		if len(claim.Selectors) == 0 {
+			if len(names) > 0 || len(prefixes) > 0 {
+				logger.Error("cluster emission claim names no selectors; its destinations are kept only in gateways that use its selectors, so it keeps nothing",
+					"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind)
+			}
+			continue
+		}
+		if len(names)+len(prefixes) == 0 || droppedPrefix {
 			logger.Error("cluster emission claim names selectors but no valid destinations; its selectors stay unaccounted, so gateways using them stay unscoped",
 				"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind, "selectors", claim.Selectors)
 			continue
@@ -78,11 +93,21 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 					"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind)
 				continue
 			}
-			claims.accountedSelectors[selector] = struct{}{}
+			kept := claims.bySelector[selector]
+			if kept == nil {
+				kept = &claimedDestinations{names: map[string]struct{}{}}
+				claims.bySelector[selector] = kept
+			}
+			for _, name := range names {
+				kept.names[name] = struct{}{}
+			}
+			kept.prefixes = append(kept.prefixes, prefixes...)
 		}
 	}
-	slices.Sort(claims.prefixes)
-	claims.prefixes = slices.Compact(claims.prefixes)
+	for _, kept := range claims.bySelector {
+		slices.Sort(kept.prefixes)
+		kept.prefixes = slices.Compact(kept.prefixes)
+	}
 	return claims
 }
 
@@ -97,27 +122,48 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 func (c emissionClaims) accountsFor(selector requestTimeSelector) bool {
 	switch selector.Kind {
 	case selectorSpecifierPlugin, selectorInlinePlugin:
-		_, ok := c.accountedSelectors[selector.Name]
+		_, ok := c.bySelector[selector.Name]
 		return ok
 	default:
 		return false
 	}
 }
 
-// claims reports whether this cluster is one a plugin declared it may route to,
-// and so must keep being emitted even though nothing names it.
-func (c emissionClaims) claims(cluster string) bool {
-	if _, ok := c.names[cluster]; ok {
-		return true
-	}
-	for _, prefix := range c.prefixes {
-		if strings.HasPrefix(cluster, prefix) {
-			return true
+// keptFor returns what the claims keep in a gateway whose configuration has
+// these request-time selectors: the destinations of the claimed ones. A gateway
+// that uses none of a claim's selectors keeps none of its destinations.
+func (c emissionClaims) keptFor(selectors []requestTimeSelector) claimedSet {
+	var kept claimedSet
+	for _, selector := range selectors {
+		if !c.accountsFor(selector) {
+			continue
+		}
+		if destinations := c.bySelector[selector.Name]; !slices.Contains(kept, destinations) {
+			kept = append(kept, destinations)
 		}
 	}
-	return false
+	return kept
 }
 
 func (c emissionClaims) empty() bool {
-	return len(c.accountedSelectors) == 0 && len(c.names) == 0 && len(c.prefixes) == 0
+	return len(c.bySelector) == 0
+}
+
+// claimedSet is the destinations a gateway's claimed selectors keep.
+type claimedSet []*claimedDestinations
+
+// claims reports whether this cluster is one the gateway's claimed selectors
+// may route to, and so must keep being emitted even though nothing names it.
+func (s claimedSet) claims(cluster string) bool {
+	for _, kept := range s {
+		if _, ok := kept.names[cluster]; ok {
+			return true
+		}
+		for _, prefix := range kept.prefixes {
+			if strings.HasPrefix(cluster, prefix) {
+				return true
+			}
+		}
+	}
+	return false
 }

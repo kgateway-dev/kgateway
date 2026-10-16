@@ -73,6 +73,14 @@ func TestClusterHeaderCanNeverBeClaimed(t *testing.T) {
 	assert.Equal(t, []string{`cluster_header "x-target"`}, emission.unaccountedSelectors(claims))
 }
 
+// pickerGateway is a gateway whose routes name routed and also select through
+// the picker cluster specifier plugin.
+func pickerGateway() emittedClusters {
+	set := emissionSet("routed")
+	set.RequestTimeSelectors = []requestTimeSelector{{selectorSpecifierPlugin, "picker"}}
+	return set
+}
+
 // TestClaimedClustersSurviveTheFilter covers what a claim buys once the gateway
 // is scoped: the candidates the plugin may compute, and its own placeholder,
 // stay in CDS even though nothing names them.
@@ -87,13 +95,46 @@ func TestClaimedClustersSurviveTheFilter(t *testing.T) {
 	clusters, versions := clusterResourcesFor(
 		"routed", "picker-fallback", "tenant-a", "tenant-b", "unreferenced")
 
-	got, _, filtered := filterClustersToEmitted(scoping, emissionSet("routed"), clusters, versions)
+	got, _, filtered := filterClustersToEmitted(scoping, pickerGateway(), clusters, versions)
 
 	require.True(t, filtered)
 	assert.ElementsMatch(t,
 		[]string{"routed", "picker-fallback", "tenant-a", "tenant-b"},
 		resourceNames(got),
 		"claimed names and prefixes are kept; only the genuinely unreferenced backend goes")
+}
+
+// TestClaimsKeepNothingInAGatewayWithoutTheirSelector: claims are collected
+// for the whole controller, but a claim's destinations belong to its
+// selectors. A gateway that never uses the plugin must not keep its candidates,
+// or every scoped gateway would grow by every plugin's claims.
+func TestClaimsKeepNothingInAGatewayWithoutTheirSelector(t *testing.T) {
+	scoping := scopedClusters()
+	scoping.claims = collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
+		Selectors:    []string{"picker"},
+		Names:        []string{"picker-fallback"},
+		NamePrefixes: []string{"tenant-"},
+	}))
+
+	clusters, versions := clusterResourcesFor("routed", "picker-fallback", "tenant-a", "unreferenced")
+	got, _, filtered := filterClustersToEmitted(scoping, emissionSet("routed"), clusters, versions)
+
+	require.True(t, filtered)
+	assert.ElementsMatch(t, []string{"routed"}, resourceNames(got),
+		"a gateway without the picker selector keeps only what its configuration names")
+}
+
+// TestClaimWithoutSelectorsKeepsNothing: destinations are kept only where a
+// claim's selectors are used, so a claim naming none would apply nowhere. It is
+// dropped rather than read as "keep these everywhere".
+func TestClaimWithoutSelectorsKeepsNothing(t *testing.T) {
+	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
+		Names:        []string{"picker-fallback"},
+		NamePrefixes: []string{"tenant-"},
+	}))
+
+	assert.True(t, claims.empty())
+	assert.False(t, claims.keptFor(pickerGateway().RequestTimeSelectors).claims("tenant-a"))
 }
 
 // TestEmptyPrefixClaimIsRejected: a prefix matching everything re-admits the
@@ -105,8 +146,8 @@ func TestEmptyPrefixClaimIsRejected(t *testing.T) {
 		NamePrefixes: []string{""},
 	}))
 
-	assert.Empty(t, claims.prefixes)
-	assert.False(t, claims.claims("anything-at-all"))
+	assert.True(t, claims.empty())
+	assert.False(t, claims.keptFor(pickerGateway().RequestTimeSelectors).claims("anything-at-all"))
 	assert.False(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}),
 		"with its prefix dropped the claim keeps none of the selector's candidates, so it must not account for the selector")
 }
@@ -155,7 +196,7 @@ func TestNoClaimsIsTheOrdinaryCase(t *testing.T) {
 	})
 
 	assert.True(t, claims.empty())
-	assert.False(t, claims.claims("anything"))
+	assert.False(t, claims.keptFor(nil).claims("anything"))
 	assert.True(t, emittedClusters{Names: map[string]struct{}{"a": {}}}.Filterable(claims),
 		"a gateway with no request-time selectors is scoped regardless of claims")
 }

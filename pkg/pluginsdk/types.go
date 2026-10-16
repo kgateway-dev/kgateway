@@ -165,14 +165,22 @@ type ClusterEmissionClaim struct {
 	// Otherwise the selectors stay unaccounted (and an error is logged), since
 	// accounting for a selector while keeping none of its candidates would
 	// prune exactly the clusters it computes.
+	//
+	// Names and NamePrefixes belong to these selectors: they are kept only in
+	// gateways whose configuration uses one of them, so a claim never widens a
+	// gateway that does not use the plugin. A claim without selectors keeps
+	// nothing (and an error is logged). A cluster the plugin needs whatever
+	// the routes say belongs in the resources its translation pass adds
+	// (ResourcesToAdd), which scoping never filters.
 	Selectors []string
-	// Names are exact cluster names to keep emitting.
+	// Names are exact cluster names to keep emitting where Selectors are used.
 	Names []string
-	// NamePrefixes admit every cluster whose name starts with one of them, for
-	// the composed-name case where the candidates cannot be enumerated ahead of
-	// time. An empty prefix is rejected rather than treated as "everything":
-	// a claim that re-admits the whole inventory restores emit-all silently,
-	// which is the outcome scoping exists to avoid.
+	// NamePrefixes admit every cluster whose name starts with one of them,
+	// where Selectors are used, for the composed-name case where the
+	// candidates cannot be enumerated ahead of time. An empty prefix is
+	// rejected rather than treated as "everything": a claim that re-admits the
+	// whole inventory restores emit-all silently, which is the outcome scoping
+	// exists to avoid.
 	NamePrefixes []string
 }
 
