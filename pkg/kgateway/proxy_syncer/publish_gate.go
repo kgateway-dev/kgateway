@@ -778,7 +778,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 	if published == nil {
 		return // nothing published to resolve against; nothing was held
 	}
-	graced, _ := g.graceDereferencedClustersLocked(
+	graced, soonestExpiry := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
 	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
 	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
@@ -787,6 +787,10 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 		logPublishFailure(proxyKey, err)
 		return
 	}
+	// The release may grace clusters its routes stopped naming; like every
+	// other publish that graces, arm the prune that removes them, or they
+	// linger until some later build.
+	g.armDereferenceTimerLocked(ctx, cache, proxyKey, pf.wrap, soonestExpiry)
 	recordBoundedPublish(proxyKey, boundedPublishFlipRelease)
 	g.armCarryExpiryLocked(ctx, cache, pf.wrap)
 }
