@@ -75,6 +75,63 @@ func TestDebouncedCollectionBatchesBurst(t *testing.T) {
 	assert.Equal(t, sortedItems(src), sortedItems(out), "the mirror should match the source after the flush")
 }
 
+// countedItem counts its Equals calls, to show how many objects a flush compares.
+type countedItem struct {
+	Name  string
+	Value int
+}
+
+var countedItemEquals atomic.Int64
+
+func (c countedItem) ResourceName() string {
+	return c.Name
+}
+
+func (c countedItem) Equals(other countedItem) bool {
+	countedItemEquals.Add(1)
+	return c.Name == other.Name && c.Value == other.Value
+}
+
+func TestDebouncedCollectionAppliesALoneChangeByItself(t *testing.T) {
+	stop := test.NewStop(t)
+	var items []countedItem
+	for i := range 100 {
+		items = append(items, countedItem{Name: fmt.Sprint("item-", i), Value: i})
+	}
+	src := krt.NewStaticCollection(nil, items)
+	out := newDebouncedCollection[countedItem](src, 10*time.Millisecond, 100*time.Millisecond, stop)
+	require.True(t, out.WaitUntilSynced(stop), "the mirror should sync")
+
+	var mu sync.Mutex
+	var batches [][]krt.Event[countedItem]
+	out.RegisterBatch(func(evs []krt.Event[countedItem]) {
+		mu.Lock()
+		defer mu.Unlock()
+		batches = append(batches, evs)
+	}, false)
+	countedItemEquals.Store(0)
+
+	src.UpdateObject(countedItem{Name: "item-7", Value: 1000})
+	assert.Eventually(t, func() bool {
+		obj := out.GetKey("item-7")
+		return obj != nil && obj.Value == 1000
+	}, 5*time.Second, 5*time.Millisecond, "a lone update should reach the mirror")
+	src.DeleteObject("item-8")
+	assert.Eventually(t, func() bool { return out.GetKey("item-8") == nil }, 5*time.Second, 5*time.Millisecond,
+		"a lone delete should reach the mirror")
+
+	assert.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(batches) == 2
+	}, 5*time.Second, 5*time.Millisecond, "each lone change should be delivered as its own event set")
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, batches[0], 1, "the update flush should carry only the updated object")
+	assert.Len(t, batches[1], 1, "the delete flush should carry only the deleted object")
+	assert.LessOrEqual(t, countedItemEquals.Load(), int64(1), "a lone change should compare only the changed object")
+}
+
 func TestDebouncedCollectionFlushesWhileChangesKeepArriving(t *testing.T) {
 	stop := test.NewStop(t)
 	src := krt.NewStaticCollection[debounceItem](nil, nil)
