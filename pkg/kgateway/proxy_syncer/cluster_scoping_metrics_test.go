@@ -143,3 +143,14 @@ func TestReferenceAheadTransitionsCountWindowsNotBuilds(t *testing.T) {
 	pt.syncXds(ctx, deferred)
 	assert.Equal(t, float64(2), held(), "the deferred path's hold counts its new cluster")
 }
+
+// The unscoped warning fires when a gateway turns unscoped, not on every
+// rebuild of each of its clients while it stays that way.
+func TestClusterScopingDisabledIsNotedOnTransition(t *testing.T) {
+	const gateway = "kube-gateway-api~ns-note~gw-note"
+	assert.False(t, noteClusterScopingDisabled(gateway, false))
+	assert.True(t, noteClusterScopingDisabled(gateway, true), "scoped to unscoped is a transition")
+	assert.False(t, noteClusterScopingDisabled(gateway, true), "staying unscoped is not")
+	assert.False(t, noteClusterScopingDisabled(gateway, false))
+	assert.True(t, noteClusterScopingDisabled(gateway, true), "turning unscoped again is")
+}
