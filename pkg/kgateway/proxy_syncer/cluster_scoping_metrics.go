@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 const (
@@ -150,4 +151,37 @@ func recordClusterScopingTransition(clientKey, transition string, count int) {
 			metrics.Label{Name: transitionLabel, Value: transition},
 		)
 	}
+}
+
+// gatewayHasClients reports whether any of clients belongs to clientKey's
+// gateway.
+func gatewayHasClients(clientKey string, clients []ir.UniquelyConnectedClient) bool {
+	departed := getDetailsFromXDSClientResourceName(clientKey)
+	for _, ucc := range clients {
+		cd := getDetailsFromXDSClientResourceName(ucc.ResourceName())
+		if cd.Gateway == departed.Gateway && cd.Namespace == departed.Namespace {
+			return true
+		}
+	}
+	return false
+}
+
+// forgetClusterScopingGateway drops a gateway's scoping gauges, and the state
+// behind its unscoped warning, once none of its clients is connected. The
+// gauges are written on every publish and nothing else removes them, so a
+// deleted gateway would otherwise export its last values forever: a
+// disabled_gateways of 1 keeps an alert firing for a gateway that is gone. A
+// client that connects again re-creates them on its first publish.
+func forgetClusterScopingGateway(clientKey string) {
+	cd := getDetailsFromXDSClientResourceName(clientKey)
+	labels := []metrics.Label{
+		{Name: gatewayLabel, Value: cd.Gateway},
+		{Name: namespaceLabel, Value: cd.Namespace},
+	}
+	clusterScopingEmittedClusters.DeletePartialMatch(labels...)
+	clusterScopingDroppedClusters.DeletePartialMatch(labels...)
+	clusterScopingDisabledGateways.DeletePartialMatch(labels...)
+	clusterScopingDisabledState.Lock()
+	defer clusterScopingDisabledState.Unlock()
+	delete(clusterScopingDisabledState.gateways, resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway})
 }
