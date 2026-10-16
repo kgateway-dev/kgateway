@@ -6,7 +6,8 @@ set -euo pipefail
 # run (conformance, e2e, or manual):
 #
 #   - kgateway_xds_snapshot_perclient_inconsistent_snapshots_total: a published
-#     per-client snapshot failed go-control-plane's Snapshot.Consistent().
+#     per-client snapshot carried an EDS or RDS resource nothing in it
+#     references, or a listener naming a RouteConfiguration it lacks.
 #     Recorded only when KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true is set on the
 #     controller (the script warns when it is not).
 #   - kgateway_envoy_xds_rejects_total: a connected client rejected a
@@ -75,10 +76,10 @@ check_metric "kgateway_envoy_xds_rejects_total" \
 
 if [[ "$(consistency_check_enabled)" == "true" ]]; then
     check_metric "kgateway_xds_snapshot_perclient_inconsistent_snapshots_total" \
-        "the controller published per-client xDS snapshots that failed Snapshot.Consistent()."
+        "the controller published inconsistent per-client xDS snapshots (see the controller's error log)."
 else
     echo "WARNING: KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK is not enabled on deploy/kgateway in ${INSTALL_NAMESPACE};" >&2
-    echo "         the Snapshot.Consistent() invariant was not recorded and only NACKs were verified." >&2
+    echo "         snapshot consistency was not recorded and only NACKs were verified." >&2
 fi
 
 if [[ "${FAILED}" -ne 0 ]]; then

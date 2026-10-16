@@ -1375,8 +1375,9 @@ all-conformance: conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
 
 # Verify the controller's xDS invariants: no client NACKed a published
-# response (always recorded), and no published per-client snapshot failed
-# go-control-plane's Snapshot.Consistent() (recorded when the install has
+# response (always recorded), and no published per-client snapshot carried a
+# resource nothing in it references or a listener naming a missing
+# RouteConfiguration (recorded when the install has
 # KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true on the controller; the script warns
 # otherwise). Safe to chain after any cluster-based run.
 # Example: make conformance xds-consistency-check
