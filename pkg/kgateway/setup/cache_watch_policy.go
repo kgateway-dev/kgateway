@@ -27,14 +27,14 @@ var (
 		metrics.CounterOpts{
 			Subsystem: envoyXdsSubsystem,
 			Name:      "reconnect_responses_total",
-			Help:      "Number of reconnecting proxies' first endpoint requests whose held version was cleared, so the current or next snapshot answers them even at that version",
+			Help:      "Number of reconnecting proxies' first endpoint, route or secret requests whose held version was cleared, so the current or next snapshot answers them even at that version",
 		}, []string{typeURLLabel})
 )
 
 // watchPolicy wraps the snapshot cache with two request-level rules the cache
 // itself does not have: it does not re-send a response the proxy has just
-// rejected, and it answers a reconnecting proxy's first endpoint request even
-// when the proxy already holds the current version.
+// rejected, and it answers a reconnecting proxy's first endpoint, route and
+// secret requests even when the proxy already holds the current version.
 //
 // Rule 1, NACKs.
 //
@@ -82,17 +82,20 @@ var (
 // which is what a proxy meets when the control plane has just restarted, the
 // request parks; and when the control plane then republishes the same content
 // under the same version, the publish path compares versions only, finds them
-// equal, and sends nothing. For a cluster that was warming when the
-// stream broke that is not harmless: Envoy rebuilds the cluster, asks for its
-// endpoints again at the version it holds, gets no answer, and keeps CDS
-// paused until its own endpoint fetch timeout releases it. The policy hands
-// the cache a copy of the endpoint request with the version cleared, so the
-// current snapshot answers it now or the next published one answers it then.
-// Only the endpoint type is treated this way: a warming cluster waits on
-// endpoints, a parked cluster or listener watch on a reconnect costs nothing,
-// and named route and secret requests on a fresh stream are answered by the
-// cache's own not-yet-returned rule. The cost is one endpoint push per
-// reconnecting proxy.
+// equal, and sends nothing. The same happens after the controller reclaims a
+// departed proxy's entry and the proxy comes back. For a resource that was
+// warming when the stream broke that is not harmless: a cluster waits on its
+// endpoints (and Envoy keeps CDS paused meanwhile), a listener on its route
+// configuration, and either on its secrets. Each asks again at the version it
+// holds, gets no answer, and stays warming until its own fetch timeout
+// releases it. The policy hands the cache a copy of such a request with the
+// version cleared, so the current snapshot answers it now or the next
+// published one answers it then. The cache's own not-yet-returned rule does
+// not cover this: it answers a fresh stream's named request only when a
+// snapshot already exists as the request arrives. Cluster and listener
+// requests are left alone, since nothing warms on them and a parked watch for
+// a version the proxy holds costs nothing. The cost is one endpoint, route and
+// secret push per reconnecting proxy.
 type watchPolicy struct {
 	envoycache.SnapshotCache
 	hasher envoycache.NodeHash
@@ -238,13 +241,13 @@ func (s *watchPolicy) rejectedVersion(req *envoycache.Request) (string, time.Dur
 // CreateWatch applies the two rules and delegates everything else.
 func (s *watchPolicy) CreateWatch(req *envoycache.Request, sub envoycache.Subscription, ch chan envoycache.Response) (func(), error) {
 	if req.GetErrorDetail() == nil {
-		if s.respondOnReconnect && isReconnectRequest(req) && req.GetTypeUrl() == envoyresource.EndpointType {
+		if s.respondOnReconnect && isReconnectRequest(req) && warmedOnTypes[req.GetTypeUrl()] {
 			// Clear the held version so the current or next snapshot answers.
 			fresh := proto.Clone(req).(*discoveryv3.DiscoveryRequest)
 			fresh.VersionInfo = ""
 			xdsReconnectResponses.Inc(metrics.Label{Name: typeURLLabel, Value: rejectionTypeURL(req.GetTypeUrl())})
-			envoyLogger.Debug("answering a reconnecting proxy's first endpoint request regardless of its held version",
-				"node", s.hasher.ID(req.GetNode()), "held_version", req.GetVersionInfo())
+			envoyLogger.Debug("answering a reconnecting proxy's first request regardless of its held version",
+				"node", s.hasher.ID(req.GetNode()), "type_url", req.GetTypeUrl(), "held_version", req.GetVersionInfo())
 			return s.SnapshotCache.CreateWatch(fresh, sub, ch)
 		}
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
@@ -391,6 +394,15 @@ func (w *retryingWatch) cancel() {
 		w.inner = nil
 	}
 	close(w.done)
+}
+
+// warmedOnTypes are the named types an Envoy resource waits on while it warms:
+// a cluster on its endpoints, a listener on its route configuration, and
+// either on its secrets.
+var warmedOnTypes = map[string]bool{
+	envoyresource.EndpointType: true,
+	envoyresource.RouteType:    true,
+	envoyresource.SecretType:   true,
 }
 
 // isReconnectRequest reports whether req is the first request on a stream from

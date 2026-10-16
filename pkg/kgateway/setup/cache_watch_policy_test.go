@@ -9,6 +9,7 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -23,7 +24,8 @@ import (
 )
 
 // newPolicyHarness is the ADS harness with the watch policy in front of the
-// cache and its callbacks on the server, as NewControlPlane wires them.
+// cache and its callbacks on the server, as NewControlPlane wires them,
+// including the separate cache newSnapshotCache serves secrets from.
 func newPolicyHarness(t *testing.T, ordered, suppressNackResend, respondOnReconnect bool) *adsHarness {
 	t.Helper()
 
@@ -34,7 +36,7 @@ func newPolicyHarness(t *testing.T, ordered, suppressNackResend, respondOnReconn
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
 	hasher := kgwxds.NewNodeRoleHasher()
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, hasher, nil), hasher, suppressNackResend, respondOnReconnect)
+	policy := newWatchPolicy(newSnapshotCache(hasher, nil), hasher, suppressNackResend, respondOnReconnect)
 
 	var opts []serverconfig.XDSOption
 	if ordered {
@@ -66,6 +68,20 @@ func newPolicyHarness(t *testing.T, ordered, suppressNackResend, respondOnReconn
 		}
 	})
 	return h
+}
+
+// openWatches counts node's open watches in cache and the cache it wraps.
+// newSnapshotCache's status already sums its per-type caches. ok is false
+// until one of them has seen the node.
+func openWatches(cache envoycache.SnapshotCache, node string) (n int, ok bool) {
+	if c, isPolicy := cache.(*watchPolicy); isPolicy {
+		return openWatches(c.SnapshotCache, node)
+	}
+	info := cache.GetStatusInfo(node)
+	if info == nil {
+		return 0, false
+	}
+	return info.GetNumWatches(), true
 }
 
 // nack sends a NACK of resp: accepted as the held version, resp's nonce, and an
@@ -224,6 +240,25 @@ func reconnectSnapshot(version string) *envoycache.Snapshot {
 		&envoyendpointv3.ClusterLoadAssignment{ClusterName: adsTestCluster},
 	})
 	return snap
+}
+
+const adsTestSecret = "test-secret"
+
+// reconnectSnapshotWithSecret adds a secret to reconnectSnapshot, so named SDS
+// requests have something to be answered with.
+func reconnectSnapshotWithSecret(version string) *envoycache.Snapshot {
+	snap := reconnectSnapshot(version)
+	snap.Resources[cachetypes.Secret] = envoycache.NewResources(version, []cachetypes.Resource{
+		&envoytlsv3.Secret{Name: adsTestSecret},
+	})
+	return snap
+}
+
+// The named types a resource warms on, with the name the harness requests.
+var reconnectWarmedTypes = []struct{ typeURL, name string }{
+	{envoyresource.EndpointType, adsTestCluster},
+	{envoyresource.RouteType, adsTestRoute},
+	{envoyresource.SecretType, adsTestSecret},
 }
 
 // A proxy reconnecting after a control-plane restart: its first endpoint
@@ -388,4 +423,38 @@ func TestNackRetryDelayBacksOff(t *testing.T) {
 	require.NoError(t, policy.onStreamRequest(1, &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType, VersionInfo: "also-bad", ResponseNonce: "3"}))
 	respond("4", "also-bad")
 	require.Equal(t, time.Second, reject("4"), "an ACK starts over")
+}
+
+// The empty-cache path parks a reconnecting proxy's route and secret requests
+// exactly like its endpoint request: an equal-version republish does not
+// answer them. A listener that was warming on its route configuration, or a
+// listener or cluster warming on a secret, then waits for its own fetch
+// timeout. This pins that on the plain harness.
+func TestPlainCacheLeavesReconnectRouteAndSecretRequestsParkedOnEqualVersionRepublish(t *testing.T) {
+	for _, tc := range reconnectWarmedTypes[1:] {
+		t.Run(tc.typeURL, func(t *testing.T) {
+			h := newADSHarness(t, true)
+			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: tc.typeURL, ResourceNames: []string{tc.name}, VersionInfo: "1"})
+			h.waitForOpenWatches(1)
+			h.setSnapshot(reconnectSnapshotWithSecret("1"))
+			h.expectSilence("equal-version republish to a reconnecting proxy's parked request")
+		})
+	}
+}
+
+// The policy answers a reconnecting proxy's first request for every type a
+// resource warms on, once a snapshot arrives at the held version.
+func TestReconnectWarmedTypeRequestsAreAnsweredWhenSnapshotArrivesAtHeldVersion(t *testing.T) {
+	for _, tc := range reconnectWarmedTypes {
+		for _, ordered := range []bool{false, true} {
+			t.Run(tc.typeURL+map[bool]string{false: "/default", true: "/ordered"}[ordered], func(t *testing.T) {
+				h := newPolicyHarness(t, ordered, true, true)
+				h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: tc.typeURL, ResourceNames: []string{tc.name}, VersionInfo: "1"})
+				h.waitForOpenWatches(1)
+				h.setSnapshot(reconnectSnapshotWithSecret("1"))
+				resp := h.receiveType(tc.typeURL, "1")
+				require.Len(t, resp.GetResources(), 1)
+			})
+		}
+	}
 }
