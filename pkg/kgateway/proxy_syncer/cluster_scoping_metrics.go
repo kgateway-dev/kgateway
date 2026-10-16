@@ -1,6 +1,8 @@
 package proxy_syncer
 
 import (
+	"sync"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
@@ -114,6 +116,26 @@ func recordClusterScopingDisabled(clientKey string, disabled bool) {
 		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
 		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
 	)
+}
+
+// clusterScopingDisabledState remembers, per gateway, whether its CDS was last
+// reported unscoped, so the warning fires when a gateway turns unscoped rather
+// than on every rebuild of every one of its clients.
+var clusterScopingDisabledState = struct {
+	sync.Mutex
+	gateways map[resourceNameDetails]bool
+}{gateways: make(map[resourceNameDetails]bool)}
+
+// noteClusterScopingDisabled records whether clientKey's gateway is unscoped
+// and reports whether that is a change to unscoped.
+func noteClusterScopingDisabled(clientKey string, disabled bool) bool {
+	cd := getDetailsFromXDSClientResourceName(clientKey)
+	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
+	clusterScopingDisabledState.Lock()
+	defer clusterScopingDisabledState.Unlock()
+	was := clusterScopingDisabledState.gateways[gateway]
+	clusterScopingDisabledState.gateways[gateway] = disabled
+	return disabled && !was
 }
 
 func recordClusterScopingTransition(clientKey, transition string, count int) {
