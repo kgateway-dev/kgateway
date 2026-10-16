@@ -131,7 +131,15 @@ func snapshotPerClient(
 
 		snap.missingReferenced = missingClusters
 		snap.missingEndpointsReferenced = missingEndpointClusters
-		snap.synthesizedEndpoints = slices.Sorted(maps.Keys(synthesizedEndpoints))
+		// Only synthesized CLAs whose rows are on their way are settled against
+		// what the client holds. A synthesized CLA with no endpoints source is
+		// the cluster's steady state and publishes like a derived empty one.
+		for name := range synthesizedEndpoints {
+			if name == bootstrapEndpoint || endpoints.HasEndpointsSource(kctx, name) {
+				snap.synthesizedEndpoints = append(snap.synthesizedEndpoints, name)
+			}
+		}
+		slices.Sort(snap.synthesizedEndpoints)
 		snap.erroredClusters = clustersForUcc.erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}

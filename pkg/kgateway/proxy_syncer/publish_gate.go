@@ -211,7 +211,7 @@ func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, p
 // snapshot is still published (a publish-blocking check would reintroduce
 // unbounded withholds). Callers must hold g.mu.
 func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, snap *envoycache.Snapshot, synthesized []string) error {
-	snap = settleSynthesizedEndpoints(snap, synthesized, g.connectionSnapshotLocked(cache, proxyKey), g.warm(proxyKey))
+	snap = settleSynthesizedEndpoints(snap, synthesized, g.connectionSnapshotLocked(cache, proxyKey))
 	if g.checkConsistency {
 		if err := snapshotConsistencyError(proxyKey, snap); err != nil {
 			logger.Error("BUG: per-client snapshot failed consistency check before publish; publishing anyway",
@@ -557,27 +557,32 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 }
 
 // settleSynthesizedEndpoints decides what the client receives for each CLA in
-// snap that snapshotPerClient synthesized because no row was derived for it.
-// Whether such a backend has endpoints is unknown, and the per-client rows are
-// rebuilt from scratch whenever a client reconnects, so a missing row usually
-// means that rebuild has not finished. Envoy keeps a cluster's endpoints when
-// its CLA is absent from a response but drops them for an empty one, so a
-// synthesized CLA is published only where the client cannot hold endpoints
-// for the cluster:
+// snap that snapshotPerClient synthesized while the client's per-client row
+// for it is still being built: some backend derives endpoints for it, and the
+// per-client rows are rebuilt from scratch whenever a client connects or
+// reconnects, so the row is on its way. Envoy keeps a cluster's endpoints when
+// its CLA is absent from a response but drops them for an empty one, and an
+// EDS cluster without a CLA waits for it (up to its initial fetch timeout)
+// rather than serving with no hosts. So a synthesized CLA is published only
+// where the cluster is new to an already-published client:
 //
 //   - the client was published a CLA for it on this connection: republish
 //     that CLA;
 //   - the client was published the cluster on this connection without a CLA:
-//     leave its endpoints alone again;
-//   - the client has not been published a snapshot on this connection:
-//     leave its endpoints alone if it reported a prior accepted version (it
-//     may hold them from an earlier stream), otherwise publish the empty CLA;
+//     leave it out again;
+//   - the client has not been published a snapshot on this connection: leave
+//     it out. A reconnecting proxy keeps the endpoints it holds; a new proxy
+//     waits for the row instead of going Ready with zero hosts behind, say,
+//     its ext_authz cluster. This does not depend on the client reporting a
+//     prior version, so it holds even without connection state;
 //   - the cluster is new to the client: publish the empty CLA, so the cluster
 //     activates without waiting for its initial fetch timeout.
 //
 // A derived CLA, even an empty one, is the backend's truth and always
-// publishes. published is the snapshot returned by connectionSnapshotLocked.
-func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string, published envoycache.ResourceSnapshot, warm bool) *envoycache.Snapshot {
+// publishes, and so does a synthesized one with no endpoints source (it is
+// not in synthesized). published is the snapshot returned by
+// connectionSnapshotLocked.
+func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string, published envoycache.ResourceSnapshot) *envoycache.Snapshot {
 	if len(synthesized) == 0 {
 		return snap
 	}
@@ -603,7 +608,7 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 		leaveAlone := false
 		if !republish {
 			if published == nil {
-				leaveAlone = warm
+				leaveAlone = true
 			} else {
 				_, leaveAlone = publishedEDSNames[name]
 			}

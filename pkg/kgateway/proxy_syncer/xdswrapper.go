@@ -45,8 +45,11 @@ type XdsSnapWrapper struct {
 	// (#14352). Sorted.
 	missingEndpointsReferenced []string
 	// synthesizedEndpoints lists every EDS resource whose CLA in snap is a
-	// synthesized empty, referenced or not. The publish gate decides which of
-	// them the client receives (settleSynthesizedEndpoints). Sorted.
+	// synthesized empty standing in for a per-client row that is still being
+	// built (some backend derives endpoints for it), referenced or not. The
+	// publish gate decides which of them the client receives
+	// (settleSynthesizedEndpoints). A synthesized CLA with no endpoints source
+	// at all is the cluster's steady state and is not listed. Sorted.
 	synthesizedEndpoints []string
 }
 
