@@ -31,6 +31,14 @@ type emissionClaims struct {
 // An empty prefix is dropped with a log rather than honored. It would admit
 // every cluster, which restores emit-all while still reporting the gateway as
 // scoped: the one outcome worse than reverting, because it is invisible.
+//
+// A claim accounts for its selectors only if it also says where they may route:
+// at least one name or prefix, and no prefix that had to be dropped. Accounting
+// for a selector while keeping none of its candidates would prune exactly the
+// clusters it computes, and its plugin would quietly fall back on every
+// request, the failure claims exist to prevent. Such a claim's selectors stay
+// unaccounted, so their gateways stay unscoped; its valid names and prefixes
+// are still kept.
 func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 	claims := emissionClaims{
 		accountedSelectors: map[string]struct{}{},
@@ -41,6 +49,29 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 			continue
 		}
 		claim := policyPlugin.ClaimEmittedClusters()
+		destinations, droppedPrefix := 0, false
+		for _, name := range claim.Names {
+			if name == "" {
+				continue
+			}
+			claims.names[name] = struct{}{}
+			destinations++
+		}
+		for _, prefix := range claim.NamePrefixes {
+			if prefix == "" {
+				logger.Error("cluster emission claim declares an empty name prefix; ignoring it, since it would re-admit every cluster while still reporting this gateway as scoped",
+					"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind)
+				droppedPrefix = true
+				continue
+			}
+			claims.prefixes = append(claims.prefixes, prefix)
+			destinations++
+		}
+		if len(claim.Selectors) > 0 && (destinations == 0 || droppedPrefix) {
+			logger.Error("cluster emission claim names selectors but no valid destinations; its selectors stay unaccounted, so gateways using them stay unscoped",
+				"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind, "selectors", claim.Selectors)
+			continue
+		}
 		for _, selector := range claim.Selectors {
 			if selector == "" {
 				logger.Error("cluster emission claim names an empty selector; it accounts for nothing",
@@ -48,20 +79,6 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 				continue
 			}
 			claims.accountedSelectors[selector] = struct{}{}
-		}
-		for _, name := range claim.Names {
-			if name == "" {
-				continue
-			}
-			claims.names[name] = struct{}{}
-		}
-		for _, prefix := range claim.NamePrefixes {
-			if prefix == "" {
-				logger.Error("cluster emission claim declares an empty name prefix; ignoring it, since it would re-admit every cluster while still reporting this gateway as scoped",
-					"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind)
-				continue
-			}
-			claims.prefixes = append(claims.prefixes, prefix)
 		}
 	}
 	slices.Sort(claims.prefixes)
@@ -71,15 +88,20 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 
 // accountsFor reports whether a claim covers this request-time selector.
 //
-// A cluster-header selector is never accounted for: its destination is whatever
-// the client puts in the header, so nothing a plugin declares can bound the set
-// of clusters it might name.
+// Only cluster specifier plugins, referenced or inline, can be claimed: a claim
+// names them by extension name. A cluster-header selector never is, since its
+// destination is whatever the client puts in the header, so nothing a plugin
+// declares can bound the set of clusters it might name; nor are the other kinds
+// (filter-state overrides, undecodable typed configs, unknown specifier kinds),
+// which no plugin claim describes.
 func (c emissionClaims) accountsFor(selector requestTimeSelector) bool {
-	if selector.Kind == selectorClusterHeader {
+	switch selector.Kind {
+	case selectorSpecifierPlugin, selectorInlinePlugin:
+		_, ok := c.accountedSelectors[selector.Name]
+		return ok
+	default:
 		return false
 	}
-	_, ok := c.accountedSelectors[selector.Name]
-	return ok
 }
 
 // claims reports whether this cluster is one a plugin declared it may route to,

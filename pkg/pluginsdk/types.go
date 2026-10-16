@@ -159,6 +159,12 @@ type ClusterEmissionClaim struct {
 	// selector in its configuration is accounted for here by some plugin. A
 	// cluster-header selector cannot be accounted for: the destination is
 	// whatever the client sends, so no claim can bound it.
+	//
+	// A claim accounts for its selectors only if it also says where they may
+	// route: at least one of Names or NamePrefixes, with no prefix rejected.
+	// Otherwise the selectors stay unaccounted (and an error is logged), since
+	// accounting for a selector while keeping none of its candidates would
+	// prune exactly the clusters it computes.
 	Selectors []string
 	// Names are exact cluster names to keep emitting.
 	Names []string
