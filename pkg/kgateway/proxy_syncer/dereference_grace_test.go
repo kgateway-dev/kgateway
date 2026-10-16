@@ -6,6 +6,7 @@ import (
 	"time"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -282,4 +283,63 @@ func TestDereferenceGraceGivesARecoveredClusterAFreshWindow(t *testing.T) {
 	require.Contains(t, publishedClusterNames(t, pt), "flaky")
 	pt.syncXds(ctx, clusterWrapperV("v4", "kept")) // de-referenced for real
 	assert.Contains(t, publishedClusterNames(t, pt), "flaky", "a de-referenced cluster keeps its full window")
+}
+
+// A coherent build that still carries graced clusters supersedes a held flip
+// like any other publish without a hold: the flip release must not fire later
+// and re-publish the older held build over it (here: route back to the empty
+// placeholder for a backend that has since derived its endpoints).
+func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 100*time.Millisecond, true,
+		scopedClustersWithGrace(time.Hour))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+	ucc := newTestUcc(publishGateTestClient)
+	listeners := func(version string) envoycache.Resources {
+		r := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+		r.Version = version
+		return r
+	}
+	a := edsClusterForClient(ucc, "cluster-a", 1)
+	b := edsClusterForClient(ucc, "cluster-b", 3)
+
+	v1 := &envoycache.Snapshot{}
+	v1.Resources[envoycachetypes.Listener] = listeners("v1")
+	v1.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a")
+	v1.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-1", []envoycachetypes.ResourceWithTTL{a.Cluster.ResourceWithTTL()})
+	v1.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-1", []envoycachetypes.ResourceWithTTL{endpointsForClient(ucc, "cluster-a", 2).Endpoints.ResourceWithTTL()})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: v1, proxyKey: publishGateTestClient})
+
+	// The route flips to cluster-b before its endpoints are derived: held.
+	v2 := &envoycache.Snapshot{}
+	v2.Resources[envoycachetypes.Listener] = listeners("v2")
+	v2.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-b")
+	v2.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-2", []envoycachetypes.ResourceWithTTL{b.Cluster.ResourceWithTTL()})
+	v2.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-2", []envoycachetypes.ResourceWithTTL{
+		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "cluster-b"}},
+	})
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap: v2, proxyKey: publishGateTestClient,
+		missingEndpointsReferenced: []string{"cluster-b"}, synthesizedEndpoints: []string{"cluster-b"},
+	})
+	require.Equal(t, "v1", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType), "flip held")
+
+	// cluster-b derives its endpoints: coherent, with cluster-a graced.
+	v3 := &envoycache.Snapshot{}
+	v3.Resources[envoycachetypes.Listener] = listeners("v3")
+	v3.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-b")
+	v3.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-2", []envoycachetypes.ResourceWithTTL{b.Cluster.ResourceWithTTL()})
+	v3.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-3", []envoycachetypes.ResourceWithTTL{
+		endpointsForClient(ucc, "cluster-b", 4).Endpoints.ResourceWithTTL(),
+	})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: v3, proxyKey: publishGateTestClient, endpointHashes: map[string]uint64{"cluster-b": 4}})
+	require.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
+	require.Contains(t, publishedClusterNames(t, pt), "cluster-a", "cluster-a is still graced")
+
+	time.Sleep(400 * time.Millisecond) // past the held flip's 100ms release bound
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "v3", served.GetVersion(resourcev3.ListenerType), "an expired flip release must not re-publish the older held build")
+	n, ok := endpointCount(served, "cluster-b")
+	assert.True(t, ok && n == 1, "cluster-b keeps its derived endpoints")
 }
