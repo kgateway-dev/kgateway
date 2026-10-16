@@ -53,7 +53,7 @@ import (
 // — so the pod binds its listeners and becomes Ready while routes to
 // still-unready clusters return 503 until they cohere.
 //
-// One exception: a client that reported a prior accepted xDS version on
+// One exception: a client that reported a prior accepted listener version on
 // connect is warm — an Envoy that reconnected (or outlived a controller
 // restart) and is still serving config from its previous stream. Publishing
 // a snapshot whose routes name clusters absent from its CDS would replace
@@ -176,8 +176,9 @@ func newPublishGate(budget time.Duration, checkConsistency bool, clientState krt
 	}
 }
 
-// warm reports whether the client reported a prior accepted xDS version: it
-// may be serving config from an earlier stream that this gate never published.
+// warm reports whether the client reported a prior accepted listener version:
+// it may be serving config from an earlier stream that this gate never
+// published.
 func (g *publishGate) warm(proxyKey string) bool {
 	return g.clientState != nil && g.clientState.HasPriorXDSVersion(proxyKey)
 }
