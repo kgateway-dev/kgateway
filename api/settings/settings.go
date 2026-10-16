@@ -486,7 +486,8 @@ type Settings struct {
 	// ClusterDereferenceGrace keeps a de-referenced one until the configuration
 	// that stopped naming it has landed. Both are elapsed time, not
 	// acknowledgements: each must exceed the fleet's worst-case propagation. A
-	// gateway whose routes pick a destination at request time stays unscoped.
+	// gateway whose routes pick a destination at request time stays unscoped
+	// unless a plugin claims that selector (pluginsdk.ClusterEmissionClaim).
 	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
 
 	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays

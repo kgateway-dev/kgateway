@@ -130,11 +130,22 @@ extension name the plugin puts in `cluster_specifier_plugin`, in either its
 referenced or inline form), which exact cluster names to keep, and which name
 prefixes to keep for candidates that cannot be enumerated ahead of time.
 
-Two rules are worth knowing. An **empty prefix is rejected**: it would re-admit
-the entire inventory while still reporting the gateway as scoped, which is worse
-than reverting because it is invisible. And a **cluster-header selector can
-never be claimed** — the destination is whatever the client sends, so nothing a
-plugin declares can bound it, and such a gateway stays unscoped.
+Three rules are worth knowing. An **empty prefix is rejected**: it would
+re-admit the entire inventory while still reporting the gateway as scoped, which
+is worse than reverting because it is invisible. A claim **accounts for its
+selectors only if it keeps somewhere for them to go** — at least one name or
+prefix, and no rejected prefix — because accounting for a selector while keeping
+none of its candidates would prune exactly the clusters it computes; otherwise
+its selectors stay unaccounted and an error is logged. And **only cluster
+specifier plugins can be claimed**: a cluster-header selector's destination is
+whatever the client sends, so nothing a plugin declares can bound it, and the
+other fallbacks above (filter-state overrides, undecodable typed configs,
+unknown specifier kinds) are not something a claim describes; such gateways stay
+unscoped.
+
+Claims are collected once, when the controller starts, before its caches sync,
+and hold for its lifetime: derive them from how the plugin names the clusters it
+computes, not from cluster state.
 
 A claim should also cover the plugin's own resources. A plugin of this shape
 commonly emits an endpointless placeholder cluster so an unmatched request fails
