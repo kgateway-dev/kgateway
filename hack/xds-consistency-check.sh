@@ -9,9 +9,9 @@ set -euo pipefail
 #     per-client snapshot failed go-control-plane's Snapshot.Consistent().
 #     Recorded only when KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true is set on the
 #     controller (the script warns when it is not).
-#   - kgateway_xds_nacks_total: a connected client rejected a published xDS
-#     response and is serving older config than the control plane published.
-#     Always recorded.
+#   - kgateway_envoy_xds_rejects_total: a connected client rejected a
+#     published xDS response and is serving older config than the control
+#     plane published. Always recorded.
 #
 # The publication paths maintain both invariants by construction, so any
 # nonzero sample is a kgateway bug.
@@ -70,7 +70,7 @@ check_metric() {
     fi
 }
 
-check_metric "kgateway_xds_nacks_total" \
+check_metric "kgateway_envoy_xds_rejects_total" \
     "connected clients NACKed published xDS responses (they are serving older config than published)."
 
 if [[ "$(consistency_check_enabled)" == "true" ]]; then
