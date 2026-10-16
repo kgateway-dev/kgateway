@@ -199,6 +199,11 @@ func NewProxySyncer(
 	opts ...StatusSyncerOption,
 ) *ProxySyncer {
 	optCfg := processStatusSyncerOptions(opts...)
+	if xdsClientState == nil {
+		// Nothing fails without it, so say so: integrations that build their
+		// own StartConfig silently lose this protection otherwise.
+		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget")
+	}
 	return &ProxySyncer{
 		controllerName:             controllerName,
 		commonCols:                 commonCols,

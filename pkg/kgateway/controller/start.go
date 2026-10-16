@@ -83,7 +83,11 @@ type StartConfig struct {
 	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniquelyConnectedClient]
-	XDSClientState    krtcollections.XDSClientState
+	// XDSClientState is the connection state behind UniqueClients (the third
+	// result of krtcollections.NewUniquelyConnectedClients). Leave it nil
+	// only if no such state exists: per-client publication then treats every
+	// reconnecting proxy as a new one.
+	XDSClientState krtcollections.XDSClientState
 
 	KrtOptions krtutil.KrtOptions
 
