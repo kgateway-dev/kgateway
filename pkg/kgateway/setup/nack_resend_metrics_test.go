@@ -21,7 +21,7 @@ func TestNackResendsSuppressedMetric(t *testing.T) {
 			t.Run(resourceType+"/"+scenario, func(t *testing.T) {
 				xdsNackResendsSuppressed.Reset()
 				t.Cleanup(xdsNackResendsSuppressed.Reset)
-				metricLabels := []metrics.Label{{Name: typeURLLabel, Value: resourceType}}
+				metricLabels := []metrics.Label{{Name: typeURLLabel, Value: rejectionTypeURL(resourceType)}}
 				xdsNackResendsSuppressed.Add(0, metricLabels...)
 				policy := newNackResendSuppressor(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{})
 				node := &envoycorev3.Node{Id: "node"}

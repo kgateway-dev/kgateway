@@ -166,7 +166,7 @@ func (s *nackResendSuppressor) CreateWatch(req *envoycache.Request, sub envoycac
 	// version so the cache parks the watch until the snapshot changes.
 	parked := proto.Clone(req).(*discoveryv3.DiscoveryRequest)
 	parked.VersionInfo = current
-	xdsNackResendsSuppressed.Inc(metrics.Label{Name: typeURLLabel, Value: req.GetTypeUrl()})
+	xdsNackResendsSuppressed.Inc(metrics.Label{Name: typeURLLabel, Value: rejectionTypeURL(req.GetTypeUrl())})
 	envoyLogger.Debug("not re-sending a NACKed xDS response until the snapshot changes",
 		"node", node, "type_url", req.GetTypeUrl(), "version", current)
 	return s.SnapshotCache.CreateWatch(parked, sub, ch)

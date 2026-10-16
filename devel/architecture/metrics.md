@@ -72,9 +72,11 @@ metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.
 
 This counter records when a NACK matches the response sent on its stream and the
 snapshot still has the rejected version, so kgateway suppresses the immediate
-resend and waits for a snapshot change. The `type_url` label contains the full
-xDS resource type URL. ACKs, uncorrelated NACKs, and NACKs for an older snapshot
-do not increment it.
+resend and waits for a snapshot change. The `type_url` label takes the same
+values as on `kgateway_envoy_xds_rejects_total` and
+`kgateway_envoy_xds_rejects_active` (the type URL without its
+`type.googleapis.com/` prefix), so the series join on it. ACKs, uncorrelated
+NACKs, and NACKs for an older snapshot do not increment it.
 
 An increment indicates that kgateway prevented a resend of rejected configuration;
 it does not mean the rejection was resolved or count every retry that would have
