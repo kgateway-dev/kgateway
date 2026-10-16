@@ -802,6 +802,30 @@ func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 	return out
 }
 
+// buildUdpAggregateCluster builds the synthetic EDS cluster a multi-backend UDPRoute routes to.
+// The cluster's endpoints (served separately as a per-client CLA of the same name) are the weighted
+// union of the route's backends. LocalityWeightedLbConfig is always set so Envoy respects the
+// per-locality endpoint weights that carry the backend weighting.
+func buildUdpAggregateCluster(name string) *envoyclusterv3.Cluster {
+	return &envoyclusterv3.Cluster{
+		Name:                 name,
+		ConnectTimeout:       durationpb.New(clusterConnectionTimeout),
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS},
+		EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{
+			EdsConfig: &envoycorev3.ConfigSource{
+				ResourceApiVersion:    envoycorev3.ApiVersion_V3,
+				ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{Ads: &envoycorev3.AggregatedConfigSource{}},
+			},
+		},
+		CommonLbConfig: &envoyclusterv3.Cluster_CommonLbConfig{
+			LocalityConfigSpecifier: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoyclusterv3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			},
+		},
+		IgnoreHealthOnHostRemoval: true,
+	}
+}
+
 // BlackholeCluster is the named, endpoint-less STATIC cluster that stands in
 // for a backend whose translation failed. It is the Cluster of every errored
 // BaseCluster, and consumers that must record a failure of their own under the

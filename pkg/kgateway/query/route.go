@@ -123,6 +123,7 @@ func (r *gatewayQueries) GetRouteChain(
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	case *ir.TlsRouteIR:
+	case *ir.UdpRouteIR:
 	default:
 		return nil
 	}
@@ -214,7 +215,7 @@ func defaultAllowedRouteKinds(l *gwv1.Listener) []metav1.GroupKind {
 	case gwv1.TCPProtocolType:
 		return []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1.GroupName}}
 	case gwv1.UDPProtocolType:
-		return []metav1.GroupKind{{}}
+		return []metav1.GroupKind{{Kind: wellknown.UDPRouteKind, Group: gwv1.GroupName}}
 	default:
 		// allow custom protocols to work
 		return []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}

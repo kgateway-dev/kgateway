@@ -101,7 +101,7 @@ jobs:
           # May 29, 2026: ~10 minutes
           - cluster-name: 'cluster-six'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
+            go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^UDPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
             localstack: 'false'
             ordered-ads: 'true'
           # May 29, 2026: ~4 minutes
