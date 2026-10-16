@@ -178,17 +178,25 @@ var _ json.Marshaler = LocalityLbMap{}
 
 type EndpointsForBackend struct {
 	// preserve the labels from the original backend object
-	// for use in endpoints plugins
-	// +krtEqualsTodo include backend labels in equality or confirm omission
+	// for use in endpoints plugins.
+	// NewEndpointsForBackend folds these labels into upstreamHash, which is compared in
+	// Equals, so a label change is observed without walking the map here.
+	// +noKrtEquals
 	BackendLabels map[string]string
 
-	// AttachedPolicies carries the policy attachment view already resolved for
-	// the backend. LbEpsEqualityHash includes backend policy versioning, so this
-	// field does not need to participate in equality directly.
+	// AttachedPolicies carries the policy attachment view resolved for the backend.
+	// NewEndpointsForBackend copies it without hashing it. The final EDS collection
+	// folds backendEndpointVersionHash into LbEpsEqualityHash via FoldVersion;
+	// inline CLA translation includes that policy hash in baseClusterVersion.
 	// +noKrtEquals
 	AttachedPolicies AttachedPolicies
 
-	// +krtEqualsTodo compare load-balanced endpoint map
+	// LbEps is summarized by epsEqualityHash and endpointCount, both compared by
+	// Equals. Add hashes locality, metadata labels, and the LbEndpoint proto and sums
+	// the per-endpoint hashes, so the summary is order-independent and duplicates do
+	// not cancel; reuse/adoption methods preserve those contributions. Equality assumes
+	// no 64-bit collisions. Writers must maintain these summaries rather than edit LbEps directly.
+	// +noKrtEquals
 	LbEps                LocalityLbMap
 	ClusterName          string
 	UpstreamResourceName string
@@ -202,7 +210,7 @@ type EndpointsForBackend struct {
 	epsEqualityHash   uint64
 	// endpointCount is the number of endpoints across all localities. The
 	// equality hash needs the empty/non-empty distinction, and it cannot be
-	// derived from epsEqualityHash: a non-empty set can xor to zero. Maintaining
+	// derived from epsEqualityHash: a non-empty set can sum to zero. Maintaining
 	// it here keeps every writer — Add, ReuseEndpointsFrom, AdoptEndpointsFrom —
 	// answering that question the same way.
 	endpointCount        int
@@ -237,9 +245,9 @@ func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	h.Write([]byte{0})
 	h.Write([]byte(objSrc.Namespace))
 	// Fold the labels in through HashLabels, which XORs a per-label hash and is therefore
-	// order-independent. Writing the label pairs straight into this hasher makes the result
-	// depend on Go's randomized map iteration order, so two identical backends hash
-	// differently and every recomputation of this collection looks like a change.
+	// order-independent. Writing the label pairs straight into this hasher would make the
+	// result depend on Go's randomized map iteration order, so two identical backends would
+	// hash differently and every recomputation of this collection would look like a change.
 	h.Write([]byte{0})
 	utils.HashUint64(h, utils.HashLabels(labels))
 	h.Write([]byte{0})
@@ -339,9 +347,9 @@ func (e *EndpointsForBackend) ReuseEndpoint(l PodLocality, emd EndpointWithMd) {
 }
 
 func (e *EndpointsForBackend) addWithEndpointHash(l PodLocality, emd EndpointWithMd, endpointHash uint64) {
-	// xor it as we dont care about order - if we have the same endpoints in the same locality
-	// we are good.
-	e.epsEqualityHash ^= endpointHash
+	// Sum the contributions: the result is order-independent like XOR, but a
+	// duplicated endpoint does not cancel itself out, so [A, A] and [B, B] differ.
+	e.epsEqualityHash += endpointHash
 	emd.endpointEqualityHash = endpointHash
 	e.LbEps[l] = append(e.LbEps[l], emd)
 	e.endpointCount++

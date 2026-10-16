@@ -74,7 +74,10 @@ type ProxySyncer struct {
 type GatewayXdsResources struct {
 	types.NamespacedName
 	// Clusters are items in the CDS response payload.
-	// +krtEqualsTodo include CDC resources in equality for diff detection
+	// Equals compares ClustersHash, the sum of the cluster proto hashes from
+	// sliceToResourcesHash. Routes, Listeners, and Secrets each use a Version
+	// string derived from the corresponding resource set's hash.
+	// +noKrtEquals
 	Clusters     []envoycachetypes.ResourceWithTTL
 	ClustersHash uint64
 
@@ -138,7 +141,9 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 		var m proto.Message = r
 		hash := utils.HashProto(r)
 		slicePb = append(slicePb, envoycachetypes.ResourceWithTTL{Resource: m})
-		resourcesHash ^= hash
+		// Sum rather than XOR: still order-independent, but a duplicated
+		// resource does not cancel itself out.
+		resourcesHash += hash
 	}
 
 	return slicePb, resourcesHash

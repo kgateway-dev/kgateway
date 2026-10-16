@@ -1,11 +1,15 @@
 package ir
 
 import (
+	"slices"
+
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 )
 
 type Route interface {
@@ -26,14 +30,11 @@ var _ Route = &HttpRouteIR{}
 type HttpRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject metav1.Object
-	// +krtEqualsTodo compare parent refs when determining equality
-	ParentRefs []gwv1.ParentReference
+	ParentRefs   []gwv1.ParentReference
 
-	// +krtEqualsTodo ensure hostname list differences are observed
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
-	// +krtEqualsTodo include rule array comparisons (beyond versionEquals) or annotate why not
-	Rules []HttpRouteRuleIR
+	Rules            []HttpRouteRuleIR
 
 	// PrecedenceWeight specifies the weight of this route relative to other route.
 	// Higher weight means higher priority, and are evaluated before routes with lower weight
@@ -69,33 +70,36 @@ var (
 )
 
 func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
-	// as backends resolution may change when they are added/remove we need to check equality for them as well
-	// we don't need to check the whole backend, just the cluster name (that may swap in and out of black-hole)
-	// note - if we stop setting cluster to black whole here (and always set it to the expect cluster name) we can remove the backend equality check.
+	// Backend and policy resolution can change without a route spec update.
+	// Compare those inputs through rulesEqual as well as the source object version.
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
+		parentRefsEqual(c.ParentRefs, in.ParentRefs) &&
+		slices.Equal(c.Hostnames, in.Hostnames) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
-		c.rulesEqual(in) &&
+		rulesEqual(c.Rules, in.Rules) &&
 		c.PrecedenceWeight == in.PrecedenceWeight &&
 		c.DelegationInheritParentMatcher == in.DelegationInheritParentMatcher
 }
 
-func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
-	// we don't need to check the rules themselves as this is covered by versionEquals.
-	// we do need to check backends and policies
-	// we also need to check the error on rule
-	if len(c.Rules) != len(in.Rules) {
+// rulesEqual compares the parts of the route rules that are not already covered by the
+// versionEquals(SourceObject) check in Equals. Fields copied straight out of the route spec
+// (Matches, Name, ...) change only when the source object's generation changes, so what is
+// left to compare here is everything resolved from *other* objects: attached policies,
+// extensionRef policies, resolved backends, and the per-rule resolution error.
+func rulesEqual(a, b []HttpRouteRuleIR) bool {
+	if len(a) != len(b) {
 		return false
 	}
-	for i, rule := range c.Rules {
-		if !rule.AttachedPolicies.Equals(in.Rules[i].AttachedPolicies) {
+	for i, rule := range a {
+		if !rule.AttachedPolicies.Equals(b[i].AttachedPolicies) {
 			return false
 		}
-		if !rule.ExtensionRefs.Equals(in.Rules[i].ExtensionRefs) {
+		if !rule.ExtensionRefs.Equals(b[i].ExtensionRefs) {
 			return false
 		}
 		backendsa := rule.Backends
-		backendsb := in.Rules[i].Backends
+		backendsb := b[i].Backends
 		if len(backendsa) != len(backendsb) {
 			return false
 		}
@@ -105,7 +109,7 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 			}
 		}
 		e1 := rule.Err
-		e2 := in.Rules[i].Err
+		e2 := b[i].Err
 		if e1 == nil && e2 != nil {
 			return false
 		}
@@ -122,9 +126,8 @@ func (c HttpRouteIR) rulesEqual(in HttpRouteIR) bool {
 var _ Route = &HttpRouteIR{}
 
 type TcpRouteIR struct {
-	ObjectSource `json:",inline"`
-	SourceObject *gwv1a2.TCPRoute
-	// +krtEqualsTodo include parent references when computing equality
+	ObjectSource     `json:",inline"`
+	SourceObject     *gwv1a2.TCPRoute
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
@@ -145,6 +148,7 @@ func (c TcpRouteIR) ResourceName() string {
 func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
+		parentRefsEqual(c.ParentRefs, in.ParentRefs) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		backendsEqual(c.Backends, in.Backends)
 }
@@ -162,15 +166,27 @@ func backendsEqual(a, b []BackendRefIR) bool {
 	return true
 }
 
+// parentRefsEqual compares parent references field by field. Producers copy them from
+// the route spec today, but comparing them directly keeps route attachment correct even
+// if a producer later defaults or rewrites them without a source generation change.
+func parentRefsEqual(a, b []gwv1.ParentReference) bool {
+	return slices.EqualFunc(a, b, func(x, y gwv1.ParentReference) bool {
+		return x.Name == y.Name &&
+			cmputils.PointerValsEqual(x.Group, y.Group) &&
+			cmputils.PointerValsEqual(x.Kind, y.Kind) &&
+			cmputils.PointerValsEqual(x.Namespace, y.Namespace) &&
+			cmputils.PointerValsEqual(x.SectionName, y.SectionName) &&
+			cmputils.PointerValsEqual(x.Port, y.Port)
+	})
+}
+
 var _ Route = &TcpRouteIR{}
 
 type TlsRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject *gwv1a2.TLSRoute
-	// +krtEqualsTodo include parent references when computing equality
-	ParentRefs []gwv1.ParentReference
+	ParentRefs   []gwv1.ParentReference
 
-	// +krtEqualsTodo ensure hostname list differences are observed
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
 	Backends         []BackendRefIR
@@ -191,6 +207,8 @@ func (c TlsRouteIR) ResourceName() string {
 func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
 	return c.ObjectSource == in.ObjectSource &&
 		versionEquals(c.SourceObject, in.SourceObject) &&
+		parentRefsEqual(c.ParentRefs, in.ParentRefs) &&
+		slices.Equal(c.Hostnames, in.Hostnames) &&
 		c.AttachedPolicies.Equals(in.AttachedPolicies) &&
 		backendsEqual(c.Backends, in.Backends)
 }
