@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
+	"sync"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -82,11 +84,65 @@ func (s *ProxyTranslator) syncXds(
 }
 
 // publishedReferencedClusters returns the routing targets of the published
-// snapshot's routes and listeners.
+// snapshot's routes and listeners. The result is shared: callers must not
+// modify it.
 func publishedReferencedClusters(published envoycache.ResourceSnapshot) map[string]struct{} {
-	routes := envoycache.Resources{Items: published.GetResourcesAndTTL(envoyresourcev3.RouteType)}
-	listeners := envoycache.Resources{Items: published.GetResourcesAndTTL(envoyresourcev3.ListenerType)}
-	return collectReferencedClusters(routes, listeners)
+	routes := published.GetResourcesAndTTL(envoyresourcev3.RouteType)
+	listeners := published.GetResourcesAndTTL(envoyresourcev3.ListenerType)
+	return publishedRefs.get(routes, listeners, func() map[string]struct{} {
+		return collectReferencedClusters(envoycache.Resources{Items: routes}, envoycache.Resources{Items: listeners})
+	})
+}
+
+// publishedRefs memoizes publishedReferencedClusters. Every deferred build
+// resolves against the client's published snapshot under the gate's single
+// lock, and finding the published routing targets unmarshals each listener's
+// filter chain, so recomputing it per build serializes that work for every
+// client behind one lock. The published routes and listeners change far less
+// often than deferred builds arrive: a snapshot that keeps them, whether held,
+// carried or resolved, reuses the very item maps of the gateway translation
+// that produced them, which are never modified once built.
+var publishedRefs = &referencedClustersMemo{}
+
+// referencedClustersMemo caches referenced-cluster sets by the identity of the
+// routes and listeners item maps they were computed from. An entry keeps those
+// maps referenced, so their addresses cannot be reused by other maps while it
+// exists; identity therefore implies equal content. The cache is cleared when
+// it reaches maxReferencedClustersMemo entries.
+type referencedClustersMemo struct {
+	mu      sync.Mutex
+	entries map[[2]uintptr]referencedClustersEntry
+}
+
+type referencedClustersEntry struct {
+	routes, listeners map[string]envoycachetypes.ResourceWithTTL
+	refs              map[string]struct{}
+}
+
+const maxReferencedClustersMemo = 4096
+
+func (m *referencedClustersMemo) get(
+	routes, listeners map[string]envoycachetypes.ResourceWithTTL,
+	compute func() map[string]struct{},
+) map[string]struct{} {
+	if routes == nil && listeners == nil {
+		return compute()
+	}
+	key := [2]uintptr{reflect.ValueOf(routes).Pointer(), reflect.ValueOf(listeners).Pointer()}
+	m.mu.Lock()
+	entry, ok := m.entries[key]
+	m.mu.Unlock()
+	if ok {
+		return entry.refs
+	}
+	refs := compute()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.entries == nil || len(m.entries) >= maxReferencedClustersMemo {
+		m.entries = make(map[[2]uintptr]referencedClustersEntry)
+	}
+	m.entries[key] = referencedClustersEntry{routes: routes, listeners: listeners, refs: refs}
+	return refs
 }
 
 // resolveDeferredPerCluster composes the snapshot actually published for a
