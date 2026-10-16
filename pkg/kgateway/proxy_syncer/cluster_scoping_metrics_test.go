@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // TestClusterScopingMetricsReportWhatWasDroppedAndWhy: the emitted/dropped pair
@@ -153,4 +155,43 @@ func TestClusterScopingDisabledIsNotedOnTransition(t *testing.T) {
 	assert.False(t, noteClusterScopingDisabled(gateway, true), "staying unscoped is not")
 	assert.False(t, noteClusterScopingDisabled(gateway, false))
 	assert.True(t, noteClusterScopingDisabled(gateway, true), "turning unscoped again is")
+}
+
+// A gateway's scoping gauges are dropped when its last client departs, so a
+// deleted gateway does not keep exporting its last values (a disabled gauge of
+// 1 would keep an alert firing), and are kept while any client remains.
+func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	// series persist across tests in this package
+	clusterScopingEmittedClusters.Reset()
+	clusterScopingDroppedClusters.Reset()
+	clusterScopingDisabledGateways.Reset()
+	const (
+		leaving = "kube-gateway-api~ns-forget~gw-forget"
+		other   = "kube-gateway-api~ns-forget~gw-other"
+	)
+	for _, client := range []string{leaving, other} {
+		recordClusterScopingEmission(client, 3, 17)
+		recordClusterScopingDisabled(client, true)
+		noteClusterScopingDisabled(client, true)
+	}
+	stillThere := []ir.UniquelyConnectedClient{newTestUcc(leaving)}
+	require.True(t, gatewayHasClients(leaving, stillThere), "another client of the gateway is still connected")
+	require.False(t, gatewayHasClients(leaving, []ir.UniquelyConnectedClient{newTestUcc(other)}))
+
+	forgetClusterScopingGateway(leaving)
+
+	gathered := metricstest.MustGatherMetrics(t)
+	for _, name := range []string{
+		"kgateway_xds_cluster_scoping_emitted_clusters",
+		"kgateway_xds_cluster_scoping_dropped_clusters",
+		"kgateway_xds_cluster_scoping_disabled_gateways",
+	} {
+		gathered.AssertMetricLabels(name, []metrics.Label{
+			{Name: gatewayLabel, Value: "gw-other"},
+			{Name: namespaceLabel, Value: "ns-forget"},
+		})
+	}
+	assert.True(t, noteClusterScopingDisabled(leaving, true), "a returning gateway that is unscoped warns again")
 }
