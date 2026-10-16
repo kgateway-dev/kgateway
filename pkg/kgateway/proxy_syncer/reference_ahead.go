@@ -68,6 +68,7 @@ func (g *publishGate) referenceAheadLocked(
 
 	var ahead []string
 	var longest time.Duration
+	var opened int
 	for name := range building {
 		if name == wellknown.BlackholeClusterName {
 			continue
@@ -83,6 +84,7 @@ func (g *publishGate) referenceAheadLocked(
 				g.aheadSent[proxyKey] = sent
 			}
 			sent[name] = since
+			opened++
 		}
 		ahead = append(ahead, name)
 		longest = max(longest, g.referenceAhead-now.Sub(since))
@@ -90,6 +92,9 @@ func (g *publishGate) referenceAheadLocked(
 	if len(sent) == 0 {
 		delete(g.aheadSent, proxyKey)
 	}
+	// Counted where a cluster's window opens, so each cluster counts once per
+	// window whichever path held it and however many builds it spans.
+	recordClusterScopingTransition(proxyKey, transitionReferenceAheadHeld, opened)
 	slices.Sort(ahead)
 	return ahead, longest
 }
