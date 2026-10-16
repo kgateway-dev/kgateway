@@ -307,12 +307,7 @@ func TestResourceSync(t *testing.T) {
 	gathered.AssertHistogramPopulated("kgateway_resources_status_sync_duration_seconds")
 
 	// Test for resource XDS snapshot sync metrics.
-	StartResourceXDSSync(ResourceSyncDetails{
-		Gateway:      details.Gateway,
-		Namespace:    details.Namespace,
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-	})
+	StartResourceXDSSync(details)
 
 	EndResourceXDSSync(details)
 
@@ -465,7 +460,7 @@ func TestGatewayDeleteDropsPendingXDSSync(t *testing.T) {
 	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventDelete, Old: &deleted})
 
 	// The next sync of the same-name Gateway ends only its own pending sync.
-	EndResourceXDSSync(ResourceSyncDetails{Gateway: "gw", Namespace: "live", ResourceType: "Gateway", ResourceName: "gw"})
+	EndResourceXDSSync(ResourceSyncDetails{Gateway: "gw", GatewayNamespace: "live", Namespace: "live", ResourceType: "Gateway", ResourceName: "gw"})
 	// Only the live Gateway's sync is recorded, not the deleted Gateway's pending one.
 	metricstest.MustGatherMetricsContext(ctx, t, "kgateway_xds_snapshot_sync_duration_seconds").
 		AssertMetricsLabels("kgateway_xds_snapshot_sync_duration_seconds", [][]metrics.Label{
@@ -504,4 +499,51 @@ func TestSweepRemovesStatusSyncsOfDeletedGateway(t *testing.T) {
 		{{Name: "gateway", Value: ""}, {Name: "gateway_namespace", Value: ""}, {Name: "namespace", Value: ""}, {Name: "resource", Value: ""}},
 		{{Name: "gateway", Value: "ls"}, {Name: "gateway_namespace", Value: ""}, {Name: "namespace", Value: "routes"}, {Name: "resource", Value: "HTTPRoute"}},
 	})
+}
+
+func TestStatusSyncsOfSameNameGatewaysAreSeparate(t *testing.T) {
+	setupTest()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	t.Cleanup(cancel)
+	StartResourceSyncMetricsProcessing(ctx)
+
+	route := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "r", Namespace: "routes"},
+		Spec: gwv1.HTTPRouteSpec{CommonRouteSpec: gwv1.CommonRouteSpec{ParentRefs: []gwv1.ParentReference{
+			{Name: "gw", Namespace: new(gwv1.Namespace("a"))},
+			{Name: "gw", Namespace: new(gwv1.Namespace("b"))},
+		}}},
+	}
+	GetResourceMetricEventHandler[*gwv1.HTTPRoute]()(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &route})
+
+	// The route has a sync per parent Gateway, and each one ends separately.
+	for _, gatewayNamespace := range []string{"a", "b"} {
+		EndResourceStatusSync(ResourceSyncDetails{
+			Gateway:          "gw",
+			GatewayNamespace: gatewayNamespace,
+			Namespace:        "routes",
+			ResourceType:     "HTTPRoute",
+			ResourceName:     "r",
+		})
+	}
+	series := func(gatewayNamespace string) []metrics.Label {
+		return []metrics.Label{
+			{Name: "gateway", Value: "gw"},
+			{Name: "gateway_namespace", Value: gatewayNamespace},
+			{Name: "namespace", Value: "routes"},
+			{Name: "resource", Value: "HTTPRoute"},
+		}
+	}
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		metricstest.MustGatherMetrics(c).AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds",
+			[][]metrics.Label{series("a"), series("b")})
+	}, time.Second, 10*time.Millisecond)
+
+	// Deleting a/gw removes only its series.
+	metrics.Sweeper{
+		NamespaceExists: func(string) bool { return true },
+		GatewayExists:   func(namespace, _ string) bool { return namespace == "b" },
+	}.Sweep()
+	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds",
+		[][]metrics.Label{series("b")})
 }

@@ -402,9 +402,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
-				Namespace:    cd.Namespace,
-				Gateway:      cd.Gateway,
-				ResourceName: cd.Gateway,
+				Namespace:        cd.Namespace,
+				Gateway:          cd.Gateway,
+				GatewayNamespace: cd.Namespace,
+				ResourceName:     cd.Gateway,
 			})
 		}
 	}, true)

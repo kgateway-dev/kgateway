@@ -170,10 +170,17 @@ type ResourceSyncDetails struct {
 	Namespace string
 	Gateway   string
 	// GatewayNamespace is the namespace of Gateway, or empty if the resource's parent is
-	// not a Gateway. It labels status sync series but is not part of the sync's key.
+	// not a Gateway. A sync's start and end must agree on it, since it is part of the key
+	// that joins them: a route attached to same-name Gateways in two namespaces has a
+	// sync for each.
 	GatewayNamespace string
 	ResourceType     string
 	ResourceName     string
+}
+
+// gatewayKey identifies the sync's parent Gateway in startTimes.
+func (d ResourceSyncDetails) gatewayKey() string {
+	return d.GatewayNamespace + "/" + d.Gateway
 }
 
 type syncStartInfo struct {
@@ -230,8 +237,10 @@ func StartResourceStatusSync(details ResourceSyncDetails) {
 		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
 	}
 
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
+	gateway := details.gatewayKey()
+
+	if startTimes.times[gateway] == nil {
+		startTimes.times[gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
 	}
 
 	st := ResourceSyncStartTime{
@@ -243,16 +252,16 @@ func StartResourceStatusSync(details ResourceSyncDetails) {
 		GatewayNamespace: details.GatewayNamespace,
 	}
 
-	if startTimes.times[details.Gateway][details.ResourceType] == nil {
-		startTimes.times[details.Gateway][details.ResourceType] = make(map[string]map[string]ResourceSyncStartTime)
+	if startTimes.times[gateway][details.ResourceType] == nil {
+		startTimes.times[gateway][details.ResourceType] = make(map[string]map[string]ResourceSyncStartTime)
 	}
 
-	if startTimes.times[details.Gateway][details.ResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][details.ResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
+	if startTimes.times[gateway][details.ResourceType][details.Namespace] == nil {
+		startTimes.times[gateway][details.ResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
 	}
 
-	if _, exists := startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName]; !exists {
-		startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName] = st
+	if _, exists := startTimes.times[gateway][details.ResourceType][details.Namespace][details.ResourceName]; !exists {
+		startTimes.times[gateway][details.ResourceType][details.Namespace][details.ResourceName] = st
 
 		resourcesStatusSyncsStartedTotal.Inc(
 			metrics.Label{Name: gatewayLabel, Value: details.Gateway},
@@ -276,8 +285,10 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
 	}
 
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
+	gateway := details.gatewayKey()
+
+	if startTimes.times[gateway] == nil {
+		startTimes.times[gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
 	}
 
 	st := ResourceSyncStartTime{
@@ -289,15 +300,15 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 		GatewayNamespace: details.GatewayNamespace,
 	}
 
-	if startTimes.times[details.Gateway][snapshotResourceType] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType] = make(map[string]map[string]ResourceSyncStartTime)
+	if startTimes.times[gateway][snapshotResourceType] == nil {
+		startTimes.times[gateway][snapshotResourceType] = make(map[string]map[string]ResourceSyncStartTime)
 	}
 
-	if startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
+	if startTimes.times[gateway][snapshotResourceType][details.Namespace] == nil {
+		startTimes.times[gateway][snapshotResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
 	}
 
-	startTimes.times[details.Gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
+	startTimes.times[gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
 }
 
 // dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. A Gateway whose
@@ -308,11 +319,11 @@ func dropResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	deleteStartTimeLocked(details.Gateway, snapshotResourceType, details.Namespace, details.ResourceName)
+	deleteStartTimeLocked(details.gatewayKey(), snapshotResourceType, details.Namespace, details.ResourceName)
 }
 
 // deleteStartTimeLocked removes a pending sync and any map left empty by its removal.
-// The caller must hold startTimes.
+// gateway is a ResourceSyncDetails.gatewayKey. The caller must hold startTimes.
 func deleteStartTimeLocked(gateway, resourceType, namespace, resourceName string) {
 	byType := startTimes.times[gateway]
 	byNamespace := byType[resourceType]
@@ -415,7 +426,9 @@ func endResourceSync(syncInfo *syncStartInfo) {
 		return
 	}
 
-	if startTimes.times[syncInfo.details.Gateway] == nil {
+	gateway := syncInfo.details.gatewayKey()
+
+	if startTimes.times[gateway] == nil {
 		return
 	}
 
@@ -423,10 +436,8 @@ func endResourceSync(syncInfo *syncStartInfo) {
 	rt := syncInfo.details.ResourceType
 
 	if syncInfo.xdsSnapshot {
-		// Pending syncs are keyed by Gateway name, so end only those of this Gateway's
-		// namespace, not those of a Gateway with the same name in another namespace.
 		rt = snapshotResourceType
-		for resourceName, st := range startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace] {
+		for resourceName, st := range startTimes.times[gateway][rt][syncInfo.details.Namespace] {
 			xdsSnapshotSyncsTotal.Inc(
 				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
 				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
@@ -438,21 +449,21 @@ func endResourceSync(syncInfo *syncStartInfo) {
 			)
 
 			// Deleting entries of a map while ranging over it is safe.
-			deleteStartTimeLocked(syncInfo.details.Gateway, rt, st.Namespace, resourceName)
+			deleteStartTimeLocked(gateway, rt, st.Namespace, resourceName)
 		}
 
 		return
 	}
 
-	if startTimes.times[syncInfo.details.Gateway][rt] == nil {
+	if startTimes.times[gateway][rt] == nil {
 		return
 	}
 
-	if startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace] == nil {
+	if startTimes.times[gateway][rt][syncInfo.details.Namespace] == nil {
 		return
 	}
 
-	st, exists := startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace][rn]
+	st, exists := startTimes.times[gateway][rt][syncInfo.details.Namespace][rn]
 	if !exists {
 		return
 	}
@@ -471,7 +482,7 @@ func endResourceSync(syncInfo *syncStartInfo) {
 		metrics.Label{Name: resourceLabel, Value: st.ResourceType},
 	)
 
-	deleteStartTimeLocked(syncInfo.details.Gateway, rt, syncInfo.details.Namespace, rn)
+	deleteStartTimeLocked(gateway, rt, syncInfo.details.Namespace, rn)
 }
 
 // parentRef is a parent of a resource, as recorded in its metrics.
@@ -496,15 +507,16 @@ func routeParents(refs []gwv1.ParentReference, routeNamespace string) []parentRe
 	for _, ref := range refs {
 		parents = append(parents, parentRef{
 			name:             string(ref.Name),
-			gatewayNamespace: gatewayNamespace(ref.Group, ref.Kind, ref.Namespace, routeNamespace),
+			gatewayNamespace: GatewayNamespace(ref.Group, ref.Kind, ref.Namespace, routeNamespace),
 		})
 	}
 	return parents
 }
 
-// gatewayNamespace returns the namespace of a parent reference if it refers to a Gateway,
-// or empty otherwise. An unset group, kind, or namespace takes its Gateway API default.
-func gatewayNamespace(group *gwv1.Group, kind *gwv1.Kind, namespace *gwv1.Namespace, from string) string {
+// GatewayNamespace returns the namespace of a parent reference if it refers to a Gateway,
+// or empty otherwise. from is the namespace of the referring resource. An unset group,
+// kind, or namespace takes its Gateway API default.
+func GatewayNamespace(group *gwv1.Group, kind *gwv1.Kind, namespace *gwv1.Namespace, from string) string {
 	if group != nil && *group != gwv1.GroupName || kind != nil && *kind != wellknown.GatewayKind {
 		return ""
 	}
@@ -620,7 +632,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			// *gwv1.ListenerSet, so this arm reports the two flavors as ONE metric series,
 			// under the legacy label value "XListenerSet" — including resources that were
 			// never XListenerSets. The value is part of the start/end join key
-			// (startTimes.times[Gateway][ResourceType][Namespace][ResourceName]), so it must
+			// (startTimes.times[GatewayNamespace/Gateway][ResourceType][Namespace][ResourceName]), so it must
 			// stay byte-identical to the ResourceType that listenerSetStatusMetricsHook reports
 			// in proxy_syncer/status_collections.go — a hook both ListenerSet writers share for
 			// exactly this reason: rename either site alone and every listener
@@ -637,7 +649,7 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			ref := obj.Spec.ParentRef
 			parents = []parentRef{{
 				name:             string(ref.Name),
-				gatewayNamespace: gatewayNamespace(ref.Group, ref.Kind, ref.Namespace, obj.Namespace),
+				gatewayNamespace: GatewayNamespace(ref.Group, ref.Kind, ref.Namespace, obj.Namespace),
 			}}
 
 			if clientObjectOld != nil {

@@ -348,10 +348,11 @@ func mergeGatewayStatusAddresses(current *gwv1.Gateway, desired gwv1.GatewayStat
 // gatewayStatusOnSync closes a Gateway's resource status sync once its status is written.
 func gatewayStatusOnSync(res statussync.Resource, _ *gwv1.Gateway, _ gwv1.GatewayStatus, err error) {
 	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-		Namespace:    res.Namespace,
-		Gateway:      res.Name,
-		ResourceType: wellknown.GatewayKind,
-		ResourceName: res.Name,
+		Namespace:        res.Namespace,
+		Gateway:          res.Name,
+		GatewayNamespace: res.Namespace,
+		ResourceType:     wellknown.GatewayKind,
+		ResourceName:     res.Name,
 	})
 }
 
@@ -367,10 +368,11 @@ func routeStatusMetricsHook[T controllers.ComparableObject](
 		}
 		for _, pr := range parentRefs(current) {
 			statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-				Namespace:    res.Namespace,
-				Gateway:      string(pr.Name),
-				ResourceType: kind,
-				ResourceName: res.Name,
+				Namespace:        res.Namespace,
+				Gateway:          string(pr.Name),
+				GatewayNamespace: kmetrics.GatewayNamespace(pr.Group, pr.Kind, pr.Namespace, res.Namespace),
+				ResourceType:     kind,
+				ResourceName:     res.Name,
 			})
 		}
 	}
@@ -441,13 +443,16 @@ func listenerSetDesired(
 // listenerSetStatusOnSync closes the resource status sync of either ListenerSet flavor once
 // its status is written.
 func listenerSetStatusOnSync(res statussync.Resource, current *gwv1.ListenerSet, _ gwv1.ListenerSetStatus, err error) {
-	parentName := ""
+	parentName, parentNamespace := "", ""
 	if !controllers.IsNil(current) {
-		parentName = string(current.Spec.ParentRef.Name)
+		ref := current.Spec.ParentRef
+		parentName = string(ref.Name)
+		parentNamespace = kmetrics.GatewayNamespace(ref.Group, ref.Kind, ref.Namespace, res.Namespace)
 	}
 	statussync.EndResourceStatusSyncOnWriteSuccess(err, kmetrics.ResourceSyncDetails{
-		Namespace: res.Namespace,
-		Gateway:   parentName,
+		Namespace:        res.Namespace,
+		Gateway:          parentName,
+		GatewayNamespace: parentNamespace,
 		// Promoted ListenerSets and legacy XListenerSets are deliberately one metric
 		// series under the legacy value "XListenerSet", not two -- which is also why
 		// both writers share this hook. This must stay byte-identical to the value the
