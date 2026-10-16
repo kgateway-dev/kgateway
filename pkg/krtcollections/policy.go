@@ -1,6 +1,7 @@
 package krtcollections
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"strconv"
@@ -597,17 +598,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
 		// - ListenerSet ordered by creation time (oldest first)
 		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
-			// primary sort: creation timestamp (oldest first)
-			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
-				return cmp
-			}
-			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls *gwv1.ListenerSet) string {
-				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
-			}
-			return strings.Compare(nnsString(a), nnsString(b))
-		})
+		slices.SortFunc(listenerSets, compareListenerSetPrecedence)
 
 		for _, ls := range listenerSets {
 			if ls.GroupVersionKind().Empty() {
@@ -683,6 +674,45 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		}
 
 		return gwIR
+	}
+}
+
+func compareListenerSetPrecedence(a, b *gwv1.ListenerSet) int {
+	// primary sort: creation timestamp (oldest first)
+	if c := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); c != 0 {
+		return c
+	}
+	// secondary sort: alphabetically by "{namespace}/{name}"
+	return compareNamespacedName(a.Namespace, a.Name, b.Namespace, b.Name)
+}
+
+// compareNamespacedName returns strings.Compare(aNs+"/"+aName, bNs+"/"+bName) without
+// building either string, since it runs inside sort comparators. A plain (namespace, name)
+// tuple compare is not equivalent: '-' and '.' sort before '/', so "a-b/c" < "a/z" even
+// though "a" < "a-b".
+func compareNamespacedName(aNs, aName, bNs, bName string) int {
+	if aNs == bNs {
+		return strings.Compare(aName, bName)
+	}
+	// Walk both joined strings a part at a time, comparing where the current parts overlap.
+	a, b := [3]string{aNs, "/", aName}, [3]string{bNs, "/", bName}
+	var i, j int
+	var x, y string
+	for {
+		for x == "" && i < len(a) {
+			x, i = a[i], i+1
+		}
+		for y == "" && j < len(b) {
+			y, j = b[j], j+1
+		}
+		if x == "" || y == "" {
+			return cmp.Compare(len(x), len(y))
+		}
+		n := min(len(x), len(y))
+		if c := strings.Compare(x[:n], y[:n]); c != 0 {
+			return c
+		}
+		x, y = x[n:], y[n:]
 	}
 }
 
