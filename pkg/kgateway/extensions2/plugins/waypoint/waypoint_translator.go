@@ -114,6 +114,8 @@ func (w *waypointTranslator) Translate(
 		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
 	}
 
+	gwListener.GetParentReporter(reporter).Listener(&gwListener.Listener).SetAttachedRoutes(uint(attachedRoutes.Len())) //nolint:gosec // G115: route count is non-negative
+
 	// ensure consistent ordering in outputs
 	proxyListener.HttpFilterChain = slices.SortBy(proxyListener.HttpFilterChain, func(fc ir.HttpFilterChainIR) string {
 		return fc.FilterChainName

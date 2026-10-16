@@ -33,6 +33,7 @@ var cases = []struct {
 	{"Namespace use-waypoint", "ns-use-waypoint", exampleGw, ""},
 	{"HTTPRoute on Gateway", "httproute-gateway", exampleGw, ""},
 	{"HTTPRoute on Service", "httproute-svc", exampleGw, ""},
+	{"HTTPRoute on Gateway and Service", "httproute-mixed", exampleGw, ""},
 	{"HTTPRoute on ServiceEntry", "httproute-se", exampleGw, ""},
 	{"HTTPRoute on ServiceEntry via Hostname", "httproute-se-hostname", exampleGw, ""},
 	{"Authz Policies", "authz", exampleGw, ""},
