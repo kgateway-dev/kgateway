@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -181,4 +182,50 @@ func TestReferenceAheadHoldsForAClusterOnlyAFilterNames(t *testing.T) {
 
 	assert.Contains(t, publishedClusterNames(t, pt), "authz", "the new cluster is delivered")
 	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the listener that calls it waits")
+}
+
+// routedBuild is a build whose one route config names routeTo, emitting
+// clusters, with listeners at version.
+func routedBuild(t *testing.T, version, routeTo string, clusters ...string) XdsSnapWrapper {
+	t.Helper()
+	wrap := clusterWrapperV(version, clusters...)
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	listeners.Version = version
+	wrap.snap.Resources[envoycachetypes.Listener] = listeners
+	wrap.snap.Resources[envoycachetypes.Route] = routeResourcesForClusters(routeTo)
+	return wrap
+}
+
+// While a retarget onto a new cluster is held, the held (published) routes
+// still name the cluster the build dropped. It must stay published with them,
+// whatever the de-reference grace: here the grace is 0.
+func TestReferenceAheadHoldCarriesTheHeldConfigsClusters(t *testing.T) {
+	pt := newReferenceAheadTranslator(t, time.Hour)
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new"))
+
+	served := servedSnapshot(t, pt)
+	require.Equal(t, "v1", served.GetVersion(resourcev3.ListenerType), "the retarget is held")
+	assert.ElementsMatch(t, []string{"old", "new"}, publishedClusterNames(t, pt),
+		"the held routes' destination stays published alongside the new cluster")
+	assertSnapshotCoherent(t, served)
+}
+
+// A deferred build (here: a previously-referenced cluster whose endpoints are
+// being rebuilt, which does not block) that also introduces a new cluster
+// holds the configuration naming it like a coherent build does.
+func TestReferenceAheadAppliesToDeferredBuilds(t *testing.T) {
+	pt := newReferenceAheadTranslator(t, time.Hour)
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	deferred := routedBuild(t, "v2", "old", "old", "authz")
+	deferred.missingEndpointsReferenced = []string{"old"}
+	deferred.synthesizedEndpoints = []string{"old"}
+	pt.syncXds(ctx, deferred)
+
+	assert.Contains(t, publishedClusterNames(t, pt), "authz")
+	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the configuration naming the new cluster waits for it")
 }

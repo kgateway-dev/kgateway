@@ -239,13 +239,13 @@ func (g *publishGate) publishWithTransitionGraces(
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}
 
-	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	if len(newlyEmitted) > 0 {
-		held := holdRoutingTypes(resolved, published)
+		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
 		recordFlipHeld(snapWrap.proxyKey)
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, newlyEmitted, edsHashes, true)
 	} else {
+		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 		// Through publishLocked like any other publish without a hold: this
 		// build supersedes a pending first publish or flip release, whose
 		// timer would otherwise re-publish its older build when it fires.
