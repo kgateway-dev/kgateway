@@ -807,6 +807,40 @@ func TestCarryExpiresWithoutAnotherBuild(t *testing.T) {
 		labelsWith("mode", boundedPublishCarryExpired)))
 }
 
+// A carry ends when its cluster comes back. If the cluster goes missing again
+// later, that is a new episode: it is carried for a fresh bound, not dropped at
+// once because an earlier episode started long ago. The recovery here is a
+// coherent build, which never runs the deferred path's carry bookkeeping.
+func TestCarryStartsFreshAfterTheClusterRecovers(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	pt.gate.warmWithholdBound = 80 * time.Millisecond
+	ctx := context.Background()
+	routed := []string{"cluster-a", "cluster-b"}
+	lagging := func(version string) XdsSnapWrapper {
+		return XdsSnapWrapper{
+			snap: carryTestBuild(t, version, routed, "cluster-a"), proxyKey: publishGateTestClient,
+			missingReferenced: []string{"cluster-b"},
+		}
+	}
+
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, lagging("v2"))
+	time.Sleep(30 * time.Millisecond)
+	// It recovers: a coherent build has it again.
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	time.Sleep(70 * time.Millisecond) // past the bound measured from the first episode's start
+
+	pt.syncXds(ctx, lagging("v4"))
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "v4", served.GetVersion(resourcev3.ListenerType))
+	assert.Contains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-b",
+		"a second disappearance is carried for a fresh bound")
+	require.Eventually(t, func() bool {
+		_, carried := servedSnapshot(t, pt).Resources[envoycachetypes.Cluster].Items["cluster-b"]
+		return !carried
+	}, 2*time.Second, 5*time.Millisecond, "and still ends at its own bound")
+}
+
 // A carry expiry re-publishes the client's latest build only. Once a later
 // build has superseded the one that carried, the expiry must not bring the
 // older one back.

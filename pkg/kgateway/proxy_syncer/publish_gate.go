@@ -287,6 +287,7 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 func (g *publishGate) publish(ctx context.Context, cache envoycache.SnapshotCache, snapWrap XdsSnapWrapper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.beginBuildLocked(snapWrap)
 	return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints)
 }
 
@@ -322,7 +323,35 @@ func (g *publishGate) resolveDeferred(
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.beginBuildLocked(snapWrap)
 	return g.resolveDeferredLocked(ctx, cache, snapWrap)
+}
+
+// beginBuildLocked runs for every new build that reaches the gate, before it
+// is published. Timers that re-publish a stored build do not run it: that
+// build already began.
+//
+// A carry record belongs to one episode of a cluster missing from the builds.
+// A build that has the cluster again ends the episode, so a later
+// disappearance is carried for a fresh warm withhold bound. boundCarryLocked
+// also forgets recovered clusters, but only deferred builds run it, and a
+// recovery is usually a coherent build: without this, the earlier episode's
+// start would survive it, and the next disappearance, however brief, would be
+// dropped at once instead of carried. Callers must hold g.mu.
+func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) {
+	since := g.carriedSince[snapWrap.proxyKey]
+	if len(since) == 0 {
+		return
+	}
+	missing := stringSet(snapWrap.missingReferenced)
+	for name := range since {
+		if _, stillMissing := missing[name]; !stillMissing {
+			delete(since, name)
+		}
+	}
+	if len(since) == 0 {
+		delete(g.carriedSince, snapWrap.proxyKey)
+	}
 }
 
 // resolveDeferredLocked is resolveDeferred for callers that hold g.mu.
