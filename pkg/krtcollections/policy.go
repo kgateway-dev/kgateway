@@ -614,8 +614,9 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		// so they do not have staggered start times.
 		for _, ls := range listenerSets {
 			metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-				Namespace: ls.Namespace,
-				Gateway:   gw.GetName(),
+				Namespace:        ls.Namespace,
+				Gateway:          gw.GetName(),
+				GatewayNamespace: gw.GetNamespace(),
 				// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
 				// follow-up cleanup so dashboards, tests, and emitters can be updated together.
 				ResourceType: "XListenerSet",

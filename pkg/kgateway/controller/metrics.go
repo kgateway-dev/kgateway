@@ -40,6 +40,12 @@ var (
 	)
 )
 
+func init() {
+	// GatewayClass series have no namespace, so the sweep keeps them.
+	metrics.RegisterGatewayScoped(reconciliationsTotal, namespaceLabel, nameLabel)
+	metrics.RegisterGatewayScoped(reconcileDuration, namespaceLabel, nameLabel)
+}
+
 // collectReconciliationMetrics is called at the start of a controller reconciliation
 // function to begin metrics collection and returns a function called at the end to
 // complete metrics recording.

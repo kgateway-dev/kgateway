@@ -38,6 +38,11 @@ var (
 	)
 )
 
+func init() {
+	metrics.RegisterGatewayScoped(translationsTotal, namespaceLabel, nameLabel)
+	metrics.RegisterGatewayScoped(translationDuration, namespaceLabel, nameLabel)
+}
+
 type TranslatorMetricLabels struct {
 	Name       string
 	Namespace  string

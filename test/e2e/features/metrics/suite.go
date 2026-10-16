@@ -182,6 +182,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: "gw2"},
+					{Name: "gateway_namespace", Value: "default"},
 					{Name: "namespace", Value: "default"},
 					{Name: "resource", Value: "Gateway"},
 				},
@@ -190,6 +191,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: "gw2"},
+					{Name: "gateway_namespace", Value: "default"},
 					{Name: "namespace", Value: "default"},
 					{Name: "resource", Value: "HTTPRoute"},
 				},
@@ -198,6 +200,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: ""},
+					{Name: "gateway_namespace", Value: ""},
 					{Name: "namespace", Value: "default"},
 					{Name: "resource", Value: "ListenerPolicy"},
 				},
@@ -209,6 +212,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: "gw2"},
+					{Name: "gateway_namespace", Value: "default"},
 					{Name: "namespace", Value: "default"},
 					{Name: "resource", Value: "Gateway"},
 				},
@@ -217,6 +221,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: "gw2"},
+					{Name: "gateway_namespace", Value: "default"},
 					{Name: "namespace", Value: "default"},
 					{Name: "resource", Value: "HTTPRoute"},
 				},
@@ -225,6 +230,7 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			&metricstest.ExpectedMetricValueTest{
 				Labels: []metrics.Label{
 					{Name: "gateway", Value: ""},
+					{Name: "gateway_namespace", Value: ""},
 					{Name: "namespace", Value: "default"},
 					{Name: "resource", Value: "ListenerPolicy"},
 				},
@@ -234,14 +240,17 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 
 		gathered.AssertMetricsLabelsInclude("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
 			{Name: "gateway", Value: "gw2"},
+			{Name: "gateway_namespace", Value: "default"},
 			{Name: "namespace", Value: "default"},
 			{Name: "resource", Value: "Gateway"},
 		}, {
 			{Name: "gateway", Value: "gw2"},
+			{Name: "gateway_namespace", Value: "default"},
 			{Name: "namespace", Value: "default"},
 			{Name: "resource", Value: "HTTPRoute"},
 		}, {
 			{Name: "gateway", Value: ""},
+			{Name: "gateway_namespace", Value: ""},
 			{Name: "namespace", Value: "default"},
 			{Name: "resource", Value: "ListenerPolicy"},
 		}})

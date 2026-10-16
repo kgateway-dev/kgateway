@@ -37,6 +37,11 @@ var (
 		}, []string{gwNamespaceLabel, gwNameLabel, typeURLLabel})
 )
 
+func init() {
+	metrics.RegisterGatewayScoped(xdsRejectsTotal, gwNamespaceLabel, gwNameLabel)
+	metrics.RegisterGatewayScoped(xdsRejectsCurrent, gwNamespaceLabel, gwNameLabel)
+}
+
 type resourceKey struct {
 	Namespace       string
 	Name            string
@@ -56,6 +61,11 @@ func newResourceState() resourceState {
 type logNackCallback struct {
 	xdsserver.CallbackFuncs
 	streamState map[int64]resourceState
+	// active counts the streams currently rejecting each resource. It is the source of
+	// truth for xdsRejectsCurrent, which is always written with Set: the metrics sweeper
+	// may delete the series of a deleted Gateway while its streams are still open, and a
+	// relative update would then corrupt the series of a Gateway recreated with that name.
+	active map[resourceKey]int
 
 	lock sync.Mutex
 }
@@ -65,18 +75,20 @@ var _ xdsserver.Callbacks = (*logNackCallback)(nil)
 func newLogNackCallback() *logNackCallback {
 	return &logNackCallback{
 		streamState: make(map[int64]resourceState),
+		active:      make(map[resourceKey]int),
 	}
 }
 
 // OnStreamClosed implements server.Callbacks.
 func (l *logNackCallback) OnStreamClosed(streamID int64, node *envoycorev3.Node) {
 	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	streamState := l.streamState[streamID]
 	delete(l.streamState, streamID)
-	l.lock.Unlock()
 
 	for k := range streamState.errors {
-		l.onErrorGone(k)
+		l.addActiveLocked(k, -1)
 	}
 }
 
@@ -110,10 +122,7 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 		}
 		l.onNewError(key, req.ErrorDetail)
 	} else {
-		errorGone := l.handleNoError(streamID, key)
-		if errorGone {
-			l.onErrorGone(key)
-		}
+		l.handleNoError(streamID, key)
 	}
 	return nil
 }
@@ -121,21 +130,29 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 func (l *logNackCallback) onNewError(key resourceKey, err *status.Status) {
 	labels := toLabels(key)
 	xdsRejectsTotal.Inc(labels...)
-	xdsRejectsCurrent.Add(1, labels...)
 	envoyLogger.Warn("xds error", "gateway_name", key.Name, "gateway_ns", key.Namespace, "resource", key.ResourceTypeUrl, "error", err.Message)
 }
 
-func (l *logNackCallback) onErrorGone(key resourceKey) {
-	xdsRejectsCurrent.Add(-1, toLabels(key)...)
+// addActiveLocked adjusts the count of streams rejecting key and publishes it.
+// The caller must hold l.lock, so that publishes happen in the same order as updates.
+func (l *logNackCallback) addActiveLocked(key resourceKey, delta int) {
+	count := l.active[key] + delta
+	if count == 0 {
+		delete(l.active, key)
+	} else {
+		l.active[key] = count
+	}
+	xdsRejectsCurrent.Set(float64(count), toLabels(key)...)
 }
 
-func (l *logNackCallback) handleNoError(streamID int64, key resourceKey) bool {
+func (l *logNackCallback) handleNoError(streamID int64, key resourceKey) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	streamState := l.streamState[streamID]
-	_, hadKey := streamState.errors[key]
-	delete(streamState.errors, key)
-	return hadKey
+	if _, hadKey := streamState.errors[key]; hadKey {
+		delete(streamState.errors, key)
+		l.addActiveLocked(key, -1)
+	}
 }
 
 func (l *logNackCallback) handleError(streamID int64, key resourceKey) bool {
@@ -150,6 +167,7 @@ func (l *logNackCallback) handleError(streamID int64, key resourceKey) bool {
 		return false
 	}
 	streamState.errors[key] = struct{}{}
+	l.addActiveLocked(key, 1)
 	return true
 }
 

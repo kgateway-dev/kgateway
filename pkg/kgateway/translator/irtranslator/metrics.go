@@ -40,6 +40,11 @@ var routeReplacementsTotal = metrics.NewCounter(
 	[]string{gatewayNamespaceLabel, gatewayLabel, errorTypeLabel},
 )
 
+func init() {
+	metrics.RegisterGatewayScoped(domainsPerListener, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(routeReplacementsTotal, gatewayNamespaceLabel, gatewayLabel)
+}
+
 // domainsPerListenerMetricLabels is used as an argument to SetDomainPerListener
 type domainsPerListenerMetricLabels struct {
 	Namespace   string

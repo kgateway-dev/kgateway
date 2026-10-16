@@ -7,6 +7,7 @@ import (
 
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -17,13 +18,14 @@ import (
 )
 
 const (
-	resourcesSubsystem   = "resources"
-	snapshotSubsystem    = "xds_snapshot"
-	snapshotResourceType = "XDSSnapshot"
-	gatewayLabel         = "gateway"
-	parentLabel          = "parent"
-	namespaceLabel       = "namespace"
-	resourceLabel        = "resource"
+	resourcesSubsystem    = "resources"
+	snapshotSubsystem     = "xds_snapshot"
+	snapshotResourceType  = "XDSSnapshot"
+	gatewayLabel          = "gateway"
+	gatewayNamespaceLabel = "gateway_namespace"
+	parentLabel           = "parent"
+	namespaceLabel        = "namespace"
+	resourceLabel         = "resource"
 )
 
 var logger = logging.New("translator.metrics")
@@ -63,14 +65,14 @@ var (
 		Name:      "status_syncs_started_total",
 		Help:      "Total number of status syncs started",
 	},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel})
+		[]string{gatewayLabel, gatewayNamespaceLabel, namespaceLabel, resourceLabel})
 	resourcesStatusSyncsCompletedTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: resourcesSubsystem,
 			Name:      "status_syncs_completed_total",
 			Help:      "Total number of status syncs completed for resources",
 		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel})
+		[]string{gatewayLabel, gatewayNamespaceLabel, namespaceLabel, resourceLabel})
 	resourcesStatusSyncDuration = metrics.NewHistogram(
 		metrics.HistogramOpts{
 			Subsystem:                       resourcesSubsystem,
@@ -81,7 +83,7 @@ var (
 			NativeHistogramMaxBucketNumber:  100,
 			NativeHistogramMinResetDuration: time.Hour,
 		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel},
+		[]string{gatewayLabel, gatewayNamespaceLabel, namespaceLabel, resourceLabel},
 	)
 	resourcesUpdatesDroppedTotal = metrics.NewCounter(metrics.CounterOpts{
 		Subsystem: resourcesSubsystem,
@@ -89,6 +91,23 @@ var (
 		Help:      "Total number of resources metrics updates dropped. If this metric is ever greater than 0, all resources subsystem metrics should be considered invalid until process restart",
 	}, nil)
 )
+
+func init() {
+	// A Gateway's snapshot syncs carry the Gateway's own namespace.
+	metrics.RegisterGatewayScoped(xdsSnapshotSyncsTotal, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(xdsSnapshotSyncDuration, namespaceLabel, gatewayLabel)
+
+	// These carry the namespace of the route or policy, so they are removed with it.
+	metrics.RegisterNamespaceScoped(resourcesManaged, namespaceLabel)
+	metrics.RegisterNamespaceScoped(resourcesStatusSyncsStartedTotal, namespaceLabel)
+	metrics.RegisterNamespaceScoped(resourcesStatusSyncsCompletedTotal, namespaceLabel)
+	metrics.RegisterNamespaceScoped(resourcesStatusSyncDuration, namespaceLabel)
+
+	// Status syncs whose parent is a Gateway also name its namespace, so they go with it.
+	metrics.RegisterGatewayScoped(resourcesStatusSyncsStartedTotal, gatewayNamespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(resourcesStatusSyncsCompletedTotal, gatewayNamespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(resourcesStatusSyncDuration, gatewayNamespaceLabel, gatewayLabel)
+}
 
 type resourceMetricLabels struct {
 	Parent    string
@@ -104,29 +123,71 @@ func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
 	}
 }
 
-// ResourceSyncStartTime represents the start time of a resource sync.
-type ResourceSyncStartTime struct {
-	Time         time.Time
-	ResourceType string
-	ResourceName string
-	Namespace    string
-	Gateway      string
+// managedCounts is the source of truth for resourcesManaged, which is always written with
+// Set: the metrics sweeper may delete a namespace's series while delete events for its
+// resources are still queued, and a relative update would then corrupt the series of a
+// namespace recreated with that name. A series whose count reaches zero is deleted, so a
+// deleted parent in a namespace that stays does not leave one behind.
+var managedCounts = struct {
+	sync.Mutex
+	counts map[resourceMetricLabels]int
+}{counts: map[resourceMetricLabels]int{}}
+
+// addResourcesManaged adjusts the count of managed resources for labels and publishes it.
+func addResourcesManaged(labels resourceMetricLabels, delta int) {
+	metricLabels := labels.toMetricsLabels()
+
+	managedCounts.Lock()
+	defer managedCounts.Unlock()
+
+	count := managedCounts.counts[labels] + delta
+	if count == 0 {
+		delete(managedCounts.counts, labels)
+		resourcesManaged.Delete(metricLabels...)
+		return
+	}
+	managedCounts.counts[labels] = count
+	resourcesManaged.Set(float64(count), metricLabels...)
 }
 
-// resourceSyncStartTimes tracks the start times of resource syncs.
-type resourceSyncStartTimes struct {
-	sync.RWMutex
-	times map[string]map[string]map[string]map[string]ResourceSyncStartTime
-}
-
-var startTimes = &resourceSyncStartTimes{}
+// startTimes tracks the start times of pending syncs, keyed by their details.
+var startTimes = struct {
+	sync.Mutex
+	times map[ResourceSyncDetails]time.Time
+}{times: map[ResourceSyncDetails]time.Time{}}
 
 // ResourceSyncDetails holds the details of a resource sync operation.
 type ResourceSyncDetails struct {
-	Namespace    string
-	Gateway      string
-	ResourceType string
-	ResourceName string
+	Namespace string
+	Gateway   string
+	// GatewayNamespace is the namespace of Gateway, or empty if the resource's parent is
+	// not a Gateway. A sync's start and end must agree on it, since it is part of the key
+	// that joins them: a route attached to same-name Gateways in two namespaces has a
+	// sync for each.
+	GatewayNamespace string
+	ResourceType     string
+	ResourceName     string
+}
+
+// xdsSyncKey is the startTimes key of the XDS snapshot sync of the Gateway in d. A Gateway
+// has at most one pending XDS sync, so the key leaves out the resource.
+func (d ResourceSyncDetails) xdsSyncKey() ResourceSyncDetails {
+	return ResourceSyncDetails{
+		Namespace:        d.Namespace,
+		Gateway:          d.Gateway,
+		GatewayNamespace: d.GatewayNamespace,
+		ResourceType:     snapshotResourceType,
+	}
+}
+
+// statusSyncLabels returns the labels of the status sync metrics for d.
+func (d ResourceSyncDetails) statusSyncLabels() []metrics.Label {
+	return []metrics.Label{
+		{Name: gatewayLabel, Value: d.Gateway},
+		{Name: gatewayNamespaceLabel, Value: d.GatewayNamespace},
+		{Name: namespaceLabel, Value: d.Namespace},
+		{Name: resourceLabel, Value: d.ResourceType},
+	}
 }
 
 type syncStartInfo struct {
@@ -179,38 +240,10 @@ func StartResourceStatusSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
-	}
+	if _, exists := startTimes.times[details]; !exists {
+		startTimes.times[details] = time.Now()
 
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
-	}
-
-	st := ResourceSyncStartTime{
-		Time:         time.Now(),
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-		Namespace:    details.Namespace,
-		Gateway:      details.Gateway,
-	}
-
-	if startTimes.times[details.Gateway][details.ResourceType] == nil {
-		startTimes.times[details.Gateway][details.ResourceType] = make(map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway][details.ResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][details.ResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
-	}
-
-	if _, exists := startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName]; !exists {
-		startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName] = st
-
-		resourcesStatusSyncsStartedTotal.Inc(
-			metrics.Label{Name: gatewayLabel, Value: details.Gateway},
-			metrics.Label{Name: namespaceLabel, Value: details.Namespace},
-			metrics.Label{Name: resourceLabel, Value: details.ResourceType},
-		)
+		resourcesStatusSyncsStartedTotal.Inc(details.statusSyncLabels()...)
 	}
 }
 
@@ -223,31 +256,18 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
-	}
+	startTimes.times[details.xdsSyncKey()] = time.Now()
+}
 
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
-	}
+// dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. A Gateway whose
+// translation produced no snapshot has a sync that nothing ends, so it would otherwise be
+// held forever, and the first sync of a Gateway recreated with the same name would record
+// its age.
+func dropResourceXDSSync(details ResourceSyncDetails) {
+	startTimes.Lock()
+	defer startTimes.Unlock()
 
-	st := ResourceSyncStartTime{
-		Time:         time.Now(),
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-		Namespace:    details.Namespace,
-		Gateway:      details.Gateway,
-	}
-
-	if startTimes.times[details.Gateway][snapshotResourceType] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType] = make(map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
-	}
-
-	startTimes.times[details.Gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
+	delete(startTimes.times, details.xdsSyncKey())
 }
 
 // EndResourceStatusSync records the end time of a status sync for a given resource and
@@ -333,105 +353,81 @@ func endResourceSync(syncInfo *syncStartInfo) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		return
-	}
-
-	if startTimes.times[syncInfo.details.Gateway] == nil {
-		return
-	}
-
-	rn := syncInfo.details.ResourceName
-	rt := syncInfo.details.ResourceType
-
+	key := syncInfo.details
 	if syncInfo.xdsSnapshot {
-		rt = snapshotResourceType
-		resourceTypeStartTimes, exists := startTimes.times[syncInfo.details.Gateway][rt]
-		if !exists {
-			return
-		}
-
-		deleteResources := map[string]map[string]struct{}{}
-
-		for _, namespaceStartTimes := range resourceTypeStartTimes {
-			for resourceName, st := range namespaceStartTimes {
-				xdsSnapshotSyncsTotal.Inc(
-					metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-					metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-				)
-
-				xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-					metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-					metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-				)
-
-				if deleteResources[st.Namespace] == nil {
-					deleteResources[st.Namespace] = map[string]struct{}{}
-				}
-
-				deleteResources[st.Namespace][resourceName] = struct{}{}
-			}
-		}
-
-		for namespace, resources := range deleteResources {
-			for resourceName := range resources {
-				delete(startTimes.times[syncInfo.details.Gateway][rt][namespace], resourceName)
-
-				if len(startTimes.times[syncInfo.details.Gateway][rt][namespace]) == 0 {
-					delete(startTimes.times[syncInfo.details.Gateway][rt], namespace)
-				}
-
-				if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
-					delete(startTimes.times[syncInfo.details.Gateway], rt)
-				}
-
-				if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
-					delete(startTimes.times, syncInfo.details.Gateway)
-				}
-			}
-		}
-
-		return
+		key = key.xdsSyncKey()
 	}
 
-	if startTimes.times[syncInfo.details.Gateway][rt] == nil {
-		return
-	}
-
-	if startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace] == nil {
-		return
-	}
-
-	st, exists := startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace][rn]
+	start, exists := startTimes.times[key]
 	if !exists {
 		return
 	}
+	delete(startTimes.times, key)
+	duration := syncInfo.endTime.Sub(start).Seconds()
 
-	resourcesStatusSyncsCompletedTotal.Inc(
-		metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-		metrics.Label{Name: resourceLabel, Value: st.ResourceType},
-	)
-
-	resourcesStatusSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-		metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-		metrics.Label{Name: resourceLabel, Value: st.ResourceType},
-	)
-
-	delete(startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace], rn)
-
-	if len(startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace]) == 0 {
-		delete(startTimes.times[syncInfo.details.Gateway][rt], syncInfo.details.Namespace)
+	if syncInfo.xdsSnapshot {
+		labels := []metrics.Label{
+			{Name: gatewayLabel, Value: key.Gateway},
+			{Name: namespaceLabel, Value: key.Namespace},
+		}
+		xdsSnapshotSyncsTotal.Inc(labels...)
+		xdsSnapshotSyncDuration.Observe(duration, labels...)
+		return
 	}
 
-	if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
-		delete(startTimes.times[syncInfo.details.Gateway], rt)
-	}
+	labels := key.statusSyncLabels()
+	resourcesStatusSyncsCompletedTotal.Inc(labels...)
+	resourcesStatusSyncDuration.Observe(duration, labels...)
+}
 
-	if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
-		delete(startTimes.times, syncInfo.details.Gateway)
+// parentRef is a parent of a resource, as recorded in its metrics.
+type parentRef struct {
+	name string
+	// gatewayNamespace is the parent's namespace if the parent is a Gateway, else empty.
+	gatewayNamespace string
+}
+
+func (p parentRef) syncDetails(namespace, resourceType, resourceName string) ResourceSyncDetails {
+	return ResourceSyncDetails{
+		Gateway:          p.name,
+		GatewayNamespace: p.gatewayNamespace,
+		Namespace:        namespace,
+		ResourceType:     resourceType,
+		ResourceName:     resourceName,
 	}
+}
+
+func routeParents(refs []gwv1.ParentReference, routeNamespace string) []parentRef {
+	parents := make([]parentRef, 0, len(refs))
+	for _, ref := range refs {
+		parents = append(parents, parentRef{
+			name:             string(ref.Name),
+			gatewayNamespace: GatewayNamespace(ref.Group, ref.Kind, ref.Namespace, routeNamespace),
+		})
+	}
+	return parents
+}
+
+func gatewayParent(gw *gwv1.Gateway) parentRef {
+	return parentRef{name: gw.Name, gatewayNamespace: gw.Namespace}
+}
+
+func listenerSetParent(ls *gwv1.ListenerSet) parentRef {
+	ref := ls.Spec.ParentRef
+	return parentRef{
+		name:             string(ref.Name),
+		gatewayNamespace: GatewayNamespace(ref.Group, ref.Kind, ref.Namespace, ls.Namespace),
+	}
+}
+
+// GatewayNamespace returns the namespace of a parent reference if it refers to a Gateway,
+// or empty otherwise. from is the namespace of the referring resource. An unset group,
+// kind, or namespace takes its Gateway API default.
+func GatewayNamespace(group *gwv1.Group, kind *gwv1.Kind, namespace *gwv1.Namespace, from string) string {
+	if ptr.OrDefault(group, gwv1.GroupName) != gwv1.GroupName || ptr.OrDefault(kind, wellknown.GatewayKind) != wellknown.GatewayKind {
+		return ""
+	}
+	return string(ptr.OrDefault(namespace, gwv1.Namespace(from)))
 }
 
 // GetResourceMetricEventHandler returns a function that handles krt events for various Gateway API resources.
@@ -440,8 +436,8 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 		eventType       controllers.EventType
 		resourceType    string
 		resourceName    string
-		names           []string
-		namesOld        []string
+		parents         []parentRef
+		parentsOld      []parentRef
 		namespace       string
 		namespaceOld    string
 		clientObject    any
@@ -463,96 +459,73 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			resourceType = obj.Kind
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = []string{""}
+			parents = []parentRef{{}}
 
 			if clientObjectOld != nil {
 				namespaceOld = clientObjectOld.(ir.PolicyWrapper).Namespace
-				namesOld = []string{""}
+				parentsOld = []parentRef{{}}
 			}
 		case *gwv1.HTTPRoute:
 			resourceType = "HTTPRoute"
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = make([]string, 0, len(obj.Spec.ParentRefs))
-			for _, pr := range obj.Spec.ParentRefs {
-				names = append(names, string(pr.Name))
-			}
+			parents = routeParents(obj.Spec.ParentRefs, obj.Namespace)
 
 			if clientObjectOld != nil {
 				oldObj := clientObjectOld.(*gwv1.HTTPRoute)
 				namespaceOld = oldObj.Namespace
-				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
-				for _, pr := range oldObj.Spec.ParentRefs {
-					namesOld = append(namesOld, string(pr.Name))
-				}
+				parentsOld = routeParents(oldObj.Spec.ParentRefs, oldObj.Namespace)
 			}
 		case *gwv1a2.TCPRoute:
 			resourceType = "TCPRoute"
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = make([]string, 0, len(obj.Spec.ParentRefs))
-			for _, pr := range obj.Spec.ParentRefs {
-				names = append(names, string(pr.Name))
-			}
+			parents = routeParents(obj.Spec.ParentRefs, obj.Namespace)
 
 			if clientObjectOld != nil {
 				oldObj := clientObjectOld.(*gwv1a2.TCPRoute)
 				namespaceOld = oldObj.Namespace
-				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
-				for _, pr := range oldObj.Spec.ParentRefs {
-					namesOld = append(namesOld, string(pr.Name))
-				}
+				parentsOld = routeParents(oldObj.Spec.ParentRefs, oldObj.Namespace)
 			}
 		case *gwv1a2.TLSRoute:
 			resourceType = "TLSRoute"
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = make([]string, 0, len(obj.Spec.ParentRefs))
-			for _, pr := range obj.Spec.ParentRefs {
-				names = append(names, string(pr.Name))
-			}
+			parents = routeParents(obj.Spec.ParentRefs, obj.Namespace)
 
 			if clientObjectOld != nil {
 				oldObj := clientObjectOld.(*gwv1a2.TLSRoute)
 				namespaceOld = oldObj.Namespace
-				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
-				for _, pr := range oldObj.Spec.ParentRefs {
-					namesOld = append(namesOld, string(pr.Name))
-				}
+				parentsOld = routeParents(oldObj.Spec.ParentRefs, oldObj.Namespace)
 			}
 		case *gwv1.GRPCRoute:
 			resourceType = "GRPCRoute"
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = make([]string, 0, len(obj.Spec.ParentRefs))
-			for _, pr := range obj.Spec.ParentRefs {
-				names = append(names, string(pr.Name))
-			}
+			parents = routeParents(obj.Spec.ParentRefs, obj.Namespace)
 
 			if clientObjectOld != nil {
 				oldObj := clientObjectOld.(*gwv1.GRPCRoute)
 				namespaceOld = oldObj.Namespace
-				namesOld = make([]string, 0, len(oldObj.Spec.ParentRefs))
-				for _, pr := range oldObj.Spec.ParentRefs {
-					namesOld = append(namesOld, string(pr.Name))
-				}
+				parentsOld = routeParents(oldObj.Spec.ParentRefs, oldObj.Namespace)
 			}
 		case *gwv1.Gateway:
 			resourceType = "Gateway"
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = []string{obj.Name}
+			parents = []parentRef{gatewayParent(obj)}
 
 			if clientObjectOld != nil {
-				namespaceOld = clientObjectOld.(*gwv1.Gateway).Namespace
-				namesOld = []string{clientObjectOld.(*gwv1.Gateway).Name}
+				oldObj := clientObjectOld.(*gwv1.Gateway)
+				namespaceOld = oldObj.Namespace
+				parentsOld = []parentRef{gatewayParent(oldObj)}
 			}
 		case *gwv1.ListenerSet:
 			// Promoted ListenerSets and legacy XListenerSets both normalize to
 			// *gwv1.ListenerSet, so this arm reports the two flavors as ONE metric series,
 			// under the legacy label value "XListenerSet" — including resources that were
 			// never XListenerSets. The value is part of the start/end join key
-			// (startTimes.times[Gateway][ResourceType][Namespace][ResourceName]), so it must
+			// (the startTimes key), so it must
 			// stay byte-identical to the ResourceType that listenerSetStatusMetricsHook reports
 			// in proxy_syncer/status_collections.go — a hook both ListenerSet writers share for
 			// exactly this reason: rename either site alone and every listener
@@ -566,11 +539,12 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			resourceType = "XListenerSet"
 			resourceName = obj.Name
 			namespace = obj.Namespace
-			names = []string{string(obj.Spec.ParentRef.Name)}
+			parents = []parentRef{listenerSetParent(obj)}
 
 			if clientObjectOld != nil {
-				namespaceOld = clientObjectOld.(*gwv1.ListenerSet).Namespace
-				namesOld = []string{string(clientObjectOld.(*gwv1.ListenerSet).Spec.ParentRef.Name)}
+				oldObj := clientObjectOld.(*gwv1.ListenerSet)
+				namespaceOld = oldObj.Namespace
+				parentsOld = []parentRef{listenerSetParent(oldObj)}
 			}
 		}
 
@@ -584,66 +558,52 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 
 		switch eventType {
 		case controllers.EventAdd:
-			for _, name := range names {
-				resourcesManaged.Add(1, resourceMetricLabels{
-					Parent:    name,
+			for _, parent := range parents {
+				addResourcesManaged(resourceMetricLabels{
+					Parent:    parent.name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, 1)
 
-				startResourceSync(ResourceSyncDetails{
-					Gateway:      name,
-					Namespace:    namespace,
-					ResourceType: resourceType,
-					ResourceName: resourceName,
-				})
+				startResourceSync(parent.syncDetails(namespace, resourceType, resourceName))
 			}
 		case controllers.EventUpdate:
-			for _, name := range namesOld {
-				resourcesManaged.Sub(1, resourceMetricLabels{
-					Parent:    name,
-					Namespace: namespaceOld,
-					Resource:  resourceType,
-				}.toMetricsLabels()...)
+			// Apply the net change, so an update that keeps a parent does not delete and
+			// re-create its series as the count passes through zero.
+			deltas := make(map[resourceMetricLabels]int, len(parentsOld)+len(parents))
+			for _, parent := range parentsOld {
+				deltas[resourceMetricLabels{Parent: parent.name, Namespace: namespaceOld, Resource: resourceType}]--
+			}
+			for _, parent := range parents {
+				deltas[resourceMetricLabels{Parent: parent.name, Namespace: namespace, Resource: resourceType}]++
+			}
+			for labels, delta := range deltas {
+				if delta != 0 {
+					addResourcesManaged(labels, delta)
+				}
 			}
 
-			for _, name := range names {
-				resourcesManaged.Add(1, resourceMetricLabels{
-					Parent:    name,
-					Namespace: namespace,
-					Resource:  resourceType,
-				}.toMetricsLabels()...)
-
-				startResourceSync(ResourceSyncDetails{
-					Gateway:      name,
-					Namespace:    namespace,
-					ResourceType: resourceType,
-					ResourceName: resourceName,
-				})
+			for _, parent := range parents {
+				startResourceSync(parent.syncDetails(namespace, resourceType, resourceName))
 			}
 		case controllers.EventDelete:
-			for _, name := range names {
-				resourcesManaged.Sub(1, resourceMetricLabels{
-					Parent:    name,
+			for _, parent := range parents {
+				addResourcesManaged(resourceMetricLabels{
+					Parent:    parent.name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, -1)
 
-				startResourceSync(ResourceSyncDetails{
-					Gateway:      name,
-					Namespace:    namespace,
-					ResourceType: resourceType,
-					ResourceName: resourceName,
-				})
+				details := parent.syncDetails(namespace, resourceType, resourceName)
+				StartResourceStatusSync(details)
+				if resourceType == wellknown.GatewayKind {
+					// A deleted Gateway gets no further XDS sync.
+					dropResourceXDSSync(details)
+				}
 
 				// There will not be a status sync for a deleted resource,
 				// so end the resource status sync immediately.
-				EndResourceStatusSync(ResourceSyncDetails{
-					Gateway:      name,
-					Namespace:    namespace,
-					ResourceType: resourceType,
-					ResourceName: resourceName,
-				})
+				EndResourceStatusSync(details)
 			}
 		}
 	}
@@ -660,9 +620,13 @@ func ResetMetrics() {
 	resourcesStatusSyncDuration.Reset()
 	resourcesUpdatesDroppedTotal.Reset()
 
+	managedCounts.Lock()
+	managedCounts.counts = map[resourceMetricLabels]int{}
+	managedCounts.Unlock()
+
 	startTimes.Lock()
 	defer startTimes.Unlock()
-	startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
+	startTimes.times = map[ResourceSyncDetails]time.Time{}
 
 	syncChLock.Lock()
 	syncCh = make(chan *syncStartInfo, 1024)

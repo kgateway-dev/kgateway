@@ -53,6 +53,7 @@ func TestResourceSyncMetrics(t *testing.T) {
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
 				{Name: "gateway", Value: testName},
+				{Name: "gateway_namespace", Value: ""},
 				{Name: "namespace", Value: testNS},
 				{Name: "resource", Value: testResource},
 			},
@@ -64,6 +65,7 @@ func TestResourceSyncMetrics(t *testing.T) {
 		&metricstest.ExpectedMetric{
 			Labels: []metrics.Label{
 				{Name: "gateway", Value: testName},
+				{Name: "gateway_namespace", Value: ""},
 				{Name: "namespace", Value: testNS},
 				{Name: "resource", Value: testResource},
 			},
@@ -73,6 +75,7 @@ func TestResourceSyncMetrics(t *testing.T) {
 
 	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
 		{Name: "gateway", Value: testName},
+		{Name: "gateway_namespace", Value: ""},
 		{Name: "namespace", Value: testNS},
 		{Name: "resource", Value: testResource},
 	}})
