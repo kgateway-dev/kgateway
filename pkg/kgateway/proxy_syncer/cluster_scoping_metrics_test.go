@@ -114,3 +114,32 @@ func TestReferenceAheadTransitionsAreCountedOncePerCluster(t *testing.T) {
 	})
 	assert.Equal(t, float64(2), held, "two never-sent clusters, one held update: count the clusters, once each")
 }
+
+// A cluster counts once per window, not once per build that the window spans,
+// and a hold the deferred path applies counts like a coherent one.
+func TestReferenceAheadTransitionsCountWindowsNotBuilds(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	clusterScopingTransitionsTotal.Reset() // series persist across tests in this package
+	held := func() float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+			{Name: gatewayLabel, Value: "unknown"},
+			{Name: namespaceLabel, Value: "unknown"},
+			{Name: transitionLabel, Value: transitionReferenceAheadHeld},
+		})
+	}
+
+	pt := newReferenceAheadTranslator(t, time.Hour)
+	ctx := t.Context()
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "old", "new"))
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "old", "new")) // a rebuild inside the window
+	assert.Equal(t, float64(1), held(), "one cluster, one window")
+
+	deferred := routedBuild(t, "v4", "new", "old", "new", "authz")
+	deferred.missingEndpointsReferenced = []string{"old"}
+	deferred.synthesizedEndpoints = []string{"old"}
+	pt.syncXds(ctx, deferred)
+	assert.Equal(t, float64(2), held(), "the deferred path's hold counts its new cluster")
+}

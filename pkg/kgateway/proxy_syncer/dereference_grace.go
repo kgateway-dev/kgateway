@@ -272,7 +272,6 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 	if len(newlyEmitted) > 0 {
 		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
 		recordFlipHeld(snapWrap.proxyKey)
-		recordClusterScopingTransition(snapWrap.proxyKey, transitionReferenceAheadHeld, len(newlyEmitted))
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes, now)
 	} else {
 		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
