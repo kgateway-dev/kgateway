@@ -216,7 +216,10 @@ func (g *publishGate) publishWithDereferenceGrace(
 	}
 
 	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
-	if err := g.setSnapshot(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes); err != nil {
+	// Through publishLocked like any other publish without a hold: this build
+	// supersedes a pending first publish or flip release, whose timer would
+	// otherwise re-publish its older build when it fires.
+	if err := g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes); err != nil {
 		return err
 	}
 	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonest)
