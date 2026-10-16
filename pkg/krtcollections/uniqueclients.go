@@ -176,11 +176,12 @@ type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.K
 
 // XDSClientState exposes per-client connection state derived from the xDS
 // callbacks. HasPriorXDSVersion reports whether a stream of the client opened
-// a resource type with a version it had accepted before (an empty nonce with a
-// non-empty version) — i.e. the Envoy may already be serving config accepted
-// on a previous stream even though this controller has not published to it
-// (reconnect, controller restart). The mark belongs to the resource name, so
-// it covers every stream sharing it, and lasts until the last of them closes.
+// its listener subscription with a version it had accepted before (an empty
+// nonce with a non-empty version) — i.e. the Envoy may already be serving
+// config accepted on a previous stream even though this controller has not
+// published to it (reconnect, controller restart). The mark belongs to the
+// resource name, so it covers every stream sharing it, and lasts until the
+// last of them closes.
 type XDSClientState interface {
 	HasPriorXDSVersion(resourceName string) bool
 }
@@ -511,8 +512,15 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	return nil
 }
 
+// hasPriorXDSVersion reports whether r is a stream's initial listener request
+// carrying a version the proxy accepted before. Only listeners count: an Envoy
+// serves traffic through its listeners, so warmth exists to protect config the
+// proxy is serving. A proxy can hold an accepted cluster version and no
+// listeners at all (its previous stream broke while CDS was still warming,
+// before it requested listeners); it has nothing to protect and must start
+// within the first-publish budget like a new proxy.
 func hasPriorXDSVersion(r *envoy_service_discovery_v3.DiscoveryRequest) bool {
-	return r.GetResponseNonce() == "" && r.GetVersionInfo() != ""
+	return r.GetTypeUrl() == resource.ListenerType && r.GetResponseNonce() == "" && r.GetVersionInfo() != ""
 }
 
 // markPriorXDSVersion records that stream sid reported held config. Each

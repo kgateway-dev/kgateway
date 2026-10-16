@@ -790,10 +790,14 @@ func TestNormalizeGatewayRole(t *testing.T) {
 	}
 }
 
-// priorVersionRequest builds a request on the shared test role. version is the
-// version the proxy reports holding; nonce is empty on a stream's initial
-// request for a type and set on follow-ups (ACKs and NACKs).
+// priorVersionRequest builds a listener request on the shared test role.
+// version is the version the proxy reports holding; nonce is empty on a
+// stream's initial request for a type and set on follow-ups (ACKs and NACKs).
 func priorVersionRequest(role, version, nonce string) *envoy_service_discovery_v3.DiscoveryRequest {
+	return typedPriorVersionRequest(role, resource.ListenerType, version, nonce)
+}
+
+func typedPriorVersionRequest(role, typeURL, version, nonce string) *envoy_service_discovery_v3.DiscoveryRequest {
 	return &envoy_service_discovery_v3.DiscoveryRequest{
 		Node: &envoycorev3.Node{
 			Id: "podname.ns",
@@ -801,10 +805,33 @@ func priorVersionRequest(role, version, nonce string) *envoy_service_discovery_v
 				xds.RoleKey: structpb.NewStringValue(role),
 			}},
 		},
-		TypeUrl:       resource.ClusterType,
+		TypeUrl:       typeURL,
 		VersionInfo:   version,
 		ResponseNonce: nonce,
 	}
+}
+
+// Only a held listener version marks a key warm. A proxy whose previous stream
+// broke while its clusters were warming holds a cluster version but no
+// listeners: it serves nothing, so it must not be withheld like a proxy that
+// is serving config.
+func TestUniqueClientsPriorXDSVersionNeedsHeldListeners(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+
+	g.Expect(cb.OnStreamRequest(1, typedPriorVersionRequest(role, resource.ClusterType, "cds-v1", ""))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(1, typedPriorVersionRequest(role, resource.EndpointType, "eds-v1", ""))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(1, typedPriorVersionRequest(role, resource.ListenerType, "", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "held clusters without listeners are not served config")
+
+	g.Expect(cb.OnStreamRequest(2, typedPriorVersionRequest(role, resource.ListenerType, "lds-v1", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeTrue(), "a held listener version is warm")
 }
 
 // A key is warm only when a stream's initial request reports a version it
