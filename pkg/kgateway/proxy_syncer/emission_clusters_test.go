@@ -229,7 +229,7 @@ func TestEmittedClustersEquals(t *testing.T) {
 	assert.True(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: map[string]struct{}{"a": {}}}}))
 	assert.False(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: map[string]struct{}{"a": {}, "b": {}}}}),
 		"the gateway collection must detect changed emission candidates even with unchanged resource versions")
-	assert.False(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: base.Names, Unresolvable: []string{"cluster_header \"x\""}}}),
+	assert.False(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: base.Names, RequestTimeSelectors: []requestTimeSelector{{selectorClusterHeader, "x"}}}}),
 		"the gateway collection must detect when filtering becomes unsafe")
 }
 
