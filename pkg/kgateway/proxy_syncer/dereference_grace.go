@@ -222,7 +222,8 @@ func (g *publishGate) publishWithTransitionGraces(
 	// Holding routes, listeners and secrets at their published versions
 	// publishes the new cluster's CDS by itself, and the existing flip-release
 	// timer sends the route once the window closes.
-	newlyEmitted, _ := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, time.Now())
+	now := time.Now()
+	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
 
 	if len(graced) == 0 && len(newlyEmitted) == 0 {
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
@@ -232,7 +233,7 @@ func (g *publishGate) publishWithTransitionGraces(
 	if len(newlyEmitted) > 0 {
 		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
 		recordFlipHeld(snapWrap.proxyKey)
-		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, newlyEmitted, edsHashes, true)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes, now)
 	} else {
 		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 		// Through publishLocked like any other publish without a hold: this
