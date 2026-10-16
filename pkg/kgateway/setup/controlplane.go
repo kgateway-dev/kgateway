@@ -3,6 +3,7 @@ package setup
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -13,8 +14,10 @@ import (
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
 	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoylog "github.com/envoyproxy/go-control-plane/pkg/log"
+	envoyresource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	serverconfig "github.com/envoyproxy/go-control-plane/pkg/server/config"
 	sotwv3 "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -93,6 +96,45 @@ func (s *slogAdapterForEnvoy) Errorf(format string, args ...any) {
 	}
 }
 
+// newSnapshotCache returns the ADS snapshot cache, with secrets served per request.
+func newSnapshotCache(hash envoycache.NodeHash, logger envoylog.Logger) envoycache.SnapshotCache {
+	return &perRequestSecretsCache{
+		SnapshotCache: envoycache.NewSnapshotCache(true, hash, logger),
+		secrets:       envoycache.NewSnapshotCache(false, hash, logger),
+	}
+}
+
+// perRequestSecretsCache serves secret watches from a non-ADS copy of each
+// snapshot's secrets. Delta watches, Fetch and status stay on the embedded cache.
+type perRequestSecretsCache struct {
+	envoycache.SnapshotCache
+	secrets envoycache.SnapshotCache
+}
+
+func (c *perRequestSecretsCache) CreateWatch(request *envoycache.Request, sub envoycache.Subscription, value chan envoycache.Response) (func(), error) {
+	if request.GetTypeUrl() == envoyresource.SecretType {
+		return c.secrets.CreateWatch(request, sub, value)
+	}
+	return c.SnapshotCache.CreateWatch(request, sub, value)
+}
+
+// SetSnapshot publishes secrets first, so they are ready when a new listener
+// requests them. Both caches store the snapshot even if a response fails.
+func (c *perRequestSecretsCache) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
+	secrets := &envoycache.Snapshot{}
+	secrets.Resources[envoycachetypes.Secret] = envoycache.Resources{
+		Version: snapshot.GetVersion(envoyresource.SecretType),
+		Items:   snapshot.GetResourcesAndTTL(envoyresource.SecretType),
+	}
+	err := c.secrets.SetSnapshot(ctx, node, secrets)
+	return errors.Join(err, c.SnapshotCache.SetSnapshot(ctx, node, snapshot))
+}
+
+func (c *perRequestSecretsCache) ClearSnapshot(node string) {
+	c.secrets.ClearSnapshot(node)
+	c.SnapshotCache.ClearSnapshot(node)
+}
+
 func NewControlPlane(
 	ctx context.Context,
 	lis net.Listener,
@@ -111,7 +153,7 @@ func NewControlPlane(
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher) //nolint:contextcheck
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 
-	snapshotCache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), envoyLoggerAdapter)
+	snapshotCache := newSnapshotCache(xds.NewNodeRoleHasher(), envoyLoggerAdapter)
 
 	var xdsOpts []serverconfig.XDSOption
 	if orderedADS {

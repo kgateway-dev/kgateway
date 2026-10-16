@@ -9,6 +9,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
@@ -198,6 +199,41 @@ func TestTranslateBackendBase_BaseClusterHooks(t *testing.T) {
 	perClient, err := bt.ApplyPerClient(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, unattached, base)
 	require.NoError(t, err)
 	assert.Nil(t, perClient, "a base cluster hook alone must not cost any client a cluster of its own")
+}
+
+// TestTranslateBackendBase_BaseClusterResources checks resource hook ordering
+// and delivery of generated listeners with the base cluster.
+func TestTranslateBackendBase_BaseClusterResources(t *testing.T) {
+	var order []string
+	resources := func(name string) sdk.ProcessBaseClusterResources {
+		return func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+			order = append(order, name)
+			return sdk.BaseClusterResources{
+				Listeners: []*envoylistenerv3.Listener{{Name: name + "_" + out.GetName()}},
+			}, nil
+		}
+	}
+	bt := edsBackendTranslator(map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "b", Kind: "Resources"}: {ProcessBaseClusterResources: resources("b")},
+		{Group: "a", Kind: "Resources"}: {ProcessBaseClusterResources: resources("a")},
+		{Group: "z", Kind: "Hook"}: {
+			ProcessBaseCluster: func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, _ *envoyclusterv3.Cluster) {
+				order = append(order, "hook")
+			},
+		},
+	})
+	backend := overlayBackend()
+
+	base := bt.TranslateBackendBase(krt.TestingDummyContext{}, context.Background(), backend)
+	require.NoError(t, base.Error)
+	assert.Equal(t, []string{"hook", "a", "b"}, order)
+
+	names := make([]string, 0, len(base.Listeners))
+	for _, l := range base.Listeners {
+		names = append(names, l.GetName())
+	}
+	cluster := backend.ClusterName()
+	assert.Equal(t, []string{"a_" + cluster, "b_" + cluster}, names, "the hooks' listeners must be returned with the base")
 }
 
 // TestApplyPerClient_BaseErrorIsNoOp: when the base is errored there is no

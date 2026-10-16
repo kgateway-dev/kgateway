@@ -1,0 +1,337 @@
+# The Backends name destination.internal  resolves nowhere. nginx is
+# reachable only through connect-proxy, and it accepts CONNECT only for
+# destination.internal:8080 or :8443 with the right Proxy-Authorization.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: connect-proxy
+  namespace: kgateway-base
+data:
+  envoy.yaml: |
+    static_resources:
+      listeners:
+      - name: connect
+        address:
+          socket_address: {address: 0.0.0.0, port_value: 3128}
+        filter_chains:
+        - filters:
+          - name: envoy.filters.network.http_connection_manager
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              stat_prefix: connect
+              codec_type: HTTP1
+              # Enable CONNECT upgrades so authentication failures return 407.
+              upgrade_configs:
+              - upgrade_type: CONNECT
+              access_log:
+              - name: envoy.access_loggers.stdout
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+              route_config:
+                virtual_hosts:
+                - name: http
+                  domains: ["destination.internal:8080"]
+                  routes:
+                  - match:
+                      connect_matcher: {}
+                      headers:
+                      - name: proxy-authorization
+                        string_match: {exact: "Basic dXNlcjpwYXNz"}
+                    route:
+                      cluster: nginx-http
+                      upgrade_configs: [{upgrade_type: CONNECT, connect_config: {}}]
+                  - match: {connect_matcher: {}}
+                    direct_response: {status: 407}
+                - name: https
+                  domains: ["destination.internal:8443"]
+                  routes:
+                  - match:
+                      connect_matcher: {}
+                      headers:
+                      - name: proxy-authorization
+                        string_match: {exact: "Basic dXNlcjpwYXNz"}
+                    route:
+                      cluster: nginx-https
+                      upgrade_configs: [{upgrade_type: CONNECT, connect_config: {}}]
+                  - match: {connect_matcher: {}}
+                    direct_response: {status: 407}
+              http_filters:
+              - name: envoy.filters.http.router
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      clusters:
+      - name: nginx-http
+        type: STRICT_DNS
+        connect_timeout: 2s
+        load_assignment:
+          cluster_name: nginx-http
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address: {address: nginx.kgateway-base.svc.cluster.local, port_value: 8080}
+      - name: nginx-https
+        type: STRICT_DNS
+        connect_timeout: 2s
+        load_assignment:
+          cluster_name: nginx-https
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address: {address: nginx.kgateway-base.svc.cluster.local, port_value: 8443}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connect-proxy
+  namespace: kgateway-base
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: connect-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: connect-proxy
+    spec:
+      containers:
+      - name: envoy
+        image: envoyproxy/envoy:v1.39.1
+        args: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+        ports:
+        - containerPort: 3128
+        volumeMounts:
+        - name: config
+          mountPath: /etc/envoy
+      volumes:
+      - name: config
+        configMap:
+          name: connect-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: connect-proxy
+  namespace: kgateway-base
+spec:
+  selector:
+    app.kubernetes.io/name: connect-proxy
+  ports:
+  - name: http
+    port: 3128
+    targetPort: 3128
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: connect-proxy-down
+  namespace: kgateway-base
+spec:
+  selector:
+    app.kubernetes.io/name: no-such-proxy
+  ports:
+  - name: http
+    port: 3128
+    targetPort: 3128
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: connect-proxy-credentials
+  namespace: kgateway-base
+type: Opaque
+stringData:
+  # Exercise trailing-newline normalization.
+  authorization: |
+    Basic dXNlcjpwYXNz
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: connect-proxy-wrong-credentials
+  namespace: kgateway-base
+type: Opaque
+stringData:
+  authorization: Basic d3Jvbmc6Y3JlZHM=
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: tunnel-http
+  namespace: kgateway-base
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: destination.internal
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: tunnel-http
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: tunnel-http
+  tunnel:
+    proxy:
+      backendRef:
+        name: connect-proxy
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      secretRef:
+        name: connect-proxy-credentials
+        key: authorization
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: tunnel-https
+  namespace: kgateway-base
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: destination.internal
+      port: 8443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: tunnel-https
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: tunnel-https
+  tls:
+    sni: example.com
+    insecureSkipVerify: true
+  tunnel:
+    proxy:
+      backendRef:
+        name: connect-proxy
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      secretRef:
+        name: connect-proxy-credentials
+        key: authorization
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: tunnel-rejected
+  namespace: kgateway-base
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: destination.internal
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: tunnel-rejected
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: tunnel-rejected
+  tunnel:
+    proxy:
+      backendRef:
+        name: connect-proxy
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      secretRef:
+        name: connect-proxy-wrong-credentials
+        key: authorization
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: tunnel-proxy-down
+  namespace: kgateway-base
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: destination.internal
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: tunnel-proxy-down
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: tunnel-proxy-down
+  tunnel:
+    proxy:
+      backendRef:
+        name: connect-proxy-down
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      secretRef:
+        name: connect-proxy-credentials
+        key: authorization
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: tunnel
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: gateway
+    namespace: kgateway-base
+  hostnames:
+  - tunnel.example.com
+  rules:
+  - matches:
+    - path: {type: PathPrefix, value: /http}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path: {type: ReplacePrefixMatch, replacePrefixMatch: /}
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: tunnel-http
+  - matches:
+    - path: {type: PathPrefix, value: /https}
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path: {type: ReplacePrefixMatch, replacePrefixMatch: /}
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: tunnel-https
+  - matches:
+    - path: {type: PathPrefix, value: /rejected}
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: tunnel-rejected
+  - matches:
+    - path: {type: PathPrefix, value: /proxy-down}
+    backendRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: tunnel-proxy-down
