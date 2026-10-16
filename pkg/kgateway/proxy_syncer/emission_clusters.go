@@ -192,12 +192,17 @@ func collectUnresolvableSelectors(msg proto.Message, unresolvable map[string]str
 		if m.GetObjectKey() == tcpProxyClusterFilterStateKey {
 			unresolvable[fmt.Sprintf("filter_state %q", tcpProxyClusterFilterStateKey)] = struct{}{}
 		}
+	case *anypb.Any:
+		// The walk hands over only typed configs it could not decode; any
+		// cluster they name is invisible to it.
+		unresolvable[fmt.Sprintf("undecodable typed_config %q", m.GetTypeUrl())] = struct{}{}
 	}
 }
 
 // walkResourceProtos visits every message reachable from resources, descending
 // into nested messages, lists, maps, and typed_config (anypb.Any) payloads, and
-// calls visit on each.
+// calls visit on each. An Any whose payload cannot be decoded is visited
+// itself, in place of the payload.
 //
 // This broader traversal is used for emission; readiness uses the targeted
 // route/listener walk in collectReferencedClusters.
@@ -252,9 +257,12 @@ func walkProtoValue(v protoreflect.Value, visit func(proto.Message)) {
 	if anyMsg, ok := msg.Interface().(*anypb.Any); ok {
 		nestedMsg, err := anyMsg.UnmarshalNew()
 		if err != nil {
-			// Typed extensions whose Go types aren't linked into this binary will fail here;
-			// that's expected, but log at debug so genuinely malformed configs are diagnosable.
-			logger.Debug("skipping typed_config during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
+			// A typed config whose Go type is not linked into this binary (or
+			// that is malformed) can name clusters the walk cannot see. Hand
+			// the opaque Any itself to visit, so the emission guard reports it
+			// (collectUnresolvableSelectors) rather than pruning what it names.
+			logger.Debug("typed_config not decodable during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
+			visit(anyMsg)
 			return
 		}
 		walkProto(nestedMsg, visit)
