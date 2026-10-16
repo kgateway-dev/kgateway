@@ -312,3 +312,36 @@ func TestReferenceAheadReleaseIsNotABudgetExpiry(t *testing.T) {
 	assert.Equal(t, float64(1), bounded(boundedPublishReferenceAhead), "the budget cutting a window short is counted, under its own mode")
 	assert.Zero(t, bounded(boundedPublishFlipRelease))
 }
+
+// A de-reference grace that closes while a retarget is held for its
+// reference-ahead window must not release the retarget. The prune re-publishes
+// through the same hold decision as a new build, which still holds: the new
+// cluster's window is open. Here the removal window (20ms) closes long before
+// the addition window (an hour).
+func TestDereferencePruneKeepsAReferenceAheadHold(t *testing.T) {
+	scoping := scopedClustersWithReferenceAhead(time.Hour)
+	scoping.dereferenceGrace = 20 * time.Millisecond
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scoping)
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	heldRoutes := servedSnapshot(t, pt).GetVersion(resourcev3.RouteType)
+	// The route moves from old to new: old is de-referenced, new is new to
+	// the client. The retarget is held for new's window.
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new"))
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the retarget is held")
+
+	time.Sleep(150 * time.Millisecond) // well past old's de-reference grace
+	served := servedSnapshot(t, pt)
+	assert.Equal(t, "v1", served.GetVersion(resourcev3.ListenerType), "the grace closing must not release the held listeners")
+	assert.Equal(t, heldRoutes, served.GetVersion(resourcev3.RouteType), "nor the held routes")
+	assert.ElementsMatch(t, []string{"old", "new"}, publishedClusterNames(t, pt),
+		"the held routes' destination stays published with the new cluster")
+	pt.gate.mu.Lock()
+	held := pt.gate.pendingFlips[publishGateTestClient] != nil
+	pt.gate.mu.Unlock()
+	assert.True(t, held, "the hold is still pending its own release")
+	assertSnapshotCoherent(t, served)
+}
