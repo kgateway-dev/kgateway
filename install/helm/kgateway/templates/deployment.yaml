@@ -135,6 +135,20 @@ spec:
               value: {{ .Values.controller.logLevel | quote }}
             - name: KGW_ADMIN_BIND_ADDRESS
               value: {{ .Values.controller.admin.bindAddress | quote }}
+            {{- if .Values.controller.leaderElection }}
+            {{- with .Values.controller.leaderElection.leaseDuration }}
+            - name: KGW_LEADER_ELECTION_LEASE_DURATION
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.controller.leaderElection.renewDeadline }}
+            - name: KGW_LEADER_ELECTION_RENEW_DEADLINE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.controller.leaderElection.retryPeriod }}
+            - name: KGW_LEADER_ELECTION_RETRY_PERIOD
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             - name: KGW_XDS_SERVICE_NAME
               value: {{ include "kgateway.fullname" . }}
             - name: KGW_XDS_SERVICE_PORT

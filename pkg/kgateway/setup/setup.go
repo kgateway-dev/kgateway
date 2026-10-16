@@ -257,6 +257,9 @@ func New(opts ...func(*setup)) (*setup, error) {
 				LeaderElectionNamespace: namespaces.GetPodNamespace(),
 				LeaderElection:          !s.globalSettings.DisableLeaderElection,
 				LeaderElectionID:        leaderElectionID,
+				LeaseDuration:           &s.globalSettings.LeaderElectionLeaseDuration,
+				RenewDeadline:           &s.globalSettings.LeaderElectionRenewDeadline,
+				RetryPeriod:             &s.globalSettings.LeaderElectionRetryPeriod,
 			}
 		}
 	}
