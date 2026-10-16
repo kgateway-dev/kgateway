@@ -467,6 +467,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger.Info("caches warm!")
 
 	// caches are warm, now we can do registrations
+	// The gate publishes a build only while it is the client's current row
+	// (see publishGate.beginBuildLocked).
+	s.proxyTranslator.gate.currentBuild = func(proxyKey string) *XdsSnapWrapper {
+		return s.perclientSnapCollection.GetKey(proxyKey)
+	}
 	// A client whose snapshot row was already gone when it disconnected gets
 	// no row Delete then; end its connection when the client itself leaves.
 	// The check skips a client that has already reconnected.

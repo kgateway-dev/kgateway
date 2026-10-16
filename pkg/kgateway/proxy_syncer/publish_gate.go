@@ -169,6 +169,10 @@ type publishGate struct {
 	// beforeInstall, set only by tests, runs under mu just before setSnapshot
 	// installs, to hold a publisher at that point.
 	beforeInstall func(proxyKey string)
+	// currentBuild returns a client's current snapshot row, or nil if it has
+	// none (beginBuildLocked). Set by ProxySyncer.Start before the gate is
+	// first used; nil for callers that drive the gate directly.
+	currentBuild func(proxyKey string) *XdsSnapWrapper
 }
 
 type pendingFirstPublish struct {
@@ -302,7 +306,9 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 func (g *publishGate) publish(ctx context.Context, cache envoycache.SnapshotCache, snapWrap XdsSnapWrapper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.beginBuildLocked(snapWrap)
+	if !g.beginBuildLocked(snapWrap) {
+		return nil
+	}
 	return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints)
 }
 
@@ -334,13 +340,28 @@ func (g *publishGate) resolveDeferred(
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.beginBuildLocked(snapWrap)
+	if !g.beginBuildLocked(snapWrap) {
+		return nil
+	}
 	return g.resolveDeferredLocked(ctx, cache, snapWrap)
 }
 
 // beginBuildLocked runs for every new build that reaches the gate, before it
-// is published. Timers that re-publish a stored build do not run it: that
-// build already began.
+// is published, and reports whether to publish it. Timers that re-publish a
+// stored build do not run it: that build already began.
+//
+// A build is published only while it is still the client's current snapshot
+// row. Builds reach the gate through the snapshot collection's event queue,
+// and an event can wait there while the row moves on. Publishing a
+// superseded build is not merely redundant: the connection-start hook
+// publishes a returning client's current row as soon as its stream is
+// admitted, ahead of any events still queued, and a queued older build would
+// then replace it on the new connection, answering the new stream's watches
+// with the older routes. The connection fence cannot catch this, since the
+// gate has already adopted the new connection when the old build arrives.
+// The check runs under the gate lock, so no publish can slip between it and
+// the publication. A skipped build loses nothing: the row's later change, or
+// its deletion, has its own event behind it.
 //
 // A carry record belongs to one episode of a cluster missing from the builds.
 // A build that has the cluster again ends the episode, so a later
@@ -349,10 +370,16 @@ func (g *publishGate) resolveDeferred(
 // recovery is usually a coherent build: without this, the earlier episode's
 // start would survive it, and the next disappearance, however brief, would be
 // dropped at once instead of carried. Callers must hold g.mu.
-func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) {
+func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) bool {
+	if g.currentBuild != nil {
+		if current := g.currentBuild(snapWrap.proxyKey); current == nil || !current.Equals(snapWrap) {
+			logger.Debug("not publishing a build the client's snapshot row has moved past", "proxy_key", snapWrap.proxyKey)
+			return false
+		}
+	}
 	since := g.carriedSince[snapWrap.proxyKey]
 	if len(since) == 0 {
-		return
+		return true
 	}
 	missing := stringSet(snapWrap.missingReferenced)
 	for name := range since {
@@ -363,6 +390,7 @@ func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) {
 	if len(since) == 0 {
 		delete(g.carriedSince, snapWrap.proxyKey)
 	}
+	return true
 }
 
 // resolveDeferredLocked is resolveDeferred for callers that hold g.mu.
