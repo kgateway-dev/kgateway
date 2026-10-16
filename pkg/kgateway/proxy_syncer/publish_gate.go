@@ -136,7 +136,9 @@ type publishGate struct {
 	pending      map[string]*pendingFirstPublish
 	pendingFlips map[string]*pendingFlipRelease
 	// published holds the clients the gate has published a snapshot to on
-	// their current connection; clientDeparted removes them.
+	// their current connection; clientDeparted removes them, and
+	// snapshotWithdrawn (the row went away, the connection did not) keeps
+	// them.
 	published map[string]struct{}
 }
 
@@ -538,14 +540,33 @@ func (g *publishGate) cancelFlipReleaseLocked(proxyKey string) {
 	}
 }
 
-// clientDeparted cancels any pending bounded first publish or flip release
-// for a client whose wrapper row was deleted, so a timer cannot publish to a
-// key after its client left, and forgets what the gate published on the
-// client's connection. A still-connected client re-arms the gate with its next
-// deferred wrapper.
+// clientDeparted ends a client's connection: it cancels any pending bounded
+// first publish or flip release, so a timer cannot publish to a key after its
+// client left, and forgets what the gate published on the connection.
 func (g *publishGate) clientDeparted(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.withdrawLocked(proxyKey)
+	delete(g.published, proxyKey)
+}
+
+// snapshotWithdrawn handles a client whose wrapper row was deleted while it
+// stays connected (its gateway's translation briefly produced nothing: a
+// GatewayClass deleted and recreated, a route lookup error). There is nothing
+// left to publish, so pending bounded publishes are canceled, but the client
+// still runs what the gate published on this connection: when the row
+// returns, a deferred build resolves against it (carrying the clusters the
+// client serves, holding flips) instead of starting over as a first publish.
+func (g *publishGate) snapshotWithdrawn(proxyKey string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.withdrawLocked(proxyKey)
+}
+
+// withdrawLocked cancels the client's pending bounded first publish and flip
+// release, keeping the warm episode for a reconnect to resume. Callers must
+// hold g.mu.
+func (g *publishGate) withdrawLocked(proxyKey string) {
 	if st := g.pending[proxyKey]; st != nil {
 		if st.timer != nil {
 			st.timer.Stop()
@@ -555,7 +576,6 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
-	delete(g.published, proxyKey)
 }
 
 // settleSynthesizedEndpoints decides what the client receives for each CLA in

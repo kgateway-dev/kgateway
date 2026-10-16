@@ -231,6 +231,17 @@ func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState krtcol
 	}
 }
 
+// clientSnapshotDeleted handles the deletion of a client's snapshot row. If
+// the client is still connected, only its snapshot went away (see
+// publishGate.snapshotWithdrawn); otherwise the client departed.
+func (t ProxyTranslator) clientSnapshotDeleted(proxyKey string, connected bool) {
+	if connected {
+		t.gate.snapshotWithdrawn(proxyKey)
+		return
+	}
+	t.gate.clientDeparted(proxyKey)
+}
+
 var logger = logging.New("proxy_syncer")
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
@@ -399,6 +410,17 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger.Info("caches warm!")
 
 	// caches are warm, now we can do registrations
+	// A client whose snapshot row was already gone when it disconnected gets
+	// no row Delete then; end its connection when the client itself leaves.
+	// The check skips a client that has already reconnected.
+	s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
+		for _, e := range events {
+			if name := e.Latest().ResourceName(); e.Event == controllers.EventDelete && s.uniqueClients.GetKey(name) == nil {
+				s.proxyTranslator.gate.clientDeparted(name)
+			}
+		}
+	}, false)
+
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
 			cd := getDetailsFromXDSClientResourceName(e.Latest().ResourceName())
@@ -413,18 +435,21 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// readiness deferral no longer removes rows (deferred
 				// wrappers stay present, annotated), a Delete now means the
 				// client departed or a transform-level input briefly
-				// vanished; cancel any pending bounded first publish or flip
-				// release so a timer cannot fire for a client that is gone (a
-				// live client re-arms it with its next deferred wrapper), and
-				// stop treating the cached entry as what the client runs: a
-				// client that returns resolves against nothing until the gate
-				// publishes to it again.
+				// vanished. Either way cancel any pending bounded first
+				// publish or flip release so a timer cannot fire for a row
+				// that is gone (a live client re-arms it with its next
+				// deferred wrapper). Only a departed client stops having the
+				// cached entry treated as what it runs: a client that returns
+				// resolves against nothing until the gate publishes to it
+				// again, while a client that stayed connected still runs what
+				// was published on its connection.
 				//
 				// Known leak: the SnapshotCache entry for a departed UCC is
 				// never cleared and accumulates over the controller's
 				// lifetime. Pre-existing behavior; reclaiming these entries
 				// is a separate follow-up (#14307).
-				s.proxyTranslator.gate.clientDeparted(e.Latest().ResourceName())
+				name := e.Latest().ResourceName()
+				s.proxyTranslator.clientSnapshotDeleted(name, s.uniqueClients.GetKey(name) != nil)
 			}
 
 			kmetrics.EndResourceXDSSync(kmetrics.ResourceSyncDetails{
