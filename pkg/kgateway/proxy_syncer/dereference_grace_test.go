@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"slices"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -458,4 +459,27 @@ func TestStaleGracePruneCallbackDoesNothing(t *testing.T) {
 	pt.gate.mu.Unlock()
 	assert.NotPanics(t, func() { pt.gate.fireDereferencePrune(ctx, pt.xdsCache, publishGateTestClient, state, state.epoch) },
 		"a callback whose state was replaced must not touch the new one")
+}
+
+// The de-reference grace path takes new builds just as publish and
+// resolveDeferred do, so it too skips a build whose client's row has moved on
+// while the build waited in the event queue.
+func TestDereferenceGracePathSkipsASupersededBuild(t *testing.T) {
+	pt := newGraceTestTranslator(t, time.Minute)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	var current atomic.Pointer[XdsSnapWrapper]
+	pt.gate.currentBuild = func(string) *XdsSnapWrapper { return current.Load() }
+	ctx := t.Context()
+
+	v1 := clusterWrapperV("v1", "backend")
+	current.Store(&v1)
+	pt.syncXds(ctx, v1)
+	v2 := clusterWrapperV("v2", "backend")
+	current.Store(&v2)
+	pt.syncXds(ctx, v2)
+	require.Equal(t, "v2", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
+
+	pt.syncXds(ctx, v1) // queued before v2, delivered late
+	assert.Equal(t, "v2", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType),
+		"a superseded build must not replace the current one")
 }
