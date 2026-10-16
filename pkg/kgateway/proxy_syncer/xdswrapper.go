@@ -51,6 +51,12 @@ type XdsSnapWrapper struct {
 	// (settleSynthesizedEndpoints). A synthesized CLA with no endpoints source
 	// at all is the cluster's steady state and is not listed. Sorted.
 	synthesizedEndpoints []string
+	// expiredCarry lists clusters the publish gate stopped carrying at the
+	// warm withhold bound; resolution must not carry them back with a held
+	// flip's closure. Set only on the gate's copy of a wrapper, never on a KRT
+	// row. Sorted.
+	// +noKrtEquals
+	expiredCarry []string
 }
 
 // deferred reports whether the snapshot was built while some referenced

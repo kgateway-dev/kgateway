@@ -134,6 +134,10 @@ type publishGate struct {
 	// client was published (boundCarryLocked). Guarded by mu; created on
 	// first use.
 	carriedSince map[string]map[string]time.Time
+	// carryExpiry holds, per client, the timer that ends its earliest carry at
+	// the warm withhold bound when no build arrives to do it
+	// (armCarryExpiryLocked). Guarded by mu; created on first use.
+	carryExpiry map[string]*carryExpiry
 	// coldEpisodes does the same for the first-publish budget: a client whose
 	// connection (or snapshot row) resets more often than the budget resumes
 	// its first-publish episode instead of restarting it, so it still gets
@@ -181,6 +185,15 @@ type pendingFirstPublish struct {
 type warmEpisode struct {
 	since      time.Time
 	departedAt time.Time
+}
+
+// carryExpiry re-resolves a client's latest deferred build once its earliest
+// carried cluster reaches the warm withhold bound (see armCarryExpiryLocked).
+type carryExpiry struct {
+	// wrap is the client's latest deferred build, the one whose resolution
+	// carried.
+	wrap  XdsSnapWrapper
+	timer *time.Timer
 }
 
 type pendingFlipRelease struct {
@@ -287,6 +300,9 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
+	// This build supersedes the one a pending carry expiry would re-resolve;
+	// a deferred build that carries re-arms it after publishing.
+	g.cancelCarryExpiryLocked(proxyKey)
 	return g.setSnapshot(ctx, cache, proxyKey, snap, synthesized)
 }
 
@@ -306,6 +322,15 @@ func (g *publishGate) resolveDeferred(
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	return g.resolveDeferredLocked(ctx, cache, snapWrap)
+}
+
+// resolveDeferredLocked is resolveDeferred for callers that hold g.mu.
+func (g *publishGate) resolveDeferredLocked(
+	ctx context.Context,
+	cache envoycache.SnapshotCache,
+	snapWrap XdsSnapWrapper,
+) error {
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Not yet published on this connection: there is no known config to
@@ -322,14 +347,20 @@ func (g *publishGate) resolveDeferred(
 		g.offerColdLocked(ctx, cache, snapWrap)
 		return nil
 	}
+	candidate := snapWrap
 	snapWrap = g.boundCarryLocked(snapWrap, published, time.Now())
 	resolved, heldBlocking := resolveDeferredPerCluster(snapWrap, published, true)
+	var publishErr error
 	if len(heldBlocking) > 0 {
 		// The held snapshot still publishes (CDS/EDS keep flowing); the
 		// gate additionally arms the flip-release bound for the episode.
-		return g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking)
+	} else {
+		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints)
 	}
-	return g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints)
+	// Armed after publishing, which cancels it on the no-hold path.
+	g.armCarryExpiryLocked(ctx, cache, candidate)
+	return publishErr
 }
 
 // offerColdLocked records the latest deferred wrapper for a client not yet
@@ -556,6 +587,9 @@ func (g *publishGate) publishHeldLocked(
 	blocking []string,
 ) error {
 	proxyKey := snapWrap.proxyKey
+	// Like any publish, this supersedes the build a pending carry expiry would
+	// re-resolve; a deferred build re-arms it after publishing.
+	g.cancelCarryExpiryLocked(proxyKey)
 	if err := g.setSnapshot(ctx, cache, proxyKey, held, snapWrap.synthesizedEndpoints); err != nil {
 		return err
 	}
@@ -603,6 +637,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 		return
 	}
 	recordBoundedPublish(proxyKey, boundedPublishFlipRelease)
+	g.armCarryExpiryLocked(ctx, cache, pf.wrap)
 }
 
 func (g *publishGate) cancelFlipReleaseLocked(proxyKey string) {
@@ -653,6 +688,7 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
+	g.cancelCarryExpiryLocked(proxyKey)
 }
 
 // settleSynthesizedEndpoints decides what the client receives for each CLA in
@@ -804,9 +840,10 @@ func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error 
 // workloads by then. After the warm withhold bound (the gate's existing bound
 // on "a referenced cluster missing from CDS is not coming back") the cluster is
 // no longer carried and routes to it fail until it reappears. The returned
-// wrapper lists only the missing clusters still carried; the bound, like every
-// other, applies only while the publish budget is non-zero. Callers must hold
-// g.mu.
+// wrapper lists only the missing clusters still carried, and the expired ones
+// in expiredCarry; the bound, like every other, applies only while the publish
+// budget is non-zero. A build applies it when it is resolved, and
+// armCarryExpiryLocked when no build arrives. Callers must hold g.mu.
 func (g *publishGate) boundCarryLocked(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, now time.Time) XdsSnapWrapper {
 	key := snapWrap.proxyKey
 	if g.budget <= 0 || g.warmWithholdBound <= 0 {
@@ -864,7 +901,69 @@ func (g *publishGate) boundCarryLocked(snapWrap XdsSnapWrapper, published envoyc
 		_, gone := expired[name]
 		return gone
 	})
+	// A held flip carries its whole published closure; it must not carry these
+	// back, or the next build would find them published and start them over.
+	bounded.expiredCarry = slices.Sorted(maps.Keys(expired))
 	return bounded
+}
+
+// armCarryExpiryLocked schedules the end of the client's earliest carry.
+// boundCarryLocked enforces the warm withhold bound only when a build is
+// resolved, and with quiet inputs none may arrive: a cluster whose backend was
+// deleted while routes still name it would be carried for as long as nothing
+// else changed. At the earliest carried cluster's deadline the timer
+// re-resolves wrap, the client's latest deferred build, through the same path
+// as a new build, which stops carrying whatever has been carried for the bound
+// and re-arms for the rest.
+//
+// The timer never re-publishes an older build: every publish cancels it
+// (publishLocked, publishHeldLocked), a deferred build then re-arms it with
+// itself, and a departure or withdrawn row cancels it. Callers must hold g.mu.
+func (g *publishGate) armCarryExpiryLocked(ctx context.Context, cache envoycache.SnapshotCache, wrap XdsSnapWrapper) {
+	key := wrap.proxyKey
+	g.cancelCarryExpiryLocked(key)
+	var earliest time.Time
+	for _, since := range g.carriedSince[key] {
+		if earliest.IsZero() || since.Before(earliest) {
+			earliest = since
+		}
+	}
+	if earliest.IsZero() {
+		return // nothing carried (or the bound is off, which records nothing)
+	}
+	ce := &carryExpiry{wrap: wrap}
+	if g.carryExpiry == nil {
+		g.carryExpiry = make(map[string]*carryExpiry)
+	}
+	g.carryExpiry[key] = ce
+	ce.timer = time.AfterFunc(max(0, time.Until(earliest.Add(g.warmWithholdBound))), func() {
+		g.fireCarryExpiry(ctx, cache, key, ce)
+	})
+}
+
+func (g *publishGate) cancelCarryExpiryLocked(proxyKey string) {
+	if ce := g.carryExpiry[proxyKey]; ce != nil {
+		ce.timer.Stop()
+		delete(g.carryExpiry, proxyKey)
+	}
+}
+
+// fireCarryExpiry re-resolves the client's latest deferred build at a carry's
+// deadline (see armCarryExpiryLocked). It acts only for the arming that
+// scheduled it, under the gate lock like every other publication.
+func (g *publishGate) fireCarryExpiry(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, ce *carryExpiry) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.carryExpiry[proxyKey] != ce {
+		return // superseded by a later build, or the client left
+	}
+	delete(g.carryExpiry, proxyKey)
+	if g.connectionSnapshotLocked(cache, proxyKey) == nil {
+		return // defensive: a reset connection cancels the timer
+	}
+	if err := g.resolveDeferredLocked(ctx, cache, ce.wrap); err != nil {
+		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+	}
 }
 
 // rememberColdEpisodeLocked keeps a departing unpublished client's

@@ -245,12 +245,18 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	newEndpoints := composed.Resources[envoycachetypes.Endpoint]
 	oldEndpoints := published.GetResourcesAndTTL(envoyresourcev3.EndpointType)
 	erroredSet := stringSet(snapWrap.erroredClusters)
+	expiredSet := stringSet(snapWrap.expiredCarry)
 	var carried []string
 	var carryHash uint64
 	clusterItems := newClusters.Items
 	endpointItems := newEndpoints.Items
 	for name := range carryRefs {
 		if name == wellknown.BlackholeClusterName {
+			continue
+		}
+		if _, expired := expiredSet[name]; expired {
+			// Carried for the whole warm withhold bound (boundCarryLocked):
+			// neither the truth path nor a held flip's closure brings it back.
 			continue
 		}
 		if _, errored := erroredSet[name]; errored {
