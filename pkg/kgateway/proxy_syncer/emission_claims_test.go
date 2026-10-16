@@ -32,7 +32,8 @@ func TestClaimedSelectorKeepsTheGatewayScoped(t *testing.T) {
 		"an unclaimed selector must cost the gateway its scoping")
 
 	claimed := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
-		Selectors: []string{"picker"},
+		Selectors:    []string{"picker"},
+		NamePrefixes: []string{"picker_"},
 	}))
 	assert.True(t, emission.Filterable(claimed),
 		"the plugin that owns the selector accounted for it")
@@ -43,7 +44,8 @@ func TestClaimedSelectorKeepsTheGatewayScoped(t *testing.T) {
 // plugin's unbounded selector.
 func TestClaimedSelectorsAreMatchedByName(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
-		Selectors: []string{"picker"},
+		Selectors:    []string{"picker"},
+		NamePrefixes: []string{"picker_"},
 	}))
 
 	assert.True(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}))
@@ -105,8 +107,44 @@ func TestEmptyPrefixClaimIsRejected(t *testing.T) {
 
 	assert.Empty(t, claims.prefixes)
 	assert.False(t, claims.claims("anything-at-all"))
-	assert.True(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}),
-		"the selector is still accounted for; only the unbounded prefix was dropped")
+	assert.False(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}),
+		"with its prefix dropped the claim keeps none of the selector's candidates, so it must not account for the selector")
+}
+
+// TestClaimWithoutDestinationsDoesNotAccountForItsSelectors: accounting for a
+// selector while keeping none of its candidates would prune exactly the clusters
+// it computes, and its plugin would quietly fall back on every request.
+func TestClaimWithoutDestinationsDoesNotAccountForItsSelectors(t *testing.T) {
+	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
+		Selectors: []string{"picker"},
+	}))
+
+	assert.False(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}))
+	assert.False(t, emittedClusters{
+		Names:                map[string]struct{}{"a": {}},
+		RequestTimeSelectors: []requestTimeSelector{{selectorSpecifierPlugin, "picker"}},
+	}.Filterable(claims), "its gateway stays unscoped")
+}
+
+// TestOnlySpecifierPluginsCanBeClaimed: a claim names cluster specifier
+// plugins. Other request-time selectors are never accounted for, even when a
+// claimed name happens to equal theirs.
+func TestOnlySpecifierPluginsCanBeClaimed(t *testing.T) {
+	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
+		Selectors:    []string{"picker", "envoy.tcp_proxy.cluster", "type.googleapis.com/example.Opaque"},
+		NamePrefixes: []string{"backend_"},
+	}))
+
+	assert.True(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}))
+	assert.True(t, claims.accountsFor(requestTimeSelector{selectorInlinePlugin, "picker"}))
+	for _, selector := range []requestTimeSelector{
+		{selectorFilterState, "envoy.tcp_proxy.cluster"},
+		{selectorOpaqueConfig, "type.googleapis.com/example.Opaque"},
+		{Kind: selectorSniCluster},
+		{selectorUnknownSpecifier, "picker"},
+	} {
+		assert.False(t, claims.accountsFor(selector), "%s must not be claimable", selector)
+	}
 }
 
 // TestNoClaimsIsTheOrdinaryCase: nearly every plugin routes only where the
