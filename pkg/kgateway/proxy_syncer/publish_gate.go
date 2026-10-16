@@ -153,6 +153,10 @@ type publishGate struct {
 	// version (warm). May be nil: every client is then treated as cold.
 	// Written once at construction.
 	clientState krtcollections.XDSClientState
+	// afterPublish, when set, runs under mu after every snapshot the gate
+	// installs; the snapshot reclaimer uses it to notice a publish that
+	// landed after its client left. Written before the gate is first used.
+	afterPublish func(proxyKey string)
 
 	mu           sync.Mutex
 	pending      map[string]*pendingFirstPublish
@@ -277,6 +281,9 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 	delete(g.coldEpisodes, proxyKey)
 	delete(g.warmEpisodes, proxyKey)
 	g.published[proxyKey] = struct{}{}
+	if g.afterPublish != nil {
+		g.afterPublish(proxyKey)
+	}
 	return nil
 }
 

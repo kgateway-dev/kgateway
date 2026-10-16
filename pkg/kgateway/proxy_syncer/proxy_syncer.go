@@ -438,6 +438,16 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		reclaimer := newSnapshotReclaimer(func(resourceName string) bool {
 			return s.proxyTranslator.gate.reclaimDeparted(s.proxyTranslator.xdsCache, resourceName, s.clientState)
 		})
+		// A publish can land after its client left: a build queued behind
+		// the departure, or a bounded publish already firing. If the reclaim
+		// ran first, that publish re-creates the entry, and nothing would
+		// reclaim it again. Re-arm the reclaim (a no-op while one is pending);
+		// it still clears only if the client is gone when it fires.
+		s.proxyTranslator.gate.afterPublish = func(resourceName string) {
+			if s.uniqueClients.GetKey(resourceName) == nil {
+				reclaimer.clientDeparted(resourceName)
+			}
+		}
 		s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
 			for _, e := range events {
 				name := e.Latest().ResourceName()
