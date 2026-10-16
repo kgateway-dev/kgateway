@@ -86,7 +86,8 @@ type StartConfig struct {
 	// XDSClientState is the connection state behind UniqueClients (the third
 	// result of krtcollections.NewUniquelyConnectedClients). Leave it nil
 	// only if no such state exists: per-client publication then treats every
-	// reconnecting proxy as a new one.
+	// reconnecting proxy as a new one, and never reclaims the snapshots of
+	// departed proxies, so controller memory grows with proxy churn.
 	XDSClientState krtcollections.XDSClientState
 
 	KrtOptions krtutil.KrtOptions
