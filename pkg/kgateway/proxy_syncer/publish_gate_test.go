@@ -38,6 +38,9 @@ func newPublishGateTestTranslator(t *testing.T, prior bool, budget time.Duration
 		budget,
 		true,
 	)
+	// Stop the gate's timers with the test: a warm client withheld at the
+	// budget re-arms every budget for as long as the test binary runs.
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
 	return &pt
 }
 
