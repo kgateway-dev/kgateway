@@ -1,0 +1,18 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xds-warming-empty
+  namespace: kgateway-base
+spec:
+  parentRefs:
+    - name: gateway
+  hostnames:
+    - "xds-warming-empty.example.com"
+  rules:
+    - backendRefs:
+        # warming-new exists as a Service (see setup.yaml) but no Deployment
+        # ever backs it here: a permanent zero-endpoint backend, the
+        # steady-state shape of scale-to-zero / ExternalName (#14352). The
+        # route publishes as truth (503) rather than holding anything.
+        - name: warming-new
+          port: 8080
