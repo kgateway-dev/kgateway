@@ -10,13 +10,15 @@ package main
 
 import (
 	"bufio"
+	"cmp"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -57,10 +59,10 @@ func main() {
 
 func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch float64, config string) error {
 	if profiles == "" {
-		return fmt.Errorf("-profiles is required")
+		return errors.New("-profiles is required")
 	}
 	merged := profile{}
-	for _, f := range strings.Split(profiles, ",") {
+	for f := range strings.SplitSeq(profiles, ",") {
 		if err := readProfile(strings.TrimSpace(f), merged); err != nil {
 			return err
 		}
@@ -189,15 +191,14 @@ func writeProfile(name string, p profile) error {
 	for k := range p {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool {
-		a, b := keys[i], keys[j]
+	slices.SortFunc(keys, func(a, b blockKey) int {
 		if a.file != b.file {
-			return a.file < b.file
+			return cmp.Compare(a.file, b.file)
 		}
 		if a.startLine != b.startLine {
-			return a.startLine < b.startLine
+			return cmp.Compare(a.startLine, b.startLine)
 		}
-		return a.startCol < b.startCol
+		return cmp.Compare(a.startCol, b.startCol)
 	})
 	f, err := os.Create(name)
 	if err != nil {
@@ -223,7 +224,7 @@ func totals(p profile) (covered, total int) {
 			covered += k.nStmts
 		}
 	}
-	return
+	return covered, total
 }
 
 func readDiff(base, diffFile string) (string, error) {
@@ -231,7 +232,10 @@ func readDiff(base, diffFile string) (string, error) {
 		b, err := os.ReadFile(diffFile)
 		return string(b), err
 	}
-	out, err := exec.Command("git", "diff", "-U0", "--no-color", "--no-ext-diff", base+"...HEAD", "--", "*.go").Output()
+	// The executable is fixed, no shell is involved, and --end-of-options keeps
+	// the supplied revision from being interpreted as a Git option.
+	// #nosec G204 -- base is a revision argument; external diff/textconv execution is disabled.
+	out, err := exec.Command("git", "diff", "-U0", "--no-color", "--no-ext-diff", "--no-textconv", "--end-of-options", base+"...HEAD", "--", "*.go").Output()
 	if err != nil {
 		return "", fmt.Errorf("git diff %s...HEAD: %w", base, err)
 	}
@@ -245,7 +249,7 @@ var hunkRe = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@`)
 func parseAddedLines(diff string) map[string][]int {
 	added := map[string][]int{}
 	var file string
-	for _, line := range strings.Split(diff, "\n") {
+	for line := range strings.SplitSeq(diff, "\n") {
 		switch {
 		case strings.HasPrefix(line, "+++ "):
 			file = ""
@@ -293,7 +297,7 @@ func patchCoverage(p profile, added map[string][]int, exclude *regexp.Regexp) pa
 	for n := range added {
 		names = append(names, n)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	for _, name := range names {
 		if path.Ext(name) != ".go" || exclude.MatchString(name) {
 			continue

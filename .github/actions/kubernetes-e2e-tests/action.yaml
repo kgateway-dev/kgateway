@@ -32,10 +32,7 @@ inputs:
   collect-coverage:
     required: false
     default: "false"
-    description: >-
-      Collect coverage from a coverage-instrumented controller (built with KGATEWAY_COVER=true) and
-      upload it as the coverage-e2e-<cluster-name> artifact for the Test Coverage job to merge.
-
+    description: Collect controller coverage (requires KGATEWAY_COVER=true) and upload coverage-e2e-<cluster-name> for the coverage report.
 runs:
   using: "composite"
   steps:

@@ -96,14 +96,15 @@ func TestReportUsesConfiguredExclusions(t *testing.T) {
 	dir := t.TempDir()
 	input, output := filepath.Join(dir, "input.out"), filepath.Join(dir, "merged.out")
 	summary := filepath.Join(dir, "summary.md")
-	data := unitProfile
+	var data strings.Builder
+	data.WriteString(unitProfile)
 	for _, name := range []string{
 		"pkg/a/a.pb.go", "pkg/a/a.pb.hash.go", "pkg/a/a.pb.equal.go",
 		"pkg/a/zz_generated.deepcopy.go", "test/helper.go", "hack/tool.go",
 	} {
-		data += modulePath + name + ":1.1,2.1 100 1\n"
+		data.WriteString(modulePath + name + ":1.1,2.1 100 1\n")
 	}
-	mustWrite(t, input, data)
+	mustWrite(t, input, data.String())
 	if err := run(input, output, "", "", summary, defaultExclude, 0, "../../../test_coverage.yml"); err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +151,20 @@ func TestExclusionsReadConfig(t *testing.T) {
 
 func mustWrite(t *testing.T, name, content string) {
 	t.Helper()
-	if err := os.WriteFile(name, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(name, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestReadDiffRevision(t *testing.T) {
+	got, err := readDiff("HEAD", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "" {
+		t.Fatalf("HEAD compared with itself should produce no diff: %s", got)
+	}
+	if _, err := readDiff("--output=unexpected", ""); err == nil {
+		t.Fatal("expected an option-like revision to be rejected")
 	}
 }
