@@ -23,7 +23,7 @@ Runs [code generation](/devel/contributing/code-generation.md) and makes sure th
 
 Runs all Go unit tests and calls the reusable Kubernetes e2e workflow in parallel. The `Test Coverage` job waits through job dependencies, without occupying a runner, then merges unit and e2e shard coverage from the same run.
 It writes statement coverage and approximate changed-line coverage to the job summary and publishes an HTML report as the `coverage-html` artifact.
-When e2e succeeds, it enforces the thresholds in [test_coverage.yml](/test_coverage.yml).
+When e2e succeeds, it requires a nonempty unit profile and a profile from every configured e2e shard, then enforces the thresholds in [test_coverage.yml](/test_coverage.yml).
 If unit tests succeed but e2e fails, the report is still produced but thresholds are not enforced. Cancelled runs skip reporting.
 See the [coverage guide](/devel/testing/run-tests.md#coverage) for scope, limitations, and local reporting commands.
 

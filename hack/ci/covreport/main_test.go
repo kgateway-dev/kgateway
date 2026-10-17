@@ -41,7 +41,7 @@ func TestMergeSumsCountsAcrossProfiles(t *testing.T) {
 	mustWrite(t, u, unitProfile)
 	mustWrite(t, e, e2eProfile)
 
-	if err := run(u+","+e, out, "", "", "", defaultExclude, 0, ""); err != nil {
+	if err := run(u+","+e, out, "", "", "", defaultExclude, 0, "", reportOptions{}); err != nil {
 		t.Fatal(err)
 	}
 	got, _ := os.ReadFile(out)
@@ -78,10 +78,10 @@ func TestMinPatchFails(t *testing.T) {
 	u, d := filepath.Join(dir, "u.out"), filepath.Join(dir, "d.diff")
 	mustWrite(t, u, unitProfile)
 	mustWrite(t, d, diff)
-	if err := run(u, "", "", d, "", defaultExclude, 99, ""); err == nil {
+	if err := run(u, "", "", d, "", defaultExclude, 99, "", reportOptions{}); err == nil {
 		t.Fatal("expected failure below threshold")
 	}
-	if err := run(u, "", "", d, "", defaultExclude, 10, ""); err != nil {
+	if err := run(u, "", "", d, "", defaultExclude, 10, "", reportOptions{}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -101,11 +101,12 @@ func TestReportUsesConfiguredExclusions(t *testing.T) {
 	for _, name := range []string{
 		"pkg/a/a.pb.go", "pkg/a/a.pb.hash.go", "pkg/a/a.pb.equal.go",
 		"pkg/a/zz_generated.deepcopy.go", "test/helper.go", "hack/tool.go",
+		"pkg/kgateway/query/mocks/mock_queries.go", "pkg/client/clientset/versioned/clientset.go", "api/applyconfiguration/backend.go", "pkg/generated/openapi/zz_generated.openapi.go",
 	} {
 		data.WriteString(modulePath + name + ":1.1,2.1 100 1\n")
 	}
 	mustWrite(t, input, data.String())
-	if err := run(input, output, "", "", summary, defaultExclude, 0, "../../../test_coverage.yml"); err != nil {
+	if err := run(input, output, "", "", summary, defaultExclude, 0, "../../../test_coverage.yml", reportOptions{}); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(summary)
@@ -166,5 +167,56 @@ func TestReadDiffRevision(t *testing.T) {
 	}
 	if _, err := readDiff("--output=unexpected", ""); err == nil {
 		t.Fatal("expected an option-like revision to be rejected")
+	}
+}
+
+func TestSummaryUsesValidatorBreakdown(t *testing.T) {
+	dir := t.TempDir()
+	input, stats, summary := filepath.Join(dir, "cover.out"), filepath.Join(dir, "stats.txt"), filepath.Join(dir, "summary.md")
+	mustWrite(t, input, unitProfile)
+	mustWrite(t, stats, "pkg/a/a.go;3;1\npkg/b/b.go;2;2\n")
+	if err := run(input, "", "", "", summary, defaultExclude, 0, "", reportOptions{breakdown: stats}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(summary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "60.0% of statements (3/5)") {
+		t.Fatalf("wrong counts: %s", data)
+	}
+	for _, invalid := range []string{"bad", "a;x;1", "a;1;2", "a;-1;0"} {
+		mustWrite(t, stats, invalid)
+		if _, _, err := breakdownTotals(stats); err == nil {
+			t.Fatalf("accepted invalid breakdown %q", invalid)
+		}
+	}
+}
+
+func TestRequiredShardProfiles(t *testing.T) {
+	dir := t.TempDir()
+	workflow := filepath.Join(dir, "e2e.yaml")
+	mustWrite(t, workflow, "jobs:\n  end_to_end_tests:\n    strategy:\n      matrix:\n        test:\n          - cluster-name: one\n          - cluster-name: two\n")
+	for _, name := range []string{"coverage-unit", "coverage-e2e-one", "coverage-e2e-two"} {
+		if err := os.Mkdir(filepath.Join(dir, name), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		mustWrite(t, filepath.Join(dir, name, "cover.out"), unitProfile)
+	}
+	if err := checkCoverageArtifacts(workflow, dir); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(dir, "coverage-e2e-two", "cover.out")
+	for _, contents := range []string{"mode: atomic\n", "bad profile\n"} {
+		mustWrite(t, missing, contents)
+		if err := checkCoverageArtifacts(workflow, dir); err == nil {
+			t.Fatal("accepted invalid shard profile")
+		}
+	}
+	if err := os.Remove(missing); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkCoverageArtifacts(workflow, dir); err == nil {
+		t.Fatal("accepted missing shard")
 	}
 }

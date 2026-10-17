@@ -9,8 +9,7 @@ profile: _output/cover.merged.out
 threshold:
   # (optional; default 0)
   # The minimum coverage that each file should have.
-  # Not enforced yet: a baseline run (unit tests only, no Docker) leaves ~170 files and many packages
-  # under 50% that are mostly exercised by e2e. Raise once the merged unit+e2e baseline is known.
+  # File and package floors remain disabled; coverage varies by responsibility.
   file: 0
 
   # (optional; default 0)
@@ -18,9 +17,9 @@ threshold:
   package: 0
 
   # (optional; default 0)
-  # The minimum total coverage project should have. A local unit-only baseline measured 57.4%;
-  # e2e coverage is merged on top of that in CI. The long-term goal is 85%.
-  total: 55
+  # CI baseline (2026-10-17): approximately 81% unit-only and 83% combined.
+  # Keep a modest regression budget below that baseline. The long-term goal is 85%.
+  total: 80
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.
@@ -47,6 +46,12 @@ exclude:
     - \.pb\.equal\.go$
     # Exclude generated code (deepcopy, register, ...), which tests can't meaningfully cover
     - zz_generated[^/]*\.go$
+    # Generated Kubernetes clients, apply configurations, and OpenAPI schemas
+    - ^pkg/client/
+    - ^api/applyconfiguration/
+    - ^pkg/generated/
+    # Generated query mocks are test support, not controller implementation
+    - ^pkg/kgateway/query/mocks/
     # Exclude test support code (helpers, matchers, fixtures); it is exercised by the tests, not under test
     - ^test/
     # Exclude the tooling that lives under hack/ (code generation, CI helpers)

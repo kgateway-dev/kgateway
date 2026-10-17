@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -38,26 +39,42 @@ type blockKey struct {
 
 type profile map[blockKey]int
 
+type reportOptions struct {
+	mergeOnly bool
+	breakdown string
+}
+
 func main() {
 	var (
-		profiles  = flag.String("profiles", "", "comma separated coverage profiles to merge")
-		mergedOut = flag.String("merged-out", "", "write the merged profile here")
-		base      = flag.String("base", "", "git ref to diff against for patch coverage (skipped if empty)")
-		diffFile  = flag.String("diff-file", "", "read a unified diff from this file instead of running git diff")
-		summary   = flag.String("summary", "", "write a markdown summary here (e.g. $GITHUB_STEP_SUMMARY)")
-		exclude   = flag.String("exclude", defaultExclude, "regexp of changed files ignored for patch coverage")
-		minPatch  = flag.Float64("min-patch", 0, "fail if patch coverage is below this percentage")
-		config    = flag.String("config", "", "coverage configuration whose exclude.paths apply to the report")
+		checkShards = flag.String("check-shards", "", "e2e workflow whose shard profiles must be present")
+		coverageDir = flag.String("coverage-dir", "", "directory containing downloaded coverage artifacts")
+		profiles    = flag.String("profiles", "", "comma separated coverage profiles to merge")
+		mergedOut   = flag.String("merged-out", "", "write the merged profile here")
+		base        = flag.String("base", "", "git ref to diff against for patch coverage (skipped if empty)")
+		diffFile    = flag.String("diff-file", "", "read a unified diff from this file instead of running git diff")
+		summary     = flag.String("summary", "", "write a markdown summary here (e.g. $GITHUB_STEP_SUMMARY)")
+		exclude     = flag.String("exclude", defaultExclude, "regexp of changed files ignored for patch coverage")
+		minPatch    = flag.Float64("min-patch", 0, "fail if patch coverage is below this percentage")
+		mergeOnly   = flag.Bool("merge-only", false, "write merged profile without reporting")
+		breakdown   = flag.String("breakdown", "", "validator breakdown used for summary statement counts")
+		config      = flag.String("config", "", "coverage configuration whose exclude.paths apply to the report")
 	)
 	flag.Parse()
+	if *checkShards != "" {
+		if err := checkCoverageArtifacts(*checkShards, *coverageDir); err != nil {
+			fmt.Fprintln(os.Stderr, "covreport:", err)
+			os.Exit(1)
+		}
+		return
+	}
 
-	if err := run(*profiles, *mergedOut, *base, *diffFile, *summary, *exclude, *minPatch, *config); err != nil {
+	if err := run(*profiles, *mergedOut, *base, *diffFile, *summary, *exclude, *minPatch, *config, reportOptions{mergeOnly: *mergeOnly, breakdown: *breakdown}); err != nil {
 		fmt.Fprintln(os.Stderr, "covreport:", err)
 		os.Exit(1)
 	}
 }
 
-func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch float64, config string) error {
+func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch float64, config string, opts reportOptions) error {
 	if profiles == "" {
 		return errors.New("-profiles is required")
 	}
@@ -76,8 +93,18 @@ func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch 
 		}
 	}
 
+	if opts.mergeOnly {
+		return nil
+	}
 	var md strings.Builder
 	covered, total := totals(merged)
+	if opts.breakdown != "" {
+		var err error
+		covered, total, err = breakdownTotals(opts.breakdown)
+		if err != nil {
+			return err
+		}
+	}
 	fmt.Fprintf(&md, "## Test coverage\n\n**Total:** %.1f%% of statements (%d/%d)\n\n", pct(covered, total), covered, total)
 
 	patchPct := 100.0
@@ -362,4 +389,76 @@ func ranges(lines []int) string {
 		i = j + 1
 	}
 	return strings.Join(parts, ", ")
+}
+
+// breakdownTotals reads the pinned validator's file;total;covered export. Using
+// its counts keeps the summary aligned with validation, including AST handling
+// of package-level function literals and coverage-ignore annotations.
+func breakdownTotals(name string) (covered, total int, err error) {
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return 0, 0, fmt.Errorf("read coverage breakdown: %w", err)
+	}
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if line == "" {
+			continue
+		}
+		fields := strings.Split(line, ";")
+		if len(fields) != 3 {
+			return 0, 0, fmt.Errorf("invalid coverage breakdown line %q", line)
+		}
+		n, nErr := strconv.Atoi(fields[1])
+		c, cErr := strconv.Atoi(fields[2])
+		if nErr != nil || cErr != nil || n < 0 || c < 0 || c > n {
+			return 0, 0, fmt.Errorf("invalid coverage breakdown counts %q", line)
+		}
+		total += n
+		covered += c
+	}
+	return covered, total, nil
+}
+
+// checkCoverageArtifacts derives the required profiles from the actual matrix,
+// so a new shard cannot silently disappear from a successful combined report.
+func checkCoverageArtifacts(workflow, dir string) error {
+	data, err := os.ReadFile(workflow)
+	if err != nil {
+		return err
+	}
+	var cfg struct {
+		Jobs map[string]struct {
+			Strategy struct {
+				Matrix struct {
+					Tests []struct {
+						ClusterName string `json:"cluster-name"`
+					} `json:"test"`
+				} `json:"matrix"`
+			} `json:"strategy"`
+		} `json:"jobs"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return err
+	}
+	shards := cfg.Jobs["end_to_end_tests"].Strategy.Matrix.Tests
+	if len(shards) == 0 {
+		return errors.New("e2e workflow has no coverage shards")
+	}
+	names := []string{"coverage-unit"}
+	for _, shard := range shards {
+		if shard.ClusterName == "" || filepath.Base(shard.ClusterName) != shard.ClusterName {
+			return fmt.Errorf("invalid coverage shard name %q", shard.ClusterName)
+		}
+		names = append(names, "coverage-e2e-"+shard.ClusterName)
+	}
+	for _, name := range names {
+		p := profile{}
+		if err := readProfile(filepath.Join(dir, name, "cover.out"), p); err != nil {
+			return fmt.Errorf("required coverage artifact %s: %w", name, err)
+		}
+		_, total := totals(p)
+		if total == 0 {
+			return fmt.Errorf("required coverage artifact %s has no statements", name)
+		}
+	}
+	return nil
 }

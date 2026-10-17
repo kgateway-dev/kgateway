@@ -165,6 +165,9 @@ jobs:
         with:
           pattern: coverage-*
           path: _output/coverage
+      - name: Require all coverage profiles
+        if: ${{ needs.e2e.result == 'success' }}
+        run: go run ./hack/ci/covreport -check-shards .github/workflows/e2e.yaml -coverage-dir _output/coverage
       - name: Report and validate coverage
         shell: bash
         env:

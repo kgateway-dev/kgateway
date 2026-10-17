@@ -563,7 +563,7 @@ unit: ## Run all unit tests (excludes e2e tests)
 
 .PHONY: validate-test-coverage
 validate-test-coverage: merge-test-coverage ## Validate the (merged) test coverage against test_coverage.yml
-	$(GO_TEST_COVERAGE) --config=./test_coverage.yml
+	$(GO_TEST_COVERAGE) --config=./test_coverage.yml --profile="$(COVERAGE_MERGED)"
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: view-test-coverage
@@ -579,7 +579,9 @@ COVERAGE_MIN_PATCH ?= 0
 
 .PHONY: merge-test-coverage
 merge-test-coverage: ## Merge COVERAGE_PROFILES, and report coverage of lines changed since COVERAGE_BASE
-	go run ./hack/ci/covreport -config ./test_coverage.yml -profiles "$(COVERAGE_PROFILES)" -merged-out "$(COVERAGE_MERGED)" \
+	go run ./hack/ci/covreport -config ./test_coverage.yml -profiles "$(COVERAGE_PROFILES)" -merged-out "$(COVERAGE_MERGED)" -merge-only
+	$(GO_TEST_COVERAGE) --config=./test_coverage.yml --profile="$(COVERAGE_MERGED)" --threshold-total=0 --threshold-file=0 --threshold-package=0 --breakdown-file-name="$(COVERAGE_MERGED).stats"
+	go run ./hack/ci/covreport -profiles "$(COVERAGE_MERGED)" -breakdown "$(COVERAGE_MERGED).stats" \
 		$(if $(COVERAGE_BASE),-base "$(COVERAGE_BASE)" -min-patch $(COVERAGE_MIN_PATCH)) \
 		$(if $(GITHUB_STEP_SUMMARY),-summary "$(GITHUB_STEP_SUMMARY)")
 
