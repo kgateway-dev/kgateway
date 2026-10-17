@@ -604,7 +604,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			}
 			// secondary sort: alphabetically by "{namespace}/{name}"
 			nnsString := func(ls *gwv1.ListenerSet) string {
-				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
+				return ls.Namespace + "/" + ls.Name
 			}
 			return strings.Compare(nnsString(a), nnsString(b))
 		})
