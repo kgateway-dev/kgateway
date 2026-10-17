@@ -37,6 +37,7 @@ func newPublishGateTestTranslator(t *testing.T, prior bool, budget time.Duration
 		stubPriorXDS{has: prior},
 		budget,
 		true,
+		clusterScoping{},
 	)
 	// Stop the gate's timers with the test: a warm client withheld at the
 	// budget re-arms every budget for as long as the test binary runs.
@@ -473,7 +474,7 @@ func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil, nil))
 	current := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
 	require.NotNil(t, current)
-	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
+	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
 	require.NotEmpty(t, blocking)
 	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking, hashes))
 	pt.gate.mu.Unlock()
@@ -681,7 +682,7 @@ func (c installThenFailCache) SetSnapshot(ctx context.Context, node string, snap
 func TestSetSnapshotErrorAfterInstallKeepsBookkeeping(t *testing.T) {
 	ctx := context.Background()
 	newTranslator := func(budget time.Duration) *ProxyTranslator {
-		pt := NewProxyTranslator(installThenFailCache{newTestSnapshotCache(t)}, stubPriorXDS{}, budget, true)
+		pt := NewProxyTranslator(installThenFailCache{newTestSnapshotCache(t)}, stubPriorXDS{}, budget, true, clusterScoping{})
 		return &pt
 	}
 	t.Run("bounded first publish", func(t *testing.T) {

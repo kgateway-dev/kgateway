@@ -74,7 +74,7 @@ func newSourceFixture(t *testing.T, state krtcollections.XDSClientState, routed 
 	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs, gateways, endpoints,
 		newTestPerClientClustersFromCol(krt.NewStaticCollection[uccWithCluster](nil, clusterRows), f.uccs), clusterScoping{})
 	f.cache = newTestSnapshotCache(t)
-	translator := NewProxyTranslator(f.cache, state, 15*time.Second, true)
+	translator := NewProxyTranslator(f.cache, state, 15*time.Second, true, clusterScoping{})
 	f.snapshots.RegisterBatch(func(events []krt.Event[XdsSnapWrapper]) {
 		for _, e := range events {
 			if e.Event == controllers.EventDelete {

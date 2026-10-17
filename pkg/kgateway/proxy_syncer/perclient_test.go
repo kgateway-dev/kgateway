@@ -725,7 +725,7 @@ func TestSnapshotPerClientDefersMakeBeforeBreakRouteUntilNewEndpointReady(t *tes
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -833,7 +833,7 @@ func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -933,7 +933,7 @@ func TestSnapshotPerClientDefersWeightedRouteUntilAllEndpointsReady(t *testing.T
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -1222,7 +1222,7 @@ func TestSnapshotPerClientPartialUpdateForOneClientDoesNotPoisonAnotherClient(t 
 	)
 
 	cache := newTestSnapshotCache(t)
-	translator := NewProxyTranslator(cache, nil, 0, true)
+	translator := NewProxyTranslator(cache, nil, 0, true, clusterScoping{})
 	snapshots.RegisterBatch(func(events []krt.Event[XdsSnapWrapper]) {
 		for _, event := range events {
 			if event.Event == controllers.EventDelete {

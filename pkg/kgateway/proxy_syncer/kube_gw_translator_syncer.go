@@ -76,6 +76,19 @@ func (s *ProxyTranslator) syncXds(
 	// the snapshot shared with the krt cache. Publication goes through the
 	// publish gate so it settles synthesized CLAs, cancels any pending bounded
 	// publish or flip release, and cannot race an expiring budget timer.
+	// A de-reference produces a perfectly coherent build -- nothing is missing,
+	// a cluster simply stopped being emitted -- so the removal side cannot ride
+	// on the deferred path above. When a grace is configured, a coherent
+	// snapshot is published through the same carry-forward resolution, with no
+	// holds, so a cluster that just left the emitted set stays published until
+	// its window closes.
+	if s.gate.retainsDereferenced() {
+		if err := s.gate.publishWithDereferenceGrace(ctx, s.xdsCache, snapWrap); err != nil {
+			logPublishFailure(proxyKey, err)
+		}
+		return
+	}
+
 	if err := s.gate.publish(ctx, s.xdsCache, snapWrap); err != nil {
 		// A rejected snapshot leaves the client on its previous config; surface
 		// it rather than silently dropping the update.
@@ -172,10 +185,12 @@ func (m *referencedClustersMemo) get(
 // new routes publish as-is even with never-ready gaps — used by the gate's
 // flip-release bound so a steady-state-unready reference cannot pin the
 // client's route/listener/secret updates forever (#14352).
-// lastPublished answers for assignments copied from the published snapshot
-// with the hash each was last published under (eds_set_version.go). The last
-// result holds the contributions of the composed EDS set.
-func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
+// graced names clusters whose de-reference grace is still open; they are
+// carried forward like any other published cluster. lastPublished answers for
+// assignments copied from the published snapshot with the hash each was last
+// published under (eds_set_version.go). The last result holds the
+// contributions of the composed EDS set.
+func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 
@@ -240,6 +255,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		for _, name := range snapWrap.missingReferenced {
 			carryRefs[name] = struct{}{}
 		}
+	}
+
+	// Clusters within their de-reference grace are carried the same way: they
+	// are absent from this build because nothing references them any more, and
+	// they stay published until the window closes so the route update that
+	// stopped naming them reaches Envoy first.
+	for name := range graced {
+		carryRefs[name] = struct{}{}
 	}
 
 	// Carry forward cluster/CLA pairs (a carried CLA always travels with

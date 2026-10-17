@@ -112,7 +112,7 @@ func TestVersionEndpointSetKeepsItems(t *testing.T) {
 // client, answers carry-forward lookups from them, and forgets them with the
 // client's snapshot.
 func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
-	gate := newPublishGate(0, false, nil)
+	gate := newPublishGate(0, false, nil, clusterScoping{})
 	cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("1", []envoycachetypes.ResourceWithTTL{
@@ -147,7 +147,7 @@ func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
 }
 
 func TestPublishGatePreservesHashesWhenSettlingEndpoints(t *testing.T) {
-	gate := newPublishGate(0, false, stubPriorXDS{has: true})
+	gate := newPublishGate(0, false, stubPriorXDS{has: true}, clusterScoping{})
 	cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 	ucc := newTestUcc("client")
 	build := func(hashes map[string]uint64) *envoycache.Snapshot {
