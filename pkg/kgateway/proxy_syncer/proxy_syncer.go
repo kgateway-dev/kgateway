@@ -57,6 +57,9 @@ type ProxySyncer struct {
 	proxyTranslator ProxyTranslator
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
+	// clientState is the synchronous xDS connection state behind uniqueClients;
+	// the snapshot reclaimer decides through it whether a client is still gone.
+	clientState krtcollections.XDSClientState
 
 	statusContributions         krt.Collection[reports.StatusContribution]
 	statusContributionsByTarget krt.Index[reports.StatusKey, reports.StatusContribution]
@@ -202,7 +205,7 @@ func NewProxySyncer(
 	if xdsClientState == nil {
 		// Nothing fails without it, so say so: integrations that build their
 		// own StartConfig silently lose this protection otherwise.
-		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget")
+		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget, and departed proxies' snapshots are never reclaimed")
 	}
 	return &ProxySyncer{
 		controllerName:             controllerName,
@@ -210,6 +213,7 @@ func NewProxySyncer(
 		apiClient:                  client,
 		proxyTranslator:            NewProxyTranslator(xdsCache, xdsClientState, commonCols.Settings.PerClientPublishBudget, commonCols.Settings.XdsSnapshotConsistencyCheck),
 		uniqueClients:              uniqueClients,
+		clientState:                xdsClientState,
 		translator:                 translator.NewCombinedTranslator(ctx, mergedPlugins, commonCols, validator),
 		plugins:                    mergedPlugins,
 		extraPolicyTargetResolvers: optCfg.policyTargetResolvers,
@@ -234,6 +238,57 @@ func NewProxyTranslator(xdsCache envoycache.SnapshotCache, xdsClientState krtcol
 		xdsCache: xdsCache,
 		gate:     newPublishGate(publishBudget, checkSnapshotConsistency, xdsClientState),
 	}
+}
+
+// registerConnectionStartHooks makes the start of a client key's connection a
+// clean slate, if the client state reports connection starts (see
+// krtcollections.ConnectionStartHooks), and reports whether it does.
+//
+// The snapshot cache keeps the entry last published to a client after its
+// connection ends, and go-control-plane answers a returning client's first
+// requests from it. The gate does not count that entry as published to the new
+// connection, and it can predate config the proxy received meanwhile from
+// another controller replica, so serving it would roll the proxy back until the
+// gate's first publish to the new connection, which a deferred build can
+// withhold for the first-publish budget or the warm withhold bound. Instead:
+//
+//   - while the stream is being admitted, before any watch exists for it and
+//     with no other stream of the key connected, the fence starts a new
+//     connection generation and clears the old entry, so the stream's requests
+//     wait for a publish rather than being answered from it; nothing else can
+//     be answered from it, since no stream of the key remains;
+//   - a publish computed for the previous connection, including one already
+//     holding the gate lock when the stream arrived, is rejected by the fence
+//     rather than installed after the clear (see connectionFence);
+//   - once admitted, the gate forgets the previous connection, adopts the new
+//     generation, and the client's current build, if it has one, is published
+//     to the new connection. A reconnect too quick for the connected-client
+//     collection to notice produces no new snapshot row, so without this the
+//     stream would wait for the next config change.
+//
+// Only the first stream of a key starts a connection. A further stream that
+// shares the key joins the connection already running: the key's entry is the
+// one published to that connection, so it is served as it is, and it is never
+// cleared under streams that are connected.
+//
+// currentRow returns the client's current snapshot row, or nil.
+func (t ProxyTranslator) registerConnectionStartHooks(ctx context.Context, state krtcollections.XDSClientState, currentRow func(proxyKey string) *XdsSnapWrapper) bool {
+	hooks, ok := state.(krtcollections.ConnectionStartHooks)
+	if !ok {
+		return false
+	}
+	hooks.SetConnectionStartHooks(
+		func(proxyKey string) {
+			t.gate.fence.start(t.xdsCache, proxyKey)
+		},
+		func(proxyKey string) {
+			t.gate.connectionStarted(proxyKey)
+			if row := currentRow(proxyKey); row != nil {
+				t.syncXds(ctx, *row)
+			}
+		},
+	)
+	return true
 }
 
 // clientSnapshotDeleted handles the deletion of a client's snapshot row. If
@@ -415,6 +470,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger.Info("caches warm!")
 
 	// caches are warm, now we can do registrations
+	// The gate publishes a build only while it is the client's current row
+	// (see publishGate.beginBuildLocked).
+	s.proxyTranslator.gate.currentBuild = func(proxyKey string) *XdsSnapWrapper {
+		return s.perclientSnapCollection.GetKey(proxyKey)
+	}
 	// A client whose snapshot row was already gone when it disconnected gets
 	// no row Delete then; end its connection when the client itself leaves.
 	// The check skips a client that has already reconnected.
@@ -425,6 +485,41 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			}
 		}
 	}, false)
+
+	// Reclaim the SnapshotCache entries of departed clients (see
+	// snapshotReclaimer). The connected-client collection schedules and cancels
+	// reclaims; whether the client is still gone is decided when the grace
+	// period ends, against the synchronous connection state.
+	if s.clientState != nil {
+		// Clear a returning client's previous entry before its stream is
+		// answered (see registerConnectionStartHooks).
+		s.proxyTranslator.registerConnectionStartHooks(ctx, s.clientState, func(proxyKey string) *XdsSnapWrapper {
+			return s.perclientSnapCollection.GetKey(proxyKey)
+		})
+		reclaimer := newSnapshotReclaimer(func(resourceName string) bool {
+			return s.proxyTranslator.gate.reclaimDeparted(s.proxyTranslator.xdsCache, resourceName, s.clientState)
+		})
+		// A publish can land after its client left: a build queued behind
+		// the departure, or a bounded publish already firing. If the reclaim
+		// ran first, that publish re-creates the entry, and nothing would
+		// reclaim it again. Re-arm the reclaim (a no-op while one is pending);
+		// it still clears only if the client is gone when it fires.
+		s.proxyTranslator.gate.afterPublish = func(resourceName string) {
+			if s.uniqueClients.GetKey(resourceName) == nil {
+				reclaimer.clientDeparted(resourceName)
+			}
+		}
+		s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
+			for _, e := range events {
+				name := e.Latest().ResourceName()
+				if e.Event == controllers.EventDelete {
+					reclaimer.clientDeparted(name)
+				} else {
+					reclaimer.clientConnected(name)
+				}
+			}
+		}, true)
+	}
 
 	s.perclientSnapCollection.RegisterBatch(func(o []krt.Event[XdsSnapWrapper]) {
 		for _, e := range o {
@@ -449,10 +544,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				// again, while a client that stayed connected still runs what
 				// was published on its connection.
 				//
-				// Known leak: the SnapshotCache entry for a departed UCC is
-				// never cleared and accumulates over the controller's
-				// lifetime. Pre-existing behavior; reclaiming these entries
-				// is a separate follow-up (#14307).
+				// Entries of truly-departed clients, which surface here
+				// indistinguishably from transient deletes, are reclaimed by
+				// the snapshotReclaimer registered above.
 				name := e.Latest().ResourceName()
 				s.proxyTranslator.clientSnapshotDeleted(name, s.uniqueClients.GetKey(name) != nil)
 			}

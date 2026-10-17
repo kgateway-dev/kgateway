@@ -914,3 +914,77 @@ func TestUniqueClientsHasColdStreamSince(t *testing.T) {
 	cb.OnStreamClosed(2, nil)
 	g.Expect(cold.HasColdStreamSince(role, 0)).To(BeFalse(), "a closed stream no longer counts")
 }
+
+func TestUniqueClientsRunIfDisconnected(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+	newRequest := func() *envoy_service_discovery_v3.DiscoveryRequest {
+		return &envoy_service_discovery_v3.DiscoveryRequest{
+			Node: &envoycorev3.Node{
+				Id: "podname.ns",
+				Metadata: &structpb.Struct{Fields: map[string]*structpb.Value{
+					xds.RoleKey: structpb.NewStringValue(role),
+				}},
+			},
+		}
+	}
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+
+	g.Expect(cb.OnStreamRequest(1, newRequest())).To(Succeed())
+	ran := false
+	g.Expect(state.RunIfDisconnected(role, func() { ran = true })).To(BeFalse())
+	g.Expect(ran).To(BeFalse(), "fn must not run while a stream is connected under the identity")
+
+	cb.OnStreamClosed(1, nil)
+	g.Expect(state.RunIfDisconnected(role, func() { ran = true })).To(BeTrue())
+	g.Expect(ran).To(BeTrue(), "fn must run once the identity's last stream has closed")
+
+	// A stream connecting while fn runs is admitted only after fn returns.
+	admitted := make(chan error, 1)
+	g.Expect(state.RunIfDisconnected(role, func() {
+		go func() { admitted <- cb.OnStreamRequest(2, newRequest()) }()
+		g.Consistently(admitted, "100ms").ShouldNot(Receive(), "stream admission must wait for fn")
+	})).To(BeTrue())
+	g.Eventually(admitted, "1s").Should(Receive(BeNil()))
+	g.Expect(state.RunIfDisconnected(role, func() {})).To(BeFalse())
+}
+
+// Connection-start hooks run when a key's first stream is admitted, once per
+// connection: not for follow-up requests, not for a second stream joining the
+// key, and again when the key returns after its last stream closed.
+func TestUniqueClientsConnectionStartHooks(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+	var events []string
+	state.(ConnectionStartHooks).SetConnectionStartHooks(
+		func(name string) { events = append(events, "admitting "+name) },
+		func(name string) { events = append(events, "admitted "+name) },
+	)
+
+	g.Expect(cb.OnStreamRequest(1, priorVersionRequest(role, "", ""))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(1, priorVersionRequest(role, "v1", "n1"))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(2, priorVersionRequest(role, "", ""))).To(Succeed())
+	g.Expect(events).To(Equal([]string{"admitting " + role, "admitted " + role}), "one connection start for the key")
+
+	cb.OnStreamClosed(1, nil)
+	g.Expect(cb.OnStreamRequest(3, priorVersionRequest(role, "v1", ""))).To(Succeed())
+	g.Expect(events).To(HaveLen(2), "the key stayed connected through stream 2")
+
+	cb.OnStreamClosed(2, nil)
+	cb.OnStreamClosed(3, nil)
+	g.Expect(cb.OnStreamRequest(4, priorVersionRequest(role, "v1", ""))).To(Succeed())
+	g.Expect(events).To(Equal([]string{"admitting " + role, "admitted " + role, "admitting " + role, "admitted " + role}),
+		"a key that returns after its last stream closed starts a new connection")
+}

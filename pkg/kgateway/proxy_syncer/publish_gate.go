@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -153,6 +154,10 @@ type publishGate struct {
 	// version (warm). May be nil: every client is then treated as cold.
 	// Written once at construction.
 	clientState krtcollections.XDSClientState
+	// afterPublish, when set, runs under mu after every snapshot the gate
+	// installs; the snapshot reclaimer uses it to notice a publish that
+	// landed after its client left. Written before the gate is first used.
+	afterPublish func(proxyKey string)
 
 	mu           sync.Mutex
 	pending      map[string]*pendingFirstPublish
@@ -162,6 +167,26 @@ type publishGate struct {
 	// snapshotWithdrawn (the row went away, the connection did not) keeps
 	// them.
 	published map[string]struct{}
+	// connGen is, per client key, the connection generation the gate's state
+	// for the key belongs to: adopted from fence when the client's connection
+	// starts (connectionStarted), zero for clients whose state reports no
+	// connection starts. setSnapshot installs only while it is still the key's
+	// generation.
+	connGen map[string]uint64
+	// fence orders cache installs against connection starts; it has its own
+	// lock (see connectionFence).
+	fence connectionFence
+	// beforeInstall, set only by tests, runs under mu just before setSnapshot
+	// installs, to hold a publisher at that point.
+	beforeInstall func(proxyKey string)
+	// connectionReset, set only by tests, runs under mu in connectionStarted
+	// after the previous connection is forgotten and before the new
+	// generation is adopted.
+	connectionReset func(proxyKey string)
+	// currentBuild returns a client's current snapshot row, or nil if it has
+	// none (beginBuildLocked). Set by ProxySyncer.Start before the gate is
+	// first used; nil for callers that drive the gate directly.
+	currentBuild func(proxyKey string) *XdsSnapWrapper
 }
 
 type pendingFirstPublish struct {
@@ -231,7 +256,9 @@ type coldStreamReader interface {
 // connectionSnapshotLocked returns the snapshot the gate last published to the
 // client on its current connection, or nil if it has published none. A cache
 // entry left over from an earlier connection is ignored: it says nothing about
-// what the client runs now. Callers must hold g.mu.
+// what the client runs now. (With connection-start hooks, such an entry is also
+// cleared before the new connection is answered; see
+// registerConnectionStartHooks.) Callers must hold g.mu.
 func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, proxyKey string) envoycache.ResourceSnapshot {
 	if _, ok := g.published[proxyKey]; !ok {
 		return nil
@@ -261,7 +288,13 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 			recordInconsistentSnapshot(proxyKey)
 		}
 	}
-	if err := cache.SetSnapshot(ctx, proxyKey, snap); err != nil {
+	if g.beforeInstall != nil {
+		g.beforeInstall(proxyKey)
+	}
+	if err := g.fence.install(ctx, cache, proxyKey, g.connGen[proxyKey], snap); err != nil {
+		if errors.Is(err, errConnectionSuperseded) {
+			return err // computed for the client's previous connection
+		}
 		// go-control-plane installs the snapshot before answering the
 		// node's open watches, and only answering can fail (the context
 		// ended). Later requests are answered from the installed snapshot,
@@ -277,6 +310,9 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 	delete(g.coldEpisodes, proxyKey)
 	delete(g.warmEpisodes, proxyKey)
 	g.published[proxyKey] = struct{}{}
+	if g.afterPublish != nil {
+		g.afterPublish(proxyKey)
+	}
 	return nil
 }
 
@@ -287,7 +323,9 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 func (g *publishGate) publish(ctx context.Context, cache envoycache.SnapshotCache, snapWrap XdsSnapWrapper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.beginBuildLocked(snapWrap)
+	if !g.beginBuildLocked(snapWrap) {
+		return nil
+	}
 	return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints)
 }
 
@@ -323,13 +361,28 @@ func (g *publishGate) resolveDeferred(
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.beginBuildLocked(snapWrap)
+	if !g.beginBuildLocked(snapWrap) {
+		return nil
+	}
 	return g.resolveDeferredLocked(ctx, cache, snapWrap)
 }
 
 // beginBuildLocked runs for every new build that reaches the gate, before it
-// is published. Timers that re-publish a stored build do not run it: that
-// build already began.
+// is published, and reports whether to publish it. Timers that re-publish a
+// stored build do not run it: that build already began.
+//
+// A build is published only while it is still the client's current snapshot
+// row. Builds reach the gate through the snapshot collection's event queue,
+// and an event can wait there while the row moves on. Publishing a
+// superseded build is not merely redundant: the connection-start hook
+// publishes a returning client's current row as soon as its stream is
+// admitted, ahead of any events still queued, and a queued older build would
+// then replace it on the new connection, answering the new stream's watches
+// with the older routes. The connection fence cannot catch this, since the
+// gate has already adopted the new connection when the old build arrives.
+// The check runs under the gate lock, so no publish can slip between it and
+// the publication. A skipped build loses nothing: the row's later change, or
+// its deletion, has its own event behind it.
 //
 // A carry record belongs to one episode of a cluster missing from the builds.
 // A build that has the cluster again ends the episode, so a later
@@ -338,10 +391,16 @@ func (g *publishGate) resolveDeferred(
 // recovery is usually a coherent build: without this, the earlier episode's
 // start would survive it, and the next disappearance, however brief, would be
 // dropped at once instead of carried. Callers must hold g.mu.
-func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) {
+func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) bool {
+	if g.currentBuild != nil {
+		if current := g.currentBuild(snapWrap.proxyKey); current == nil || !current.Equals(snapWrap) {
+			logger.Debug("not publishing a build the client's snapshot row has moved past", "proxy_key", snapWrap.proxyKey)
+			return false
+		}
+	}
 	since := g.carriedSince[snapWrap.proxyKey]
 	if len(since) == 0 {
-		return
+		return true
 	}
 	missing := stringSet(snapWrap.missingReferenced)
 	for name := range since {
@@ -352,6 +411,7 @@ func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) {
 	if len(since) == 0 {
 		delete(g.carriedSince, snapWrap.proxyKey)
 	}
+	return true
 }
 
 // resolveDeferredLocked is resolveDeferred for callers that hold g.mu.
@@ -525,7 +585,7 @@ func (g *publishGate) firePending(
 			"proxy_key", proxyKey, "missing_clusters", wrap.missingReferenced, "missing_endpoint_clusters", wrap.missingEndpointsReferenced)
 	}
 	if err := g.setSnapshot(ctx, cache, proxyKey, wrap.snap, wrap.synthesizedEndpoints); err != nil {
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 		return
 	}
 	g.unmarkWarmWithheldLocked(proxyKey, st)
@@ -662,7 +722,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
 		"proxy_key", proxyKey, "flip_blocking", pf.blocking)
 	if err := g.setSnapshot(ctx, cache, proxyKey, released, pf.wrap.synthesizedEndpoints); err != nil {
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 		return
 	}
 	recordBoundedPublish(proxyKey, boundedPublishFlipRelease)
@@ -684,9 +744,37 @@ func (g *publishGate) cancelFlipReleaseLocked(proxyKey string) {
 func (g *publishGate) clientDeparted(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.forgetConnectionLocked(proxyKey)
+}
+
+// forgetConnectionLocked is clientDeparted for callers that hold g.mu.
+func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	g.withdrawLocked(proxyKey)
 	delete(g.published, proxyKey)
 	delete(g.carriedSince, proxyKey)
+}
+
+// connectionStarted begins the client's new connection in the gate (the
+// connection-start hook, after the fence started it): it forgets the previous
+// connection, as clientDeparted does, and adopts the key's new generation, in
+// one critical section. A build that reached the gate between the two would be
+// decided against the reset state but under the old generation. Nothing it
+// installs gets past the fence, but a timer it arms does: offered as a first
+// publish, it would leave a pending entry and its budget timer behind, which
+// fire after the adoption and publish that build to the new connection,
+// answering the new stream's watches with config the connection-start replay
+// has already moved past.
+func (g *publishGate) connectionStarted(proxyKey string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.forgetConnectionLocked(proxyKey)
+	if g.connectionReset != nil {
+		g.connectionReset(proxyKey)
+	}
+	if g.connGen == nil {
+		g.connGen = make(map[string]uint64)
+	}
+	g.connGen[proxyKey] = g.fence.current(proxyKey)
 }
 
 // snapshotWithdrawn handles a client whose wrapper row was deleted while it
@@ -718,6 +806,30 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
 	g.cancelCarryExpiryLocked(proxyKey)
+}
+
+// disconnectedRunner runs fn only while no xDS stream is connected under a
+// client key, excluding stream admission while fn runs. Satisfied by
+// krtcollections.XDSClientState.
+type disconnectedRunner interface {
+	RunIfDisconnected(resourceName string, fn func()) bool
+}
+
+// reclaimDeparted clears a departed client's snapshot cache entry and reports
+// whether it did. It holds the gate lock, which every publish holds, and
+// clears only through clients.RunIfDisconnected: ClearSnapshot also drops the
+// node's open watches, so clearing after a reconnecting stream was admitted
+// would strand that stream with no watch for the next SetSnapshot to answer.
+func (g *publishGate) reclaimDeparted(cache envoycache.SnapshotCache, proxyKey string, clients disconnectedRunner) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return clients.RunIfDisconnected(proxyKey, func() {
+		cache.ClearSnapshot(proxyKey)
+		// Nothing of the connection is left; a returning client starts a new
+		// generation (generations are never reused).
+		g.fence.forget(proxyKey)
+		delete(g.connGen, proxyKey)
+	})
 }
 
 // settleSynthesizedEndpoints decides what the client receives for each CLA in
@@ -991,7 +1103,7 @@ func (g *publishGate) fireCarryExpiry(ctx context.Context, cache envoycache.Snap
 		return // defensive: a reset connection cancels the timer
 	}
 	if err := g.resolveDeferredLocked(ctx, cache, ce.wrap); err != nil {
-		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
+		logPublishFailure(proxyKey, err)
 	}
 }
 
