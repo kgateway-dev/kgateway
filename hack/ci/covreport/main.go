@@ -78,7 +78,7 @@ func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch 
 	covered, total := totals(merged)
 	fmt.Fprintf(&md, "## Test coverage\n\n**Total:** %.1f%% of statements (%d/%d)\n\n", pct(covered, total), covered, total)
 
-	var patchPct = 100.0
+	patchPct := 100.0
 	if base != "" || diffFile != "" {
 		diff, err := readDiff(base, diffFile)
 		if err != nil {
