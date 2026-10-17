@@ -18,6 +18,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Run alongside unit tests; GitHub waits for both without occupying a runner.
+  e2e:
+    uses: ./.github/workflows/e2e.yaml
+
   # Runs the unit tests for Go packages
   go:
     name: Go Unit Tests
@@ -142,10 +146,10 @@ jobs:
   # thresholds in test_coverage.yml.
   coverage:
     name: Test Coverage
-    needs: go
+    needs: [go, e2e]
+    if: ${{ !cancelled() && needs.go.result == 'success' }}
     runs-on: ubuntu-22.04
-    # Includes waiting for the end-to-end shards (e2e.yaml), which run for up to ~1h45m after the PR is pushed.
-    timeout-minutes: 120
+    timeout-minutes: 15
     permissions:
       contents: read
       actions: read
@@ -161,41 +165,11 @@ jobs:
         with:
           pattern: coverage-*
           path: _output/coverage
-      - name: Fetch e2e coverage
-        id: e2e
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          EVENT: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-          # Unit coverage alone understates what the tests exercise, so wait for the e2e run of this
-          # commit and stitch its per-shard profiles in. If it never completes successfully we still
-          # report, but do not enforce thresholds against partial data.
-          deadline=$((SECONDS + 6300))
-          while (( SECONDS < deadline )); do
-            run="$(gh run list --workflow e2e.yaml --commit "${SHA}" --event "${EVENT}" --limit 1 \
-              --json databaseId,status,conclusion --jq '.[0] // empty')"
-            if [[ -n "${run}" && "$(jq -r .status <<<"${run}")" == "completed" ]]; then
-              if [[ "$(jq -r .conclusion <<<"${run}")" == "success" ]]; then
-                gh run download "$(jq -r .databaseId <<<"${run}")" --pattern 'coverage-e2e-*' --dir _output/coverage
-                echo "complete=true" >> "$GITHUB_OUTPUT"
-              else
-                echo "::warning::e2e run did not succeed; coverage thresholds are not enforced"
-                echo "complete=false" >> "$GITHUB_OUTPUT"
-              fi
-              exit 0
-            fi
-            sleep 60
-          done
-          echo "::warning::timed out waiting for the e2e run; coverage thresholds are not enforced"
-          echo "complete=false" >> "$GITHUB_OUTPUT"
       - name: Report and validate coverage
         shell: bash
         env:
           BASE_REF: ${{ github.base_ref }}
-          E2E_COMPLETE: ${{ steps.e2e.outputs.complete }}
+          E2E_RESULT: ${{ needs.e2e.result }}
         run: |
           set -euo pipefail
           profiles="$(find _output/coverage -name cover.out | sort | paste -sd, -)"
@@ -207,8 +181,10 @@ jobs:
             args+=(COVERAGE_BASE="origin/${BASE_REF}")
           fi
           make html-test-coverage "${args[@]}"
-          if [[ "${E2E_COMPLETE}" == "true" ]]; then
+          if [[ "${E2E_RESULT}" == "success" ]]; then
             make validate-test-coverage COVERAGE_PROFILES="${profiles}"
+          else
+            echo "::warning::e2e did not succeed; coverage thresholds are not enforced"
           fi
       - name: Upload HTML coverage report
         if: always()

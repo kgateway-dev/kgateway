@@ -39,7 +39,7 @@ Unit coverage instruments all packages with `-coverpkg=./...`, so calls from tes
 
 The `Test Coverage` job publishes a summary and a `coverage-html` artifact containing `coverage.html` and `cover.merged.out`. It enforces a 55% combined statement coverage minimum when e2e succeeds. File, package, and patch minimums are currently disabled. Validation excludes generated protobuf files, `zz_generated*.go`, `test/`, and `hack/`, as configured in [test_coverage.yml](/test_coverage.yml). The summary total and HTML report apply the same configured exclusions as validation.
 
-If e2e fails or the wait times out, CI reports the available coverage and skips threshold enforcement. A successful e2e workflow does not guarantee every shard supplied a profile: missing coverage uploads only produce warnings.
+The unit workflow calls the reusable e2e workflow in parallel with unit tests. The coverage job depends on both, so no runner polls or waits for another workflow run. Once both finish, it downloads their profiles from the same run. If unit tests succeed but e2e fails, CI reports the available coverage and skips threshold enforcement. Cancelled runs skip reporting. Successful e2e jobs do not guarantee every shard supplied a profile: missing coverage uploads only produce warnings.
 
 To generate and view unit coverage locally, run from the repository root:
 
@@ -57,7 +57,7 @@ make html-test-coverage COVERAGE_PROFILES="$profiles"
 
 Open `_output/coverage.html` to view the result. `COVERAGE_PROFILES` accepts any comma-separated list of profiles, so include the unit profile to produce a combined report. Use the matching source checkout when rendering downloaded profiles. Add `COVERAGE_BASE=origin/main` to report patch coverage against that locally available ref; `COVERAGE_MIN_PATCH` defaults to `0`.
 
-Additional jobs in the unit workflow can contribute a `coverage-<name>` artifact containing `cover.out`, provided the coverage job waits for them through `needs`. Separate workflows require an explicit download step, as used for e2e.
+Additional jobs in the unit workflow can contribute a `coverage-<name>` artifact containing `cover.out`, provided the coverage job waits for them through `needs`. Independent workflows require an explicit download step; the reusable e2e workflow shares the caller’s run and artifacts.
 
 ## Environment Variables
 Shared environment variables that can be used to control the behavior of the tests are defined in [env.go](/test/testutils/env.go). Below are a few that are commonly used:
