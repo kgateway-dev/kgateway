@@ -257,3 +257,58 @@ func TestDelayedBuildDoesNotRollBackANewConnection(t *testing.T) {
 	version, _ = f.served()
 	assert.Equal(t, "v2", version)
 }
+
+// Forgetting the previous connection and adopting the new generation happen in
+// one critical section. A queued build that reaches the gate while a
+// connection starts is decided either before the reset, which withdraws
+// whatever it armed, or after the adoption, under the new generation. Never in
+// between: a first-publish timer armed there would outlive the adoption and
+// later publish the build to the new connection.
+func TestNoBuildIsDecidedBetweenResetAndAdoption(t *testing.T) {
+	f := newConnectionStartFixture(t)
+	ctx := t.Context()
+	g := f.translator.gate
+
+	v1 := f.build("v1")
+	f.current.Store(&v1)
+	f.connect(t, 1)
+	f.closeStream(1)
+
+	queued := f.build("queued")
+	queued.missingReferenced = []string{"cluster-not-ready"}
+	f.current.Store(&queued)
+	var mu sync.Mutex
+	var decidedUnder []uint64
+	g.currentBuild = func(key string) *XdsSnapWrapper {
+		mu.Lock()
+		decidedUnder = append(decidedUnder, g.connGen[key]) // the gate lock is held here
+		mu.Unlock()
+		return f.current.Load()
+	}
+	// While the connection starts, a queued build reaches the gate; give it
+	// every chance to be decided before the adoption.
+	g.connectionReset = func(string) {
+		decided := make(chan struct{})
+		go func() {
+			defer close(decided)
+			f.translator.syncXds(ctx, queued)
+		}()
+		select {
+		case <-decided:
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+	f.connect(t, 2)
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(decidedUnder) >= 2 // the queued build and the admission replay
+	}, 2*time.Second, time.Millisecond)
+	adopted := g.fence.current(f.role)
+	mu.Lock()
+	defer mu.Unlock()
+	for _, gen := range decidedUnder {
+		assert.Equal(t, adopted, gen, "a build was decided before the new connection's generation was adopted")
+	}
+}
