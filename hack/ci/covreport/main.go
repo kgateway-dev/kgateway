@@ -19,6 +19,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"sigs.k8s.io/yaml"
 )
 
 // modulePath is stripped from profile file names to get repo-relative paths.
@@ -43,16 +45,17 @@ func main() {
 		summary   = flag.String("summary", "", "write a markdown summary here (e.g. $GITHUB_STEP_SUMMARY)")
 		exclude   = flag.String("exclude", defaultExclude, "regexp of changed files ignored for patch coverage")
 		minPatch  = flag.Float64("min-patch", 0, "fail if patch coverage is below this percentage")
+		config    = flag.String("config", "", "coverage configuration whose exclude.paths apply to the report")
 	)
 	flag.Parse()
 
-	if err := run(*profiles, *mergedOut, *base, *diffFile, *summary, *exclude, *minPatch); err != nil {
+	if err := run(*profiles, *mergedOut, *base, *diffFile, *summary, *exclude, *minPatch, *config); err != nil {
 		fmt.Fprintln(os.Stderr, "covreport:", err)
 		os.Exit(1)
 	}
 }
 
-func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch float64) error {
+func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch float64, config string) error {
 	if profiles == "" {
 		return fmt.Errorf("-profiles is required")
 	}
@@ -61,6 +64,9 @@ func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch 
 		if err := readProfile(strings.TrimSpace(f), merged); err != nil {
 			return err
 		}
+	}
+	if err := applyExclusions(merged, config); err != nil {
+		return err
 	}
 	if mergedOut != "" {
 		if err := writeProfile(mergedOut, merged); err != nil {
@@ -99,6 +105,39 @@ func run(profiles, mergedOut, base, diffFile, summary, exclude string, minPatch 
 	}
 	if patchPct < minPatch {
 		return fmt.Errorf("patch coverage %.1f%% is below the required %.1f%%", patchPct, minPatch)
+	}
+	return nil
+}
+
+// Filter the merged profile so the summary, HTML report, and validation all use
+// the same configured exclusions. Profile paths are module-qualified; config
+// patterns match repository-relative paths.
+func applyExclusions(p profile, config string) error {
+	if config == "" {
+		return nil
+	}
+	data, err := os.ReadFile(config)
+	if err != nil {
+		return fmt.Errorf("read coverage config: %w", err)
+	}
+	var cfg struct {
+		Exclude struct {
+			Paths []string `json:"paths"`
+		} `json:"exclude"`
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("parse coverage config: %w", err)
+	}
+	for _, pattern := range cfg.Exclude.Paths {
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			return fmt.Errorf("invalid coverage exclusion %q: %w", pattern, err)
+		}
+		for k := range p {
+			if re.MatchString(strings.TrimPrefix(k.file, modulePath)) {
+				delete(p, k)
+			}
+		}
 	}
 	return nil
 }

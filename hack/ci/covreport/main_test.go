@@ -41,7 +41,7 @@ func TestMergeSumsCountsAcrossProfiles(t *testing.T) {
 	mustWrite(t, u, unitProfile)
 	mustWrite(t, e, e2eProfile)
 
-	if err := run(u+","+e, out, "", "", "", defaultExclude, 0); err != nil {
+	if err := run(u+","+e, out, "", "", "", defaultExclude, 0, ""); err != nil {
 		t.Fatal(err)
 	}
 	got, _ := os.ReadFile(out)
@@ -78,10 +78,10 @@ func TestMinPatchFails(t *testing.T) {
 	u, d := filepath.Join(dir, "u.out"), filepath.Join(dir, "d.diff")
 	mustWrite(t, u, unitProfile)
 	mustWrite(t, d, diff)
-	if err := run(u, "", "", d, "", defaultExclude, 99); err == nil {
+	if err := run(u, "", "", d, "", defaultExclude, 99, ""); err == nil {
 		t.Fatal("expected failure below threshold")
 	}
-	if err := run(u, "", "", d, "", defaultExclude, 10); err != nil {
+	if err := run(u, "", "", d, "", defaultExclude, 10, ""); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -89,6 +89,62 @@ func TestMinPatchFails(t *testing.T) {
 func TestRanges(t *testing.T) {
 	if got := ranges([]int{1, 2, 3, 7, 9, 10}); got != "1-3, 7, 9-10" {
 		t.Fatal(got)
+	}
+}
+
+func TestReportUsesConfiguredExclusions(t *testing.T) {
+	dir := t.TempDir()
+	input, output := filepath.Join(dir, "input.out"), filepath.Join(dir, "merged.out")
+	summary := filepath.Join(dir, "summary.md")
+	data := unitProfile
+	for _, name := range []string{
+		"pkg/a/a.pb.go", "pkg/a/a.pb.hash.go", "pkg/a/a.pb.equal.go",
+		"pkg/a/zz_generated.deepcopy.go", "test/helper.go", "hack/tool.go",
+	} {
+		data += modulePath + name + ":1.1,2.1 100 1\n"
+	}
+	mustWrite(t, input, data)
+	if err := run(input, output, "", "", summary, defaultExclude, 0, "../../../test_coverage.yml"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(summary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "40.0% of statements (2/5)") {
+		t.Fatalf("summary includes excluded statements: %s", got)
+	}
+	got, err = os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != unitProfile {
+		t.Fatalf("merged profile includes excluded files: %s", got)
+	}
+}
+
+func TestExclusionsReadConfig(t *testing.T) {
+	dir := t.TempDir()
+	config := filepath.Join(dir, "coverage.yml")
+	mustWrite(t, config, "exclude:\n  paths:\n    - ^pkg/custom/\n")
+	p := profile{
+		{file: modulePath + "pkg/custom/a.go"}: 1,
+		{file: modulePath + "pkg/keep/a.go"}:   1,
+	}
+	if err := applyExclusions(p, config); err != nil {
+		t.Fatal(err)
+	}
+	if len(p) != 1 || p[blockKey{file: modulePath + "pkg/keep/a.go"}] != 1 {
+		t.Fatalf("custom exclusion not applied: %v", p)
+	}
+	for _, content := range []string{"exclude: [", "exclude:\n  paths:\n    - '['\n"} {
+		mustWrite(t, config, content)
+		if err := applyExclusions(p, config); err == nil {
+			t.Fatalf("expected error for invalid config %q", content)
+		}
+	}
+	if err := applyExclusions(p, filepath.Join(dir, "missing.yml")); err == nil {
+		t.Fatal("expected error for missing config")
 	}
 }
 

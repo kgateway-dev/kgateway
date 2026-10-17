@@ -530,7 +530,8 @@ E2E_GO_TEST_ARGS ?= -vet=off -timeout=35m -outputdir=$(OUTPUT_DIR)
 # takes to run the longest test step (unittests. TODO(chandler): why is the
 # upgraded setup-envtest so much slower?)
 GO_TEST_ARGS ?= -timeout=35m -outputdir=$(OUTPUT_DIR) -race
-GO_TEST_COVERAGE_ARGS ?= --cover --covermode=atomic --coverprofile=cover.out
+# Include calls from tests in other packages (for example, setup tests exercising proxy_syncer).
+GO_TEST_COVERAGE_ARGS ?= --cover --coverpkg=./... --covermode=atomic --coverprofile=cover.out
 GO_TEST_COVERAGE ?= go tool -modfile tools/go.mod github.com/vladopajic/go-test-coverage/v2
 
 # This is a way for a user executing `make go-test` to be able to provide args which we do not include by default
@@ -578,7 +579,7 @@ COVERAGE_MIN_PATCH ?= 0
 
 .PHONY: merge-test-coverage
 merge-test-coverage: ## Merge COVERAGE_PROFILES, and report coverage of lines changed since COVERAGE_BASE
-	go run ./hack/ci/covreport -profiles "$(COVERAGE_PROFILES)" -merged-out "$(COVERAGE_MERGED)" \
+	go run ./hack/ci/covreport -config ./test_coverage.yml -profiles "$(COVERAGE_PROFILES)" -merged-out "$(COVERAGE_MERGED)" \
 		$(if $(COVERAGE_BASE),-base "$(COVERAGE_BASE)" -min-patch $(COVERAGE_MIN_PATCH)) \
 		$(if $(GITHUB_STEP_SUMMARY),-summary "$(GITHUB_STEP_SUMMARY)")
 
