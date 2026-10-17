@@ -218,6 +218,24 @@ func backendReportEqual(a, b *BackendReport) bool {
 		conditionsEqual(a.Conditions, b.Conditions)
 }
 
+func cloneGatewayExtensionReport(in *GatewayExtensionReport) *GatewayExtensionReport {
+	if in == nil {
+		return nil
+	}
+	return &GatewayExtensionReport{
+		Conditions:         slices.Clone(in.Conditions),
+		observedGeneration: in.observedGeneration,
+	}
+}
+
+func gatewayExtensionReportEqual(a, b *GatewayExtensionReport) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.observedGeneration == b.observedGeneration &&
+		conditionsEqual(a.Conditions, b.Conditions)
+}
+
 func conditionsEqual(a, b []metav1.Condition) bool {
 	if len(a) != len(b) {
 		return false

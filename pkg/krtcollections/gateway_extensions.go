@@ -16,11 +16,15 @@ import (
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 )
 
+// NewGatewayExtensionsCollection builds the translated ir.GatewayExtension collection and
+// returns the raw informer-backed *kgateway.GatewayExtension collection it is derived from.
+// The raw collection is exposed so the status syncer can reconcile GatewayExtension status
+// against live objects (status-only updates do not re-emit the IR collection).
 func NewGatewayExtensionsCollection(
 	ctx context.Context,
 	client apiclient.Client,
 	krtOpts krtutil.KrtOptions,
-) krt.Collection[ir.GatewayExtension] {
+) (krt.Collection[*kgateway.GatewayExtension], krt.Collection[ir.GatewayExtension]) {
 	rawGwExts := krt.WrapClient(kclient.NewFilteredDelayed[*kgateway.GatewayExtension](
 		client,
 		wellknown.GatewayExtensionGVR,
@@ -47,5 +51,5 @@ func NewGatewayExtensionsCollection(
 		}
 		return gwExt
 	})
-	return gwExtCol
+	return rawGwExts, gwExtCol
 }
