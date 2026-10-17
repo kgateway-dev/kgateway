@@ -169,6 +169,10 @@ type publishGate struct {
 	// beforeInstall, set only by tests, runs under mu just before setSnapshot
 	// installs, to hold a publisher at that point.
 	beforeInstall func(proxyKey string)
+	// connectionReset, set only by tests, runs under mu in connectionStarted
+	// after the previous connection is forgotten and before the new
+	// generation is adopted.
+	connectionReset func(proxyKey string)
 	// currentBuild returns a client's current snapshot row, or nil if it has
 	// none (beginBuildLocked). Set by ProxySyncer.Start before the gate is
 	// first used; nil for callers that drive the gate directly.
@@ -693,20 +697,33 @@ func (g *publishGate) cancelFlipReleaseLocked(proxyKey string) {
 func (g *publishGate) clientDeparted(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.forgetConnectionLocked(proxyKey)
+}
+
+// forgetConnectionLocked is clientDeparted for callers that hold g.mu.
+func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	g.withdrawLocked(proxyKey)
 	delete(g.published, proxyKey)
 	delete(g.carriedSince, proxyKey)
 }
 
 // connectionStarted begins the client's new connection in the gate (the
-// connection-start hook, after the fence started it). It first forgets the
-// previous connection, as clientDeparted does, and only then adopts the key's
-// new generation: in between, a publish is rejected by the fence rather than
-// installed with the previous connection's state.
+// connection-start hook, after the fence started it): it forgets the previous
+// connection, as clientDeparted does, and adopts the key's new generation, in
+// one critical section. A build that reached the gate between the two would be
+// decided against the reset state but under the old generation. Nothing it
+// installs gets past the fence, but a timer it arms does: offered as a first
+// publish, it would leave a pending entry and its budget timer behind, which
+// fire after the adoption and publish that build to the new connection,
+// answering the new stream's watches with config the connection-start replay
+// has already moved past.
 func (g *publishGate) connectionStarted(proxyKey string) {
-	g.clientDeparted(proxyKey)
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.forgetConnectionLocked(proxyKey)
+	if g.connectionReset != nil {
+		g.connectionReset(proxyKey)
+	}
 	if g.connGen == nil {
 		g.connGen = make(map[string]uint64)
 	}
