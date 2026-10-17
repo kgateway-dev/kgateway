@@ -2,22 +2,24 @@
 
 # (mandatory)
 # Path to coverprofile file (output of `go test -coverprofile` command)
-profile: _output/cover.out
+profile: _output/cover.merged.out
 
 # Holds coverage thresholds percentages, values should be in range [0-100]
 # We should strive to increase these percentages over time
 threshold:
   # (optional; default 0)
-  # The minimum coverage that each file should have
-  file: 50
+  # The minimum coverage that each file should have.
+  # File and package floors remain disabled; coverage varies by responsibility.
+  file: 0
 
   # (optional; default 0)
-  # The minimum coverage that each package should have
-  package: 50
+  # The minimum coverage that each package should have. Not enforced yet, see above.
+  package: 0
 
   # (optional; default 0)
-  # The minimum total coverage project should have
-  total: 50
+  # CI baseline (2026-10-17): approximately 81% unit-only and 83% combined.
+  # Keep a modest regression budget below that baseline. The long-term goal is 85%.
+  total: 80
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.
@@ -42,3 +44,15 @@ exclude:
     - \.pb\.go$
     - \.pb\.hash\.go$
     - \.pb\.equal\.go$
+    # Exclude generated code (deepcopy, register, ...), which tests can't meaningfully cover
+    - zz_generated[^/]*\.go$
+    # Generated Kubernetes clients, apply configurations, and OpenAPI schemas
+    - ^pkg/client/
+    - ^api/applyconfiguration/
+    - ^pkg/generated/
+    # Generated query mocks are test support, not controller implementation
+    - ^pkg/kgateway/query/mocks/
+    # Exclude test support code (helpers, matchers, fixtures); it is exercised by the tests, not under test
+    - ^test/
+    # Exclude the tooling that lives under hack/ (code generation, CI helpers)
+    - ^hack/

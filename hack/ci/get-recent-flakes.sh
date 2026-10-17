@@ -90,7 +90,12 @@ else
 fi
 
 repo_info=$(gh repo view --json owner,name -q '.owner.login + "/" + .name')
-failing_run_ids=$(gh run list -w=".github/workflows/e2e.yaml" --event=merge_group --created ">$start_date" --limit 100 -s failure --json databaseId | jq '.[].databaseId' -r)
+# Include historical standalone e2e runs and the workflow now calling e2e.
+failing_run_ids=$(
+    for workflow in e2e.yaml unit.yaml; do
+        gh run list -w="$workflow" --event=merge_group --created ">$start_date" --limit 100 -s failure --json databaseId | jq '.[].databaseId' -r
+    done
+)
 
 # map of test_name to list of run_urls
 # Format: test_map["test_name"]="run_url1,run_url2,run_url3"
@@ -99,7 +104,13 @@ declare -A test_map
 for run_id in $failing_run_ids
 do
     run_url="https://github.com/$repo_info/actions/runs/$run_id"
-    failure_lines=$(gh run view $run_id --log-failed | grep FAIL:)
+    # Combined runs also contain unit jobs; only inspect failed e2e shards.
+    failed_jobs=$(gh run view "$run_id" --json jobs --jq '.jobs[] | select(.conclusion == "failure" and (.name | contains("End-to-End ("))) | .databaseId')
+    failure_lines=$(
+        for job_id in $failed_jobs; do
+            gh run view "$run_id" --job "$job_id" --log-failed | grep 'FAIL:'
+        done
+    )
     # extract the test names from the log lines
     failing_tests=$(echo $failure_lines | grep -o 'FAIL: [^ ]*' | sed 's/FAIL: //')
 
