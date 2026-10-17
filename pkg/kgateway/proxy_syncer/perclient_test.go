@@ -138,7 +138,7 @@ func TestFilterEndpointResourcesForClusters_FiltersStaticClusterCLAs(t *testing.
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-cluster"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 endpoint resource, got %d", len(out.Items))
@@ -163,7 +163,7 @@ func TestFilterEndpointResourcesForClusters_ReturnsOriginalWhenNoFiltering(t *te
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-only"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 endpoint resource, got %d", len(out.Items))
@@ -184,7 +184,7 @@ func TestFilterEndpointResourcesForClusters_EmptyClustersAndEndpoints(t *testing
 	emptyClusters := envoycache.NewResourcesWithTTL("v1", nil)
 	emptyEndpoints := envoycache.NewResourcesWithTTL("v1", nil)
 
-	out, _ := filterEndpointResourcesForClusters(emptyClusters, emptyEndpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(emptyClusters, emptyEndpoints, nil, "")
 
 	if len(out.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(out.Items))
@@ -197,7 +197,7 @@ func TestFilterEndpointResourcesForClusters_EmptyClustersNonEmptyEndpoints(t *te
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "any"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(emptyClusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(emptyClusters, endpoints, nil, "")
 
 	if len(out.Items) != 0 {
 		t.Fatalf("expected no endpoint resources when no EDS clusters are emitted, got %d", len(out.Items))
@@ -210,7 +210,7 @@ func TestFilterEndpointResourcesForClusters_EmptyEndpoints(t *testing.T) {
 	})
 	emptyEndpoints := envoycache.NewResourcesWithTTL("v1", nil)
 
-	out, _ := filterEndpointResourcesForClusters(clusters, emptyEndpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, emptyEndpoints, nil, "")
 
 	if len(out.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(out.Items))
@@ -232,7 +232,7 @@ func TestFilterEndpointResourcesForClusters_MixedStaticAndNonStatic(t *testing.T
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-b"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 2 {
 		t.Fatalf("expected 2 endpoint resources (eds-a, eds-b), got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -260,7 +260,7 @@ func TestFilterEndpointResourcesForClusters_FiltersStaleClusterLoadAssignments(t
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "cluster-b"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected only the CLA required by CDS, got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -293,7 +293,7 @@ func TestFilterEndpointResourcesForClusters_UsesEDSServiceName(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "service-a"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected only the service-name CLA required by CDS, got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -2072,7 +2072,7 @@ func TestFilterEndpointResourcesForClusters_VersionTracksPublishedSet(t *testing
 		for _, name := range clusters {
 			items = append(items, edsCluster(name))
 		}
-		out, _ := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", items), endpoints, "")
+		out, _, _ := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", items), endpoints, nil, "")
 		return out.Version
 	}
 
@@ -2126,7 +2126,7 @@ func TestFilterEndpointResourcesForClusters_PublishesRequiredSet(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
-			out, synthesized := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", tc.clusters), tc.endpoints, tc.bootstrap)
+			out, _, synthesized := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", tc.clusters), tc.endpoints, nil, tc.bootstrap)
 			g.Expect(slices.Sorted(maps.Keys(out.Items))).To(gomega.Equal(tc.wantPublished))
 			g.Expect(slices.Sorted(maps.Keys(synthesized))).To(gomega.Equal(tc.wantSynthesized))
 			if len(tc.wantSynthesized) == 0 && len(tc.wantPublished) == len(tc.endpoints.Items) {
