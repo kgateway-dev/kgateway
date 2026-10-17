@@ -417,7 +417,29 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	if _, ok := parent.(*gwv1.Gateway); ok {
 		return listenerName
 	}
-	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
+	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
+}
+
+// RouteKeyMatches reports whether key equals GenerateRouteKey(parent, listenerName)
+// without building the key, so callers can scan every listener without allocating.
+func RouteKeyMatches(key string, parent client.Object, listenerName string) bool {
+	if parent == nil {
+		return key == listenerName
+	}
+	if _, ok := parent.(*gwv1.Gateway); ok {
+		return key == listenerName
+	}
+	rest, ok := strings.CutPrefix(key, parent.GetNamespace())
+	if ok {
+		rest, ok = strings.CutPrefix(rest, "/")
+	}
+	if ok {
+		rest, ok = strings.CutPrefix(rest, parent.GetName())
+	}
+	if ok {
+		rest, ok = strings.CutPrefix(rest, "/")
+	}
+	return ok && rest == listenerName
 }
 
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {

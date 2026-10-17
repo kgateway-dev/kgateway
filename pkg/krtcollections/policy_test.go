@@ -758,3 +758,15 @@ func BenchmarkPolicyAttachment(b *testing.B) {
 		})
 	}
 }
+
+func TestToAttachedPoliciesEmpty(t *testing.T) {
+	assert.Nil(t, ToAttachedPolicies(nil).Policies, "no policies should not allocate a map")
+
+	var merged ir.AttachedPolicies
+	merged.Append(ToAttachedPolicies(nil), ToAttachedPolicies(nil))
+	assert.Nil(t, merged.Policies, "appending empty attachments should not allocate a map")
+
+	gk := schema.GroupKind{Group: "g", Kind: "K"}
+	merged.Append(ToAttachedPolicies([]ir.PolicyAtt{{GroupKind: gk}, {GroupKind: gk}}))
+	assert.Len(t, merged.Policies[gk], 2, "policies should still be grouped by kind")
+}

@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_opentelemetry-collector_4317
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -60,7 +58,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         tracing:
           provider:
             name: envoy.tracers.opentelemetry

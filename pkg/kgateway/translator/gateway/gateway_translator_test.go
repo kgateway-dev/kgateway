@@ -5,18 +5,22 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -27,13 +31,29 @@ import (
 	backendplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"
 )
 
 type translatorTestCase struct {
-	inputFiles []string
-	outputFile string
-	gwNN       types.NamespacedName
+	inputFiles  []string
+	outputFile  string
+	gwNN        types.NamespacedName
+	extraConfig translatortest.ExtraConfig
+}
+
+// pinVersion fixes the reported kgateway version for the duration of a test.
+// version.Version reaches translation output through the OTel access-log resource
+// attributes (see access_logging_converter.go), so without it a golden recorded from
+// a locally stamped build would not match one recorded in CI.
+//
+// It writes a package-level global, which is only safe because nothing in this package
+// calls t.Parallel().
+func pinVersion(t *testing.T) {
+	t.Helper()
+	prev := version.Version
+	version.Version = "v1.0.0-ci1"
+	t.Cleanup(func() { version.Version = prev })
 }
 
 func TestBasic(t *testing.T) {
@@ -42,11 +62,7 @@ func TestBasic(t *testing.T) {
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
-		prevVersion := version.Version
-		version.Version = "v1.0.0-ci1"
-		defer func() {
-			version.Version = prevVersion
-		}()
+		pinVersion(t)
 
 		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -61,7 +77,7 @@ func TestBasic(t *testing.T) {
 			inputFiles = append(inputFiles, filepath.Join(dir, "testutils/inputs/", input))
 		}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		translatortest.TestTranslation(t, ctx, inputFiles, expectedProxyFile, in.gwNN, settingOpts...)
+		translatortest.TestTranslationWithExtraPlugins(t, ctx, inputFiles, expectedProxyFile, in.gwNN, in.extraConfig, settingOpts...)
 	}
 
 	t.Run("gateway with no routes should not add empty filter chain", func(t *testing.T) {
@@ -1558,6 +1574,8 @@ func TestBasic(t *testing.T) {
 				Namespace: "default",
 				Name:      "example-gateway",
 			},
+			// the fixture routes to a backend of the fake plugin-contributed kind
+			extraConfig: translatortest.ExtraConfig{RegisterTestBackendPlugin: true},
 		})
 	})
 
@@ -3739,15 +3757,85 @@ func TestBasic(t *testing.T) {
 	})
 }
 
+// setupStructuralSchemas returns the structural schemas for kgateway's CRDs plus the
+// Gateway API's, so fixtures get the same CRD defaulting, pruning and validation an API
+// server would apply. TestCase.Run defaults to kgateway's CRDs alone, which leaves
+// Gateway API defaults (HTTPCORSFilter.maxAge, for one) unapplied - fine for fixtures
+// written against this harness, wrong for the setup fixtures, whose goldens were
+// recorded through a real API server.
+func setupStructuralSchemas(t *testing.T) map[schema.GroupVersionKind]*apiserverschema.Structural {
+	t.Helper()
+
+	schemas, err := testutils.GetStructuralSchemasForAllCharts()
+	require.NoError(t, err, "failed to load kgateway CRD schemas")
+
+	gwAPIDir, err := testutils.GetGatewayAPICRDDir()
+	require.NoError(t, err, "failed to locate Gateway API CRDs")
+	gwAPISchemas, err := testutils.GetStructuralSchemas(gwAPIDir)
+	require.NoError(t, err, "failed to load Gateway API CRD schemas")
+
+	maps.Copy(schemas, gwAPISchemas)
+	return schemas
+}
+
+// TestSetupScenarios covers the fixtures migrated from the envtest-based scenario tests in
+// pkg/kgateway/setup. Each fixture YAML under testutils/inputs/setup/<group>/ defines a gateway
+// named http-gw-for-test in namespace gwtest; testutils/inputs/setup/common.yaml provides the
+// shared pods/nodes the fixtures rely on for endpoints (mirroring setup's testdata/setup_yaml).
+func TestSetupScenarios(t *testing.T) {
+	ctx := t.Context()
+	dir := fsutils.MustGetThisDir()
+
+	pinVersion(t)
+	structuralSchemas := setupStructuralSchemas(t)
+
+	groups := []struct {
+		name        string
+		settingOpts []translatortest.SettingsOpts
+	}{
+		{name: "standard"},
+		{name: "experimental", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		}}},
+		{name: "listenerbind/v4", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
+		}}},
+		{name: "listenerbind/v6", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = true
+		}}},
+		{name: "autodns", settingOpts: []translatortest.SettingsOpts{func(s *apisettings.Settings) {
+			s.DnsLookupFamily = apisettings.DnsLookupFamilyAuto
+		}}},
+	}
+
+	for _, g := range groups {
+		inputs, err := filepath.Glob(filepath.Join(dir, "testutils/inputs/setup", g.name, "*.yaml"))
+		require.NoError(t, err)
+		require.NotEmpty(t, inputs, "no input files found for group %s", g.name)
+		for _, input := range inputs {
+			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
+			require.NoError(t, err)
+			t.Run(strings.TrimSuffix(filepath.ToSlash(rel), ".yaml"), func(t *testing.T) {
+				translatortest.TestTranslationWithExtraPlugins(t, ctx, []string{
+					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
+					input,
+				}, filepath.Join(dir, "testutils/outputs", rel), types.NamespacedName{
+					Namespace: "gwtest",
+					Name:      "http-gw-for-test",
+				}, translatortest.ExtraConfig{
+					IncludeEndpoints:      true,
+					GVKToStructuralSchema: structuralSchemas,
+				}, g.settingOpts...)
+			})
+		}
+	}
+}
+
 func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T) {
 	ctx := t.Context()
 
 	dir := fsutils.MustGetThisDir()
-	prevVersion := version.Version
-	version.Version = "v1.0.0-ci1"
-	defer func() {
-		version.Version = prevVersion
-	}()
+	pinVersion(t)
 
 	tc := translatortest.TestCase{
 		InputFiles: []string{
@@ -3758,7 +3846,7 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 		t,
 		ctx,
 		translatortest.NewScheme(runtime.SchemeBuilder{}),
-		translatortest.ExtraConfig{},
+		translatortest.ExtraConfig{IncludeEndpoints: true},
 		func(s *apisettings.Settings) {
 			s.EnableExperimentalGatewayAPIFeatures = true
 		},
@@ -3801,6 +3889,37 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 
 	assert.Equal(t, "client.example.com", requireGatewayClientCertificateCommonName(t, clusterOne))
 	assert.Equal(t, "client2.example.com", requireGatewayClientCertificateCommonName(t, clusterTwo))
+
+	// Each variant is an EDS cluster, so Envoy also needs a CLA under the
+	// variant's own name carrying the base Service's endpoints.
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultOne.Endpoints, expectedClusterOne))
+	assert.Equal(t, []string{"10.244.1.20:8443"}, claAddressesFor(t, resultTwo.Endpoints, expectedClusterTwo))
+	assert.Nil(t, findCLAByName(resultOne.Endpoints, expectedClusterTwo), "first gateway should not publish endpoints for second gateway variant")
+	assert.Nil(t, findCLAByName(resultTwo.Endpoints, expectedClusterOne), "second gateway should not publish endpoints for first gateway variant")
+}
+
+func findCLAByName(assignments []*envoyendpointv3.ClusterLoadAssignment, name string) *envoyendpointv3.ClusterLoadAssignment {
+	for _, cla := range assignments {
+		if cla.GetClusterName() == name {
+			return cla
+		}
+	}
+	return nil
+}
+
+func claAddressesFor(t *testing.T, assignments []*envoyendpointv3.ClusterLoadAssignment, name string) []string {
+	t.Helper()
+
+	cla := findCLAByName(assignments, name)
+	require.NotNil(t, cla, "expected a load assignment for cluster %s", name)
+	var addresses []string
+	for _, locality := range cla.GetEndpoints() {
+		for _, lbEndpoint := range locality.GetLbEndpoints() {
+			socket := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
+			addresses = append(addresses, fmt.Sprintf("%s:%d", socket.GetAddress(), socket.GetPortValue()))
+		}
+	}
+	return addresses
 }
 
 func requireSingleRouteClusterName(t *testing.T, routes []*envoyroutev3.RouteConfiguration) string {
