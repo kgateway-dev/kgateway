@@ -13,6 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/backendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicauth"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/buffer"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/compression"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/cors"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/features/csrf"
@@ -90,6 +91,7 @@ func SuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TrafficPolicyStatus", trafficpolicystatus.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Buffer", buffer.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Compression", compression.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("FaultInjection", faultinjection.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
