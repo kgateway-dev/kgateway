@@ -482,6 +482,8 @@ type GatewayIndexConfig struct {
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
 	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwv1.ListenerSet]
+	listenerSetIRs                        krt.Collection[listenerSetIRRef]
+	listenerSetIRsByParentRef             krt.Index[TargetRefIndexKey, listenerSetIRRef]
 }
 
 func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption) *GatewayIndex {
@@ -493,9 +495,54 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 		return h
 	}
 
-	h.Gateways = krt.NewCollection(config.Gateways, config.gatewaysForEnvoyTransformationFunc(&config), config.KrtOpts.ToOptions("gateways")...)
+	// Each ListenerSet's listeners and attached policies are built in a collection of their own,
+	// so a change to one ListenerSet rebuilds only that one instead of every ListenerSet on the
+	// Gateway. ir.ListenerSet.Equals compares the source object by version, so a status-only
+	// write to a ListenerSet rebuilds only its IR and stops there.
+	config.listenerSetIRs = krt.NewCollection(config.ListenerSets, func(kctx krt.HandlerContext, ls *gwv1.ListenerSet) *listenerSetIRRef {
+		return &listenerSetIRRef{listenerSetIR(kctx, config.PolicyIndex, ls)}
+	}, config.KrtOpts.ToOptions("ListenerSetIRs")...)
+	config.listenerSetIRsByParentRef = krtpkg.UnnamedIndex(config.listenerSetIRs, func(in listenerSetIRRef) []TargetRefIndexKey {
+		return listenerSetParentRefKeys(in.Obj.(*gwv1.ListenerSet))
+	})
+	// The Envoy transformation reads only the Gateway's spec and metadata, so feed it from a
+	// projection that drops status-only writes. Otherwise every Gateway status write re-runs it
+	// over all of the Gateway's ListenerSets, only for Gateway.Equals to discard the result.
+	gatewaySpecs := krt.NewCollection(config.Gateways, func(_ krt.HandlerContext, gw *gwv1.Gateway) *gatewaySpec {
+		return &gatewaySpec{gw: gw}
+	}, config.KrtOpts.ToOptions("GatewaySpecs")...)
+	envoyTransformation := config.gatewaysForEnvoyTransformationFunc(&config)
+	h.Gateways = krt.NewCollection(gatewaySpecs, func(kctx krt.HandlerContext, gw gatewaySpec) *ir.Gateway {
+		return envoyTransformation(kctx, gw.gw)
+	}, config.KrtOpts.ToOptions("gateways")...)
 
 	return h
+}
+
+// gatewaySpec wraps a Gateway so that KRT compares it with ir.VersionEquals rather than by
+// value: a status-only write bumps resourceVersion but leaves generation, labels and
+// annotations alone, so it stops here. The wrapped Gateway is the one from the last change
+// that got through.
+type gatewaySpec struct {
+	gw *gwv1.Gateway
+}
+
+func (g gatewaySpec) ResourceName() string {
+	return krt.GetKey(g.gw)
+}
+
+func (g gatewaySpec) Equals(in gatewaySpec) bool {
+	return ir.VersionEquals(g.gw, in.gw)
+}
+
+// listenerSetIRRef holds a ListenerSet's IR by pointer, so that fetching every ListenerSet on a
+// Gateway copies pointers rather than ir.ListenerSet values.
+type listenerSetIRRef struct {
+	*ir.ListenerSet
+}
+
+func (r listenerSetIRRef) Equals(in listenerSetIRRef) bool {
+	return r.ListenerSet.Equals(*in.ListenerSet)
 }
 
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
@@ -586,67 +633,39 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
+		listenerSets := krt.Fetch(kctx, config.listenerSetIRs, krt.FilterIndex(config.listenerSetIRsByParentRef, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
 		}))
+		// Make room for every ListenerSet listener up front rather than regrowing per ListenerSet.
+		numListeners := len(gwIR.Listeners)
+		for _, ls := range listenerSets {
+			numListeners += len(ls.Listeners)
+		}
+		gwIR.Listeners = append(make([]ir.Listener, 0, numListeners), gwIR.Listeners...)
 
 		// Sort by listener precedence
 		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
 		// - ListenerSet ordered by creation time (oldest first)
 		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
+		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int {
 			// primary sort: creation timestamp (oldest first)
-			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
+			if cmp := a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time); cmp != 0 {
 				return cmp
 			}
 			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls *gwv1.ListenerSet) string {
+			nnsString := func(ls listenerSetIRRef) string {
 				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
 			}
 			return strings.Compare(nnsString(a), nnsString(b))
 		})
 
 		for _, ls := range listenerSets {
-			if ls.GroupVersionKind().Empty() {
-				ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
-			}
-			lsGVK := ls.GroupVersionKind()
-
-			lsIR := ir.ListenerSet{
-				ObjectSource: ir.ObjectSource{
-					Group:     lsGVK.Group,
-					Kind:      lsGVK.Kind,
-					Namespace: ls.Namespace,
-					Name:      ls.Name,
-				},
-				Obj:       ls,
-				Listeners: make([]ir.Listener, 0),
-			}
-			listenerSetPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
-
-			for _, l := range ls.Spec.Listeners {
-				listenerSpecificPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
-				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
-				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
-				// Ensure the sectioned policies are first
-				listenerPolicies := slices.Clone(listenerSpecificPolicies)
-				listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
-
-				lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
-					Listener:         utils.ToListener(l),
-					Parent:           ls,
-					AttachedPolicies: ToAttachedPolicies(listenerPolicies),
-					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     new(gwv1.Group(lsGVK.Group)),
-						Kind:      new(gwv1.Kind(lsGVK.Kind)),
-						Name:      gwv1.ObjectName(ls.Name),
-						Namespace: new(gwv1.Namespace(ls.Namespace)),
-					},
-				})
-			}
+			// A copy, since Err is set per Gateway.
+			lsIR := *ls.ListenerSet
+			lsGVK := lsIR.Obj.GetObjectKind().GroupVersionKind()
 
 			if gw.Spec.AllowedListeners == nil {
 				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
@@ -663,7 +682,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
-			if !allowedNs(kctx, ls.GetNamespace()) {
+			if !allowedNs(kctx, lsIR.Namespace) {
 				lsIR.Err = errors.New("Attachment not allowed")
 				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
@@ -684,6 +703,49 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 		return gwIR
 	}
+}
+
+// listenerSetIR builds a ListenerSet's listeners with the policies attached to them. Whether the
+// parent Gateway admits the ListenerSet is left to the Gateway transformation, which sets Err.
+func listenerSetIR(kctx krt.HandlerContext, policyIndex *PolicyIndex, ls *gwv1.ListenerSet) *ir.ListenerSet {
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	lsGVK := ls.GroupVersionKind()
+
+	lsIR := &ir.ListenerSet{
+		ObjectSource: ir.ObjectSource{
+			Group:     lsGVK.Group,
+			Kind:      lsGVK.Kind,
+			Namespace: ls.Namespace,
+			Name:      ls.Name,
+		},
+		Obj:       ls,
+		Listeners: make([]ir.Listener, 0),
+	}
+	listenerSetPolicies := policyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
+
+	for _, l := range ls.Spec.Listeners {
+		listenerSpecificPolicies := policyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
+		// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
+		// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
+		// Ensure the sectioned policies are first
+		listenerPolicies := slices.Clone(listenerSpecificPolicies)
+		listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
+
+		lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
+			Listener:         utils.ToListener(l),
+			Parent:           ls,
+			AttachedPolicies: ToAttachedPolicies(listenerPolicies),
+			PolicyAncestorRef: gwv1.ParentReference{
+				Group:     new(gwv1.Group(lsGVK.Group)),
+				Kind:      new(gwv1.Kind(lsGVK.Kind)),
+				Name:      gwv1.ObjectName(ls.Name),
+				Namespace: new(gwv1.Namespace(ls.Namespace)),
+			},
+		})
+	}
+	return lsIR
 }
 
 func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
