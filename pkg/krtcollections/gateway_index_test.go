@@ -2,9 +2,11 @@ package krtcollections
 
 import (
 	"strconv"
-	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -12,15 +14,13 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-func TestSpecVersionEquals(t *testing.T) {
-	base := &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{
-		Name:            "ls",
+func TestGatewaySpecEquals(t *testing.T) {
+	base := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{
+		Name:            "gw",
 		Namespace:       "default",
 		UID:             "uid",
 		Generation:      1,
@@ -30,28 +30,28 @@ func TestSpecVersionEquals(t *testing.T) {
 	}}
 	tests := []struct {
 		name   string
-		mutate func(*gwv1.ListenerSet)
+		mutate func(*gwv1.Gateway)
 		want   bool
 	}{
 		{
 			name: "status-only write",
-			mutate: func(ls *gwv1.ListenerSet) {
-				ls.ResourceVersion = "2"
-				ls.Status.Conditions = []metav1.Condition{{Type: "Accepted", Status: metav1.ConditionTrue}}
+			mutate: func(gw *gwv1.Gateway) {
+				gw.ResourceVersion = "2"
+				gw.Status.Conditions = []metav1.Condition{{Type: "Programmed", Status: metav1.ConditionTrue}}
 			},
 			want: true,
 		},
-		{name: "spec change", mutate: func(ls *gwv1.ListenerSet) { ls.Generation = 2 }, want: false},
-		{name: "label change", mutate: func(ls *gwv1.ListenerSet) { ls.Labels = map[string]string{"a": "z"} }, want: false},
-		{name: "annotation change", mutate: func(ls *gwv1.ListenerSet) { ls.Annotations = nil }, want: false},
-		{name: "recreated", mutate: func(ls *gwv1.ListenerSet) { ls.UID = "other" }, want: false},
+		{name: "spec change", mutate: func(gw *gwv1.Gateway) { gw.Generation = 2 }, want: false},
+		{name: "label change", mutate: func(gw *gwv1.Gateway) { gw.Labels = map[string]string{"a": "z"} }, want: false},
+		{name: "annotation change", mutate: func(gw *gwv1.Gateway) { gw.Annotations = nil }, want: false},
+		{name: "recreated", mutate: func(gw *gwv1.Gateway) { gw.UID = "other" }, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 			changed := base.DeepCopy()
 			tt.mutate(changed)
-			a, b := specVersion[*gwv1.ListenerSet]{obj: base}, specVersion[*gwv1.ListenerSet]{obj: changed}
+			a, b := gatewaySpec{gw: base}, gatewaySpec{gw: changed}
 			g.Expect(a.Equals(b)).To(Equal(tt.want))
 			g.Expect(b.Equals(a)).To(Equal(tt.want))
 		})
@@ -63,65 +63,9 @@ func TestSpecVersionEquals(t *testing.T) {
 // label and annotation changes must.
 func TestGatewayIRIgnoresStatusOnlyWrites(t *testing.T) {
 	g := NewWithT(t)
-	krtOpts := krtutil.NewKrtOptions(t.Context().Done(), nil)
-
-	const controller = "envoy-controller"
 	gw := testGateway("gw")
 	ls := testListenerSet("ls", "gw")
-	// Writes to the barrier objects re-run only the barrier Gateway. Collections deliver events
-	// in order, so once that run is seen, every earlier write to the same input was handled.
-	barrierGW := testGateway("barrier")
-	barrierLS := testListenerSet("barrier-ls", "barrier")
-
-	gateways := krt.NewStaticCollection(nil, []*gwv1.Gateway{gw, barrierGW}, krtOpts.ToOptions("Gateways")...)
-	listenerSets := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{ls, barrierLS}, krtOpts.ToOptions("ListenerSets")...)
-	gatewayClasses := krt.NewStaticCollection(nil, []*gwv1.GatewayClass{{
-		ObjectMeta: metav1.ObjectMeta{Name: "envoy"},
-		Spec:       gwv1.GatewayClassSpec{ControllerName: controller},
-	}}, krtOpts.ToOptions("GatewayClasses")...)
-
-	var mu sync.Mutex
-	runs := map[string]int{}
-	countRuns := func(config *GatewayIndexConfig) func(krt.HandlerContext, *gwv1.Gateway) *ir.Gateway {
-		transform := GatewaysForEnvoyTransformationFunc(config)
-		return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
-			mu.Lock()
-			runs[gw.Name]++
-			mu.Unlock()
-			return transform(kctx, gw)
-		}
-	}
-	runsOf := func(name string) int {
-		mu.Lock()
-		defer mu.Unlock()
-		return runs[name]
-	}
-
-	index := NewGatewayIndex(GatewayIndexConfig{
-		KrtOpts:             krtOpts,
-		EnvoyControllerName: controller,
-		PolicyIndex:         NewPolicyIndex(krtOpts, nil, settings.Settings{}),
-		Gateways:            gateways,
-		ListenerSets:        listenerSets,
-		GatewayClasses:      gatewayClasses,
-		Namespaces:          krt.NewStaticCollection[NamespaceMetadata](nil, nil, krtOpts.ToOptions("Namespaces")...),
-	}, WithGatewayForEnvoyTransformationFunc(countRuns))
-	g.Expect(index.Gateways.WaitUntilSynced(t.Context().Done())).To(BeTrue())
-
-	flush := func() {
-		before := runsOf("barrier")
-		barrierGW = bumpGeneration(barrierGW)
-		gateways.UpdateObject(barrierGW)
-		g.Eventually(func() int { return runsOf("barrier") }).Should(Equal(before+1), "barrier Gateway write should re-run the barrier Gateway")
-		barrierLS = bumpGeneration(barrierLS)
-		listenerSets.UpdateObject(barrierLS)
-		g.Eventually(func() int { return runsOf("barrier") }).Should(Equal(before+2), "barrier ListenerSet write should re-run the barrier Gateway")
-	}
-	gatewayIR := func() *ir.Gateway {
-		return index.Gateways.GetKey(ir.ObjectSource{Group: gwv1.GroupName, Kind: wellknown.GatewayKind, Namespace: "default", Name: "gw"}.ResourceName())
-	}
-	// A late ListenerSet event may still re-run the Gateway once after the initial sync.
-	flush()
+	h := newGatewayIndexHarness(t, gw, []*gwv1.ListenerSet{ls})
 
 	steps := []struct {
 		name      string
@@ -131,19 +75,19 @@ func TestGatewayIRIgnoresStatusOnlyWrites(t *testing.T) {
 		{
 			name: "Gateway status",
 			write: func() {
-				gw = writeStatus(gw, func(o *gwv1.Gateway) {
+				gw = updated(gw, func(o *gwv1.Gateway) {
 					o.Status.Conditions = []metav1.Condition{{Type: "Programmed", Status: metav1.ConditionTrue}}
 				})
-				gateways.UpdateObject(gw)
+				h.gateways.UpdateObject(gw)
 			},
 		},
 		{
 			name: "ListenerSet status",
 			write: func() {
-				ls = writeStatus(ls, func(o *gwv1.ListenerSet) {
+				ls = updated(ls, func(o *gwv1.ListenerSet) {
 					o.Status.Conditions = []metav1.Condition{{Type: "Accepted", Status: metav1.ConditionTrue}}
 				})
-				listenerSets.UpdateObject(ls)
+				h.listenerSets.UpdateObject(ls)
 			},
 		},
 		{
@@ -151,23 +95,23 @@ func TestGatewayIRIgnoresStatusOnlyWrites(t *testing.T) {
 			write: func() {
 				gw = bumpGeneration(gw)
 				gw.Spec.Listeners[0].Name = "renamed"
-				gateways.UpdateObject(gw)
+				h.gateways.UpdateObject(gw)
 			},
 			wantRerun: true,
 		},
 		{
 			name: "Gateway labels",
 			write: func() {
-				gw = writeStatus(gw, func(o *gwv1.Gateway) { o.Labels = map[string]string{"team": "a"} })
-				gateways.UpdateObject(gw)
+				gw = updated(gw, func(o *gwv1.Gateway) { o.Labels = map[string]string{"team": "a"} })
+				h.gateways.UpdateObject(gw)
 			},
 			wantRerun: true,
 		},
 		{
 			name: "Gateway annotations",
 			write: func() {
-				gw = writeStatus(gw, func(o *gwv1.Gateway) { o.Annotations = map[string]string{"note": "a"} })
-				gateways.UpdateObject(gw)
+				gw = updated(gw, func(o *gwv1.Gateway) { o.Annotations = map[string]string{"note": "a"} })
+				h.gateways.UpdateObject(gw)
 			},
 			wantRerun: true,
 		},
@@ -176,45 +120,121 @@ func TestGatewayIRIgnoresStatusOnlyWrites(t *testing.T) {
 			write: func() {
 				ls = bumpGeneration(ls)
 				ls.Spec.Listeners[0].Port = 9090
-				listenerSets.UpdateObject(ls)
+				h.listenerSets.UpdateObject(ls)
 			},
 			wantRerun: true,
 		},
 		{
 			name: "ListenerSet labels",
 			write: func() {
-				ls = writeStatus(ls, func(o *gwv1.ListenerSet) { o.Labels = map[string]string{"team": "a"} })
-				listenerSets.UpdateObject(ls)
+				ls = updated(ls, func(o *gwv1.ListenerSet) { o.Labels = map[string]string{"team": "a"} })
+				h.listenerSets.UpdateObject(ls)
 			},
 			wantRerun: true,
 		},
 		{
 			name: "ListenerSet annotations",
 			write: func() {
-				ls = writeStatus(ls, func(o *gwv1.ListenerSet) { o.Annotations = map[string]string{"note": "a"} })
-				listenerSets.UpdateObject(ls)
+				ls = updated(ls, func(o *gwv1.ListenerSet) { o.Annotations = map[string]string{"note": "a"} })
+				h.listenerSets.UpdateObject(ls)
 			},
 			wantRerun: true,
 		},
 	}
 	for _, step := range steps {
-		before := runsOf("gw")
+		before := h.runs.Load()
 		step.write()
-		flush()
+		h.flushGateways()
+		h.flushListenerSets()
 		want := before
 		if step.wantRerun {
 			want++
 		}
-		g.Expect(runsOf("gw")).To(Equal(want), "%s write: wantRerun=%v", step.name, step.wantRerun)
+		g.Expect(h.runs.Load()).To(Equal(want), "%s write: wantRerun=%v", step.name, step.wantRerun)
 	}
 
-	// The IR still reflects the latest spec of both objects.
-	out := gatewayIR()
+	// The IR reflects the latest spec of both objects.
+	out := h.index.Gateways.GetKey(ir.ObjectSource{Group: gwv1.GroupName, Kind: wellknown.GatewayKind, Namespace: "default", Name: "gw"}.ResourceName())
 	g.Expect(out).NotTo(BeNil())
 	g.Expect(out.Obj.Generation).To(Equal(gw.Generation))
 	g.Expect(out.Listeners).To(HaveLen(2))
 	g.Expect(out.Listeners[0].Name).To(Equal(gwv1.SectionName("renamed")))
 	g.Expect(out.Listeners[1].Port).To(Equal(gwv1.PortNumber(9090)))
+}
+
+// gatewayIndexHarness runs the Envoy Gateway transformation over static collections holding
+// one Gateway under test, its ListenerSets, and a barrier Gateway with one ListenerSet of its
+// own. Writes to the barrier objects re-run only the barrier Gateway. Collections deliver
+// events in order, so once that run is seen, every earlier write to the same input was handled.
+type gatewayIndexHarness struct {
+	t            *testing.T
+	index        *GatewayIndex
+	gateways     krt.StaticCollection[*gwv1.Gateway]
+	listenerSets krt.StaticCollection[*gwv1.ListenerSet]
+	// runs counts transformation runs for the Gateway under test.
+	runs        atomic.Int64
+	barrierGW   *gwv1.Gateway
+	barrierLS   *gwv1.ListenerSet
+	barrierRuns chan struct{}
+}
+
+func newGatewayIndexHarness(t *testing.T, gw *gwv1.Gateway, listenerSets []*gwv1.ListenerSet) *gatewayIndexHarness {
+	const barrier = "barrier"
+	h := &gatewayIndexHarness{
+		t:           t,
+		barrierGW:   testGateway(barrier),
+		barrierLS:   testListenerSet("barrier-ls", barrier),
+		barrierRuns: make(chan struct{}, 16),
+	}
+
+	config := getConfig(t)
+	h.gateways = krt.NewStaticCollection(nil, []*gwv1.Gateway{gw, h.barrierGW}, config.KrtOpts.ToOptions("Gateways")...)
+	h.listenerSets = krt.NewStaticCollection(nil, append([]*gwv1.ListenerSet{h.barrierLS}, listenerSets...), config.KrtOpts.ToOptions("ListenerSets")...)
+	config.Gateways = h.gateways
+	config.ListenerSets = h.listenerSets
+	config.GatewayClasses = krt.NewStaticCollection(nil, []*gwv1.GatewayClass{{
+		ObjectMeta: metav1.ObjectMeta{Name: "envoy"},
+		Spec:       gwv1.GatewayClassSpec{ControllerName: gwv1.GatewayController(config.EnvoyControllerName)},
+	}}, config.KrtOpts.ToOptions("GatewayClasses")...)
+
+	countRuns := func(config *GatewayIndexConfig) func(krt.HandlerContext, *gwv1.Gateway) *ir.Gateway {
+		transform := GatewaysForEnvoyTransformationFunc(config)
+		return func(kctx krt.HandlerContext, in *gwv1.Gateway) *ir.Gateway {
+			out := transform(kctx, in)
+			if in.Name == barrier {
+				h.barrierRuns <- struct{}{}
+			} else {
+				h.runs.Add(1)
+			}
+			return out
+		}
+	}
+	h.index = NewGatewayIndex(config, WithGatewayForEnvoyTransformationFunc(countRuns))
+	if !h.index.Gateways.WaitUntilSynced(t.Context().Done()) {
+		t.Fatal("Gateway IR collection did not sync")
+	}
+	h.awaitBarrier()
+	return h
+}
+
+func (h *gatewayIndexHarness) flushGateways() {
+	h.barrierGW = bumpGeneration(h.barrierGW)
+	h.gateways.UpdateObject(h.barrierGW)
+	h.awaitBarrier()
+}
+
+func (h *gatewayIndexHarness) flushListenerSets() {
+	h.barrierLS = bumpGeneration(h.barrierLS)
+	h.listenerSets.UpdateObject(h.barrierLS)
+	h.awaitBarrier()
+}
+
+func (h *gatewayIndexHarness) awaitBarrier() {
+	select {
+	case <-h.barrierRuns:
+	case <-time.After(time.Minute):
+		h.t.Fatal("barrier Gateway was not re-run")
+	}
 }
 
 func testGateway(name string) *gwv1.Gateway {
@@ -238,16 +258,10 @@ func testListenerSet(name, parent string) *gwv1.ListenerSet {
 	}
 }
 
-type versionedObject[T any] interface {
-	*T
-	metav1.Object
-	DeepCopy() *T
-}
-
-// writeStatus returns a copy of obj as the API server would store it after a write that
-// does not touch the spec: a new resourceVersion and the same generation.
-func writeStatus[T any, PT versionedObject[T]](obj PT, mutate func(PT)) PT {
-	out := PT(obj.DeepCopy())
+// updated returns a copy of obj as the API server would store it after a write that does not
+// touch the spec: a new resourceVersion and the same generation.
+func updated[T controllers.Object](obj T, mutate func(T)) T {
+	out := obj.DeepCopyObject().(T)
 	rv, _ := strconv.Atoi(out.GetResourceVersion())
 	out.SetResourceVersion(strconv.Itoa(rv + 1))
 	mutate(out)
@@ -255,6 +269,6 @@ func writeStatus[T any, PT versionedObject[T]](obj PT, mutate func(PT)) PT {
 }
 
 // bumpGeneration returns a copy of obj as the API server would store it after a spec write.
-func bumpGeneration[T any, PT versionedObject[T]](obj PT) PT {
-	return writeStatus(obj, func(o PT) { o.SetGeneration(o.GetGeneration() + 1) })
+func bumpGeneration[T controllers.Object](obj T) T {
+	return updated(obj, func(o T) { o.SetGeneration(o.GetGeneration() + 1) })
 }
