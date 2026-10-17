@@ -321,3 +321,218 @@ fn test_json_body_extracted_from_received_when_buffered_is_empty() {
         abi::envoy_dynamic_module_type_on_http_filter_request_body_status::Continue
     );
 }
+
+#[test]
+fn test_connection_attributes_are_available_to_jinja() {
+    let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+    let json_str = r#"
+    {
+      "request": {
+        "set": [
+          { "name": "X-TLS-Version", "value": "{{ connection.tls_version }}" },
+          { "name": "X-mTLS", "value": "{{ connection.mtls }}" }
+        ]
+      }
+    }
+    "#;
+    let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
+    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+    envoy_filter
+        .expect_get_request_headers()
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
+
+    envoy_filter
+        .expect_get_attribute_string()
+        .times(13)
+        .returning(|attribute| match attribute {
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionTlsVersion => {
+                Some(EnvoyBuffer::new(b"TLSv1.3"))
+            }
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionMtls => {
+                Some(EnvoyBuffer::new(&[1]))
+            }
+            _ => None,
+        });
+
+    let mut seq = Sequence::new();
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-TLS-Version");
+            assert_eq!(value, b"TLSv1.3");
+            true
+        });
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .in_sequence(&mut seq)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-mTLS");
+            assert_eq!(value, b"true");
+            true
+        });
+
+    assert_eq!(
+        filter.on_request_headers(&mut envoy_filter, true),
+        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
+    );
+}
+
+/// Verifies that when Envoy returns an empty byte buffer for connection.mtls,
+/// it is normalized to the string "false".
+#[test]
+fn test_connection_mtls_empty_bytes_returns_false() {
+    let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+    let json_str = r#"
+    {
+      "request": {
+        "set": [
+          { "name": "X-mTLS", "value": "{{ connection.mtls }}" }
+        ]
+      }
+    }
+    "#;
+    let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
+    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+    envoy_filter
+        .expect_get_request_headers()
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
+
+    envoy_filter
+        .expect_get_attribute_string()
+        .times(13)
+        .returning(|attribute| match attribute {
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionMtls => {
+                Some(EnvoyBuffer::new(&[]))
+            }
+            _ => None,
+        });
+
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-mTLS");
+            assert_eq!(value, b"false");
+            true
+        });
+
+    assert_eq!(
+        filter.on_request_headers(&mut envoy_filter, true),
+        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
+    );
+}
+
+/// Verifies that connection attributes are also available in response transformations.
+#[test]
+fn test_connection_attributes_in_response_transformation() {
+    let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+    let json_str = r#"
+    {
+      "response": {
+        "set": [
+          { "name": "X-TLS-Version", "value": "{{ connection.tls_version }}" }
+        ]
+      }
+    }
+    "#;
+    let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
+    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+    envoy_filter
+        .expect_get_request_headers()
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
+    envoy_filter.expect_get_response_headers().returning(|| {
+        vec![(
+            EnvoyBuffer::new(b"content-type"),
+            EnvoyBuffer::new(b"text/plain"),
+        )]
+    });
+
+    envoy_filter
+        .expect_get_attribute_string()
+        .times(13)
+        .returning(|attribute| match attribute {
+            abi::envoy_dynamic_module_type_attribute_id::ConnectionTlsVersion => {
+                Some(EnvoyBuffer::new(b"TLSv1.2"))
+            }
+            _ => None,
+        });
+
+    envoy_filter
+        .expect_set_response_header()
+        .times(1)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-TLS-Version");
+            assert_eq!(value, b"TLSv1.2");
+            true
+        });
+
+    // Request headers pass through (no request transform configured).
+    assert_eq!(
+        filter.on_request_headers(&mut envoy_filter, true),
+        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
+    );
+    assert_eq!(
+        filter.on_response_headers(&mut envoy_filter, true),
+        abi::envoy_dynamic_module_type_on_http_filter_response_headers_status::Continue
+    );
+}
+
+/// Verifies that when templates do NOT reference connection attributes,
+/// get_attribute_string is never called (the USES_CONNECTION flag optimization).
+#[test]
+fn test_no_connection_lookups_when_templates_do_not_reference_connection() {
+    let mut envoy_filter = envoy_proxy_dynamic_modules_rust_sdk::MockEnvoyHttpFilter::default();
+    let json_str = r#"
+    {
+      "request": {
+        "set": [
+          { "name": "X-Static", "value": "hello" }
+        ]
+      }
+    }
+    "#;
+    let filter_conf = FilterConfig::new(json_str).expect("Failed to parse filter config json");
+    let mut filter = filter_conf.new_http_filter(&mut envoy_filter);
+
+    envoy_filter
+        .expect_get_most_specific_route_config()
+        .returning(|| None);
+    envoy_filter
+        .expect_get_request_headers()
+        .returning(|| vec![(EnvoyBuffer::new(b"host"), EnvoyBuffer::new(b"example.com"))]);
+
+    // get_attribute_string should NEVER be called when connection is not referenced.
+    envoy_filter
+        .expect_get_attribute_string()
+        .times(0)
+        .returning(|_| None);
+
+    envoy_filter
+        .expect_set_request_header()
+        .times(1)
+        .returning(|key, value: &[u8]| {
+            assert_eq!(key, "X-Static");
+            assert_eq!(value, b"hello");
+            true
+        });
+
+    assert_eq!(
+        filter.on_request_headers(&mut envoy_filter, true),
+        abi::envoy_dynamic_module_type_on_http_filter_request_headers_status::Continue
+    );
+}
