@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Tests
 
 on:
   pull_request:
@@ -20,6 +20,7 @@ concurrency:
 jobs:
   # Run alongside unit tests; GitHub waits for both without occupying a runner.
   e2e:
+    name: E2E
     uses: ./.github/workflows/e2e.yaml
 
   # Runs the unit tests for Go packages

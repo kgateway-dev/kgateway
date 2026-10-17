@@ -19,7 +19,7 @@ Checks if there are any linting errors in the Go code, Rust code, Helm charts, o
 
 Runs [code generation](/devel/contributing/code-generation.md) and makes sure that generated files are up to date.
 
-### [Unit Tests](./unit.yaml)
+### [Tests](./unit.yaml)
 
 Runs all Go unit tests and calls the reusable Kubernetes e2e workflow in parallel. The `Test Coverage` job waits through job dependencies, without occupying a runner, then merges unit and e2e shard coverage from the same run.
 It writes statement coverage and approximate changed-line coverage to the job summary and publishes an HTML report as the `coverage-html` artifact.
@@ -32,7 +32,7 @@ Runs conformance tests against both the experimental and standard Gateway API ch
 Uses the upstream [Kubernetes Gateway API Conformance suite](https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/conformance_test.go).
 
 ### [Kubernetes End-to-End Tests](./e2e.yaml)
-Runs the suite of [Kubernetes End-To-End Tests](/test/e2e) as a reusable workflow called by Unit Tests. It no longer starts a separate PR or merge-queue workflow run.
+Runs the suite of [Kubernetes End-To-End Tests](/test/e2e) as a reusable workflow called by Tests. It no longer starts a separate PR or merge-queue workflow run.
 
 ## Scheduled Workflows
 
