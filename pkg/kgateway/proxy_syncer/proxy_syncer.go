@@ -500,11 +500,15 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	}
 	// A client whose snapshot row was already gone when it disconnected gets
 	// no row Delete then; end its connection when the client itself leaves.
-	// The check skips a client that has already reconnected.
+	// The check skips a client that has already reconnected. When it was its
+	// gateway's last client, the gateway's cluster scoping series go too.
 	s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
 		for _, e := range events {
 			if name := e.Latest().ResourceName(); e.Event == controllers.EventDelete && s.uniqueClients.GetKey(name) == nil {
 				s.proxyTranslator.gate.clientDeparted(name)
+				if !gatewayHasClients(name, s.uniqueClients.List()) {
+					forgetClusterScopingGateway(name)
+				}
 			}
 		}
 	}, false)

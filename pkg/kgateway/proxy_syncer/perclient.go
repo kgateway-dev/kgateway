@@ -125,6 +125,25 @@ func snapshotPerClient(
 				"emitted", len(clusterResources.Items),
 				"translated", len(clustersForUcc.clusters.Items))
 		}
+		if scoping.ScopesClusters() {
+			// Reported whether or not anything was dropped, so the series exist
+			// for every scoped client: an operator comparing emitted against
+			// translated needs both numbers even when they are equal, and a
+			// gateway that reverted needs its disabled series to read 0 -> 1
+			// rather than to appear from nowhere.
+			recordClusterScopingEmission(ucc.ResourceName(),
+				len(clusterResources.Items),
+				len(clustersForUcc.clusters.Items)-len(clusterResources.Items))
+			disabled := !listenerRouteSnapshot.EmittedClusters.Filterable()
+			recordClusterScopingDisabled(ucc.ResourceName(), disabled)
+			// Warned on the transition, not on every rebuild of every client of
+			// the gateway: the gauge carries the state.
+			if noteClusterScopingDisabled(ucc.ResourceName(), disabled) {
+				logger.Warn("cluster scoping disabled for this gateway: a route selects its destination at request time",
+					"client", ucc.ResourceName(),
+					"unresolvable", listenerRouteSnapshot.EmittedClusters.Unresolvable)
+			}
+		}
 
 		snap := XdsSnapWrapper{}
 		if len(listenerRouteSnapshot.Clusters) > 0 {
