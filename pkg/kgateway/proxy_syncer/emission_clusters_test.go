@@ -44,7 +44,7 @@ func TestEmissionSetIncludesAncillaryReferencesTheGateSkips(t *testing.T) {
 		assert.NotContainsf(t, gating, name,
 			"%s must stay out of the readiness gate", name)
 	}
-	assert.True(t, emission.Filterable(), "no request-time selector is present")
+	assert.True(t, emission.Filterable(emissionClaims{}), "no request-time selector is present")
 }
 
 // TestEmissionSetAlwaysIncludesBlackhole: routes whose backends fail resolution
@@ -116,7 +116,7 @@ func TestEmissionSetCollectsDeclarativeRouteTargets(t *testing.T) {
 	} {
 		assert.Contains(t, emission.Names, name)
 	}
-	assert.True(t, emission.Filterable())
+	assert.True(t, emission.Filterable(emissionClaims{}))
 }
 
 // TestEmissionSetReportsRequestTimeSelectors pins the guard on all three arms of
@@ -186,9 +186,9 @@ func TestEmissionSetReportsRequestTimeSelectors(t *testing.T) {
 
 			emission := collectReferencedClustersForEmission(routes, envoycache.Resources{})
 
-			assert.False(t, emission.Filterable(),
+			assert.False(t, emission.Filterable(emissionClaims{}),
 				"a request-time destination must make the gateway fall back to emitting every cluster")
-			assert.Equal(t, []string{tc.expected}, emission.Unresolvable)
+			assert.Equal(t, []string{tc.expected}, emission.unaccountedSelectors(emissionClaims{}))
 		})
 	}
 }
@@ -211,8 +211,8 @@ func TestEmissionSetIsFilterableForOrdinaryRoutes(t *testing.T) {
 
 	emission := collectReferencedClustersForEmission(routes, envoycache.Resources{})
 
-	assert.True(t, emission.Filterable())
-	assert.Empty(t, emission.Unresolvable)
+	assert.True(t, emission.Filterable(emissionClaims{}))
+	assert.Empty(t, emission.RequestTimeSelectors)
 }
 
 // TestEmittedClustersEquals: the set rides on GatewayXdsResources, whose Equals
@@ -225,14 +225,14 @@ func TestEmittedClustersEquals(t *testing.T) {
 	assert.True(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}}}))
 	assert.False(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}, "b": {}}}),
 		"a changed cluster set must invalidate the projection")
-	assert.False(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}}, Unresolvable: []string{"cluster_header \"x\""}}),
+	assert.False(t, base.Equals(emittedClusters{Names: map[string]struct{}{"a": {}}, RequestTimeSelectors: []requestTimeSelector{{selectorClusterHeader, "x"}}}),
 		"a gateway that just became unfilterable must invalidate the projection")
 
 	gateway := GatewayXdsResources{EmittedClusters: base}
 	assert.True(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: map[string]struct{}{"a": {}}}}))
 	assert.False(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: map[string]struct{}{"a": {}, "b": {}}}}),
 		"the gateway collection must detect changed emission candidates even with unchanged resource versions")
-	assert.False(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: base.Names, Unresolvable: []string{"cluster_header \"x\""}}}),
+	assert.False(t, gateway.Equals(GatewayXdsResources{EmittedClusters: emittedClusters{Names: base.Names, RequestTimeSelectors: []requestTimeSelector{{selectorClusterHeader, "x"}}}}),
 		"the gateway collection must detect when filtering becomes unsafe")
 }
 
@@ -320,18 +320,18 @@ func TestEmissionSetReportsTcpProxyClusterOverrides(t *testing.T) {
 		}}}, []string{`filter_state "envoy.tcp_proxy.cluster"`}},
 		"set_filter_state writing another key": {&sfsnetwork.Config{OnNewConnection: []*sfsvalue.FilterStateValue{{
 			Key: &sfsvalue.FilterStateValue_ObjectKey{ObjectKey: "io.istio.peer_principal"},
-		}}}, []string{}},
+		}}}, nil},
 	} {
 		t.Run(name, func(t *testing.T) {
 			emission := collectReferencedClustersForEmission(envoycache.Resources{}, listenerWith(tc.override))
-			assert.Equal(t, tc.expected, emission.Unresolvable)
+			assert.Equal(t, tc.expected, emission.unaccountedSelectors(emissionClaims{}))
 			assert.Contains(t, emission.Names, "backend")
 		})
 	}
 }
 
 // Every arm of RouteAction.cluster_specifier is either declarative (the walk
-// sees its names) or a request-time selector collectUnresolvableSelectors
+// sees its names) or a request-time selector collectRequestTimeSelectors
 // reports. An arm added by a go-control-plane bump is reported as unknown, and
 // this test fails so that someone decides which it is.
 func TestRouteActionClusterSpecifierArmsAreClassified(t *testing.T) {
@@ -374,6 +374,6 @@ func TestEmissionSetReportsUndecodableTypedConfig(t *testing.T) {
 
 	emission := collectReferencedClustersForEmission(envoycache.Resources{}, listeners)
 
-	assert.False(t, emission.Filterable())
-	assert.Equal(t, []string{`undecodable typed_config "type.googleapis.com/example.v1.NotLinked"`}, emission.Unresolvable)
+	assert.False(t, emission.Filterable(emissionClaims{}))
+	assert.Equal(t, []string{`undecodable typed_config "type.googleapis.com/example.v1.NotLinked"`}, emission.unaccountedSelectors(emissionClaims{}))
 }
