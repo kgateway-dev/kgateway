@@ -83,6 +83,11 @@ type StartConfig struct {
 	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniquelyConnectedClient]
+	// XDSClientState is the connection state behind UniqueClients (the third
+	// result of krtcollections.NewUniquelyConnectedClients). Leave it nil
+	// only if no such state exists: per-client publication then treats every
+	// reconnecting proxy as a new one.
+	XDSClientState krtcollections.XDSClientState
 
 	KrtOptions krtutil.KrtOptions
 
@@ -153,6 +158,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
+		cfg.XDSClientState,
 		cfg.StatusSyncerOptions...,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)

@@ -152,12 +152,31 @@ func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
 type PerClientEnvoyEndpoints struct {
 	endpoints krt.Collection[UccWithEndpoints]
 	index     krt.Index[string, UccWithEndpoints]
+	// sources are the backend endpoint inputs the per-client rows are built
+	// from, indexed by the CLA they produce. Nil when unknown (test doubles).
+	sources          krt.Collection[ir.EndpointsForBackend]
+	sourcesByCluster krt.Index[string, ir.EndpointsForBackend]
 }
 
 // FetchEndpointsForClient returns every CLA belonging to ucc, registering a KRT
 // dependency narrowed to that client's rows.
 func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []UccWithEndpoints {
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
+}
+
+// HasEndpointsSource reports whether some backend derives endpoints for the
+// named CLA. When it does, a client without a row for that CLA is waiting for
+// its per-client row to be built (every reconnect rebuilds them); when it
+// does not, no row will ever come and an empty CLA is the cluster's steady
+// state (an EC2 Backend with discovery disabled, #14352). It registers a KRT
+// dependency on that name, so a source appearing or disappearing recomputes
+// the caller. Without a source index (test doubles) it reports true: the safe
+// reading of an unknown backend is that its endpoints are on their way.
+func (ie *PerClientEnvoyEndpoints) HasEndpointsSource(kctx krt.HandlerContext, claName string) bool {
+	if ie.sources == nil {
+		return true
+	}
+	return len(krt.Fetch(kctx, ie.sources, krt.FilterIndex(ie.sourcesByCluster, claName))) > 0
 }
 
 // NewPerClientEnvoyEndpoints resolves endpoints for each (client, backend) pair
@@ -213,10 +232,15 @@ func NewPerClientEnvoyEndpoints(
 	idx := krtpkg.UnnamedIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
+	sourcesByCluster := krtpkg.UnnamedIndex(kgatewayEndpoints, func(ep ir.EndpointsForBackend) []string {
+		return []string{ep.ClusterName}
+	})
 
 	return PerClientEnvoyEndpoints{
-		endpoints: eps,
-		index:     idx,
+		endpoints:        eps,
+		index:            idx,
+		sources:          kgatewayEndpoints,
+		sourcesByCluster: sourcesByCluster,
 	}
 }
 

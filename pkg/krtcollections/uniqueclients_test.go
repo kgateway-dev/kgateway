@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -194,7 +195,7 @@ func TestUniqueClients(t *testing.T) {
 				pods.WaitUntilSynced(context.Background().Done())
 			}
 
-			cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+			cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 			ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 			ucc.WaitUntilSynced(context.Background().Done())
 
@@ -285,7 +286,7 @@ func TestUniqueClientsLocalClusterCapabilityGating(t *testing.T) {
 	nodes.WaitUntilSynced(context.Background().Done())
 	pods.WaitUntilSynced(context.Background().Done())
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 	uccCol.WaitUntilSynced(context.Background().Done())
 
@@ -355,7 +356,7 @@ func TestUniqueClientsLocalClusterCapabilityGatingSharedBucket(t *testing.T) {
 		}
 	}
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	var pods krt.Collection[LocalityPod] // nil: pod-locality tracking disabled, so all streams for this role share one bucket
 	uccCol := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 	uccCol.WaitUntilSynced(context.Background().Done())
@@ -462,7 +463,7 @@ func TestUniqueClientsFollowUpWithReusedAugmentedNode(t *testing.T) {
 		AugmentedLabels: labels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	ucc.WaitUntilSynced(ctx.Done())
 
@@ -515,7 +516,7 @@ func TestUniqueClientsReidentifyOnPodChange(t *testing.T) {
 		AugmentedLabels: staleLabels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	ucc.WaitUntilSynced(ctx.Done())
 
@@ -584,7 +585,7 @@ func TestUniqueClientsKeepIdentityWhenPodLookupFails(t *testing.T) {
 		AugmentedLabels: labels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	ucc.WaitUntilSynced(ctx.Done())
 
@@ -646,7 +647,7 @@ func TestUniqueClientsLocalClusterGatingSurvivesIdentityReDerivation(t *testing.
 		AugmentedLabels: labels,
 	}})
 
-	cb, uccBuilder := NewUniquelyConnectedClients(nil, false)
+	cb, uccBuilder, _ := NewUniquelyConnectedClients(nil, false)
 	uccCol := uccBuilder(ctx, krtutil.KrtOptions{}, pods)
 	uccCol.WaitUntilSynced(ctx.Done())
 
@@ -787,4 +788,129 @@ func TestNormalizeGatewayRole(t *testing.T) {
 			g.Expect(result).To(Equal(tc.expectedRole))
 		})
 	}
+}
+
+// priorVersionRequest builds a listener request on the shared test role.
+// version is the version the proxy reports holding; nonce is empty on a
+// stream's initial request for a type and set on follow-ups (ACKs and NACKs).
+func priorVersionRequest(role, version, nonce string) *envoy_service_discovery_v3.DiscoveryRequest {
+	return typedPriorVersionRequest(role, resource.ListenerType, version, nonce)
+}
+
+func typedPriorVersionRequest(role, typeURL, version, nonce string) *envoy_service_discovery_v3.DiscoveryRequest {
+	return &envoy_service_discovery_v3.DiscoveryRequest{
+		Node: &envoycorev3.Node{
+			Id: "podname.ns",
+			Metadata: &structpb.Struct{Fields: map[string]*structpb.Value{
+				xds.RoleKey: structpb.NewStringValue(role),
+			}},
+		},
+		TypeUrl:       typeURL,
+		VersionInfo:   version,
+		ResponseNonce: nonce,
+	}
+}
+
+// Only a held listener version marks a key warm. A proxy whose previous stream
+// broke while its clusters were warming holds a cluster version but no
+// listeners: it serves nothing, so it must not be withheld like a proxy that
+// is serving config.
+func TestUniqueClientsPriorXDSVersionNeedsHeldListeners(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+
+	g.Expect(cb.OnStreamRequest(1, typedPriorVersionRequest(role, resource.ClusterType, "cds-v1", ""))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(1, typedPriorVersionRequest(role, resource.EndpointType, "eds-v1", ""))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(1, typedPriorVersionRequest(role, resource.ListenerType, "", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "held clusters without listeners are not served config")
+
+	g.Expect(cb.OnStreamRequest(2, typedPriorVersionRequest(role, resource.ListenerType, "lds-v1", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeTrue(), "a held listener version is warm")
+}
+
+// A key is warm only when a stream's initial request reports a version it
+// already holds; follow-up requests never mark it, and the mark ends when the
+// key's last stream closes.
+func TestUniqueClientsPriorXDSVersionMark(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+
+	g.Expect(cb.OnStreamRequest(1, priorVersionRequest(role, "", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "a stream reporting no version is cold")
+
+	g.Expect(cb.OnStreamRequest(1, priorVersionRequest(role, "v1", "n1"))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "an ACK of config from this controller must not mark the key warm")
+
+	cb.OnStreamClosed(1, nil)
+	g.Expect(cb.OnStreamRequest(2, priorVersionRequest(role, "v1", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeTrue(), "a reconnect reporting a held version is warm")
+
+	cb.OnStreamClosed(2, nil)
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "the mark must end when the key's last stream closes")
+
+	g.Expect(cb.OnStreamRequest(3, priorVersionRequest(role, "", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "a later cold stream must not inherit an ended mark")
+}
+
+// When proxies share a key (pod locality off), the key must stop being warm
+// once the streams that reported a held version have closed, even if cold
+// streams remain. Otherwise a new proxy is withheld as if it were serving
+// config it never received.
+func TestUniqueClientsPriorXDSVersionEndsWithWarmStreams(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+
+	g.Expect(cb.OnStreamRequest(1, priorVersionRequest(role, "v1", ""))).To(Succeed())
+	g.Expect(cb.OnStreamRequest(2, priorVersionRequest(role, "", ""))).To(Succeed())
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeTrue())
+
+	cb.OnStreamClosed(1, nil)
+	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(),
+		"with only a cold stream left, the key must no longer be warm")
+}
+
+// HasColdStreamSince reports only streams that hold no config and have been
+// connected for at least the given time, under the given key.
+func TestUniqueClientsHasColdStreamSince(t *testing.T) {
+	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
+	g := NewWithT(t)
+	ctx := context.Background()
+	role := wellknown.GatewayApiProxyValue + "~ns~gw"
+
+	cb, uccBuilder, state := NewUniquelyConnectedClients(nil, false)
+	ucc := uccBuilder(ctx, krtutil.KrtOptions{}, nil)
+	ucc.WaitUntilSynced(ctx.Done())
+	cold, ok := state.(interface {
+		HasColdStreamSince(string, time.Duration) bool
+	})
+	g.Expect(ok).To(BeTrue())
+
+	g.Expect(cb.OnStreamRequest(1, priorVersionRequest(role, "v1", ""))).To(Succeed())
+	g.Expect(cold.HasColdStreamSince(role, 0)).To(BeFalse(), "a warm stream is not cold")
+
+	g.Expect(cb.OnStreamRequest(2, priorVersionRequest(role, "", ""))).To(Succeed())
+	g.Expect(cold.HasColdStreamSince(role, time.Hour)).To(BeFalse(), "a cold stream that just connected has not waited")
+	g.Expect(cold.HasColdStreamSince(role, 0)).To(BeTrue())
+	g.Expect(cold.HasColdStreamSince(role+"-other", 0)).To(BeFalse(), "other keys are not affected")
+
+	cb.OnStreamClosed(2, nil)
+	g.Expect(cold.HasColdStreamSince(role, 0)).To(BeFalse(), "a closed stream no longer counts")
 }
