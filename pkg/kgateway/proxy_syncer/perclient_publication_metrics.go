@@ -37,6 +37,11 @@ const (
 	// bound: the cluster's last config is no longer served and routes to it
 	// fail until it reappears.
 	boundedPublishCarryExpired = "carry_expired"
+	// boundedPublishReferenceAhead marks a hold kept only for reference-ahead
+	// windows (KGW_CLUSTER_REFERENCE_AHEAD, REFERENCED cluster discovery) that
+	// the publish budget released before the windows closed. A hold whose
+	// windows close first ends as designed and is not a bounded publish.
+	boundedPublishReferenceAhead = "reference_ahead"
 
 	withheldReasonPriorXDSVersion = "prior_xds_version"
 )
@@ -73,9 +78,10 @@ var (
 			Name:      "perclient_flips_held_total",
 			Help: "Total publications in which routes/listeners/secrets were held " +
 				"at their published versions because a newly-referenced cluster was " +
-				"not yet ready. A sustained rate means a route flip is pinned " +
-				"behind a cluster that never becomes ready; each hold episode is " +
-				"released at budget expiry (bounded_publishes_total, " +
+				"not yet ready or, with REFERENCED cluster discovery, not yet sent " +
+				"for its reference-ahead window. A sustained rate means a route " +
+				"flip is pinned behind a cluster that never becomes ready; such a " +
+				"hold is released at budget expiry (bounded_publishes_total, " +
 				"mode=flip_release).",
 		},
 		[]string{gatewayLabel, namespaceLabel},
@@ -128,7 +134,11 @@ var (
 				"were missing from CDS; routes to them fail until they appear. " +
 				"mode=carry_expired: a published client stopped being carried a " +
 				"referenced cluster that stayed missing from CDS for the warm " +
-				"withhold bound; routes to it fail until it reappears.",
+				"withhold bound; routes to it fail until it reappears. " +
+				"mode=reference_ahead: a hold kept only for reference-ahead " +
+				"windows (KGW_CLUSTER_REFERENCE_AHEAD) released at the budget " +
+				"before the windows closed; holds whose windows close first are " +
+				"not counted.",
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationModeLabel},
 	)

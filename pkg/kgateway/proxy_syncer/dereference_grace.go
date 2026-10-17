@@ -154,11 +154,21 @@ func (g *publishGate) cancelDereferenceTimerLocked(proxyKey string) {
 	}
 }
 
-// fireDereferencePrune re-publishes the client's latest snapshot now that a
-// grace window has closed, under the same lock as every other publication, so
+// fireDereferencePrune re-publishes the client's latest build now that a grace
+// window has closed, under the same lock as every other publication, so
 // pruning cannot race a coherent publish. It acts only for the arming that
 // scheduled it: a callback already waiting on the lock when its timer was
 // re-armed or cancelled, or its state replaced, does nothing.
+//
+// The build goes through the same path a new build of its kind takes
+// (publishBuildLocked), so the prune makes the whole hold decision again
+// rather than a narrower one of its own. A held flip stays held for whichever
+// reason holds it: an unready cluster, which re-resolving the build finds,
+// and also a cluster still inside its reference-ahead window, which only the
+// reference-ahead check sees. Releasing either here would send routes onto a
+// cluster before the hold meant them to go, at a de-reference grace that has
+// nothing to do with it. The expired clusters drop out the same way they do
+// for a new build, and the path re-arms the prune for any window still open.
 func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, state *dereferenceState, epoch uint64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -170,27 +180,25 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
-	published := g.connectionSnapshotLocked(cache, proxyKey)
-	if published == nil {
+	if g.connectionSnapshotLocked(cache, proxyKey) == nil {
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
-
-	wrap := state.wrap
-	graced, soonest := g.graceDereferencedClustersLocked(
-		proxyKey, published, wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
-	// Keep a held flip held: its own bound (the flip release) decides when it
-	// goes out. Re-resolving with holds disabled would release it at this
-	// grace instead, onto a cluster that may still be unready.
-	holding := g.pendingFlips[proxyKey] != nil
-	resolved, _, edsHashes := resolveDeferredPerCluster(wrap, published, holding, graced, g.lastPublishedEDSLocked(proxyKey))
-	logger.Debug("de-reference grace elapsed; re-publishing without the expired clusters",
-		"proxy_key", proxyKey, "still_graced", len(graced))
-	if err := g.setSnapshot(ctx, cache, proxyKey, resolved, wrap.synthesizedEndpoints, edsHashes); err != nil {
+	logger.Debug("de-reference grace elapsed; re-publishing the latest build without the expired clusters", "proxy_key", proxyKey)
+	if err := g.publishBuildLocked(ctx, cache, state.wrap); err != nil {
 		logPublishFailure(proxyKey, err)
-		return
 	}
-	g.armDereferenceTimerLocked(ctx, cache, proxyKey, wrap, soonest)
+}
+
+// publishBuildLocked publishes a build through the path a new build of its
+// kind takes: per-cluster resolution for a deferred build, the transition
+// graces for a coherent one. Timers that re-publish a stored build use it, so
+// every publication makes the same hold decision. Callers must hold g.mu.
+func (g *publishGate) publishBuildLocked(ctx context.Context, cache envoycache.SnapshotCache, wrap XdsSnapWrapper) error {
+	if wrap.deferred() {
+		return g.resolveDeferredLocked(ctx, cache, wrap)
+	}
+	return g.publishWithTransitionGracesLocked(ctx, cache, wrap)
 }
 
 // retainsDereferenced reports whether any cluster can outlive its last
@@ -198,26 +206,36 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 // path stays exactly as it was.
 func (g *publishGate) retainsDereferenced() bool { return g.dereferenceGrace > 0 }
 
-// publishWithDereferenceGrace publishes a coherent snapshot, carrying forward
-// the clusters whose grace window is still open.
+// publishWithTransitionGraces publishes a coherent snapshot with both emitted-set
+// transitions made safe: clusters whose de-reference window is still open are
+// carried forward, and a route update that retargets onto a cluster the client
+// has never been sent is held back until that cluster has had time to land.
 //
-// A removal is coherent by construction, so it never reaches the deferred
-// resolution path; this is the removal side's equivalent, and it holds nothing:
-// routes, listeners and secrets are published as built. The only difference
-// from a plain publish is that clusters which just left the emitted set, and
-// their ClusterLoadAssignments, are still in the snapshot.
-func (g *publishGate) publishWithDereferenceGrace(
+// Both transitions produce coherent builds -- nothing is missing, the emitted
+// set simply changed -- so neither reaches the deferred resolution path that
+// handles unready clusters. This is their equivalent.
+func (g *publishGate) publishWithTransitionGraces(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
 	snapWrap XdsSnapWrapper,
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	// A new build, like those publish and resolveDeferred take.
+	// A new build, like those publish and resolveDeferred take. The timers
+	// that re-publish a stored build go straight to the Locked form.
 	if !g.beginBuildLocked(snapWrap) {
 		return nil
 	}
+	return g.publishWithTransitionGracesLocked(ctx, cache, snapWrap)
+}
 
+// publishWithTransitionGracesLocked is publishWithTransitionGraces for callers
+// that hold g.mu.
+func (g *publishGate) publishWithTransitionGracesLocked(
+	ctx context.Context,
+	cache envoycache.SnapshotCache,
+	snapWrap XdsSnapWrapper,
+) error {
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Never published: there is nothing to carry forward, and nothing can
@@ -227,16 +245,33 @@ func (g *publishGate) publishWithDereferenceGrace(
 
 	graced, soonest := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], time.Now())
-	if len(graced) == 0 {
+
+	// The addition side rides the same path, for the same reason: a retarget
+	// onto a cluster the client has never been sent is a coherent build too.
+	// Holding routes, listeners and secrets at their published versions
+	// publishes the new cluster's CDS by itself, and the existing flip-release
+	// timer sends the route once the window closes.
+	now := time.Now()
+	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
+
+	if len(graced) == 0 && len(newlyEmitted) == 0 {
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}
 
-	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
-	// Through publishLocked like any other publish without a hold: this build
-	// supersedes a pending first publish or flip release, whose timer would
-	// otherwise re-publish its older build when it fires.
-	if err := g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes); err != nil {
-		return err
+	var publishErr error
+	if len(newlyEmitted) > 0 {
+		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
+		recordFlipHeld(snapWrap.proxyKey)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes, now)
+	} else {
+		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+		// Through publishLocked like any other publish without a hold: this
+		// build supersedes a pending first publish or flip release, whose
+		// timer would otherwise re-publish its older build when it fires.
+		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
+	}
+	if publishErr != nil {
+		return publishErr
 	}
 	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonest)
 	return nil
