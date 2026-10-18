@@ -18,19 +18,13 @@ type SeriesDeleter interface {
 	Delete(...Label) bool
 }
 
-// scope identifies the Kubernetes object a series belongs to by its namespace label and,
-// for objects other than namespaces, its name label.
-type scope struct {
-	namespaceLabel string
-	// nameLabel is empty for a series scoped to a namespace only.
-	nameLabel string
-}
-
-// scopedMetric is a metric whose series each belong to the objects its scopes identify.
+// scopedMetric is a metric whose series each belong to the Gateway named by its
+// namespace and name labels.
 type scopedMetric struct {
-	m         SeriesDeleter
-	collector prometheus.Collector
-	scopes    []scope
+	m              SeriesDeleter
+	collector      prometheus.Collector
+	namespaceLabel string
+	nameLabel      string
 }
 
 var (
@@ -46,23 +40,8 @@ var (
 // A sweep can remove a series while a write to it is still in flight, so a registered
 // gauge must be written with Set from a value its producer owns, never with Add or Sub.
 func RegisterGatewayScoped(m SeriesDeleter, namespaceLabel, nameLabel string) {
-	register(m, scope{namespaceLabel: namespaceLabel, nameLabel: nameLabel})
-}
-
-// RegisterNamespaceScoped marks m as carrying series per namespace, identified by
-// namespaceLabel, so a sweep removes them once the namespace no longer exists.
-// Kubernetes removes a Namespace only after everything in it is gone, so this suits any
-// metric whose label names the namespace of the object it describes.
-// It panics if m lacks namespaceLabel. The rule on gauges of RegisterGatewayScoped applies.
-func RegisterNamespaceScoped(m SeriesDeleter, namespaceLabel string) {
-	register(m, scope{namespaceLabel: namespaceLabel})
-}
-
-// register adds s to the scopes of m. A series of a metric registered under several
-// scopes is removed once any of its objects no longer exists.
-func register(m SeriesDeleter, s scope) {
-	for _, l := range []string{s.namespaceLabel, s.nameLabel} {
-		if l != "" && !slices.Contains(m.Labels(), l) {
+	for _, l := range []string{namespaceLabel, nameLabel} {
+		if !slices.Contains(m.Labels(), l) {
 			panic("metric does not have label " + l)
 		}
 	}
@@ -74,13 +53,7 @@ func register(m SeriesDeleter, s scope) {
 	scopedLock.Lock()
 	defer scopedLock.Unlock()
 
-	for i := range scoped {
-		if scoped[i].m == m {
-			scoped[i].scopes = append(scoped[i].scopes, s)
-			return
-		}
-	}
-	scoped = append(scoped, scopedMetric{m: m, collector: collector, scopes: []scope{s}})
+	scoped = append(scoped, scopedMetric{m: m, collector: collector, namespaceLabel: namespaceLabel, nameLabel: nameLabel})
 }
 
 // Sweeper removes the series of registered metrics whose object no longer exists.
@@ -90,8 +63,6 @@ func register(m SeriesDeleter, s scope) {
 // removed by the next pass instead of being leaked until restart. Its caches must have
 // synced before it runs, since every series would look stale against empty ones.
 type Sweeper struct {
-	// NamespaceExists reports whether the namespace exists.
-	NamespaceExists func(namespace string) bool
 	// GatewayExists reports whether the Gateway exists.
 	GatewayExists func(namespace, name string) bool
 }
@@ -151,24 +122,11 @@ func (s Sweeper) staleSeries(sm scopedMetric) [][]Label {
 	return stale
 }
 
-// live reports whether every object of a series of sm still exists.
+// live reports whether the Gateway of a series of sm still exists.
 func (s Sweeper) live(sm scopedMetric, pairs []*dto.LabelPair) bool {
-	for _, sc := range sm.scopes {
-		namespace := labelValue(pairs, sc.namespaceLabel)
-		switch {
-		case namespace == "":
-			// Series with no namespace describe cluster-scoped objects or carry no object at all.
-		case sc.nameLabel == "":
-			if !s.NamespaceExists(namespace) {
-				return false
-			}
-		default:
-			if !s.GatewayExists(namespace, labelValue(pairs, sc.nameLabel)) {
-				return false
-			}
-		}
-	}
-	return true
+	namespace := labelValue(pairs, sm.namespaceLabel)
+	// Series with no namespace describe cluster-scoped objects or carry no object at all.
+	return namespace == "" || s.GatewayExists(namespace, labelValue(pairs, sm.nameLabel))
 }
 
 func labelValue(pairs []*dto.LabelPair, name string) string {

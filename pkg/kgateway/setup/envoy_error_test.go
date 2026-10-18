@@ -149,8 +149,7 @@ func TestActiveRejectsSurviveSweepOfRecreatedGateway(t *testing.T) {
 	// A proxy of the old Gateway rejects a resource, then the Gateway is deleted and swept.
 	require.NoError(t, cb.OnStreamRequest(1, dr(fullType, &status.Status{Message: "boom"})))
 	kmetrics.Sweeper{
-		NamespaceExists: func(string) bool { return true },
-		GatewayExists:   func(string, string) bool { return false },
+		GatewayExists: func(string, string) bool { return false },
 	}.Sweep()
 	metricstest.MustGatherMetrics(t).AssertMetricNotExists("kgateway_envoy_xds_rejects_active")
 

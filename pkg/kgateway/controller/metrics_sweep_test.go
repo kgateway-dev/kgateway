@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -21,11 +20,9 @@ func TestMetricsSweeperUsesInformerCaches(t *testing.T) {
 	t.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
-	namespaces := krt.NewStaticCollection[krtcollections.NamespaceMetadata](nil,
-		[]krtcollections.NamespaceMetadata{{Name: "ns"}}, krtopts.ToOptions("Namespaces")...)
 	gateways := krt.NewStaticCollection[*gwv1.Gateway](nil,
 		[]*gwv1.Gateway{{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "live"}}}, krtopts.ToOptions("Gateways")...)
-	sweeper := newMetricsSweeper(namespaces, gateways)
+	sweeper := newMetricsSweeper(gateways)
 
 	for _, name := range []string{"live", "deleted"} {
 		collectReconciliationMetrics("gateway", types.NamespacedName{Namespace: "ns", Name: name})(nil)
