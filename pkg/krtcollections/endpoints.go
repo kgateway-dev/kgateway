@@ -22,7 +22,6 @@ import (
 )
 
 type EndpointsSettings struct {
-	// +krtEqualsTodo propagate AutoMtls setting into equality
 	EnableAutoMtls bool
 }
 
@@ -33,7 +32,7 @@ var (
 )
 
 func (p EndpointsSettings) Equals(in EndpointsSettings) bool {
-	return p == in
+	return p.EnableAutoMtls == in.EnableAutoMtls
 }
 
 func (p EndpointsSettings) ResourceName() string {

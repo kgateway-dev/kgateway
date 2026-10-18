@@ -109,17 +109,14 @@ func TestReuseEndpointsFromDropsStaleLocalities(t *testing.T) {
 	}
 }
 
-func TestReuseEndpointsFromNonEmptyZeroHash(t *testing.T) {
-	// two identical (locality, endpoint) entries xor to a zero epsEqualityHash;
-	// a re-Add still produces hash(0, upstreamHash), so reuse must too.
+func TestReuseEndpointsFromDuplicateEndpoints(t *testing.T) {
+	// Two identical (locality, endpoint) entries must reuse to the same hash a
+	// re-Add produces.
 	base := NewEndpointsForBackend(epsBackend("svc"))
 	loc := PodLocality{Region: "us-east-1", Zone: "zone-a"}
 	emd := testEndpointWithMd(1)
 	base.Add(loc, emd)
 	base.Add(loc, emd)
-	if base.epsEqualityHash != 0 {
-		t.Fatalf("expected xor of identical endpoints to be 0, got %d", base.epsEqualityHash)
-	}
 
 	readded := NewEndpointsForBackend(epsBackend("svc-variant"))
 	readded.Add(loc, emd)
@@ -128,7 +125,39 @@ func TestReuseEndpointsFromNonEmptyZeroHash(t *testing.T) {
 	clone := NewEndpointsForBackend(epsBackend("svc-variant"))
 	clone.ReuseEndpointsFrom(base)
 	if clone.LbEpsEqualityHash != readded.LbEpsEqualityHash {
-		t.Fatalf("zero-hash non-empty reuse mismatch: reuse=%d readd=%d", clone.LbEpsEqualityHash, readded.LbEpsEqualityHash)
+		t.Fatalf("duplicate-endpoint reuse mismatch: reuse=%d readd=%d", clone.LbEpsEqualityHash, readded.LbEpsEqualityHash)
+	}
+}
+
+func TestNonEmptyZeroSumEndpointsDifferFromEmpty(t *testing.T) {
+	// The contribution sum wraps, so a non-empty set can still sum to zero.
+	// endpointCount is what keeps such a set from hashing like an empty one.
+	// Seed cached contributions that cancel, as TestReuseEndpointUsesPrecomputedContribution does.
+	loc := PodLocality{Region: "us-east-1", Zone: "zone-a"}
+	var contribution uint64 = 42
+	a, b := testEndpointWithMd(1), testEndpointWithMd(2)
+	a.endpointEqualityHash = contribution
+	b.endpointEqualityHash = -contribution
+
+	zeroSum := NewEndpointsForBackend(epsBackend("svc"))
+	zeroSum.ReuseEndpoint(loc, a)
+	zeroSum.ReuseEndpoint(loc, b)
+	if zeroSum.epsEqualityHash != 0 {
+		t.Fatalf("expected the seeded contributions to sum to 0, got %d", zeroSum.epsEqualityHash)
+	}
+
+	empty := NewEndpointsForBackend(epsBackend("svc"))
+	if zeroSum.LbEpsEqualityHash == empty.LbEpsEqualityHash {
+		t.Fatal("a non-empty set whose contributions sum to zero hashed like an empty set")
+	}
+	if zeroSum.Equals(*empty) {
+		t.Fatal("a non-empty set whose contributions sum to zero compared equal to an empty set")
+	}
+
+	clone := NewEndpointsForBackend(epsBackend("svc"))
+	clone.ReuseEndpointsFrom(zeroSum)
+	if clone.LbEpsEqualityHash != zeroSum.LbEpsEqualityHash {
+		t.Fatalf("zero-sum non-empty reuse mismatch: reuse=%d orig=%d", clone.LbEpsEqualityHash, zeroSum.LbEpsEqualityHash)
 	}
 }
 
@@ -414,5 +443,21 @@ func TestEndpointHashInputsUnchanged(t *testing.T) {
 				ty.Name(), got, want,
 			)
 		}
+	}
+}
+
+func TestDuplicatedEndpointSwapChangesEquality(t *testing.T) {
+	// A ServiceEntry can list the same address twice. Replacing [A, A] with
+	// [B, B] keeps the count, so only the content hash can tell them apart.
+	loc := PodLocality{Region: "us-east-1", Zone: "zone-a"}
+	before := NewEndpointsForBackend(epsBackend("svc"))
+	before.Add(loc, testEndpointWithMd(1))
+	before.Add(loc, testEndpointWithMd(1))
+	after := NewEndpointsForBackend(epsBackend("svc"))
+	after.Add(loc, testEndpointWithMd(2))
+	after.Add(loc, testEndpointWithMd(2))
+
+	if before.Equals(*after) {
+		t.Fatal("[A, A] and [B, B] must not compare equal")
 	}
 }

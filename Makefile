@@ -202,7 +202,19 @@ mod-tidy: ## Tidy the go mod file
 .PHONY: analyze
 analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override golangci-lint options with ANALYZE_ARGS.
 	$(MAKE) --no-print-directory fmt-yaml
+	$(MAKE) --no-print-directory check-krt-equals-todo
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
+
+# The krtequals analyzer treats +krtEqualsTodo as a suppression, so new uses would
+# silently disable its field check. Every legacy gap has been resolved; reject the marker.
+# Match the way the analyzer does: case-insensitive, anywhere in a comment, so spellings
+# like +krtEqualsTODO, //+krtEqualsTodo, or /* +krtequalstodo */ cannot slip through.
+.PHONY: check-krt-equals-todo
+check-krt-equals-todo: ## Fail if any Go file uses the retired +krtEqualsTodo marker
+	@if grep -rniF --include='*.go' '+krtequalstodo' pkg internal; then \
+		echo "+krtEqualsTodo is retired: compare the field in Equals, or mark it +noKrtEquals and say what observes it."; \
+		exit 1; \
+	fi
 
 $(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom
