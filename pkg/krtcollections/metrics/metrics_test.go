@@ -331,45 +331,6 @@ func TestSyncChannelFull(t *testing.T) {
 	}
 }
 
-func TestResourcesManagedSurvivesSweepOfRecreatedNamespace(t *testing.T) {
-	setupTest()
-
-	route := func(name string) *gwv1.HTTPRoute {
-		return &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "ns"},
-			Spec: gwv1.HTTPRouteSpec{CommonRouteSpec: gwv1.CommonRouteSpec{
-				ParentRefs: []gwv1.ParentReference{{Name: "gw"}},
-			}},
-		}
-	}
-	managed := func(value float64) *metricstest.ExpectedMetric {
-		return &metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: "namespace", Value: "ns"},
-				{Name: "parent", Value: "gw"},
-				{Name: "resource", Value: "HTTPRoute"},
-			},
-			Value: value,
-		}
-	}
-	handler := GetResourceMetricEventHandler[*gwv1.HTTPRoute]()
-	oldRoute, newRoute := route("old"), route("new")
-
-	// The namespace is deleted and swept before the delete event of its route is handled.
-	handler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &oldRoute})
-	metrics.Sweeper{
-		NamespaceExists: func(string) bool { return false },
-		GatewayExists:   func(string, string) bool { return false },
-	}.Sweep()
-	metricstest.MustGatherMetrics(t).AssertMetricNotExists("kgateway_resources_managed")
-
-	// The namespace is recreated with a new route, then the old route's delete event arrives.
-	handler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &newRoute})
-	handler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventDelete, Old: &oldRoute})
-
-	metricstest.MustGatherMetrics(t).AssertMetric("kgateway_resources_managed", managed(1))
-}
-
 func TestResourcesManagedDeletedAtZero(t *testing.T) {
 	setupTest()
 

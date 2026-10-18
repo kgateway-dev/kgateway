@@ -68,10 +68,6 @@ func init() {
 	// A Gateway's snapshot syncs carry the Gateway's own namespace.
 	metrics.RegisterGatewayScoped(xdsSnapshotSyncsTotal, namespaceLabel, gatewayLabel)
 	metrics.RegisterGatewayScoped(xdsSnapshotSyncDuration, namespaceLabel, gatewayLabel)
-
-	// This carries the namespace of the route or policy and only the name of its parent, so
-	// it identifies no Gateway and is removed with the namespace.
-	metrics.RegisterNamespaceScoped(resourcesManaged, namespaceLabel)
 }
 
 type resourceMetricLabels struct {
@@ -89,10 +85,9 @@ func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
 }
 
 // managedCounts is the source of truth for resourcesManaged, which is always written with
-// Set: the metrics sweeper may delete a namespace's series while delete events for its
-// resources are still queued, and a relative update would then corrupt the series of a
-// namespace recreated with that name. A series whose count reaches zero is deleted, so a
-// deleted parent in a namespace that stays does not leave one behind.
+// Set. A series whose count reaches zero is deleted, so a deleted parent or namespace does
+// not leave one behind. Deleting a series kept with Add and Sub would race a concurrent
+// update to it.
 var managedCounts = struct {
 	sync.Mutex
 	counts map[resourceMetricLabels]int

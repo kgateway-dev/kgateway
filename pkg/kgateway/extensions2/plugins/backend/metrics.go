@@ -87,13 +87,6 @@ var (
 	)
 )
 
-func init() {
-	metrics.RegisterNamespaceScoped(ec2DiscoveryPollTotal, ec2MetricNamespaceLabel)
-	metrics.RegisterNamespaceScoped(ec2DiscoveryEndpointsActive, ec2MetricNamespaceLabel)
-	metrics.RegisterNamespaceScoped(ec2DiscoveryErrorState, ec2MetricNamespaceLabel)
-	metrics.RegisterNamespaceScoped(ec2DiscoveryPollDuration, ec2MetricNamespaceLabel)
-}
-
 func ec2MetricIdentity(namespace, name string) []metrics.Label {
 	return []metrics.Label{
 		{Name: ec2MetricNamespaceLabel, Value: namespace},
