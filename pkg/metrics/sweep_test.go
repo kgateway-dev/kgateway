@@ -45,29 +45,6 @@ func TestSweepRemovesSeriesOfDeletedGateways(t *testing.T) {
 	assert.Equal(t, 0, sweeper.Sweep(), "nothing should be left to remove")
 }
 
-func TestSweepOnlyMatchingSeries(t *testing.T) {
-	setupTestRegistry()
-	ResetScoped()
-
-	counter := NewCounter(CounterOpts{Name: "sweep_controller_total", Help: "test"}, []string{"controller", "name", "namespace"})
-	RegisterGatewayScoped(counter, "namespace", "name", Label{Name: "controller", Value: "gateway"})
-
-	gateway := []Label{{Name: "controller", Value: "gateway"}, {Name: "name", Value: "gw"}, {Name: "namespace", Value: "ns"}}
-	class := []Label{{Name: "controller", Value: "gatewayclass"}, {Name: "name", Value: "gc"}, {Name: "namespace", Value: ""}}
-	otherController := []Label{{Name: "controller", Value: "other"}, {Name: "name", Value: "gw"}, {Name: "namespace", Value: "ns"}}
-	counter.Inc(gateway...)
-	counter.Inc(class...)
-	counter.Inc(otherController...)
-
-	sweeper := Sweeper{
-		NamespaceExists: func(string) bool { return true },
-		GatewayExists:   func(string, string) bool { return false },
-	}
-
-	assert.Equal(t, 1, sweeper.Sweep(), "only the gateway controller's series should be removed")
-	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_sweep_controller_total", [][]Label{class, otherController})
-}
-
 func TestSweepRemovesSeriesOfDeletedNamespaces(t *testing.T) {
 	setupTestRegistry()
 	ResetScoped()

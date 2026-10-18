@@ -25,9 +25,6 @@ type scopedMetric struct {
 	namespaceLabel string
 	// nameLabel is empty for a metric scoped to a namespace only.
 	nameLabel string
-	// match restricts the sweep to series carrying these label values, for a metric that
-	// also holds series for objects of another kind.
-	match []Label
 }
 
 var (
@@ -37,10 +34,10 @@ var (
 
 // RegisterGatewayScoped marks m as carrying series per Gateway, identified by
 // namespaceLabel and nameLabel, so a sweep removes them once the Gateway no longer
-// exists. If match is set, only series carrying those label values are swept.
-// It panics if m lacks any of the labels, which is a programming error caught at init.
-func RegisterGatewayScoped(m SeriesDeleter, namespaceLabel, nameLabel string, match ...Label) {
-	register(scopedMetric{m: m, namespaceLabel: namespaceLabel, nameLabel: nameLabel, match: match})
+// exists. Series with an empty namespaceLabel are kept.
+// It panics if m lacks either label, which is a programming error caught at init.
+func RegisterGatewayScoped(m SeriesDeleter, namespaceLabel, nameLabel string) {
+	register(scopedMetric{m: m, namespaceLabel: namespaceLabel, nameLabel: nameLabel})
 }
 
 // RegisterNamespaceScoped marks m as carrying series per namespace, identified by
@@ -56,9 +53,6 @@ func register(s scopedMetric) {
 	labels := []string{s.namespaceLabel}
 	if s.nameLabel != "" {
 		labels = append(labels, s.nameLabel)
-	}
-	for _, l := range s.match {
-		labels = append(labels, l.Name)
 	}
 	for _, l := range labels {
 		if !slices.Contains(s.m.Labels(), l) {
@@ -133,9 +127,6 @@ func (s Sweeper) staleSeries(sm scopedMetric) [][]Label {
 			continue
 		}
 		pairs := out.GetLabel()
-		if !matches(pairs, sm.match) {
-			continue
-		}
 		key := objectKey{
 			namespace: labelValue(pairs, sm.namespaceLabel),
 			name:      labelValue(pairs, sm.nameLabel),
@@ -170,15 +161,6 @@ func (s Sweeper) exists(sm scopedMetric, key objectKey) bool {
 type objectKey struct {
 	namespace string
 	name      string
-}
-
-func matches(pairs []*dto.LabelPair, match []Label) bool {
-	for _, l := range match {
-		if labelValue(pairs, l.Name) != l.Value {
-			return false
-		}
-	}
-	return true
 }
 
 func labelValue(pairs []*dto.LabelPair, name string) string {
