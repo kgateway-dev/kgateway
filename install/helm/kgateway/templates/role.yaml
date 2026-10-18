@@ -219,4 +219,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - security.istio.io
+  resources:
+  - authorizationpolicies
+  verbs:
+  - get
+  - list
+  - watch
 {{- end }}
