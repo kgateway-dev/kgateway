@@ -770,3 +770,48 @@ func TestToAttachedPoliciesEmpty(t *testing.T) {
 	merged.Append(ToAttachedPolicies([]ir.PolicyAtt{{GroupKind: gk}, {GroupKind: gk}}))
 	assert.Len(t, merged.Policies[gk], 2, "policies should still be grouped by kind")
 }
+
+// A ListenerSet read from an informer that was registered without the GVK-stamping transform
+// has no TypeMeta. It must still be keyed as a promoted ListenerSet, and the shared object must
+// not be written to.
+func TestGatewaysForEnvoyTransformationDefaultsEmptyListenerSetGVK(t *testing.T) {
+	krtOpts := krtutil.NewKrtOptions(t.Context().Done(), nil)
+	from := gwv1.NamespacesFromSame
+	gw := &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "default"},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "envoy",
+			AllowedListeners: &gwv1.AllowedListeners{Namespaces: &gwv1.ListenerNamespaces{From: &from}},
+		},
+	}
+	ls := &gwv1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "ls", Namespace: "default"},
+		Spec: gwv1.ListenerSetSpec{
+			ParentRef: gwv1.ParentGatewayReference{Name: "gw"},
+			Listeners: []gwv1.ListenerEntry{{Name: "http", Port: 80, Protocol: gwv1.HTTPProtocolType}},
+		},
+	}
+	cfg := GatewayIndexConfig{
+		KrtOpts:             krtOpts,
+		EnvoyControllerName: "envoy-controller",
+		PolicyIndex:         NewPolicyIndex(krtOpts, nil, apisettings.Settings{}),
+		ListenerSets:        krt.NewStaticCollection(nil, []*gwv1.ListenerSet{ls}, krtOpts.ToOptions("ListenerSets")...),
+		GatewayClasses: krt.NewStaticCollection(nil, []*gwv1.GatewayClass{{
+			ObjectMeta: metav1.ObjectMeta{Name: "envoy"},
+			Spec:       gwv1.GatewayClassSpec{ControllerName: "envoy-controller"},
+		}}, krtOpts.ToOptions("GatewayClasses")...),
+		Namespaces: krt.NewStaticCollection[NamespaceMetadata](nil, nil, krtOpts.ToOptions("Namespaces")...),
+	}
+	processGatewayIndexConfig(&cfg)
+
+	gwIR := GatewaysForEnvoyTransformationFunc(&cfg)(krt.TestingDummyContext{}, gw)
+	require.NotNil(t, gwIR)
+
+	require.Empty(t, gwIR.DeniedListenerSets)
+	allowed := gwIR.AllowedListenerSets[wellknown.ListenerSetGVK]
+	require.Len(t, allowed, 1, "a ListenerSet without TypeMeta should be keyed as a promoted ListenerSet")
+	require.Equal(t, wellknown.ListenerSetKind, allowed[0].Kind)
+	require.Len(t, allowed[0].Listeners, 1)
+	require.Equal(t, gwv1.Kind(wellknown.ListenerSetKind), *allowed[0].Listeners[0].PolicyAncestorRef.Kind)
+	require.True(t, ls.GroupVersionKind().Empty(), "the cached ListenerSet must not be mutated")
+}

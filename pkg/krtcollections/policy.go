@@ -610,7 +610,12 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 		})
 
 		for _, ls := range listenerSets {
+			// The informer transform normally stamps this; default without mutating the shared
+			// object in case another client registered the informer without that transform.
 			lsGVK := ls.GroupVersionKind()
+			if lsGVK.Empty() {
+				lsGVK = wellknown.ListenerSetGVK
+			}
 
 			lsIR := ir.ListenerSet{
 				ObjectSource: ir.ObjectSource{

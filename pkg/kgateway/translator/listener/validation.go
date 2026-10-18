@@ -544,7 +544,7 @@ func rejectConflictedListener(parentReporter reports.GatewayReporter, listener i
 // generateUniqueListenerName returns a unique name per listener of the form
 // <parent-kind>/<parent-namespace>/<parent-name>.<listener-name>
 func generateUniqueListenerName(listener ir.Listener) string {
-	return fmt.Sprintf("%s/%s/%s.%s", listener.Parent.GetObjectKind().GroupVersionKind().Kind, listener.Parent.GetNamespace(), listener.Parent.GetName(), listener.Name)
+	return fmt.Sprintf("%s/%s/%s.%s", inferKind(listener.Parent), listener.Parent.GetNamespace(), listener.Parent.GetName(), listener.Name)
 }
 
 // getOrDefaultHostname returns the hostname if not nil or blank. Else returns `DefaultHostname`. Ie: '*'

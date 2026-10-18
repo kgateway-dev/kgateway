@@ -72,6 +72,26 @@ func lsToIR(ls *gwv1.ListenerSet) ir.ListenerSet {
 	return out
 }
 
+func TestGenerateUniqueListenerNameWithoutGVK(t *testing.T) {
+	g := NewWithT(t)
+	meta := metav1.ObjectMeta{Name: "same", Namespace: "default"}
+	gw := &gwv1.Gateway{ObjectMeta: meta}
+	ls := &gwv1.ListenerSet{ObjectMeta: meta}
+	legacy := &gwv1.ListenerSet{ObjectMeta: meta}
+	legacy.SetGroupVersionKind(wellknown.XListenerSetGVK)
+
+	l := gwv1.Listener{Name: "http"}
+	gwName := generateUniqueListenerName(ir.Listener{Listener: l, Parent: gw})
+	lsName := generateUniqueListenerName(ir.Listener{Listener: l, Parent: ls})
+	legacyName := generateUniqueListenerName(ir.Listener{Listener: l, Parent: legacy})
+
+	g.Expect(gwName).To(Equal("Gateway/default/same.http"))
+	g.Expect(lsName).To(Equal("ListenerSet/default/same.http"))
+	g.Expect(legacyName).To(Equal("XListenerSet/default/same.http"))
+	g.Expect(gw.GroupVersionKind().Empty()).To(BeTrue(), "the parent must not be mutated")
+	g.Expect(ls.GroupVersionKind().Empty()).To(BeTrue(), "the parent must not be mutated")
+}
+
 func TestValidate(t *testing.T) {
 	gateway := simpleGw()
 	listenerSet := simpleLs()

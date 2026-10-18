@@ -280,8 +280,9 @@ func convertLegacyXListenerSetToV1(in *unstructured.Unstructured) *gwv1.Listener
 // the shared cache, instead of by readers mutating cached objects. Setting a transform replaces
 // the informer's default one, so this also strips managed fields the way the default does.
 //
-// The informer is shared and keeps the first transform registered, so every client of
-// ListenerSetGVR must pass this same function.
+// The informer is shared and keeps the first transform registered, so a client registering it
+// without this function wins over it; readers therefore also default an empty GVK. Clients
+// here pass the same function to keep the cache consistent and avoid the conflict warning.
 func ListenerSetObjectTransform(obj any) (any, error) {
 	ls, ok := obj.(*gwv1.ListenerSet)
 	if !ok {
