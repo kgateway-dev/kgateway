@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,7 +26,6 @@ func TestMetricsSweeperUsesInformerCaches(t *testing.T) {
 	gateways := krt.NewStaticCollection[*gwv1.Gateway](nil,
 		[]*gwv1.Gateway{{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "live"}}}, krtopts.ToOptions("Gateways")...)
 	sweeper := newMetricsSweeper(namespaces, gateways)
-	require.True(t, sweeper.HasSynced(), "the sweeper should run once both caches have synced")
 
 	for _, name := range []string{"live", "deleted"} {
 		collectReconciliationMetrics("gateway", types.NamespacedName{Namespace: "ns", Name: name})(nil)

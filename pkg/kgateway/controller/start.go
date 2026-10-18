@@ -10,6 +10,7 @@ import (
 	"time"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,10 +77,20 @@ func newMetricsSweeper(
 		GatewayExists: func(namespace, name string) bool {
 			return gateways.GetKey(namespace+"/"+name) != nil
 		},
-		HasSynced: func() bool {
-			return namespaces.HasSynced() && gateways.HasSynced()
-		},
 	}
+}
+
+// runMetricsSweeper sweeps metric series against the namespaces and Gateways in the
+// informer cache once it has synced, until ctx is done.
+func runMetricsSweeper(
+	ctx context.Context,
+	namespaces krt.Collection[krtcollections.NamespaceMetadata],
+	gateways krt.Collection[*gwv1.Gateway],
+) {
+	if !kube.WaitForCacheSync("metrics sweeper", ctx.Done(), namespaces.HasSynced, gateways.HasSynced) {
+		return
+	}
+	newMetricsSweeper(namespaces, gateways).Run(ctx, metricsSweepInterval)
 }
 
 type StartConfig struct {
@@ -167,7 +178,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	metrics.StartResourceSyncMetricsProcessing(ctx)
 
 	// Remove the metric series of Gateways and namespaces that no longer exist.
-	go newMetricsSweeper(cfg.CommonCollections.Namespaces, cfg.CommonCollections.RawGateways).Run(ctx, metricsSweepInterval)
+	if pkgmetrics.Active() {
+		go runMetricsSweeper(ctx, cfg.CommonCollections.Namespaces, cfg.CommonCollections.RawGateways)
+	}
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")

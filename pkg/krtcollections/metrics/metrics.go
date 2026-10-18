@@ -100,35 +100,26 @@ var managedCounts = struct {
 
 // addResourcesManaged adjusts the count of managed resources for labels and publishes it.
 func addResourcesManaged(labels resourceMetricLabels, delta int) {
+	metricLabels := labels.toMetricsLabels()
+
 	managedCounts.Lock()
 	defer managedCounts.Unlock()
 
 	count := managedCounts.counts[labels] + delta
 	if count == 0 {
 		delete(managedCounts.counts, labels)
-		resourcesManaged.Delete(labels.toMetricsLabels()...)
+		resourcesManaged.Delete(metricLabels...)
 		return
 	}
 	managedCounts.counts[labels] = count
-	resourcesManaged.Set(float64(count), labels.toMetricsLabels()...)
+	resourcesManaged.Set(float64(count), metricLabels...)
 }
 
-// ResourceSyncStartTime represents the start time of a resource sync.
-type ResourceSyncStartTime struct {
-	Time         time.Time
-	ResourceType string
-	ResourceName string
-	Namespace    string
-	Gateway      string
-}
-
-// resourceSyncStartTimes tracks the start times of resource syncs.
-type resourceSyncStartTimes struct {
-	sync.RWMutex
-	times map[string]map[string]map[string]map[string]ResourceSyncStartTime
-}
-
-var startTimes = &resourceSyncStartTimes{}
+// startTimes tracks the start times of pending XDS snapshot syncs, keyed by xdsSyncKey.
+var startTimes = struct {
+	sync.Mutex
+	times map[ResourceSyncDetails]time.Time
+}{times: map[ResourceSyncDetails]time.Time{}}
 
 // ResourceSyncDetails holds the details of a resource sync operation.
 type ResourceSyncDetails struct {
@@ -136,6 +127,12 @@ type ResourceSyncDetails struct {
 	Gateway      string
 	ResourceType string
 	ResourceName string
+}
+
+// xdsSyncKey is the startTimes key of the XDS snapshot sync of the Gateway in d. A Gateway
+// has at most one pending XDS sync, so the key leaves out the resource.
+func (d ResourceSyncDetails) xdsSyncKey() ResourceSyncDetails {
+	return ResourceSyncDetails{Namespace: d.Namespace, Gateway: d.Gateway}
 }
 
 type syncStartInfo struct {
@@ -186,31 +183,7 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
-	}
-
-	st := ResourceSyncStartTime{
-		Time:         time.Now(),
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-		Namespace:    details.Namespace,
-		Gateway:      details.Gateway,
-	}
-
-	if startTimes.times[details.Gateway][snapshotResourceType] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType] = make(map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
-	}
-
-	startTimes.times[details.Gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
+	startTimes.times[details.xdsSyncKey()] = time.Now()
 }
 
 // dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. A Gateway whose
@@ -221,24 +194,7 @@ func dropResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	deleteStartTimeLocked(details.Gateway, snapshotResourceType, details.Namespace, details.ResourceName)
-}
-
-// deleteStartTimeLocked removes a pending sync and any map left empty by its removal.
-// The caller must hold startTimes.
-func deleteStartTimeLocked(gateway, resourceType, namespace, resourceName string) {
-	byType := startTimes.times[gateway]
-	byNamespace := byType[resourceType]
-	delete(byNamespace[namespace], resourceName)
-	if len(byNamespace[namespace]) == 0 {
-		delete(byNamespace, namespace)
-	}
-	if len(byNamespace) == 0 {
-		delete(byType, resourceType)
-	}
-	if len(byType) == 0 {
-		delete(startTimes.times, gateway)
-	}
+	delete(startTimes.times, details.xdsSyncKey())
 }
 
 // EndResourceXDSSync records the end time of an XDS snapshot sync.
@@ -282,23 +238,19 @@ func endResourceSync(syncInfo *syncStartInfo) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	// Pending syncs are keyed by Gateway name, so end only those of this Gateway's
-	// namespace, not those of a Gateway with the same name in another namespace.
-	rt := snapshotResourceType
-	for resourceName, st := range startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace] {
-		xdsSnapshotSyncsTotal.Inc(
-			metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-			metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-		)
-
-		xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-			metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-			metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-		)
-
-		// Deleting entries of a map while ranging over it is safe.
-		deleteStartTimeLocked(syncInfo.details.Gateway, rt, st.Namespace, resourceName)
+	key := syncInfo.details.xdsSyncKey()
+	start, exists := startTimes.times[key]
+	if !exists {
+		return
 	}
+	delete(startTimes.times, key)
+
+	labels := []metrics.Label{
+		{Name: gatewayLabel, Value: key.Gateway},
+		{Name: namespaceLabel, Value: key.Namespace},
+	}
+	xdsSnapshotSyncsTotal.Inc(labels...)
+	xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(start).Seconds(), labels...)
 }
 
 // GetResourceMetricEventHandler returns a function that handles krt events for various Gateway API resources.
@@ -518,7 +470,7 @@ func ResetMetrics() {
 
 	startTimes.Lock()
 	defer startTimes.Unlock()
-	startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
+	startTimes.times = map[ResourceSyncDetails]time.Time{}
 
 	syncChLock.Lock()
 	syncCh = make(chan *syncStartInfo, 1024)
