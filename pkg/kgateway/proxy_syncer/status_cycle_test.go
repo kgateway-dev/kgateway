@@ -18,6 +18,7 @@ import (
 
 	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -260,7 +261,10 @@ func newStatusCycleFixture(t *testing.T) statusCycleFixture {
 	routes := krt.WrapClient(routeClient, krtopts.ToOptions("HTTPRoutes")...)
 	// The controller joins the promoted and legacy flavors into one collection; the promoted
 	// half alone is what the writer under test reads, and the only half a typed client sees.
-	listenerSetClient := kclient.NewFiltered[*gwv1.ListenerSet](c, f)
+	listenerSetClient := kclient.NewFiltered[*gwv1.ListenerSet](c, kclient.Filter{
+		ObjectFilter:    f.ObjectFilter,
+		ObjectTransform: collections.ListenerSetObjectTransform,
+	})
 	listenerSets := krt.WrapClient(listenerSetClient, krtopts.ToOptions("ListenerSets")...)
 
 	// Report fragments from the real reporter, as translation would produce them.

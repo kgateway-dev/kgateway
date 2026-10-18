@@ -45,8 +45,10 @@ func (c *CommonCollections) InitCollections(
 	metrics.RegisterEvents(kubeRawGateways, kmetrics.GetResourceMetricEventHandler[*gwv1.Gateway]())
 
 	var kubeRawListenerSets krt.Collection[*gwv1.ListenerSet]
+	lsFilter := filter
+	lsFilter.ObjectTransform = ListenerSetObjectTransform
 	promotedListenerSets := krt.WrapClient(
-		kclient.NewDelayedInformer[*gwv1.ListenerSet](c.Client, wellknown.ListenerSetGVR, kubetypes.StandardInformer, filter),
+		kclient.NewDelayedInformer[*gwv1.ListenerSet](c.Client, wellknown.ListenerSetGVR, kubetypes.StandardInformer, lsFilter),
 		c.KrtOpts.ToOptions("KubePromotedListenerSets")...,
 	)
 	// ON_EXPERIMENTAL_PROMOTION : Remove this block
@@ -270,4 +272,24 @@ func convertLegacyXListenerSetToV1(in *unstructured.Unstructured) *gwv1.Listener
 	// from promoted ListenerSets after normalization.
 	ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
 	return ls
+}
+
+// ListenerSetObjectTransform is the ObjectTransform for the promoted ListenerSet informer.
+// Typed informers drop TypeMeta on decode, and the GVK is what tells a promoted ListenerSet
+// apart from a converted legacy XListenerSet, so it is stamped here, before the object enters
+// the shared cache, instead of by readers mutating cached objects. Setting a transform replaces
+// the informer's default one, so this also strips managed fields the way the default does.
+//
+// The informer is shared and keeps the first transform registered, so every client of
+// ListenerSetGVR must pass this same function.
+func ListenerSetObjectTransform(obj any) (any, error) {
+	ls, ok := obj.(*gwv1.ListenerSet)
+	if !ok {
+		return obj, nil
+	}
+	ls.SetManagedFields(nil)
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	return ls, nil
 }

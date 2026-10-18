@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	plug "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -348,6 +349,9 @@ func listenerSetWriter(
 	listenerSets krt.Collection[*gwv1.ListenerSet],
 	reportCol krt.Collection[statussync.ResourceReports],
 ) statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus] {
+	// This client shares the promoted ListenerSet informer, which keeps the first transform
+	// registered, so it must pass the same one.
+	f.ObjectTransform = collections.ListenerSetObjectTransform
 	return statussync.Writer[*gwv1.ListenerSet, gwv1.ListenerSetStatus]{
 		Name:    "listenerSet",
 		Current: statussync.CollectionSource(listenerSets),

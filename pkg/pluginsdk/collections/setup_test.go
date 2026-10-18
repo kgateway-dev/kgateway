@@ -1,15 +1,71 @@
 package collections
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/cache"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
+
+func TestListenerSetObjectTransform(t *testing.T) {
+	t.Run("stamps the promoted gvk and strips managed fields", func(t *testing.T) {
+		ls := &gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{
+			Name:          "ls",
+			Namespace:     "default",
+			ManagedFields: []metav1.ManagedFieldsEntry{{Manager: "kubectl"}},
+		}}
+		out, err := ListenerSetObjectTransform(ls)
+		require.NoError(t, err)
+		require.Same(t, ls, out, "the transform runs before the object is cached, so it mutates in place")
+		require.Equal(t, wellknown.ListenerSetGVK, ls.GroupVersionKind())
+		require.Nil(t, ls.ManagedFields)
+	})
+
+	t.Run("keeps a gvk that is already set", func(t *testing.T) {
+		ls := &gwv1.ListenerSet{}
+		ls.SetGroupVersionKind(wellknown.XListenerSetGVK)
+		_, err := ListenerSetObjectTransform(ls)
+		require.NoError(t, err)
+		require.Equal(t, wellknown.XListenerSetGVK, ls.GroupVersionKind())
+	})
+
+	t.Run("passes other objects through", func(t *testing.T) {
+		tombstone := cache.DeletedFinalStateUnknown{Key: "default/ls", Obj: &gwv1.ListenerSet{}}
+		out, err := ListenerSetObjectTransform(tombstone)
+		require.NoError(t, err)
+		require.Equal(t, tombstone, out)
+	})
+}
+
+func TestPromotedListenerSetInformerStampsGVK(t *testing.T) {
+	stop := test.NewStop(t)
+	apiclient.RegisterTypes()
+
+	client := kube.NewFakeClient()
+	// Created without TypeMeta, which is how a typed informer decodes it.
+	_, err := client.GatewayAPI().GatewayV1().ListenerSets("default").Create(context.Background(),
+		&gwv1.ListenerSet{ObjectMeta: metav1.ObjectMeta{Name: "ls", Namespace: "default"}},
+		metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	inf := kclient.NewFiltered[*gwv1.ListenerSet](client, kclient.Filter{ObjectTransform: ListenerSetObjectTransform})
+	client.RunAndWait(stop)
+
+	listed := inf.List("default", labels.Everything())
+	require.Len(t, listed, 1)
+	require.Equal(t, wellknown.ListenerSetGVK, listed[0].GroupVersionKind())
+}
 
 func TestConvertLegacyXListenerSetToV1(t *testing.T) {
 	t.Run("converts legacy xlistenerset and preserves legacy gvk", func(t *testing.T) {
