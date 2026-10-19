@@ -13,23 +13,12 @@ const (
 )
 
 var (
-	// clusterScopingEmittedClusters is how many of a client's translated
-	// backend clusters actually reached its CDS. Reading it against
-	// xds_snapshot_resources{resource="cluster"} is the whole point of the
-	// feature: the gap between them is the inventory each proxy no longer
-	// carries.
-	clusterScopingEmittedClusters = metrics.NewGauge(
-		metrics.GaugeOpts{
-			Subsystem: clusterScopingSubsystem,
-			Name:      "emitted_clusters",
-			Help:      "Backend clusters published to a client after scoping CDS to what its configuration references",
-		},
-		[]string{gatewayLabel, namespaceLabel},
-	)
-	// clusterScopingDroppedClusters is the complement: clusters translated for
-	// this client and withheld because nothing references them. Zero here with
-	// scoping on means the deployment routes to everything it discovers and has
-	// nothing to gain from the feature.
+	// clusterScopingDroppedClusters is what scoping saves a client: clusters
+	// translated for it and withheld because nothing references them. How many
+	// it does receive is already xds_snapshot_resources{resource="Cluster"},
+	// which counts the published snapshot. Zero here with scoping on means the
+	// deployment routes to everything it discovers and has nothing to gain from
+	// the feature.
 	clusterScopingDroppedClusters = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: clusterScopingSubsystem,
@@ -84,20 +73,18 @@ const (
 	transitionReferenceAheadHeld = "reference_ahead_held"
 )
 
-// recordClusterScopingEmission reports how a client's CDS was scoped. Called on
-// every publish that filtered, so the gauges track the current state rather
-// than a high-water mark.
-func recordClusterScopingEmission(clientKey string, emitted, dropped int) {
+// recordClusterScopingDropped reports how many clusters scoping kept out of a
+// client's CDS. Called on every publish that filtered, so the gauge tracks the
+// current state rather than a high-water mark.
+func recordClusterScopingDropped(clientKey string, dropped int) {
 	if !metrics.Active() {
 		return
 	}
 	cd := getDetailsFromXDSClientResourceName(clientKey)
-	labels := []metrics.Label{
-		{Name: gatewayLabel, Value: cd.Gateway},
-		{Name: namespaceLabel, Value: cd.Namespace},
-	}
-	clusterScopingEmittedClusters.Set(float64(emitted), labels...)
-	clusterScopingDroppedClusters.Set(float64(dropped), labels...)
+	clusterScopingDroppedClusters.Set(float64(dropped),
+		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
+		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
+	)
 }
 
 // recordClusterScopingDisabled reports whether this gateway's CDS had to revert
@@ -178,7 +165,6 @@ func forgetClusterScopingGateway(clientKey string) {
 		{Name: gatewayLabel, Value: cd.Gateway},
 		{Name: namespaceLabel, Value: cd.Namespace},
 	}
-	clusterScopingEmittedClusters.DeletePartialMatch(labels...)
 	clusterScopingDroppedClusters.DeletePartialMatch(labels...)
 	clusterScopingDisabledGateways.DeletePartialMatch(labels...)
 	clusterScopingDisabledState.Lock()

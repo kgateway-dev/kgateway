@@ -118,13 +118,16 @@ one whose windows close first is not a bounded publish.
 
 | Metric | Type | Meaning |
 | --- | --- | --- |
-| `kgateway_xds_cluster_scoping_emitted_clusters` | gauge | Backend clusters published to a client after scoping. |
 | `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | Clusters withheld because nothing references them. |
 | `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 when a gateway reverted to emit-all. Worth an alert. |
 | `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters. |
 
-The three gauges are removed when a gateway's last connected proxy goes away, so
-a deleted gateway does not keep a `disabled_gateways` alert firing.
+How many clusters a gateway's proxies do receive is
+`kgateway_xds_snapshot_resources{resource="Cluster"}`, which counts the published
+snapshot after scoping.
+
+The two gauges are removed when a gateway's last connected proxy goes away, so a
+deleted gateway does not keep a `disabled_gateways` alert firing.
 
 `dropped_clusters` at zero with scoping on means the deployment routes to
 everything it discovers and has nothing to gain here. A steadily rising

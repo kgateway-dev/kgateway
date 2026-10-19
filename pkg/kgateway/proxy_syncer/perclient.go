@@ -135,12 +135,11 @@ func snapshotPerClient(
 		}
 		if scoping.ScopesClusters() {
 			// Reported whether or not anything was dropped, so the series exist
-			// for every scoped client: an operator comparing emitted against
-			// translated needs both numbers even when they are equal, and a
-			// gateway that reverted needs its disabled series to read 0 -> 1
-			// rather than to appear from nowhere.
-			recordClusterScopingEmission(ucc.ResourceName(),
-				len(clusterResources.Items),
+			// for every scoped client: dropped_clusters at zero is itself the
+			// answer that this deployment has nothing to gain, and a gateway
+			// that reverted needs its disabled series to read 0 -> 1 rather
+			// than to appear from nowhere.
+			recordClusterScopingDropped(ucc.ResourceName(),
 				len(clustersForUcc.clusters.Items)-len(clusterResources.Items))
 			disabled := !listenerRouteSnapshot.EmittedClusters.Filterable()
 			recordClusterScopingDisabled(ucc.ResourceName(), disabled)

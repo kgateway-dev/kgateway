@@ -12,23 +12,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// TestClusterScopingMetricsReportWhatWasDroppedAndWhy: the emitted/dropped pair
-// is how an operator sees what the feature bought them, so both series must
-// exist for a scoped client even when nothing was dropped.
+// TestClusterScopingMetricsReportWhatWasDroppedAndWhy: dropped_clusters is how
+// an operator sees what the feature bought them, so its series must exist for a
+// scoped client even when nothing was dropped.
 func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
 
-	recordClusterScopingEmission(publishGateTestClient, 3, 17)
+	recordClusterScopingDropped(publishGateTestClient, 17)
 
 	gathered := metricstest.MustGatherMetrics(t)
-	gathered.AssertMetric("kgateway_xds_cluster_scoping_emitted_clusters", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: gatewayLabel, Value: "unknown"},
-			{Name: namespaceLabel, Value: "unknown"},
-		},
-		Value: 3,
-	})
 	gathered.AssertMetric("kgateway_xds_cluster_scoping_dropped_clusters", &metricstest.ExpectedMetric{
 		Labels: []metrics.Label{
 			{Name: gatewayLabel, Value: "unknown"},
@@ -164,7 +157,6 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
 	// series persist across tests in this package
-	clusterScopingEmittedClusters.Reset()
 	clusterScopingDroppedClusters.Reset()
 	clusterScopingDisabledGateways.Reset()
 	const (
@@ -172,7 +164,7 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 		other   = "kube-gateway-api~ns-forget~gw-other"
 	)
 	for _, client := range []string{leaving, other} {
-		recordClusterScopingEmission(client, 3, 17)
+		recordClusterScopingDropped(client, 17)
 		recordClusterScopingDisabled(client, true)
 		noteClusterScopingDisabled(client, true)
 	}
@@ -184,7 +176,6 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 
 	gathered := metricstest.MustGatherMetrics(t)
 	for _, name := range []string{
-		"kgateway_xds_cluster_scoping_emitted_clusters",
 		"kgateway_xds_cluster_scoping_dropped_clusters",
 		"kgateway_xds_cluster_scoping_disabled_gateways",
 	} {
