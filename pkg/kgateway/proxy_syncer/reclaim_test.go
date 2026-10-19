@@ -14,6 +14,8 @@ import (
 	envoystreamv3 "github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
 // shortenReclaimGrace shrinks the grace period for the duration of a test.
@@ -58,6 +60,8 @@ func (f *fakeReclaim) reclaimedNodes() []string {
 }
 
 func TestReclaim_DepartedEntryClearedAfterGrace(t *testing.T) {
+	const reclaimedMetric = "kgateway_xds_snapshot_perclient_reclaimed_total"
+	ResetMetrics()
 	shortenReclaimGrace(t, 30*time.Millisecond)
 	f := newFakeReclaim()
 	r := newSnapshotReclaimer(f.reclaim)
@@ -69,6 +73,13 @@ func TestReclaim_DepartedEntryClearedAfterGrace(t *testing.T) {
 		return len(f.reclaimedNodes()) == 1
 	}, 2*time.Second, 5*time.Millisecond, "departed client's entry must be reclaimed after the grace period")
 	assert.Equal(t, []string{"c1"}, f.reclaimedNodes())
+
+	require.Eventually(t, func() bool {
+		return metricstest.MustGatherMetrics(t).MetricLength(reclaimedMetric) == 1
+	}, 2*time.Second, 5*time.Millisecond, "the reclaim is counted")
+	metricstest.MustGatherMetrics(t).AssertMetric(reclaimedMetric, &metricstest.ExpectedMetricValueTest{
+		Test: metricstest.Equal(1),
+	})
 }
 
 func TestReclaim_ReconnectWithinGraceCancels(t *testing.T) {

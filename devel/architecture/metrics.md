@@ -159,3 +159,11 @@ They do not show when Envoy receives, accepts or applies them.
 * The publication paths keep snapshots consistent by construction, so any
   increment is a kgateway bug. Report it with the error logged alongside it,
   which names the client.
+
+### `kgateway_xds_snapshot_perclient_reclaimed_total` Metric
+* Counts per-client snapshot cache entries cleared after their client left and
+  stayed gone for the grace period, which keeps controller memory from growing
+  with proxy churn. It has no labels.
+* Its rate follows how often proxies go away for good: scale-downs, rollouts and
+  deleted gateways. A proxy that reconnects within the grace period keeps its
+  entry and is not counted.

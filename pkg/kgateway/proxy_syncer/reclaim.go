@@ -83,5 +83,5 @@ func (r *snapshotReclaimer) fire(resourceName string) {
 		return
 	}
 	logger.Info("reclaimed xds snapshot cache entry for departed client", "client", resourceName)
-	recordSnapshotReclaim(resourceName)
+	recordSnapshotReclaim()
 }

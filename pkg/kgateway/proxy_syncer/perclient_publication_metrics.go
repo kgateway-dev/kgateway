@@ -78,10 +78,9 @@ var (
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
 			Name:      "perclient_reclaimed_total",
-			Help: "Total per-client xDS snapshot cache entries reclaimed after the " +
-				"client left the connected set and stayed gone for the grace period.",
+			Help:      "Per-client xDS snapshot cache entries reclaimed after their client left and stayed gone for the grace period",
 		},
-		[]string{gatewayLabel, namespaceLabel},
+		nil,
 	)
 )
 
@@ -156,15 +155,12 @@ func recordInconsistentSnapshot() {
 	snapshotPerClientInconsistentTotal.Inc()
 }
 
-// recordSnapshotReclaim counts one reclaimed snapshot cache entry for the
-// departed client's gateway.
-func recordSnapshotReclaim(proxyKey string) {
+// recordSnapshotReclaim counts one reclaimed snapshot cache entry. It carries
+// no gateway labels: a reclaim runs after the client has gone, often with its
+// gateway, so a labeled series would outlive what it names.
+func recordSnapshotReclaim() {
 	if !metrics.Active() {
 		return
 	}
-	cd := getDetailsFromXDSClientResourceName(proxyKey)
-	snapshotPerClientReclaimedTotal.Inc(
-		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-	)
+	snapshotPerClientReclaimedTotal.Inc()
 }
