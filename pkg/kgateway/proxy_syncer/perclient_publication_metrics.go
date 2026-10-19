@@ -37,6 +37,14 @@ const (
 	// bound: the cluster's last config is no longer served and routes to it
 	// fail until it reappears.
 	boundedPublishCarryExpired = "carry_expired"
+
+	withheldStateLabel = "state"
+	// withheldWithinBudget is a client whose first publish on its connection
+	// waits for referenced clusters, inside the first-publish budget.
+	withheldWithinBudget = "within_budget"
+	// withheldWarm is a warm client still withheld after the budget because
+	// referenced clusters are missing from CDS, up to the warm withhold bound.
+	withheldWarm = "warm_withheld"
 )
 
 var (
@@ -55,32 +63,13 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationReasonLabel},
 	)
-	snapshotPerClientWarmWithheldClients = metrics.NewGauge(
+	snapshotPerClientWithheldClients = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: snapshotSubsystem,
-			Name:      "perclient_warm_withheld_clients",
-			Help: "Warm clients (they reported a prior accepted xDS version, so " +
-				"they may be serving config from an earlier stream) currently " +
-				"withheld because referenced clusters are missing from CDS. " +
-				"While withheld a client receives no updates at all, including " +
-				"certificate rotations. A client that stays here is released at " +
-				"KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, or never if that is 0.",
+			Name:      "perclient_withheld_clients",
+			Help:      "Clients whose first publish on their connection is withheld until referenced clusters are ready, by state",
 		},
-		[]string{gatewayLabel, namespaceLabel},
-	)
-	snapshotPerClientFirstPublishPendingClients = metrics.NewGauge(
-		metrics.GaugeOpts{
-			Subsystem: snapshotSubsystem,
-			Name:      "perclient_first_publish_pending_clients",
-			Help: "Clients whose first publish on their current connection is " +
-				"being withheld because referenced clusters are not ready, cold " +
-				"or warm. Until it goes out such a client has nothing from this " +
-				"connection: a new proxy has no listeners and is not Ready. A cold " +
-				"client is published at KGW_PER_CLIENT_PUBLISH_BUDGET; a warm one " +
-				"can stay withheld up to KGW_PER_CLIENT_WARM_WITHHOLD_BOUND (see " +
-				"perclient_warm_withheld_clients).",
-		},
-		[]string{gatewayLabel, namespaceLabel},
+		[]string{gatewayLabel, namespaceLabel, withheldStateLabel},
 	)
 	snapshotPerClientBoundedPublishesTotal = metrics.NewCounter(
 		metrics.CounterOpts{
@@ -164,22 +153,29 @@ func recordBoundedPublish(proxyKey string, mode string) {
 	)
 }
 
-// recordWarmWithheldClients publishes the number of warm clients currently
-// withheld for one gateway.
-// recordFirstPublishPendingClients publishes the number of clients of one
-// gateway whose first publish on their connection is withheld.
-func recordFirstPublishPendingClients(labels resourceNameDetails, n int) {
-	snapshotPerClientFirstPublishPendingClients.Set(float64(n),
-		metrics.Label{Name: gatewayLabel, Value: labels.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: labels.Namespace},
-	)
-}
-
-func recordWarmWithheldClients(labels resourceNameDetails, n int) {
-	snapshotPerClientWarmWithheldClients.Set(float64(n),
-		metrics.Label{Name: gatewayLabel, Value: labels.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: labels.Namespace},
-	)
+// recordWithheldClients publishes how many of one gateway's clients are
+// withheld in each state, from the gate's counts of clients pending a first
+// publish and of the warm ones among them withheld past the budget. A state
+// with no clients has no series, so a gateway that is gone leaves none.
+func recordWithheldClients(labels resourceNameDetails, pending, warm int) {
+	for _, s := range []struct {
+		state string
+		n     int
+	}{
+		{withheldWithinBudget, pending - warm},
+		{withheldWarm, warm},
+	} {
+		series := []metrics.Label{
+			{Name: gatewayLabel, Value: labels.Gateway},
+			{Name: namespaceLabel, Value: labels.Namespace},
+			{Name: withheldStateLabel, Value: s.state},
+		}
+		if s.n > 0 {
+			snapshotPerClientWithheldClients.Set(float64(s.n), series...)
+		} else {
+			snapshotPerClientWithheldClients.DeletePartialMatch(series...)
+		}
+	}
 }
 
 // recordInconsistentSnapshot counts a pre-publication consistency violation

@@ -49,6 +49,8 @@ func TestWarmWithhold_ReleasedAtBoundWithStaticInputs(t *testing.T) {
 		time.Second, 5*time.Millisecond, "the client must be counted as withheld after the first budget expiry")
 	_, ok := publishedListenerVersion(t, pt)
 	assert.False(t, ok, "a warm client with missing clusters must stay withheld before the bound")
+	assert.Equal(t, float64(1), withheldClients(t, withheldWarm), "past the budget the client moves to warm_withheld")
+	assert.Equal(t, 1, metricstest.MustGatherMetrics(t).MetricLength(withheldClientsMetric), "and leaves within_budget")
 
 	require.Eventually(t, func() bool {
 		_, ok := publishedListenerVersion(t, pt)
@@ -59,17 +61,14 @@ func TestWarmWithhold_ReleasedAtBoundWithStaticInputs(t *testing.T) {
 	assert.Zero(t, warmWithheldCount(pt), "a released client is no longer withheld")
 
 	g := metricstest.MustGatherMetricsContext(ctx, t,
-		"kgateway_xds_snapshot_perclient_bounded_publishes_total",
-		"kgateway_xds_snapshot_perclient_warm_withheld_clients")
+		"kgateway_xds_snapshot_perclient_bounded_publishes_total")
 	g.AssertMetricsInclude("kgateway_xds_snapshot_perclient_bounded_publishes_total", []metricstest.ExpectMetric{
 		&metricstest.ExpectedMetricValueTest{
 			Labels: labelsWith("mode", boundedPublishWarmRelease),
 			Test:   metricstest.Equal(1),
 		},
 	})
-	g.AssertMetricsInclude("kgateway_xds_snapshot_perclient_warm_withheld_clients", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetricValueTest{Labels: unknownLabels, Test: metricstest.Equal(0)},
-	})
+	g.AssertMetricNotExists(withheldClientsMetric)
 }
 
 // With the bound at 0 the warm withhold has no deadline, and the client stays

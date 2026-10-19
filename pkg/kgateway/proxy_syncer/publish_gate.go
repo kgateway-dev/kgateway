@@ -66,8 +66,8 @@ import (
 // KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, minutes rather than seconds): a cluster
 // still missing that long after a restart is not translation catching up, and
 // holding longer would freeze the client's routes, listeners and
-// certificates until its proxy restarts. The perclient_warm_withheld_clients
-// gauge shows the clients currently held.
+// certificates until its proxy restarts. The perclient_withheld_clients gauge
+// shows the clients currently held, under state=warm_withheld.
 // A reconnect resumes the episode rather than restarting the bound. And when
 // proxies share a key (pod locality off), a proxy under it that holds no config
 // lifts the withhold once it has waited a budget: it has no listeners until the
@@ -114,13 +114,14 @@ type publishGate struct {
 	// while budget is non-zero. Written before the gate is first used.
 	warmWithholdBound time.Duration
 	// warmWithheld counts, per gateway, the warm clients currently withheld
-	// (pendingFirstPublish.warmWithheldSince set), for the warm_withheld_clients
-	// gauge. Guarded by mu; created on first use.
+	// past the budget (pendingFirstPublish.warmWithheldSince set). They are
+	// among firstPublishPending; the withheld_clients gauge reports them as
+	// state=warm_withheld and the rest as state=within_budget. Guarded by mu;
+	// created on first use.
 	warmWithheld map[resourceNameDetails]int
 	// firstPublishPending counts, per gateway, the clients whose first publish
-	// on their connection is being withheld (pendingFirstPublish.counted), for
-	// the first_publish_pending_clients gauge. Guarded by mu; created on first
-	// use.
+	// on their connection is being withheld (pendingFirstPublish.counted).
+	// Guarded by mu; created on first use.
 	firstPublishPending map[resourceNameDetails]int
 	// warmEpisodes keeps, per client key, when a withheld warm client's episode
 	// started, across the client's departure: a proxy that reconnects resumes
@@ -296,8 +297,8 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 		if st.timer != nil {
 			st.timer.Stop()
 		}
-		g.unmarkWarmWithheldLocked(proxyKey, st)
 		g.unmarkFirstPublishPendingLocked(proxyKey, st)
+		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
@@ -527,13 +528,13 @@ func (g *publishGate) firePending(
 		logger.Error("failed to set xds snapshot", "proxy_key", proxyKey, "error", err)
 		return
 	}
-	g.unmarkWarmWithheldLocked(proxyKey, st)
 	g.unmarkFirstPublishPendingLocked(proxyKey, st)
+	g.unmarkWarmWithheldLocked(proxyKey, st)
 	recordBoundedPublish(proxyKey, mode)
 }
 
 // markWarmWithheldLocked records that a warm client's episode started
-// withholding at now, for the warm bound and the warm_withheld_clients gauge.
+// withholding at now, for the warm bound and the withheld_clients gauge.
 // Callers must hold g.mu.
 func (g *publishGate) markWarmWithheldLocked(proxyKey string, st *pendingFirstPublish, now time.Time) {
 	st.warmWithheldSince = now
@@ -557,8 +558,10 @@ func (g *publishGate) unmarkWarmWithheldLocked(proxyKey string, st *pendingFirst
 }
 
 // unmarkFirstPublishPendingLocked takes the client out of the
-// first_publish_pending_clients gauge when its first publish goes out or its
-// pending entry ends. Callers must hold g.mu.
+// withheld_clients gauge when its first publish goes out or its pending entry
+// ends. Callers uncount it here before unmarkWarmWithheldLocked, so a scrape
+// between the two never shows a warm client as within its budget. Callers
+// must hold g.mu.
 func (g *publishGate) unmarkFirstPublishPendingLocked(proxyKey string, st *pendingFirstPublish) {
 	if !st.counted {
 		return
@@ -576,11 +579,10 @@ func (g *publishGate) adjustFirstPublishPendingLocked(proxyKey string, delta int
 	n := g.firstPublishPending[labels] + delta
 	if n <= 0 {
 		delete(g.firstPublishPending, labels)
-		n = 0
 	} else {
 		g.firstPublishPending[labels] = n
 	}
-	recordFirstPublishPendingClients(labels, n)
+	recordWithheldClients(labels, g.firstPublishPending[labels], g.warmWithheld[labels])
 }
 
 func (g *publishGate) adjustWarmWithheldLocked(proxyKey string, delta int) {
@@ -592,11 +594,10 @@ func (g *publishGate) adjustWarmWithheldLocked(proxyKey string, delta int) {
 	n := g.warmWithheld[labels] + delta
 	if n <= 0 {
 		delete(g.warmWithheld, labels)
-		n = 0
 	} else {
 		g.warmWithheld[labels] = n
 	}
-	recordWarmWithheldClients(labels, n)
+	recordWithheldClients(labels, g.firstPublishPending[labels], g.warmWithheld[labels])
 }
 
 // publishHeldLocked publishes a snapshot whose route flip is held at the
@@ -711,8 +712,8 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 		}
 		g.rememberColdEpisodeLocked(proxyKey, st.since)
 		g.rememberWarmEpisodeLocked(proxyKey, st.warmWithheldSince)
-		g.unmarkWarmWithheldLocked(proxyKey, st)
 		g.unmarkFirstPublishPendingLocked(proxyKey, st)
+		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)

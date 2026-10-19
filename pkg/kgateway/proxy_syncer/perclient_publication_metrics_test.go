@@ -134,34 +134,49 @@ func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 	})
 }
 
-// first_publish_pending_clients counts a client while its first publish on the
-// connection is withheld, and stops when it publishes, by a coherent build or
-// at the budget, or leaves.
-func TestPublicationMetrics_FirstPublishPending(t *testing.T) {
-	const metricName = "kgateway_xds_snapshot_perclient_first_publish_pending_clients"
+const withheldClientsMetric = "kgateway_xds_snapshot_perclient_withheld_clients"
+
+// withheldClients reads the withheld_clients gauge for one state of the test
+// gateway. A state with no clients has no series, so absence reads as 0. These
+// tests hold one client, so a series for another state fails the read.
+func withheldClients(t *testing.T, state string) float64 {
+	t.Helper()
+	g := metricstest.MustGatherMetrics(t)
+	if g.MetricLength(withheldClientsMetric) == 0 {
+		return 0
+	}
+	return g.MustGetMetricValueByLabels(withheldClientsMetric, labelsWith("state", state))
+}
+
+// withheld_clients counts a client under state=within_budget while its first
+// publish on the connection is withheld, and drops the series when it
+// publishes, by a coherent build or at the budget, or leaves.
+func TestPublicationMetrics_WithheldClients(t *testing.T) {
 	ctx := context.Background()
-	pending := func() float64 {
+	gone := func(msg string) {
 		t.Helper()
-		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(metricName, unknownLabels)
+		require.Zero(t, metricstest.MustGatherMetrics(t).MetricLength(withheldClientsMetric), msg)
 	}
 
 	ResetMetrics()
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
 	pt.syncXds(ctx, deferredWrapperV("v1"))
-	require.Equal(t, float64(1), pending(), "withheld from its first publish")
+	require.Equal(t, float64(1), withheldClients(t, withheldWithinBudget), "withheld from its first publish")
 	pt.syncXds(ctx, deferredWrapperV("v2"))
-	require.Equal(t, float64(1), pending(), "one client, however many deferred builds")
+	require.Equal(t, float64(1), withheldClients(t, withheldWithinBudget), "one client, however many deferred builds")
 	pt.syncXds(ctx, coherentWrapperV("v3"))
-	require.Equal(t, float64(0), pending(), "published")
+	gone("published: no series is left at zero")
 
 	bounded := newPublishGateTestTranslator(t, false, 30*time.Millisecond)
 	bounded.syncXds(ctx, deferredWrapperV("v1"))
-	require.Equal(t, float64(1), pending())
-	require.Eventually(t, func() bool { return pending() == 0 }, 2*time.Second, 5*time.Millisecond, "published at the budget")
+	require.Equal(t, float64(1), withheldClients(t, withheldWithinBudget))
+	require.Eventually(t, func() bool {
+		return metricstest.MustGatherMetrics(t).MetricLength(withheldClientsMetric) == 0
+	}, 2*time.Second, 5*time.Millisecond, "published at the budget")
 
 	departed := newPublishGateTestTranslator(t, false, time.Hour)
 	departed.syncXds(ctx, deferredWrapperV("v1"))
-	require.Equal(t, float64(1), pending())
+	require.Equal(t, float64(1), withheldClients(t, withheldWithinBudget))
 	departed.gate.clientDeparted(publishGateTestClient)
-	require.Equal(t, float64(0), pending(), "left before its first publish")
+	gone("left before its first publish")
 }
