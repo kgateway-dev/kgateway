@@ -25,11 +25,10 @@ The underlying implementation is based on [github.com/prometheus/client_golang/p
 Several packages have interfaces created to standardize collection of metrics around existing frameworks
 * [CollectTranslationMetrics](/pkg/kgateway/translator/metrics/metrics.go) for [/pkg/kgateway/translator/](/pkg/kgateway/translator/)
   * Called with `CollectTranslationMetrics(labels TranslatorMetricLabels) func(error)` at the start of a translation function; the returned function is deferred to complete recording
-* [StartResourceStatusSync, StartResourceXDSSync, EndResourceStatusSync, and EndResourceXDSSync](/pkg/krtcollections/metrics/metrics.go) are used to track metrics related to resource sync.
-  * Used with `StartResourceStatusSync(details ResourceSyncDetails)` / `StartResourceXDSSync(details ResourceSyncDetails)` and their corresponding `End*` counterparts
+* [StartResourceXDSSync and EndResourceXDSSync](/pkg/krtcollections/metrics/metrics.go) are used to track the time from a Gateway change to its XDS snapshot.
+  * Used with `StartResourceXDSSync(details ResourceSyncDetails)` and `EndResourceXDSSync(details ResourceSyncDetails)`
   * `StartResourceSyncMetricsProcessing(ctx context.Context)` must be called at process startup to handle processing of resource metrics.
-* [statusSyncMetricsRecorder](/pkg/kgateway/proxy_syncer/metrics.go) for the status syncer in [/pkg/kgateway/proxy_syncer/](/pkg/kgateway/proxy_syncer/)
-  * Created by `NewStatusSyncMetricsRecorder(syncerName string) statusSyncMetricsRecorder`
+* [statussync.Writer](/pkg/pluginsdk/statussync/writer.go) records `kgateway_status_writes_total{kind, result}` once per `ApplyStatus` call that had a status to write; writers get it without any wiring.
 
 Objects returned from these constructors will be unique, but the underlying metrics will be shared.
 

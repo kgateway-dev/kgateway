@@ -37,7 +37,7 @@ Listeners:
           dns: true
           subject: true
           uri: true
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   metadata:
