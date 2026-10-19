@@ -80,7 +80,7 @@ values as on `kgateway_envoy_xds_rejects_total` and
 `type.googleapis.com/` prefix), so the series join on it. ACKs, uncorrelated
 NACKs, and NACKs for an older snapshot do not increment it.
 
-An increment indicates that kgateway prevented a resend of rejected configuration;
+An increment indicates that kgateway delayed a resend of rejected configuration;
 it does not mean the rejection was resolved or count every retry that would have
 occurred without suppression. Use `kgateway_envoy_xds_rejects_active` to monitor
 active rejections and the NACK logs to investigate their cause.
