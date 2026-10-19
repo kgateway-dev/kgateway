@@ -44,8 +44,9 @@ type ClusterDiscoveryMode string
 
 const (
 	// ClusterDiscoveryAll emits every backend in discovery scope, referenced or not.
-	// Retargets are safe because the destination already exists, but every proxy
-	// carries, and reports stats for, the whole inventory.
+	// A retarget to an existing backend is safe because its cluster already
+	// exists, but every proxy carries, and reports stats for, the whole
+	// inventory.
 	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
 	// ClusterDiscoveryReferenced emits only referenced clusters, including filter
 	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
