@@ -191,14 +191,18 @@ func TestRejectionMetricIdentityAndCardinality(t *testing.T) {
 				req.Node.Metadata.Fields[xds.RoleKey] = structpb.NewStringValue(fmt.Sprintf(owner+"~fake-ns-%d~fake-gateway-%d", i, i))
 				require.NoError(t, chain.OnStreamRequest(1, req))
 			}
-			wantNS, wantName := "unknown", "unknown"
+			// With auth on, the peer's identity wins over every claimed role.
+			// With it off, the stream keeps the gateway it claimed first: the
+			// unique-client callback pins a stream's role, so twenty different
+			// claims on one stream still make one series.
+			wantNS, wantName := "fake-ns-0", "fake-gateway-0"
 			if auth {
 				wantNS, wantName = ns, name
 			}
 			want := &metricstest.ExpectedMetric{Labels: labels(wantNS, wantName, "other"), Value: 1}
 			gathered := metricstest.MustGatherMetrics(t)
-			gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_total", []metricstest.ExpectMetric{want})
-			gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{want})
+			gathered.AssertMetric("kgateway_envoy_xds_rejects_total", want)
+			gathered.AssertMetric("kgateway_envoy_xds_rejects_active", want)
 			require.Equal(t, 1, gathered.MetricLength("kgateway_envoy_xds_rejects_total"))
 			require.Equal(t, 1, gathered.MetricLength("kgateway_envoy_xds_rejects_active"))
 			require.Len(t, cb.streamState[1].errors, 1)
@@ -206,9 +210,30 @@ func TestRejectionMetricIdentityAndCardinality(t *testing.T) {
 			require.Empty(t, cb.streamIdentity)
 			require.Empty(t, cb.streamState)
 			want.Value = 0
-			metricstest.MustGatherMetrics(t).AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{want})
+			metricstest.MustGatherMetrics(t).AssertMetric("kgateway_envoy_xds_rejects_active", want)
 		})
 	}
+}
+
+// Without auth, a role that is not a gateway's is never used as a label: the
+// unique-client callback leaves it alone, and the rejection stays unknown.
+func TestUnauthenticatedRejectionOfNonGatewayRole(t *testing.T) {
+	resetMetrics()
+	t.Cleanup(resetMetrics)
+	xdsRejectsTotal.DeletePartialMatch(kmetrics.Label{Name: gwNameLabel, Value: ""})
+	xdsRejectsCurrent.DeletePartialMatch(kmetrics.Label{Name: gwNameLabel, Value: ""})
+	cb := newLogNackCallback(false)
+	ctx := t.Context()
+	clients, build, _ := krtcollections.NewUniquelyConnectedClients(false)
+	col := build(ctx, krtutil.KrtOptions{Stop: ctx.Done()}, nil)
+	require.True(t, col.WaitUntilSynced(ctx.Done()))
+	chain := chainCallbacks(clients, cb)
+	require.NoError(t, chain.OnStreamOpen(ctx, 1, ""))
+	req := dr(fullType, &status.Status{Message: "rejected"})
+	req.Node.Metadata.Fields[xds.RoleKey] = structpb.NewStringValue("some-other-proxy~ns~name")
+	require.NoError(t, chain.OnStreamRequest(1, req))
+	metricstest.MustGatherMetrics(t).AssertMetric("kgateway_envoy_xds_rejects_total",
+		&metricstest.ExpectedMetric{Labels: labels("unknown", "unknown", typeURL), Value: 1})
 }
 
 func TestRejectionRequiresAcceptedStream(t *testing.T) {

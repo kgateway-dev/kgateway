@@ -78,7 +78,7 @@ func newLogNackCallback(xdsAuth bool) *logNackCallback {
 
 // OnStreamOpen validates the authenticated stream. Gateway identity is resolved
 // by the preceding unique-client callback on each request, not from the service
-// account name here. Unauthenticated clients always share unknown labels.
+// account name here.
 func (l *logNackCallback) OnStreamOpen(ctx context.Context, streamID int64, _ string) error {
 	key := resourceKey{Namespace: "unknown", Name: "unknown"}
 	if l.xdsAuth {
@@ -114,19 +114,20 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	if !ok {
 		return nil
 	}
-	if l.xdsAuth {
-		// NewControlPlane chains this callback after unique-client processing.
-		// That callback re-derives identity from current pod state and rewrites
-		// the role; errors (including identity drift) stop the chain before us.
-		// Never use this metadata for unauthenticated streams.
-		role := req.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
-		parts := strings.SplitN(role, xds.KeyDelimiter, 4)
-		if xds.IsKubeGatewayCacheKey(role) && len(parts) >= 3 {
-			key.Namespace, key.Name = parts[1], parts[2]
-			l.lock.Lock()
-			l.streamIdentity[streamID] = key
-			l.lock.Unlock()
-		}
+	// NewControlPlane chains this callback after unique-client processing,
+	// which rewrites the role to the client's resolved identity: from the
+	// authenticated peer and current pod state with xDS auth on, and from the
+	// role the stream first presented with it off. That is the gateway every
+	// other per-client xDS metric is labeled with. Errors (including identity
+	// drift) stop the chain before us. A role that is not a gateway's keeps the
+	// unknown labels.
+	role := req.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
+	parts := strings.SplitN(role, xds.KeyDelimiter, 4)
+	if xds.IsKubeGatewayCacheKey(role) && len(parts) >= 3 {
+		key.Namespace, key.Name = parts[1], parts[2]
+		l.lock.Lock()
+		l.streamIdentity[streamID] = key
+		l.lock.Unlock()
 	}
 	key.ResourceTypeUrl = rejectionTypeURL(req.GetTypeUrl())
 
