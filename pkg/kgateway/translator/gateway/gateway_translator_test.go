@@ -16,6 +16,7 @@ import (
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -4462,4 +4463,42 @@ func TestDiscoveryNamespaceSelector(t *testing.T) {
   }
 ]`, "base.yaml", "base_select_infra.yaml")
 	})
+}
+
+func TestListenerPolicyGatewayTargetAppliesClientCertificateValidation(t *testing.T) {
+	dir := fsutils.MustGetThisDir()
+	pinVersion(t)
+
+	tc := translatortest.TestCase{
+		InputFiles: []string{
+			filepath.Join(dir, "testutils/inputs/listener-policy/gateway-wide-mtls.yaml"),
+		},
+	}
+	results, err := tc.Run(
+		t,
+		t.Context(),
+		translatortest.NewScheme(runtime.SchemeBuilder{}),
+		translatortest.ExtraConfig{},
+		func(s *apisettings.Settings) {
+			s.EnableExperimentalGatewayAPIFeatures = true
+		},
+	)
+	require.NoError(t, err)
+
+	gw := types.NamespacedName{Namespace: "default", Name: "example-gateway"}
+	result, ok := results[gw]
+	require.True(t, ok, "expected gateway result")
+	require.NotEmpty(t, result.Proxy.Listeners)
+
+	var chains int
+	for _, l := range result.Proxy.Listeners {
+		for _, fc := range l.GetFilterChains() {
+			chains++
+			out, err := protojson.Marshal(fc.GetTransportSocket())
+			require.NoError(t, err)
+			assert.Contains(t, string(out), "validationContext",
+				"gateway-targeted ListenerPolicy clientCertificateValidation should apply to filter chain %s", fc.GetName())
+		}
+	}
+	assert.Equal(t, 2, chains, "expected one filter chain per listener")
 }
