@@ -482,7 +482,6 @@ type GatewayIndexConfig struct {
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
 	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwv1.ListenerSet]
-	listenerSetIRs                        krt.Collection[listenerSetIRRef]
 	listenerSetIRsByParentRef             krt.Index[TargetRefIndexKey, listenerSetIRRef]
 }
 
@@ -499,7 +498,7 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	// so a change to one ListenerSet rebuilds only that one instead of every ListenerSet on the
 	// Gateway. ir.ListenerSet.Equals compares the source object by version, so a status-only
 	// write to a ListenerSet rebuilds only its IR and stops there.
-	config.listenerSetIRs = krt.NewCollection(config.ListenerSets, func(kctx krt.HandlerContext, ls *gwv1.ListenerSet) *listenerSetIRRef {
+	listenerSetIRs := krt.NewCollection(config.ListenerSets, func(kctx krt.HandlerContext, ls *gwv1.ListenerSet) *listenerSetIRRef {
 		// Nothing reads the IR of a ListenerSet under another controller's Gateway, so skip its
 		// policy lookups.
 		if !envoyOwnsParent(kctx, &config, ls) {
@@ -507,7 +506,7 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 		}
 		return &listenerSetIRRef{listenerSetIR(kctx, config.PolicyIndex, ls)}
 	}, config.KrtOpts.ToOptions("ListenerSetIRs")...)
-	config.listenerSetIRsByParentRef = krtpkg.UnnamedIndex(config.listenerSetIRs, func(in listenerSetIRRef) []TargetRefIndexKey {
+	config.listenerSetIRsByParentRef = krtpkg.UnnamedIndex(listenerSetIRs, func(in listenerSetIRRef) []TargetRefIndexKey {
 		return listenerSetParentRefKeys(in.Obj.(*gwv1.ListenerSet))
 	})
 	// The Envoy transformation reads only the Gateway's spec and metadata, so feed it from a
@@ -638,12 +637,12 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.listenerSetIRs, krt.FilterIndex(config.listenerSetIRsByParentRef, TargetRefIndexKey{
+		listenerSets := config.listenerSetIRsByParentRef.Fetch(kctx, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
-		}))
+		})
 		// Make room for every ListenerSet listener up front rather than regrowing per ListenerSet.
 		numListeners := len(gwIR.Listeners)
 		for _, ls := range listenerSets {
