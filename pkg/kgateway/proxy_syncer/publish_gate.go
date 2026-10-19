@@ -491,7 +491,6 @@ func (g *publishGate) resolveDeferredLocked(
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, newlyEmitted, aheadFor, edsHashes, now)
 	case len(newlyEmitted) > 0:
 		held, aheadHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
-		recordFlipHeld(snapWrap.proxyKey)
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, aheadHashes, now)
 	default:
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
