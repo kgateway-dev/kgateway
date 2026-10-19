@@ -12,9 +12,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-// referenceAheadLocked returns the clusters this build emits that the client
-// has not had for a whole reference-ahead window, and how long until the last
-// window closes. Callers must hold g.mu.
+// referenceAheadLocked returns the clusters this build emits whose
+// reference-ahead window is open, opening one for each cluster the published
+// snapshot lacks, and how long until the last window closes. Callers must hold
+// g.mu.
 //
 // One coherent snapshot does not make Envoy apply CDS before RDS or LDS:
 //
@@ -25,13 +26,18 @@ import (
 //     Any retarget during an un-ACKed CDS update hits this, and no server
 //     option prevents it.
 //
-// ALL mode is immune because destinations are sent long before routes name
-// them.
+// ALL mode needs no window for existing backends, whose clusters were published
+// long before a route names them. A backend created together with the route
+// that names it races there too.
 //
-// Each cluster's window starts at its first send. Being in the published
-// snapshot means installed, not applied, so a rebuild inside the window keeps
-// holding. Every new cluster counts, including ones only a filter calls
-// (ext_authz, ext_proc, rate limit, JWKS).
+// A window opens at now, the publish that first carries the cluster, before the
+// snapshot is installed in the cache. Installation, the gRPC send, Envoy's ACK
+// and Envoy applying and warming the cluster are separate later events that
+// nothing here observes. A send waiting on an un-ACKed CDS response, or slow
+// warming, can outlast the window. A cluster is new by published-snapshot
+// membership, not by delivery, so a rebuild inside the window keeps holding.
+// Every new cluster counts, including ones only a filter calls (ext_authz,
+// ext_proc, rate limit, JWKS).
 //
 // The blackhole cluster is excluded: it is always emitted, and holding on it
 // would delay only configuration that is already broken. A cluster absent from
@@ -85,7 +91,8 @@ func (g *publishGate) referenceAheadLocked(
 }
 
 // holdsReferenceAhead reports whether the reference-ahead hold is configured.
-// With 0, a new cluster and the configuration naming it publish together.
+// When nonpositive, a new cluster and the configuration naming it publish
+// together.
 func (g *publishGate) holdsReferenceAhead() bool { return g.referenceAhead > 0 }
 
 // referenceAheadHoldLocked composes a reference-ahead hold: the build's

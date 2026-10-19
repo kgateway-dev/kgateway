@@ -502,22 +502,30 @@ type Settings struct {
 	// 0 removes immediately and accepts the race.
 	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
 
-	// ClusterReferenceAhead is how long a cluster new to a proxy is sent before
-	// the configuration that names it, in REFERENCED mode only. Routes,
-	// listeners and secrets stay at their current versions until every new
-	// cluster they name has been sent this long. Each cluster's window starts
-	// at its first send. Clusters only a filter calls count too, such as a new
-	// ext_authz cluster.
+	// ClusterReferenceAhead is how long routes, listeners and secrets that name
+	// a cluster new to a proxy are held after the controller first publishes
+	// that cluster to it, in REFERENCED mode only. A cluster is new when the
+	// proxy's published snapshot lacks it. Clusters only a filter calls count
+	// too, such as a new ext_authz cluster.
 	//
 	// One snapshot carrying both is not enough. After a CDS response is sent
 	// its watch stays closed until Envoy ACKs, so a route update in that window
 	// goes out on the open RDS watch first. Any retarget during an un-ACKed CDS
 	// update hits this, and no server option prevents it.
 	//
-	// Only edits that introduce a destination the proxy has never been sent pay
-	// the latency. 0 publishes cluster and route together and accepts that
-	// race. PerClientPublishBudget bounds each hold from its start, so a
-	// misconfigured window or a stream of new clusters cannot pin updates.
+	// The clock starts at the publish that first carries the cluster, just
+	// before the controller installs it in its xDS cache. The send, Envoy's ACK,
+	// and Envoy applying and warming the cluster are later events that nothing
+	// observes. A send held back by an un-ACKed CDS response, or slow warming,
+	// can outlast the window, so it narrows the race rather than closing it.
+	//
+	// Only edits that introduce a cluster the proxy's published snapshot lacks
+	// pay the latency. 0 or a negative value publishes cluster and route
+	// together and accepts that race. With PerClientPublishBudget positive, a
+	// hold ends at most one budget after it began, so a misconfigured window or
+	// a stream of new clusters cannot pin updates. With the budget at 0 or
+	// less, a hold still ends when its windows close, but new clusters that
+	// keep arriving can extend it.
 	ClusterReferenceAhead time.Duration `split_words:"true" default:"2s"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.

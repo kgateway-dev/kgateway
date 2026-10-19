@@ -20,8 +20,8 @@ import (
 // publishGate bounds every per-client publication withhold, because
 // unreadiness may never converge (#14352): a plugin EDS cluster's endpoints
 // row may never appear, and translation backlog can outlast any probe window.
-// The publish budget (KGW_PER_CLIENT_PUBLISH_BUDGET; 0 disables both) sets two
-// bounds:
+// The publish budget (KGW_PER_CLIENT_PUBLISH_BUDGET; nonpositive disables both)
+// sets two bounds:
 //
 //   - first publish (offerColdLocked/firePending): how long a client not yet
 //     published on its current connection waits for referenced clusters;
@@ -39,20 +39,23 @@ import (
 // publishing routes to unready clusters would 503 them, so it is withheld.
 // Unbounded, a permanently unready reference leaves the pod without listeners:
 // it never goes Ready and crash-loops, re-triggering the per-client fan-out on
-// every restart. At budget expiry the latest deferred snapshot, which is
-// internally consistent, publishes so the pod goes Ready; unready routes 503
-// until they cohere.
+// every restart. The budget starts when the client's first deferred build
+// reaches the gate, and resumes across a brief departure (coldEpisodes). At
+// expiry the latest deferred snapshot, which is internally consistent,
+// publishes so the pod gets listeners; unready routes 503 until they cohere.
 //
-// A warm client reported a prior accepted listener version on connect, so it
-// still serves config from its previous stream; a controller-local cache miss
-// cannot prove it cold. Publishing routes to clusters missing from its CDS
-// would NC routes it serves, so it stays withheld past the budget while any is
-// missing (#13868 make-before-break), for at most warmWithholdBound
-// (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, minutes). A cluster missing that long
-// is not restart catch-up, and holding longer would freeze routes, listeners
-// and certificates until the proxy restarts. Reconnects resume the episode. A
-// cold proxy sharing the key (pod locality off) lifts the withhold once it has
-// waited a budget (firePending).
+// A warm client's first listener request on this connection carried a
+// previously accepted version, so it may still serve config from an earlier
+// stream. That version is the only warmth signal and does not prove the config
+// is active, but a controller-local cache miss cannot prove the client cold.
+// Publishing routes to clusters missing from its CDS would NC routes it may
+// serve, so it stays withheld past the budget while any is missing (#13868
+// make-before-break), for at most warmWithholdBound
+// (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, minutes) from the budget's expiry. A
+// cluster missing that long is not restart catch-up, and holding longer would
+// freeze routes, listeners and certificates until the proxy restarts.
+// Reconnects resume the episode. A cold proxy sharing the key (pod locality
+// off) lifts the withhold once it has waited a budget (firePending).
 //
 // Gaps that are only underived CLAs (missingEndpointsReferenced) do not extend
 // the warm withhold: after a budget they have no convergence guarantee, and
@@ -124,7 +127,7 @@ type publishGate struct {
 	dereferenceGrace time.Duration
 
 	// referenceAhead is how long configuration naming a newly-emitted cluster
-	// is held; 0 disables it. Non-zero only with scoped CDS. Written once at
+	// is held; nonpositive disables it. Zero without scoped CDS. Written once at
 	// construction.
 	referenceAhead time.Duration
 
@@ -151,8 +154,9 @@ type publishGate struct {
 	// current connection. Guarded by mu.
 	publishedEDS map[string]map[string]uint64
 	dereferenced map[string]*dereferenceState
-	// aheadSent records, per client, when each cluster in an open
-	// reference-ahead window was first sent. clientDeparted clears it.
+	// aheadSent records, per client, when the gate first published each cluster
+	// in an open reference-ahead window, timed before installation; sending is
+	// not observed. clientDeparted clears it.
 	aheadSent map[string]map[string]time.Time
 }
 
@@ -422,7 +426,8 @@ func (g *publishGate) resolveDeferredLocked(
 	}
 	candidate := snapWrap
 	snapWrap = g.boundCarryLocked(snapWrap, published, time.Now())
-	// Keep de-referenced clusters for their grace so the route update can land first.
+	// Keep de-referenced clusters for their grace, giving the route update time
+	// to land first.
 	now := time.Now()
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, now)
@@ -642,7 +647,9 @@ func (g *publishGate) adjustWarmWithheldLocked(proxyKey string, delta int) {
 // the flip release once per episode. At expiry fireFlipRelease publishes the
 // latest held wrapper with holds disabled, so a cluster that never becomes
 // ready (#14352) pins route/listener/secret updates for at most one budget.
-// budget<=0 holds until the flip resolves. Callers must hold g.mu.
+// With budget<=0 an unready hold lasts until the flip resolves; a hold kept
+// only for reference-ahead windows still releases when they close. Callers
+// must hold g.mu.
 func (g *publishGate) publishHeldLocked(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,

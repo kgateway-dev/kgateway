@@ -101,7 +101,8 @@ func TestReferenceAheadIgnoresTheBlackhole(t *testing.T) {
 }
 
 // TestReferenceAheadWindowIsPerCluster: each cluster is held for a full window
-// from its first send, even once published.
+// from the publish that first carries it, even once the published snapshot has
+// it.
 func TestReferenceAheadWindowIsPerCluster(t *testing.T) {
 	g := newPublishGate(0, false, nil, scopedClustersWithReferenceAhead(time.Minute))
 	published := &envoycache.Snapshot{}

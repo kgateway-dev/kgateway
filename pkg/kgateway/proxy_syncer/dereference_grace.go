@@ -190,8 +190,9 @@ func (g *publishGate) retainsDereferenced() bool { return g.dereferenceGrace > 0
 
 // publishWithTransitionGraces publishes a coherent build, carrying
 // de-referenced clusters through their grace and holding configuration that
-// names a never-sent cluster for its reference-ahead window. A transition alone
-// leaves nothing missing, so it never reaches deferred resolution.
+// names a cluster new to the published snapshot for its reference-ahead
+// window. A transition alone leaves nothing missing, so it never reaches
+// deferred resolution.
 func (g *publishGate) publishWithTransitionGraces(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
