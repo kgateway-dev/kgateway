@@ -4,7 +4,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// ToListener converts a ListenerSet entry to a Gateway listener without copying it. The result
+// ToListener converts a ListenerSet entry to a Gateway listener without deep-copying it. The result
 // aliases the entry's Hostname, TLS and AllowedRoutes, so callers must treat them as read-only,
 // as they already do for listeners taken from Gateway.Spec.Listeners.
 func ToListener(listenerEntry gwv1.ListenerEntry) gwv1.Listener {
