@@ -27,11 +27,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-// TestEmissionSetIncludesAncillaryReferencesTheGateSkips is the counterpart to
-// TestCollectReferencedClusters_ExcludesAncillaryReferences. The two collectors
-// look at the same protos and must disagree about exactly these clusters: the
-// gate excludes them so one plugin bug cannot starve a gateway, emission
-// includes them because Envoy genuinely needs them.
+// TestEmissionSetIncludesAncillaryReferencesTheGateSkips mirrors
+// TestCollectReferencedClusters_ExcludesAncillaryReferences: readiness skips
+// these clusters so one plugin bug cannot starve a gateway; emission keeps them
+// because filters call them.
 func TestEmissionSetIncludesAncillaryReferencesTheGateSkips(t *testing.T) {
 	listeners := listenersWithAncillaryClusters(t)
 
@@ -47,17 +46,16 @@ func TestEmissionSetIncludesAncillaryReferencesTheGateSkips(t *testing.T) {
 	assert.True(t, emission.Filterable(), "no request-time selector is present")
 }
 
-// TestEmissionSetAlwaysIncludesBlackhole: routes whose backends fail resolution
-// target the blackhole cluster, and a healthy build may name it from no proto at
-// all. Filtering it out would remove the cluster those routes land on.
+// TestEmissionSetAlwaysIncludesBlackhole: routes with unresolved backends target
+// blackhole, which a healthy build may name nowhere.
 func TestEmissionSetAlwaysIncludesBlackhole(t *testing.T) {
 	emission := collectReferencedClustersForEmission(envoycache.Resources{}, envoycache.Resources{})
 
 	assert.Contains(t, emission.Names, wellknown.BlackholeClusterName)
 }
 
-// TestEmissionSetCollectsDeclarativeRouteTargets covers the destinations both
-// collectors agree on, through each shape the translator emits.
+// TestEmissionSetCollectsDeclarativeRouteTargets covers each route-target shape
+// the translator emits.
 func TestEmissionSetCollectsDeclarativeRouteTargets(t *testing.T) {
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
 		Name: "listener~80",
@@ -119,12 +117,10 @@ func TestEmissionSetCollectsDeclarativeRouteTargets(t *testing.T) {
 	assert.True(t, emission.Filterable())
 }
 
-// TestEmissionSetReportsRequestTimeSelectors pins the guard on all three arms of
-// the cluster_specifier oneof that choose a destination per request, and on the
-// weighted-cluster entries and mirror policies that read their cluster from a
-// header. Each makes the whole gateway unfilterable, because the candidates it
-// may select are named nowhere: pruning them does not 503, it silently sends
-// every affected request to the plugin's fallback.
+// TestEmissionSetReportsRequestTimeSelectors: the three request-time
+// cluster_specifier arms and header-named weighted or mirror clusters make the
+// gateway unfilterable. Their candidates are named nowhere, and pruning them
+// silently routes to the plugin's fallback.
 func TestEmissionSetReportsRequestTimeSelectors(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -193,9 +189,8 @@ func TestEmissionSetReportsRequestTimeSelectors(t *testing.T) {
 	}
 }
 
-// TestEmissionSetIsFilterableForOrdinaryRoutes is the negative control for the
-// guard: an ordinary declarative route must not trip it, or the filter would
-// never engage anywhere.
+// TestEmissionSetIsFilterableForOrdinaryRoutes: an ordinary route must not trip
+// the guard, or filtering never engages.
 func TestEmissionSetIsFilterableForOrdinaryRoutes(t *testing.T) {
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
 		Name: "listener~80",
@@ -215,10 +210,8 @@ func TestEmissionSetIsFilterableForOrdinaryRoutes(t *testing.T) {
 	assert.Empty(t, emission.Unresolvable)
 }
 
-// TestEmittedClustersEquals: the set rides on GatewayXdsResources, whose Equals
-// decides whether a gateway's xDS projection is recomputed. A difference in
-// either half has to register, or a gateway that becomes unfilterable would keep
-// being filtered.
+// TestEmittedClustersEquals: both halves must count, or a gateway that becomes
+// unfilterable keeps being filtered.
 func TestEmittedClustersEquals(t *testing.T) {
 	base := emittedClusters{Names: map[string]struct{}{"a": {}}}
 
@@ -290,8 +283,7 @@ func listenersWithAncillaryClusters(t *testing.T) envoycache.Resources {
 	return listeners
 }
 
-// A network filter can override the cluster a TcpProxy connects to through
-// filter state, so the TcpProxy's own cluster is not the whole candidate set.
+// Filter-state overrides can select clusters beyond TcpProxy's declared target.
 func TestEmissionSetReportsTcpProxyClusterOverrides(t *testing.T) {
 	tcpProxy := &envoylistenerv3.Filter{
 		Name: envoywellknown.TCPProxy,
@@ -349,10 +341,8 @@ func TestRouteActionClusterSpecifierArmsAreClassified(t *testing.T) {
 	}, arms)
 }
 
-// A typed config the binary cannot decode (its Go type is not linked in, as a
-// downstream plugin's own extension might not be) can name clusters the walk
-// never sees, so it makes the gateway unfilterable instead of letting them be
-// pruned.
+// An undecodable typed_config, such as an unlinked downstream extension, can
+// name clusters the walk never sees, so it makes the gateway unfilterable.
 func TestEmissionSetReportsUndecodableTypedConfig(t *testing.T) {
 	hcm := &envoyhttpv3.HttpConnectionManager{
 		StatPrefix: "http",

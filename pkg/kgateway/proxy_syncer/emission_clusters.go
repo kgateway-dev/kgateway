@@ -84,9 +84,8 @@ func collectReferencedClustersForEmission(routes, listeners envoycache.Resources
 	return out
 }
 
-// extractEmissionClusterCandidates adds every string this message carries
-// directly: singular fields, repeated elements, and both halves of a map entry.
-// Nested messages are reached by the walk, not from here.
+// extractEmissionClusterCandidates collects direct string fields, list elements
+// and map keys/values. The outer walk handles nested messages.
 func extractEmissionClusterCandidates(msg proto.Message, candidates map[string]struct{}) {
 	if msg == nil {
 		return
@@ -133,8 +132,7 @@ func addCandidate(candidates map[string]struct{}, s string) {
 	candidates[s] = struct{}{}
 }
 
-// tcpProxyClusterFilterStateKey is the filter state object a network filter can
-// set to override the cluster a TcpProxy connects to.
+// tcpProxyClusterFilterStateKey names the filter-state override for TcpProxy's cluster.
 const tcpProxyClusterFilterStateKey = "envoy.tcp_proxy.cluster"
 
 // collectUnresolvableSelectors records configuration that chooses a

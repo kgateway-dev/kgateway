@@ -17,29 +17,16 @@ import (
 const goldenCorpusDir = "../translator/gateway/testutils/outputs"
 
 // TestEmissionSetCoversEveryGoldenCorpusReference is the completeness gate for
-// referenced-only cluster discovery. Under-collection is not a degraded
-// optimization, it is a cluster Envoy needs going missing with no route-level
-// symptom, so completeness has to be enforced by CI rather than by review of
-// each new cluster-referencing filter.
+// referenced-only discovery: a missed cluster leaves CDS with no route-level
+// symptom. Expected names come from a plain YAML walk, independent of the
+// production collector; goldens store typed_config decoded. Per fixture:
 //
-// Every golden output is swept. For each, the cluster names the fixture defines
-// are read from its Clusters block, and the strings its Listeners and Routes
-// mention anywhere are collected by a plain walk over the parsed YAML —
-// deliberately not by production code, so a bug in the collector cannot hide
-// itself in the expectation. Goldens store typed_config decoded, so that walk
-// reaches references nested inside filter configuration that a typed traversal
-// would have to know about in advance.
+//   - every defined cluster the config mentions is in the emission set;
+//   - the gating set is a subset of it. Otherwise filtering could leave a gated
+//     cluster absent from CDS, which the gate answers with a warm-client
+//     withhold, turning a rare plugin bug into a routine freeze.
 //
-// Two properties are asserted per fixture:
-//
-//   - No false drops. Every defined cluster the configuration mentions is in the
-//     emission set. This is what fails when a new filter starts naming a cluster
-//     from a message shape the walk does not reach.
-//   - The subset invariant. The gating set is contained in the emission set. An
-//     emission filter is the only way a cluster can be referenced-but-absent from
-//     CDS, which the publication engine treats as a plugin-bug class and answers
-//     with a warm-client withhold; if emission could drop a cluster gating
-//     requires, a rare residue would become a routine freeze.
+// It covers the corpus only, not every extension.
 func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 	goldens := goldenCorpusFiles(t)
 	require.NotEmpty(t, goldens, "golden corpus is empty; the sweep would prove nothing")
@@ -52,11 +39,8 @@ func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 
 		result, err := readGoldenTranslation(path)
 		if err != nil {
-			// A golden this binary cannot parse is a hole in the sweep, not a
-			// pass: the same unresolvable typed_config is opaque to the walk in
-			// production, so a cluster named only inside it would be dropped.
-			// Collected and compared against an explicit list below so a newly
-			// unparseable fixture has to be looked at by a person.
+			// An unparseable golden would silently leave the sweep; collect it so the
+			// check below fails.
 			unparseable = append(unparseable, rel)
 			continue
 		}
@@ -72,8 +56,7 @@ func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 
 			for name := range defined {
 				if _, ok := mentioned[name]; !ok {
-					// Defined but named nowhere: exactly the population
-					// referenced-only emission removes.
+					// Defined but unreferenced: eligible for pruning.
 					continue
 				}
 				referenced++
@@ -96,18 +79,15 @@ func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 	t.Logf("swept %d goldens: %d defined clusters, %d of them named by the generated config",
 		swept, definedClusters, referenced)
 
-	// Every current fixture must be covered. A newly unparseable typed_config
-	// may conceal a cluster reference from the production walk too.
+	// Every fixture must parse: an opaque typed_config can hide cluster names from
+	// the production walk too.
 	require.Empty(t, unparseable,
 		"the completeness sweep must load every golden; inspect any unresolvable typed_config for hidden cluster references")
 }
 
-// TestEmissionSetKeepsAncillaryClusterTheGatingSetSkips pins the two sets apart
-// on the fixture that motivates their separation. The JWKS cluster is an
-// ordinary backend cluster named only from inside a typed_config chain: the
-// gating set must not contain it (a plugin bug there would starve the gateway),
-// and the emission set must (dropping it breaks JWT validation permanently, with
-// no route-level symptom).
+// TestEmissionSetKeepsAncillaryClusterTheGatingSetSkips: the JWKS cluster is
+// named only inside typed_config. Gating on it would let one plugin bug starve
+// the gateway; dropping it breaks JWT validation with no route-level symptom.
 func TestEmissionSetKeepsAncillaryClusterTheGatingSetSkips(t *testing.T) {
 	path := filepath.Join(goldenCorpusDir, "jwt/remote-jwks-async.yaml")
 	if _, err := os.Stat(path); err != nil {
@@ -184,9 +164,8 @@ func goldenResources(result *irtranslator.TranslationResult) (routes, listeners 
 	return envoycache.NewResourcesWithTTL("routes", routeItems), envoycache.NewResourcesWithTTL("listeners", listenerItems)
 }
 
-// definedClusterNames reads the fixture's Clusters block. These are the names an
-// emission filter decides between; a string mentioned in the config that names
-// no cluster is irrelevant to the filter either way.
+// definedClusterNames reads the fixture's Clusters block, the only names
+// filtering decides on.
 func definedClusterNames(t *testing.T, path string) map[string]struct{} {
 	t.Helper()
 	golden := parseGolden(t, path)
@@ -205,10 +184,8 @@ func definedClusterNames(t *testing.T, path string) map[string]struct{} {
 	return names
 }
 
-// stringsMentionedInGolden collects every string anywhere under Listeners and
-// Routes, by walking the parsed YAML rather than the protos. This is the
-// independent oracle: it knows nothing about which message types can carry a
-// cluster reference, so it cannot inherit the collector's blind spots.
+// stringsMentionedInGolden collects every string under Listeners and Routes from
+// the parsed YAML, so it cannot share the proto collector's blind spots.
 func stringsMentionedInGolden(t *testing.T, path string) map[string]struct{} {
 	t.Helper()
 	golden := parseGolden(t, path)

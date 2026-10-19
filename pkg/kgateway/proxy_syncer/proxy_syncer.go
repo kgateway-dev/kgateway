@@ -93,10 +93,9 @@ type GatewayXdsResources struct {
 	// +noKrtEquals derived from Routes and Listeners, whose content-hash versions Equals compares
 	ReferencedClusters map[string]struct{}
 
-	// EmittedClusters is the over-approximating set of cluster names the generated
-	// Routes and Listeners could name, plus any request-time selector that makes
-	// that set unsafe to filter on. ReferencedClusters is always a subset of its
-	// Names; see collectReferencedClustersForEmission.
+	// EmittedClusters over-approximates the cluster names Routes and Listeners could
+	// name, plus selectors that make filtering unsafe. ReferencedClusters is always
+	// a subset of its Names.
 	EmittedClusters emittedClusters
 
 	// Secrets are items in the SDS response payload.
