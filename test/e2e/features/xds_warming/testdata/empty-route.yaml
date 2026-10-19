@@ -10,9 +10,7 @@ spec:
     - "xds-warming-empty.example.com"
   rules:
     - backendRefs:
-        # warming-new exists as a Service (see setup.yaml) but no Deployment
-        # ever backs it here: a permanent zero-endpoint backend, the
-        # steady-state shape of scale-to-zero / ExternalName (#14352). The
-        # route publishes as truth (503) rather than holding anything.
+        # warming-new has a Service (setup.yaml) but no Deployment in this test: a
+        # permanently empty backend (#14352). The route publishes and answers 503.
         - name: warming-new
           port: 8080

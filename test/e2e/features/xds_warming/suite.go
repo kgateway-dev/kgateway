@@ -83,8 +83,7 @@ var proxyObjectMeta = metav1.ObjectMeta{
 type testingSuite struct {
 	*base.BaseTestingSuite
 	activeCase *base.TestCase
-	// invariantBaseline holds the xDS invariant counters as the active test
-	// began, so AfterTest blames the test only for what it added.
+	// invariantBaseline records counters at test start; AfterTest checks growth.
 	invariantBaseline xdsInvariantCounters
 }
 
@@ -98,9 +97,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-// Each test owns its baseline and any resources added during the scenario.
-// BaseTestingSuite deletes the registered manifests without imposing a resource
-// deletion order, including after an assertion fails.
+// BaseTestingSuite deletes each test's manifests in no fixed order, even on failure.
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.invariantBaseline = s.scrapeXdsInvariantCounters()
 	s.activeCase = &base.TestCase{Manifests: []string{setupManifest}}
@@ -121,13 +118,10 @@ func (s *testingSuite) applyManifest(manifest string) {
 	s.ApplyManifests(&base.TestCase{Manifests: []string{manifest}})
 }
 
-// TestRouteUpdateToEmptyBackendPublishesTruth pins stock-parity presence
-// semantics (#14352): retargeting a route to a Service whose EndpointSlice
-// exists but is empty publishes the flip as the backend's truth — the route
-// answers 503 until endpoints arrive, and it must NOT pin route/listener/
-// secret updates behind the empty backend, because "empty forever, on
-// purpose" (scale-to-zero, ExternalName shapes) is a production-proven
-// steady state.
+// TestRouteUpdateToEmptyBackendPublishesTruth pins presence semantics (#14352).
+// A route retargeted to a Service with an empty EndpointSlice publishes and
+// answers 503. Emptiness can be permanent (scale-to-zero), so it must not hold
+// route, listener or secret updates.
 func (s *testingSuite) TestRouteUpdateToEmptyBackendPublishesTruth() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
@@ -142,9 +136,7 @@ func (s *testingSuite) TestRouteUpdateToEmptyBackendPublishesTruth() {
 	s.applyManifest(routeNewManifest)
 	s.eventuallyRouteObserved(routeName)
 
-	// The flip publishes: the new cluster reaches the served CDS and the
-	// route answers 503 (no healthy upstream) — the truthful state of an
-	// endpoint-less backend, not an indefinite hold.
+	// The flip publishes: the new cluster is active and the route answers 503.
 	s.assertActiveClusterIsPresent(newClusterName)
 	s.assertGatewayEventuallyStatus(hostName, http.StatusServiceUnavailable, time.Minute, 500*time.Millisecond)
 
@@ -165,11 +157,9 @@ func (s *testingSuite) TestRouteUpdateToEmptyBackendPublishesTruth() {
 	s.assertGatewayServesConsistently(hostName, newBody, 5*time.Second, time.Second)
 }
 
-// TestWeightedRouteToEmptyBackendServesMixedTruth pins stock-parity presence
-// semantics for a weighted split where one target's EndpointSlice exists but
-// is empty: the split publishes immediately, so requests weighted to the
-// empty target answer 503 while the rest keep serving the old backend —
-// accurate per-target degradation instead of an indefinite hold (#14352).
+// TestWeightedRouteToEmptyBackendServesMixedTruth pins presence semantics for a
+// split with one empty target (#14352). The split publishes at once, and only
+// the empty target's share answers 503.
 func (s *testingSuite) TestWeightedRouteToEmptyBackendServesMixedTruth() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyHTTPRouteCondition(
 		s.Ctx,
@@ -184,9 +174,7 @@ func (s *testingSuite) TestWeightedRouteToEmptyBackendServesMixedTruth() {
 	s.applyManifest(routeWeightedManifest)
 	s.eventuallyRouteObserved(routeName)
 
-	// The split publishes: the empty target's cluster reaches the served CDS
-	// and its share of requests answers 503 while the old backend's share
-	// keeps serving.
+	// The split publishes: the empty target's share answers 503, the rest still serves.
 	s.assertActiveClusterIsPresent(newClusterName)
 	s.assertGatewayEventuallyMixes(hostName, oldBody, http.StatusServiceUnavailable, time.Minute, time.Second)
 
@@ -207,10 +195,9 @@ func (s *testingSuite) TestWeightedRouteToEmptyBackendServesMixedTruth() {
 	s.assertGatewayEventuallyServesAll(hostName, []string{oldBody, newBody}, 30*time.Second, time.Second)
 }
 
-// TestInitialRouteToEmptyBackendServes503UntilReady pins stock-parity
-// presence semantics for a brand-new route whose Service exists with no
-// endpoints: the route publishes and answers 503 (the backend's truth) until
-// endpoints arrive — it does not stay invisible behind a hold (#14352).
+// TestInitialRouteToEmptyBackendServes503UntilReady pins presence semantics for
+// a new route to a Service with no endpoints (#14352). It publishes and answers
+// 503 until endpoints arrive.
 func (s *testingSuite) TestInitialRouteToEmptyBackendServes503UntilReady() {
 	s.applyManifest(startupServiceRouteManifest)
 	s.eventuallyRouteObserved(startupRouteName)
@@ -236,50 +223,38 @@ func (s *testingSuite) TestInitialRouteToEmptyBackendServes503UntilReady() {
 	s.assertGatewayServesConsistently(startupHostName, startupBody, 5*time.Second, time.Second)
 }
 
-// TestSteadyStateEmptyBackendSurvivesControllerRestart pins the #14352
-// failure shape end to end: a shared gateway referencing a backend that
-// legitimately never has endpoints (scale-to-zero / ExternalName shape —
-// here, a Service with no Deployment). The emptiness is a steady state, not
-// a transient race, and the publication path must treat it as truth
-// everywhere — in particular it must never enter a withhold that only
-// converges if the backend gains endpoints:
+// TestSteadyStateEmptyBackendSurvivesControllerRestart pins the #14352 failure
+// shape. A backend that never has endpoints (a Service with no Deployment) must
+// never cause a withhold that ends only when it gains endpoints:
 //
-//  1. a new route to the empty backend publishes and answers 503 — it never
-//     pins route/listener/secret updates behind the empty backend;
-//  2. unrelated route updates keep flowing while the empty reference exists;
-//  3. after a CONTROLLER restart (empty snapshot cache, every client warm
-//     and re-gated at once), proxies resume receiving updates within the
-//     publish budget;
-//  4. a gateway rollout after the restart brings up a fresh proxy pod that
-//     goes Ready instead of starving at "cm init: initializing cds" — the
-//     crash-loop symptom reported in #14352.
+//  1. a route to it publishes and answers 503;
+//  2. unrelated route updates keep flowing;
+//  3. updates resume after a controller restart (empty cache, every client warm);
+//  4. a fresh proxy pod then goes Ready instead of starving at
+//     "cm init: initializing cds", the #14352 crash loop.
 func (s *testingSuite) TestSteadyStateEmptyBackendSurvivesControllerRestart() {
 	s.assertGatewayEventuallyServes(hostName, oldBody)
 
-	// A route to the permanently-empty backend publishes as truth: 503 (no
-	// healthy upstream), not an indefinite hold.
+	// A route to the permanently empty backend publishes and answers 503.
 	s.applyManifest(emptyRouteManifest)
 	s.eventuallyRouteObserved("xds-warming-empty")
 	s.assertGatewayEventuallyStatus("xds-warming-empty.example.com", http.StatusServiceUnavailable, time.Minute, time.Second)
 
-	// Unrelated route updates must keep flowing despite the steady-state
-	// empty reference.
+	// Unrelated route updates must still flow.
 	s.applyManifest(canaryRouteManifest)
 	s.assertGatewayEventuallyServes("xds-warming-canary.example.com", oldBody)
 
-	// Controller restart: the snapshot cache starts empty and every rebuild
-	// carries the steady-state empty gap, so warm clients depend on the
-	// budget-bounded truth publish to ever receive config again.
+	// Restart the controller: empty cache, every client reconnects warm. The empty
+	// backend must not withhold their snapshots.
 	err := s.TestInstallation.Actions.Kubectl().RestartDeploymentAndWait(s.Ctx, "kgateway",
 		"-n", s.TestInstallation.Metadata.InstallNamespace)
 	s.Require().NoError(err, "can restart the kgateway controller")
 
-	// Existing traffic is never interrupted (Envoy keeps its last config).
+	// Existing routes keep serving; Envoy keeps its last config.
 	s.assertGatewayEventuallyServes(hostName, oldBody)
 
-	// The hole-1 regression check: a route change applied AFTER the restart
-	// must become effective. Pre-fix, the warm client was withheld forever
-	// and this route never appeared.
+	// A route applied after the restart must take effect; a withhold waiting for
+	// endpoints would hide it forever.
 	s.applyManifest(postrestartRouteManifest)
 	s.eventuallyRouteObserved("xds-warming-postrestart")
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
@@ -290,42 +265,32 @@ func (s *testingSuite) TestSteadyStateEmptyBackendSurvivesControllerRestart() {
 	}).WithContext(s.Ctx).WithTimeout(2*time.Minute).WithPolling(time.Second).Should(gomega.Succeed(),
 		"a route created after a controller restart must become effective despite a steady-state empty reference")
 
-	// The #14352 crashloop check: a fresh proxy pod (gateway rollout) must
-	// receive a snapshot and go Ready. Pre-fix it starved at cds init and
-	// the rollout never completed.
+	// A fresh proxy pod must get a snapshot and go Ready; in #14352 it starved at
+	// CDS init.
 	err = s.TestInstallation.Actions.Kubectl().RestartDeploymentAndWait(s.Ctx, gatewayName,
 		"-n", gatewayNamespace)
 	s.Require().NoError(err, "a fresh gateway proxy pod must go Ready despite a steady-state empty reference")
 	s.assertGatewayEventuallyServes(hostName, oldBody)
 }
 
-// xdsInvariants are the controller counters that only move on a kgateway
-// bug, with what an increment means:
-//
-//   - kgateway_xds_snapshot_perclient_inconsistent_snapshots_total: a
-//     published snapshot carried a resource nothing in it references, or a
-//     listener named a RouteConfiguration it lacks (recorded because the
-//     install runs with KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK);
-//   - kgateway_envoy_xds_rejects_total: a client rejected a published
-//     response and is serving older config than the control plane believes.
+// xdsInvariants maps controller counters that only grow on a kgateway bug to
+// what growth means. The consistency counter is recorded because the install
+// sets KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK.
 var xdsInvariants = map[string]string{
 	"kgateway_xds_snapshot_perclient_inconsistent_snapshots_total": "the controller published an inconsistent per-client snapshot",
 	"kgateway_envoy_xds_rejects_total":                             "a client NACKed a published xDS response and is serving older config",
 }
 
-// xdsInvariantCounters is one scrape of the xdsInvariants counters, summed
-// over their label sets, and the lines that contributed.
+// xdsInvariantCounters sums a scrape across labels and retains contributing lines.
 type xdsInvariantCounters struct {
-	// startTime is the controller's process_start_time_seconds; counters
-	// reset when it changes.
+	// startTime is process_start_time_seconds; counters reset when it changes.
 	startTime string
 	totals    map[string]float64
 	lines     map[string][]string
 }
 
-// scrapeXdsInvariantCounters reads the xdsInvariants counters from the
-// controller's metrics endpoint. Counters only materialize on their first
-// increment, so an absent counter reads as zero.
+// scrapeXdsInvariantCounters reads controller metrics; absent counters are zero
+// because they appear only on first increment.
 func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
 	metricsService := metav1.ObjectMeta{
 		Name:      "kgateway-metrics",
@@ -368,11 +333,9 @@ func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
 	return counters
 }
 
-// assertNoXdsInvariantViolations fails if any xdsInvariants counter grew
-// during the test. Other suites share the controller and may provoke NACKs
-// on purpose, so only the growth since BeforeTest counts; if the controller
-// restarted in between (its process start time changed), every count since
-// the restart is the test's.
+// assertNoXdsInvariantViolations fails on counter growth since BeforeTest
+// (other suites may provoke NACKs on purpose), or on any count if the
+// controller restarted in between.
 func (s *testingSuite) assertNoXdsInvariantViolations() {
 	now := s.scrapeXdsInvariantCounters()
 	baseline := s.invariantBaseline
@@ -395,9 +358,8 @@ func (s *testingSuite) assertGatewayEventuallyStatus(host string, status int, ti
 	}).WithContext(s.Ctx).WithTimeout(timeout).WithPolling(poll).Should(gomega.Succeed())
 }
 
-// assertGatewayEventuallyMixes asserts that, within a burst of requests, the
-// gateway serves bodySubstring on some and answers status on others — the
-// signature of a weighted split where one target is legitimately empty.
+// assertGatewayEventuallyMixes requires both bodySubstring and status within
+// a request burst, as expected for a split with one empty target.
 func (s *testingSuite) assertGatewayEventuallyMixes(host, bodySubstring string, status int, timeout, poll time.Duration) {
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		var sawBody, sawStatus bool

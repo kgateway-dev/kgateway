@@ -2,29 +2,16 @@
 
 set -euo pipefail
 
-# Verifies the kgateway controller's xDS invariants after a cluster-based test
-# run (conformance, e2e, or manual):
-#
+# Checks the controller's xDS invariant counters after a cluster test run
+# (conformance, e2e or manual). Any nonzero sample is a kgateway bug:
 #   - kgateway_xds_snapshot_perclient_inconsistent_snapshots_total: a published
-#     per-client snapshot carried an EDS or RDS resource nothing in it
-#     references, or a listener naming a RouteConfiguration it lacks.
-#     Recorded only when KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true is set on the
-#     controller (the script warns when it is not).
-#   - kgateway_envoy_xds_rejects_total: a connected client rejected a
-#     published xDS response and is serving older config than the control
-#     plane published. Always recorded.
+#     snapshot had an unreferenced EDS/RDS resource or a listener naming a
+#     missing RouteConfiguration. Recorded only with
+#     KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true; the script warns otherwise.
+#   - kgateway_envoy_xds_rejects_total: a client NACKed a published response.
 #
-# The publication paths maintain both invariants by construction, so any
-# nonzero sample is a kgateway bug.
-#
-# Environment variables:
-#   INSTALL_NAMESPACE - namespace of the kgateway install (default: kgateway-system)
-#   KUBE_CONTEXT      - optional kubectl context
-#
-# Exit codes:
-#   0 - no violations recorded
-#   1 - at least one violation was recorded
-#   2 - could not reach the controller metrics endpoint
+# Environment: INSTALL_NAMESPACE (default kgateway-system), KUBE_CONTEXT (optional).
+# Exit codes: 0 no violations, 1 violations recorded, 2 metrics unreachable.
 
 INSTALL_NAMESPACE="${INSTALL_NAMESPACE:-kgateway-system}"
 KUBECTL=(kubectl)

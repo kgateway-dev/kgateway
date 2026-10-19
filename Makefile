@@ -1374,15 +1374,11 @@ conformance-%:  ## Run only the specified Gateway API conformance test by ShortN
 all-conformance: conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
 
-# Verify the controller's xDS invariants: no client NACKed a published
-# response (always recorded), and no published per-client snapshot carried a
-# resource nothing in it references or a listener naming a missing
-# RouteConfiguration (recorded when the install has
-# KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true on the controller; the script warns
-# otherwise). Safe to chain after any cluster-based run.
-# Example: make conformance xds-consistency-check
+# Fail if the controller recorded a client NACK or an inconsistent snapshot.
+# Consistency needs KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true; the script warns
+# otherwise. Example: make conformance xds-consistency-check
 .PHONY: xds-consistency-check
-xds-consistency-check: ## Fail if clients NACKed responses or inconsistent snapshots were published
+xds-consistency-check: ## Fail on recorded client NACKs or inconsistent snapshots
 	INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) ./hack/xds-consistency-check.sh
 
 #----------------------------------------------------------------------------------
