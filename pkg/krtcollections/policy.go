@@ -500,6 +500,11 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 	// Gateway. ir.ListenerSet.Equals compares the source object by version, so a status-only
 	// write to a ListenerSet rebuilds only its IR and stops there.
 	config.listenerSetIRs = krt.NewCollection(config.ListenerSets, func(kctx krt.HandlerContext, ls *gwv1.ListenerSet) *listenerSetIRRef {
+		// Nothing reads the IR of a ListenerSet under another controller's Gateway, so skip its
+		// policy lookups.
+		if !envoyOwnsParent(kctx, &config, ls) {
+			return nil
+		}
 		return &listenerSetIRRef{listenerSetIR(kctx, config.PolicyIndex, ls)}
 	}, config.KrtOpts.ToOptions("ListenerSetIRs")...)
 	config.listenerSetIRsByParentRef = krtpkg.UnnamedIndex(config.listenerSetIRs, func(in listenerSetIRRef) []TargetRefIndexKey {
@@ -703,6 +708,24 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 		return gwIR
 	}
+}
+
+// envoyOwnsParent reports whether a ListenerSet's parent Gateway has a class that the Envoy
+// controller owns, the check the Envoy Gateway transformation makes. It reads only the Gateway's
+// class name and the class's controller name, so other writes to either do not rebuild the
+// ListenerSet's IR.
+func envoyOwnsParent(kctx krt.HandlerContext, config *GatewayIndexConfig, ls *gwv1.ListenerSet) bool {
+	parent := listenerSetParentRefKeys(ls)[0]
+	className := krt.PartialFetchComparable(kctx, config.Gateways, func(gw *gwv1.Gateway) gwv1.ObjectName {
+		return gw.Spec.GatewayClassName
+	}, krt.FilterKey(parent.Namespace+"/"+parent.Name))
+	if len(className) == 0 {
+		return false
+	}
+	controller := krt.PartialFetchComparable(kctx, config.GatewayClasses, func(gc *gwv1.GatewayClass) gwv1.GatewayController {
+		return gc.Spec.ControllerName
+	}, krt.FilterKey(string(className[0])))
+	return len(controller) > 0 && string(controller[0]) == config.EnvoyControllerName
 }
 
 // listenerSetIR builds a ListenerSet's listeners with the policies attached to them. Whether the

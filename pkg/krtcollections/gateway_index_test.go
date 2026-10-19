@@ -263,6 +263,78 @@ func TestGatewayIRRebuildsOnlyChangedListenerSets(t *testing.T) {
 	g.Expect(viewListeners(deniedSets[0].Listeners)).To(Equal([]listenerView{{Parent: "denied", Port: 8080}}), "a denied ListenerSet still carries its listeners for status")
 }
 
+// TestListenerSetIRSkipsOtherControllers checks that a ListenerSet under another controller's
+// Gateway costs no policy lookups until its Gateway moves to an Envoy class, and that a Gateway
+// change that keeps the class does not rebuild the Gateway's ListenerSets.
+func TestListenerSetIRSkipsOtherControllers(t *testing.T) {
+	g := NewWithT(t)
+	gw := testGateway("gw")
+	h := newGatewayIndexHarness(t, gw, []*gwv1.ListenerSet{testListenerSet("ls", "gw")})
+	other := testGateway("other-gw")
+	other.Spec.GatewayClassName = "other"
+	h.gateways.UpdateObject(other)
+	h.flushGateways()
+
+	// flushGateways re-runs the barrier Gateway (2 lookups); flushListenerSets also rebuilds the
+	// barrier ListenerSet (4 lookups in all).
+	foreign := testListenerSet("foreign", "other-gw")
+	steps := []struct {
+		name    string
+		write   func()
+		flush   func()
+		lookups int64
+	}{
+		{
+			name:    "create a ListenerSet under another controller's Gateway",
+			write:   func() { h.listenerSets.UpdateObject(foreign) },
+			flush:   h.flushListenerSets,
+			lookups: 4,
+		},
+		{
+			name: "status write to that ListenerSet",
+			write: func() {
+				foreign = updated(foreign, func(o *gwv1.ListenerSet) {
+					o.Status.Conditions = []metav1.Condition{{Type: "Accepted", Status: metav1.ConditionTrue}}
+				})
+				h.listenerSets.UpdateObject(foreign)
+			},
+			flush:   h.flushListenerSets,
+			lookups: 4,
+		},
+		{
+			// Only the Gateway re-runs; its ListenerSet is not rebuilt.
+			name: "Gateway spec change that keeps its class",
+			write: func() {
+				gw = bumpGeneration(gw)
+				gw.Spec.Listeners[0].Name = "renamed"
+				h.gateways.UpdateObject(gw)
+			},
+			flush: func() {
+				h.flushGateways()
+				h.flushListenerSets()
+			},
+			lookups: 2 + 2 + 4,
+		},
+	}
+	for _, step := range steps {
+		before := h.lookups.Load()
+		step.write()
+		step.flush()
+		g.Expect(h.lookups.Load()-before).To(Equal(step.lookups), step.name)
+	}
+
+	other = bumpGeneration(other)
+	other.Spec.GatewayClassName = "envoy"
+	h.gateways.UpdateObject(other)
+	g.Eventually(func() []string {
+		out := h.gatewayIR("other-gw")
+		if out == nil {
+			return nil
+		}
+		return slices.Map(out.AllowedListenerSets[wellknown.ListenerSetGVK], func(ls ir.ListenerSet) string { return ls.Name })
+	}).Should(Equal([]string{"foreign"}), "moving the Gateway to an Envoy class builds its ListenerSet")
+}
+
 // gatewayIndexHarness runs the Envoy Gateway transformation over static collections holding
 // one Gateway under test, its ListenerSets and policies, and a barrier Gateway with one
 // ListenerSet and one policy of its own. Writes to the barrier objects re-run only the barrier
@@ -310,10 +382,16 @@ func newGatewayIndexHarness(t *testing.T, gw *gwv1.Gateway, listenerSets []*gwv1
 			},
 		},
 	}, settings.Settings{})
-	config.GatewayClasses = krt.NewStaticCollection(nil, []*gwv1.GatewayClass{{
-		ObjectMeta: metav1.ObjectMeta{Name: "envoy"},
-		Spec:       gwv1.GatewayClassSpec{ControllerName: gwv1.GatewayController(config.EnvoyControllerName)},
-	}}, config.KrtOpts.ToOptions("GatewayClasses")...)
+	config.GatewayClasses = krt.NewStaticCollection(nil, []*gwv1.GatewayClass{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "envoy"},
+			Spec:       gwv1.GatewayClassSpec{ControllerName: gwv1.GatewayController(config.EnvoyControllerName)},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "other"},
+			Spec:       gwv1.GatewayClassSpec{ControllerName: "other-controller"},
+		},
+	}, config.KrtOpts.ToOptions("GatewayClasses")...)
 
 	countRuns := func(config *GatewayIndexConfig) func(krt.HandlerContext, *gwv1.Gateway) *ir.Gateway {
 		transform := GatewaysForEnvoyTransformationFunc(config)
