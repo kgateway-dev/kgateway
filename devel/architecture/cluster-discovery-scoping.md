@@ -63,11 +63,13 @@ Builds that are deferred for an unrelated reason are held the same way. While
 held, the published routes and listeners are still the ones in force, so every
 cluster they name stays published with them, whatever the de-reference grace.
 
-**Removing a destination.** Envoy is delivered CDS before RDS, so dropping a
-cluster in the same snapshot as the route that stopped naming it sends the
-removal first. `KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster published for a
-bounded period after its last reference goes away, so the route update always
-lands first. Set this above worst-case RDS propagation for your fleet.
+**Removing a destination.** With ordered ADS, the default, CDS reaches Envoy
+before RDS, and without it CDS can still arrive first. Dropping a cluster in the
+same snapshot as the route that stopped naming it then applies the removal
+first, and requests on the old route get a 503 NC until the route update lands.
+`KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster published for a bounded period
+after its last reference goes away, giving the route update time to land first.
+Set this above worst-case RDS propagation for your fleet.
 
 Ordered ADS does not substitute for either window: it fixes CDS before RDS,
 which is the wrong order for removals, and it does not close the ACK-skew
