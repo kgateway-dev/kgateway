@@ -192,9 +192,8 @@ func TestRejectionMetricIdentityAndCardinality(t *testing.T) {
 				require.NoError(t, chain.OnStreamRequest(1, req))
 			}
 			// With auth on, the peer's identity wins over every claimed role.
-			// With it off, the stream keeps the gateway it claimed first: the
-			// unique-client callback pins a stream's role, so twenty different
-			// claims on one stream still make one series.
+			// With it off, the unique-client callback pins the first claimed
+			// gateway, so twenty claims on one stream make one series.
 			wantNS, wantName := "fake-ns-0", "fake-gateway-0"
 			if auth {
 				wantNS, wantName = ns, name

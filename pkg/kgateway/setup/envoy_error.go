@@ -76,9 +76,8 @@ func newLogNackCallback(xdsAuth bool) *logNackCallback {
 	}
 }
 
-// OnStreamOpen validates the authenticated stream. Gateway identity is resolved
-// by the preceding unique-client callback on each request, not from the service
-// account name here.
+// OnStreamOpen validates the authenticated stream. The gateway comes from the
+// preceding unique-client callback per request, not the service account name.
 func (l *logNackCallback) OnStreamOpen(ctx context.Context, streamID int64, _ string) error {
 	key := resourceKey{Namespace: "unknown", Name: "unknown"}
 	if l.xdsAuth {
@@ -114,13 +113,11 @@ func (l *logNackCallback) OnStreamRequest(streamID int64, req *discoveryv3.Disco
 	if !ok {
 		return nil
 	}
-	// NewControlPlane chains this callback after unique-client processing,
-	// which rewrites the role to the client's resolved identity: from the
-	// authenticated peer and current pod state with xDS auth on, and from the
-	// role the stream first presented with it off. That is the gateway every
-	// other per-client xDS metric is labeled with. Errors (including identity
-	// drift) stop the chain before us. A role that is not a gateway's keeps the
-	// unknown labels.
+	// NewControlPlane runs unique-client processing first. It rewrites the role
+	// to the resolved identity: the authenticated peer and pod state with xDS auth
+	// on, the stream's first-claimed role with it off. Other per-client xDS
+	// metrics use the same gateway. Its errors, including identity drift, stop the
+	// chain before this callback. Non-gateway roles keep the unknown labels.
 	role := req.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
 	parts := strings.SplitN(role, xds.KeyDelimiter, 4)
 	if xds.IsKubeGatewayCacheKey(role) && len(parts) >= 3 {
@@ -198,8 +195,8 @@ func toLabels(key resourceKey) []metrics.Label {
 	}
 }
 
-// rejectionTypeURL preserves existing labels for known types and bounds all
-// other client-supplied type URLs to a single series.
+// rejectionTypeURL keeps the short-name label of known types and bounds all
+// other client-supplied type URLs to one series.
 func rejectionTypeURL(typeURL string) string {
 	switch typeURL {
 	case resourcev3.ClusterType, resourcev3.EndpointType, resourcev3.RouteType,
