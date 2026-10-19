@@ -72,8 +72,7 @@ type (
 	nackStreamState  struct {
 		sent    map[string]sentNackResponse
 		pending *discoveryv3.DiscoveryRequest
-		// rejections counts, per type, consecutive NACKs of one version on
-		// this stream, for the retry backoff.
+		// rejections counts consecutive NACKs of one version per type, for the backoff.
 		rejections map[string]nackRejections
 	}
 	nackRejections struct {
@@ -85,8 +84,7 @@ type (
 type pendingNack struct {
 	stream   *nackStreamState
 	response sentNackResponse
-	// retryIn is how long the parked NACK waits before its response is
-	// re-sent with the snapshot unchanged.
+	// retryIn is how long the parked NACK waits before its response is re-sent.
 	retryIn time.Duration
 }
 
@@ -98,9 +96,8 @@ var (
 	nackRetryMax  = time.Minute
 )
 
-// nackRetryDelay is the delay before re-sending a response rejected n times in
-// a row: nackRetryBase doubled per rejection after the first, at most
-// nackRetryMax.
+// nackRetryDelay is the delay after n consecutive rejections: nackRetryBase
+// doubled n-1 times, capped at nackRetryMax.
 func nackRetryDelay(n int) time.Duration {
 	delay := nackRetryBase
 	for i := 1; i < n && delay < nackRetryMax; i++ {
@@ -136,8 +133,8 @@ func (s *nackResendSuppressor) onStreamRequest(streamID int64, req *discoveryv3.
 		st = &nackStreamState{sent: make(map[string]sentNackResponse), rejections: make(map[string]nackRejections)}
 		s.streams[streamID] = st
 	}
-	// A callback can be followed by nonce rejection instead of CreateWatch.
-	// Retain at most one association per stream, including on ignored requests.
+	// The server may drop a stale-nonce request without calling CreateWatch, so
+	// replace any earlier association now.
 	delete(s.pending, st.pending)
 	st.pending = nil
 	if req.GetErrorDetail() == nil {
@@ -210,13 +207,11 @@ func (s *nackResendSuppressor) CreateWatch(req *envoycache.Request, sub envoycac
 	}
 	current := snapshot.GetVersion(req.GetTypeUrl())
 	if current == "" || current != rejected {
-		// The snapshot moved since the rejected response: a correction may be
-		// waiting, let the cache answer.
+		// The snapshot moved and may carry a correction; let the cache answer.
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
 	}
-	// Re-sending would deliver the rejected bytes again. Claim the current
-	// version so the cache parks the watch until the snapshot changes, and
-	// re-send them only after retryIn.
+	// Claim the current version to park this watch. Retry the rejected config
+	// after retryIn if no correction arrives.
 	parked := proto.Clone(req).(*discoveryv3.DiscoveryRequest)
 	parked.VersionInfo = current
 	xdsNackResendsSuppressed.Inc(metrics.Label{Name: typeURLLabel, Value: rejectionTypeURL(req.GetTypeUrl())})

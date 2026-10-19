@@ -66,9 +66,8 @@ func newNackHarness(t *testing.T, ordered bool) *adsHarness {
 	return h
 }
 
-// nack rejects resp: the request carries the version the client still holds
-// (accepted, the empty string here), the rejected response's nonce, and an
-// error detail, which is what distinguishes a NACK from an ACK on the wire.
+// nack sends a NACK of resp: accepted as the held version, resp's nonce, and an
+// error detail, which is what marks a NACK on the wire.
 func (h *adsHarness) nack(resp *discoveryv3.DiscoveryResponse, accepted string) {
 	h.t.Helper()
 
@@ -93,10 +92,8 @@ func (h *adsHarness) expectSilence(reason string) {
 	}
 }
 
-// Without the suppressor the cache answers every NACK with the rejected
-// response again: the client is on its old version, the snapshot is the
-// rejected one, the versions differ, so the cache responds. This pins the loop
-// the suppressor exists for, using the plain harness.
+// The plain cache re-sends the rejected response on every NACK, because the
+// NACK's version differs from the snapshot's.
 func TestPlainCacheResendsRejectedResponseOnEveryNack(t *testing.T) {
 	h := newADSHarness(t, true)
 	h.setSnapshot(nackSnapshot("1"))
@@ -117,7 +114,7 @@ func TestNackOfCurrentSnapshotIsNotResent(t *testing.T) {
 			h.subscribe(envoyresource.ClusterType)
 			first := h.receiveType(envoyresource.ClusterType, "1")
 
-			// The NACK parks: nothing is re-sent while the snapshot is unchanged.
+			// The NACK parks; nothing is re-sent.
 			h.nack(first, "")
 			h.expectSilence("NACK of the current version")
 			h.waitForOpenWatches(1)
@@ -126,11 +123,11 @@ func TestNackOfCurrentSnapshotIsNotResent(t *testing.T) {
 			h.nack(first, "")
 			h.expectSilence("repeated NACK of the current version")
 
-			// The correction is delivered as soon as the snapshot changes.
+			// A snapshot change delivers the correction.
 			h.setSnapshot(nackSnapshot("2"))
 			second := h.receiveType(envoyresource.ClusterType, "2")
 
-			// And an ACK of the correction leaves the stream in its normal state.
+			// After an ACK the stream behaves normally.
 			h.ack(second)
 			h.waitForOpenWatches(1)
 			h.setSnapshot(nackSnapshot("3"))
@@ -179,8 +176,7 @@ func TestNackOfNamedTypeIsNotResent(t *testing.T) {
 	h.receiveType(envoyresource.EndpointType, "2")
 }
 
-// A rejection after an accepted version: the client holds version 1, rejects
-// version 2, and must not be flooded with version 2 again; version 3 reaches it.
+// The client holds v1 and rejects v2: no flood of v2, and v3 still arrives.
 func TestNackOfSecondVersionParksUntilThird(t *testing.T) {
 	h := newNackHarness(t, true)
 	h.setSnapshot(nackSnapshot("1"))
@@ -196,8 +192,7 @@ func TestNackOfSecondVersionParksUntilThird(t *testing.T) {
 	h.receiveType(envoyresource.ClusterType, "3")
 }
 
-// nackSnapshot is the harness snapshot (one cluster, its endpoints, one route)
-// with every type at version.
+// nackSnapshot is one cluster, its endpoints and one route, all at version.
 func nackSnapshot(version string) *envoycache.Snapshot {
 	return snapshotFor(allADSVersions(version),
 		[]*envoyclusterv3.Cluster{testCluster(adsTestCluster)},
@@ -213,10 +208,8 @@ func shortenNackRetry(t *testing.T, base, maximum time.Duration) {
 	t.Cleanup(func() { nackRetryBase, nackRetryMax = origBase, origMax })
 }
 
-// A parked NACK is not parked forever: with the snapshot unchanged, the
-// rejected response is offered again after the retry delay, so a transient
-// rejection recovers without waiting for an unrelated change. A snapshot change
-// still answers at once.
+// With the snapshot unchanged, a parked NACK is re-sent after the retry delay so
+// a transient rejection recovers. A snapshot change still answers at once.
 func TestParkedNackIsRetried(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
@@ -239,9 +232,8 @@ func TestParkedNackIsRetried(t *testing.T) {
 	}
 }
 
-// Consecutive rejections of one version double the delay up to the maximum, so
-// a config that keeps failing is re-sent at a bounded rate rather than spun;
-// the delay starts over for a different version.
+// Rejections of one version double the delay up to the maximum, bounding the
+// resend rate. A different version or an ACK resets it.
 func TestNackRetryDelayBacksOff(t *testing.T) {
 	shortenNackRetry(t, time.Second, 10*time.Second)
 	require.Equal(t, time.Second, nackRetryDelay(1))

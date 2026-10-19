@@ -21,8 +21,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 )
 
-// These tests deliberately use the pinned upstream server/cache plus the
-// decorator from #14701. No local cache or SotW implementation is involved.
+// These tests deliberately use the pinned upstream server and cache behind only
+// kgateway's cache wrapper.
 func TestNackSharedKeyKeepsStreamVersionsSeparate(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(strconv.FormatBool(ordered), func(t *testing.T) {
@@ -62,8 +62,8 @@ func TestNackSharedKeyKeepsStreamVersionsSeparate(t *testing.T) {
 			b.setSnapshot(nackSnapshot("2"))
 			b.subscribe(envoyresource.ClusterType)
 			b2 := b.receiveType(envoyresource.ClusterType, "2")
-			// Both servers' streams start their nonce counter at 1, so node/type/
-			// nonce alone cannot distinguish which version was actually rejected.
+			// Both streams start nonces at 1, so node/type/nonce cannot identify the
+			// rejected version.
 			require.Equal(t, a1.Nonce, b2.Nonce)
 			b.nack(b2, "")
 			b.expectSilence("B rejected v2")
