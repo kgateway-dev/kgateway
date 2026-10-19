@@ -102,14 +102,14 @@ func (f *sourceFixture) hosts(cla string) (int, bool) {
 // Publishing their synthesized empty CLAs would let Envoy finish initializing
 // with zero hosts behind them, so ext_authz denies every request until the row
 // lands; leaving them out makes Envoy wait for them, as it did before the
-// placeholders existed. A cluster no backend derives endpoints for (an EC2
-// Backend with discovery disabled) never gets a row, so its empty CLA is its
-// steady state and still publishes, letting it activate immediately.
+// placeholders existed. A cluster no backend derives endpoints for (a plugin
+// that contributes no endpoint rows) gets no row until a source appears, so
+// its empty CLA still publishes, letting it activate immediately.
 func TestFirstPublishLeavesOutRowsStillBeingBuilt(t *testing.T) {
 	f := newSourceFixture(t, stubPriorXDS{has: false},
 		"routed",
-		[]string{"routed", "authz", "ec2-no-discovery"},
-		[]string{"routed", "authz"}, // ec2-no-discovery has no endpoints source
+		[]string{"routed", "authz", "no-endpoints-source"},
+		[]string{"routed", "authz"}, // no-endpoints-source has no endpoints source
 		[]string{"routed"},          // the authz row has not been built yet
 	)
 
@@ -121,8 +121,8 @@ func TestFirstPublishLeavesOutRowsStillBeingBuilt(t *testing.T) {
 
 	_, authzPublished := f.hosts("authz")
 	assert.False(t, authzPublished, "a row still being built is left out, so Envoy waits for it")
-	n, ec2Published := f.hosts("ec2-no-discovery")
-	assert.True(t, ec2Published, "a cluster with no endpoints source publishes its empty CLA")
+	n, sourcelessPublished := f.hosts("no-endpoints-source")
+	assert.True(t, sourcelessPublished, "a cluster with no endpoints source publishes its empty CLA")
 	assert.Zero(t, n)
 
 	f.rows.UpdateObject(endpointsForClient(f.ucc, "authz", 200))

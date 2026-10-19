@@ -57,12 +57,11 @@ func deferredWrapperV(version string) XdsSnapWrapper {
 }
 
 // deferredMissingEndpointsWrapperV builds a deferred wrapper whose only gap is
-// a referenced cluster with no derived CLA — the steady-state shape of an EDS
-// cluster whose plugin has no endpoints source, such as an AWS EC2 Backend with
-// discovery disabled (#14352): every referenced cluster is present in CDS, but
-// one's ClusterLoadAssignment was never derived (a synthesized empty stands
-// in). A Service without EndpointSlices, ExternalName included, derives an
-// empty CLA instead and is not a gap at all.
+// a referenced cluster with no derived CLA, such as an EDS cluster from a
+// plugin that contributes no endpoint rows: every referenced cluster is
+// present in CDS, but one's ClusterLoadAssignment was never derived (a
+// synthesized empty stands in). A Service without EndpointSlices, ExternalName
+// included, derives an empty CLA instead and is not a gap at all.
 func deferredMissingEndpointsWrapperV(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)

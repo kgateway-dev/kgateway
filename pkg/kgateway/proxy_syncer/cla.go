@@ -167,11 +167,15 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 // HasEndpointsSource reports whether some backend derives endpoints for the
 // named CLA. When it does, a client without a row for that CLA is waiting for
 // its per-client row to be built (every reconnect rebuilds them); when it
-// does not, no row will ever come and an empty CLA is the cluster's steady
-// state (an EC2 Backend with discovery disabled, #14352). It registers a KRT
-// dependency on that name, so a source appearing or disappearing recomputes
-// the caller. Without a source index (test doubles) it reports true: the safe
-// reading of an unknown backend is that its endpoints are on their way.
+// does not, no row comes until a source appears, and the empty CLA is the
+// cluster's state until then. Every upstream EDS backend has a source, even
+// with no endpoints (a Service without EndpointSlices, an EDS ServiceEntry
+// without workloads, an EC2 Backend not yet discovered; one with discovery
+// disabled is an errored cluster), so a cluster without one comes from a
+// plugin that contributes no endpoint rows. It registers a KRT dependency on
+// that name, so a source appearing or disappearing recomputes the caller.
+// Without a source index (test doubles) it reports true: the safe reading of
+// an unknown backend is that its endpoints are on their way.
 func (ie *PerClientEnvoyEndpoints) HasEndpointsSource(kctx krt.HandlerContext, claName string) bool {
 	if ie.sources == nil {
 		return true
