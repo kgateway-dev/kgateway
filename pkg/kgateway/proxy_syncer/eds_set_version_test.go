@@ -19,9 +19,7 @@ func edsSetVersionItems(names ...string) map[string]envoycachetypes.ResourceWith
 	return envoycache.NewResourcesWithTTL("", items).Items
 }
 
-// A set published through a filter is versioned exactly as the same set
-// published directly: the version is a function of the published rows, not
-// of the path that published them.
+// Direct and filtered publication must version the same row set identically.
 func TestEndpointSetVersionIsPathIndependent(t *testing.T) {
 	rows := map[string]uint64{"a": 11, "b": 22, "c": 33}
 
@@ -41,8 +39,7 @@ func TestEndpointSetVersionIsOrderIndependent(t *testing.T) {
 	require.Equal(t, v1, v2)
 }
 
-// A row that changes behind a filter still moves the filtered version, and a
-// row that recovers its inputs restores the version it had.
+// A changed row moves the filtered version; restoring it restores the version.
 func TestEndpointSetVersionFollowsRowHashes(t *testing.T) {
 	items := edsSetVersionItems("a", "c")
 	before := endpointSetVersion(endpointSetHashes(items, map[string]uint64{"a": 11, "b": 22, "c": 33}, nil))
@@ -52,8 +49,7 @@ func TestEndpointSetVersionFollowsRowHashes(t *testing.T) {
 	require.Equal(t, before, restored, "restoring the row must restore the version")
 }
 
-// Contribution precedence: a built row wins over a carried hash, a carried
-// hash wins over the name hash, and anything else is versioned by name.
+// Precedence: built row hash, then carried hash, then name hash.
 func TestEndpointSetHashesPrecedence(t *testing.T) {
 	items := edsSetVersionItems("built", "carried", "synth")
 	rows := map[string]uint64{"built": 1, "unpublished": 9}
@@ -79,14 +75,12 @@ func TestEndpointSetHashesPrecedence(t *testing.T) {
 	require.Equal(t, uint64(1), withoutCarry["built"])
 }
 
-// A carried assignment restored with the hash it was published under gives
-// the composed set the version the directly built set would have.
+// Reusing carried contributions must match the directly built set's version.
 func TestEndpointSetVersionCarryRestoresPublishedVersion(t *testing.T) {
 	publishedRows := map[string]uint64{"old": 11, "other": 22}
 	published := endpointSetVersion(endpointSetHashes(edsSetVersionItems("old", "other"), publishedRows, nil))
 
-	// The candidate rebuilt only "other"; "old" is copied from the published
-	// snapshot and remembered under its published contribution.
+	// Only "other" was rebuilt; "old" is carried with its published contribution.
 	lastPublished := func(name string) (uint64, bool) {
 		h, ok := publishedRows[name]
 		return h, ok
@@ -108,9 +102,8 @@ func TestVersionEndpointSetKeepsItems(t *testing.T) {
 	require.Equal(t, res.Items, out.Items)
 }
 
-// The gate remembers the contributions of the EDS set it last wrote for a
-// client, answers carry-forward lookups from them, and forgets them with the
-// client's snapshot.
+// The gate remembers each client's last written EDS contributions for
+// carry-forward and forgets them on reclaim.
 func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
 	gate := newPublishGate(0, false, nil)
 	cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)

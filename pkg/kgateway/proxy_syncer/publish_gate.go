@@ -168,8 +168,8 @@ type publishGate struct {
 	// currentBuild returns a client's current row, or nil, for beginBuildLocked.
 	// ProxySyncer.Start sets it before first use; nil skips the check.
 	currentBuild func(proxyKey string) *XdsSnapWrapper
-	// publishedEDS remembers, per client, the contribution each assignment was
-	// published under in the snapshot now in the cache (eds_set_version.go).
+	// publishedEDS holds each client's contributions as last installed on its
+	// current connection. Guarded by mu.
 	publishedEDS map[string]map[string]uint64
 }
 
@@ -296,13 +296,10 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 		if errors.Is(err, errConnectionSuperseded) {
 			return err // computed for the client's previous connection
 		}
-		// go-control-plane installs the snapshot before answering the
-		// node's open watches, and only answering can fail (the context
-		// ended). Later requests are answered from the installed snapshot,
-		// so the bookkeeping below follows installation: an error here must
-		// not leave an episode, gauge or flip bound behind for a snapshot
-		// the cache already serves, and the remembered EDS contributions
-		// must describe the installed set.
+		// go-control-plane installs the snapshot before answering watches, and only
+		// answering can fail. Later requests are served from the installed snapshot,
+		// so the bookkeeping below (episodes, gauges, flip bounds, EDS contributions)
+		// follows installation even on that error.
 		if installed, getErr := cache.GetSnapshot(proxyKey); getErr != nil || installed != envoycache.ResourceSnapshot(snap) {
 			return err
 		}
@@ -888,7 +885,7 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 		return snap
 	}
 	settled := *snap
-	// setSnapshot assigns the final version using the remembered row hashes.
+	// Version is unset; setSnapshot assigns it.
 	settled.Resources[envoycachetypes.Endpoint] = envoycache.Resources{Items: items}
 	return &settled
 }

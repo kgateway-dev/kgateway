@@ -303,8 +303,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			Version: fmt.Sprintf("%s-carry-%d", newClusters.Version, carryHash),
 			Items:   clusterItems,
 		}
-		// The carried assignments keep the contribution they were published
-		// under, so the composed set is versioned like a direct publication.
+		// Reuse carried contributions so direct and composed publication agree.
 		edsHashes = endpointSetHashes(endpointItems, snapWrap.endpointHashes, lastPublished)
 		composed.Resources[envoycachetypes.Endpoint] = envoycache.Resources{
 			Version: endpointSetVersion(edsHashes),

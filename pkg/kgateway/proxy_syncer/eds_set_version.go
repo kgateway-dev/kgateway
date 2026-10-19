@@ -11,35 +11,24 @@ import (
 
 // EDS set versioning.
 //
-// go-control-plane answers a watch only when the snapshot version differs
-// from the version the client last accepted. The EDS version must therefore
-// move exactly when the set of assignments a client is served moves: a
-// version that moves without the content pushes identical endpoints to every
-// client, and a version that stays while the content moves parks the client
-// on stale endpoints. Every publication path derives the version from the
-// same function of the same inputs, so equal published sets get equal
-// versions. No proto is digested for this.
+// go-control-plane answers a watch only on a version change, so the EDS version
+// must move exactly when the served assignment set does. A spurious move pushes
+// identical endpoints to every client; a missed one leaves clients on stale
+// endpoints. All publication paths use this function, digesting no protos:
 //
-//   - A row published directly contributes its row hash (EndpointsHash).
-//   - An assignment carried forward from the previously published snapshot
-//     contributes the hash it was last published under, so a row that returns
-//     with unchanged inputs restores the version it had.
-//   - A synthesized empty assignment contributes a hash of its name.
+//   - a built row contributes its EndpointsHash;
+//   - a carried assignment contributes the hash it was published under, so
+//     carrying does not move the version;
+//   - a synthesized empty assignment contributes a hash of its name.
 //
-// The fold is an XOR, so it is independent of iteration order and, when every
-// row is published, equal to the version string this code produced before
-// filtering and carry-forward were versioned separately. Two contributions
-// cancel only under a 64-bit collision, as before: row hashes and name hashes
-// both include the resource name. An input-only change (a policy generation
-// bump that leaves the built assignment unchanged) still moves the version;
-// removing that push would need a content digest per row, which this
-// deliberately avoids.
+// The XOR fold is order-independent and matches the unfiltered version when
+// every row is published. Hashes include the resource name, so contributions
+// cancel, or different sets share a version, only under a 64-bit collision. An
+// input-only change (such as a policy generation bump) still moves the version
+// and pushes identical endpoints; avoiding that needs per-row content digests.
 
-// endpointSetHashes maps each assignment name in items to its version
-// contribution. rowHashes holds the hashes of the rows built for this client,
-// keyed by assignment name. carried, when non-nil, answers for assignments
-// copied from the previously published snapshot. Anything else is a
-// synthesized assignment, versioned by its name.
+// endpointSetHashes returns each item's contribution: its row hash, else the
+// carried hash (carried may be nil), else a hash of its name.
 func endpointSetHashes(items map[string]envoycachetypes.ResourceWithTTL, rowHashes map[string]uint64, carried func(name string) (uint64, bool)) map[string]uint64 {
 	out := make(map[string]uint64, len(items))
 	for name := range items {
