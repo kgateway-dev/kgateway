@@ -83,11 +83,8 @@ func snapshotPerClient(
 		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
 		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
 
-		// Annotate missing routing targets and underived CLAs for the bounded
-		// publication gate. A derived empty CLA is backend truth, not a gap.
-		// A nil row means its transform has not run yet (the cluster transform
-		// also returns nil while no backend exists), so there is nothing to
-		// publish.
+		// A nil row has not been computed yet (the cluster transform also returns
+		// nil with no backends), so there is nothing to publish.
 		if clustersForUcc == nil || clientEndpointResources == nil {
 			logger.Debug("per-client inputs not ready; deferring snapshot", "client", ucc.ResourceName())
 			return nil
@@ -111,9 +108,9 @@ func snapshotPerClient(
 			clusterResources.Items,
 			clustersForUcc.erroredClusters,
 		)
-		// Keep EDS resources aligned with the EDS clusters in the same CDS snapshot.
-		// Envoy's named EDS requests are induced by CDS; stale CLAs for clusters no
-		// longer present in CDS can make go-control-plane suppress ADS responses.
+		// Envoy requests CLAs by the names CDS gives it, and go-control-plane
+		// withholds an ADS response carrying an unrequested CLA, so EDS must match
+		// this snapshot's CDS.
 		bootstrapEndpoint := ""
 		if ucc.KnowsLocalCluster {
 			bootstrapEndpoint, _, _ = ucc.LocalClusterInfo()
@@ -131,9 +128,8 @@ func snapshotPerClient(
 
 		snap.missingReferenced = missingClusters
 		snap.missingEndpointsReferenced = missingEndpointClusters
-		// Only synthesized CLAs whose rows are on their way are settled against
-		// what the client holds. A synthesized CLA with no endpoints source is
-		// the cluster's steady state and publishes like a derived empty one.
+		// Settle only placeholders whose rows are on their way. A source-less
+		// synthesized CLA is the cluster's steady state and publishes as-is.
 		for name := range synthesizedEndpoints {
 			if name == bootstrapEndpoint || endpoints.HasEndpointsSource(kctx, name) {
 				snap.synthesizedEndpoints = append(snap.synthesizedEndpoints, name)
@@ -316,9 +312,8 @@ func addRouteConfigurationTargets(routeConfig *envoyroutev3.RouteConfiguration, 
 	}
 }
 
-// addFilterChainTargets adds the targets of the filter chain's TCP proxies and
-// of any route configuration its HTTP connection managers inline; a manager
-// that uses RDS contributes through the route configurations instead.
+// addFilterChainTargets collects TCP targets and inline HTTP route targets.
+// RDS targets come from the separate route configurations.
 func addFilterChainTargets(filterChain *envoylistenerv3.FilterChain, referenced map[string]struct{}) {
 	for _, filter := range filterChain.GetFilters() {
 		typedConfig := filter.GetTypedConfig()
@@ -377,20 +372,12 @@ func findMissingReferencedClusters(
 	return missingClusters
 }
 
-// findMissingReferencedEndpointResources reports the referenced EDS clusters
-// whose ClusterLoadAssignment was not derived by the per-client endpoints
-// collection — i.e. their CLA in the snapshot is a synthesized empty
-// placeholder (see filterEndpointResourcesForClusters). Whether such a
-// backend has endpoints is UNKNOWN — per-client derivation lag for kube
-// Services (whose endpoints transform emits a row for every resolvable
-// port, even sliceless ones like ExternalName), or a plugin that
-// contributed an EDS cluster without an endpoints row — which is what
-// warrants deferral. PRESENCE, not contents, is the test: a derived CLA
-// with zero usable endpoints is the backend's known truth (scale-to-zero
-// and crashlooping backends are steady states, not races — #14352) and must
-// not defer the snapshot; this matches the existence semantics of the
-// whole-snapshot gate this replaced, the behavior production configs are
-// built against.
+// findMissingReferencedEndpointResources lists referenced EDS clusters whose
+// CLA is a synthesized placeholder because no row was derived. Their
+// endpoints are unknown, so they defer: derivation is lagging (a kube
+// Service, even ExternalName, derives a row per resolvable port), or a plugin
+// never supplies one. A derived empty CLA is known truth and must not defer:
+// scale-to-zero and crashlooping backends are steady states (#14352).
 func findMissingReferencedEndpointResources(
 	referencedClusters map[string]struct{},
 	clusters map[string]envoycachetypes.ResourceWithTTL,
@@ -511,11 +498,10 @@ func filterEndpointResourcesForClusters(clusters envoycache.Resources, endpoints
 	return envoycache.NewResourcesWithTTL(endpoints.Version+"-"+strconv.FormatUint(namesHash, 10), filteredEndpoints), synthesized
 }
 
-// endpointsMatchClusters reports, without allocating, whether endpoints holds
-// exactly one CLA for each EDS cluster in clusters and for bootstrapEndpoint,
-// and nothing else: the common case, in which there is nothing to filter or
-// synthesize. It gives up (returns false) on anything unusual, such as an EDS
-// service_name alias, and leaves that to the general path.
+// endpointsMatchClusters reports, without allocating, the common case: one
+// CLA per EDS cluster plus bootstrapEndpoint, and nothing to filter or
+// synthesize. It returns false on anything unusual, such as a service_name
+// alias, leaving it to the general path.
 func endpointsMatchClusters(clusters envoycache.Resources, endpoints envoycache.Resources, bootstrapEndpoint string) bool {
 	required := 0
 	for name, item := range clusters.Items {

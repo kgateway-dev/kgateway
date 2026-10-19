@@ -21,8 +21,8 @@ import (
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
-// sourceFixture wires snapshotPerClient to static collections and the gate the
-// way ProxySyncer.Start does, with an explicit set of backend endpoint sources.
+// sourceFixture mirrors Start's snapshot and gate wiring with explicit backend
+// endpoint sources.
 type sourceFixture struct {
 	ucc       ir.UniquelyConnectedClient
 	uccs      krt.StaticCollection[ir.UniquelyConnectedClient]
@@ -96,15 +96,11 @@ func (f *sourceFixture) hosts(cla string) (int, bool) {
 	return endpointCount(rs.(*envoycache.Snapshot), cla)
 }
 
-// TestFirstPublishLeavesOutRowsStillBeingBuilt: a new proxy's first snapshot
-// can publish as soon as its route targets' rows exist, while rows for other
-// clusters (a filter-called ext_authz backend, say) are still being built.
-// Publishing their synthesized empty CLAs would let Envoy finish initializing
-// with zero hosts behind them, so ext_authz denies every request until the row
-// lands; leaving them out makes Envoy wait for them, as it did before the
-// placeholders existed. A cluster no backend derives endpoints for (a plugin
-// that contributes no endpoint rows) gets no row until a source appears, so
-// its empty CLA still publishes, letting it activate immediately.
+// A first publish may precede rows for filter-called clusters such as ext_authz.
+// Their placeholders are left out so Envoy waits for the rows; publishing them
+// empty would make ext_authz deny every request until its row lands. A cluster
+// with no endpoints source (a plugin that contributes no endpoint rows) still
+// publishes its empty CLA, so it activates at once.
 func TestFirstPublishLeavesOutRowsStillBeingBuilt(t *testing.T) {
 	f := newSourceFixture(t, stubPriorXDS{has: false},
 		"routed",
@@ -130,11 +126,9 @@ func TestFirstPublishLeavesOutRowsStillBeingBuilt(t *testing.T) {
 		"the derived CLA publishes as soon as the row lands")
 }
 
-// TestReconnectWithoutClientStateKeepsFilterClusterEndpoints: a deployment that
-// does not wire XDSClientState cannot tell a reconnecting proxy from a new one.
-// Leaving out rows still being built must not depend on that, or every
-// reconnect would publish explicit empty CLAs over the endpoints the proxy
-// holds for clusters whose rows are rebuilt last.
+// Without XDSClientState a reconnect looks cold. Placeholders for rows being
+// rebuilt must still be left out, or every reconnect would send empty CLAs over
+// the endpoints the proxy holds.
 func TestReconnectWithoutClientStateKeepsFilterClusterEndpoints(t *testing.T) {
 	f := newSourceFixture(t, nil,
 		"routed",
@@ -144,7 +138,7 @@ func TestReconnectWithoutClientStateKeepsFilterClusterEndpoints(t *testing.T) {
 	)
 	require.Eventually(t, func() bool { n, ok := f.hosts("authz"); return ok && n == 1 }, 2*time.Second, 5*time.Millisecond)
 
-	// Stream reset: the client's rows are dropped and the cache entry retained.
+	// Reset the stream: drop client rows but retain the cache entry.
 	f.uccs.DeleteObject(f.ucc.ResourceName())
 	f.rows.DeleteObject(endpointsForClient(f.ucc, "routed", 0).ResourceName())
 	f.rows.DeleteObject(endpointsForClient(f.ucc, "authz", 0).ResourceName())

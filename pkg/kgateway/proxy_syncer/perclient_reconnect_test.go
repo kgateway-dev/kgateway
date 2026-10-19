@@ -1,10 +1,8 @@
 package proxy_syncer
 
-// Tests for publication across a client reconnect. When a client's last stream
-// closes and a new one opens, every per-client row is rebuilt from scratch.
-// The per-backend endpoints collection recomputes every backend for every
-// client, so it usually lands last; until it does, the client's EDS row lacks
-// CLAs that exist. These tests stall that collection to hold the window open.
+// A reconnect rebuilds all client rows. The endpoints fan-out (every backend for
+// every client) usually lands last, leaving CLAs briefly missing; these tests
+// stall it to hold that window open.
 
 import (
 	"context"
@@ -33,8 +31,7 @@ type reconnectBackend struct{ name string }
 
 func (b reconnectBackend) ResourceName() string { return b.name }
 
-// recordingCache records every snapshot published to one node, on top of the
-// package's consistency oracle.
+// recordingCache wraps the consistency oracle and records one node's snapshots.
 type recordingCache struct {
 	envoycache.SnapshotCache
 	node      string
@@ -91,8 +88,7 @@ func newReconnectFixture(t *testing.T, routeTargets []string, backendNames []str
 	}
 	f.backends = krt.NewStaticCollection[reconnectBackend](nil, initial)
 
-	// CDS, like the production per-client transform: one row per client built
-	// from every backend, complete as soon as it exists.
+	// Mirror production CDS: a complete backend row for each client.
 	perClient := krt.NewCollection(f.uccs, func(kctx krt.HandlerContext, c ir.UniquelyConnectedClient) *clustersWithErrors {
 		var rows []uccWithCluster
 		for _, b := range krt.Fetch(kctx, f.backends) {
@@ -100,8 +96,7 @@ func newReconnectFixture(t *testing.T, routeTargets []string, backendNames []str
 		}
 		return assemblePerClientClusters(c, rows)
 	})
-	// EDS, shaped like NewPerClientEnvoyEndpoints: one transform per backend
-	// that builds a row for every client.
+	// Mirror NewPerClientEnvoyEndpoints: each backend builds rows for all clients.
 	endpointRows := krt.NewManyCollection(f.backends, func(kctx krt.HandlerContext, b reconnectBackend) []UccWithEndpoints {
 		clients := krt.Fetch(kctx, f.uccs)
 		if f.stall.Load() && len(clients) > 0 {
@@ -149,15 +144,14 @@ func (f *reconnectFixture) setRoutes(clusters ...string) {
 	})
 }
 
-// reconnect removes the client, runs whileAway, and brings the client back with
-// the endpoints collection stalled, returning the publish count at reconnect.
+// reconnect drops the client, runs whileAway, and reconnects with endpoints
+// stalled. It returns the publish count at reconnect.
 func (f *reconnectFixture) reconnect(t *testing.T, whileAway func()) int {
 	t.Helper()
 	f.uccs.DeleteObject(f.ucc.ResourceName())
 	require.Eventually(t, func() bool { return len(f.snapshots.List()) == 0 }, 2*time.Second, 5*time.Millisecond)
-	// Let the endpoint transform observe departure before stalling its rebuild.
-	// Otherwise a quick reconnect can retain the old rows and skip the missing
-	// endpoint window this fixture is meant to exercise.
+	// Wait for the endpoint rows to go before stalling, or a quick reconnect can
+	// reuse them and skip the window under test.
 	require.Eventually(t, func() bool { return len(f.endpoints.List()) == 0 }, 2*time.Second, 5*time.Millisecond)
 	if whileAway != nil {
 		whileAway()
@@ -165,8 +159,7 @@ func (f *reconnectFixture) reconnect(t *testing.T, whileAway func()) int {
 	mark := f.cache.publishCount()
 	f.stall.Store(true)
 	f.uccs.UpdateObject(f.ucc)
-	// Wait until the rebuilt client's snapshot has been built while its CLA rows
-	// were still missing, which is the window under test.
+	// Wait for a rebuilt snapshot that still lacks CLA rows.
 	require.Eventually(t, func() bool {
 		wraps := f.snapshots.List()
 		return len(wraps) == 1 && len(wraps[0].synthesizedEndpoints) > 0
@@ -199,10 +192,8 @@ func (f *reconnectFixture) served(t *testing.T) *envoycache.Snapshot {
 	return snap.(*envoycache.Snapshot)
 }
 
-// While a reconnected client's CLA rows are rebuilt, nothing published may
-// replace endpoints it holds with an empty CLA: not for the route target, and
-// not for a cluster only a filter calls (ext_authz, ext_proc, JWKS), which is
-// never a routing target and so never defers the snapshot.
+// While CLA rows rebuild, no publish may replace held endpoints with an empty
+// CLA, including for filter-only clusters, which never defer the snapshot.
 func TestReconnectWhileEndpointRowsRebuildKeepsClientEndpoints(t *testing.T) {
 	f := newReconnectFixture(t, []string{"cluster-a"}, []string{"cluster-a", "cluster-authz"})
 	require.Eventually(t, func() bool {
@@ -239,11 +230,9 @@ func TestReconnectWhileEndpointRowsRebuildKeepsClientEndpoints(t *testing.T) {
 	assertSnapshotCoherent(t, served)
 }
 
-// A client that returns after a route change is not resolved against the
-// snapshot published before it left: that entry can predate config the client
-// received from another controller replica. Holding the flip against it would
-// republish the old route, and carrying from it would resurrect the deleted
-// backend with its old endpoints.
+// A reconnect is not resolved against the old cache entry, which can predate
+// config from another replica. Holding or carrying from it would restore the old
+// route or the deleted backend.
 func TestReconnectDoesNotResolveAgainstPreviousConnection(t *testing.T) {
 	f := newReconnectFixture(t, []string{"cluster-a"}, []string{"cluster-a", "cluster-b"})
 	require.Eventually(t, func() bool {
@@ -273,9 +262,8 @@ func TestReconnectDoesNotResolveAgainstPreviousConnection(t *testing.T) {
 	assertSnapshotCoherent(t, served)
 }
 
-// A published client whose CLA row for a live cluster disappears keeps the
-// endpoints already published for it, instead of receiving an empty CLA; a
-// derived empty CLA is still the backend's truth and publishes as-is.
+// Preserve published endpoints when their row disappears. A derived empty CLA
+// still publishes as known backend state.
 func TestPublishedClientKeepsEndpointsWhenRowIsNotDerived(t *testing.T) {
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})

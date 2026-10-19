@@ -790,9 +790,8 @@ func TestNormalizeGatewayRole(t *testing.T) {
 	}
 }
 
-// priorVersionRequest builds a listener request on the shared test role.
-// version is the version the proxy reports holding; nonce is empty on a
-// stream's initial request for a type and set on follow-ups (ACKs and NACKs).
+// priorVersionRequest builds a listener request reporting version. nonce is
+// empty on a stream's initial request and set on ACKs and NACKs.
 func priorVersionRequest(role, version, nonce string) *envoy_service_discovery_v3.DiscoveryRequest {
 	return typedPriorVersionRequest(role, resource.ListenerType, version, nonce)
 }
@@ -811,10 +810,8 @@ func typedPriorVersionRequest(role, typeURL, version, nonce string) *envoy_servi
 	}
 }
 
-// Only a held listener version marks a key warm. A proxy whose previous stream
-// broke while its clusters were warming holds a cluster version but no
-// listeners: it serves nothing, so it must not be withheld like a proxy that
-// is serving config.
+// Only a held listener version marks a key warm: a proxy whose stream broke
+// while clusters were warming holds no listeners and serves nothing.
 func TestUniqueClientsPriorXDSVersionNeedsHeldListeners(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
 	g := NewWithT(t)
@@ -834,9 +831,8 @@ func TestUniqueClientsPriorXDSVersionNeedsHeldListeners(t *testing.T) {
 	g.Expect(state.HasPriorXDSVersion(role)).To(BeTrue(), "a held listener version is warm")
 }
 
-// A key is warm only when a stream's initial request reports a version it
-// already holds; follow-up requests never mark it, and the mark ends when the
-// key's last stream closes.
+// Only a stream's initial request reporting a held version marks a key warm.
+// The mark ends when the key's last stream closes.
 func TestUniqueClientsPriorXDSVersionMark(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
 	g := NewWithT(t)
@@ -864,9 +860,8 @@ func TestUniqueClientsPriorXDSVersionMark(t *testing.T) {
 	g.Expect(state.HasPriorXDSVersion(role)).To(BeFalse(), "a later cold stream must not inherit an ended mark")
 }
 
-// When proxies share a key (pod locality off), the key must stop being warm
-// once the streams that reported a held version have closed, even if cold
-// streams remain. Otherwise a new proxy is withheld as if it were serving
+// A shared key (pod locality off) stops being warm when its last warm stream
+// closes, even with cold streams left. Otherwise a new proxy is withheld for
 // config it never received.
 func TestUniqueClientsPriorXDSVersionEndsWithWarmStreams(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
@@ -887,8 +882,7 @@ func TestUniqueClientsPriorXDSVersionEndsWithWarmStreams(t *testing.T) {
 		"with only a cold stream left, the key must no longer be warm")
 }
 
-// HasColdStreamSince reports only streams that hold no config and have been
-// connected for at least the given time, under the given key.
+// HasColdStreamSince filters by key, cold status and connection age.
 func TestUniqueClientsHasColdStreamSince(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
 	g := NewWithT(t)

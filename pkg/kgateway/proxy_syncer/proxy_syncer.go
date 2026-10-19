@@ -86,8 +86,7 @@ type GatewayXdsResources struct {
 	// Listeners are items in the LDS response payload.
 	Listeners envoycache.Resources
 
-	// ReferencedClusters are the routing targets of Routes and Listeners (see
-	// collectReferencedClusters).
+	// ReferencedClusters are the routing targets of Routes and Listeners.
 	// +noKrtEquals derived from Routes and Listeners, whose content-hash versions Equals compares
 	ReferencedClusters map[string]struct{}
 
@@ -218,10 +217,8 @@ func NewProxySyncer(
 
 type ProxyTranslator struct {
 	xdsCache envoycache.SnapshotCache
-	// gate bounds how long publication may be withheld from a client while
-	// its referenced clusters are unready — the first publish on a client's
-	// connection and the release of a held route flip (see publish_gate.go).
-	// Pointer so the state is shared across ProxyTranslator copies.
+	// gate bounds first-publish and held-flip waits for unready clusters
+	// (publish_gate.go). A pointer, so ProxyTranslator copies share its state.
 	gate *publishGate
 }
 

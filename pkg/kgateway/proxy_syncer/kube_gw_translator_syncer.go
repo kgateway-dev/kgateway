@@ -84,8 +84,7 @@ func (s *ProxyTranslator) syncXds(
 }
 
 // publishedReferencedClusters returns the routing targets of the published
-// snapshot's routes and listeners. The result is shared: callers must not
-// modify it.
+// routes and listeners. Callers must not modify the shared result.
 func publishedReferencedClusters(published envoycache.ResourceSnapshot) map[string]struct{} {
 	routes := published.GetResourcesAndTTL(envoyresourcev3.RouteType)
 	listeners := published.GetResourcesAndTTL(envoyresourcev3.ListenerType)
@@ -94,21 +93,17 @@ func publishedReferencedClusters(published envoycache.ResourceSnapshot) map[stri
 	})
 }
 
-// publishedRefs memoizes publishedReferencedClusters. Every deferred build
-// resolves against the client's published snapshot under the gate's single
-// lock, and finding the published routing targets unmarshals each listener's
-// filter chain, so recomputing it per build serializes that work for every
-// client behind one lock. The published routes and listeners change far less
-// often than deferred builds arrive: a snapshot that keeps them, whether held,
-// carried or resolved, reuses the very item maps of the gateway translation
-// that produced them, which are never modified once built.
+// publishedRefs memoizes publishedReferencedClusters. Collecting targets
+// unmarshals every listener, which under the gate's single lock would
+// serialize all clients' deferred builds. Published routes and listeners
+// change rarely, and published snapshots reuse their translation's immutable
+// item maps.
 var publishedRefs = &referencedClustersMemo{}
 
-// referencedClustersMemo caches referenced-cluster sets by the identity of the
-// routes and listeners item maps they were computed from. An entry keeps those
-// maps referenced, so their addresses cannot be reused by other maps while it
-// exists; identity therefore implies equal content. The cache is cleared when
-// it reaches maxReferencedClustersMemo entries.
+// referencedClustersMemo keys target sets by the identity of the route and
+// listener item maps. An entry retains its maps, so their addresses cannot be
+// reused and identity implies equal content. It is cleared at
+// maxReferencedClustersMemo entries.
 type referencedClustersMemo struct {
 	mu      sync.Mutex
 	entries map[[2]uintptr]referencedClustersEntry
@@ -176,11 +171,8 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 
-	// A gap does not block updates if the published config already references
-	// the cluster, even if it is still missing after a bounded release. Missing
-	// clusters available in published CDS can also be carried forward. A
-	// previously-referenced cluster whose CLA row is not derived keeps the
-	// endpoints the client holds for it.
+	// Only gaps the published config does not yet reference block the flip.
+	// Missing clusters still in published CDS are carried instead.
 	var flipBlocking []string
 	for _, name := range snapWrap.missingReferenced {
 		if _, wasReferenced := publishedRefs[name]; wasReferenced {
@@ -202,16 +194,11 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	composed := &envoycache.Snapshot{}
 	*composed = *snapWrap.snap
 
-	// carryRefs are the clusters whose cluster/CLA pairs must exist in the
-	// composed snapshot. While the flip is held, that is every cluster the
-	// published snapshot has: the held routes and listeners are exactly the
-	// published ones, so their whole dependency closure is the published CDS --
-	// route targets, and also the clusters their filters call (ext_authz,
-	// ext_proc, JWKS, OAuth2, rate limit, access log). Carrying only the routes'
-	// targets would let a build that stops naming such a cluster remove it while
-	// the held listener still calls it. The hold is bounded by the flip-release
-	// timer, so the extra clusters are carried for at most a budget. On the
-	// truth path, only previously-published missing clusters are carried.
+	// carryRefs are the clusters whose cluster/CLA pairs the composed snapshot
+	// needs. A held flip needs every published cluster: the held listeners
+	// still call filter clusters (ext_authz, JWKS, ...) that a new build may
+	// drop. The flip-release bound limits this to one budget. Without a hold,
+	// only missing referenced clusters are carried.
 	carryRefs := make(map[string]struct{})
 	var heldBlocking []string
 	if holdFlips && len(flipBlocking) > 0 {
@@ -254,19 +241,15 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			continue
 		}
 		if _, expired := expiredSet[name]; expired {
-			// Carried for the whole warm withhold bound (boundCarryLocked):
-			// neither the truth path nor a held flip's closure brings it back.
+			// Its carry hit the warm withhold bound (boundCarryLocked); a held
+			// flip's closure must not bring it back.
 			continue
 		}
 		if _, errored := erroredSet[name]; errored {
-			// Fail closed: a cluster whose current translation is errored is
-			// never resurrected from the published snapshot, even while a flip
-			// is held for an unrelated cluster. Serving it with its stale
-			// (pre-error) config would silently bypass the very policy whose
-			// failure errored it — e.g. an invalid BackendTLSPolicy must 5xx
-			// (Gateway API conformance
-			// BackendTLSPolicyInvalidCACertificateRef), not keep serving with
-			// the previous TLS configuration.
+			// Never carry an errored cluster, even during an unrelated held flip:
+			// its stale config would bypass the policy whose failure errored it.
+			// An invalid BackendTLSPolicy must 5xx (conformance test
+			// BackendTLSPolicyInvalidCACertificateRef), not keep its old TLS.
 			continue
 		}
 		if _, ok := clusterItems[name]; ok {
@@ -283,22 +266,18 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		}
 		clusterItems[name] = old
 		carried = append(carried, name)
-		// The hash folds in the carried CONTENT, not just the names: the same
-		// carried set over the same new-build version can otherwise reproduce
-		// an identical version string around a vanish/return/vanish cycle
-		// whose carried protos differ, and a client reconnecting with that
-		// version as last-accepted would never be resent the newer content.
+		// Hash carried content too. Otherwise a vanish/return/vanish cycle can
+		// reuse a version for different protos, and a client reconnecting with
+		// that version is never resent the newer content.
 		carryHash ^= utils.HashString(name) ^ utils.HashProto(old.Resource)
 		claName, requiresEndpointResource := endpointResourceNameForCluster(old)
 		if !requiresEndpointResource {
 			continue
 		}
 		if _, built := endpointItems[claName]; built {
-			// Another cluster in this build already requires this assignment
-			// (an EDS service_name shared between clusters): keep the build's
-			// assignment. Replacing it with the published copy would serve stale
-			// endpoints to the cluster that was built, under a version that
-			// claims the built content.
+			// Another built cluster shares this EDS service_name. Keep the
+			// built CLA; the published copy would serve stale endpoints under
+			// the built version.
 			continue
 		}
 		if oldCla, ok := oldEndpoints[claName]; ok {

@@ -19,14 +19,12 @@ import (
 
 const publishGateTestClient = "c1"
 
-// newTestUcc builds a minimal UCC; the cluster/endpoint fixtures only consume
-// the proto they wrap, not the client identity.
+// newTestUcc builds a minimal UCC; fixtures ignore client identity.
 func newTestUcc(name string) ir.UniquelyConnectedClient {
 	return ir.NewUniquelyConnectedClient(name, "", nil, ir.PodLocality{})
 }
 
-// stubPriorXDS models the client-state reader: has=false is a cold client,
-// has=true a warm reconnect that reported a prior accepted version.
+// stubPriorXDS: has=false is a cold client, has=true a warm one (prior version).
 type stubPriorXDS struct{ has bool }
 
 func (s stubPriorXDS) HasPriorXDSVersion(string) bool { return s.has }
@@ -38,14 +36,13 @@ func newPublishGateTestTranslator(t *testing.T, prior bool, budget time.Duration
 		budget,
 		true,
 	)
-	// Stop the gate's timers with the test: a warm client withheld at the
-	// budget re-arms every budget for as long as the test binary runs.
+	// Stop timers at cleanup; a warm hold would otherwise re-arm forever.
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
 	return &pt
 }
 
-// deferredWrapperV builds a deferred wrapper whose listener version identifies
-// it in assertions; the missing reference is what keeps it deferred.
+// deferredWrapperV: the listener version names the build; a missing reference
+// defers it.
 func deferredWrapperV(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
@@ -56,12 +53,10 @@ func deferredWrapperV(version string) XdsSnapWrapper {
 	}
 }
 
-// deferredMissingEndpointsWrapperV builds a deferred wrapper whose only gap is
-// a referenced cluster with no derived CLA, such as an EDS cluster from a
-// plugin that contributes no endpoint rows: every referenced cluster is
-// present in CDS, but one's ClusterLoadAssignment was never derived (a
-// synthesized empty stands in). A Service without EndpointSlices, ExternalName
-// included, derives an empty CLA instead and is not a gap at all.
+// deferredMissingEndpointsWrapperV's only gap is a referenced cluster with no
+// derived CLA (a synthesized empty stands in), as for an EDS cluster from a
+// plugin that contributes no endpoint rows. A Service without EndpointSlices,
+// ExternalName included, derives an empty CLA and is no gap.
 func deferredMissingEndpointsWrapperV(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
@@ -87,8 +82,7 @@ func publishedListenerVersion(t *testing.T, pt *ProxyTranslator) (string, bool) 
 	return snap.GetVersion(resourcev3.ListenerType), true
 }
 
-// A cold, never-published client is withheld within the budget and published
-// at expiry so the pod can start.
+// A cold client waits out the budget, then is published so the pod can start.
 func TestFirstPublish_ColdClientPublishesAtBudget(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 50*time.Millisecond)
 
@@ -105,7 +99,7 @@ func TestFirstPublish_ColdClientPublishesAtBudget(t *testing.T) {
 	assert.Equal(t, "v1", v)
 }
 
-// The latest deferred snapshot is the one published at budget expiry.
+// At budget expiry the latest deferred build publishes.
 func TestFirstPublish_LatestDeferredWins(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 80*time.Millisecond)
 
@@ -120,10 +114,8 @@ func TestFirstPublish_LatestDeferredWins(t *testing.T) {
 	assert.Equal(t, "v2", v)
 }
 
-// A client that reported a prior accepted xDS version is warm: while clusters
-// are missing from CDS it must stay withheld at budget expiry (publishing
-// routes to absent clusters would NC config it is already serving), but a
-// coherent snapshot still publishes immediately.
+// A warm client with clusters missing from CDS stays withheld at expiry, since
+// publishing would NC routes it serves; a coherent build publishes at once.
 func TestFirstPublish_PriorXDSVersionClientStaysWithheld(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, 40*time.Millisecond)
 
@@ -141,10 +133,8 @@ func TestFirstPublish_PriorXDSVersionClientStaysWithheld(t *testing.T) {
 	assert.Equal(t, "coherent", v)
 }
 
-// A warm client whose only gaps are clusters with no derived CLA publishes at
-// budget expiry: that gap has no convergence guarantee (#14352), and
-// withholding would freeze the client's config indefinitely after a
-// controller restart.
+// A warm client whose only gaps are underived CLAs publishes at budget expiry:
+// they may never converge (#14352), and withholding would freeze its config.
 func TestFirstPublish_WarmClientPublishesEndpointTruthAtBudget(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, 50*time.Millisecond)
 
@@ -162,8 +152,7 @@ func TestFirstPublish_WarmClientPublishesEndpointTruthAtBudget(t *testing.T) {
 	assert.Equal(t, "v1", v)
 }
 
-// A warm client with BOTH missing and underived-CLA gaps stays withheld: the
-// missing clusters dominate (publishing would NC their routes).
+// Missing clusters keep a warm client withheld even alongside underived CLAs.
 func TestFirstPublish_WarmClientMixedGapsStaysWithheld(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, 40*time.Millisecond)
 
@@ -178,8 +167,8 @@ func TestFirstPublish_WarmClientMixedGapsStaysWithheld(t *testing.T) {
 		"a warm client must stay withheld while any referenced cluster is missing from CDS, even if other gaps are underived CLAs")
 }
 
-// A coherent snapshot supersedes a pending bounded publish, and the canceled
-// timer must never overwrite it.
+// A coherent build cancels the pending first publish; its timer must not
+// overwrite it.
 func TestFirstPublish_CoherentSupersedesPending(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 100*time.Millisecond)
 
@@ -207,8 +196,7 @@ func TestFirstPublish_DepartureCancelsPending(t *testing.T) {
 	assert.False(t, ok, "a departed client's pending first publish must not fire")
 }
 
-// KGW_PER_CLIENT_PUBLISH_BUDGET=0 is the conservative opt-out: never-published
-// clients are withheld with no deadline.
+// KGW_PER_CLIENT_PUBLISH_BUDGET=0 disables the first-publication deadline.
 func TestFirstPublish_BudgetZeroDisablesBound(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 0)
 
@@ -223,11 +211,8 @@ func TestFirstPublish_BudgetZeroDisablesBound(t *testing.T) {
 
 // --- flip-release bound ---
 
-// flipHoldFixture drives a published client into a held route flip: the
-// published snapshot routes to cluster-old, then a deferred wrapper flips the
-// routes onto cluster-new, which is newly referenced and has no derived CLA
-// (synthesized empty), so resolution holds routes/listeners/secrets at the
-// published versions.
+// flipHoldFixture publishes routes to cluster-old and returns a wrapper flipping
+// them to underived cluster-new; syncing it holds the flip.
 func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string, flipWrap XdsSnapWrapper) {
 	t.Helper()
 
@@ -249,7 +234,7 @@ func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string
 	})
 	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
 
-	// The flip: routes now target cluster-new, whose CLA was never derived.
+	// Retarget to cluster-new before its CLA derives.
 	newCluster := edsClusterForClient(newTestUcc(publishGateTestClient), "cluster-new", 3)
 	flipSnap := &envoycache.Snapshot{}
 	flipSnap.Resources[envoycachetypes.Listener] = listeners
@@ -265,8 +250,7 @@ func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string
 	flipWrap = XdsSnapWrapper{
 		snap:     flipSnap,
 		proxyKey: publishGateTestClient,
-		// cluster-new's CLA was never derived: the empty CLA in the snapshot
-		// mirrors the synthesized placeholder the transform would emit.
+		// Mirror the synthesized placeholder for cluster-new's underived CLA.
 		missingEndpointsReferenced: []string{"cluster-new"},
 	}
 	return published.GetVersion(resourcev3.RouteType), flipWrap
@@ -281,9 +265,8 @@ func servedSnapshot(t *testing.T, pt *ProxyTranslator) *envoycache.Snapshot {
 	return snap
 }
 
-// A held route flip is released at budget expiry: the new routes publish and
-// the still-unready cluster's routes fail until it becomes ready, instead of
-// pinning every route/listener/secret update forever (#14352).
+// At expiry the held flip publishes; routes to the unready cluster fail rather
+// than pinning every route, listener and secret update (#14352).
 func TestFlipRelease_HeldFlipPublishesAtBudget(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 50*time.Millisecond)
 	heldRouteVersion, flipWrap := flipHoldFixture(t, pt)
@@ -305,8 +288,7 @@ func TestFlipRelease_HeldFlipPublishesAtBudget(t *testing.T) {
 	assertSnapshotCoherent(t, released)
 }
 
-// Releasing a flip onto a cluster absent from CDS must also unblock later
-// route/listener/secret updates while that cluster remains missing.
+// A released missing-CDS flip must not hold later route/listener/secret updates.
 func TestFlipRelease_MissingClusterDoesNotHoldSubsequentUpdates(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -319,7 +301,7 @@ func TestFlipRelease_MissingClusterDoesNotHoldSubsequentUpdates(t *testing.T) {
 	pt.syncXds(context.Background(), flipWrap)
 	require.Equal(t, heldRouteVersion, servedSnapshot(t, pt).GetVersion(resourcev3.RouteType))
 
-	// Fire the release directly to exercise expiry without timing-dependent assertions.
+	// Invoke expiry directly to avoid timing-dependent assertions.
 	pt.gate.mu.Lock()
 	pending := pt.gate.pendingFlips[publishGateTestClient]
 	if pending != nil {
@@ -352,15 +334,15 @@ func TestFlipRelease_MissingClusterDoesNotHoldSubsequentUpdates(t *testing.T) {
 	}
 }
 
-// A build that resolves the flip (endpoints derived, snapshot coherent)
-// cancels the pending release; the expired timer must not overwrite it.
+// A build that resolves the flip cancels the pending release; the timer must not
+// overwrite it.
 func TestFlipRelease_ResolvedFlipCancelsPending(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 100*time.Millisecond)
 	_, flipWrap := flipHoldFixture(t, pt)
 
 	pt.syncXds(context.Background(), flipWrap)
 
-	// The gap resolves before expiry: the same flip arrives coherent.
+	// Resolve the same flip before expiry.
 	resolved := flipWrap
 	resolved.missingEndpointsReferenced = nil
 	resolvedSnap := &envoycache.Snapshot{}
@@ -391,8 +373,7 @@ func TestFlipRelease_DepartureCancelsPending(t *testing.T) {
 		"a departed client's pending flip release must not fire")
 }
 
-// KGW_PER_CLIENT_PUBLISH_BUDGET=0 also disables the flip-release bound: the
-// hold lasts until the flip resolves.
+// KGW_PER_CLIENT_PUBLISH_BUDGET=0 holds flips until resolution.
 func TestFlipRelease_BudgetZeroDisablesBound(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 0)
 	heldRouteVersion, flipWrap := flipHoldFixture(t, pt)
@@ -407,10 +388,9 @@ func TestFlipRelease_BudgetZeroDisablesBound(t *testing.T) {
 
 // --- connection scope, stale timers, synthesized CLAs ---
 
-// A client that left and came back is not resolved against the snapshot the
-// gate published before it left: the entry may predate what the client runs.
-// It is withheld as a first publish instead, and that bound still fires even
-// though the cache still holds the old entry.
+// A returning client is not resolved against its pre-departure cache entry,
+// which may be stale. It goes through first publish, whose bound still fires
+// although that entry exists.
 func TestFirstPublish_ReconnectIgnoresEntryFromPreviousConnection(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 100*time.Millisecond)
 	ctx := context.Background()
@@ -433,8 +413,8 @@ func TestFirstPublish_ReconnectIgnoresEntryFromPreviousConnection(t *testing.T) 
 		"the bounded first publish must fire although the cache holds the previous connection's entry")
 }
 
-// A first-publish timer whose callback waited on the gate lock while its
-// episode ended and a new one began must not publish the new episode early.
+// A first-publish callback that waited on the lock across episodes must not
+// publish the next episode early.
 func TestFirstPublish_StaleTimerDoesNotPublishLaterEpisode(t *testing.T) {
 	budget := 300 * time.Millisecond
 	pt := newPublishGateTestTranslator(t, false, budget)
@@ -457,8 +437,8 @@ func TestFirstPublish_StaleTimerDoesNotPublishLaterEpisode(t *testing.T) {
 	}, 2*time.Second, 5*time.Millisecond, "the later episode publishes at its own budget")
 }
 
-// A flip-release timer whose callback waited on the gate lock while its
-// episode ended and a new hold began must not release the new hold early.
+// An old flip-release callback blocked on the lock must not release a newer
+// episode early.
 func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 	budget := 300 * time.Millisecond
 	pt := newPublishGateTestTranslator(t, false, budget)
@@ -485,8 +465,7 @@ func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 	}, 2*time.Second, 5*time.Millisecond, "the later hold releases at its own budget")
 }
 
-// A cold sibling lifts the publication hold, but does not make the warm
-// proxies sharing its snapshot forget the endpoints they already hold.
+// A cold sibling lifts the hold without replacing warm siblings' endpoints.
 func TestFirstPublish_SharedColdClientPreservesWarmEndpoints(t *testing.T) {
 	pt := newSharedKeyTestTranslator(t, true, 20*time.Millisecond, time.Minute)
 	wrap := deferredWrapperV("v1")
@@ -526,9 +505,8 @@ func TestSettleSynthesizedEndpoints(t *testing.T) {
 		return endpointsForClient(ucc, name, 1).Endpoints.ResourceWithTTL()
 	}
 
-	// cluster-known had endpoints published; cluster-left-out was published
-	// without a CLA; cluster-new was never published; cluster-derived has a
-	// derived (empty) CLA, which is truth and is never settled.
+	// Published: cluster-known with endpoints, cluster-left-out without a CLA.
+	// cluster-new is new; cluster-derived is derived, so never settled.
 	build := &envoycache.Snapshot{}
 	build.Resources[envoycachetypes.Cluster] = edsClusters("cluster-known", "cluster-left-out", "cluster-new", "cluster-derived")
 	build.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds", []envoycachetypes.ResourceWithTTL{
@@ -559,9 +537,8 @@ func TestSettleSynthesizedEndpoints(t *testing.T) {
 		assert.NoError(t, snapshotConsistencyError(publishGateTestClient, settled))
 	})
 	t.Run("first publish on a connection", func(t *testing.T) {
-		// Warm or cold alike: a reconnecting proxy keeps the endpoints it holds,
-		// and a new proxy waits for the rows instead of going Ready with zero
-		// hosts behind clusters whose rows are still being built.
+		// Warm or cold, a first publish leaves these out: a reconnect keeps its
+		// endpoints, and a new proxy waits rather than going Ready with zero hosts.
 		settled := settleSynthesizedEndpoints(build, synthesized, nil)
 		assert.Equal(t, map[string]int{"cluster-derived": 0}, served(settled),
 			"synthesized CLAs whose rows are on their way are left out of a connection's first publish")
@@ -571,11 +548,9 @@ func TestSettleSynthesizedEndpoints(t *testing.T) {
 	})
 }
 
-// A client whose snapshot row is deleted while it stays connected (a
-// GatewayClass deleted and recreated, a route lookup error) still runs what
-// was published on its connection. When the row returns lagging a cluster
-// the client serves, that cluster is carried, not dropped by a bounded first
-// publish; a client that really departed starts over.
+// Row withdrawal while connected preserves publication state. When the row
+// returns, carry the missing cluster rather than use bounded first publication.
+// Actual departure clears that state.
 func TestSnapshotRowFlapKeepsConnectionState(t *testing.T) {
 	ucc := newTestUcc(publishGateTestClient)
 	full := func() *envoycache.Snapshot {
@@ -625,10 +600,9 @@ func TestSnapshotRowFlapKeepsConnectionState(t *testing.T) {
 	})
 }
 
-// A cold client whose connection resets more often than the first-publish
-// budget resumes its episode on reconnect instead of restarting it, so it
-// still gets its bounded first publish; one that stays away longer than the
-// budget starts a fresh episode.
+// A cold client that reconnects within the budget resumes its episode, so
+// frequent resets still get a bounded first publish; a longer absence starts a
+// new one.
 func TestFirstPublish_BudgetResumesAcrossBriefDepartures(t *testing.T) {
 	const budget = 400 * time.Millisecond
 	ctx := context.Background()
@@ -660,8 +634,8 @@ func TestFirstPublish_BudgetResumesAcrossBriefDepartures(t *testing.T) {
 	})
 }
 
-// installThenFailCache installs every snapshot and then reports the error
-// go-control-plane returns when it cannot answer an open watch.
+// installThenFailCache installs each snapshot, then returns go-control-plane's
+// open-watch error.
 type installThenFailCache struct {
 	envoycache.SnapshotCache
 }
@@ -673,10 +647,9 @@ func (c installThenFailCache) SetSnapshot(ctx context.Context, node string, snap
 	return context.Canceled
 }
 
-// A snapshot the cache installed is what the client is served from then on,
-// even if answering an open watch failed, so the gate's bookkeeping follows
-// the installation: the bounded first publish counts as published, and a
-// held flip still gets its release bound.
+// An installed snapshot is served even if answering a watch failed, so
+// bookkeeping follows installation: the first publish counts and a held flip
+// keeps its release bound.
 func TestSetSnapshotErrorAfterInstallKeepsBookkeeping(t *testing.T) {
 	ctx := context.Background()
 	newTranslator := func(budget time.Duration) *ProxyTranslator {
@@ -704,10 +677,8 @@ func TestSetSnapshotErrorAfterInstallKeepsBookkeeping(t *testing.T) {
 	})
 }
 
-// A published client keeps being sent the last config of a referenced cluster
-// that went missing from CDS (make-before-break), but not past the warm
-// withhold bound: after it the cluster is dropped and routes to it fail,
-// rather than serving endpoints that old indefinitely.
+// A missing referenced cluster is carried (make-before-break) only up to the
+// warm withhold bound; then it is dropped and its routes fail.
 func TestCarryOfAMissingClusterIsBounded(t *testing.T) {
 	ResetMetrics()
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
@@ -752,8 +723,8 @@ func TestCarryOfAMissingClusterIsBounded(t *testing.T) {
 		labelsWith("mode", boundedPublishCarryExpired)))
 }
 
-// carryTestBuild is a snapshot whose routes target routeTargets and whose CDS
-// and EDS hold clusters, for the carry-expiry tests.
+// carryTestBuild builds a snapshot routing to routeTargets with cluster/CLA
+// pairs for clusters.
 func carryTestBuild(t *testing.T, version string, routeTargets []string, clusters ...string) *envoycache.Snapshot {
 	t.Helper()
 	ucc := newTestUcc(publishGateTestClient)
@@ -776,9 +747,7 @@ func carryTestBuild(t *testing.T, version string, routeTargets []string, cluster
 	return snap
 }
 
-// With no build after the one that started carrying a cluster, the bound is
-// still enforced: a backend deleted while routes still name it is a quiet
-// input, and nothing else would ever re-resolve the client.
+// Enforce carry expiry even when a deleted backend produces no further builds.
 func TestCarryExpiresWithoutAnotherBuild(t *testing.T) {
 	ResetMetrics()
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
@@ -806,10 +775,8 @@ func TestCarryExpiresWithoutAnotherBuild(t *testing.T) {
 		labelsWith("mode", boundedPublishCarryExpired)))
 }
 
-// A carry ends when its cluster comes back. If the cluster goes missing again
-// later, that is a new episode: it is carried for a fresh bound, not dropped at
-// once because an earlier episode started long ago. The recovery here is a
-// coherent build, which never runs the deferred path's carry bookkeeping.
+// Coherent recovery ends the carry episode, even outside deferred resolution, so
+// a later disappearance gets a fresh bound.
 func TestCarryStartsFreshAfterTheClusterRecovers(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
 	pt.gate.warmWithholdBound = 80 * time.Millisecond
@@ -825,9 +792,9 @@ func TestCarryStartsFreshAfterTheClusterRecovers(t *testing.T) {
 	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
 	pt.syncXds(ctx, lagging("v2"))
 	time.Sleep(30 * time.Millisecond)
-	// It recovers: a coherent build has it again.
+	// Recover in a coherent build.
 	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
-	time.Sleep(70 * time.Millisecond) // past the bound measured from the first episode's start
+	time.Sleep(70 * time.Millisecond) // past the first episode's bound
 
 	pt.syncXds(ctx, lagging("v4"))
 	served := servedSnapshot(t, pt)
@@ -840,9 +807,7 @@ func TestCarryStartsFreshAfterTheClusterRecovers(t *testing.T) {
 	}, 2*time.Second, 5*time.Millisecond, "and still ends at its own bound")
 }
 
-// A carry expiry re-publishes the client's latest build only. Once a later
-// build has superseded the one that carried, the expiry must not bring the
-// older one back.
+// Carry expiry must not restore a build superseded by a later publication.
 func TestCarryExpiryNeverRepublishesAnOlderBuild(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
 	pt.gate.warmWithholdBound = 20 * time.Millisecond
@@ -853,16 +818,14 @@ func TestCarryExpiryNeverRepublishesAnOlderBuild(t *testing.T) {
 		snap: carryTestBuild(t, "v2", []string{"cluster-a", "cluster-b"}, "cluster-a"), proxyKey: publishGateTestClient,
 		missingReferenced: []string{"cluster-b"},
 	})
-	// The route stops naming the missing cluster: a coherent build.
+	// A coherent build removes the missing target.
 	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", []string{"cluster-a"}, "cluster-a"), proxyKey: publishGateTestClient})
 
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType), "the superseded build is not re-published")
 }
 
-// A held flip carries its whole published closure, but not a cluster that has
-// been carried for the bound: publishing it again would make it look freshly
-// carried to the next build, which would carry it for another full bound.
+// A held closure must not re-carry expired clusters, or their bounds restart.
 func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, time.Hour)
 	pt.gate.warmWithholdBound = 50 * time.Millisecond
@@ -874,12 +837,12 @@ func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
 		missingReferenced: []string{"cluster-b"},
 	})
 	pt.gate.mu.Lock()
-	pt.gate.cancelCarryExpiryLocked(publishGateTestClient) // let the held build below be the one that expires it
+	pt.gate.cancelCarryExpiryLocked(publishGateTestClient) // let the held build below observe expiry
 	pt.gate.mu.Unlock()
 	time.Sleep(60 * time.Millisecond)
 
-	// Past the bound, a build that also moves a route onto a cluster the
-	// client has never had: the flip is held, with its published closure.
+	// Past the bound, a build flips onto a never-seen cluster, so the flip and its
+	// closure are held.
 	pt.syncXds(ctx, XdsSnapWrapper{
 		snap:              carryTestBuild(t, "v3", []string{"cluster-a", "cluster-b", "cluster-new"}, "cluster-a"),
 		proxyKey:          publishGateTestClient,
@@ -893,11 +856,8 @@ func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
 	assert.False(t, hasCLA)
 }
 
-// Resolving a deferred build finds the published routing targets by walking
-// the published listeners' filter chains, under the gate's single lock. The
-// walk is memoized by the identity of the published routes and listeners, so
-// builds that keep them reuse it, while different routing config, even under
-// a reused version label, is walked afresh.
+// The routing-target walk is memoized by map identity: retained maps reuse it,
+// and different content under a reused version label is walked again.
 func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
 	memo := &referencedClustersMemo{}
 	routesA := routeResourcesForClusters("cluster-a")

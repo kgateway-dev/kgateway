@@ -78,9 +78,8 @@ type ConnectedClient struct {
 	originalRole string
 	// connectedAt is when the stream was admitted.
 	connectedAt time.Time
-	// priorXDSVersion records that a request on this stream reported config the
-	// proxy already held from an earlier stream (a reconnect, or a proxy that
-	// outlived a controller restart).
+	// priorXDSVersion marks a stream that reported config held from an earlier
+	// stream (a reconnect, or a proxy that outlived a controller restart).
 	priorXDSVersion bool
 }
 
@@ -120,10 +119,9 @@ type callbacksCollection struct {
 	// cluster once every stream currently in that bucket has confirmed it, or the same
 	// full-EDS-withholding this file exists to prevent reappears for the still-old siblings.
 	knownLocalClusterBySid map[int64]bool
-	// priorXDSVersions counts, per resource name, the connected streams that
-	// reported config the proxy already held. It is per stream, not a flag per
-	// name: when replicas share a name (pod locality off), the name must stop
-	// being warm once the streams that reported held config have closed.
+	// priorXDSVersions counts warm streams per resource name. A count, not a
+	// flag, so a shared name (pod locality off) stops being warm when its last
+	// warm stream closes, even with cold streams left.
 	priorXDSVersions map[string]int
 	stateLock        sync.RWMutex
 
@@ -512,19 +510,16 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	return nil
 }
 
-// hasPriorXDSVersion reports whether r is a stream's initial listener request
-// carrying a version the proxy accepted before. Only listeners count: an Envoy
-// serves traffic through its listeners, so warmth exists to protect config the
-// proxy is serving. A proxy can hold an accepted cluster version and no
-// listeners at all (its previous stream broke while CDS was still warming,
-// before it requested listeners); it has nothing to protect and must start
-// within the first-publish budget like a new proxy.
+// hasPriorXDSVersion reports whether r is an initial listener request carrying
+// a previously accepted version. Only listeners count: warmth protects served
+// config, and a proxy whose stream broke during CDS warming serves none, so it
+// starts within the first-publish budget.
 func hasPriorXDSVersion(r *envoy_service_discovery_v3.DiscoveryRequest) bool {
 	return r.GetTypeUrl() == resource.ListenerType && r.GetResponseNonce() == "" && r.GetVersionInfo() != ""
 }
 
-// markPriorXDSVersion records that stream sid reported held config. Each
-// stream counts once toward its resource name.
+// markPriorXDSVersion marks stream sid warm. Each stream counts once toward
+// its resource name.
 func (x *callbacksCollection) markPriorXDSVersion(sid int64, resourceName string) {
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
@@ -551,12 +546,11 @@ func (x *callbacksCollection) hasPriorXDSVersion(resourceName string) bool {
 	return x.priorXDSVersions[resourceName] > 0
 }
 
-// HasColdStreamSince reports whether a stream that reported no held config
-// has been connected under resourceName for at least d. When proxies share a
-// name, such a proxy has no listeners until the shared snapshot publishes, so
-// publication uses this to stop withholding on behalf of its warm siblings.
-// It scans the connected streams, so call it only at publication deadlines,
-// not per request.
+// HasColdStreamSince reports whether a cold stream has been connected under
+// resourceName for at least d. A cold proxy sharing a warm name has no
+// listeners until the shared snapshot publishes, so the gate uses this to lift
+// the warm withhold. It scans all streams: call it only at publication
+// deadlines.
 func (x *callbacks) HasColdStreamSince(resourceName string, d time.Duration) bool {
 	c := x.collection.Load()
 	if c == nil {

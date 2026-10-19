@@ -14,16 +14,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
-// newWarmWithholdTestTranslator builds a gate for a warm client (it reported a
-// prior xDS version) with the given budget and warm withhold bound.
+// newWarmWithholdTestTranslator builds a gate for a warm client with the given
+// budget and bound.
 func newWarmWithholdTestTranslator(t *testing.T, budget, bound time.Duration) *ProxyTranslator {
 	pt := newPublishGateTestTranslator(t, true, budget)
 	pt.gate.warmWithholdBound = bound
 	return pt
 }
 
-// warmWithheldCount reads the gate's count of currently withheld warm clients
-// across all gateways.
+// warmWithheldCount totals warm holds across gateways.
 func warmWithheldCount(pt *ProxyTranslator) int {
 	pt.gate.mu.Lock()
 	defer pt.gate.mu.Unlock()
@@ -34,9 +33,8 @@ func warmWithheldCount(pt *ProxyTranslator) int {
 	return n
 }
 
-// A warm client withheld for missing clusters is published once the bound is
-// reached, even when no further deferred build arrives to re-arm the timer:
-// the permanent case is exactly the one with static inputs.
+// The warm bound fires with no further builds: a permanent gap is exactly the
+// static-input case.
 func TestWarmWithhold_ReleasedAtBoundWithStaticInputs(t *testing.T) {
 	ResetMetrics()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -71,8 +69,7 @@ func TestWarmWithhold_ReleasedAtBoundWithStaticInputs(t *testing.T) {
 	g.AssertMetricNotExists(withheldClientsMetric)
 }
 
-// With the bound at 0 the warm withhold has no deadline, and the client stays
-// counted as withheld.
+// A zero warm bound allows indefinite holds while retaining the gauge count.
 func TestWarmWithhold_BoundZeroWithholdsWithoutDeadline(t *testing.T) {
 	pt := newWarmWithholdTestTranslator(t, 20*time.Millisecond, 0)
 
@@ -85,8 +82,7 @@ func TestWarmWithhold_BoundZeroWithholdsWithoutDeadline(t *testing.T) {
 	assert.Equal(t, 1, warmWithheldCount(pt))
 }
 
-// If the missing clusters appear while endpoints are still underived, the
-// warm-truth publish happens at the next budget check, not at the bound.
+// With CDS complete, the next budget check publishes despite underived CLAs.
 func TestWarmWithhold_MissingClustersResolvedPublishesTruthPromptly(t *testing.T) {
 	pt := newWarmWithholdTestTranslator(t, 20*time.Millisecond, time.Minute)
 
@@ -138,8 +134,7 @@ func TestWarmWithhold_DepartureClearsCount(t *testing.T) {
 	assert.False(t, ok, "a departed client must not be released at the bound")
 }
 
-// mutablePriorXDS models a client key whose warm mark can change between
-// budget checks: the mark is cleared when every stream under the key closes.
+// mutablePriorXDS models the warm mark clearing once the key's streams close.
 type mutablePriorXDS struct {
 	mu  sync.Mutex
 	has bool
@@ -157,8 +152,7 @@ func (m *mutablePriorXDS) set(has bool) {
 	m.has = has
 }
 
-// The bound measures the whole withhold episode: a change in WHICH clusters
-// are missing must not restart it.
+// Changing the missing-cluster set must not restart the warm episode.
 func TestWarmWithhold_ChangingMissingSetDoesNotRestartBound(t *testing.T) {
 	pt := newWarmWithholdTestTranslator(t, 20*time.Millisecond, 250*time.Millisecond)
 	start := time.Now()
@@ -179,8 +173,7 @@ func TestWarmWithhold_ChangingMissingSetDoesNotRestartBound(t *testing.T) {
 		"the bound must run from the first withhold, not from the latest change in missing clusters")
 }
 
-// A cold client is never counted as a withheld warm client, even while it
-// waits out the first-publish budget.
+// Cold clients awaiting first publication do not count as warm holds.
 func TestWarmWithhold_ColdClientNeverCounted(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 40*time.Millisecond)
 
@@ -193,9 +186,8 @@ func TestWarmWithhold_ColdClientNeverCounted(t *testing.T) {
 	assert.Zero(t, warmWithheldCount(pt))
 }
 
-// The warm mark is read at every budget check, not latched at the first one:
-// once the key stops being warm (every stream that reported a prior version
-// has closed), the next check publishes as a first publish.
+// Warmth is re-read at each budget check; once every warm stream closes, the
+// next check publishes as a first publish.
 func TestWarmWithhold_MarkClearedPublishesAtNextCheck(t *testing.T) {
 	prior := &mutablePriorXDS{has: true}
 	pt := newPublishGateTestTranslator(t, true, 20*time.Millisecond)
@@ -216,8 +208,8 @@ func TestWarmWithhold_MarkClearedPublishesAtNextCheck(t *testing.T) {
 	assert.Zero(t, warmWithheldCount(pt))
 }
 
-// Once a warm client has been released, later builds resolve per cluster
-// against what was published; the cold-path withhold never applies again.
+// After release, resolve later builds against this connection's published
+// snapshot instead of restarting first publication.
 func TestWarmWithhold_AfterReleaseLaterBuildsResolvePerCluster(t *testing.T) {
 	pt := newWarmWithholdTestTranslator(t, 20*time.Millisecond, 60*time.Millisecond)
 
@@ -236,9 +228,7 @@ func TestWarmWithhold_AfterReleaseLaterBuildsResolvePerCluster(t *testing.T) {
 	assert.Zero(t, warmWithheldCount(pt))
 }
 
-// A stream that flaps (closes and reconnects under the same key) while the
-// client is withheld must not restart the bound: a client whose connection
-// resets more often than the bound would otherwise never be released.
+// Reconnects resume the warm episode; otherwise frequent resets never release.
 func TestWarmWithhold_ReconnectDuringWithholdDoesNotRestartBound(t *testing.T) {
 	pt := newWarmWithholdTestTranslator(t, 20*time.Millisecond, 250*time.Millisecond)
 	start := time.Now()
@@ -249,8 +239,7 @@ func TestWarmWithhold_ReconnectDuringWithholdDoesNotRestartBound(t *testing.T) {
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
-		// The last stream closes (its snapshot row is deleted) and the
-		// proxy reconnects, still holding the config it had.
+		// Close the last stream and reconnect with its held config.
 		pt.gate.clientDeparted(publishGateTestClient)
 		pt.syncXds(context.Background(), deferredWrapperV("v1"))
 	}
@@ -258,8 +247,8 @@ func TestWarmWithhold_ReconnectDuringWithholdDoesNotRestartBound(t *testing.T) {
 	assert.True(t, ok, "a client that keeps reconnecting while withheld must still be released at the bound")
 }
 
-// sharedKeyClients models a key with warm proxies and, optionally, a proxy
-// holding no config that has waited a full budget under the same key.
+// sharedKeyClients models warm proxies and an optional cold proxy that has
+// waited a budget under the same key.
 type sharedKeyClients struct{ coldWaited bool }
 
 func (sharedKeyClients) HasPriorXDSVersion(string) bool { return true }
@@ -273,9 +262,8 @@ func newSharedKeyTestTranslator(t *testing.T, coldWaited bool, budget, bound tim
 	return pt
 }
 
-// A proxy holding no config that shares the key with warm proxies is published
-// to once it has waited a budget: otherwise it has no listeners and
-// crash-loops on behalf of its warm siblings.
+// A cold proxy sharing a warm key is published after one budget; otherwise it
+// has no listeners and crash-loops.
 func TestWarmWithhold_ColdProxySharingKeyIsPublishedTo(t *testing.T) {
 	for _, bound := range []time.Duration{time.Minute, 0} {
 		t.Run(fmt.Sprintf("bound=%s", bound), func(t *testing.T) {
@@ -305,8 +293,7 @@ func TestWarmWithhold_WarmOnlyKeyStaysWithheld(t *testing.T) {
 	assert.Equal(t, 1, warmWithheldCount(pt))
 }
 
-// A proxy that stays away longer than the bound starts a fresh episode when it
-// returns: only reconnects within the bound resume the old one.
+// Departures within the bound resume the warm episode; longer ones restart it.
 func TestWarmWithhold_LongAbsenceStartsFreshEpisode(t *testing.T) {
 	pt := newWarmWithholdTestTranslator(t, 20*time.Millisecond, 200*time.Millisecond)
 
@@ -342,8 +329,8 @@ func TestWarmWithhold_PublishForgetsEpisode(t *testing.T) {
 	assert.False(t, remembered, "a publish must drop the remembered episode")
 }
 
-// The client state the syncer is given must expose the cold-proxy check;
-// without it, a cold proxy sharing a warm key is never published to.
+// The syncer's client state must expose the cold-stream check so a cold proxy
+// can lift a shared warm withhold.
 func TestWarmWithhold_ClientStateReportsColdProxies(t *testing.T) {
 	_, _, state := krtcollections.NewUniquelyConnectedClients(false)
 	_, ok := state.(coldStreamReader)

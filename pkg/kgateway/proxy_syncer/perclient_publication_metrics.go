@@ -4,10 +4,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
-// Per-client publication metrics. They show in the field when publish-time
-// resolution runs and how it ends, which otherwise has to be inferred from
-// debug logs. devel/architecture/metrics.md describes each one; keep the help
-// strings to a line.
+// Per-client publication metrics. They show when publish-time resolution runs
+// and how it ends. devel/architecture/metrics.md describes each one; keep the
+// help strings to a line.
 const (
 	publicationReasonLabel = "reason"
 	publicationModeLabel   = "mode"
@@ -16,26 +15,21 @@ const (
 	deferReasonMissingEndpoints = "missing_endpoints"
 
 	boundedPublishFirstPublish = "first_publish"
-	// boundedPublishWarmTruth marks a bounded publish to a warm
-	// (prior-xDS-version) client whose only remaining gaps were referenced
-	// clusters with no derived CLA — their steady-state truth, not
-	// propagation lag. Warm clients with clusters missing from CDS stay
-	// withheld.
+	// boundedPublishWarmTruth marks a bounded publish to a warm client whose
+	// only gaps were referenced clusters with no derived CLA; withholding would
+	// freeze it indefinitely. Warm clients missing CDS clusters stay withheld.
 	boundedPublishWarmTruth = "warm_truth"
-	// boundedPublishFlipRelease marks a held route flip published at budget
-	// expiry: the newly-referenced cluster never became ready, and holding
-	// longer would keep the client's route/listener/secret updates pinned.
+	// boundedPublishFlipRelease marks a held flip released at budget expiry:
+	// the new cluster never became ready, and holding longer would keep the
+	// client's route/listener/secret updates pinned.
 	boundedPublishFlipRelease = "flip_release"
-	// boundedPublishWarmRelease marks a warm client published after staying
-	// withheld, with referenced clusters missing from CDS, for the whole warm
-	// withhold bound (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND): the missing clusters
-	// were not translation catching up, and holding longer would freeze the
-	// client's config until its proxy restarts.
+	// boundedPublishWarmRelease marks a warm client published after being
+	// withheld for KGW_PER_CLIENT_WARM_WITHHOLD_BOUND with clusters missing
+	// from CDS; holding longer would freeze its config until its proxy restarts.
 	boundedPublishWarmRelease = "warm_release"
-	// boundedPublishCarryExpired marks a published client stopped being
-	// carried a referenced cluster missing from CDS after the warm withhold
-	// bound: the cluster's last config is no longer served and routes to it
-	// fail until it reappears.
+	// boundedPublishCarryExpired marks a published client that stopped being
+	// carried a cluster missing from CDS for the warm withhold bound. Routes to
+	// it fail until it reappears.
 	boundedPublishCarryExpired = "carry_expired"
 
 	withheldStateLabel = "state"
@@ -105,9 +99,8 @@ func recordSnapshotDefer(proxyKey string, missing, missingEndpoints []string) {
 	}
 }
 
-// recordBoundedPublish counts a deferred snapshot published at budget expiry,
-// by mode (first_publish for cold clients, warm_truth for warm clients whose
-// only gaps were endpoint-less clusters).
+// recordBoundedPublish counts a withheld or held publication that a time
+// bound released before every referenced cluster was ready, by mode.
 func recordBoundedPublish(proxyKey string, mode string) {
 	if !metrics.Active() {
 		return
@@ -120,10 +113,9 @@ func recordBoundedPublish(proxyKey string, mode string) {
 	)
 }
 
-// recordWithheldClients publishes how many of one gateway's clients are
-// withheld in each state, from the gate's counts of clients pending a first
-// publish and of the warm ones among them withheld past the budget. A state
-// with no clients has no series, so a gateway that is gone leaves none.
+// recordWithheldClients sets one gateway's withheld-client gauge per state
+// from the gate's pending and warm counts. A state with no clients has no
+// series, so a gateway that is gone leaves none.
 func recordWithheldClients(labels resourceNameDetails, pending, warm int) {
 	for _, s := range []struct {
 		state string
@@ -146,8 +138,8 @@ func recordWithheldClients(labels resourceNameDetails, pending, warm int) {
 }
 
 // recordInconsistentSnapshot counts a pre-publication consistency violation
-// (see snapshotConsistencyError). It carries no gateway labels: any increment
-// is a bug, and the error logged with it names the client.
+// (see snapshotConsistencyError). It is unlabeled: any increment is a bug,
+// and the logged error names the client.
 func recordInconsistentSnapshot() {
 	if !metrics.Active() {
 		return

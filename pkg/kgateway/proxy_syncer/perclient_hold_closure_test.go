@@ -17,8 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// listenerCallingAuthz is an HTTP listener whose ext_authz filter calls
-// clusterName, routing through RDS route-config.
+// listenerCallingAuthz builds an RDS listener whose ext_authz calls clusterName.
 func listenerCallingAuthz(t *testing.T, clusterName string) *envoylistenerv3.Listener {
 	t.Helper()
 	authz := &envoyextauthzv3.ExtAuthz{Services: &envoyextauthzv3.ExtAuthz_GrpcService{GrpcService: &envoycorev3.GrpcService{
@@ -40,12 +39,10 @@ func listenerCallingAuthz(t *testing.T, clusterName string) *envoylistenerv3.Lis
 	}}}
 }
 
-// TestHeldFlipKeepsClustersTheHeldListenerCalls: while a route flip is held,
-// the published routes AND listeners stay live, so every cluster they depend
-// on must stay in CDS -- not only the routes' targets. Here one change both
-// moves the route onto a not-yet-derived cluster and drops the ext_authz
-// backend from the build; the held listener still calls ext_authz, so its
-// cluster (and CLA) must be carried for as long as the hold lasts.
+// A held flip keeps the old listeners live, so it carries their filter
+// dependencies, not just route targets. When the build drops ext_authz while
+// adding an underived route target, the authz cluster and CLA are carried until
+// the hold ends.
 func TestHeldFlipKeepsClustersTheHeldListenerCalls(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, time.Hour)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -91,11 +88,9 @@ func TestHeldFlipKeepsClustersTheHeldListenerCalls(t *testing.T) {
 		"the held routes' target is carried too")
 }
 
-// TestCarryKeepsBuiltAssignmentSharedByServiceName: two clusters share one EDS
-// assignment through EdsClusterConfig.service_name. When one is carried and the
-// other is built, the shared assignment must be the built one: the carried
-// copy is stale for the built cluster, and the EDS version describes the built
-// content.
+// With a shared EDS service_name, a built assignment overrides the carried copy.
+// Retaining the old CLA would give the built cluster stale endpoints under a
+// version describing the new assignment.
 func TestCarryKeepsBuiltAssignmentSharedByServiceName(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, true, time.Hour)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -114,8 +109,7 @@ func TestCarryKeepsBuiltAssignmentSharedByServiceName(t *testing.T) {
 		[]envoycachetypes.ResourceWithTTL{endpointsForClient(ucc, "shared", 10).Endpoints.ResourceWithTTL()})
 	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
 
-	// c1 is missing from this build (carried); c2 is built against a derived,
-	// now-empty "shared" assignment (the backend scaled to zero).
+	// c1 is carried; c2 is built against the derived empty "shared" assignment.
 	build := &envoycache.Snapshot{}
 	build.Resources[envoycachetypes.Listener] = listeners
 	build.Resources[envoycachetypes.Route] = routeResourcesForClusters("c1", "c2")

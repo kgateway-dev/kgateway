@@ -32,16 +32,12 @@ type XdsSnapWrapper struct {
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
-	// missingReferenced lists referenced clusters absent from this snapshot's
-	// CDS (translation lagging, or the backend is gone). Sorted.
+	// missingReferenced lists referenced clusters absent from CDS (lagging or
+	// gone). Sorted.
 	missingReferenced []string
-	// missingEndpointsReferenced lists referenced EDS clusters whose CLA was
-	// not derived by the per-client endpoints collection; a synthesized empty
-	// stands in for it in the snapshot, and whether the backend has endpoints
-	// is unknown (the client's per-client rows are still being built, or a
-	// plugin contributed an EDS cluster without an endpoints row; kube
-	// Services always derive a row, even sliceless ones like ExternalName).
-	// A derived-but-empty CLA is the backend's known truth and is NOT listed
+	// missingEndpointsReferenced lists referenced EDS clusters whose CLA is a
+	// synthesized placeholder, so their endpoints are unknown (see
+	// findMissingReferencedEndpointResources). Derived empty CLAs are excluded
 	// (#14352). Sorted.
 	missingEndpointsReferenced []string
 	// synthesizedEndpoints lists every EDS resource whose CLA in snap is a
@@ -59,13 +55,9 @@ type XdsSnapWrapper struct {
 	expiredCarry []string
 }
 
-// deferred reports whether the snapshot was built while some referenced
-// cluster was not ready. syncXds resolves such a snapshot per cluster against
-// the snapshot published on the client's current connection:
-// previously-published clusters are carried forward, previously-referenced
-// clusters whose CLA row is not derived keep the endpoints the client holds,
-// and a route flip onto a newly-referenced not-yet-derived cluster is held
-// back for at most the publish budget (see publishGate).
+// deferred reports whether some referenced cluster was unready at build
+// time. syncXds then resolves the snapshot per cluster (see
+// resolveDeferredPerCluster).
 func (p XdsSnapWrapper) deferred() bool {
 	return len(p.missingReferenced) > 0 || len(p.missingEndpointsReferenced) > 0
 }

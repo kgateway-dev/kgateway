@@ -14,8 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
-// The proxyKey has no gateway/namespace segments, so labels fall back to
-// "unknown" — the metric plumbing, not name parsing, is under test.
+// This key has no gateway or namespace, so labels are "unknown".
 var unknownLabels = []metrics.Label{
 	{Name: "gateway", Value: "unknown"},
 	{Name: "namespace", Value: "unknown"},
@@ -80,8 +79,8 @@ func TestPublicationMetrics_FlipRelease(t *testing.T) {
 	})
 }
 
-// A warm client published at budget expiry because its only gaps were
-// clusters with no derived CLA increments bounded_publishes_total{warm_truth}.
+// A warm bounded publish with only underived CLAs increments
+// bounded_publishes_total{warm_truth}.
 func TestPublicationMetrics_WarmTruthBoundedPublish(t *testing.T) {
 	ResetMetrics()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -104,11 +103,8 @@ func TestPublicationMetrics_WarmTruthBoundedPublish(t *testing.T) {
 	})
 }
 
-// With KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK enabled, publishing a snapshot that
-// fails the consistency check (here: an orphan CLA with no CDS cluster)
-// increments inconsistent_snapshots_total — and still publishes (the check
-// records, never withholds). Uses a plain cache: the package's oracle cache
-// would rightly fail the test on this publish.
+// With KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK on, an orphan CLA is counted but still
+// published. A plain cache is used because the test oracle rejects it.
 func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 	ResetMetrics()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -132,9 +128,8 @@ func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 
 const withheldClientsMetric = "kgateway_xds_snapshot_perclient_withheld_clients"
 
-// withheldClients reads the withheld_clients gauge for one state of the test
-// gateway. A state with no clients has no series, so absence reads as 0. These
-// tests hold one client, so a series for another state fails the read.
+// withheldClients reads the withheld_clients gauge for state. No series reads as
+// 0; a series only for another state fails the read.
 func withheldClients(t *testing.T, state string) float64 {
 	t.Helper()
 	g := metricstest.MustGatherMetrics(t)
@@ -144,9 +139,8 @@ func withheldClients(t *testing.T, state string) float64 {
 	return g.MustGetMetricValueByLabels(withheldClientsMetric, labelsWith("state", state))
 }
 
-// withheld_clients counts a client under state=within_budget while its first
-// publish on the connection is withheld, and drops the series when it
-// publishes, by a coherent build or at the budget, or leaves.
+// withheld_clients counts a client as within_budget while its first publish is
+// withheld, and drops the series once it publishes or leaves.
 func TestPublicationMetrics_WithheldClients(t *testing.T) {
 	ctx := context.Background()
 	gone := func(msg string) {

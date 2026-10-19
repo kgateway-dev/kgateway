@@ -1,15 +1,11 @@
 package proxy_syncer
 
-// Regression tests for EDS snapshot consistency. The per-client CDS includes a
-// cluster for every backend, referenced or not, so an EDS cluster can be in
-// CDS before (or without) its ClusterLoadAssignment. The published snapshot
-// must still satisfy go-control-plane's Snapshot.Consistent() invariant: every
-// EDS cluster has exactly one CLA and there are no CLAs without a cluster.
-// filterEndpointResourcesForClusters drops stale/STATIC CLAs and synthesizes
-// empty assignments for EDS clusters that have no CLA yet; referenced clusters
-// backed by a synthesized empty mark the wrapper deferred (presence, not
-// contents), and the empties reach Envoy for unreferenced clusters and on the
-// bounded publish paths (see publishGate).
+// EDS consistency regressions. The per-client CDS has a cluster for every
+// backend, so an EDS cluster can lack a CLA, yet the built snapshot must pass
+// Snapshot.Consistent(). filterEndpointResourcesForClusters drops orphan and
+// STATIC CLAs and synthesizes missing ones. A referenced placeholder defers
+// publication; a derived empty CLA does not. The gate may omit placeholders to
+// keep held endpoints.
 
 import (
 	"testing"
@@ -33,8 +29,7 @@ import (
 func TestFilterEndpointResourcesForClusters_SynthesizesEmptyCLAForEDSClusterWithoutCLA(t *testing.T) {
 	g := gomega.NewWithT(t)
 
-	// One EDS cluster in CDS; one stale CLA whose cluster is gone. Expect: the
-	// EDS cluster gets a synthesized empty CLA, and the stale CLA is dropped.
+	// Drop the stale CLA and synthesize an empty one for the EDS cluster.
 	clusters := envoycache.NewResourcesWithTTL("v1", []envoycachetypes.ResourceWithTTL{
 		{Resource: &envoyclusterv3.Cluster{
 			Name:                 "eds-x",
@@ -54,11 +49,8 @@ func TestFilterEndpointResourcesForClusters_SynthesizesEmptyCLAForEDSClusterWith
 	g.Expect(cla.GetEndpoints()).To(gomega.BeEmpty(), "the synthesized assignment is empty (active with no hosts)")
 }
 
-// TestSnapshotPerClientPublishesConsistentSnapshotForUnreferencedEDSClusterWithoutEndpoints
-// exercises the production path: an EDS cluster lands in the per-client CDS
-// that no route references and has no endpoints. The published snapshot must
-// still be EDS-consistent (Snapshot.Consistent() passes), which before this
-// change it was not.
+// An unreferenced EDS cluster without endpoints must still produce an
+// EDS-consistent snapshot through the production assembly path.
 func TestSnapshotPerClientPublishesConsistentSnapshotForUnreferencedEDSClusterWithoutEndpoints(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -66,8 +58,7 @@ func TestSnapshotPerClientPublishesConsistentSnapshotForUnreferencedEDSClusterWi
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 
-	// A route config the listener references, but with no routes (so no cluster
-	// is referenced).
+	// The listener uses this empty route config; no cluster is referenced.
 	routes := routeResourcesForClusters()
 	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
 	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
@@ -77,7 +68,7 @@ func TestSnapshotPerClientPublishesConsistentSnapshotForUnreferencedEDSClusterWi
 		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}})
 
-	// An unreferenced EDS cluster in CDS, with no endpoints anywhere.
+	// An unreferenced EDS cluster with no endpoint row.
 	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
 		edsClusterForClient(ucc, "cluster-0", 1),
 	})

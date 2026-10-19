@@ -75,8 +75,8 @@ func TestSnapshotConsistencyChecksBootstrapWithoutHidingOtherGaps(t *testing.T) 
 	if len(snap.Resources[envoycachetypes.Cluster].Items) != 0 {
 		t.Fatal("validation mutated the shared CDS map")
 	}
-	// An EDS cluster without a CLA is how the gate leaves a client's endpoints
-	// alone; Envoy keeps them, so it is not a violation.
+	// Envoy keeps a cluster's endpoints when its CLA is omitted, so this is not
+	// a violation.
 	dangling := *snap
 	dangling.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds", []envoycachetypes.ResourceWithTTL{
 		{Resource: &envoyclusterv3.Cluster{Name: "left-out", ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}},

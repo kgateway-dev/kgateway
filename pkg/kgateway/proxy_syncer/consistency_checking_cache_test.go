@@ -7,25 +7,17 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 )
 
-// consistencyCheckingCache decorates a SnapshotCache so that EVERY snapshot
-// published by any test — including intermediate publishes no assertion looks
-// at, and publishes fired from the gate's budget timers — is checked for
-// resources no other resource of the snapshot references (every EDS resource
-// must match a CDS reference, every RDS resource an LDS reference) and for
-// RouteConfigurations a listener names but the snapshot lacks (see
-// snapshotConsistencyError).
+// consistencyCheckingCache runs snapshotConsistencyError on every snapshot a
+// test publishes, including intermediate and timer-fired ones: no CLA or
+// RouteConfiguration that nothing references (the bootstrap local CLA
+// excepted), and no RouteConfiguration a listener names but the snapshot
+// lacks. It has no false positives: deliberately incomplete publishes
+// (bounded first publish, flip release, left-out CLAs) leave gaps only in
+// route->cluster and cluster->CLA edges, which it does not check. Tests that
+// expect those closures use assertSnapshotCoherent.
 //
-// Accounting for the known bootstrap local cluster, this is a universal
-// invariant: it must hold on every publish, including the deliberately
-// incomplete ones (bounded first publish, flip release, CLAs left out so a
-// client keeps its endpoints), because their incompleteness lives in edges
-// the check does not model: route->cluster and EDS cluster->CLA. That makes
-// this a zero-false-positive oracle. Those closures are deliberately NOT
-// asserted here and remain an opt-in assertion (assertSnapshotCoherent) for
-// tests that expect full coherence.
-//
-// t.Errorf (not Fatalf) is used because SetSnapshot runs on gate timer
-// goroutines; Errorf is safe from non-test goroutines.
+// It uses t.Errorf because SetSnapshot runs on timer goroutines, where
+// Fatalf must not be called.
 type consistencyCheckingCache struct {
 	envoycache.SnapshotCache
 	t *testing.T
@@ -35,8 +27,8 @@ func newConsistencyCheckingCache(t *testing.T, inner envoycache.SnapshotCache) e
 	return &consistencyCheckingCache{SnapshotCache: inner, t: t}
 }
 
-// newTestSnapshotCache is the standard cache constructor for tests in this
-// package: a plain ADS snapshot cache wrapped with the consistency oracle.
+// newTestSnapshotCache is the package's standard test cache: an ADS snapshot
+// cache wrapped with the consistency checks.
 func newTestSnapshotCache(t *testing.T) envoycache.SnapshotCache {
 	return newConsistencyCheckingCache(t, envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil))
 }

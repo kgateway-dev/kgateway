@@ -371,9 +371,7 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 		newTestPerClientClustersFromCol(clusterCol, uccs),
 	)
 
-	// The wrapper is built immediately but marked deferred: cluster-b is
-	// referenced and missing, so syncXds holds the route flip (or withholds
-	// entirely for a never-published client).
+	// Built at once but deferred: cluster-b is referenced and missing.
 	wrap := eventuallyDeferredWrapper(t, snapshots)
 	g.Expect(wrap.missingReferenced).To(gomega.ConsistOf("cluster-b"),
 		"the missing referenced cluster must be recorded for syncXds to resolve")
@@ -454,8 +452,8 @@ func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testi
 		newTestPerClientClustersFromCol(clusterCol, uccs),
 	)
 
-	// Deferred: the referenced EDS cluster has no usable endpoint yet. Its
-	// CLA is a synthesized empty so the snapshot stays EDS-consistent.
+	// Deferred: the referenced cluster has no derived CLA. A placeholder keeps the
+	// snapshot EDS-consistent.
 	wrap := eventuallyDeferredWrapper(t, snapshots)
 	g.Expect(wrap.missingEndpointsReferenced).To(gomega.ConsistOf("cluster-a"))
 	g.Expect(wrap.snap.Resources[envoycachetypes.Endpoint].Items).To(gomega.HaveKey("cluster-a"),
@@ -735,10 +733,8 @@ func TestSnapshotPerClientDefersMakeBeforeBreakRouteUntilNewEndpointReady(t *tes
 	mostXdsSnapshots.UpdateObject(updated)
 	clusterCol.UpdateObject(clusterNew)
 
-	// The flip onto cluster-new is held while its EDS is absent: the served
-	// routes keep targeting cluster-old, but cluster-new already enters the
-	// served CDS (with a synthesized empty CLA) so it can warm — the
-	// reference-ahead shape.
+	// Hold routes at cluster-old while publishing cluster-new and its placeholder
+	// CLA first: the reference-ahead snapshot shape.
 	var heldServed *envoycache.Snapshot
 	g.Eventually(func() bool {
 		heldServed = eventuallyCacheSnapshot(t, cache, nodeID)
@@ -779,15 +775,9 @@ func TestSnapshotPerClientDefersMakeBeforeBreakRouteUntilNewEndpointReady(t *tes
 	assertSnapshotCoherent(t, finalServed)
 }
 
-// TestSnapshotPerClientRetargetToDerivedBackend pins the two phases of a
-// route retarget onto a brand-new backend under presence semantics: while
-// the new cluster's CLA has not been derived (the per-client endpoints
-// collection has no row for it), the flip is held at the published routes;
-// once a CLA row is derived — even an EMPTY one — it is the backend's truth
-// (presence, not contents, gates deferral: "empty forever, on purpose" is a
-// production-proven config shape, #14352) and the flip publishes, with the
-// route failing until endpoints arrive, exactly as the whole-snapshot
-// existence gate this replaced behaved.
+// Hold a retarget while the new CLA is underived; release once a row is derived,
+// even empty, and let the route fail until endpoints arrive. A backend empty on
+// purpose must not pin the flip (#14352).
 func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -842,9 +832,7 @@ func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 	mostXdsSnapshots.UpdateObject(updated)
 	clusterCol.UpdateObject(clusterNew)
 
-	// Phase 1: no CLA row has been derived for cluster-new (only a
-	// synthesized empty stands in), so the flip is held: served routes keep
-	// targeting cluster-old while cluster-new warms in the served CDS.
+	// Phase 1: cluster-new has only a placeholder; the flip is held while it warms.
 	var heldServed *envoycache.Snapshot
 	g.Eventually(func() bool {
 		heldServed = eventuallyCacheSnapshot(t, cache, nodeID)
@@ -855,9 +843,8 @@ func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 		"an underived CLA must not flip the served route onto the new cluster")
 	assertSnapshotCoherent(t, heldServed)
 
-	// Phase 2: a derived-but-EMPTY CLA row appears (the EndpointSlice exists
-	// with no ready endpoints). Presence is truth: the flip publishes and the
-	// route fails until endpoints arrive — it must not stay pinned (#14352).
+	// Phase 2: a derived empty CLA releases the flip (#14352); the route fails
+	// until endpoints arrive.
 	endpointCol.UpdateObject(endpointNewEmpty)
 
 	var flippedServed *envoycache.Snapshot
@@ -941,9 +928,7 @@ func TestSnapshotPerClientDefersWeightedRouteUntilAllEndpointsReady(t *testing.T
 	mostXdsSnapshots.UpdateObject(updated)
 	clusterCol.UpdateObject(clusterNew)
 
-	// The weighted split is held while cluster-new has no usable endpoints:
-	// the served routes keep sending 100% to cluster-old while cluster-new
-	// warms in the served CDS.
+	// Hold the weighted split until cluster-new derives; 100% stays on cluster-old.
 	var heldServed *envoycache.Snapshot
 	g.Eventually(func() bool {
 		heldServed = eventuallyCacheSnapshot(t, cache, nodeID)
@@ -1001,8 +986,7 @@ func TestSnapshotPerClientDefersUntilReferencedEDSServiceNameHasEndpoints(t *tes
 		newTestPerClientClustersFromCol(clusterCol, uccs),
 	)
 
-	// Deferred: the referenced EDS cluster resolves its CLA by service_name,
-	// which has no usable endpoint yet (synthesized empty).
+	// Deferred: a placeholder stands in under the underived service_name.
 	wrap := eventuallyDeferredWrapper(t, snapshots)
 	g.Expect(wrap.missingEndpointsReferenced).To(gomega.ConsistOf("cluster-a"))
 	g.Expect(wrap.snap.Resources[envoycachetypes.Endpoint].Items).To(gomega.HaveKey("backend-service"),
@@ -1351,13 +1335,8 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 	g.Expect(snap.snap.Resources[envoycachetypes.Cluster].Items).ToNot(gomega.HaveKey("cluster-b"))
 }
 
-// TestCollectReferencedClusters_ExcludesAncillaryReferences verifies that
-// cluster names reachable only through ancillary / control-plane
-// typed_config (access-log GrpcService, JWT jwks HttpUri, etc.) are
-// deliberately NOT treated as gated dataplane targets. Those clusters are
-// ordinary backends that can lag like any other, but holding every route
-// update of the gateway behind one side service is not what this readiness
-// guard is for.
+// Clusters reachable only via ancillary typed_config (access log, JWKS) are not
+// gated targets: one lagging side service must not hold every route update.
 func TestCollectReferencedClusters_ExcludesAncillaryReferences(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -1434,12 +1413,8 @@ func TestCollectReferencedClusters_ExcludesAncillaryReferences(t *testing.T) {
 		"ancillary JWT jwks cluster must not be treated as a gated dataplane target")
 }
 
-// TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef verifies that
-// a user BackendRef typo — e.g. an HTTPRoute pointing at a Service that does
-// not exist — does not starve the readiness gate on startup. IR-time
-// resolution substitutes wellknown.BlackholeClusterName for the unresolved
-// target, and the gate explicitly skips blackhole so valid routes still
-// reach Envoy.
+// A BackendRef typo becomes the blackhole cluster in IR translation, which the
+// gate skips, so valid routes still publish on startup.
 func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -1515,14 +1490,8 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 		"a snapshot must publish so Envoy can serve the good route even when another route's BackendRef is unresolvable")
 }
 
-// TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime
-// verifies that a BackendRef pointing at a nonexistent Service arriving after
-// the control plane is already serving does not cause the per-client snapshot
-// to be withdrawn. IR translation substitutes blackhole for the unresolved
-// target, which the gate skips, so the snapshot re-publishes with the new
-// route set rather than being withdrawn. The existing good route keeps
-// flowing; the typo'd route blackholes in Envoy — no 500/NC for valid
-// traffic.
+// An unresolvable BackendRef added at runtime becomes blackhole, which the gate
+// skips, so the snapshot republishes instead of being withdrawn.
 func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRuntime(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -1623,20 +1592,9 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 		"snapshot must stay published after an unresolvable BackendRef arrives; withdrawing it strands Envoy on restart")
 }
 
-// TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly pins the
-// defensive behaviour of snapshotPerClient when the per-client clusters
-// collection is empty for a UCC. In production this is hard to reach because
-// finalBackends emits a BackendObjectIR for every Service port in the
-// cluster, so the per-client clusters collection is non-empty even for a
-// gateway whose HTTPRoutes only use RequestRedirect or DirectResponse. The
-// test constructs that condition synthetically — zero entries in the cluster
-// collection and zero referenced clusters in the route config — to exercise
-// the branch that treats a nil clusterSnapshot entry as "zero clusters"
-// rather than "not yet computed". Without that branch the snapshot would
-// stall indefinitely whenever the path is reached (controller starting
-// before Service informers sync, or a deployment whose only backends are
-// non-K8s and all fail translation); with it, publishing proceeds because
-// the referenced-cluster gate has nothing to wait for.
+// A present but empty per-client clusters row with redirect-only routes must
+// publish: there is no target to wait for. The row is synthetic; in production
+// every Service port contributes a backend.
 func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
 	g := gomega.NewWithT(t)
 
@@ -1644,7 +1602,7 @@ func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
 
-	// Routes with only a Redirect action — no cluster references.
+	// Redirect-only routes have no cluster references.
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{
 		{
 			Name: "route-config",
@@ -1673,9 +1631,7 @@ func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
 		ReferencedClusters: referencedClusters,
 	}})
 
-	// No per-client clusters at all for this UCC — simulates a deployment with
-	// only redirect-only routes and no Service-backed backends contributing
-	// clusters. The client-keyed collection still emits a complete empty row.
+	// No clusters; the client-keyed collection still emits a complete, empty row.
 	pcc := newTestPerClientClustersFromCol(krt.NewStaticCollection[uccWithCluster](nil, nil), uccs)
 	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, nil)
 
@@ -1984,9 +1940,8 @@ func eventuallyCoherentWrapper(t *testing.T, snapshots krt.Collection[XdsSnapWra
 	return wrap
 }
 
-// registerSyncXds wires a test ProxyTranslator to the wrapper collection the
-// way proxy_syncer does in production: every non-delete event is pushed
-// through syncXds against the translator's snapshot cache.
+// registerSyncXds pushes non-delete wrapper events through syncXds, like
+// proxy_syncer; it ignores deletes.
 func registerSyncXds(snapshots krt.Collection[XdsSnapWrapper], translator ProxyTranslator) {
 	snapshots.RegisterBatch(func(events []krt.Event[XdsSnapWrapper]) {
 		for _, event := range events {
@@ -1998,11 +1953,8 @@ func registerSyncXds(snapshots krt.Collection[XdsSnapWrapper], translator ProxyT
 	}, true)
 }
 
-// assertSnapshotCoherent verifies the published snapshot's internal
-// invariants: go-control-plane consistency (every EDS cluster has exactly one
-// CLA, no CLA without a cluster) and reference closure (every route/listener-
-// referenced cluster exists in CDS, so Envoy cannot 500/NC on a published
-// route).
+// assertSnapshotCoherent checks Snapshot.Consistent() and that every
+// non-blackhole route or listener target is in CDS, so no published route NCs.
 func assertSnapshotCoherent(t *testing.T, snap *envoycache.Snapshot) {
 	t.Helper()
 	if err := snap.Consistent(); err != nil {
@@ -2023,10 +1975,8 @@ func assertSnapshotCoherent(t *testing.T, snap *envoycache.Snapshot) {
 	}
 }
 
-// TestCollectReferencedClusters_ListenerTargets covers the listener side of the
-// walk: TCP proxies in filter chains and in the default filter chain, and route
-// configurations inlined in an HTTP connection manager. A manager using RDS
-// contributes through the route configurations, not the listener.
+// Collect TCP targets from normal/default filter chains and inline HTTP routes.
+// RDS targets come from the separate route configurations.
 func TestCollectReferencedClusters_ListenerTargets(t *testing.T) {
 	g := gomega.NewWithT(t)
 	tcpFilter := func(tcp *envoytcpv3.TcpProxy) *envoylistenerv3.Filter {
@@ -2076,9 +2026,8 @@ func TestCollectReferencedClusters_ListenerTargets(t *testing.T) {
 	}))
 }
 
-// The EDS version is the input's whenever nothing is dropped or synthesized, and
-// otherwise changes with the dropped and synthesized names, so a client is
-// pushed every change in what is published without hashing any CLA.
+// The EDS version is the input's unless CLAs are dropped or synthesized; then it
+// folds in their names, so it changes with the published set.
 func TestFilterEndpointResourcesForClusters_VersionTracksPublishedSet(t *testing.T) {
 	g := gomega.NewWithT(t)
 	edsCluster := func(name string) envoycachetypes.ResourceWithTTL {
@@ -2105,9 +2054,8 @@ func TestFilterEndpointResourcesForClusters_VersionTracksPublishedSet(t *testing
 	g.Expect(versionFor("a")).To(gomega.Equal(dropB), "the version is deterministic")
 }
 
-// The filter publishes exactly one CLA per EDS cluster (plus the bootstrap
-// one), whichever path it takes: the allocation-free check for the common case
-// must agree with the general path, including in the cases it hands over.
+// The allocation-free fast path and the general path must both publish exactly
+// one CLA per EDS cluster, plus bootstrap.
 func TestFilterEndpointResourcesForClusters_PublishesRequiredSet(t *testing.T) {
 	eds := func(name, serviceName string) envoycachetypes.ResourceWithTTL {
 		c := &envoyclusterv3.Cluster{Name: name, ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}}

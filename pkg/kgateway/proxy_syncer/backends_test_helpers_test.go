@@ -90,9 +90,9 @@ func storedClusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniquelyConnec
 	return names
 }
 
-// newTestPerClientClustersFromCol lets publication tests vary each client's
-// translated rows independently while using the production CDS assembler.
-// Driving it from clients preserves the empty row after the last backend leaves.
+// newTestPerClientClustersFromCol feeds per-client test rows through the
+// production CDS assembler. Keyed by client, it keeps an empty row after a
+// client's last backend leaves.
 func newTestPerClientClustersFromCol(col krt.Collection[uccWithCluster], clients krt.Collection[ir.UniquelyConnectedClient]) PerClientEnvoyClusters {
 	rows := krt.NewCollection(clients, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
 		all := krt.Fetch(kctx, col)

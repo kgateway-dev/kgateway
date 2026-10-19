@@ -8,13 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestXdsSnapWrapperEquals_ComparesGapClassification pins the regression where
-// a wrapper's deferred->ready transition was invisible to KRT: a synthesized
-// empty CLA and a derived-but-empty CLA are byte-identical protos, so every
-// per-type version can be unchanged while missingEndpointsReferenced shrinks.
-// Equals must compare the gap classification itself, or the event is
-// suppressed and syncXds never releases a held route flip whose blocking
-// cluster derived its (empty) truth.
+// TestXdsSnapWrapperEquals_ComparesGapClassification pins that Equals compares
+// the gap classification. Synthesized and derived empty CLAs are identical
+// protos and publication depends on which one a CLA is, so Equals must not
+// rely on versions alone to see the change.
 func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
 	newSnap := func() *envoycache.Snapshot {
 		snap := &envoycache.Snapshot{}
@@ -51,8 +48,8 @@ func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
 	assert.True(t, deferredWrap.Equals(same),
 		"identical versions and identical classification are equal")
 
-	// An unreferenced cluster's CLA turning from synthesized into derived-empty
-	// changes nothing any version sees, but the gate stops leaving that CLA out.
+	// An unreferenced cluster's CLA turning derived changes whether the gate
+	// leaves it out, so the wrappers must differ.
 	synthesizedOnly := readyWrap
 	synthesizedOnly.synthesizedEndpoints = []string{"cluster-unreferenced"}
 	assert.False(t, readyWrap.Equals(synthesizedOnly),

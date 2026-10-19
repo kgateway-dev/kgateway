@@ -352,67 +352,51 @@ type Settings struct {
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
 
-	// PerClientPublishBudget bounds how long per-client xDS publication may
-	// be withheld while referenced clusters are not yet ready. It governs:
+	// PerClientPublishBudget bounds how long per-client xDS publication may be
+	// withheld while referenced clusters are not ready:
 	//
-	//   - first publish: a client that has NEVER been published a snapshot
-	//     receives the latest deferred snapshot at expiry (it is always
-	//     internally consistent), so a freshly scheduled gateway pod binds
-	//     its listeners and becomes Ready instead of crash-looping; routes
-	//     to still-unready clusters return 503 until they cohere. Clients
-	//     that reported a prior accepted xDS version on connect are warm:
-	//     they stay withheld while referenced clusters are missing from CDS
-	//     (for at most PerClientWarmWithholdBound),
-	//     but publish at expiry when the only gaps are clusters whose
-	//     endpoints were never derived (by then that is translation backlog
-	//     or a plugin gap with no convergence guarantee, and withholding
-	//     longer would freeze the client's config indefinitely); the client
-	//     keeps the endpoints it holds for those clusters.
-	//   - flip release: a route flip held because it targets a
-	//     newly-referenced cluster with no derived endpoints is published at
-	//     expiry, so a reference that never becomes ready cannot pin the
-	//     client's route/listener/secret updates indefinitely.
+	//   - first publish: a client not yet published on its current connection
+	//     gets the latest deferred snapshot at expiry, so a new gateway pod
+	//     goes Ready instead of crash-looping; routes to unready clusters
+	//     return 503 until ready. A warm client (prior accepted xDS version on
+	//     connect) stays withheld while referenced clusters are missing from
+	//     CDS, up to PerClientWarmWithholdBound. If its only gaps are underived
+	//     endpoints, it publishes at expiry and keeps the endpoints it holds:
+	//     such gaps may never converge, and withholding would freeze its config.
+	//   - flip release: a route flip held for a newly-referenced unready
+	//     cluster publishes at expiry, so it cannot pin route, listener and
+	//     secret updates indefinitely.
 	//
-	// Keep the budget well below the gateway proxy's startup probe window
-	// (60s by default): a first publish bounded above the probe window
-	// recreates the crash loop the bound exists to prevent. A value of 0
-	// disables all bounds: clients wait for coherence with no deadline.
+	// Keep it well below the proxy's startup probe window (60s by default);
+	// above it, the first publish comes too late and the crash loop returns.
+	// 0 disables all bounds: clients wait for coherence indefinitely.
 	PerClientPublishBudget time.Duration `split_words:"true" default:"15s"`
 
-	// PerClientWarmWithholdBound is the last-resort bound on how long a warm
-	// client (one that reported a prior accepted xDS version on connect, so it
-	// may still be serving config from an earlier stream) stays withheld
-	// because referenced clusters are missing from CDS. Withholding keeps
-	// routes the proxy is serving from failing with no cluster, but a cluster
-	// that never appears would otherwise freeze the client's config, including
-	// certificate rotations, until the proxy restarts. Once a warm client has
-	// been withheld this long, the latest deferred snapshot is published
-	// anyway; routes to the missing clusters fail until they appear.
+	// PerClientWarmWithholdBound bounds how long a warm client (one that
+	// reported a prior accepted xDS version on connect and may still serve
+	// earlier config) stays withheld because referenced clusters are missing
+	// from CDS. Without it, a cluster that never appears would freeze the
+	// client's config, including certificate rotations, until the proxy
+	// restarts. At the bound the latest deferred snapshot publishes, and routes
+	// to missing clusters fail until they appear. It also bounds how long a
+	// published client is still sent a missing cluster's last config
+	// (make-before-break carry), so stale endpoints are not served forever.
 	//
-	// The same bound limits how long an already-published client keeps being
-	// sent the last config of a referenced cluster that went missing from CDS
-	// (carried forward as make-before-break): past it the cluster is dropped,
-	// so endpoints that old are not served indefinitely.
-	//
-	// Keep it well above the longest time translation takes to catch up after
-	// a controller restart: a bound shorter than that fails warm routes on
-	// every restart. Only applies while PerClientPublishBudget is non-zero. A
-	// value of 0 removes the bound: warm clients stay withheld until the
-	// missing clusters appear, and missing clusters are carried indefinitely.
+	// Keep it well above how long translation takes to catch up after a
+	// controller restart; a shorter bound fails warm routes on every restart.
+	// Applies only while PerClientPublishBudget is non-zero. 0 removes the
+	// bound: warm clients stay withheld, and missing clusters are carried,
+	// indefinitely.
 	PerClientWarmWithholdBound time.Duration `split_words:"true" default:"10m"`
 
-	// XdsSnapshotConsistencyCheck checks every per-client xDS snapshot
-	// immediately before it is published for an EDS or RDS resource that no
-	// CDS or LDS resource of the same snapshot references (go-control-plane
-	// withholds an ADS response that carries an unrequested resource) and for
-	// a listener naming a RouteConfiguration the snapshot lacks, recording
-	// violations in the
-	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total counter and
-	// the error log. The snapshot is still published either way: the check is
-	// an invariant monitor for test and CI environments (any increment is a
-	// kgateway bug worth reporting), never a gate — withholding on
-	// inconsistency would reintroduce the unbounded withholds the publication
-	// engine removed. Off by default.
+	// XdsSnapshotConsistencyCheck checks each per-client snapshot before
+	// publish for EDS or RDS resources that no CDS or LDS resource references
+	// (go-control-plane withholds an ADS response carrying an unrequested
+	// resource) and for listeners naming a missing RouteConfiguration.
+	// Violations are logged and counted in
+	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total; any
+	// increment is a kgateway bug. The snapshot still publishes: blocking would
+	// reintroduce unbounded withholds. For test and CI; off by default.
 	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.

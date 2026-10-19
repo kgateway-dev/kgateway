@@ -104,102 +104,89 @@ import (
 // so an expiring timer can never overwrite a newer publish, and each timer
 // acts only on the episode that armed it.
 type publishGate struct {
-	// budget is how long a withhold (first publish or held flip) may last
-	// before its bounded publish; 0 disables both bounds (withhold/hold until
-	// coherent, with no deadline). Written once at construction.
-	budget time.Duration
-	// warmWithholdBound is the last-resort bound on how long a warm client
-	// stays withheld while referenced clusters are missing from CDS
-	// (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND); 0 removes it. It only applies
-	// while budget is non-zero. Written before the gate is first used.
-	warmWithholdBound time.Duration
-	// warmWithheld counts, per gateway, the warm clients currently withheld
-	// past the budget (pendingFirstPublish.warmWithheldSince set). They are
-	// among firstPublishPending; the withheld_clients gauge reports them as
-	// state=warm_withheld and the rest as state=within_budget. Guarded by mu;
-	// created on first use.
-	warmWithheld map[resourceNameDetails]int
-	// firstPublishPending counts, per gateway, the clients whose first publish
-	// on their connection is being withheld (pendingFirstPublish.counted).
-	// Guarded by mu; created on first use.
-	firstPublishPending map[resourceNameDetails]int
-	// warmEpisodes keeps, per client key, when a withheld warm client's episode
-	// started, across the client's departure: a proxy that reconnects resumes
-	// its episode instead of restarting the bound, so a connection that resets
-	// more often than the bound is still released. Entries expire once the
-	// departure is older than the bound, and any publish removes them. Guarded
-	// by mu; created on first use.
-	warmEpisodes map[string]warmEpisode
-	// carriedSince records, per client, since when each referenced cluster
-	// missing from the builds has been carried forward from the snapshot the
-	// client was published (boundCarryLocked). Guarded by mu; created on
-	// first use.
-	carriedSince map[string]map[string]time.Time
-	// carryExpiry holds, per client, the timer that ends its earliest carry at
-	// the warm withhold bound when no build arrives to do it
-	// (armCarryExpiryLocked). Guarded by mu; created on first use.
-	carryExpiry map[string]*carryExpiry
-	// coldEpisodes does the same for the first-publish budget: a client whose
-	// connection (or snapshot row) resets more often than the budget resumes
-	// its first-publish episode instead of restarting it, so it still gets
-	// its bounded first publish. Entries expire once the departure is older
-	// than the budget, and any publish removes them. Guarded by mu; created on
-	// first use.
-	coldEpisodes map[string]warmEpisode
-	// checkConsistency verifies every publish, recording (never withholding
-	// on) violations — an invariant monitor for test/CI environments
-	// (KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK). Written once at construction.
-	checkConsistency bool
-	// clientState reports whether a client reported a prior accepted xDS
-	// version (warm). May be nil: every client is then treated as cold.
+	// budget bounds first-publish withholds and held flips; 0 disables both.
 	// Written once at construction.
+	budget time.Duration
+	// warmWithholdBound (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND) bounds warm
+	// withholds on clusters missing from CDS and how long missing clusters are
+	// carried. 0 removes it; it applies only while budget is non-zero. Written
+	// before first use.
+	warmWithholdBound time.Duration
+	// warmWithheld counts, per gateway, warm clients withheld past the budget
+	// (warmWithheldSince set), a subset of firstPublishPending. The
+	// withheld_clients gauge reports them as state=warm_withheld, the rest as
+	// within_budget. Guarded by mu; created on first use.
+	warmWithheld map[resourceNameDetails]int
+	// firstPublishPending counts, per gateway, clients whose first publish on
+	// their connection is withheld (pendingFirstPublish.counted). Guarded by
+	// mu; created on first use.
+	firstPublishPending map[resourceNameDetails]int
+	// warmEpisodes keeps a warm withhold's start across departures, so a
+	// connection that resets faster than the bound is still released. Entries
+	// expire a bound after departure; any publish removes them. Guarded by mu;
+	// created on first use.
+	warmEpisodes map[string]warmEpisode
+	// carriedSince records, per client, when each carried cluster started
+	// being carried (boundCarryLocked). Guarded by mu; created on first use.
+	carriedSince map[string]map[string]time.Time
+	// carryExpiry holds each client's timer for its earliest carry deadline,
+	// for when no build arrives (armCarryExpiryLocked). Guarded by mu; created
+	// on first use.
+	carryExpiry map[string]*carryExpiry
+	// coldEpisodes is warmEpisodes for the first-publish budget: a client whose
+	// connection or snapshot row resets faster than the budget still gets its
+	// bounded first publish. Entries expire a budget after departure; any
+	// publish removes them. Guarded by mu; created on first use.
+	coldEpisodes map[string]warmEpisode
+	// checkConsistency checks every publish, recording violations without
+	// withholding (KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK). Written once at
+	// construction.
+	checkConsistency bool
+	// clientState reports warm clients (prior accepted xDS version); nil treats
+	// every client as cold. Written once at construction.
 	clientState krtcollections.XDSClientState
 
 	mu           sync.Mutex
 	pending      map[string]*pendingFirstPublish
 	pendingFlips map[string]*pendingFlipRelease
-	// published holds the clients the gate has published a snapshot to on
-	// their current connection; clientDeparted removes them, and
-	// snapshotWithdrawn (the row went away, the connection did not) keeps
-	// them.
+	// published marks clients the gate has published to on their current
+	// connection. clientDeparted clears the mark; snapshotWithdrawn keeps it.
 	published map[string]struct{}
 }
 
 type pendingFirstPublish struct {
-	// wrap is the latest deferred wrapper; the timer publishes whatever is
-	// latest at expiry. Its missing clusters decide whether a warm client
-	// publishes or stays withheld. A nil wrap.snap means nothing is pending.
+	// wrap is the latest deferred wrapper, published at expiry unless a warm
+	// client stays withheld for its missing clusters. A nil wrap.snap means
+	// nothing is pending.
 	wrap  XdsSnapWrapper
 	timer *time.Timer
-	// since is when the first-publish episode started; the budget runs from
-	// it, across brief departures (see coldEpisodes).
+	// since starts the budget; it survives brief departures (coldEpisodes).
 	since time.Time
 	// Preserve the warm withhold start across budget rechecks.
 	warmWithheldSince time.Time
-	// counted records that the client is in firstPublishPending: from the
-	// entry's creation until its first publish or its end.
+	// counted means the client is in firstPublishPending, until its first
+	// publish or the entry ends.
 	counted bool
 }
 
-// warmEpisode preserves an episode's start across a brief departure (used for
-// both the warm withhold and the first-publish budget).
+// warmEpisode keeps an episode's start across a brief departure (warm
+// withhold or first-publish budget).
 type warmEpisode struct {
 	since      time.Time
 	departedAt time.Time
 }
 
-// carryExpiry re-resolves a client's latest deferred build once its earliest
-// carried cluster reaches the warm withhold bound (see armCarryExpiryLocked).
+// carryExpiry re-resolves the latest deferred build when the client's earliest
+// carry reaches the warm withhold bound (armCarryExpiryLocked).
 type carryExpiry struct {
-	// wrap is the client's latest deferred build, the one whose resolution
-	// carried.
+	// wrap is the latest deferred build, whose resolution carried.
 	wrap  XdsSnapWrapper
 	timer *time.Timer
 }
 
 type pendingFlipRelease struct {
-	// wrap is the latest deferred wrapper whose flip was held; at expiry it
-	// is re-resolved against the then-published snapshot with holds disabled.
+	// wrap is the latest held wrapper; expiry re-resolves it with holds
+	// disabled against the then-published snapshot.
 	wrap XdsSnapWrapper
 	// blocking are the latest flip-blocking cluster names, for the expiry log.
 	blocking []string
@@ -217,9 +204,8 @@ func newPublishGate(budget time.Duration, checkConsistency bool, clientState krt
 	}
 }
 
-// warm reports whether the client reported a prior accepted listener version:
-// it may be serving config from an earlier stream that this gate never
-// published.
+// warm reports a prior accepted listener version: the client may serve config
+// from an earlier stream this gate never published.
 func (g *publishGate) warm(proxyKey string) bool {
 	return g.clientState != nil && g.clientState.HasPriorXDSVersion(proxyKey)
 }
@@ -302,21 +288,17 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 		delete(g.pending, proxyKey)
 	}
 	g.cancelFlipReleaseLocked(proxyKey)
-	// This build supersedes the one a pending carry expiry would re-resolve;
-	// a deferred build that carries re-arms it after publishing.
+	// This build supersedes the pending carry expiry's; a deferred build
+	// re-arms it after publishing.
 	g.cancelCarryExpiryLocked(proxyKey)
 	return g.setSnapshot(ctx, cache, proxyKey, snap, synthesized)
 }
 
-// resolveDeferred decides how a deferred wrapper publishes. The cache read,
-// the per-cluster resolution, and the resulting publish all happen under one
-// lock acquisition so an expiring budget timer cannot interleave: a
-// first-publish timer firing between an unlocked cache check and the cold
-// offer would strand the newest deferred snapshot unpublished until the next
-// build event, and a flip-release timer firing between an unlocked cache read
-// and the held publish would be overwritten by a hold composed against the
-// pre-release snapshot (re-pinning the just-released routes for another full
-// budget).
+// resolveDeferred reads the cache, resolves per cluster and publishes under one
+// lock. Otherwise a timer firing in between could strand the newest deferred
+// snapshot until the next build (first publish), or have its flip release
+// overwritten by a hold composed before it, re-pinning the released routes
+// for another budget.
 func (g *publishGate) resolveDeferred(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -363,17 +345,9 @@ func (g *publishGate) resolveDeferredLocked(
 ) error {
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
-		// Not yet published on this connection: there is no known config to
-		// hold or carry, and publishing an incoherent snapshot would 503 the
-		// unready routes — so withhold (cold-start make-before-break,
-		// unchanged from the whole-snapshot gate), but only up to the
-		// first-publish budget: a pod with no config at all never goes Ready
-		// and crash-loops, so past the budget the latest deferred snapshot is
-		// published anyway. Clients that reported a prior accepted xDS
-		// version are warm, not cold: they stay withheld at expiry only
-		// while clusters are missing from CDS; when the only gaps are
-		// underived CLAs, the snapshot publishes without them rather than
-		// freezing the client indefinitely.
+		// Not yet published on this connection: nothing to hold or carry, and
+		// publishing would 503 unready routes. Withhold up to the first-publish
+		// budget (firePending).
 		g.offerColdLocked(ctx, cache, snapWrap)
 		return nil
 	}
@@ -393,11 +367,10 @@ func (g *publishGate) resolveDeferredLocked(
 	return publishErr
 }
 
-// offerColdLocked records the latest deferred wrapper for a client not yet
-// published on this connection and arms the budget timer once per episode;
-// the timer publishes whatever is latest unless the client turns out to be
-// warm (prior xDS version) with clusters missing from CDS, or a coherent
-// publish got there first. Callers must hold g.mu.
+// offerColdLocked stores an unpublished client's latest deferred wrapper and
+// arms one budget timer per episode. The timer publishes the latest wrapper
+// unless a coherent publish came first or the client is warm with clusters
+// missing from CDS. Callers must hold g.mu.
 func (g *publishGate) offerColdLocked(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -435,15 +408,11 @@ func (g *publishGate) offerColdLocked(
 	})
 }
 
-// firePending runs at budget expiry: publish the latest deferred snapshot,
-// unless the pending entry was canceled, superseded by a later episode, or
-// drained, or the client reported a prior xDS version (warm reconnect) AND
-// some referenced cluster is missing from CDS — publishing that would NC
-// routes the proxy is still serving. A warm client whose only gaps are
-// clusters with no derived CLA publishes anyway: by expiry that gap has no
-// convergence guarantee (#14352), and withholding would freeze the client
-// indefinitely (see the type comment). The check and publish happen under
-// the gate lock, so they cannot interleave with publish().
+// firePending publishes the latest deferred snapshot at first-publish expiry,
+// unless the entry was canceled, superseded or drained. A warm client with
+// clusters missing from CDS stays withheld, up to warmWithholdBound, since
+// publishing would NC routes it serves; underived CLAs alone do not withhold
+// it. Runs under the gate lock.
 func (g *publishGate) firePending(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -455,23 +424,20 @@ func (g *publishGate) firePending(
 	if g.pending[proxyKey] != st || st.wrap.snap == nil {
 		return
 	}
-	// Keep the entry so a later deferred wrapper of the same episode re-arms
-	// the timer instead of restarting the accounting.
+	// Keep the entry so a later deferred wrapper re-arms the timer instead of
+	// restarting the budget.
 	wrap := st.wrap
 	st.wrap = XdsSnapWrapper{}
 	st.timer = nil
 	if _, published := g.published[proxyKey]; published {
-		// Defensive: every publish path deletes or resolves the pending entry
-		// under this same lock, so a publish on this connection alongside a
-		// pending wrapper should be unreachable — but publishing over it
-		// would regress a newer snapshot, so bail.
+		// Defensive: every publish deletes or resolves the pending entry under
+		// this lock. Publishing here would regress a newer snapshot.
 		return
 	}
 	mode := boundedPublishFirstPublish
 	warm := g.warm(proxyKey)
-	// A cold proxy sharing the key must receive config after its startup
-	// budget. The key still has warm proxies whose endpoints setSnapshot
-	// must preserve when their endpoint rows have not been derived yet.
+	// A cold proxy sharing a warm key must get its bounded first publish.
+	// setSnapshot still preserves the warm proxies' underived endpoints.
 	if cold, ok := g.clientState.(coldStreamReader); ok && cold.HasColdStreamSince(proxyKey, g.budget) {
 		warm = false
 	}
@@ -486,13 +452,10 @@ func (g *publishGate) firePending(
 			logger.Warn("first-publish budget expired, but client reported a prior xDS version and referenced clusters are missing; withholding deferred snapshot",
 				"proxy_key", proxyKey, "missing_clusters", wrap.missingReferenced, "missing_endpoint_clusters", wrap.missingEndpointsReferenced,
 				"withheld_for", withheldFor, "warm_withhold_bound", g.warmWithholdBound)
-			// Re-check every budget without waiting for another deferred
-			// build: with static inputs none may ever arrive. The check
-			// reaches the bound, publishes the warm truth promptly if the
-			// missing clusters appear while some endpoints are still
-			// underived, and publishes once the key stops being warm (its
-			// warm streams closed, or a proxy holding no config has waited a
-			// budget under it).
+			// Re-check every budget, since with static inputs no build may
+			// arrive. This enforces the warm bound and publishes once CDS
+			// recovers or the key stops being warm (warm streams closed, or a
+			// cold proxy waited a budget).
 			next := g.budget
 			if g.warmWithholdBound > 0 {
 				next = min(next, g.warmWithholdBound-withheldFor)
@@ -503,20 +466,17 @@ func (g *publishGate) firePending(
 			})
 			return
 		}
-		// Withheld for the whole bound: whatever is missing is not translation
-		// catching up after a restart. Stop holding the client's routes,
-		// listeners and certificates for it; routes to the missing clusters
-		// fail until those clusters appear.
+		// Withheld for the whole bound, so this is not restart catch-up.
+		// Release routes, listeners and certificates; routes to the missing
+		// clusters fail until they appear.
 		mode = boundedPublishWarmRelease
 		logger.Warn("warm client withheld for the full warm withhold bound; publishing deferred snapshot, routes to the missing clusters will fail until they appear",
 			"proxy_key", proxyKey, "missing_clusters", wrap.missingReferenced, "missing_endpoint_clusters", wrap.missingEndpointsReferenced,
 			"withheld_for", withheldFor)
 	case warm:
-		// Warm client, but every referenced cluster is present in CDS and
-		// the only gaps are clusters with underived CLAs: by now that is
-		// backlog or a plugin gap with no convergence guarantee (#14352),
-		// and withholding would freeze this client's config indefinitely.
-		// Their CLAs are left out, so the client keeps its endpoints for them.
+		// CDS is complete; only underived CLAs remain, and they may never
+		// arrive (#14352). Publish without them rather than freeze the
+		// client, which keeps its endpoints for them.
 		mode = boundedPublishWarmTruth
 		logger.Warn("first-publish budget expired for warm client; publishing without the CLAs that are not derived yet",
 			"proxy_key", proxyKey, "missing_endpoint_clusters", wrap.missingEndpointsReferenced)
@@ -533,9 +493,8 @@ func (g *publishGate) firePending(
 	recordBoundedPublish(proxyKey, mode)
 }
 
-// markWarmWithheldLocked records that a warm client's episode started
-// withholding at now, for the warm bound and the withheld_clients gauge.
-// Callers must hold g.mu.
+// markWarmWithheldLocked records when a warm client's withhold started, for
+// the warm bound and the withheld_clients gauge. Callers must hold g.mu.
 func (g *publishGate) markWarmWithheldLocked(proxyKey string, st *pendingFirstPublish, now time.Time) {
 	st.warmWithheldSince = now
 	if ep, ok := g.warmEpisodes[proxyKey]; ok {
@@ -557,11 +516,9 @@ func (g *publishGate) unmarkWarmWithheldLocked(proxyKey string, st *pendingFirst
 	g.adjustWarmWithheldLocked(proxyKey, -1)
 }
 
-// unmarkFirstPublishPendingLocked takes the client out of the
-// withheld_clients gauge when its first publish goes out or its pending entry
-// ends. Callers uncount it here before unmarkWarmWithheldLocked, so a scrape
-// between the two never shows a warm client as within its budget. Callers
-// must hold g.mu.
+// unmarkFirstPublishPendingLocked removes the client from the withheld_clients
+// gauge. Call it before unmarkWarmWithheldLocked, so a scrape in between never
+// shows a warm client as within budget. Callers must hold g.mu.
 func (g *publishGate) unmarkFirstPublishPendingLocked(proxyKey string, st *pendingFirstPublish) {
 	if !st.counted {
 		return
@@ -600,14 +557,11 @@ func (g *publishGate) adjustWarmWithheldLocked(proxyKey string, delta int) {
 	recordWithheldClients(labels, g.firstPublishPending[labels], g.warmWithheld[labels])
 }
 
-// publishHeldLocked publishes a snapshot whose route flip is held at the
-// published versions and arms the flip-release bound once per episode. If the
-// client is still holding at budget expiry, fireFlipRelease publishes the
-// latest held wrapper re-resolved with holds disabled, so a newly-referenced
-// cluster that never becomes ready (a steady-state-empty backend, #14352)
-// pins the client's route/listener/secret updates for at most one budget
-// instead of forever. budget<=0 disables the bound: the hold lasts until the
-// flip resolves. Callers must hold g.mu.
+// publishHeldLocked publishes a snapshot with its route flip held and arms
+// the flip release once per episode. At expiry fireFlipRelease publishes the
+// latest held wrapper with holds disabled, so a cluster that never becomes
+// ready (#14352) pins route/listener/secret updates for at most one budget.
+// budget<=0 holds until the flip resolves. Callers must hold g.mu.
 func (g *publishGate) publishHeldLocked(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -616,8 +570,8 @@ func (g *publishGate) publishHeldLocked(
 	blocking []string,
 ) error {
 	proxyKey := snapWrap.proxyKey
-	// Like any publish, this supersedes the build a pending carry expiry would
-	// re-resolve; a deferred build re-arms it after publishing.
+	// Like any publish, this supersedes the pending carry expiry; a deferred
+	// build re-arms it after publishing.
 	g.cancelCarryExpiryLocked(proxyKey)
 	if err := g.setSnapshot(ctx, cache, proxyKey, held, snapWrap.synthesizedEndpoints); err != nil {
 		return err
@@ -678,9 +632,8 @@ func (g *publishGate) cancelFlipReleaseLocked(proxyKey string) {
 	}
 }
 
-// clientDeparted ends a client's connection: it cancels any pending bounded
-// first publish or flip release, so a timer cannot publish to a key after its
-// client left, and forgets what the gate published on the connection.
+// clientDeparted cancels the client's pending timers, so none publishes after
+// it left, and forgets what was published on the connection.
 func (g *publishGate) clientDeparted(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -931,7 +884,7 @@ func (g *publishGate) boundCarryLocked(snapWrap XdsSnapWrapper, published envoyc
 		return gone
 	})
 	// A held flip carries its whole published closure; it must not carry these
-	// back, or the next build would find them published and start them over.
+	// back, or the next build would restart them.
 	bounded.expiredCarry = slices.Sorted(maps.Keys(expired))
 	return bounded
 }
@@ -977,9 +930,8 @@ func (g *publishGate) cancelCarryExpiryLocked(proxyKey string) {
 	}
 }
 
-// fireCarryExpiry re-resolves the client's latest deferred build at a carry's
-// deadline (see armCarryExpiryLocked). It acts only for the arming that
-// scheduled it, under the gate lock like every other publication.
+// fireCarryExpiry re-resolves the latest deferred build at a carry deadline,
+// under the gate lock, only for the arming that scheduled it.
 func (g *publishGate) fireCarryExpiry(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, ce *carryExpiry) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -995,9 +947,8 @@ func (g *publishGate) fireCarryExpiry(ctx context.Context, cache envoycache.Snap
 	}
 }
 
-// rememberColdEpisodeLocked keeps a departing unpublished client's
-// first-publish episode start so a reconnect resumes it (see coldEpisodes).
-// Callers must hold g.mu.
+// rememberColdEpisodeLocked keeps a departing unpublished client's episode
+// start for a reconnect (coldEpisodes). Callers must hold g.mu.
 func (g *publishGate) rememberColdEpisodeLocked(proxyKey string, since time.Time) {
 	if since.IsZero() || g.budget <= 0 {
 		return
@@ -1014,9 +965,9 @@ func (g *publishGate) rememberColdEpisodeLocked(proxyKey string, since time.Time
 	g.coldEpisodes[proxyKey] = warmEpisode{since: since, departedAt: now}
 }
 
-// rememberWarmEpisodeLocked keeps a departing warm client's episode start so a
-// reconnect resumes it (see warmEpisodes). Without a bound there is nothing to
-// resume. Callers must hold g.mu.
+// rememberWarmEpisodeLocked keeps a departing warm client's episode start for
+// a reconnect (warmEpisodes); without a bound there is nothing to resume.
+// Callers must hold g.mu.
 func (g *publishGate) rememberWarmEpisodeLocked(proxyKey string, since time.Time) {
 	if since.IsZero() || g.warmWithholdBound <= 0 {
 		return

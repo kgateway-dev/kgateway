@@ -152,8 +152,8 @@ func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
 type PerClientEnvoyEndpoints struct {
 	endpoints krt.Collection[UccWithEndpoints]
 	index     krt.Index[string, UccWithEndpoints]
-	// sources are the backend endpoint inputs the per-client rows are built
-	// from, indexed by the CLA they produce. Nil when unknown (test doubles).
+	// sources are the backend endpoint inputs, indexed by the CLA each produces.
+	// Nil when unknown (test doubles).
 	sources          krt.Collection[ir.EndpointsForBackend]
 	sourcesByCluster krt.Index[string, ir.EndpointsForBackend]
 }
@@ -165,17 +165,14 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 }
 
 // HasEndpointsSource reports whether some backend derives endpoints for the
-// named CLA. When it does, a client without a row for that CLA is waiting for
-// its per-client row to be built (every reconnect rebuilds them); when it
-// does not, no row comes until a source appears, and the empty CLA is the
-// cluster's state until then. Every upstream EDS backend has a source, even
-// with no endpoints (a Service without EndpointSlices, an EDS ServiceEntry
-// without workloads, an EC2 Backend not yet discovered; one with discovery
-// disabled is an errored cluster), so a cluster without one comes from a
-// plugin that contributes no endpoint rows. It registers a KRT dependency on
-// that name, so a source appearing or disappearing recomputes the caller.
-// Without a source index (test doubles) it reports true: the safe reading of
-// an unknown backend is that its endpoints are on their way.
+// named CLA. If one does, a client without that row is waiting for it (every
+// reconnect rebuilds rows). If none does, no row comes until a source appears.
+// Upstream EDS backends always have one, even with no endpoints (a Service
+// without EndpointSlices, an EDS ServiceEntry without workloads, an EC2 Backend
+// not yet discovered; with discovery disabled an EC2 Backend is an errored
+// cluster), so a sourceless cluster comes from a plugin that contributes no
+// endpoint rows. It registers a KRT dependency on the name. Without a source
+// index (test doubles) it reports true, assuming the endpoints are on their way.
 func (ie *PerClientEnvoyEndpoints) HasEndpointsSource(kctx krt.HandlerContext, claName string) bool {
 	if ie.sources == nil {
 		return true
