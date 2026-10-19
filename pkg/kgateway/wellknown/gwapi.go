@@ -215,3 +215,24 @@ func IsListenerSetGVK(gvk schema.GroupVersionKind) bool {
 func AllListenerSetGVKs() []schema.GroupVersionKind {
 	return []schema.GroupVersionKind{ListenerSetGVK, XListenerSetGVK}
 }
+
+// RetiredWaypointClassName is the GatewayClass kgateway created when it could run as
+// an Istio ambient waypoint. That support was removed, but the class object and its
+// Gateways can outlive an upgrade.
+const RetiredWaypointClassName = "kgateway-waypoint"
+
+// waypointInboundBindingAnnotation was set on the waypoint GatewayClass, whatever
+// name it was configured with.
+const waypointInboundBindingAnnotation = "ambient.istio.io/waypoint-inbound-binding"
+
+// IsRetiredWaypointClass reports whether gwc is a waypoint GatewayClass left over
+// from before waypoint support was removed. Its Gateways are ignored rather than
+// reconciled as ingress gateways, which would replace their ClusterIP Service with
+// a LoadBalancer and drop the waypoint port and pod settings.
+func IsRetiredWaypointClass(gwc *gwv1.GatewayClass) bool {
+	if gwc.Name == RetiredWaypointClassName {
+		return true
+	}
+	_, ok := gwc.Annotations[waypointInboundBindingAnnotation]
+	return ok
+}

@@ -503,7 +503,7 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 		// only care about gateways that use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
+		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
 		ports := sets.New[int32]()
@@ -546,7 +546,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by envoy
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || string(gwClass.Spec.ControllerName) != config.EnvoyControllerName {
+		if gwClass == nil || string(gwClass.Spec.ControllerName) != config.EnvoyControllerName || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
 
