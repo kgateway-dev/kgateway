@@ -4,9 +4,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
 
-// Per-client publication counters. These make the publish-time resolution
-// legible in the field: the #14184 triage had to infer all of this from debug
-// log volume.
+// Per-client publication metrics. They show in the field when publish-time
+// resolution runs and how it ends, which otherwise has to be inferred from
+// debug logs. devel/architecture/metrics.md describes each one; keep the help
+// strings to a line.
 const (
 	publicationReasonLabel = "reason"
 	publicationModeLabel   = "mode"
@@ -18,13 +19,12 @@ const (
 	// boundedPublishWarmTruth marks a bounded publish to a warm
 	// (prior-xDS-version) client whose only remaining gaps were referenced
 	// clusters with no derived CLA — their steady-state truth, not
-	// propagation lag (#14352). Warm clients with clusters missing from CDS
-	// stay withheld.
+	// propagation lag. Warm clients with clusters missing from CDS stay
+	// withheld.
 	boundedPublishWarmTruth = "warm_truth"
 	// boundedPublishFlipRelease marks a held route flip published at budget
 	// expiry: the newly-referenced cluster never became ready, and holding
-	// longer would keep the client's route/listener/secret updates pinned
-	// (#14352).
+	// longer would keep the client's route/listener/secret updates pinned.
 	boundedPublishFlipRelease = "flip_release"
 	// boundedPublishWarmRelease marks a warm client published after staying
 	// withheld, with referenced clusters missing from CDS, for the whole warm
@@ -52,14 +52,7 @@ var (
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
 			Name:      "perclient_defers_total",
-			Help: "Total per-client XDS snapshots built with unready referenced " +
-				"clusters, by reason (missing_clusters: absent from CDS; " +
-				"missing_endpoints: no derived CLA — a derived-but-empty CLA is " +
-				"the backend's truth and never counts, #14352). Each increment " +
-				"means publish-time resolution ran for the client " +
-				"(carry-forward, vanished-slices truth, or a held route flip). " +
-				"A sustained rate for a gateway means some referenced cluster " +
-				"is not becoming ready (#14184).",
+			Help:      "Per-client xDS snapshots built while a referenced cluster was not ready, by reason",
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationReasonLabel},
 	)
@@ -75,24 +68,7 @@ var (
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
 			Name:      "perclient_bounded_publishes_total",
-			Help: "Total withheld or held publications released because the publish " +
-				"budget (KGW_PER_CLIENT_PUBLISH_BUDGET) expired. " +
-				"mode=first_publish: a never-published client started on " +
-				"incomplete-but-consistent config instead of waiting indefinitely " +
-				"(it would otherwise have crash-looped, #14184). mode=warm_truth: " +
-				"a warm client's only gaps were referenced clusters with no " +
-				"derived CLA, and withholding would have frozen its config " +
-				"indefinitely (#14352); those CLAs were left out, so the client " +
-				"kept its endpoints for them. mode=flip_release: a " +
-				"held route flip published because its newly-referenced cluster " +
-				"never became ready; the affected routes fail until it does, and " +
-				"pinned route/listener/secret updates resume. mode=warm_release: a " +
-				"warm client withheld for the whole warm withhold bound " +
-				"(KGW_PER_CLIENT_WARM_WITHHOLD_BOUND) because referenced clusters " +
-				"were missing from CDS; routes to them fail until they appear. " +
-				"mode=carry_expired: a published client stopped being carried a " +
-				"referenced cluster that stayed missing from CDS for the warm " +
-				"withhold bound; routes to it fail until it reappears.",
+			Help:      "Withheld or held per-client publications released by a time bound before every referenced cluster was ready, by mode",
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationModeLabel},
 	)
@@ -100,16 +76,7 @@ var (
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
 			Name:      "perclient_inconsistent_snapshots_total",
-			Help: "Total per-client snapshots that, immediately before " +
-				"publication, carried an EDS or RDS resource that no CDS or LDS " +
-				"resource in the same snapshot references (go-control-plane " +
-				"withholds an ADS response carrying an unrequested resource), " +
-				"or a listener naming a RouteConfiguration the snapshot lacks. " +
-				"Only recorded when KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK is " +
-				"enabled (test/CI environments); the snapshot is still " +
-				"published. The publication paths maintain consistency by " +
-				"construction, so any increment is a kgateway bug — please " +
-				"report it with the accompanying error log line.",
+			Help:      "Per-client xDS snapshots that failed the pre-publication consistency check; any increment is a bug",
 		},
 		nil,
 	)

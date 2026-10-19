@@ -74,3 +74,78 @@ metrics.RegisterEvents(httpRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.
 * This indicates the metrics system, and probably the gateway, is overloaded.
 * Once updates have been dropped, `kgateway_resources_*` metrics are no longer valid, until the process has been restarted.
 * Metrics subsystems other than `kgateway_resources_` are not affected.
+
+## Per-client xDS publication metrics
+
+The controller builds an xDS snapshot for each connected client and holds back a
+publication that would point Envoy at a cluster it does not have yet. These
+metrics show when that happens and how it ends. Each carries `gateway` and
+`namespace` labels unless noted. `kgateway_xds_snapshot_deferred_clients` covers
+the stage before them: a client with no snapshot yet.
+
+A client is *warm* when it reported an accepted xDS version from an earlier
+connection, so it may already be serving traffic, and *cold* otherwise.
+
+### `kgateway_xds_snapshot_perclient_defers_total` Metric
+* Counts per-client snapshots built while a referenced cluster was not ready, by
+  `reason`:
+  * `missing_clusters`: a route references a cluster absent from CDS.
+  * `missing_endpoints`: the cluster is in CDS but its endpoints have not been
+    derived yet. A cluster whose derived endpoints are empty is the backend's
+    real state and does not count.
+* A build with both kinds of gap counts once under each reason.
+* Each increment means the publication was resolved at publish time, for example
+  by carrying a missing cluster forward from the last published snapshot, or by
+  holding a route change until the new cluster is ready.
+* A sustained rate for one gateway means some referenced cluster is not becoming
+  ready.
+
+### `kgateway_xds_snapshot_perclient_withheld_clients` Metric
+* Counts clients whose first publish on their current connection is withheld
+  because referenced clusters are not ready, by `state`. Until it goes out, a new
+  proxy has no listeners and is not Ready.
+  * `within_budget`: waiting inside the first-publish budget
+    (`KGW_PER_CLIENT_PUBLISH_BUDGET`). A cold client is published when the budget
+    ends, ready or not, so it only ever appears here.
+  * `warm_withheld`: a warm client still withheld after the budget because
+    referenced clusters are missing from CDS. Publishing would replace its
+    working routes with routes to clusters it does not have. While withheld it
+    receives no updates at all, including certificate rotations. It is released
+    after `KGW_PER_CLIENT_WARM_WITHHOLD_BOUND`, or never if that is 0.
+* The states do not overlap; their sum is every client being held.
+* A state's series is removed when it has no clients.
+
+### `kgateway_xds_snapshot_perclient_bounded_publishes_total` Metric
+* Counts withheld or held publications that a time bound released before every
+  referenced cluster was ready, by `mode`:
+  * `first_publish`: a client never published before started on incomplete but
+    consistent config when the first-publish budget ended, instead of waiting
+    indefinitely.
+  * `warm_truth`: a warm client whose only gaps were clusters with no derived
+    endpoints was published at the budget. Withholding would have frozen its
+    config indefinitely. Those clusters' endpoints were left out, so the client
+    kept the ones it had.
+  * `flip_release`: a route change held for a newly referenced cluster was
+    published at the budget because the cluster never became ready. Routes to it
+    fail until it does, and the route, listener and secret updates held with it
+    resume.
+  * `warm_release`: a warm client withheld for the whole warm withhold bound,
+    because referenced clusters were missing from CDS, was published. Routes to
+    those clusters fail until they appear.
+  * `carry_expired`: a published client stopped being carried a referenced
+    cluster that stayed missing from CDS for the warm withhold bound. Routes to it
+    fail until it reappears.
+* `flip_release`, `warm_release` and `carry_expired` mean some routes are
+  failing; they are the modes to alert on.
+
+### `kgateway_xds_snapshot_perclient_inconsistent_snapshots_total` Metric
+* Recorded only when `KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK` is enabled, which is
+  meant for test and CI environments. It has no labels.
+* Counts per-client snapshots that, just before publication, carried an EDS or
+  RDS resource nothing in the same snapshot references, or a listener naming a
+  RouteConfiguration the snapshot lacks. go-control-plane withholds an ADS
+  response that carries a resource the client did not request. The snapshot is
+  still published.
+* The publication paths keep snapshots consistent by construction, so any
+  increment is a kgateway bug. Report it with the error logged alongside it,
+  which names the client.
