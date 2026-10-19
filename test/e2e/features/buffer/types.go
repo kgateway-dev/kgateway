@@ -10,7 +10,7 @@ import (
 )
 
 var testCases = map[string]*base.TestCase{
-	"TestBufferLimit": &base.TestCase{
+	"TestBufferLimit": {
 		Manifests: []string{filepath.Join(fsutils.MustGetThisDir(), "testdata", "trafficpolicy.yaml")},
 	},
 }
