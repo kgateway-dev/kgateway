@@ -326,10 +326,9 @@ func TestEmissionSetReportsTcpProxyClusterOverrides(t *testing.T) {
 	}
 }
 
-// Every arm of RouteAction.cluster_specifier is either declarative (the walk
-// sees its names) or a request-time selector collectRequestTimeSelectors
-// reports. An arm added by a go-control-plane bump is reported as unknown, and
-// this test fails so that someone decides which it is.
+// Every RouteAction.cluster_specifier arm is either declarative or a reported
+// request-time selector. A new arm from a go-control-plane bump is reported as
+// unknown and fails this test until someone classifies it.
 func TestRouteActionClusterSpecifierArmsAreClassified(t *testing.T) {
 	oneof := (&envoyroutev3.RouteAction{}).ProtoReflect().Descriptor().Oneofs().ByName("cluster_specifier")
 	require.NotNil(t, oneof)

@@ -7,51 +7,36 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
-// emissionClaims is every plugin's ClusterEmissionClaim, resolved once at
-// startup into the two questions the emission path asks: is this selector
-// accounted for, and which clusters do a gateway's selectors keep.
-//
-// A claim's destinations belong to its selectors: they are kept only in a
-// gateway whose configuration uses one of them. Claims are collected once for
-// the whole controller, so keeping them everywhere would widen every scoped
-// gateway's emitted set by every plugin's candidates, gateways that never use
-// the plugin included. Tied to their selectors, they are per-gateway exactly
-// where the plugin is.
+// emissionClaims is every plugin's ClusterEmissionClaim, resolved at startup
+// into selector coverage and kept destinations. A claim's destinations are kept
+// only in gateways that use one of its selectors, so controller-wide claims do
+// not widen every scoped gateway.
 type emissionClaims struct {
-	// bySelector maps each accounted cluster specifier plugin extension name
-	// to the destinations kept for it, merged across the claims naming it. A
-	// gateway keeps scoping when every request-time selector in its
-	// configuration is in here.
+	// bySelector maps each accounted cluster specifier plugin extension name to
+	// its destinations, merged across claims. A gateway stays scoped only if
+	// every request-time selector it uses is here.
 	bySelector map[string]*claimedDestinations
 }
 
-// claimedDestinations are the clusters claims keep for a selector: exact names,
-// and names starting with one of the prefixes.
+// claimedDestinations are the exact names and prefixes kept for a selector.
 type claimedDestinations struct {
 	names    map[string]struct{}
 	prefixes []string
 }
 
-// collectEmissionClaims gathers claims from every contributed policy plugin.
-// Plugins that route only where the configuration says -- nearly all of them --
-// register nothing and cost nothing here.
+// collectEmissionClaims gathers claims from every contributed policy plugin;
+// most register none.
 //
-// An empty prefix is dropped with a log rather than honored. It would admit
-// every cluster, which restores emit-all while still reporting the gateway as
-// scoped: the one outcome worse than reverting, because it is invisible.
+// An empty prefix is dropped with a log: it would admit every cluster while the
+// gateway still reports scoped. A claim accounts for its selectors only with at
+// least one name or prefix and no dropped prefix. Otherwise its selectors stay
+// unaccounted and gateways using them stay unscoped, since keeping none of a
+// selector's candidates would prune exactly the clusters its plugin computes,
+// and the plugin would silently fall back.
 //
-// A claim accounts for its selectors only if it also says where they may route:
-// at least one name or prefix, and no prefix that had to be dropped. Accounting
-// for a selector while keeping none of its candidates would prune exactly the
-// clusters it computes, and its plugin would quietly fall back on every
-// request, the failure claims exist to prevent. Such a claim contributes
-// nothing: its selectors stay unaccounted, so the gateways that use them stay
-// unscoped and emit everything anyway.
-//
-// A claim with no selectors keeps nothing either, since its destinations would
-// apply in no gateway. A cluster a plugin needs whatever the routes say belongs
-// in the resources its translation pass adds (ResourcesToAdd), which scoping
-// never filters.
+// A claim with no selectors keeps nothing. A cluster a plugin always needs
+// belongs in its translation pass's ResourcesToAdd, which scoping never
+// filters.
 func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 	claims := emissionClaims{bySelector: map[string]*claimedDestinations{}}
 	for gk, policyPlugin := range policies {
@@ -111,14 +96,11 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 	return claims
 }
 
-// accountsFor reports whether a claim covers this request-time selector.
-//
-// Only cluster specifier plugins, referenced or inline, can be claimed: a claim
-// names them by extension name. A cluster-header selector never is, since its
-// destination is whatever the client puts in the header, so nothing a plugin
-// declares can bound the set of clusters it might name; nor are the other kinds
-// (filter-state overrides, undecodable typed configs, unknown specifier kinds),
-// which no plugin claim describes.
+// accountsFor reports whether a claim covers this selector. Only cluster
+// specifier plugins, referenced or inline, can be claimed, by extension name. A
+// cluster header is whatever the client sends, so no claim can bound it. No
+// claim describes the other kinds (sni_cluster, filter state, undecodable typed
+// configs, unknown specifiers).
 func (c emissionClaims) accountsFor(selector requestTimeSelector) bool {
 	switch selector.Kind {
 	case selectorSpecifierPlugin, selectorInlinePlugin:
@@ -129,9 +111,8 @@ func (c emissionClaims) accountsFor(selector requestTimeSelector) bool {
 	}
 }
 
-// keptFor returns what the claims keep in a gateway whose configuration has
-// these request-time selectors: the destinations of the claimed ones. A gateway
-// that uses none of a claim's selectors keeps none of its destinations.
+// keptFor returns destinations for claimed selectors used by this gateway.
+// Unused claims retain nothing.
 func (c emissionClaims) keptFor(selectors []requestTimeSelector) claimedSet {
 	var kept claimedSet
 	for _, selector := range selectors {
@@ -152,8 +133,8 @@ func (c emissionClaims) empty() bool {
 // claimedSet is the destinations a gateway's claimed selectors keep.
 type claimedSet []*claimedDestinations
 
-// claims reports whether this cluster is one the gateway's claimed selectors
-// may route to, and so must keep being emitted even though nothing names it.
+// claims reports whether one of the gateway's claimed selectors may route to
+// cluster, which must then stay emitted though nothing names it.
 func (s claimedSet) claims(cluster string) bool {
 	for _, kept := range s {
 		if _, ok := kept.names[cluster]; ok {

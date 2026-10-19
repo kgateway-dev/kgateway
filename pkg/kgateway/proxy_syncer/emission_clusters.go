@@ -18,24 +18,18 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
-// emittedClusters is the set of cluster names a gateway's generated
-// configuration could name, together with whatever made that set unreliable.
-//
-// RequestTimeSelectors are destinations the walk cannot see. Any of them that no
-// plugin has claimed makes the set unsafe to filter on for this gateway: the
-// consumer must emit every cluster rather than prune candidates the data plane
-// may still select. See Filterable.
+// emittedClusters is the cluster names a gateway's configuration could name,
+// plus the request-time selectors the walk cannot see. An unclaimed selector
+// forces emit-all (see Filterable).
 type emittedClusters struct {
 	Names map[string]struct{}
-	// RequestTimeSelectors are the destination selectors the walk cannot
-	// resolve, carried structurally rather than as prose so a plugin's claim can
-	// be matched against the selector that plugin owns.
+	// RequestTimeSelectors are the selectors the walk cannot resolve, kept
+	// structured so a claim can match the selector its plugin owns.
 	RequestTimeSelectors []requestTimeSelector
 }
 
-// requestTimeSelector identifies one piece of configuration that picks its
-// destination per request or connection. Name is the cluster specifier
-// plugin's extension name, the header a cluster-header route reads, or what
+// requestTimeSelector is configuration that picks its destination per request
+// or connection. Name is the plugin extension name, the header read, or what
 // the kind's comment says.
 type requestTimeSelector struct {
 	Kind string
@@ -50,7 +44,7 @@ const (
 	// know; Name is its Go type.
 	selectorUnknownSpecifier = "cluster_specifier"
 	// selectorSniCluster is the sni_cluster network filter, which sets a
-	// TcpProxy's cluster from the connection's SNI.
+	// TcpProxy's cluster from SNI.
 	selectorSniCluster = "sni_cluster"
 	// selectorFilterState is a filter state object that overrides a
 	// destination; Name is its key.
@@ -70,17 +64,15 @@ func (s requestTimeSelector) String() string {
 	return s.Kind + " " + strconv.Quote(s.Name)
 }
 
-// Filterable reports whether this set can be used to prune CDS, given what
-// plugins have claimed. Every request-time selector must be accounted for: one
-// that is not can select a cluster named nowhere, and pruning candidates it may
-// select does not fail visibly.
+// Filterable reports whether this set can prune CDS given the claims: every
+// request-time selector must be accounted for. An unaccounted one can select a
+// cluster named nowhere, and pruning it fails invisibly.
 func (e emittedClusters) Filterable(claims emissionClaims) bool {
 	return len(e.unaccountedSelectors(claims)) == 0
 }
 
-// unaccountedSelectors are the request-time selectors no claim covers, which is
-// what a log or metric should name: "this gateway is unscoped" is only
-// actionable with the selector that caused it.
+// unaccountedSelectors are the selectors no claim covers, named in logs and
+// metrics so an unscoped gateway is actionable.
 func (e emittedClusters) unaccountedSelectors(claims emissionClaims) []string {
 	var unaccounted []string
 	for _, selector := range e.RequestTimeSelectors {
@@ -97,33 +89,24 @@ func (e emittedClusters) Equals(in emittedClusters) bool {
 		slices.Equal(e.RequestTimeSelectors, in.RequestTimeSelectors)
 }
 
-// collectReferencedClustersForEmission returns every cluster name reachable from
-// a gateway's generated routes and listeners.
+// collectReferencedClustersForEmission returns every cluster name reachable
+// from a gateway's generated routes and listeners.
 //
-// This is the emission set, and it is deliberately not the set
-// collectReferencedClusters computes. That one answers "which clusters must be
-// present before a route may be published", so it extracts route targets alone:
-// treating an ancillary reference as required would let one plugin bug starve a
-// whole gateway. This one answers "which clusters may Envoy need", where an
-// ancillary cluster — an ext_authz or ext_proc server, a rate limit service, an
-// access-log gRPC sink, a JWKS source — is a real cluster whose absence is a
-// permanent, route-invisible outage. jwt.go, for instance, resolves its JWKS
-// target through GetBackendFromRef and emits backend.ClusterName(): an ordinary
-// per-client backend cluster, named only from inside a typed_config chain.
+// It differs from collectReferencedClusters, which takes route targets only
+// because treating an ancillary reference as required would let one plugin bug
+// starve a whole gateway. Emission must include ancillary clusters (ext_authz,
+// ext_proc, rate limit, access-log sinks, JWKS): a missing one is a permanent,
+// route-invisible outage. jwt.go, for instance, names its JWKS cluster only
+// inside a typed_config chain.
 //
-// It therefore extracts every string scalar from every message the walk reaches,
-// rather than reading named fields of known message types. The bias is
-// asymmetric on purpose: over-collection emits one cluster nothing uses, while
-// under-collection removes one the data plane needs. Strings that name no
-// cluster cost nothing, because callers intersect this set with the clusters
-// that actually exist.
+// So it collects every string scalar the walk reaches. Over-collection costs
+// one unused cluster; under-collection removes a needed one. Callers intersect
+// the result with existing clusters. The blackhole cluster is always included:
+// routes with unresolvable backends target it, and a healthy build may never
+// name it.
 //
-// wellknown.BlackholeClusterName is always included: routes whose backends fail
-// resolution target it, and it may be named by no proto in a healthy build.
-//
-// The second half of the result is the request-time-destination guard; see
-// collectRequestTimeSelectors, matched against plugin claims by
-// emittedClusters.Filterable.
+// collectRequestTimeSelectors fills RequestTimeSelectors with what the walk
+// cannot see.
 func collectReferencedClustersForEmission(routes, listeners envoycache.Resources) emittedClusters {
 	out := emittedClusters{Names: map[string]struct{}{
 		wellknown.BlackholeClusterName: {},
@@ -202,36 +185,23 @@ func addCandidate(candidates map[string]struct{}, s string) {
 // tcpProxyClusterFilterStateKey names the filter-state override for TcpProxy's cluster.
 const tcpProxyClusterFilterStateKey = "envoy.tcp_proxy.cluster"
 
-// collectRequestTimeSelectors records configuration that chooses a
-// destination cluster at request or connection time, from a set the
-// configuration never enumerates.
+// collectRequestTimeSelectors records configuration that picks a destination at
+// request or connection time from a set the configuration never enumerates: a
+// cluster header (on a route, weighted entry or mirror policy), a cluster
+// specifier plugin, referenced or inline, or a TcpProxy filter-state override
+// (sni_cluster, or set_filter_state writing envoy.tcp_proxy.cluster). A
+// specifier script typically composes the name from a prefix, a request value
+// and a port, so no walk finds the candidates: the prefix is a fragment of a
+// string blob.
 //
-// A cluster-header route reads the name from a request header. A cluster
-// specifier plugin, referenced or inline, runs a script that typically composes
-// a name from a prefix, a request value and a port, so no candidate appears in
-// the generated protos at all — only a declarative fallback, if the plugin has
-// one. Widening the walk cannot reach these: the prefix is a fragment inside one
-// string blob, not a name. The same holds for a weighted-cluster entry or a
-// mirror policy that reads its cluster from a header, and for a TcpProxy whose
-// cluster a network filter overrides through filter state (the sni_cluster
-// filter, or set_filter_state writing envoy.tcp_proxy.cluster). Code does it
-// too: a Lua script's httpCall or a Wasm plugin's HTTP or gRPC call names its
-// cluster inside the script or the module, and the walk sees only the script
-// as one string.
+// Such a plugin usually falls back when its cluster is missing, so pruning a
+// candidate misroutes silently. Reporting the selector makes that a visible
+// loss of the optimization and gives claims something to match.
 //
-// Detection matters more than it first appears. Such a plugin usually checks
-// whether its computed cluster exists and falls back when it does not, so
-// pruning a candidate does not produce a visible 503 — every affected request
-// quietly lands on the fallback instead. Reporting the selector is what turns
-// silent misrouting into a visible, metric-bearing loss of the optimization,
-// and it is what a plugin claim is matched against: a selector some plugin has
-// accounted for stops forcing its gateway back to emitting everything.
-//
-// Every arm of the cluster_specifier oneof is classified explicitly, and an arm
-// this code does not know is reported too: a go-control-plane bump that adds a
-// request-time arm must not silently prune its candidates. Over-reporting only
-// costs the optimization; TestRouteActionClusterSpecifierArmsAreClassified
-// makes a new arm a deliberate decision.
+// Every cluster_specifier arm is classified, and unknown arms are reported, so
+// a go-control-plane bump cannot silently prune a new arm's candidates.
+// Over-reporting only costs the optimization.
+// TestRouteActionClusterSpecifierArmsAreClassified forces the decision.
 func collectRequestTimeSelectors(msg proto.Message, selectors map[requestTimeSelector]struct{}) {
 	switch m := msg.(type) {
 	case *envoyroutev3.RouteAction:
@@ -263,8 +233,7 @@ func collectRequestTimeSelectors(msg proto.Message, selectors map[requestTimeSel
 			selectors[requestTimeSelector{selectorFilterState, tcpProxyClusterFilterStateKey}] = struct{}{}
 		}
 	case *anypb.Any:
-		// The walk hands over only typed configs it could not decode; any
-		// cluster they name is invisible to it.
+		// The walk passes only undecodable Anys here; it cannot see clusters they name.
 		selectors[requestTimeSelector{selectorOpaqueConfig, m.GetTypeUrl()}] = struct{}{}
 	default:
 		// Matched by name: importing these packages would link them into the
@@ -282,13 +251,10 @@ var scriptedConfigs = map[protoreflect.FullName]bool{
 	"envoy.extensions.wasm.v3.PluginConfig":            true,
 }
 
-// walkResourceProtos visits every message reachable from resources, descending
-// into nested messages, lists, maps, and typed_config (anypb.Any) payloads, and
-// calls visit on each. An Any whose payload cannot be decoded is visited
-// itself, in place of the payload.
-//
-// This broader traversal is used for emission; readiness uses the targeted
-// route/listener walk in collectReferencedClusters.
+// walkResourceProtos calls visit on every message reachable from resources,
+// including decoded typed_config payloads. An undecodable Any is visited itself
+// so the guard can report it. Readiness uses the narrower walk in
+// collectReferencedClusters.
 func walkResourceProtos(resources envoycache.Resources, visit func(proto.Message)) {
 	for _, item := range resources.Items {
 		if item.Resource == nil {
@@ -346,10 +312,9 @@ func walkProtoValue(v protoreflect.Value, visit func(proto.Message)) {
 		}
 		nestedMsg, err := anyMsg.UnmarshalNew()
 		if err != nil {
-			// A typed config whose Go type is not linked into this binary (or
-			// that is malformed) can name clusters the walk cannot see. Hand
-			// the opaque Any itself to visit, so the emission guard reports it
-			// (collectRequestTimeSelectors) rather than pruning what it names.
+			// An undecodable typed config (type not linked in, or malformed)
+			// can name clusters the walk cannot see. Visit the Any itself so
+			// collectRequestTimeSelectors reports it.
 			logger.Debug("typed_config not decodable during cluster reference scan", "type_url", anyMsg.GetTypeUrl(), "error", err)
 			visit(anyMsg)
 			return

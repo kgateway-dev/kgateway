@@ -476,18 +476,15 @@ type Settings struct {
 	//   - "ALL" (default): every backend in discovery scope becomes a cluster.
 	//   - "REFERENCED": only clusters the generated configuration references.
 	//
-	// REFERENCED is what shrinks config_dump and per-proxy stats cardinality on
-	// clusters with many Services and few routed ones. It is experimental: a
-	// cluster now enters and leaves a proxy's CDS as configuration starts and
-	// stops naming it, and Envoy does not necessarily apply CDS before RDS
-	// within one snapshot, so either transition could briefly 503 NC where ALL
-	// never would. Two windows close that: ClusterReferenceAhead delivers a new
-	// cluster before the configuration that names it, and
-	// ClusterDereferenceGrace keeps a de-referenced one until the configuration
-	// that stopped naming it has landed. Both are elapsed time, not
-	// acknowledgements: each must exceed the fleet's worst-case propagation. A
-	// gateway whose routes pick a destination at request time stays unscoped
-	// unless a plugin claims that selector (pluginsdk.ClusterEmissionClaim).
+	// REFERENCED shrinks config_dump and per-proxy stats where many Services
+	// are discovered and few are routed. It is experimental: Envoy does not
+	// necessarily apply CDS before RDS within a snapshot, so a cluster entering
+	// or leaving CDS could briefly 503 NC. ClusterReferenceAhead and
+	// ClusterDereferenceGrace cover the two transitions. Both are elapsed time,
+	// not acknowledgements, so each must exceed the fleet's worst-case
+	// propagation. A gateway whose routes pick a destination at request time
+	// stays unscoped unless a plugin claims that selector
+	// (pluginsdk.ClusterEmissionClaim).
 	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
 
 	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays

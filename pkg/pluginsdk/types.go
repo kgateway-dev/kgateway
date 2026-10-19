@@ -153,68 +153,47 @@ type ProcessBaseClusterResources func(
 	out *envoyclusterv3.Cluster,
 ) (BaseClusterResources, error)
 
-// ClusterEmissionClaim declares destinations a plugin may route to that the
-// generated Envoy configuration never names, so that scoped cluster discovery
-// (KGW_CLUSTER_DISCOVERY_MODE=REFERENCED) keeps emitting them.
+// ClusterEmissionClaim declares clusters a plugin's cluster specifier script
+// may pick at request time that the generated configuration never names, so
+// REFERENCED cluster discovery (KGW_CLUSTER_DISCOVERY_MODE) keeps emitting
+// them. The script typically composes a name from a prefix, a request value and
+// a port, so no walk of the protos can find the candidates.
 //
-// It exists for one shape: a route that picks its cluster at request time, from
-// a header or from a cluster specifier plugin whose script composes a name out
-// of a prefix, a request value and a port. None of those candidate names appear
-// in the produced protos, so no walk over them can find the candidates, and
-// scoping would prune destinations the data plane still selects.
+// Pruning them fails silently: the plugin normally falls back when its cluster
+// is missing. So an unclaimed request-time selector reverts its whole gateway
+// to emitting every cluster, and a claim lets the gateway stay scoped.
 //
-// Pruning them does not fail loudly. Such a plugin normally checks whether its
-// computed cluster exists and takes a fallback when it does not, so every
-// affected request quietly lands somewhere else instead of returning 503. That
-// is why an unclaimed request-time selector makes its whole gateway revert to
-// emitting every cluster, and why claiming is worth the trouble: a gateway whose
-// selectors are all claimed keeps scoping everywhere else.
-//
-// A claim must also cover the plugin's own resources. Such a plugin commonly
-// emits an endpointless placeholder cluster so an unmatched request fails
-// closed; once no route names that placeholder, scoping would otherwise prune
-// the very cluster that makes the feature safe.
+// Also claim the plugin's endpointless placeholder cluster, used to fail
+// closed. Once no route names it, scoping would prune it.
 type ClusterEmissionClaim struct {
 	// Selectors are the cluster specifier plugin extension names this claim
-	// accounts for, matching the `name` of the TypedExtensionConfig the plugin
-	// puts in RouteAction.cluster_specifier_plugin (or its inline form).
+	// accounts for: the `name` of the TypedExtensionConfig in
+	// RouteAction.cluster_specifier_plugin or its inline form. Cluster-header
+	// selectors cannot be claimed, since the client picks the destination.
 	//
-	// A gateway reverts to emitting every cluster unless every request-time
-	// selector in its configuration is accounted for here by some plugin. A
-	// cluster-header selector cannot be accounted for: the destination is
-	// whatever the client sends, so no claim can bound it.
+	// A claim accounts for its selectors only with at least one of Names or
+	// NamePrefixes and no rejected prefix. Otherwise it logs an error and
+	// covers nothing: keeping none of a selector's candidates would prune
+	// exactly the clusters it computes.
 	//
-	// A claim accounts for its selectors only if it also says where they may
-	// route: at least one of Names or NamePrefixes, with no prefix rejected.
-	// Otherwise the selectors stay unaccounted (and an error is logged), since
-	// accounting for a selector while keeping none of its candidates would
-	// prune exactly the clusters it computes.
-	//
-	// Names and NamePrefixes belong to these selectors: they are kept only in
-	// gateways whose configuration uses one of them, so a claim never widens a
-	// gateway that does not use the plugin. A claim without selectors keeps
-	// nothing (and an error is logged). A cluster the plugin needs whatever
-	// the routes say belongs in the resources its translation pass adds
-	// (ResourcesToAdd), which scoping never filters.
+	// Names and NamePrefixes are kept only in gateways that use these
+	// selectors. A claim with destinations but no selectors keeps nothing and
+	// logs an error. A cluster the plugin always needs belongs in its
+	// translation pass's ResourcesToAdd, which scoping never filters.
 	Selectors []string
 	// Names are exact cluster names to keep emitting where Selectors are used.
 	Names []string
-	// NamePrefixes admit every cluster whose name starts with one of them,
-	// where Selectors are used, for the composed-name case where the
-	// candidates cannot be enumerated ahead of time. An empty prefix is
-	// rejected rather than treated as "everything": a claim that re-admits the
-	// whole inventory restores emit-all silently, which is the outcome scoping
-	// exists to avoid.
+	// NamePrefixes admit clusters whose names start with one of them, where
+	// Selectors are used, for computed names that cannot be enumerated. An
+	// empty prefix is rejected: it would silently re-admit every cluster.
 	NamePrefixes []string
 }
 
 // ClaimEmittedClusters is called once, when the proxy syncer is built and
-// before its caches have synced, to collect a plugin's ClusterEmissionClaim.
-// The claim holds for the controller's lifetime, so derive it from what the
-// plugin knows statically (how it names the clusters it computes), not from
-// cluster state. Return the zero value when the plugin routes only to
-// destinations the configuration names, which is the usual case and requires
-// nothing of a plugin author.
+// before its caches sync. The claim holds for the controller's lifetime, so
+// derive it from how the plugin names its clusters, not from cluster state.
+// Return the zero value, the usual case, when the plugin routes only to
+// destinations the configuration names.
 type ClaimEmittedClusters func() ClusterEmissionClaim
 
 // PerClientProcessBackend is the legacy eager cluster mutation hook.
@@ -257,9 +236,9 @@ type PolicyPlugin struct {
 	// Required for efficient change detection with either hook; absent a
 	// declaration, consumers compare backend IR and backing-object version.
 	OverlayInputsHash OverlayInputsHash
-	// ClaimEmittedClusters declares destinations this plugin may route to that
-	// the generated configuration never names. Only needed by plugins that
-	// select a destination at request time; see ClusterEmissionClaim.
+	// ClaimEmittedClusters declares destinations the configuration never names;
+	// only plugins that pick a destination at request time need it. See
+	// ClusterEmissionClaim.
 	ClaimEmittedClusters ClaimEmittedClusters
 	// Deprecated: use PerClientClusterOverlay.
 	PerClientProcessBackend PerClientProcessBackend

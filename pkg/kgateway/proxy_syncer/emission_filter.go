@@ -32,10 +32,9 @@ func filterClustersToEmitted(
 	retainedVersions := make(map[string]uint64, len(clusterVersions))
 	for name, item := range clusters.Items {
 		_, referenced := emitted.Names[name]
-		// A claimed cluster is kept even when nothing names it: that is the
-		// whole point of a claim, and it covers the plugin's own placeholder
-		// cluster, which stops being named the moment its feature is doing its
-		// job and would otherwise be the first thing pruned.
+		// A claimed cluster is kept though nothing names it, including the
+		// plugin's placeholder, which stops being named once the feature is
+		// doing its job.
 		if !referenced && !kept.claims(name) {
 			continue
 		}

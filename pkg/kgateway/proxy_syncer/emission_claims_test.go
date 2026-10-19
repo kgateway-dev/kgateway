@@ -19,9 +19,8 @@ func claimingPlugins(claim sdk.ClusterEmissionClaim) sdk.ContributesPolicies {
 	}
 }
 
-// TestClaimedSelectorKeepsTheGatewayScoped is the point of the whole mechanism.
-// An unclaimed request-time selector costs the gateway the optimization
-// everywhere; claiming it keeps scoping on for every other backend.
+// TestClaimedSelectorKeepsTheGatewayScoped: an unclaimed request-time selector
+// unscopes the whole gateway; claiming it restores scoping.
 func TestClaimedSelectorKeepsTheGatewayScoped(t *testing.T) {
 	emission := emittedClusters{
 		Names:                map[string]struct{}{"routed": {}},
@@ -39,9 +38,8 @@ func TestClaimedSelectorKeepsTheGatewayScoped(t *testing.T) {
 		"the plugin that owns the selector accounted for it")
 }
 
-// TestClaimedSelectorsAreMatchedByName: a claim accounts for the selector it
-// names and nothing else, so one plugin's claim cannot silently cover another
-// plugin's unbounded selector.
+// TestClaimedSelectorsAreMatchedByName: a claim covers only the selectors it
+// names, never another plugin's.
 func TestClaimedSelectorsAreMatchedByName(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors:    []string{"picker"},
@@ -54,9 +52,8 @@ func TestClaimedSelectorsAreMatchedByName(t *testing.T) {
 	assert.False(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "other"}))
 }
 
-// TestClusterHeaderCanNeverBeClaimed: the destination is whatever the client
-// puts in the header, so no declaration can bound the set of clusters it might
-// name. A gateway with one stays unscoped however much is claimed.
+// TestClusterHeaderCanNeverBeClaimed: the client picks the header's
+// destination, so no claim can bound it and the gateway stays unscoped.
 func TestClusterHeaderCanNeverBeClaimed(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors:    []string{"picker", "x-target"},
@@ -73,17 +70,15 @@ func TestClusterHeaderCanNeverBeClaimed(t *testing.T) {
 	assert.Equal(t, []string{`cluster_header "x-target"`}, emission.unaccountedSelectors(claims))
 }
 
-// pickerGateway is a gateway whose routes name routed and also select through
-// the picker cluster specifier plugin.
+// pickerGateway routes to routed and uses the picker cluster specifier plugin.
 func pickerGateway() emittedClusters {
 	set := emissionSet("routed")
 	set.RequestTimeSelectors = []requestTimeSelector{{selectorSpecifierPlugin, "picker"}}
 	return set
 }
 
-// TestClaimedClustersSurviveTheFilter covers what a claim buys once the gateway
-// is scoped: the candidates the plugin may compute, and its own placeholder,
-// stay in CDS even though nothing names them.
+// TestClaimedClustersSurviveTheFilter: a scoped gateway keeps the plugin's
+// claimed candidates and placeholder though nothing names them.
 func TestClaimedClustersSurviveTheFilter(t *testing.T) {
 	scoping := scopedClusters()
 	scoping.claims = collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
@@ -104,10 +99,8 @@ func TestClaimedClustersSurviveTheFilter(t *testing.T) {
 		"claimed names and prefixes are kept; only the genuinely unreferenced backend goes")
 }
 
-// TestClaimsKeepNothingInAGatewayWithoutTheirSelector: claims are collected
-// for the whole controller, but a claim's destinations belong to its
-// selectors. A gateway that never uses the plugin must not keep its candidates,
-// or every scoped gateway would grow by every plugin's claims.
+// TestClaimsKeepNothingInAGatewayWithoutTheirSelector: controller-wide claims
+// must not grow gateways that never use the plugin.
 func TestClaimsKeepNothingInAGatewayWithoutTheirSelector(t *testing.T) {
 	scoping := scopedClusters()
 	scoping.claims = collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
@@ -124,9 +117,8 @@ func TestClaimsKeepNothingInAGatewayWithoutTheirSelector(t *testing.T) {
 		"a gateway without the picker selector keeps only what its configuration names")
 }
 
-// TestClaimWithoutSelectorsKeepsNothing: destinations are kept only where a
-// claim's selectors are used, so a claim naming none would apply nowhere. It is
-// dropped rather than read as "keep these everywhere".
+// TestClaimWithoutSelectorsKeepsNothing: a selector-less claim is dropped, not
+// read as keep-everywhere.
 func TestClaimWithoutSelectorsKeepsNothing(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
 		Names:        []string{"picker-fallback"},
@@ -137,9 +129,8 @@ func TestClaimWithoutSelectorsKeepsNothing(t *testing.T) {
 	assert.False(t, claims.keptFor(pickerGateway().RequestTimeSelectors).claims("tenant-a"))
 }
 
-// TestEmptyPrefixClaimIsRejected: a prefix matching everything re-admits the
-// whole inventory while still reporting the gateway as scoped, which is worse
-// than reverting, because it is invisible.
+// TestEmptyPrefixClaimIsRejected: an empty prefix would silently re-admit every
+// cluster while the gateway reports scoped.
 func TestEmptyPrefixClaimIsRejected(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors:    []string{"picker"},
@@ -152,9 +143,9 @@ func TestEmptyPrefixClaimIsRejected(t *testing.T) {
 		"with its prefix dropped the claim keeps none of the selector's candidates, so it must not account for the selector")
 }
 
-// TestClaimWithoutDestinationsDoesNotAccountForItsSelectors: accounting for a
-// selector while keeping none of its candidates would prune exactly the clusters
-// it computes, and its plugin would quietly fall back on every request.
+// TestClaimWithoutDestinationsDoesNotAccountForItsSelectors: otherwise the
+// plugin's computed clusters are pruned and it silently falls back on every
+// request.
 func TestClaimWithoutDestinationsDoesNotAccountForItsSelectors(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors: []string{"picker"},
@@ -167,9 +158,8 @@ func TestClaimWithoutDestinationsDoesNotAccountForItsSelectors(t *testing.T) {
 	}.Filterable(claims), "its gateway stays unscoped")
 }
 
-// TestOnlySpecifierPluginsCanBeClaimed: a claim names cluster specifier
-// plugins. Other request-time selectors are never accounted for, even when a
-// claimed name happens to equal theirs.
+// TestOnlySpecifierPluginsCanBeClaimed: other selector kinds are never
+// accounted for, even under a claimed name.
 func TestOnlySpecifierPluginsCanBeClaimed(t *testing.T) {
 	claims := collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors:    []string{"picker", "envoy.tcp_proxy.cluster", "type.googleapis.com/example.Opaque"},
@@ -188,8 +178,7 @@ func TestOnlySpecifierPluginsCanBeClaimed(t *testing.T) {
 	}
 }
 
-// TestNoClaimsIsTheOrdinaryCase: nearly every plugin routes only where the
-// configuration says, registers nothing, and must cost nothing.
+// TestNoClaimsIsTheOrdinaryCase: a plugin that claims nothing costs nothing.
 func TestNoClaimsIsTheOrdinaryCase(t *testing.T) {
 	claims := collectEmissionClaims(sdk.ContributesPolicies{
 		schema.GroupKind{Group: "test", Kind: "Ordinary"}: {Name: "ordinary"},

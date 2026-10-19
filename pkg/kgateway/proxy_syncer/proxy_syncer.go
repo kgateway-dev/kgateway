@@ -55,8 +55,8 @@ type ProxySyncer struct {
 
 	apiClient       apiclient.Client
 	proxyTranslator ProxyTranslator
-	// scoping is resolved once, at construction: it carries the plugins'
-	// cluster emission claims, collected a single time.
+	// scoping, including the plugins' emission claims, is resolved once at
+	// construction.
 	scoping clusterScoping
 
 	uniqueClients krt.Collection[ir.UniquelyConnectedClient]
@@ -345,8 +345,8 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	s.translator.Init(ctx)
 
-	// Resolved once, at construction: every path this feature touches asks
-	// scoping.ScopesClusters(), and with it false none of them do anything.
+	// Resolved at construction; every scoping path checks ScopesClusters() and
+	// does nothing when it is false.
 	scoping := s.scoping
 	translationOutputs := krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *gatewayTranslationOutput {
 		// Note: s.commonCols.GatewayIndex.Gateways is already filtered to only include Gateways
