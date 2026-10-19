@@ -71,26 +71,63 @@ var _ envoylog.Logger = (*slogAdapterForEnvoy)(nil)
 
 func (s *slogAdapterForEnvoy) Debugf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelDebug) {
-		s.logger.Debug(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
+		s.logger.Debug(fmt.Sprintf(format, boundLogArgs(args)...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func (s *slogAdapterForEnvoy) Infof(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelInfo) {
-		s.logger.Info(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
+		s.logger.Info(fmt.Sprintf(format, boundLogArgs(args)...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func (s *slogAdapterForEnvoy) Warnf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelWarn) {
-		s.logger.Warn(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
+		s.logger.Warn(fmt.Sprintf(format, boundLogArgs(args)...)) //nolint:sloglint // ignore formatting
 	}
 }
 
 func (s *slogAdapterForEnvoy) Errorf(format string, args ...any) {
 	if s.logger.Enabled(context.Background(), slog.LevelError) {
-		s.logger.Error(fmt.Sprintf(format, args...)) //nolint:sloglint // ignore formatting
+		s.logger.Error(fmt.Sprintf(format, boundLogArgs(args)...)) //nolint:sloglint // ignore formatting
 	}
+}
+
+const (
+	// maxLoggedNames caps the resource names printed per go-control-plane log
+	// line. Its ADS cache warns with every requested name when it holds back a
+	// response, which at tens of thousands of routes is ~170 KB per line.
+	maxLoggedNames = 10
+	// maxLoggedErrLen caps the error text printed per go-control-plane log
+	// line; the same warning's error embeds the unrequested names too.
+	maxLoggedErrLen = 1024
+)
+
+// boundedNames prints at most maxLoggedNames names followed by the total.
+type boundedNames []string
+
+func (b boundedNames) String() string {
+	return fmt.Sprintf("%v ... (%d names total)", []string(b[:maxLoggedNames]), len(b))
+}
+
+// boundLogArgs bounds the resource-name lists and errors that go-control-plane
+// passes to its logger, so a single line cannot grow with the snapshot size.
+func boundLogArgs(args []any) []any {
+	out := make([]any, len(args))
+	for i, arg := range args {
+		switch v := arg.(type) {
+		case []string:
+			if len(v) > maxLoggedNames {
+				arg = boundedNames(v)
+			}
+		case error:
+			if msg := v.Error(); len(msg) > maxLoggedErrLen {
+				arg = fmt.Sprintf("%s ... (%d bytes truncated)", msg[:maxLoggedErrLen], len(msg)-maxLoggedErrLen)
+			}
+		}
+		out[i] = arg
+	}
+	return out
 }
 
 func NewControlPlane(
