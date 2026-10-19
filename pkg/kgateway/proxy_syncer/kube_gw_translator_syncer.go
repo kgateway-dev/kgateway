@@ -321,7 +321,6 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			"proxy_key", snapWrap.proxyKey,
 			"carried", carried,
 		)
-		recordCarriedClusters(snapWrap.proxyKey, len(carried))
 	}
 
 	return composed, heldBlocking

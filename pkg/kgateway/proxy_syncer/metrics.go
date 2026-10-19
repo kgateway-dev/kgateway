@@ -146,7 +146,6 @@ func ResetMetrics() {
 	snapshotDeferredClients.Reset()
 	snapshotPerClientWarmWithheldClients.Reset()
 	snapshotPerClientDefersTotal.Reset()
-	snapshotPerClientCarriedClustersTotal.Reset()
 	snapshotPerClientFlipsHeldTotal.Reset()
 	snapshotPerClientBoundedPublishesTotal.Reset()
 	snapshotPerClientDeferredWithheldTotal.Reset()

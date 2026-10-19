@@ -57,16 +57,6 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationReasonLabel},
 	)
-	snapshotPerClientCarriedClustersTotal = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: snapshotSubsystem,
-			Name:      "perclient_carried_clusters_total",
-			Help: "Total clusters carried forward from the previously-published " +
-				"snapshot because the current build was missing them. Carried " +
-				"clusters serve their last-good config until the build catches up.",
-		},
-		[]string{gatewayLabel, namespaceLabel},
-	)
 	snapshotPerClientFlipsHeldTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: snapshotSubsystem,
@@ -189,18 +179,6 @@ func recordSnapshotDefer(proxyKey string, missing, missingEndpoints []string) {
 			metrics.Label{Name: publicationReasonLabel, Value: deferReasonMissingEndpoints},
 		)
 	}
-}
-
-// recordCarriedClusters counts clusters carried forward in one resolution.
-func recordCarriedClusters(proxyKey string, carried int) {
-	if carried == 0 || !metrics.Active() {
-		return
-	}
-	cd := getDetailsFromXDSClientResourceName(proxyKey)
-	snapshotPerClientCarriedClustersTotal.Add(float64(carried),
-		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-	)
 }
 
 // recordFlipHeld counts a resolution that held the route flip.

@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -152,34 +151,6 @@ func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 		&metricstest.ExpectedMetricValueTest{
 			Labels: unknownLabels,
 			Test:   metricstest.Equal(1),
-		},
-	})
-}
-
-// A warm client whose deferred build carries a missing cluster forward
-// increments carried_clusters_total.
-func TestPublicationMetrics_CarriedClusters(t *testing.T) {
-	ResetMetrics()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	pt := newPublishGateTestTranslator(t, false, 0)
-
-	// Publish a coherent snapshot containing cluster-missing, then a deferred
-	// build that lost it: resolution carries it forward.
-	coherent := coherentWrapperV("v1")
-	coherent.snap.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("c1", []envoycachetypes.ResourceWithTTL{
-		{Resource: &envoyclusterv3.Cluster{Name: "cluster-missing"}},
-	})
-	pt.syncXds(ctx, coherent)
-	pt.syncXds(ctx, deferredWrapperV("v2"))
-
-	g := metricstest.MustGatherMetricsContext(ctx, t,
-		"kgateway_xds_snapshot_perclient_carried_clusters_total")
-	g.AssertMetricsInclude("kgateway_xds_snapshot_perclient_carried_clusters_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetricValueTest{
-			Labels: unknownLabels,
-			Test:   metricstest.GreaterOrEqual(1),
 		},
 	})
 }
