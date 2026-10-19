@@ -353,40 +353,62 @@ type Settings struct {
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
 
 	// PerClientPublishBudget bounds how long per-client xDS publication may be
-	// withheld while referenced clusters are not ready:
+	// withheld while referenced clusters are not ready. A build whose referenced
+	// clusters are all in CDS with derived endpoints publishes at once. Derived
+	// endpoints may be empty, which is the backend's real state; endpoints not
+	// yet derived are a gap.
 	//
 	//   - first publish: a client not yet published on its current connection
-	//     gets the latest deferred snapshot at expiry, so a new gateway pod
-	//     goes Ready instead of crash-looping; routes to unready clusters
-	//     return 503 until ready. A warm client (prior accepted xDS version on
-	//     connect) stays withheld while referenced clusters are missing from
-	//     CDS, up to PerClientWarmWithholdBound. If its only gaps are underived
-	//     endpoints, it publishes at expiry and keeps the endpoints it holds:
-	//     such gaps may never converge, and withholding would freeze its config.
+	//     gets the latest deferred snapshot at expiry, so a new gateway pod gets
+	//     listeners instead of crash-looping; routes to unready clusters return
+	//     503 until ready. The budget starts when the gate receives the
+	//     client's first deferred build, not at connect; a client that left
+	//     mid-withhold less than a budget earlier resumes its start. A warm
+	//     client stays withheld while referenced clusters are missing from CDS,
+	//     for at most PerClientWarmWithholdBound after expiry. If its only gaps
+	//     are underived endpoints, it publishes at expiry and keeps the endpoints
+	//     it holds: such gaps may never converge, and withholding would freeze
+	//     its config.
 	//   - flip release: a route flip held for a newly-referenced unready
-	//     cluster publishes at expiry, so it cannot pin route, listener and
-	//     secret updates indefinitely.
+	//     cluster publishes one budget after the hold began, so it cannot pin
+	//     route, listener and secret updates indefinitely.
 	//
-	// Keep it well below the proxy's startup probe window (60s by default);
-	// above it, the first publish comes too late and the crash loop returns.
-	// 0 disables all bounds: clients wait for coherence indefinitely.
+	// A client is warm when its first listener request on the connection
+	// carries a previously accepted version. That suggests, but does not prove,
+	// that it still serves that config.
+	//
+	// The budget times installation in the controller's xDS cache. It is not a
+	// deadline for a pod to go Ready, or for Envoy to receive or apply config:
+	// translation before the first deferred build, KGW_XDS_FIRST_CONNECT_DELAY,
+	// delivery, Envoy's fetch timeouts and cluster warming all add to it. Keep
+	// it well below the proxy's startup probe window (60s by default); above
+	// it, the first publish comes too late and the crash loop returns.
+	//
+	// 0 or a negative value removes both deadlines: an unpublished client waits
+	// for a coherent build, and a held flip for its cluster, indefinitely.
+	// PerClientWarmWithholdBound then has no effect. Timers that other settings
+	// configure keep running.
 	PerClientPublishBudget time.Duration `split_words:"true" default:"15s"`
 
-	// PerClientWarmWithholdBound bounds how long a warm client (one that
-	// reported a prior accepted xDS version on connect and may still serve
-	// earlier config) stays withheld because referenced clusters are missing
-	// from CDS. Without it, a cluster that never appears would freeze the
-	// client's config, including certificate rotations, until the proxy
-	// restarts. At the bound the latest deferred snapshot publishes, and routes
-	// to missing clusters fail until they appear. It also bounds how long a
-	// published client is still sent a missing cluster's last config
-	// (make-before-break carry), so stale endpoints are not served forever.
+	// PerClientWarmWithholdBound bounds how long a warm client (see
+	// PerClientPublishBudget) stays withheld because referenced clusters are
+	// missing from CDS. Without it, a cluster that never appears would freeze
+	// the client's config, including certificate rotations, until the proxy
+	// restarts. The withhold starts when the first-publish budget expires and
+	// resumes if the client reconnects within the bound. At the bound the
+	// latest deferred snapshot publishes, and routes to missing clusters fail
+	// until they appear.
+	//
+	// It separately bounds how long a published client is still sent a missing
+	// cluster's last config (make-before-break carry), so stale endpoints are
+	// not served forever. Each carried cluster's clock starts with the first
+	// build that lacks it and stops when it returns.
 	//
 	// Keep it well above how long translation takes to catch up after a
 	// controller restart; a shorter bound fails warm routes on every restart.
-	// Applies only while PerClientPublishBudget is non-zero. 0 removes the
-	// bound: warm clients stay withheld, and missing clusters are carried,
-	// indefinitely.
+	// Applies only while PerClientPublishBudget is positive. 0 or a negative
+	// value removes the bound: warm clients stay withheld, and missing clusters
+	// are carried, indefinitely.
 	PerClientWarmWithholdBound time.Duration `split_words:"true" default:"10m"`
 
 	// XdsSnapshotConsistencyCheck checks each per-client snapshot before

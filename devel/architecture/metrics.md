@@ -83,8 +83,13 @@ metrics show when that happens and how it ends. Each carries `gateway` and
 `namespace` labels unless noted. `kgateway_xds_snapshot_deferred_clients` covers
 the stage before them: a client with no snapshot yet.
 
-A client is *warm* when it reported an accepted xDS version from an earlier
-connection, so it may already be serving traffic, and *cold* otherwise.
+A client is *warm* when its first listener request on a connection carries a
+previously accepted version, a sign that it may still be serving that
+configuration, and *cold* otherwise. The version does not prove that the
+configuration is active.
+
+These metrics describe when the controller installs snapshots in its xDS cache.
+They do not show when Envoy receives, accepts or applies them.
 
 ### `kgateway_xds_snapshot_perclient_defers_total` Metric
 * Counts per-client snapshots built while a referenced cluster was not ready, by
@@ -105,14 +110,19 @@ connection, so it may already be serving traffic, and *cold* otherwise.
   because referenced clusters are not ready, by `state`. Until it goes out, a new
   proxy has no listeners and is not Ready.
   * `within_budget`: waiting inside the first-publish budget
-    (`KGW_PER_CLIENT_PUBLISH_BUDGET`). A cold client is published when the budget
-    ends, ready or not, so it only ever appears here.
+    (`KGW_PER_CLIENT_PUBLISH_BUDGET`), which starts with the client's first
+    deferred build rather than at connect. A cold client is published when the
+    budget ends, ready or not, so it only ever appears here.
   * `warm_withheld`: a warm client still withheld after the budget because
-    referenced clusters are missing from CDS. Publishing would replace its
-    working routes with routes to clusters it does not have. While withheld it
-    receives no updates at all, including certificate rotations. It is released
-    after `KGW_PER_CLIENT_WARM_WITHHOLD_BOUND`, or never if that is 0.
+    referenced clusters are missing from CDS. Publishing would replace routes it
+    may still be serving with routes to clusters it does not have. While
+    withheld it receives no updates at all, including certificate rotations. It
+    is released `KGW_PER_CLIENT_WARM_WITHHOLD_BOUND` after the budget ended, or
+    never if the bound is 0 or negative.
 * The states do not overlap; their sum is every client being held.
+* With the budget at 0 or negative, nothing is counted here: a withheld client
+  waits without a deadline and is visible only through
+  `kgateway_xds_snapshot_perclient_defers_total`.
 * A state's series is removed when it has no clients.
 
 ### `kgateway_xds_snapshot_perclient_bounded_publishes_total` Metric

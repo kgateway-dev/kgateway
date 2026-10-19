@@ -104,13 +104,13 @@ import (
 // so an expiring timer can never overwrite a newer publish, and each timer
 // acts only on the episode that armed it.
 type publishGate struct {
-	// budget bounds first-publish withholds and held flips; 0 disables both.
-	// Written once at construction.
+	// budget bounds first-publish withholds and held flips; nonpositive
+	// disables both. Written once at construction.
 	budget time.Duration
 	// warmWithholdBound (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND) bounds warm
 	// withholds on clusters missing from CDS and how long missing clusters are
-	// carried. 0 removes it; it applies only while budget is non-zero. Written
-	// before first use.
+	// carried. Nonpositive removes it; it applies only while budget is
+	// positive. Written before first use.
 	warmWithholdBound time.Duration
 	// warmWithheld counts, per gateway, warm clients withheld past the budget
 	// (warmWithheldSince set), a subset of firstPublishPending. The
