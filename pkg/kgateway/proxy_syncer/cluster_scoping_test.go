@@ -74,11 +74,8 @@ func TestDisabledScopingLeavesTheGatewayProjectionEmpty(t *testing.T) {
 		"a disabled projection must equal the zero value, so it never invalidates the row")
 }
 
-// TestDisabledScopingHasNoTransitionWindows completes the off-switch: with CDS
-// unscoped, neither window is in force, whatever the durations are set to.
-// Nothing is ever de-referenced and no cluster is ever new to a client, so a
-// gate built from this configuration keeps no per-client transition state and
-// every publish takes the path it took before the feature existed.
+// TestDisabledScopingHasNoTransitionWindows: unscoped CDS ignores both
+// configured windows, so coherent builds take the plain publish path.
 func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 	configured := clusterScopingFrom(apisettings.Settings{
 		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryAll,
@@ -96,9 +93,8 @@ func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 		"the coherent publish path must be untouched when CDS is not scoped")
 }
 
-// TestScopedClustersUsesTheConfiguredWindows is the negative control: the
-// durations must actually reach the gate once scoping is on, or the windows
-// would silently never apply.
+// TestScopedClustersUsesTheConfiguredWindows: with scoping on, the configured
+// durations must reach the gate.
 func TestScopedClustersUsesTheConfiguredWindows(t *testing.T) {
 	configured := clusterScopingFrom(apisettings.Settings{
 		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryReferenced,

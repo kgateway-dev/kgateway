@@ -52,18 +52,13 @@ func (s *ProxyTranslator) syncXds(
 		return
 	}
 
-	// The snapshot publishes no unrequested resource by construction:
-	// snapshotPerClient drops CLAs for clusters absent from CDS, and the
-	// per-cluster resolution only carries cluster/CLA pairs — so we do not
-	// rely on a post-hoc MakeConsistent() pass, which would also have mutated
-	// the snapshot shared with the krt cache. Publication goes through the
-	// publish gate so it settles synthesized CLAs, cancels any pending bounded
-	// publish or flip release, and cannot race an expiring budget timer.
-	// Both emitted-set transitions produce coherent builds -- a cluster losing
-	// its last reference, and a route gaining a destination never sent to this
-	// client -- so neither can ride the deferred path above. When either window
-	// is configured, a coherent snapshot publishes through the path that makes
-	// them safe.
+	// The snapshot carries no unrequested resource: snapshotPerClient drops
+	// CLAs for clusters absent from CDS, and resolution carries only
+	// cluster/CLA pairs. MakeConsistent() would mutate the snapshot shared with
+	// the krt cache. The gate settles synthesized CLAs, cancels pending bounded
+	// publishes and flip releases, and cannot race a budget timer. A transition
+	// alone never makes a build deferred, so with either window configured,
+	// coherent builds publish through publishWithTransitionGraces.
 	if s.gate.appliesTransitionGraces() {
 		if err := s.gate.publishWithTransitionGraces(ctx, s.xdsCache, snapWrap); err != nil {
 			logPublishFailure(proxyKey, err)

@@ -17,92 +17,61 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// publishGate bounds how long per-client publication may be withheld while
-// referenced clusters are unready. Unreadiness is not guaranteed to converge
-// (#14352) — a plugin can contribute an EDS cluster whose endpoints row
-// never appears, and translation backlog can stretch "briefly behind" past
-// any probe window — so every withhold needs a bound. The gate owns two,
-// governed by the same budget (KGW_PER_CLIENT_PUBLISH_BUDGET; 0 disables
-// both):
+// publishGate bounds every per-client publication withhold, because
+// unreadiness may never converge (#14352): a plugin EDS cluster's endpoints
+// row may never appear, and translation backlog can outlast any probe window.
+// The publish budget (KGW_PER_CLIENT_PUBLISH_BUDGET; 0 disables both) sets two
+// bounds:
 //
-//   - first publish (offerColdLocked/firePending): how long a client that
-//     has not been published a snapshot on its current connection waits for
-//     its referenced clusters to become ready;
-//   - flip release (publishHeldLocked/fireFlipRelease): how long a held
-//     route flip may pin the client's route/listener/secret updates at their
-//     published versions while a newly-referenced cluster stays unready.
+//   - first publish (offerColdLocked/firePending): how long a client not yet
+//     published on its current connection waits for referenced clusters;
+//   - flip release (publishHeldLocked/fireFlipRelease): how long a held route
+//     flip may pin route/listener/secret updates while a newly-referenced
+//     cluster stays unready.
 //
 // The gate resolves only against snapshots it published on the client's
-// current connection (connectionSnapshotLocked). The snapshot cache keeps a
-// client's entry after the client leaves, so after a reconnect the entry can
-// predate config the client received from another controller replica:
-// holding a flip against it would republish its old routes, and carrying
-// from it would resurrect deleted backends with their old endpoints. A
-// reconnected client therefore goes through first publish, like a new one.
+// current connection (connectionSnapshotLocked). After a reconnect the cache
+// entry can predate config the client got from another replica: holding
+// against it would republish old routes, and carrying from it would resurrect
+// deleted backends. A reconnected client goes through first publish.
 //
-// First publish: the per-cluster resolution (resolveDeferred) withholds a
-// deferred snapshot from a client not yet published on this connection —
-// there is no known config to hold or carry, and publishing routes to
-// unready clusters would 503 them.
-// That is correct for the brief converging case, but with no bound a
-// permanently-unready reference leaves the pod with no listeners at all — it
-// never reports Ready and crash-loops, and each restart reconnects as a new
-// client that re-triggers the per-client fan-out. So the gate arms one timer
-// per unpublished client. If the client's inputs cohere within the budget,
-// the coherent publish wins and the timer is discarded. At expiry the latest
-// deferred snapshot is published as-is — it is always internally consistent
-// — so the pod binds its listeners and becomes Ready while routes to
-// still-unready clusters return 503 until they cohere.
+// First publish: an unpublished client has nothing to hold or carry, and
+// publishing routes to unready clusters would 503 them, so it is withheld.
+// Unbounded, a permanently unready reference leaves the pod without listeners:
+// it never goes Ready and crash-loops, re-triggering the per-client fan-out on
+// every restart. At budget expiry the latest deferred snapshot, which is
+// internally consistent, publishes so the pod goes Ready; unready routes 503
+// until they cohere.
 //
-// One exception: a client that reported a prior accepted listener version on
-// connect is warm — an Envoy that reconnected (or outlived a controller
-// restart) and is still serving config from its previous stream. Publishing
-// a snapshot whose routes name clusters absent from its CDS would replace
-// that working config with one that NCs those routes, so warm clients stay
-// withheld while any referenced cluster is MISSING (the #13868
-// make-before-break property). A controller-local cache miss alone cannot
-// prove a client is cold; the client-reported version can.
-// That withhold has its own last-resort bound (warmWithholdBound,
-// KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, minutes rather than seconds): a cluster
-// still missing that long after a restart is not translation catching up, and
-// holding longer would freeze the client's routes, listeners and
-// certificates until its proxy restarts. The perclient_withheld_clients gauge
-// shows the clients currently held, under state=warm_withheld.
-// A reconnect resumes the episode rather than restarting the bound. And when
-// proxies share a key (pod locality off), a proxy under it that holds no config
-// lifts the withhold once it has waited a budget: it has no listeners until the
-// shared snapshot publishes (see firePending).
+// A warm client reported a prior accepted listener version on connect, so it
+// still serves config from its previous stream; a controller-local cache miss
+// cannot prove it cold. Publishing routes to clusters missing from its CDS
+// would NC routes it serves, so it stays withheld past the budget while any is
+// missing (#13868 make-before-break), for at most warmWithholdBound
+// (KGW_PER_CLIENT_WARM_WITHHOLD_BOUND, minutes). A cluster missing that long
+// is not restart catch-up, and holding longer would freeze routes, listeners
+// and certificates until the proxy restarts. Reconnects resume the episode. A
+// cold proxy sharing the key (pod locality off) lifts the withhold once it has
+// waited a budget (firePending).
 //
-// The warm withhold deliberately does NOT extend to gaps that are only
-// underived CLAs (missingEndpointsReferenced). A CLA still underived a full
-// budget after the client connected is backlog or a plugin that never
-// derives endpoints for its EDS cluster — states with no convergence
-// guarantee. Withholding on them would freeze the warm client indefinitely —
-// no route change, cert rotation, or endpoint update would ever reach it —
-// and would starve any cold pod that shares its UCC key (the prior-version
-// mark is key-level). So at expiry, if every referenced cluster is present
-// in CDS, the snapshot publishes without those CLAs; the client keeps the
-// endpoints it holds for them (settleSynthesizedEndpoints), and the next
-// build publishes each CLA as soon as it is derived.
+// Gaps that are only underived CLAs (missingEndpointsReferenced) do not extend
+// the warm withhold: after a budget they have no convergence guarantee, and
+// withholding would freeze the client indefinitely. At expiry the snapshot
+// publishes without those CLAs, and the client keeps the endpoints it holds
+// (settleSynthesizedEndpoints).
 //
-// Flip release: resolveDeferredPerCluster holds routes/listeners/secrets at
-// their published versions while a route flip targets a newly-referenced
-// cluster that is not yet ready. The hold is per resource type, so while it
-// lasts EVERY route/listener/secret update for the client is pinned — fine
-// for a backend whose translation or endpoints catch up in seconds, but a
-// reference that never resolves (a plugin that contributes an EDS cluster
-// with no endpoints source; a cluster that never reaches CDS) would pin
-// them forever. So the first held publish of an episode arms a release timer; if
-// the client is still holding at expiry, the latest held wrapper is
-// re-resolved with holds disabled and published: the flip goes out, routes
-// to still-unready clusters fail until those clusters become ready — the
-// truthful steady-state answer — and pinned updates resume. Repeated holds
-// refresh the pending wrapper but do not extend the deadline; the episode
-// ends when a publish without a hold goes out.
+// Flip release: resolveDeferredPerCluster holds routes, listeners and secrets
+// at their published versions while a flip targets a newly-referenced unready
+// cluster. The hold is per resource type, so it pins every such update, and a
+// reference that never resolves would pin them forever. The first held publish
+// of an episode arms a release timer. At expiry the latest held wrapper is
+// re-resolved with holds disabled and published: routes to unready clusters
+// fail until ready, and pinned updates resume. Later holds do not extend the
+// deadline; a publish without a hold ends the episode.
 //
-// All snapshot-cache mutations for gated clients go through the gate's lock,
-// so an expiring timer can never overwrite a newer publish, and each timer
-// acts only on the episode that armed it.
+// All snapshot-cache writes for gated clients happen under the gate's lock, so
+// an expiring timer cannot overwrite a newer publish, and each timer acts only
+// on the episode that armed it.
 type publishGate struct {
 	// budget bounds first-publish withholds and held flips; nonpositive
 	// disables both. Written once at construction.
@@ -154,9 +123,9 @@ type publishGate struct {
 	// Written once at construction.
 	dereferenceGrace time.Duration
 
-	// referenceAhead is how long a route update onto a newly-emitted cluster is
-	// held so the cluster lands first; 0 disables the hold. Only non-zero when CDS
-	// is scoped. Written once at construction.
+	// referenceAhead is how long configuration naming a newly-emitted cluster
+	// is held; 0 disables it. Non-zero only with scoped CDS. Written once at
+	// construction.
 	referenceAhead time.Duration
 
 	mu           sync.Mutex
@@ -182,9 +151,8 @@ type publishGate struct {
 	// current connection. Guarded by mu.
 	publishedEDS map[string]map[string]uint64
 	dereferenced map[string]*dereferenceState
-	// aheadSent records, per client, when each cluster still inside its
-	// reference-ahead window was first sent (referenceAheadLocked).
-	// clientDeparted removes a client's records.
+	// aheadSent records, per client, when each cluster in an open
+	// reference-ahead window was first sent. clientDeparted clears it.
 	aheadSent map[string]map[string]time.Time
 }
 
@@ -222,20 +190,18 @@ type pendingFlipRelease struct {
 	// wrap is the latest held wrapper; expiry re-resolves it with holds
 	// disabled against the then-published snapshot.
 	wrap XdsSnapWrapper
-	// blocking are the latest unready (flip-blocking) cluster names; ahead are
-	// the latest clusters held for their reference-ahead window. Either may be
-	// empty, not both.
+	// blocking are the latest unready cluster names; ahead the latest clusters
+	// in open reference-ahead windows. At least one is non-empty.
 	blocking []string
 	ahead    []string
 	// since is when the hold episode began; unreadySince when its current run
-	// of holds with an unready cluster began (zero while the latest held build
-	// has none). Each bounds its own release (flipReleaseDeadline).
+	// of unready holds began, zero without one. flipReleaseDeadline uses both.
 	since        time.Time
 	unreadySince time.Time
 	timer        *time.Timer
-	// deadline is when the timer fires; epoch identifies its arming, so a
-	// callback that started before a re-arm does nothing. capped records that
-	// the budget from since cut the reasons' own deadline short.
+	// deadline is when the timer fires; epoch identifies its arming, so a stale
+	// callback does nothing. capped records that the episode budget cut the
+	// deadline short.
 	deadline time.Time
 	epoch    uint64
 	capped   bool
@@ -282,21 +248,15 @@ func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, p
 	return snap
 }
 
-// setSnapshot is the single funnel through which the gate writes to the
-// snapshot cache. It first settles the snapshot's synthesized CLAs against
-// what the client already holds (settleSynthesizedEndpoints). With
-// checkConsistency enabled it then verifies that the snapshot publishes no
-// resource its other resources do not reference, and that every
-// RouteConfiguration its listeners name is present, which the publication
-// paths maintain by construction; a violation is recorded and logged but the
-// snapshot is still published (a publish-blocking check would reintroduce
-// unbounded withholds). Callers must hold g.mu.
+// setSnapshot is the gate's only snapshot-cache write. It settles synthesized
+// CLAs (settleSynthesizedEndpoints) and, with checkConsistency, logs and
+// counts snapshotConsistencyError violations but still publishes: blocking
+// would reintroduce unbounded withholds. Callers must hold g.mu.
 func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, snap *envoycache.Snapshot, synthesized []string, edsHashes map[string]uint64) error {
 	published := g.connectionSnapshotLocked(cache, proxyKey)
 	settled := settleSynthesizedEndpoints(snap, synthesized, published)
 	if settled != snap {
-		// A republished assignment keeps the contribution it had on this
-		// connection. Omitted assignments contribute nothing to the set.
+		// Republished assignments keep their contribution; omitted ones add nothing.
 		hashes := endpointSetHashes(settled.Resources[envoycachetypes.Endpoint].Items, edsHashes, nil)
 		if published != nil {
 			previous := published.GetResourcesAndTTL(envoyresourcev3.EndpointType)
@@ -349,7 +309,7 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 	return nil
 }
 
-// lastPublishedEDSLocked answers for the contributions remembered for proxyKey.
+// lastPublishedEDSLocked looks up proxyKey's remembered contributions; nil if none.
 func (g *publishGate) lastPublishedEDSLocked(proxyKey string) func(string) (uint64, bool) {
 	hashes := g.publishedEDS[proxyKey]
 	if hashes == nil {
@@ -361,10 +321,9 @@ func (g *publishGate) lastPublishedEDSLocked(proxyKey string) func(string) (uint
 	}
 }
 
-// publish publishes a coherent (or per-cluster-resolved, no-hold) snapshot
-// and cancels any pending bounded first publish and any pending flip release
-// — a publish without a hold means the episode resolved — under one lock so
-// a concurrently-expiring timer cannot overwrite the newer snapshot.
+// publish publishes a coherent snapshot and cancels pending first-publish and
+// flip-release timers, since a no-hold publish ends the episode. One lock
+// covers both, so an expiring timer cannot overwrite the new snapshot.
 func (g *publishGate) publish(ctx context.Context, cache envoycache.SnapshotCache, snapWrap XdsSnapWrapper) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -410,30 +369,20 @@ func (g *publishGate) resolveDeferred(
 	return g.resolveDeferredLocked(ctx, cache, snapWrap)
 }
 
-// beginBuildLocked runs for every new build that reaches the gate, before it
-// is published, and reports whether to publish it. Timers that re-publish a
-// stored build do not run it: that build already began.
+// beginBuildLocked reports whether to publish a new build. Timers that
+// re-publish a stored build skip it. Callers must hold g.mu.
 //
-// A build is published only while it is still the client's current snapshot
-// row. Builds reach the gate through the snapshot collection's event queue,
-// and an event can wait there while the row moves on. Publishing a
-// superseded build is not merely redundant: the connection-start hook
-// publishes a returning client's current row as soon as its stream is
-// admitted, ahead of any events still queued, and a queued older build would
-// then replace it on the new connection, answering the new stream's watches
-// with the older routes. The connection fence cannot catch this, since the
-// gate has already adopted the new connection when the old build arrives.
-// The check runs under the gate lock, so no publish can slip between it and
-// the publication. A skipped build loses nothing: the row's later change, or
-// its deletion, has its own event behind it.
+// Only the client's current row is published. The connection-start hook
+// publishes that row ahead of queued events, so an older queued build would
+// replace it and answer the new stream's watches with older routes. The fence
+// cannot catch this: the gate already adopted the new connection. The check
+// and the publication share the gate lock. A skipped build loses nothing,
+// since later row changes have their own events.
 //
-// A carry record belongs to one episode of a cluster missing from the builds.
-// A build that has the cluster again ends the episode, so a later
-// disappearance is carried for a fresh warm withhold bound. boundCarryLocked
-// also forgets recovered clusters, but only deferred builds run it, and a
-// recovery is usually a coherent build: without this, the earlier episode's
-// start would survive it, and the next disappearance, however brief, would be
-// dropped at once instead of carried. Callers must hold g.mu.
+// A build that has a carried cluster again ends that carry episode, so a later
+// disappearance gets a fresh warm withhold bound. boundCarryLocked does this
+// only for deferred builds, and recoveries are usually coherent. Without this,
+// the next brief disappearance would be dropped at once instead of carried.
 func (g *publishGate) beginBuildLocked(snapWrap XdsSnapWrapper) bool {
 	if g.currentBuild != nil {
 		if current := g.currentBuild(snapWrap.proxyKey); current == nil || !current.Equals(snapWrap) {
@@ -473,21 +422,18 @@ func (g *publishGate) resolveDeferredLocked(
 	}
 	candidate := snapWrap
 	snapWrap = g.boundCarryLocked(snapWrap, published, time.Now())
-	// Retain clusters this build stopped emitting, briefly, so the route update
-	// that de-referenced them reaches Envoy before they disappear.
+	// Keep de-referenced clusters for their grace so the route update can land first.
 	now := time.Now()
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, now)
-	// A deferred build can introduce a cluster new to the client too (a
-	// retarget published alongside an unrelated gap); it needs delivering
-	// ahead of the configuration that names it as much as a coherent one.
+	// A deferred build can add a new cluster too (a retarget alongside an
+	// unrelated gap) and gets the same hold.
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
 	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	switch {
 	case len(heldBlocking) > 0:
-		// The held snapshot still publishes (CDS/EDS keep flowing); the
-		// gate additionally arms the flip-release bound for the episode.
+		// Publish CDS/EDS while holding the flip, and arm its release timer.
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, newlyEmitted, aheadFor, edsHashes, now)
 	case len(newlyEmitted) > 0:
 		held, aheadHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
@@ -744,16 +690,13 @@ func (g *publishGate) publishHeldLocked(
 	return nil
 }
 
-// flipReleaseDeadline is when a hold is released if no build resolves it
-// first. Each reason keeps its own deadline, re-evaluated on every held
-// publish: an unready cluster gets the publish budget from when its run of
-// unready holds began (the cluster may never become ready, #14352), and a
-// newly-emitted cluster its reference-ahead window (aheadFor, until the last
-// open window closes). The routing types are released together, so the hold
-// lasts until the later of the two -- but never past the budget from the
-// episode's start, so no stream of reasons can pin a client's routing updates
-// indefinitely. capped reports that this cap applied; bounded is false when
-// nothing bounds the hold: an unready cluster with the budget disabled.
+// flipReleaseDeadline is when a hold is released if no build resolves it first,
+// re-evaluated on every held publish. An unready cluster gets the budget from
+// unreadySince, since it may never become ready (#14352). New clusters wait for
+// the last open reference-ahead window. The routing types release together at
+// the later deadline, capped at the budget from the episode's start. capped
+// reports that cap; bounded is false for an unready hold with the budget
+// disabled.
 func (g *publishGate) flipReleaseDeadline(pf *pendingFlipRelease, now time.Time, aheadFor time.Duration) (deadline time.Time, capped, bounded bool) {
 	if len(pf.blocking) > 0 {
 		if g.budget <= 0 {
@@ -774,8 +717,8 @@ func (g *publishGate) flipReleaseDeadline(pf *pendingFlipRelease, now time.Time,
 	return deadline, false, true
 }
 
-// armFlipReleaseLocked (re)arms pf's release for deadline. An unchanged
-// deadline keeps the running timer. Callers must hold g.mu.
+// armFlipReleaseLocked arms pf for deadline, retaining an unchanged timer.
+// Callers must hold g.mu.
 func (g *publishGate) armFlipReleaseLocked(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, pf *pendingFlipRelease, deadline time.Time) {
 	if pf.timer != nil && pf.deadline.Equal(deadline) {
 		return
@@ -796,13 +739,10 @@ func (g *publishGate) armFlipReleaseLocked(ctx context.Context, cache envoycache
 	})
 }
 
-// fireFlipRelease releases pf now, as its timer does at its deadline: it
-// re-resolves the latest held wrapper against the currently-published
-// snapshot with holds disabled and publishes it. The flip goes out; routes to
-// still-unready clusters fail until those clusters become ready, which is the
-// truthful steady-state answer — and pinned route/listener/secret updates
-// resume. It acts only on the episode that armed it, and runs under the gate
-// lock, so it cannot interleave with publish() or resolveDeferred().
+// fireFlipRelease releases pf now, as its timer does: under g.mu, it publishes
+// the latest held build re-resolved with holds disabled. Held updates resume,
+// and routes to still-unready clusters fail until they are ready. It does
+// nothing if pf is no longer the client's hold.
 func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, pf *pendingFlipRelease) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -812,12 +752,12 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 	g.releaseFlipLocked(ctx, cache, proxyKey, pf)
 }
 
-// releaseFlipLocked is fireFlipRelease's body. Callers must hold g.mu and
-// have checked that pf is the client's current hold.
+// releaseFlipLocked releases pf after the caller checks it is the current hold.
+// Callers must hold g.mu.
 func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, pf *pendingFlipRelease) {
 	delete(g.pendingFlips, proxyKey)
-	// The released routes name these clusters now; they count as delivered,
-	// so a capped window does not re-hold them on the next build.
+	// Released routes now name these clusters; closing their windows keeps a
+	// capped window from re-holding them.
 	if sent := g.aheadSent[proxyKey]; sent != nil {
 		for _, name := range pf.ahead {
 			delete(sent, name)
@@ -830,9 +770,8 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, time.Now())
 	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
-	// A hold held only for reference-ahead windows ends as designed when the
-	// last window closes: nothing failed, so it is neither a warning nor a
-	// bounded publish, unless the budget cut a window short.
+	// A reference-ahead window closing on its own is expected. Warn and count a
+	// bounded publish only when the budget cut one short.
 	mode := boundedPublishFlipRelease
 	switch {
 	case len(pf.blocking) > 0:
@@ -885,16 +824,11 @@ func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	delete(g.aheadSent, proxyKey)
 }
 
-// connectionStarted begins the client's new connection in the gate (the
-// connection-start hook, after the fence started it): it forgets the previous
-// connection, as clientDeparted does, and adopts the key's new generation, in
-// one critical section. A build that reached the gate between the two would be
-// decided against the reset state but under the old generation. Nothing it
-// installs gets past the fence, but a timer it arms does: offered as a first
-// publish, it would leave a pending entry and its budget timer behind, which
-// fire after the adoption and publish that build to the new connection,
-// answering the new stream's watches with config the connection-start replay
-// has already moved past.
+// connectionStarted forgets the previous connection, as clientDeparted does,
+// and adopts the fence's new generation in one critical section. A build
+// decided between the two could arm a first-publish timer. The fence rejects
+// the build's install, but the timer fires after adoption and publishes the
+// old build to the new connection over the newer connection-start replay.
 func (g *publishGate) connectionStarted(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -908,13 +842,10 @@ func (g *publishGate) connectionStarted(proxyKey string) {
 	g.connGen[proxyKey] = g.fence.current(proxyKey)
 }
 
-// snapshotWithdrawn handles a client whose wrapper row was deleted while it
-// stays connected (its gateway's translation briefly produced nothing: a
-// GatewayClass deleted and recreated, a route lookup error). There is nothing
-// left to publish, so pending bounded publishes are canceled, but the client
-// still runs what the gate published on this connection: when the row
-// returns, a deferred build resolves against it (carrying the clusters the
-// client serves, holding flips) instead of starting over as a first publish.
+// snapshotWithdrawn handles a row deleted while its client stays connected,
+// such as during GatewayClass recreation. It cancels pending timers but keeps
+// the published mark: the client still runs that config, so a returning build
+// carries and holds flips against it instead of restarting first publish.
 func (g *publishGate) snapshotWithdrawn(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -940,56 +871,46 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 	g.cancelDereferenceTimerLocked(proxyKey)
 }
 
-// disconnectedRunner runs fn only while no xDS stream is connected under a
-// client key, excluding stream admission while fn runs. Satisfied by
-// krtcollections.XDSClientState.
+// disconnectedRunner runs fn only while no stream of the key is connected,
+// excluding admission until fn returns. krtcollections.XDSClientState
+// implements it.
 type disconnectedRunner interface {
 	RunIfDisconnected(resourceName string, fn func()) bool
 }
 
-// reclaimDeparted clears a departed client's snapshot cache entry and reports
-// whether it did. It holds the gate lock, which every publish holds, and
-// clears only through clients.RunIfDisconnected: ClearSnapshot also drops the
-// node's open watches, so clearing after a reconnecting stream was admitted
-// would strand that stream with no watch for the next SetSnapshot to answer.
+// reclaimDeparted clears a departed client's cache entry and reports whether it
+// did. It holds the gate lock, so no publish interleaves, and clears only under
+// RunIfDisconnected: ClearSnapshot drops open watches and would strand a newly
+// admitted stream.
 func (g *publishGate) reclaimDeparted(cache envoycache.SnapshotCache, proxyKey string, clients disconnectedRunner) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return clients.RunIfDisconnected(proxyKey, func() {
 		cache.ClearSnapshot(proxyKey)
-		// Nothing of the connection is left; a returning client starts a new
-		// generation (generations are never reused).
+		// Reconnect allocates a fresh generation; old generations are never reused.
 		g.fence.forget(proxyKey)
 		delete(g.connGen, proxyKey)
 		delete(g.publishedEDS, proxyKey)
 	})
 }
 
-// settleSynthesizedEndpoints decides what the client receives for each CLA in
-// snap that snapshotPerClient synthesized while the client's per-client row
-// for it is still being built: some backend derives endpoints for it, and the
-// per-client rows are rebuilt from scratch whenever a client connects or
-// reconnects, so the row is on its way. Envoy keeps a cluster's endpoints when
-// its CLA is absent from a response but drops them for an empty one, and an
-// EDS cluster without a CLA waits for it (up to its initial fetch timeout)
-// rather than serving with no hosts. So a synthesized CLA is published only
-// where the cluster is new to an already-published client:
+// settleSynthesizedEndpoints decides what the client gets for each CLA that
+// snapshotPerClient synthesized because its per-client row, rebuilt from
+// scratch on every connect, is still being built. Envoy keeps a cluster's
+// endpoints when its CLA is absent but drops them for an empty one, and a new
+// EDS cluster without a CLA waits up to its initial fetch timeout. So:
 //
-//   - the client was published a CLA for it on this connection: republish
-//     that CLA;
-//   - the client was published the cluster on this connection without a CLA:
-//     leave it out again;
-//   - the client has not been published a snapshot on this connection: leave
-//     it out. A reconnecting proxy keeps the endpoints it holds; a new proxy
-//     waits for the row instead of going Ready with zero hosts behind, say,
-//     its ext_authz cluster. This does not depend on the client reporting a
-//     prior version, so it holds even without connection state;
-//   - the cluster is new to the client: publish the empty CLA, so the cluster
-//     activates without waiting for its initial fetch timeout.
+//   - a CLA published on this connection is republished;
+//   - a cluster published on this connection without a CLA stays without one;
+//   - before the first publish on this connection the CLA is left out, so a
+//     reconnecting proxy keeps its endpoints and a new proxy does not go Ready
+//     with zero hosts behind, say, ext_authz. This does not depend on warm
+//     detection;
+//   - a cluster new to a published client gets the empty CLA, so it activates
+//     without waiting for the fetch timeout.
 //
-// A derived CLA, even an empty one, is the backend's truth and always
-// publishes, and so does a synthesized one with no endpoints source (it is
-// not in synthesized). published is the snapshot returned by
+// Derived CLAs, even empty, always publish, as do synthesized ones with no
+// endpoints source (not in synthesized). published is from
 // connectionSnapshotLocked.
 func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string, published envoycache.ResourceSnapshot) *envoycache.Snapshot {
 	if len(synthesized) == 0 {
@@ -1042,24 +963,16 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 	return &settled
 }
 
-// snapshotConsistencyError reports resources the snapshot publishes that none
-// of its other resources reference: a CLA whose cluster is not an EDS cluster
-// in its CDS, or a RouteConfiguration no listener names. Envoy requests those
-// types by the names CDS and LDS give it, so it never receives them; with an
-// ADS cache they also held back that whole type for the client (#14471),
-// which newSnapshotCache no longer does (#14865). The gateway's bootstrap
-// local cluster is the one intended exception: its CLA is published without a
-// dynamic cluster to clients that subscribed to it.
-//
-// It also reports a listener that names a RouteConfiguration the snapshot
-// lacks. No publication path leaves one out on purpose (a held flip keeps
-// routes and listeners at the same published build), and Envoy warms such a
-// listener until RDS answers, then serves it with no routes.
-//
-// The converse for EDS, an EDS cluster without a CLA, is not reported: Envoy
-// keeps the cluster's current endpoints when its CLA is absent, which is how
-// a client keeps endpoints that have not been derived yet (see
-// settleSynthesizedEndpoints).
+// snapshotConsistencyError reports CLAs whose cluster is not an EDS cluster in
+// the snapshot's CDS (except the bootstrap local cluster's, which subscribed
+// clients get without a dynamic cluster), RouteConfigurations no listener
+// names, and listeners naming a missing RouteConfiguration. Envoy requests
+// CLAs and RouteConfigurations by the names CDS and LDS give it, so it never
+// receives unreferenced ones; with an ADS cache they also froze that type
+// (#14471), which newSnapshotCache no longer does (#14865). A listener missing
+// its RouteConfiguration warms until RDS answers, then serves no routes. An
+// EDS cluster without a CLA is fine: Envoy keeps its endpoints
+// (settleSynthesizedEndpoints).
 func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error {
 	references := envoycache.GetAllResourceReferences(snap.Resources)
 	bootstrapEndpoint := ""
@@ -1099,20 +1012,15 @@ func snapshotConsistencyError(proxyKey string, snap *envoycache.Snapshot) error 
 	}
 }
 
-// boundCarryLocked bounds how long a referenced cluster missing from the
-// builds is carried forward from the snapshot the client was published.
-//
-// Carrying keeps the client's last config for a cluster whose translation is
-// lagging (make-before-break), but nothing else ends it: a cluster whose
-// backend is gone while routes still name it would be served its last cluster
-// and endpoints forever, and endpoint addresses that old can belong to other
-// workloads by then. After the warm withhold bound (the gate's existing bound
-// on "a referenced cluster missing from CDS is not coming back") the cluster is
-// no longer carried and routes to it fail until it reappears. The returned
-// wrapper lists only the missing clusters still carried, and the expired ones
-// in expiredCarry; the bound, like every other, applies only while the publish
-// budget is non-zero. A build applies it when it is resolved, and
-// armCarryExpiryLocked when no build arrives. Callers must hold g.mu.
+// boundCarryLocked limits how long a referenced cluster missing from the
+// builds is carried from the published snapshot. Carrying is make-before-break
+// for lagging translation, but nothing else ends it: a deleted backend would
+// be served forever, at addresses that may belong to other workloads by then.
+// After warmWithholdBound, the gate's bound for a missing cluster that is not
+// coming back, the cluster is dropped and its routes fail until it returns.
+// Expired clusters move from missingReferenced to expiredCarry. Applies only
+// with a non-zero budget; armCarryExpiryLocked covers quiet inputs. Callers
+// must hold g.mu.
 func (g *publishGate) boundCarryLocked(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, now time.Time) XdsSnapWrapper {
 	key := snapWrap.proxyKey
 	if g.budget <= 0 || g.warmWithholdBound <= 0 {
@@ -1176,18 +1084,13 @@ func (g *publishGate) boundCarryLocked(snapWrap XdsSnapWrapper, published envoyc
 	return bounded
 }
 
-// armCarryExpiryLocked schedules the end of the client's earliest carry.
-// boundCarryLocked enforces the warm withhold bound only when a build is
-// resolved, and with quiet inputs none may arrive: a cluster whose backend was
-// deleted while routes still name it would be carried for as long as nothing
-// else changed. At the earliest carried cluster's deadline the timer
-// re-resolves wrap, the client's latest deferred build, through the same path
-// as a new build, which stops carrying whatever has been carried for the bound
-// and re-arms for the rest.
-//
-// The timer never re-publishes an older build: every publish cancels it
-// (publishLocked, publishHeldLocked), a deferred build then re-arms it with
-// itself, and a departure or withdrawn row cancels it. Callers must hold g.mu.
+// armCarryExpiryLocked schedules the client's earliest carry deadline.
+// boundCarryLocked runs only when a build resolves, and with quiet inputs none
+// may arrive, so a deleted backend would be carried forever. At the deadline
+// the timer re-resolves wrap, the latest deferred build, dropping expired
+// carries and re-arming for the rest. It never re-publishes an older build:
+// every publish cancels it, a deferred build re-arms it with itself, and
+// departure or withdrawal cancels it. Callers must hold g.mu.
 func (g *publishGate) armCarryExpiryLocked(ctx context.Context, cache envoycache.SnapshotCache, wrap XdsSnapWrapper) {
 	key := wrap.proxyKey
 	g.cancelCarryExpiryLocked(key)

@@ -145,21 +145,14 @@ func (g *publishGate) cancelDereferenceTimerLocked(proxyKey string) {
 	}
 }
 
-// fireDereferencePrune re-publishes the client's latest build now that a grace
-// window has closed, under the same lock as every other publication, so
-// pruning cannot race a coherent publish. It acts only for the arming that
-// scheduled it: a callback already waiting on the lock when its timer was
-// re-armed or cancelled, or its state replaced, does nothing.
+// fireDereferencePrune re-publishes the client's latest build when a grace
+// window closes, under g.mu. A callback whose timer was re-armed or cancelled,
+// or whose state was replaced, does nothing.
 //
-// The build goes through the same path a new build of its kind takes
-// (publishBuildLocked), so the prune makes the whole hold decision again
-// rather than a narrower one of its own. A held flip stays held for whichever
-// reason holds it: an unready cluster, which re-resolving the build finds,
-// and also a cluster still inside its reference-ahead window, which only the
-// reference-ahead check sees. Releasing either here would send routes onto a
-// cluster before the hold meant them to go, at a de-reference grace that has
-// nothing to do with it. The expired clusters drop out the same way they do
-// for a new build, and the path re-arms the prune for any window still open.
+// It goes through publishBuildLocked, so the prune repeats a new build's full
+// hold decision. A grace expiring must not release a flip held for an unready
+// cluster or an open reference-ahead window. Expired clusters drop out and the
+// prune is re-armed for any window still open.
 func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, state *dereferenceState, epoch uint64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -181,10 +174,9 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 	}
 }
 
-// publishBuildLocked publishes a build through the path a new build of its
-// kind takes: per-cluster resolution for a deferred build, the transition
-// graces for a coherent one. Timers that re-publish a stored build use it, so
-// every publication makes the same hold decision. Callers must hold g.mu.
+// publishBuildLocked publishes a stored build through the path a new build of
+// its kind takes, so timer re-publishes make the same hold decision. Callers
+// must hold g.mu.
 func (g *publishGate) publishBuildLocked(ctx context.Context, cache envoycache.SnapshotCache, wrap XdsSnapWrapper) error {
 	if wrap.deferred() {
 		return g.resolveDeferredLocked(ctx, cache, wrap)
@@ -196,14 +188,10 @@ func (g *publishGate) publishBuildLocked(ctx context.Context, cache envoycache.S
 // take the plain publish path.
 func (g *publishGate) retainsDereferenced() bool { return g.dereferenceGrace > 0 }
 
-// publishWithTransitionGraces publishes a coherent snapshot with both emitted-set
-// transitions made safe: clusters whose de-reference window is still open are
-// carried forward, and a route update that retargets onto a cluster the client
-// has never been sent is held back until that cluster has had time to land.
-//
-// Both transitions produce coherent builds -- nothing is missing, the emitted
-// set simply changed -- so neither reaches the deferred resolution path that
-// handles unready clusters. This is their equivalent.
+// publishWithTransitionGraces publishes a coherent build, carrying
+// de-referenced clusters through their grace and holding configuration that
+// names a never-sent cluster for its reference-ahead window. A transition alone
+// leaves nothing missing, so it never reaches deferred resolution.
 func (g *publishGate) publishWithTransitionGraces(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -211,8 +199,8 @@ func (g *publishGate) publishWithTransitionGraces(
 ) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	// A new build, like those publish and resolveDeferred take. The timers
-	// that re-publish a stored build go straight to the Locked form.
+	// beginBuildLocked is for new builds; timers re-publishing a stored build
+	// call the Locked form.
 	if !g.beginBuildLocked(snapWrap) {
 		return nil
 	}
@@ -235,11 +223,8 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 	graced, soonest := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, time.Now())
 
-	// The addition side rides the same path, for the same reason: a retarget
-	// onto a cluster the client has never been sent is a coherent build too.
-	// Holding routes, listeners and secrets at their published versions
-	// publishes the new cluster's CDS by itself, and the existing flip-release
-	// timer sends the route once the window closes.
+	// Routes, listeners and secrets stay published while the new cluster's CDS
+	// goes out; the flip-release timer sends them when the window closes.
 	now := time.Now()
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
 
@@ -253,9 +238,8 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes, now)
 	} else {
 		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
-		// Through publishLocked like any other publish without a hold: this
-		// build supersedes a pending first publish or flip release, whose
-		// timer would otherwise re-publish its older build when it fires.
+		// publishLocked cancels a pending first publish or flip release, whose
+		// timer would otherwise re-publish an older build.
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
 	}
 	if publishErr != nil {

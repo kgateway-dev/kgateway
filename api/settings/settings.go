@@ -502,28 +502,22 @@ type Settings struct {
 	// 0 removes immediately and accepts the race.
 	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
 
-	// ClusterReferenceAhead is how long a cluster new to a proxy is delivered
-	// ahead of the configuration that names it, in REFERENCED mode only: the
-	// proxy's routes, listeners and secrets stay at the versions it has until
-	// every new cluster they name has been sent for this long. Each cluster's
-	// window starts when it is first sent, and every cluster counts, not only
-	// route targets (a listener that starts calling a new ext_authz cluster
-	// waits for it too).
+	// ClusterReferenceAhead is how long a cluster new to a proxy is sent before
+	// the configuration that names it, in REFERENCED mode only. Routes,
+	// listeners and secrets stay at their current versions until every new
+	// cluster they name has been sent this long. Each cluster's window starts
+	// at its first send. Clusters only a filter calls count too, such as a new
+	// ext_authz cluster.
 	//
-	// Publishing both in one coherent snapshot is not enough. Envoy does not
-	// necessarily apply CDS before RDS within a snapshot, and after a CDS
-	// response is sent its watch stays closed until Envoy ACKs, so a route
-	// update landing in that window reaches the wire on the still-open RDS
-	// watch before any CDS carrying its destination. That is reachable whenever
-	// a route is retargeted while an earlier cluster update is un-ACKed, and no
-	// server option closes it. Emit-all never had the problem because
-	// destinations were delivered long before any route named them.
+	// One snapshot carrying both is not enough. After a CDS response is sent
+	// its watch stays closed until Envoy ACKs, so a route update in that window
+	// goes out on the open RDS watch first. Any retarget during an un-ACKed CDS
+	// update hits this, and no server option prevents it.
 	//
-	// The cost is route-edit latency, but only for edits that introduce a
-	// destination the proxy has never seen. 0 publishes cluster and route
-	// together and accepts the blip. A hold is additionally bounded by
-	// PerClientPublishBudget from when it began, so a misconfigured window, or
-	// a stream of new clusters, cannot pin updates.
+	// Only edits that introduce a destination the proxy has never been sent pay
+	// the latency. 0 publishes cluster and route together and accepts that
+	// race. PerClientPublishBudget bounds each hold from its start, so a
+	// misconfigured window or a stream of new clusters cannot pin updates.
 	ClusterReferenceAhead time.Duration `split_words:"true" default:"2s"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.

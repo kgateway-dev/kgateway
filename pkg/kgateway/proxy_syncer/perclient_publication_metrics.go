@@ -32,9 +32,8 @@ const (
 	// it fail until it reappears.
 	boundedPublishCarryExpired = "carry_expired"
 	// boundedPublishReferenceAhead marks a hold kept only for reference-ahead
-	// windows (KGW_CLUSTER_REFERENCE_AHEAD, REFERENCED cluster discovery) that
-	// the publish budget released before the windows closed. A hold whose
-	// windows close first ends as designed and is not a bounded publish.
+	// windows (KGW_CLUSTER_REFERENCE_AHEAD) that the publish budget released
+	// early. Windows closing on their own are not a bounded publish.
 	boundedPublishReferenceAhead = "reference_ahead"
 
 	withheldStateLabel = "state"

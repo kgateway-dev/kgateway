@@ -16,8 +16,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
-// routedClusterWrapperV is a coherent build whose configuration names exactly
-// the clusters it emits: the shape a retarget produces in REFERENCED mode.
+// routedClusterWrapperV stands for a REFERENCED-mode retarget build. It emits
+// clusters but carries no routes; its listener version marks the configuration
+// change.
 func routedClusterWrapperV(version string, clusters ...string) XdsSnapWrapper {
 	return clusterWrapperV(version, clusters...)
 }
@@ -34,12 +35,9 @@ func publishedListenerVersionOf(t *testing.T, pt *ProxyTranslator) string {
 	return snap.GetVersion(resourcev3.ListenerType)
 }
 
-// TestReferenceAheadDeliversTheClusterBeforeTheRoute is the addition-side
-// guarantee. Publishing a new cluster and the route that targets it in one
-// snapshot does not make Envoy apply CDS first: after a CDS response is sent
-// its watch is closed until Envoy ACKs, so a route landing in that window
-// reaches the wire on the still-open RDS watch, before its destination. The new
-// cluster must therefore go out while the routing types stay where they were.
+// TestReferenceAheadDeliversTheClusterBeforeTheRoute: a retarget onto a new
+// cluster publishes the cluster at once and holds the routing types until its
+// window closes. It checks cached snapshots, not wire order.
 func TestReferenceAheadDeliversTheClusterBeforeTheRoute(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, 80*time.Millisecond)
 	ctx := context.Background()
@@ -47,7 +45,7 @@ func TestReferenceAheadDeliversTheClusterBeforeTheRoute(t *testing.T) {
 	pt.syncXds(ctx, routedClusterWrapperV("v1", "old"))
 	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
 
-	// The route retargets onto a cluster this client has never been sent.
+	// Retarget onto a cluster never sent to this client.
 	pt.syncXds(ctx, routedClusterWrapperV("v2", "old", "new"))
 
 	assert.ElementsMatch(t, []string{"old", "new"}, publishedClusterNames(t, pt),
@@ -62,8 +60,8 @@ func TestReferenceAheadDeliversTheClusterBeforeTheRoute(t *testing.T) {
 	assert.ElementsMatch(t, []string{"old", "new"}, publishedClusterNames(t, pt))
 }
 
-// TestReferenceAheadIsDisabledByZero: an operator who accepts the retarget blip
-// gets cluster and route in one snapshot, exactly as before.
+// TestReferenceAheadIsDisabledByZero: a 0 window publishes cluster and route
+// together.
 func TestReferenceAheadIsDisabledByZero(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, 0)
 	ctx := context.Background()
@@ -75,9 +73,8 @@ func TestReferenceAheadIsDisabledByZero(t *testing.T) {
 	assert.ElementsMatch(t, []string{"old", "new"}, publishedClusterNames(t, pt))
 }
 
-// TestReferenceAheadDoesNotHoldARetargetOntoAnAlreadySentCluster is what keeps
-// the hold from taxing ordinary route edits: the destination is already in the
-// client's CDS, so there is nothing to deliver ahead of anything.
+// TestReferenceAheadDoesNotHoldARetargetOntoAnAlreadySentCluster: ordinary
+// route edits are not held.
 func TestReferenceAheadDoesNotHoldARetargetOntoAnAlreadySentCluster(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, time.Hour)
 	ctx := context.Background()
@@ -85,16 +82,15 @@ func TestReferenceAheadDoesNotHoldARetargetOntoAnAlreadySentCluster(t *testing.T
 	pt.syncXds(ctx, routedClusterWrapperV("v1", "a", "b"))
 	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
 
-	// Routes change, but every destination was already delivered.
+	// Routes change; every destination is already published.
 	pt.syncXds(ctx, routedClusterWrapperV("v2", "a", "b"))
 
 	assert.Equal(t, "v2", publishedListenerVersionOf(t, pt),
 		"a retarget between clusters the client already has must not be held")
 }
 
-// TestReferenceAheadIgnoresTheBlackhole: routes whose backends fail resolution
-// target the blackhole cluster. Holding on it would delay exactly the
-// configurations that are already broken.
+// TestReferenceAheadIgnoresTheBlackhole: holding on it would delay only routes
+// whose backends already failed resolution.
 func TestReferenceAheadIgnoresTheBlackhole(t *testing.T) {
 	g := newPublishGate(0, false, nil, scopedClustersWithReferenceAhead(time.Minute))
 	published := &envoycache.Snapshot{}
@@ -104,9 +100,8 @@ func TestReferenceAheadIgnoresTheBlackhole(t *testing.T) {
 	assert.Empty(t, ahead)
 }
 
-// TestReferenceAheadWindowIsPerCluster: a cluster stays held for its whole
-// window from when it was first sent, even once it is in the published
-// snapshot, and a cluster first sent later gets its own window.
+// TestReferenceAheadWindowIsPerCluster: each cluster is held for a full window
+// from its first send, even once published.
 func TestReferenceAheadWindowIsPerCluster(t *testing.T) {
 	g := newPublishGate(0, false, nil, scopedClustersWithReferenceAhead(time.Minute))
 	published := &envoycache.Snapshot{}
@@ -119,7 +114,7 @@ func TestReferenceAheadWindowIsPerCluster(t *testing.T) {
 	assert.Equal(t, []string{"first"}, ahead)
 	assert.Equal(t, time.Minute, longest)
 
-	// "first" is now published, but has had it for 20s of its minute.
+	// "first" is now published, 20s into its one-minute window.
 	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v1", []envoycachetypes.ResourceWithTTL{
 		{Resource: edsClusterProto("old")}, {Resource: edsClusterProto("first")},
 	})
@@ -135,9 +130,8 @@ func TestReferenceAheadWindowIsPerCluster(t *testing.T) {
 	assert.Equal(t, 10*time.Second, longest)
 }
 
-// TestReferenceAheadHoldIsBoundedByTheBudget: the window paces delivery, the
-// budget bounds it. A window longer than the budget must not outlast the
-// budget, or a misconfigured value would pin a client's routing updates.
+// TestReferenceAheadHoldIsBoundedByTheBudget: a window longer than the budget
+// still releases at the budget.
 func TestReferenceAheadHoldIsBoundedByTheBudget(t *testing.T) {
 	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 60*time.Millisecond, true, scopedClustersWithReferenceAhead(time.Hour))
 	pt := &translator
@@ -153,9 +147,8 @@ func TestReferenceAheadHoldIsBoundedByTheBudget(t *testing.T) {
 		"a reference-ahead window longer than the budget must still release at the budget")
 }
 
-// A rebuild inside the window, such as the new backend's endpoints arriving,
-// must keep the routes held: the cluster being in the published snapshot only
-// means it was installed for delivery.
+// A rebuild inside the window keeps the routes held: being in the published
+// snapshot means installed, not applied.
 func TestReferenceAheadHoldSurvivesARebuildInsideTheWindow(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, 150*time.Millisecond)
 	ctx := context.Background()
@@ -172,8 +165,8 @@ func TestReferenceAheadHoldSurvivesARebuildInsideTheWindow(t *testing.T) {
 	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v3" }, 2*time.Second, 5*time.Millisecond)
 }
 
-// A cluster new to the client that only a listener filter names (an ext_authz
-// server, say) is delivered ahead of the listener update too.
+// A new cluster only a listener filter names (ext_authz, say) holds the
+// listener update too.
 func TestReferenceAheadHoldsForAClusterOnlyAFilterNames(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, time.Hour)
 	ctx := context.Background()
@@ -185,8 +178,7 @@ func TestReferenceAheadHoldsForAClusterOnlyAFilterNames(t *testing.T) {
 	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the listener that calls it waits")
 }
 
-// routedBuild is a build whose one route config names routeTo, emitting
-// clusters, with listeners at version.
+// routedBuild emits clusters, routes to routeTo and versions its listeners.
 func routedBuild(t *testing.T, version, routeTo string, clusters ...string) XdsSnapWrapper {
 	t.Helper()
 	wrap := clusterWrapperV(version, clusters...)
@@ -197,9 +189,8 @@ func routedBuild(t *testing.T, version, routeTo string, clusters ...string) XdsS
 	return wrap
 }
 
-// While a retarget onto a new cluster is held, the held (published) routes
-// still name the cluster the build dropped. It must stay published with them,
-// whatever the de-reference grace: here the grace is 0.
+// The held routes still name the cluster the build dropped, so it stays
+// published even with a de-reference grace of 0.
 func TestReferenceAheadHoldCarriesTheHeldConfigsClusters(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, time.Hour)
 	ctx := context.Background()
@@ -214,9 +205,9 @@ func TestReferenceAheadHoldCarriesTheHeldConfigsClusters(t *testing.T) {
 	assertSnapshotCoherent(t, served)
 }
 
-// A deferred build (here: a previously-referenced cluster whose endpoints are
-// being rebuilt, which does not block) that also introduces a new cluster
-// holds the configuration naming it like a coherent build does.
+// A deferred build that adds a cluster holds the configuration naming it, as a
+// coherent build does. Here the deferral is a rebuilding CLA, which does not
+// block.
 func TestReferenceAheadAppliesToDeferredBuilds(t *testing.T) {
 	pt := newReferenceAheadTranslator(t, time.Hour)
 	ctx := context.Background()
@@ -231,9 +222,8 @@ func TestReferenceAheadAppliesToDeferredBuilds(t *testing.T) {
 	assert.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the configuration naming the new cluster waits for it")
 }
 
-// Each hold reason keeps its own deadline. A reference-ahead hold (short
-// window) that is joined by a flip onto an unready cluster must not release
-// that flip at the reference-ahead window: the unready cluster gets its budget.
+// Each hold reason keeps its own deadline: an unready flip joining a short
+// reference-ahead hold waits for its budget, not the window.
 func TestHoldDeadlinePerReason_UnreadyFlipOutlastsTheAheadWindow(t *testing.T) {
 	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 600*time.Millisecond, true,
 		scopedClustersWithReferenceAhead(50*time.Millisecond))
@@ -256,9 +246,8 @@ func TestHoldDeadlinePerReason_UnreadyFlipOutlastsTheAheadWindow(t *testing.T) {
 		"the budget still releases it")
 }
 
-// And the other way round: an unready-cluster hold whose cluster becomes ready
-// while a reference-ahead window is open releases at that window, not at the
-// budget the unready hold armed.
+// Conversely, once the unready cluster becomes ready, the hold releases at the
+// open window, not the unready budget.
 func TestHoldDeadlinePerReason_ReadyFlipReleasesAtTheAheadWindow(t *testing.T) {
 	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true,
 		scopedClustersWithReferenceAhead(100*time.Millisecond))
@@ -278,9 +267,9 @@ func TestHoldDeadlinePerReason_ReadyFlipReleasesAtTheAheadWindow(t *testing.T) {
 		"once only the reference-ahead window holds, it releases at the window, not the 1h budget")
 }
 
-// A hold kept only for reference-ahead windows ends as designed when they
-// close; it is not a bounded publish. One the budget cut short is, under its
-// own mode, not flip_release (which means a cluster never became ready).
+// Windows closing on their own are not a bounded publish. A budget-capped one
+// counts as reference_ahead, not flip_release, which means a cluster never
+// became ready.
 func TestReferenceAheadReleaseIsNotABudgetExpiry(t *testing.T) {
 	const metricName = "kgateway_xds_snapshot_perclient_bounded_publishes_total"
 	ctx := context.Background()
@@ -313,11 +302,8 @@ func TestReferenceAheadReleaseIsNotABudgetExpiry(t *testing.T) {
 	assert.Zero(t, bounded(boundedPublishFlipRelease))
 }
 
-// A de-reference grace that closes while a retarget is held for its
-// reference-ahead window must not release the retarget. The prune re-publishes
-// through the same hold decision as a new build, which still holds: the new
-// cluster's window is open. Here the removal window (20ms) closes long before
-// the addition window (an hour).
+// A de-reference grace (20ms) closing during a reference-ahead hold (1h) must
+// not release the retarget: the prune repeats the full hold decision.
 func TestDereferencePruneKeepsAReferenceAheadHold(t *testing.T) {
 	scoping := scopedClustersWithReferenceAhead(time.Hour)
 	scoping.dereferenceGrace = 20 * time.Millisecond
@@ -328,8 +314,7 @@ func TestDereferencePruneKeepsAReferenceAheadHold(t *testing.T) {
 
 	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
 	heldRoutes := servedSnapshot(t, pt).GetVersion(resourcev3.RouteType)
-	// The route moves from old to new: old is de-referenced, new is new to
-	// the client. The retarget is held for new's window.
+	// old is de-referenced and new is new to the client; the retarget is held.
 	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new"))
 	require.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the retarget is held")
 
