@@ -204,7 +204,7 @@ func NewProxySyncer(
 	if xdsClientState == nil {
 		// Nothing fails without it, so say so: integrations that build their
 		// own StartConfig silently lose this protection otherwise.
-		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget, and departed proxies' snapshots are never reclaimed")
+		logger.Warn("no xDS client state wired; every reconnecting proxy is treated as a new one, so a deferred first publish to a proxy still serving config is not withheld past the first-publish budget, a returning proxy is answered from its previous connection's snapshot until the next publish to it, and departed proxies' snapshots are never reclaimed")
 	}
 	return &ProxySyncer{
 		controllerName:             controllerName,
