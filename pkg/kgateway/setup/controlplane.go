@@ -330,9 +330,8 @@ func NewControlPlane(
 	hasher := xds.NewNodeRoleHasher()
 	var snapshotCache envoycache.SnapshotCache = newSnapshotCache(hasher, envoyLoggerAdapter)
 	if suppressNackResend || respondOnReconnect {
-		// See watchPolicy: a NACK of the current snapshot version parks the watch
-		// instead of re-sending the rejected response, and a reconnecting proxy's
-		// first endpoint request is answered regardless of the version it holds.
+		// watchPolicy parks NACKs of the current version and answers a reconnect's
+		// first EDS, RDS and SDS requests even at the held version.
 		policy := newWatchPolicy(snapshotCache, hasher, suppressNackResend, respondOnReconnect)
 		allCallbacks = chainCallbacks(allCallbacks, policy.callbacks())
 		snapshotCache = policy

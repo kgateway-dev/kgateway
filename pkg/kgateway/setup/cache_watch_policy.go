@@ -31,71 +31,30 @@ var (
 		}, []string{typeURLLabel})
 )
 
-// watchPolicy wraps the snapshot cache with two request-level rules the cache
-// itself does not have: it does not re-send a response the proxy has just
-// rejected, and it answers a reconnecting proxy's first endpoint, route and
-// secret requests even when the proxy already holds the current version.
+// watchPolicy wraps the snapshot cache with two request rules.
 //
-// Rule 1, NACKs.
+// NACKs: a NACK carries the client's old version, which differs from the
+// snapshot's, so the cache re-sends the rejected response and both sides spin
+// (thousands of responses per second per type, burying the rejection log). When
+// the version this stream sent under the NACKed nonce is still current, the
+// policy parks the watch by claiming that version; other NACKs pass through, so
+// a correction goes out at once. Rejections can be transient (a secret or file
+// not there yet), so a parked NACK is re-sent after nackRetryBase, doubling per
+// repeated rejection up to nackRetryMax: at most one response per type per
+// nackRetryMax. An ACK or a different rejected version resets the delay. Nonces
+// are unique only within a stream, so sent versions are tracked per stream and
+// type. Request associations are consumed by CreateWatch, replaced by the next
+// request, or removed on close.
 //
-// An xDS NACK is a DiscoveryRequest that carries the client's last accepted
-// version and an error detail. The snapshot cache answers any request whose
-// version differs from the snapshot's, and after a rejection those always
-// differ: the client is still on the version it accepted before, the snapshot
-// is the one it rejected. The cache therefore re-sends the rejected response,
-// Envoy rejects it again immediately, and the two sides spin until the snapshot
-// changes. Measured against a real proxy this runs in the thousands of
-// responses per second per rejected type, all of it wasted, and it drowns the
-// one line that says what was rejected.
-//
-// The policy recognizes a NACK of exactly what would be re-sent, which is
-// when the snapshot's current version for the type equals the version identified
-// by this stream's matching nonce, and parks the watch instead: the request handed
-// to the cache claims the current version, so the cache registers a watch that
-// fires on the next snapshot change and sends nothing now. A NACK arriving
-// after the snapshot already moved is passed through unchanged, so a
-// correction is delivered immediately. ACKs and first requests are never
-// touched.
-//
-// Parking is not forever. A rejection can be transient (a secret or file the
-// config names not there yet, a resource limit), and nothing else would offer
-// the config again until an unrelated change. So a parked NACK is retried: once
-// the retry delay passes with the snapshot unchanged, the rejected response is
-// re-sent, and Envoy re-evaluates it. Consecutive rejections of one version on
-// a stream double the delay, from nackRetryBase up to nackRetryMax, so a
-// config that keeps failing costs one response per type per nackRetryMax
-// rather than a spin. An ACK, or a rejection of a different version, starts
-// over.
-//
-// Sent versions and nonces are tracked per stream and resource type. Nonces
-// are only unique within a stream: two streams sharing a cache node can both
-// use nonce "1" for different versions. A NACK may suppress only the version
-// sent on its own stream with its matching nonce. Request associations are
-// consumed by CreateWatch, replaced by the next request, or removed on close.
-//
-// Rule 2, reconnects.
-//
-// The first request on a new stream from a proxy that already holds
-// configuration carries the version it accepted on its previous stream and no
-// nonce. Against a warm cache the pinned cache answers it by itself, because
-// nothing has been returned on the new stream yet. Against an empty cache,
-// which is what a proxy meets when the control plane has just restarted, the
-// request parks; and when the control plane then republishes the same content
-// under the same version, the publish path compares versions only, finds them
-// equal, and sends nothing. The same happens after the controller reclaims a
-// departed proxy's entry and the proxy comes back. For a resource that was
-// warming when the stream broke that is not harmless: a cluster waits on its
-// endpoints (and Envoy keeps CDS paused meanwhile), a listener on its route
-// configuration, and either on its secrets. Each asks again at the version it
-// holds, gets no answer, and stays warming until its own fetch timeout
-// releases it. The policy hands the cache a copy of such a request with the
-// version cleared, so the current snapshot answers it now or the next
-// published one answers it then. The cache's own not-yet-returned rule does
-// not cover this: it answers a fresh stream's named request only when a
-// snapshot already exists as the request arrives. Cluster and listener
-// requests are left alone, since nothing warms on them and a parked watch for
-// a version the proxy holds costs nothing. The cost is one endpoint, route and
-// secret push per reconnecting proxy.
+// Reconnects: a proxy's first request for a type on a new stream carries its
+// held version and no nonce. A warm cache answers it (nothing was returned on
+// the stream yet). An empty cache, after a controller restart or reclaim, parks
+// it, and an equal-version republish does not answer it (SetSnapshot compares
+// only versions). For EDS, RDS and SDS the policy clears the version on a copy
+// so the current or next snapshot answers; otherwise a cluster or listener
+// warming on them waits for its fetch timeout, with CDS paused. CDS and LDS are
+// left alone: nothing warms on them, and a parked watch at a held version costs
+// nothing. Cost: one EDS, RDS and SDS push per reconnect.
 type watchPolicy struct {
 	envoycache.SnapshotCache
 	hasher envoycache.NodeHash
@@ -134,9 +93,8 @@ type pendingNack struct {
 	retryIn time.Duration
 }
 
-// nackRetryBase and nackRetryMax bound the delay before a parked NACK's
-// response is re-sent (see watchPolicy). Variables so tests can
-// shorten them.
+// nackRetryBase and nackRetryMax bound the parked-NACK retry delay (see
+// watchPolicy). Variables so tests can shorten them.
 var (
 	nackRetryBase = time.Second
 	nackRetryMax  = time.Minute
@@ -163,8 +121,7 @@ func newWatchPolicy(inner envoycache.SnapshotCache, hasher envoycache.NodeHash, 
 	}
 }
 
-// callbacks returns the server callbacks that keep the version table current.
-// They must be chained into the server that uses this cache.
+// callbacks tracks sent versions; chain it into the server using this cache.
 func (s *watchPolicy) callbacks() xdsserver.Callbacks {
 	return xdsserver.CallbackFuncs{
 		StreamRequestFunc:  s.onStreamRequest,
@@ -220,12 +177,10 @@ func (s *watchPolicy) onStreamClosed(streamID int64, _ *envoycorev3.Node) {
 	delete(s.streams, streamID)
 }
 
-// rejectedVersion bridges the stream callback to the cache without changing
-// the original request observed by logging/auth callbacks, and reports the
-// rejected version and how long a parked NACK of it waits before its response
-// is re-sent. The pinned SotW server passes that same request pointer to
-// CreateWatch in both ADS modes. If that contract changes, an unassociated
-// request passes through unchanged.
+// rejectedVersion returns the rejected version and retry delay recorded for req,
+// matched by pointer so the request logging/auth callbacks see is unchanged. The
+// pinned SotW server passes that pointer in both ADS modes; an unassociated
+// request passes through.
 func (s *watchPolicy) rejectedVersion(req *envoycache.Request) (string, time.Duration, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -309,25 +264,21 @@ func (s *watchPolicy) ClearSnapshot(node string) {
 	s.SnapshotCache.ClearSnapshot(node)
 }
 
-// retryLater wraps a parked watch so that, every delay, it retries the rejected
-// response: while the snapshot still holds the rejected version, it creates a
-// watch for the original NACK, and only if the cache answers that watch at once
-// does it replace the parked watch. Otherwise it keeps the parked watch and
-// tries again after delay. The cache keeps a parked watch it cannot answer yet
-// (an ADS named watch, while the snapshot holds resources outside its names)
-// but drops a new one, so replacing the parked watch before a replacement is
-// answered could leave the stream with no watch for that type. The snapshot
-// can also move away from the rejected version and come back while the parked
-// watch waits, so the retry keeps its schedule until the watch is cancelled.
+// retryLater re-sends the rejected response every delay while the snapshot
+// still holds the rejected version, by creating a watch for the original NACK;
+// it replaces the parked watch only if the cache answers that watch at once.
+// The cache keeps a parked watch it cannot answer yet (an ADS named watch,
+// while the snapshot holds resources outside its names) but drops a new one,
+// and the snapshot can leave the rejected version and return, so the retry
+// keeps the parked watch and its schedule until the watch is cancelled.
 //
-// The retry runs on a timer goroutine. It holds the publication lock, so no
-// snapshot is published between its version check and the replacement, and the
-// watch's lock, because the server modifies the subscription the cache reads
-// once cancel returns, and cancel takes that lock. Nothing under these locks
-// blocks: the replacement answers into a channel of its own, and a lock-free
-// forwarder hands the response on until the watch is cancelled. The server
-// never waits on the publication lock (CreateWatch only tries it), so a
-// publication blocked on a stream's channel cannot wait on the retry.
+// The retry runs on a timer goroutine. It holds the publication lock from its
+// version check through the replacement, so nothing is published in between,
+// and the watch lock, because the server modifies the subscription the cache
+// reads once cancel returns. Nothing under these locks blocks: the replacement
+// answers into its own channel and a lock-free forwarder passes the response
+// on until cancelled. The server never waits on the publication lock
+// (CreateWatch only tries it).
 func (s *watchPolicy) retryLater(parked func(), node, rejected string, original *envoycache.Request, sub envoycache.Subscription, ch chan envoycache.Response, delay time.Duration) func() {
 	w := &retryingWatch{inner: parked, done: make(chan struct{})}
 	w.mu.Lock()
@@ -396,20 +347,17 @@ func (w *retryingWatch) cancel() {
 	close(w.done)
 }
 
-// warmedOnTypes are the named types an Envoy resource waits on while it warms:
-// a cluster on its endpoints, a listener on its route configuration, and
-// either on its secrets.
+// warmedOnTypes lists dependencies that can delay warming: EDS for clusters,
+// RDS for listeners and SDS for either.
 var warmedOnTypes = map[string]bool{
 	envoyresource.EndpointType: true,
 	envoyresource.RouteType:    true,
 	envoyresource.SecretType:   true,
 }
 
-// isReconnectRequest reports whether req is the first request on a stream from
-// a proxy that already holds configuration: it names the version the proxy
-// accepted on its previous stream and carries no response nonce, because no
-// response has been sent on this stream yet. Every later request on the stream,
-// ACK, NACK or subscription change, carries the nonce of the last response.
+// isReconnectRequest reports a proxy's first request for a type on a new stream
+// while it holds that type: a held version and no response nonce. Later requests
+// for the type (ACK, NACK, subscription change) carry a nonce.
 func isReconnectRequest(req *discoveryv3.DiscoveryRequest) bool {
 	return req.GetResponseNonce() == "" && req.GetVersionInfo() != ""
 }

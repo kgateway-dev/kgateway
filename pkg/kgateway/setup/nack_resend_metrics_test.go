@@ -63,8 +63,8 @@ func TestNackResendsSuppressedMetric(t *testing.T) {
 	}
 }
 
-// Every reconnecting proxy's first endpoint request counts once, under the same
-// type_url values as the rejects metrics; a cold request and an ACK do not.
+// A reconnect's first EDS request counts once, labeled like the rejects metrics;
+// cold requests and ACKs do not.
 func TestReconnectResponsesMetric(t *testing.T) {
 	const metricName = "kgateway_envoy_xds_reconnect_responses_total"
 	xdsReconnectResponses.Reset()

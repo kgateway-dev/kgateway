@@ -278,16 +278,13 @@ type Settings struct {
 	// older version is answered at once. Rejections are still logged and counted.
 	XdsSuppressNackResend bool `split_words:"true" default:"true"`
 
-	// XdsRespondOnReconnect answers a reconnecting proxy's first endpoint,
-	// route and secret requests even when the proxy already holds the current
-	// version. After a stream reset the proxy asks for them at the version it
-	// accepted before, and a snapshot the control plane has yet to (re)build
-	// answers only a different version, so a cluster warming on its endpoints,
-	// or a listener or cluster warming on its route configuration or secrets
-	// when the stream broke, would otherwise wait for Envoy's own fetch timeout
-	// before it could finish warming (for clusters, CDS stays paused until
-	// then). The cost is one endpoint, route and secret push per reconnecting
-	// proxy; cluster and listener requests are not affected.
+	// XdsRespondOnReconnect answers a reconnecting proxy's first endpoint, route
+	// and secret requests even at the version it already holds. Otherwise, if its
+	// snapshot is not yet rebuilt (after a controller restart, for example), a
+	// rebuilt snapshot at that version does not answer them, and a cluster or
+	// listener warming on them waits for Envoy's fetch timeout (CDS stays paused
+	// meanwhile). Costs one endpoint, route and secret push per reconnect; cluster
+	// and listener requests are unaffected.
 	XdsRespondOnReconnect bool `split_words:"true" default:"true"`
 
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.

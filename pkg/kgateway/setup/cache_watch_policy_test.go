@@ -23,9 +23,8 @@ import (
 	kgwxds "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 )
 
-// newPolicyHarness is the ADS harness with the watch policy in front of the
-// cache and its callbacks on the server, as NewControlPlane wires them,
-// including the separate cache newSnapshotCache serves secrets from.
+// newPolicyHarness mirrors NewControlPlane's watch-policy and callback wiring,
+// secrets cache included.
 func newPolicyHarness(t *testing.T, ordered, suppressNackResend, respondOnReconnect bool) *adsHarness {
 	t.Helper()
 
@@ -98,9 +97,8 @@ func (h *adsHarness) nack(resp *discoveryv3.DiscoveryResponse, accepted string) 
 	})
 }
 
-// ackNamed acknowledges a named-type response. An ACK without names after a
-// named subscription is an unsubscribe-all on the pinned cache and parks no
-// watch, so named types must repeat their names.
+// ackNamed ACKs a named-type response, repeating the names: on the pinned cache
+// an ACK without names unsubscribes from all.
 func (h *adsHarness) ackNamed(resp *discoveryv3.DiscoveryResponse, names ...string) {
 	h.t.Helper()
 
@@ -232,8 +230,7 @@ func nackSnapshot(version string) *envoycache.Snapshot {
 		[]*envoyroutev3.RouteConfiguration{testRouteConfig(adsTestRoute, adsTestCluster)})
 }
 
-// reconnectSnapshot is the harness snapshot with a real endpoint assignment for
-// the cluster, so named EDS requests have something to be answered with.
+// reconnectSnapshot includes a real CLA for named EDS requests.
 func reconnectSnapshot(version string) *envoycache.Snapshot {
 	snap := nackSnapshot(version)
 	snap.Resources[cachetypes.Endpoint] = envoycache.NewResources(version, []cachetypes.Resource{
@@ -244,8 +241,7 @@ func reconnectSnapshot(version string) *envoycache.Snapshot {
 
 const adsTestSecret = "test-secret"
 
-// reconnectSnapshotWithSecret adds a secret to reconnectSnapshot, so named SDS
-// requests have something to be answered with.
+// reconnectSnapshotWithSecret adds a secret for named SDS requests.
 func reconnectSnapshotWithSecret(version string) *envoycache.Snapshot {
 	snap := reconnectSnapshot(version)
 	snap.Resources[cachetypes.Secret] = envoycache.NewResources(version, []cachetypes.Resource{
@@ -261,12 +257,9 @@ var reconnectWarmedTypes = []struct{ typeURL, name string }{
 	{envoyresource.SecretType, adsTestSecret},
 }
 
-// A proxy reconnecting after a control-plane restart: its first endpoint
-// request names the version it accepted on the old stream, the cache is still
-// empty, and the control plane then republishes the same content under the
-// same version. Without the policy the parked request is never answered
-// (versions are equal), so a cluster that was warming stays warming. This pins
-// that on the plain harness.
+// On the plain cache, a held-version EDS request parked on an empty cache is not
+// answered by an equal-version republish, only by a new version. A warming
+// cluster would wait for its fetch timeout.
 func TestPlainCacheLeavesReconnectEndpointRequestParkedOnEqualVersionRepublish(t *testing.T) {
 	h := newADSHarness(t, true)
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}, VersionInfo: "1"})
@@ -287,8 +280,7 @@ func TestReconnectEndpointRequestIsAnsweredWhenSnapshotArrivesAtHeldVersion(t *t
 			resp := h.receiveType(envoyresource.EndpointType, "1")
 			require.Len(t, resp.GetResources(), 1)
 
-			// From here the stream behaves normally: the ACK parks, the next
-			// version is delivered, and a NACK of it is not re-sent.
+			// Then the stream is normal: ACKs park, updates arrive, NACKs are not re-sent.
 			h.ackNamed(resp, adsTestCluster)
 			h.waitForOpenWatches(1)
 			h.setSnapshot(reconnectSnapshot("2"))
@@ -307,11 +299,9 @@ func TestReconnectEndpointRequestIsAnsweredFromWarmCache(t *testing.T) {
 	require.Len(t, resp.GetResources(), 1)
 }
 
-// Against a warm cache the pinned cache answers a fresh stream's first request
-// of any type at the held version by itself, because nothing has been
-// returned on that stream yet. The reconnect rule is therefore only needed for
-// the empty-cache path pinned above; this documents the warm-cache behavior on
-// the plain harness so a change in the pin is noticed.
+// A warm pinned cache answers a fresh stream's held-version request itself,
+// because nothing was returned on that stream yet, so only the empty-cache path
+// needs the rule. Pinned so a go-control-plane change is noticed.
 func TestPlainCacheAnswersFreshStreamAtHeldVersionFromWarmCache(t *testing.T) {
 	h := newADSHarness(t, true)
 	h.setSnapshot(reconnectSnapshot("1"))
@@ -321,10 +311,9 @@ func TestPlainCacheAnswersFreshStreamAtHeldVersionFromWarmCache(t *testing.T) {
 	h.receiveType(envoyresource.EndpointType, "1")
 }
 
-// Other types keep the cache's behavior on the empty-cache path: a
-// reconnecting proxy's cluster request parks, an equal-version republish does
-// not answer it, which is harmless since the proxy holds that version, and the
-// next version is delivered.
+// CDS keeps the cache's behavior: an equal-version republish leaves the cluster
+// request parked (harmless, the proxy holds that version); the next version
+// answers.
 func TestReconnectRuleLeavesClusterRequestsToTheCache(t *testing.T) {
 	h := newPolicyHarness(t, true, true, true)
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.ClusterType, VersionInfo: "1"})
@@ -357,8 +346,7 @@ func TestReconnectRuleDisabledParksLikePlainCache(t *testing.T) {
 	h.expectSilence("equal-version republish with the reconnect rule disabled")
 }
 
-// shortenNackRetry makes the parked-NACK retry fire quickly. Tests using it
-// must not run in parallel.
+// shortenNackRetry speeds up the parked-NACK retry; callers must not run in parallel.
 func shortenNackRetry(t *testing.T, base, maximum time.Duration) {
 	t.Helper()
 	origBase, origMax := nackRetryBase, nackRetryMax
@@ -425,11 +413,8 @@ func TestNackRetryDelayBacksOff(t *testing.T) {
 	require.Equal(t, time.Second, reject("4"), "an ACK starts over")
 }
 
-// The empty-cache path parks a reconnecting proxy's route and secret requests
-// exactly like its endpoint request: an equal-version republish does not
-// answer them. A listener that was warming on its route configuration, or a
-// listener or cluster warming on a secret, then waits for its own fetch
-// timeout. This pins that on the plain harness.
+// Route and secret requests park the same way on the plain cache; a warming
+// listener or cluster would wait for its fetch timeout.
 func TestPlainCacheLeavesReconnectRouteAndSecretRequestsParkedOnEqualVersionRepublish(t *testing.T) {
 	for _, tc := range reconnectWarmedTypes[1:] {
 		t.Run(tc.typeURL, func(t *testing.T) {
@@ -442,8 +427,7 @@ func TestPlainCacheLeavesReconnectRouteAndSecretRequestsParkedOnEqualVersionRepu
 	}
 }
 
-// The policy answers a reconnecting proxy's first request for every type a
-// resource warms on, once a snapshot arrives at the held version.
+// The policy answers each warmed-on type once a snapshot arrives at the held version.
 func TestReconnectWarmedTypeRequestsAreAnsweredWhenSnapshotArrivesAtHeldVersion(t *testing.T) {
 	for _, tc := range reconnectWarmedTypes {
 		for _, ordered := range []bool{false, true} {
