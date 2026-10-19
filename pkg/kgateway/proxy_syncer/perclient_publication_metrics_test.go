@@ -104,27 +104,6 @@ func TestPublicationMetrics_WarmTruthBoundedPublish(t *testing.T) {
 	})
 }
 
-// A warm (prior-xDS-version) client withheld at budget expiry (missing
-// clusters) increments deferred_withheld_total{prior_xds_version}.
-func TestPublicationMetrics_DeferredWithheld(t *testing.T) {
-	ResetMetrics()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	pt := newPublishGateTestTranslator(t, true, 30*time.Millisecond)
-	pt.syncXds(ctx, deferredWrapperV("v1"))
-	time.Sleep(150 * time.Millisecond) // past the budget; withheld, not published
-
-	g := metricstest.MustGatherMetricsContext(ctx, t,
-		"kgateway_xds_snapshot_perclient_deferred_withheld_total")
-	g.AssertMetricsInclude("kgateway_xds_snapshot_perclient_deferred_withheld_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetricValueTest{
-			Labels: labelsWith("reason", withheldReasonPriorXDSVersion),
-			Test:   metricstest.GreaterOrEqual(1),
-		},
-	})
-}
-
 // With KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK enabled, publishing a snapshot that
 // fails the consistency check (here: an orphan CLA with no CDS cluster)
 // increments inconsistent_snapshots_total — and still publishes (the check

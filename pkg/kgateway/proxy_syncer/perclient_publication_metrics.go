@@ -37,8 +37,6 @@ const (
 	// bound: the cluster's last config is no longer served and routes to it
 	// fail until it reappears.
 	boundedPublishCarryExpired = "carry_expired"
-
-	withheldReasonPriorXDSVersion = "prior_xds_version"
 )
 
 var (
@@ -126,23 +124,6 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
-	snapshotPerClientDeferredWithheldTotal = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: snapshotSubsystem,
-			Name:      "perclient_deferred_withheld_total",
-			Help: "Total deferred snapshots withheld at first-publish budget expiry " +
-				"because the client may already be serving traffic (it reported a " +
-				"prior accepted xDS version on connect) and some referenced cluster " +
-				"was missing from CDS. Kgateway preserved last-good config after a " +
-				"reconnect or controller restart instead of publishing routes that " +
-				"would NC (#13868). Warm clients whose only gaps are clusters with " +
-				"no derived CLA are published instead (bounded_publishes_total, " +
-				"mode=warm_truth). Counted once per budget expiry while withheld; " +
-				"after KGW_PER_CLIENT_WARM_WITHHOLD_BOUND the client is published " +
-				"(bounded_publishes_total, mode=warm_release).",
-		},
-		[]string{gatewayLabel, namespaceLabel, publicationReasonLabel},
-	)
 )
 
 // recordSnapshotDefer counts one deferred build for the client's gateway, per
@@ -211,19 +192,5 @@ func recordInconsistentSnapshot(proxyKey string) {
 	snapshotPerClientInconsistentTotal.Inc(
 		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
 		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-	)
-}
-
-// recordDeferredWithheld counts a deferred snapshot withheld at budget expiry
-// for a warm client.
-func recordDeferredWithheld(proxyKey string) {
-	if !metrics.Active() {
-		return
-	}
-	cd := getDetailsFromXDSClientResourceName(proxyKey)
-	snapshotPerClientDeferredWithheldTotal.Inc(
-		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-		metrics.Label{Name: publicationReasonLabel, Value: withheldReasonPriorXDSVersion},
 	)
 }

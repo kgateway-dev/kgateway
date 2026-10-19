@@ -485,7 +485,6 @@ func (g *publishGate) firePending(
 			logger.Warn("first-publish budget expired, but client reported a prior xDS version and referenced clusters are missing; withholding deferred snapshot",
 				"proxy_key", proxyKey, "missing_clusters", wrap.missingReferenced, "missing_endpoint_clusters", wrap.missingEndpointsReferenced,
 				"withheld_for", withheldFor, "warm_withhold_bound", g.warmWithholdBound)
-			recordDeferredWithheld(proxyKey)
 			// Re-check every budget without waiting for another deferred
 			// build: with static inputs none may ever arrive. The check
 			// reaches the bound, publishes the warm truth promptly if the
