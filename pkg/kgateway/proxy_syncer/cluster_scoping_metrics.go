@@ -46,7 +46,10 @@ var (
 	)
 	// clusterScopingTransitionsTotal counts the clusters whose emitted-set change
 	// needed a window to be safe, by which window. Each cluster counts once per
-	// window it enters, not once per publish while the window is open.
+	// window it enters, not once per publish while the window is open. Windows
+	// are kept per client key, the proxies of a gateway that share labels and
+	// locality, so a gateway whose proxies span three zones counts each change
+	// three times.
 	//
 	// These are expected during route churn, not faults. What is worth watching
 	// is the rate: a fleet whose route edits keep landing on never-sent clusters
@@ -56,7 +59,7 @@ var (
 		metrics.CounterOpts{
 			Subsystem: clusterScopingSubsystem,
 			Name:      "transitions_total",
-			Help:      "Emitted-set transitions that required a grace window",
+			Help:      "Clusters whose emitted-set change needed a grace window, per proxy group, by transition",
 		},
 		[]string{gatewayLabel, namespaceLabel, transitionLabel},
 	)
@@ -131,13 +134,11 @@ func recordClusterScopingTransition(clientKey, transition string, count int) {
 		return
 	}
 	cd := getDetailsFromXDSClientResourceName(clientKey)
-	for range count {
-		clusterScopingTransitionsTotal.Inc(
-			metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-			metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-			metrics.Label{Name: transitionLabel, Value: transition},
-		)
-	}
+	clusterScopingTransitionsTotal.Add(float64(count),
+		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
+		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
+		metrics.Label{Name: transitionLabel, Value: transition},
+	)
 }
 
 // gatewayHasClients reports whether any of clients belongs to clientKey's

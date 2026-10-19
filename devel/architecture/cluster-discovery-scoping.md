@@ -120,7 +120,12 @@ one whose windows close first is not a bounded publish.
 | --- | --- | --- |
 | `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | Clusters withheld because nothing references them. |
 | `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 when a gateway reverted to emit-all. Worth an alert. |
-| `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters. |
+| `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters, for each proxy group. |
+
+A proxy group is the proxies of a gateway that share labels and locality; they
+receive one snapshot, and each group keeps its own windows. A gateway whose
+proxies span three zones therefore counts every transition three times, while
+any number of replicas in one zone count once.
 
 How many clusters a gateway's proxies do receive is
 `kgateway_xds_snapshot_resources{resource="Cluster"}`, which counts the published
