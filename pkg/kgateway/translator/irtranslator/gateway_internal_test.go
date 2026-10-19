@@ -34,36 +34,6 @@ func listenerSetGatewayIR(n int) (ir.GatewayIR, []string) {
 	return ir.GatewayIR{SourceObject: src}, names
 }
 
-// BenchmarkFindListenerForFilterChain does the lookups of one gateway translation:
-// building filterChainListeners, then one lookup per HTTPS filter chain, plus a merged
-// plain HTTP chain that matches nothing.
-//
-// Run with:
-//
-//	go test -run=^$ -bench=BenchmarkFindListenerForFilterChain -benchmem \
-//	    ./pkg/kgateway/translator/irtranslator/
-func BenchmarkFindListenerForFilterChain(b *testing.B) {
-	for _, n := range []int{500, 2000} {
-		b.Run(fmt.Sprintf("listeners=%d", n), func(b *testing.B) {
-			gw, chainNames := listenerSetGatewayIR(n)
-			chainNames = append(chainNames, "listener~80")
-			b.ReportAllocs()
-			for b.Loop() {
-				chainListeners := newFilterChainListeners(gw)
-				found := 0
-				for _, name := range chainNames {
-					if chainListeners[name] != nil {
-						found++
-					}
-				}
-				if found != n+1 {
-					b.Fatalf("found %d listeners, want %d", found, n+1)
-				}
-			}
-		})
-	}
-}
-
 func TestFilterChainListeners(t *testing.T) {
 	gw, chainNames := listenerSetGatewayIR(3)
 	// Repeat the names of the Gateway's own listener and of ls-0's listener after
