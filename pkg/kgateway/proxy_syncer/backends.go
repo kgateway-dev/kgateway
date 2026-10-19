@@ -180,9 +180,8 @@ type clustersWithErrors struct {
 	erroredClusters     []string
 	erroredClustersHash uint64
 	clustersHash        uint64
-	// clusterVersions maps each published cluster name to its ClusterVersion, the
-	// per-row equality hash clustersHash folds, so a filter that drops clusters
-	// can version what survives without digesting a proto (emission_filter.go).
+	// clusterVersions stores per-row ClusterVersion hashes so emission filtering
+	// can version retained clusters without digesting protos.
 	// +noKrtEquals folded into clustersHash
 	clusterVersions map[string]uint64
 	// perClientErrors are the rows whose Error was produced for this client

@@ -164,10 +164,8 @@ func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	return envoycache.NewResourcesWithTTL(strconv.FormatUint(h, 10), r)
 }
 
-// toTranslationOutput projects one gateway translation into the xDS resources
-// and status the syncer publishes. scoping decides whether the emitted-cluster
-// set is computed at all: it is only read when CDS is scoped, and the walk over
-// every generated proto is not worth paying for a value nothing will consult.
+// toTranslationOutput projects one gateway translation into published xDS and
+// status. scoping gates the emitted-set walk (emittedClustersFor).
 func toTranslationOutput(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap, scoping clusterScoping) *gatewayTranslationOutput {
 	c, ch := sliceToResourcesHash(xdsSnap.ExtraClusters)
 	routes := sliceToResources(xdsSnap.Routes)

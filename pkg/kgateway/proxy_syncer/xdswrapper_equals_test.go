@@ -56,10 +56,9 @@ func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
 		"a change in which CLAs are synthesized must not be equal")
 }
 
-// A cluster missing from CDS, because the build no longer has it or, with
-// cluster scoping, the gateway stopped naming it, changes no version when it
-// errors. The wrapper must still differ, or a carry of that cluster (a held
-// flip, a grace) never sees the error and keeps serving its pre-error config.
+// A cluster out of CDS (gone from the build, or filtered out by scoping) moves
+// no version when it errors. The wrapper must still differ so a carry drops the
+// cluster's pre-error config.
 func TestXdsSnapWrapperEquals_ComparesErroredClusters(t *testing.T) {
 	newSnap := func() *envoycache.Snapshot {
 		snap := &envoycache.Snapshot{}

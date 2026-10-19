@@ -45,9 +45,8 @@ func emissionSet(names ...string) emittedClusters {
 	return set
 }
 
-// TestFilterClustersToEmittedIsInertInAllMode: ALL is the default and must be
-// byte-identical to not having the feature, or every existing deployment changes
-// shape on upgrade.
+// TestFilterClustersToEmittedIsInertInAllMode: ALL must leave CDS untouched, or
+// every deployment changes on upgrade.
 func TestFilterClustersToEmittedIsInertInAllMode(t *testing.T) {
 	clusters, versions := clusterResourcesFor("routed", "unreferenced")
 
@@ -59,9 +58,8 @@ func TestFilterClustersToEmittedIsInertInAllMode(t *testing.T) {
 	assert.Equal(t, versions, gotVersions)
 }
 
-// TestFilterClustersToEmittedDropsUnreferencedBackends is the feature: the
-// clusters no route, filter or ancillary reference names leave CDS, and with
-// them their stats and their share of every proxy's memory.
+// TestFilterClustersToEmittedDropsUnreferencedBackends: clusters nothing names
+// leave CDS.
 func TestFilterClustersToEmittedDropsUnreferencedBackends(t *testing.T) {
 	clusters, versions := clusterResourcesFor("routed", "ancillary", "unreferenced-a", "unreferenced-b")
 
@@ -73,9 +71,8 @@ func TestFilterClustersToEmittedDropsUnreferencedBackends(t *testing.T) {
 	assert.Equal(t, map[string]uint64{"routed": versions["routed"], "ancillary": versions["ancillary"]}, gotVersions)
 }
 
-// TestFilterClustersToEmittedVersionsOverWhatSurvives: a dropped cluster that
-// leaves the CDS version unchanged is a cluster Envoy goes on serving, which
-// would make the whole filter invisible to the data plane.
+// TestFilterClustersToEmittedVersionsOverWhatSurvives: a drop that leaves the
+// CDS version unchanged never reaches Envoy.
 func TestFilterClustersToEmittedVersionsOverWhatSurvives(t *testing.T) {
 	clusters, versions := clusterResourcesFor("routed", "unreferenced")
 	before := clusters.Version
@@ -90,10 +87,8 @@ func TestFilterClustersToEmittedVersionsOverWhatSurvives(t *testing.T) {
 		"the version must be the fold of exactly the retained clusters")
 }
 
-// TestFilterClustersToEmittedRevertsForRequestTimeSelectors is the guard doing
-// its job. The candidates such a route may select are named nowhere, so pruning
-// would not 503 — it would silently route to the plugin's fallback. Reverting to
-// emit-all for that gateway is the only safe answer.
+// TestFilterClustersToEmittedRevertsForRequestTimeSelectors: unnamed candidates
+// force emit-all; pruning would silently route to the plugin's fallback.
 func TestFilterClustersToEmittedRevertsForRequestTimeSelectors(t *testing.T) {
 	clusters, versions := clusterResourcesFor("routed", "candidate-a", "candidate-b")
 	unfilterable := emissionSet("routed")
@@ -107,9 +102,8 @@ func TestFilterClustersToEmittedRevertsForRequestTimeSelectors(t *testing.T) {
 	assert.Equal(t, versions, gotVersions)
 }
 
-// TestFilterClustersToEmittedReportsNoChangeWhenEverythingIsReferenced keeps the
-// common fully-routed case off the re-versioning path, so a deployment where
-// every backend is referenced produces the same version it did before.
+// TestFilterClustersToEmittedReportsNoChangeWhenEverythingIsReferenced: a fully
+// referenced gateway keeps its unfiltered version.
 func TestFilterClustersToEmittedReportsNoChangeWhenEverythingIsReferenced(t *testing.T) {
 	clusters, versions := clusterResourcesFor("a", "b")
 
@@ -121,9 +115,8 @@ func TestFilterClustersToEmittedReportsNoChangeWhenEverythingIsReferenced(t *tes
 	assert.Equal(t, versions, gotVersions)
 }
 
-// TestFilterClustersToEmittedKeepsBlackhole: routes whose backends fail
-// resolution target the blackhole cluster. The collector always puts it in the
-// set; this pins that the filter therefore keeps it.
+// TestFilterClustersToEmittedKeepsBlackhole: the collector always emits
+// blackhole, which unresolved-backend routes target.
 func TestFilterClustersToEmittedKeepsBlackhole(t *testing.T) {
 	blackhole := wellknown.BlackholeClusterName
 	clusters, versions := clusterResourcesFor(blackhole, "unreferenced")
@@ -137,11 +130,9 @@ func TestFilterClustersToEmittedKeepsBlackhole(t *testing.T) {
 	assert.Equal(t, []string{blackhole}, resourceNames(got))
 }
 
-// TestSnapshotPerClientEmitsOnlyReferencedClusters is the feature end to end:
-// the same inputs, published twice, differ by the setting alone. The routed
-// backend and the blackhole survive; the two backends no route names do not,
-// and their ClusterLoadAssignments go with them because EDS is aligned to
-// whatever CDS ends up containing.
+// TestSnapshotPerClientEmitsOnlyReferencedClusters runs the same inputs with
+// scoping off and on. Scoped, only the routed backend survives, and EDS follows
+// CDS.
 func TestSnapshotPerClientEmitsOnlyReferencedClusters(t *testing.T) {
 	for _, tc := range []struct {
 		name     string

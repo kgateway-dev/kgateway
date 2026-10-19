@@ -12,9 +12,7 @@ import (
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 )
 
-// TestClusterScopingIsOffByDefault: an upgrade must not change what any proxy
-// is sent. The zero Settings, and the documented default, both leave CDS
-// unscoped.
+// TestClusterScopingIsOffByDefault: an upgrade must not change what proxies are sent.
 func TestClusterScopingIsOffByDefault(t *testing.T) {
 	assert.False(t, clusterScopingFrom(apisettings.Settings{}).ScopesClusters(),
 		"the zero Settings must not scope clusters")
@@ -26,10 +24,8 @@ func TestClusterScopingIsOffByDefault(t *testing.T) {
 	}).ScopesClusters())
 }
 
-// TestDisabledScopingSkipsTheEmissionWalkEntirely pins that turning the feature
-// off is not just "compute the set and ignore it". The walk visits every
-// message of every generated listener and route, descending into typed_config,
-// and a deployment that has not opted in should not pay for it.
+// TestDisabledScopingSkipsTheEmissionWalkEntirely: disabled scoping must skip the
+// proto walk, not compute and discard its result.
 func TestDisabledScopingSkipsTheEmissionWalkEntirely(t *testing.T) {
 	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
 		Name: "route-config",
@@ -55,10 +51,8 @@ func TestDisabledScopingSkipsTheEmissionWalkEntirely(t *testing.T) {
 		"the same inputs must collect normally once scoping is on")
 }
 
-// TestDisabledScopingFilterIsIdentity: with the feature off the filter returns
-// its input unchanged, including the case where the emitted set would have
-// dropped something. Nothing about a published snapshot depends on the emitted
-// set unless an operator asked for it.
+// TestDisabledScopingFilterIsIdentity: with scoping off the filter returns its
+// input unchanged, even when the emitted set would drop a cluster.
 func TestDisabledScopingFilterIsIdentity(t *testing.T) {
 	clusters, versions := clusterResourcesFor("routed", "unreferenced")
 
@@ -70,9 +64,8 @@ func TestDisabledScopingFilterIsIdentity(t *testing.T) {
 	assert.Equal(t, versions, gotVersions)
 }
 
-// TestDisabledScopingLeavesTheGatewayProjectionEmpty: the emitted set rides on
-// GatewayXdsResources, and with scoping off it must stay zero so it cannot
-// contribute to that row's equality or be mistaken for "no clusters emitted".
+// TestDisabledScopingLeavesTheGatewayProjectionEmpty: with scoping off the set
+// stays zero, so it never affects the row's equality.
 func TestDisabledScopingLeavesTheGatewayProjectionEmpty(t *testing.T) {
 	assert.True(t,
 		emittedClustersFor(clusterScoping{}, envoycache.Resources{}, envoycache.Resources{}).

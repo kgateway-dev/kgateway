@@ -101,11 +101,8 @@ func snapshotPerClient(
 		clustersHash := clustersForUcc.clustersHash
 		clusterVersions := clustersForUcc.clusterVersions
 
-		// Drop backends the generated configuration does not reference, when the
-		// operator has asked for that. Filtering here rather than in translation
-		// keeps base translation shared and O(backends), and EDS follows for free
-		// because filterEndpointResourcesForClusters below aligns CLAs to
-		// whatever CDS ends up containing.
+		// Filter after shared backend translation, which stays O(backends). EDS
+		// alignment below drops CLAs for clusters removed here.
 		var filtered bool
 		clusterResources, clusterVersions, filtered = filterClustersToEmitted(
 			scoping,
@@ -114,8 +111,7 @@ func snapshotPerClient(
 			clusterVersions,
 		)
 		if filtered {
-			// Version over what survived: a dropped cluster that leaves the
-			// version unchanged is a cluster Envoy never stops serving.
+			// Re-version: an unchanged version would leave Envoy serving dropped clusters.
 			clustersHash = emittedClustersHash(clusterVersions)
 			clusterResources.Version = strconv.FormatUint(clustersHash, 10)
 			logger.Debug("emitting referenced clusters only",

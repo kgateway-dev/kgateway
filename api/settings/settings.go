@@ -39,28 +39,18 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
-// ClusterDiscoveryMode determines which backends become Envoy clusters in a
-// proxy's CDS, and therefore which ClusterLoadAssignments reach its EDS.
+// ClusterDiscoveryMode selects backends for CDS and their corresponding EDS assignments.
 type ClusterDiscoveryMode string
 
 const (
-	// ClusterDiscoveryAll emits a cluster for every backend in discovery scope,
-	// whether or not the generated configuration references it.
-	//
-	// This is historically what made route retargets safe: a destination that
-	// already exists cannot be missing when a route starts naming it. The cost
-	// is that every proxy replica carries, and reports stats for, the whole
-	// inventory -- including backends no route will ever target.
+	// ClusterDiscoveryAll emits every backend in discovery scope, referenced or not.
+	// Retargets are safe because the destination already exists, but every proxy
+	// carries, and reports stats for, the whole inventory.
 	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
-	// ClusterDiscoveryReferenced emits only the clusters the generated
-	// configuration references, including ancillary ones named from filter
-	// configuration (ext_authz, ext_proc, rate limit, access-log sinks, JWKS).
-	//
-	// A gateway whose routes select a destination at request time -- a cluster
-	// header, or a cluster specifier plugin -- reverts to ALL for that gateway,
-	// because the candidates such a route may select are named nowhere in the
-	// configuration and pruning them would silently reroute to the plugin's
-	// fallback rather than fail visibly.
+	// ClusterDiscoveryReferenced emits only referenced clusters, including filter
+	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
+	// with a request-time selector, such as a cluster header or specifier plugin,
+	// reverts to ALL: pruning could silently select the plugin's fallback.
 	ClusterDiscoveryReferenced ClusterDiscoveryMode = "REFERENCED"
 )
 
