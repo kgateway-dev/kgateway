@@ -8,43 +8,31 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 )
 
-// errConnectionSuperseded is returned for a publish computed for a client's
-// previous connection after its new connection started: it is not installed.
-// The new connection gets its own publish once the gate adopts it.
+// errConnectionSuperseded reports a publish for the client's previous
+// connection, which is not installed. The new connection gets its own publish.
 var errConnectionSuperseded = errors.New("the client's connection restarted; publish not installed")
 
-// connectionFence orders snapshot-cache installs against connection starts,
-// for clients whose state reports them (see registerConnectionStartHooks).
+// connectionFence orders cache installs against connection starts (see
+// registerConnectionStartHooks). A start clears the client's entry under the
+// client state's lock, so it cannot take the gate lock. A publisher for the
+// previous connection may already hold that lock; without the fence it would
+// refill the entry for the new stream's watches. So:
 //
-// A connection start clears the client's cache entry while stream admission is
-// excluded, so the new stream cannot be answered from it. That alone does not
-// stop a publisher that was computing for the previous connection when the
-// stream arrived: it holds the gate lock, which the start hook cannot take
-// (the reclaimer takes the gate lock before the client state's), and would
-// install its stale snapshot after the clear, where the new stream's watches
-// would find it. The fence closes that gap:
+//   - start advances the key's generation and clears its entry atomically;
+//   - connectionStarted resets the gate's state and adopts that generation;
+//   - install checks the generation and writes the cache atomically.
 //
-//   - start gives the key a fresh generation and clears its entry, as one step;
-//   - the gate adopts the key's current generation when it starts the new
-//     connection (publishGate.connectionStarted), after resetting what it knew
-//     about the previous one;
-//   - install checks the publisher's generation and installs as one step, so a
-//     publish computed for an earlier connection is rejected, never installed
-//     after the clear.
-//
-// Its lock is taken after the gate's and after the client state's, and before
-// the cache's. Keys whose state reports no connection starts keep generation
-// zero, which is also the gate's, so their publishes install as before.
+// Lock order: gate, client state, fence, cache. Keys without start hooks stay
+// at generation zero, so the fence never rejects them.
 type connectionFence struct {
 	mu sync.Mutex
-	// next numbers generations across all keys, so a generation is never
-	// reused, even after forget.
+	// next numbers generations across keys; none is reused, even after forget.
 	next uint64
 	gen  map[string]uint64
 }
 
-// start begins a new connection generation for proxyKey and clears its cache
-// entry. Runs inside stream admission (the connection-start hook).
+// start advances proxyKey's generation and clears its cache entry, under
+// stream admission.
 func (f *connectionFence) start(cache envoycache.SnapshotCache, proxyKey string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -63,8 +51,7 @@ func (f *connectionFence) current(proxyKey string) uint64 {
 	return f.gen[proxyKey]
 }
 
-// install sets snap for proxyKey only if gen is still its connection
-// generation.
+// install sets snap only if gen still matches proxyKey's generation.
 func (f *connectionFence) install(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, gen uint64, snap envoycache.ResourceSnapshot) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -81,8 +68,7 @@ func (f *connectionFence) forget(proxyKey string) {
 	delete(f.gen, proxyKey)
 }
 
-// logPublishFailure logs a publish that did not install. One rejected by the
-// fence is expected and logged at debug.
+// logPublishFailure logs failed installation; expected fence rejections use debug.
 func logPublishFailure(proxyKey string, err error) {
 	if errors.Is(err, errConnectionSuperseded) {
 		logger.Debug("not installing a publish computed for the client's previous connection", "proxy_key", proxyKey)

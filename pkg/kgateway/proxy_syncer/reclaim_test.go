@@ -18,8 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
-// shortenReclaimGrace shrinks the grace period for the duration of a test.
-// Tests using it must not run in parallel.
+// shortenReclaimGrace changes the grace for this test; callers must not run in parallel.
 func shortenReclaimGrace(t *testing.T, d time.Duration) {
 	t.Helper()
 	orig := snapshotReclaimGracePeriod
@@ -27,8 +26,8 @@ func shortenReclaimGrace(t *testing.T, d time.Duration) {
 	t.Cleanup(func() { snapshotReclaimGracePeriod = orig })
 }
 
-// fakeReclaim stands in for publishGate.reclaimDeparted: it reclaims only
-// clients absent from the connected set, and records what it reclaimed.
+// fakeReclaim stands in for reclaimDeparted: it reclaims and records only
+// clients absent from the connected set.
 type fakeReclaim struct {
 	mu        sync.Mutex
 	connected map[string]bool
@@ -95,8 +94,7 @@ func TestReclaim_ReconnectWithinGraceCancels(t *testing.T) {
 }
 
 func TestReclaim_FireTimeDecisionWins(t *testing.T) {
-	// The collection event announcing a reconnect can lag the stream; the
-	// decision at fire time must win over the timer.
+	// A reconnect event may lag admission; synchronous state at expiry must win.
 	shortenReclaimGrace(t, 30*time.Millisecond)
 	f := newFakeReclaim()
 	r := newSnapshotReclaimer(f.reclaim)
@@ -140,8 +138,7 @@ func TestReclaim_IndependentClients(t *testing.T) {
 		"only the still-departed client is reclaimed")
 }
 
-// stubConnections models the synchronous connection state behind
-// publishGate.reclaimDeparted.
+// stubConnections supplies synchronous state for reclaimDeparted tests.
 type stubConnections struct{ connected bool }
 
 func (s stubConnections) RunIfDisconnected(_ string, fn func()) bool {
@@ -152,8 +149,8 @@ func (s stubConnections) RunIfDisconnected(_ string, fn func()) bool {
 	return true
 }
 
-// openClusterWatch publishes version v1 for node and opens the watch a
-// connected Envoy holding v1 would have: parked until the next version.
+// openClusterWatch installs v1 and opens the watch an Envoy holding v1 would,
+// parked until the next version.
 func openClusterWatch(t *testing.T, cache envoycache.SnapshotCache, node string) chan envoycache.Response {
 	t.Helper()
 	snap, err := envoycache.NewSnapshot("v1", map[envoyresourcev3.Type][]envoycachetypes.Resource{envoyresourcev3.ClusterType: {}})
@@ -171,8 +168,8 @@ func openClusterWatch(t *testing.T, cache envoycache.SnapshotCache, node string)
 	return responses
 }
 
-// The caches below run in ADS mode, as the controller's does: ADS orders and
-// filters responses, so the watch behavior these cases pin must hold there.
+// These caches use ADS mode, like the controller's, since ADS orders and
+// filters responses.
 func TestReclaimDeparted(t *testing.T) {
 	const node = "c1"
 	v2, err := envoycache.NewSnapshot("v2", map[envoyresourcev3.Type][]envoycachetypes.Resource{envoyresourcev3.ClusterType: {}})
@@ -208,8 +205,8 @@ func TestReclaimDeparted(t *testing.T) {
 		assert.Empty(t, cache.GetStatusKeys(), "a departed client's status must be cleared")
 	})
 
-	// Why the clear must be excluded from stream admission: ClearSnapshot also
-	// drops open watches, so a clear that misses a connected stream strands it.
+	// ClearSnapshot drops open watches, so reclaim must exclude admission or it
+	// can strand a connected stream.
 	t.Run("clearing under a connected stream strands its watch", func(t *testing.T) {
 		cache := envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil)
 		responses := openClusterWatch(t, cache, node)
@@ -224,9 +221,8 @@ func TestReclaimDeparted(t *testing.T) {
 	})
 }
 
-// A publish that lands after the client left (a build queued behind its
-// departure) re-creates the entry a reclaim may already have cleared; the
-// gate re-arms the reclaim, so that entry is reclaimed too.
+// Publication after departure can recreate a reclaimed entry. The gate
+// must re-arm reclamation for that entry too.
 func TestReclaim_PublishAfterDepartureRearms(t *testing.T) {
 	shortenReclaimGrace(t, 20*time.Millisecond)
 	const node = "c1"

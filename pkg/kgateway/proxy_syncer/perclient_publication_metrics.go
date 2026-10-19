@@ -155,9 +155,9 @@ func recordInconsistentSnapshot() {
 	snapshotPerClientInconsistentTotal.Inc()
 }
 
-// recordSnapshotReclaim counts one reclaimed snapshot cache entry. It carries
-// no gateway labels: a reclaim runs after the client has gone, often with its
-// gateway, so a labeled series would outlive what it names.
+// recordSnapshotReclaim counts a reclaimed cache entry. It has no gateway
+// labels: the client is gone, often with its gateway, so a labeled series
+// would outlive what it names.
 func recordSnapshotReclaim() {
 	if !metrics.Active() {
 		return

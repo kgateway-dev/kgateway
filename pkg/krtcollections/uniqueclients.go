@@ -126,14 +126,11 @@ type callbacksCollection struct {
 	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
-	// hooks are the connection-start hooks registered on the owning
-	// callbacks (SetConnectionStartHooks); nil in collections built without
-	// one.
+	// hooks are start hooks registered on the owning callbacks; nil without an owner.
 	hooks *atomic.Pointer[connectionStartHooks]
 }
 
-// connectionStartHooks run when a client key's first stream is admitted; see
-// ConnectionStartHooks.
+// connectionStartHooks stores hooks for admission of a key's first stream.
 type connectionStartHooks struct {
 	admitting func(resourceName string)
 	admitted  func(resourceName string)
@@ -184,38 +181,30 @@ func (x *callbacks) getPeerInfo(sid int64, r *envoy_service_discovery_v3.Discove
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
 type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniquelyConnectedClient]
 
-// XDSClientState exposes per-client connection state derived from the xDS
-// callbacks. HasPriorXDSVersion reports whether a stream of the client opened
-// its listener subscription with a version it had accepted before (an empty
-// nonce with a non-empty version) — i.e. the Envoy may already be serving
-// config accepted on a previous stream even though this controller has not
-// published to it (reconnect, controller restart). The mark belongs to the
-// resource name, so it covers every stream sharing it, and lasts until the
-// last stream that reported held config closes.
+// XDSClientState exposes connection state derived from the xDS callbacks.
 //
-// RunIfDisconnected runs fn only while no stream is connected under
-// resourceName, and reports whether it ran. Stream admission is excluded for
-// the duration, so a stream connecting concurrently is admitted either before
-// the check (fn does not run) or after fn returns. go-control-plane creates a
-// stream's watches only after its request callback admits it, so fn cannot
-// interleave with them either.
+// HasPriorXDSVersion reports whether a stream of the client opened its
+// listener subscription with a held version and an empty nonce: the proxy may
+// serve config from an earlier stream or controller. The mark is per resource
+// name and lasts until its last held-version stream closes.
+//
+// RunIfDisconnected runs fn only if no stream is connected under resourceName,
+// and reports whether it ran. Admission is excluded until fn returns, and
+// go-control-plane creates watches only after admission, so no stream or
+// watch of the key starts during fn.
 type XDSClientState interface {
 	HasPriorXDSVersion(resourceName string) bool
 	RunIfDisconnected(resourceName string, fn func()) bool
 }
 
-// ConnectionStartHooks is implemented by the XDSClientState returned from
-// NewUniquelyConnectedClients. A client key's connection starts when its first
-// stream is admitted: its connected-stream count goes from zero to one, after
-// it had none (a new client, or one returning after its last stream closed).
+// ConnectionStartHooks is implemented by NewUniquelyConnectedClients' state.
+// A key's connection starts when its stream count goes from zero to one.
 //
-// SetConnectionStartHooks registers two hooks for that moment. admitting runs
-// while stream admission is excluded, so no other stream of the key can be
-// connected, and before go-control-plane creates any watch for the stream;
-// it must be quick and must not take locks that are held while calling into
-// this state. admitted runs after admission, outside that exclusion, and still
-// before the stream's first request is answered. Register before streams
-// connect; a later call replaces the hooks.
+// SetConnectionStartHooks registers two hooks; call it before streams connect.
+// A later call replaces them. admitting runs under admission exclusion, with
+// no other stream of the key connected and before any watch exists. It must be
+// quick and must not take locks held by callers of this state. admitted runs
+// after that exclusion but before the first request is answered.
 type ConnectionStartHooks interface {
 	SetConnectionStartHooks(admitting, admitted func(resourceName string))
 }
@@ -486,8 +475,8 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 	if currentUnique == 0 {
 		x.uniqClients[ucc.ResourceName()] = *ucc
-		// The key's connection starts. Still holding the lock, so no other
-		// stream of the key is admitted while the hook runs.
+		// The key's connection starts. The admission lock keeps other streams of
+		// the key out while the hook runs.
 		if h := x.connectionStartHooks(); h != nil && h.admitting != nil {
 			h.admitting(ucc.ResourceName())
 		}
@@ -628,8 +617,8 @@ func (x *callbacksCollection) hasColdStreamSince(resourceName string, d time.Dur
 	return false
 }
 
-// RunIfDisconnected implements XDSClientState. Before the collection is built
-// no stream can have been admitted, so fn runs.
+// RunIfDisconnected implements XDSClientState. Before collection construction,
+// no stream has been admitted, so fn runs.
 func (x *callbacks) RunIfDisconnected(resourceName string, fn func()) bool {
 	c := x.collection.Load()
 	if c == nil {
@@ -639,7 +628,7 @@ func (x *callbacks) RunIfDisconnected(resourceName string, fn func()) bool {
 	return c.runIfDisconnected(resourceName, fn)
 }
 
-// runIfDisconnected holds the write lock that add() takes to admit a stream.
+// runIfDisconnected uses add's admission write lock.
 func (x *callbacksCollection) runIfDisconnected(resourceName string, fn func()) bool {
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()

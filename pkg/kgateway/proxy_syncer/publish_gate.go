@@ -146,9 +146,8 @@ type publishGate struct {
 	// clientState reports warm clients (prior accepted xDS version); nil treats
 	// every client as cold. Written once at construction.
 	clientState krtcollections.XDSClientState
-	// afterPublish, when set, runs under mu after every snapshot the gate
-	// installs; the snapshot reclaimer uses it to notice a publish that
-	// landed after its client left. Written before the gate is first used.
+	// afterPublish, if set, runs under mu after each install so the reclaimer can
+	// catch entries re-created after departure. Set before first use.
 	afterPublish func(proxyKey string)
 
 	mu           sync.Mutex
@@ -157,25 +156,18 @@ type publishGate struct {
 	// published marks clients the gate has published to on their current
 	// connection. clientDeparted clears the mark; snapshotWithdrawn keeps it.
 	published map[string]struct{}
-	// connGen is, per client key, the connection generation the gate's state
-	// for the key belongs to: adopted from fence when the client's connection
-	// starts (connectionStarted), zero for clients whose state reports no
-	// connection starts. setSnapshot installs only while it is still the key's
-	// generation.
+	// connGen holds each key's fence generation, adopted in connectionStarted.
+	// setSnapshot installs only while it still matches the fence. Without start
+	// hooks it stays zero.
 	connGen map[string]uint64
-	// fence orders cache installs against connection starts; it has its own
-	// lock (see connectionFence).
+	// fence orders installs against connection starts (see connectionFence).
 	fence connectionFence
-	// beforeInstall, set only by tests, runs under mu just before setSnapshot
-	// installs, to hold a publisher at that point.
+	// beforeInstall is a test hook run under mu just before setSnapshot installs.
 	beforeInstall func(proxyKey string)
-	// connectionReset, set only by tests, runs under mu in connectionStarted
-	// after the previous connection is forgotten and before the new
-	// generation is adopted.
+	// connectionReset is a test hook run under mu between reset and adoption.
 	connectionReset func(proxyKey string)
-	// currentBuild returns a client's current snapshot row, or nil if it has
-	// none (beginBuildLocked). Set by ProxySyncer.Start before the gate is
-	// first used; nil for callers that drive the gate directly.
+	// currentBuild returns a client's current row, or nil, for beginBuildLocked.
+	// ProxySyncer.Start sets it before first use; nil skips the check.
 	currentBuild func(proxyKey string) *XdsSnapWrapper
 }
 
@@ -240,12 +232,9 @@ type coldStreamReader interface {
 	HasColdStreamSince(resourceName string, d time.Duration) bool
 }
 
-// connectionSnapshotLocked returns the snapshot the gate last published to the
-// client on its current connection, or nil if it has published none. A cache
-// entry left over from an earlier connection is ignored: it says nothing about
-// what the client runs now. (With connection-start hooks, such an entry is also
-// cleared before the new connection is answered; see
-// registerConnectionStartHooks.) Callers must hold g.mu.
+// connectionSnapshotLocked returns the snapshot last published on the client's
+// current connection, or nil. An entry from an earlier connection says nothing
+// about what the client runs, so it is ignored. Callers must hold g.mu.
 func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, proxyKey string) envoycache.ResourceSnapshot {
 	if _, ok := g.published[proxyKey]; !ok {
 		return nil

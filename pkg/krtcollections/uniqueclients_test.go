@@ -949,9 +949,8 @@ func TestUniqueClientsRunIfDisconnected(t *testing.T) {
 	g.Expect(state.RunIfDisconnected(role, func() {})).To(BeFalse())
 }
 
-// Connection-start hooks run when a key's first stream is admitted, once per
-// connection: not for follow-up requests, not for a second stream joining the
-// key, and again when the key returns after its last stream closed.
+// Start hooks run once per zero-to-one stream transition, including
+// reconnects, but not for follow-up requests or streams joining a connected key.
 func TestUniqueClientsConnectionStartHooks(t *testing.T) {
 	t.Cleanup(SetXdsFirstConnectDelayForTest(0))
 	g := NewWithT(t)

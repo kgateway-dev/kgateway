@@ -23,9 +23,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
-// connectionStartFixture drives the real client state's stream callbacks
-// against a translator whose connection-start hooks are registered, over a
-// real ADS snapshot cache.
+// connectionStartFixture wires real stream callbacks, start hooks and an ADS cache.
 type connectionStartFixture struct {
 	closeStream func(sid int64)
 	request     func(sid int64) error
@@ -37,7 +35,7 @@ type connectionStartFixture struct {
 
 func newConnectionStartFixture(t *testing.T) *connectionStartFixture {
 	t.Helper()
-	// Read once per process; at worst each new stream below waits the 1s default.
+	// Read once per process; each new stream may wait the 1s default.
 	t.Setenv("KGW_XDS_FIRST_CONNECT_DELAY", "0s")
 	ctx := t.Context()
 	cb, uccBuilder, state := krtcollections.NewUniquelyConnectedClients(false)
@@ -79,8 +77,7 @@ func (f *connectionStartFixture) served() (string, bool) {
 	return snap.GetVersion(resourcev3.ListenerType), true
 }
 
-// openListenerWatch opens the listener watch of a stream that holds version
-// (empty for a newly connected stream's first request).
+// openListenerWatch opens a listener watch at version (empty for a new stream).
 func (f *connectionStartFixture) openListenerWatch(t *testing.T, version string) chan envoycache.Response {
 	t.Helper()
 	responses := make(chan envoycache.Response, 1)
@@ -93,11 +90,9 @@ func (f *connectionStartFixture) openListenerWatch(t *testing.T, version string)
 	return responses
 }
 
-// A proxy that reconnects is never answered from the entry published to its
-// previous connection: that entry can predate config it received meanwhile from
-// another controller replica. The entry is cleared before the new stream is
-// answered, and the client's current build is published to the new connection;
-// with no current build the stream waits for the gate's first publish.
+// A reconnect is never answered from the previous connection's entry, which can
+// predate config from another controller replica. It gets the current build,
+// or waits for the first publish.
 func TestReconnectIsNotServedThePreviousConnectionsEntry(t *testing.T) {
 	f := newConnectionStartFixture(t)
 	ctx := t.Context()
@@ -109,7 +104,7 @@ func TestReconnectIsNotServedThePreviousConnectionsEntry(t *testing.T) {
 	require.Equal(t, "v1", version)
 	f.closeStream(1)
 
-	// The proxy returns; this replica's current build for it is v2.
+	// The proxy returns; its current build is v2.
 	v2 := f.build("v2")
 	f.current.Store(&v2)
 	f.connect(t, 2)
@@ -117,8 +112,7 @@ func TestReconnectIsNotServedThePreviousConnectionsEntry(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "v2", version, "the new connection is answered from the current build, never the previous connection's entry")
 
-	// Returning when there is no current build: the old entry is gone, so the
-	// stream waits for the first publish instead of being answered from it.
+	// With no current build, the stream waits for the first publish.
 	f.closeStream(2)
 	f.current.Store(nil)
 	f.connect(t, 3)
@@ -126,11 +120,8 @@ func TestReconnectIsNotServedThePreviousConnectionsEntry(t *testing.T) {
 	assert.False(t, ok, "the previous connection's entry must not be served")
 }
 
-// A publish computed for the previous connection must not reach the one that
-// replaces it, even when it is already under way as the stream arrives: the
-// publisher holds the gate lock, the new stream's admission clears the entry
-// without it, and the publisher would otherwise install its build after the
-// clear, where the new stream's first watch would find it.
+// A publish for the previous connection that already holds the gate lock when
+// admission clears the entry must not refill it for the new stream's watch.
 func TestPublishRacingAReconnectIsNotInstalled(t *testing.T) {
 	f := newConnectionStartFixture(t)
 	ctx := t.Context()
@@ -141,8 +132,7 @@ func TestPublishRacingAReconnectIsNotInstalled(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "v1", version)
 
-	// A publish for the first connection takes the gate lock and is held just
-	// before it installs.
+	// Pause the old publisher under the gate lock just before installation.
 	paused, resume := make(chan struct{}), make(chan struct{})
 	var hold sync.Once
 	f.translator.gate.beforeInstall = func(string) {
@@ -158,8 +148,8 @@ func TestPublishRacingAReconnectIsNotInstalled(t *testing.T) {
 	}()
 	<-paused
 
-	// Meanwhile the stream closes and the proxy reconnects. Its current build
-	// is deferred, so the new connection's first publish is withheld.
+	// Meanwhile the proxy reconnects with a deferred build; its first publish is
+	// withheld.
 	f.closeStream(1)
 	deferred := f.build("v2")
 	deferred.missingReferenced = []string{"cluster-not-ready"}
@@ -184,7 +174,7 @@ func TestPublishRacingAReconnectIsNotInstalled(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 	}
 
-	// The new connection's own publishes install, and answer that watch.
+	// The new connection's own publish installs and answers the watch.
 	f.translator.syncXds(ctx, f.build("v3"))
 	select {
 	case r := <-responses:
@@ -194,9 +184,8 @@ func TestPublishRacingAReconnectIsNotInstalled(t *testing.T) {
 	}
 }
 
-// Only a key's first stream starts a connection. A stream that joins a key
-// with streams still connected is served the key's entry as it is, and
-// publishes keep installing across the change of streams.
+// Only a key's first stream starts a connection. A joining stream is served the
+// existing entry, and publishes install while any stream stays connected.
 func TestStreamJoiningAConnectedKeyKeepsItsEntry(t *testing.T) {
 	f := newConnectionStartFixture(t)
 
@@ -214,11 +203,9 @@ func TestStreamJoiningAConnectedKeyKeepsItsEntry(t *testing.T) {
 	assert.Equal(t, "v2", version, "publishes install while any stream of the key stays connected")
 }
 
-// A build that waited in the event queue while the client's row moved on must
-// not be published. The connection-start hook publishes a returning client's
-// current row as soon as its stream is admitted, ahead of the queue; the older
-// build arriving afterwards would replace it on the new connection and answer
-// the new stream's watch with the older config.
+// A queued build superseded by the current row is not published. Admission
+// replays the current row ahead of the queue; the older build must not
+// replace it.
 func TestDelayedBuildDoesNotRollBackANewConnection(t *testing.T) {
 	f := newConnectionStartFixture(t)
 	ctx := t.Context()
@@ -231,8 +218,7 @@ func TestDelayedBuildDoesNotRollBackANewConnection(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "v1", version)
 
-	// The row moves on to v2 while v1's event is still queued, and the proxy
-	// reconnects: the new connection is published the current row.
+	// Advance to v2 before v1's event drains, then reconnect and replay v2.
 	v2 := f.build("v2")
 	f.current.Store(&v2)
 	f.closeStream(1)
@@ -242,7 +228,7 @@ func TestDelayedBuildDoesNotRollBackANewConnection(t *testing.T) {
 	require.Equal(t, "v2", version)
 	responses := f.openListenerWatch(t, "v2")
 
-	// The queued v1 event finally reaches the gate.
+	// Deliver the queued v1 event.
 	f.translator.syncXds(ctx, v1)
 	version, _ = f.served()
 	assert.Equal(t, "v2", version, "a superseded build must not replace the current one")
@@ -252,18 +238,16 @@ func TestDelayedBuildDoesNotRollBackANewConnection(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 	}
 
-	// v2's own event publishes as usual.
+	// Deliver v2's event normally.
 	f.translator.syncXds(ctx, v2)
 	version, _ = f.served()
 	assert.Equal(t, "v2", version)
 }
 
-// Forgetting the previous connection and adopting the new generation happen in
-// one critical section. A queued build that reaches the gate while a
-// connection starts is decided either before the reset, which withdraws
-// whatever it armed, or after the adoption, under the new generation. Never in
-// between: a first-publish timer armed there would outlive the adoption and
-// later publish the build to the new connection.
+// Reset and adoption share one critical section. A queued build is decided
+// before the reset, which withdraws what it armed, or after adoption. A
+// first-publish timer armed between them would publish it to the new
+// connection.
 func TestNoBuildIsDecidedBetweenResetAndAdoption(t *testing.T) {
 	f := newConnectionStartFixture(t)
 	ctx := t.Context()
@@ -285,8 +269,7 @@ func TestNoBuildIsDecidedBetweenResetAndAdoption(t *testing.T) {
 		mu.Unlock()
 		return f.current.Load()
 	}
-	// While the connection starts, a queued build reaches the gate; give it
-	// every chance to be decided before the adoption.
+	// Between reset and adoption, give a queued build every chance to be decided.
 	g.connectionReset = func(string) {
 		decided := make(chan struct{})
 		go func() {
