@@ -13,13 +13,14 @@ generated configuration actually references. It is off by default.
 ## Why the default is emit-all
 
 This is not an oversight. Emitting everything is what makes a route retarget
-safe.
+to an existing backend safe.
 
 For `/foo: service-a -> service-b`, the route update (RDS) and the cluster
 update (CDS) reach Envoy as separate events. If `/foo` starts naming `service-b`
 before `service-b`'s cluster exists, `/foo` returns `503 NC` for the gap.
-Pre-creating a cluster for every Service guarantees the destination is always
-already there. Emit-all is a make-before-break workaround for not having safe
+Pre-creating a cluster for every Service means a retarget's destination is
+normally already there; only a backend created together with the route that
+names it races. Emit-all is a make-before-break workaround for not having safe
 cluster and route transitions.
 
 Scoping therefore has to supply those transitions, in both directions.
@@ -51,33 +52,40 @@ in one coherent snapshot is not enough, because Envoy does not necessarily apply
 CDS before RDS within a snapshot, and after a CDS response is sent its watch
 stays closed until Envoy ACKs — so a route update landing in that window reaches
 the wire on the still-open RDS watch, ahead of its destination.
-`KGW_CLUSTER_REFERENCE_AHEAD` holds routes, listeners and secrets at the
-versions the client already has while the new cluster goes out, then releases.
+`KGW_CLUSTER_REFERENCE_AHEAD` holds routes, listeners and secrets at their
+published versions while the new cluster goes out, then releases.
 
-The window is per cluster and starts when the cluster is first sent; being in the
-published snapshot only means it was installed for delivery, so a rebuild inside
-the window (the new backend's own endpoints arriving, say) keeps holding. Every
-cluster new to the proxy counts, not only route targets: a listener that starts
-calling a new ext_authz, ext_proc, rate limit or JWKS cluster waits for it too.
-Builds that are deferred for an unrelated reason are held the same way. While
-held, the published routes and listeners are still the ones in force, so every
+The window is per cluster. It starts when the controller first publishes a
+snapshot carrying the cluster, just before installing it in its xDS cache.
+Installation, the gRPC send, Envoy's ACK, and Envoy applying and warming the
+cluster are separate later events, and the controller observes none of them. A
+cluster counts as new when the published snapshot lacks it, whatever Envoy has,
+so a rebuild inside the window (the new backend's own endpoints arriving, say)
+keeps holding. If the CDS send waits behind an un-ACKed earlier response, or
+the cluster warms slowly, the window can close before the cluster is active,
+and the route can still briefly return 503 NC. Every cluster new to the proxy
+counts, not only route targets: a listener that starts calling a new
+ext_authz, ext_proc, rate limit or JWKS cluster waits for it too. Builds that
+are deferred for an unrelated reason are held the same way. While held, the
+published routes and listeners are what the client is being served, so every
 cluster they name stays published with them, whatever the de-reference grace.
 
-**Removing a destination.** With ordered ADS, the default, CDS reaches Envoy
-before RDS, and without it CDS can still arrive first. Dropping a cluster in the
-same snapshot as the route that stopped naming it then applies the removal
-first, and requests on the old route get a 503 NC until the route update lands.
-`KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster published for a bounded period
-after its last reference goes away, giving the route update time to land first.
-Set this above worst-case RDS propagation for your fleet.
+**Removing a destination.** With ordered ADS, the default, a snapshot's CDS
+response is sent before its RDS response, and without it CDS can still arrive
+first. Dropping a cluster in the same snapshot as the route that stopped naming
+it then applies the removal first, and requests on the old route get a 503 NC
+until the route update lands. `KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster
+published for a bounded period after the controller first publishes a build
+without it, giving the route update time to land first; it cannot make sure the
+update does. Set this above worst-case RDS propagation for your fleet.
 
 Ordered ADS does not substitute for either window: it fixes CDS before RDS,
 which is the wrong order for removals, and it does not close the ACK-skew
 window for additions.
 
-Both windows are elapsed time, not acknowledgements: an update Envoy rejects, or
-one parked behind a slow stream, can outlast them. Size them above the fleet's
-worst-case propagation.
+Both windows are elapsed time from publication, not acknowledgements: an update
+Envoy rejects, or one parked behind a slow stream, can outlast them, so neither
+makes a transition hitless. Size them above the fleet's worst-case propagation.
 
 ## When scoping turns itself off
 
@@ -102,17 +110,21 @@ what turns that into something you can alert on.
 | Setting | Default | Effect |
 | --- | --- | --- |
 | `KGW_CLUSTER_DISCOVERY_MODE` | `ALL` | `REFERENCED` scopes CDS/EDS to referenced clusters. `ALL` is the pre-existing behavior. |
-| `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` removes immediately and accepts the race. |
-| `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long a cluster new to a proxy is delivered ahead of the configuration that names it. `0` publishes both together and accepts the blip. |
+| `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` or negative removes immediately and accepts the race. |
+| `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long configuration naming a cluster new to a proxy is held after the controller first publishes that cluster. `0` or negative publishes both together and accepts the blip. |
 
-Both windows are ignored in `ALL` mode, where no cluster is ever de-referenced
-and none is ever new to a client. With `ALL` set, nothing in this feature runs:
-the emitted set is not computed, no filtering happens, and the publish path is
-the one that existed before the feature.
+Both windows are off in `ALL` mode, where every discovered backend is emitted,
+so a cluster enters or leaves CDS only with its backend, never because a route
+started or stopped naming it. With `ALL` set, nothing in this feature runs: the
+emitted set is not computed, no filtering happens, and the publish path is the
+one that existed before the feature.
 
-A hold is additionally bounded by `KGW_PER_CLIENT_PUBLISH_BUDGET` from when it
-began, so neither a misconfigured window nor a stream of new clusters can pin a
-client's routing updates. A hold the budget cuts short is counted as
+When `KGW_PER_CLIENT_PUBLISH_BUDGET` is positive, a hold also ends one budget
+after it began, so neither a misconfigured window nor a stream of new clusters
+can pin a client's routing updates. With the budget at 0 or negative, a hold
+still ends when its windows close, but new clusters that keep arriving can
+extend it, and a hold that also waits for an unready cluster waits for it
+indefinitely. A hold the budget cuts short is counted as
 `kgateway_xds_snapshot_perclient_bounded_publishes_total{mode="reference_ahead"}`;
 one whose windows close first is not a bounded publish.
 
@@ -139,7 +151,8 @@ deleted gateway does not keep a `disabled_gateways` alert firing.
 `dropped_clusters` at zero with scoping on means the deployment routes to
 everything it discovers and has nothing to gain here. A steadily rising
 `transitions_total{transition="reference_ahead_held"}` means route edits keep
-landing on clusters the proxy has never been sent, each paying the hold once,
+landing on clusters missing from the proxy's published snapshot, each paying
+the hold once,
 which is a reason to shorten the window rather than a fault.
 
 ## What changes for users
