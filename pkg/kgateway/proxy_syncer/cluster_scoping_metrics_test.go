@@ -12,9 +12,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
-// TestClusterScopingMetricsReportWhatWasDroppedAndWhy: dropped_clusters is how
-// an operator sees what the feature bought them, so its series must exist for a
-// scoped client even when nothing was dropped.
+// TestClusterScopingMetricsReportWhatWasDroppedAndWhy: dropped_clusters shows
+// what scoping saves, so a recorded count must reach the gateway's series.
 func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
@@ -31,10 +30,9 @@ func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 	})
 }
 
-// TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot: an alert should fire on
-// the value going to 1, which requires the series to exist while the gateway is
-// healthy. Recording only the disabled case would make the alert depend on a
-// label appearing, which is far harder to write correctly.
+// TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot: the series exists at 0
+// while healthy, so an alert can fire on the change to 1 instead of on a label
+// appearing.
 func TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
@@ -60,10 +58,9 @@ func TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot(t *testing.T) {
 		})
 }
 
-// TestDereferenceTransitionsAreCountedOncePerWindow: the counter measures
-// de-reference events, not publishes. A cluster sitting in an open window must
-// not be re-counted every time the client publishes, or the rate would track
-// churn rather than removals.
+// TestDereferenceTransitionsAreCountedOncePerWindow: an open window is not
+// re-counted on every publish, so the rate tracks removals, not publish
+// frequency.
 func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
@@ -88,9 +85,7 @@ func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 }
 
 // TestReferenceAheadTransitionsAreCountedOncePerCluster: a retarget onto
-// clusters the proxy has never been sent counts each such cluster once, the
-// way the de-reference transitions count clusters, and does not count the
-// publish that releases the hold.
+// never-sent clusters counts each once.
 func TestReferenceAheadTransitionsAreCountedOncePerCluster(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
@@ -110,8 +105,8 @@ func TestReferenceAheadTransitionsAreCountedOncePerCluster(t *testing.T) {
 	assert.Equal(t, float64(2), held, "two never-sent clusters, one held update: count the clusters, once each")
 }
 
-// A cluster counts once per window, not once per build that the window spans,
-// and a hold the deferred path applies counts like a coherent one.
+// Rebuilds must not recount open windows; deferred and coherent holds count
+// alike.
 func TestReferenceAheadTransitionsCountWindowsNotBuilds(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
@@ -139,8 +134,7 @@ func TestReferenceAheadTransitionsCountWindowsNotBuilds(t *testing.T) {
 	assert.Equal(t, float64(2), held(), "the deferred path's hold counts its new cluster")
 }
 
-// The unscoped warning fires when a gateway turns unscoped, not on every
-// rebuild of each of its clients while it stays that way.
+// The unscoped warning fires on the transition, not on every client rebuild.
 func TestClusterScopingDisabledIsNotedOnTransition(t *testing.T) {
 	const gateway = "kube-gateway-api~ns-note~gw-note"
 	assert.False(t, noteClusterScopingDisabled(gateway, false))
@@ -150,9 +144,8 @@ func TestClusterScopingDisabledIsNotedOnTransition(t *testing.T) {
 	assert.True(t, noteClusterScopingDisabled(gateway, true), "turning unscoped again is")
 }
 
-// A gateway's scoping gauges are dropped when its last client departs, so a
-// deleted gateway does not keep exporting its last values (a disabled gauge of
-// 1 would keep an alert firing), and are kept while any client remains.
+// Keep gateway gauges while clients remain; remove them after the last leaves
+// so a deleted gateway cannot keep a stale disabled alert active.
 func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)

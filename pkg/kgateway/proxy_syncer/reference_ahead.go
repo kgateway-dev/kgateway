@@ -92,8 +92,8 @@ func (g *publishGate) referenceAheadLocked(
 	if len(sent) == 0 {
 		delete(g.aheadSent, proxyKey)
 	}
-	// Counted where a cluster's window opens, so each cluster counts once per
-	// window whichever path held it and however many builds it spans.
+	// Counted where the window opens: once per cluster per window, whichever
+	// path held it.
 	recordClusterScopingTransition(proxyKey, transitionReferenceAheadHeld, opened)
 	slices.Sort(ahead)
 	return ahead, longest

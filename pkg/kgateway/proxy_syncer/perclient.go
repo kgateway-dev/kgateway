@@ -134,17 +134,14 @@ func snapshotPerClient(
 				"translated", len(clustersForUcc.clusters.Items))
 		}
 		if scoping.ScopesClusters() {
-			// Reported whether or not anything was dropped, so the series exist
-			// for every scoped client: dropped_clusters at zero is itself the
-			// answer that this deployment has nothing to gain, and a gateway
-			// that reverted needs its disabled series to read 0 -> 1 rather
-			// than to appear from nowhere.
+			// Recorded even when nothing was dropped: dropped_clusters at 0
+			// means scoping gains nothing, and disabled_gateways must read 0
+			// before it can go to 1.
 			recordClusterScopingDropped(ucc.ResourceName(),
 				len(clustersForUcc.clusters.Items)-len(clusterResources.Items))
 			disabled := !listenerRouteSnapshot.EmittedClusters.Filterable()
 			recordClusterScopingDisabled(ucc.ResourceName(), disabled)
-			// Warned on the transition, not on every rebuild of every client of
-			// the gateway: the gauge carries the state.
+			// Warn on the transition only; the gauge carries the state.
 			if noteClusterScopingDisabled(ucc.ResourceName(), disabled) {
 				logger.Warn("cluster scoping disabled for this gateway: a route selects its destination at request time",
 					"client", ucc.ResourceName(),

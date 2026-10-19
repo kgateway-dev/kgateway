@@ -151,9 +151,8 @@ func (g *publishGate) settleDereferenceWindowsLocked(
 		}
 	}
 	if installed {
-		// Counted where the window opens, not on every publish that keeps it
-		// open, so the counter measures de-reference events rather than
-		// publish frequency.
+		// Counted when the window opens, so the counter measures
+		// de-references, not publish frequency.
 		recordClusterScopingTransition(proxyKey, transitionDereferenceGraced, len(opened))
 	}
 	if len(state.since) == 0 {

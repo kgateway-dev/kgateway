@@ -14,11 +14,10 @@ const (
 
 var (
 	// clusterScopingDroppedClusters is what scoping saves a client: clusters
-	// translated for it and withheld because nothing references them. How many
-	// it does receive is already xds_snapshot_resources{resource="Cluster"},
-	// which counts the published snapshot. Zero here with scoping on means the
-	// deployment routes to everything it discovers and has nothing to gain from
-	// the feature.
+	// translated for it and withheld because nothing references them.
+	// xds_snapshot_resources{resource="Cluster"} already counts what it
+	// receives. Zero with scoping on means the deployment has nothing to gain
+	// from the feature.
 	clusterScopingDroppedClusters = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: clusterScopingSubsystem,
@@ -27,15 +26,11 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
-	// clusterScopingDisabledGateways counts gateways whose emitted set could not
-	// be trusted, so CDS reverted to carrying every backend for them.
-	//
-	// This is the metric to alert on. A gateway lands here when a route picks
-	// its destination at request time, from a set the configuration never
-	// enumerates, and the failure mode without the revert is silent: the
-	// selecting plugin falls back rather than 503ing, so requests quietly go
-	// somewhere else. A nonzero value means the optimization is off for that
-	// gateway and someone should look at why.
+	// clusterScopingDisabledGateways counts gateways whose CDS reverted to
+	// every backend because a route picks its destination at request time.
+	// Alert on it: without the revert the failure is silent, since the
+	// selecting plugin falls back instead of returning 503. A nonzero value
+	// means scoping is off for that gateway.
 	clusterScopingDisabledGateways = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: clusterScopingSubsystem,
@@ -44,17 +39,15 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
-	// clusterScopingTransitionsTotal counts the clusters whose emitted-set change
-	// needed a window to be safe, by which window. Each cluster counts once per
-	// window it enters, not once per publish while the window is open. Windows
-	// are kept per client key, the proxies of a gateway that share labels and
-	// locality, so a gateway whose proxies span three zones counts each change
-	// three times.
+	// clusterScopingTransitionsTotal counts clusters whose emitted-set change
+	// needed a window, by window. Each cluster counts once per window it
+	// enters, not per publish. Windows are kept per client key (a gateway's
+	// proxies sharing labels and locality), so a gateway spanning three zones
+	// counts each change three times.
 	//
-	// These are expected during route churn, not faults. What is worth watching
-	// is the rate: a fleet whose route edits keep landing on never-sent clusters
-	// is a fleet paying reference-ahead latency on most of them, which is a
-	// reason to shorten the window rather than a bug.
+	// These are expected during route churn. Watch the rate: route edits that
+	// keep landing on never-sent clusters pay reference-ahead latency, a reason
+	// to shorten the window.
 	clusterScopingTransitionsTotal = metrics.NewCounter(
 		metrics.CounterOpts{
 			Subsystem: clusterScopingSubsystem,
@@ -70,15 +63,14 @@ const (
 	transitionDereferenceGraced = "dereference_graced"
 	// transitionDereferencePruned is one actually removed once its window closed.
 	transitionDereferencePruned = "dereference_pruned"
-	// transitionReferenceAheadHeld is a newly-emitted cluster delivered ahead of
-	// the route update that named it; a retarget onto n new clusters counts n,
-	// like the de-reference transitions count clusters.
+	// transitionReferenceAheadHeld is a newly-emitted cluster sent ahead of the
+	// route update naming it; a retarget onto n new clusters counts n.
 	transitionReferenceAheadHeld = "reference_ahead_held"
 )
 
 // recordClusterScopingDropped reports how many clusters scoping kept out of a
-// client's CDS. Called on every publish that filtered, so the gauge tracks the
-// current state rather than a high-water mark.
+// client's CDS. Called on every scoped build, so the gauge tracks the current
+// state.
 func recordClusterScopingDropped(clientKey string, dropped int) {
 	if !metrics.Active() {
 		return
@@ -90,10 +82,9 @@ func recordClusterScopingDropped(clientKey string, dropped int) {
 	)
 }
 
-// recordClusterScopingDisabled reports whether this gateway's CDS had to revert
-// to carrying every backend. Recorded for filterable gateways too, as 0, so the
-// series exists and an alert can fire on a transition to 1 rather than on the
-// appearance of a label.
+// recordClusterScopingDisabled sets this gateway's disabled gauge to 1 or 0.
+// Recording 0 keeps the series present, so an alert fires on a change to 1
+// rather than on a new label.
 func recordClusterScopingDisabled(clientKey string, disabled bool) {
 	if !metrics.Active() {
 		return
@@ -109,16 +100,15 @@ func recordClusterScopingDisabled(clientKey string, disabled bool) {
 	)
 }
 
-// clusterScopingDisabledState remembers, per gateway, whether its CDS was last
-// reported unscoped, so the warning fires when a gateway turns unscoped rather
-// than on every rebuild of every one of its clients.
+// clusterScopingDisabledState remembers each gateway's last reported state, so
+// the warning fires when a gateway turns unscoped, not on every client rebuild.
 var clusterScopingDisabledState = struct {
 	sync.Mutex
 	gateways map[resourceNameDetails]bool
 }{gateways: make(map[resourceNameDetails]bool)}
 
-// noteClusterScopingDisabled records whether clientKey's gateway is unscoped
-// and reports whether that is a change to unscoped.
+// noteClusterScopingDisabled records clientKey's gateway state and reports
+// whether it just turned unscoped.
 func noteClusterScopingDisabled(clientKey string, disabled bool) bool {
 	cd := getDetailsFromXDSClientResourceName(clientKey)
 	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
@@ -154,12 +144,10 @@ func gatewayHasClients(clientKey string, clients []ir.UniquelyConnectedClient) b
 	return false
 }
 
-// forgetClusterScopingGateway drops a gateway's scoping gauges, and the state
-// behind its unscoped warning, once none of its clients is connected. The
-// gauges are written on every publish and nothing else removes them, so a
-// deleted gateway would otherwise export its last values forever: a
-// disabled_gateways of 1 keeps an alert firing for a gateway that is gone. A
-// client that connects again re-creates them on its first publish.
+// forgetClusterScopingGateway drops a gateway's scoping gauges and warning
+// state once none of its clients is connected. Nothing else removes them, so a
+// deleted gateway would keep exporting disabled_gateways=1 and firing alerts. A
+// returning client re-creates them on its first build.
 func forgetClusterScopingGateway(clientKey string) {
 	cd := getDetailsFromXDSClientResourceName(clientKey)
 	labels := []metrics.Label{
