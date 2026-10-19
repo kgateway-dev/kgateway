@@ -9,6 +9,8 @@ carrying an `envoy_cluster_name` label.
 
 `KGW_CLUSTER_DISCOVERY_MODE=REFERENCED` scopes CDS and EDS to the clusters the
 generated configuration actually references. It is off by default.
+[xDS publication and cluster discovery settings](../../docs/guides/xds-publication-settings.md)
+summarizes this setting with the publication settings it interacts with.
 
 ## Why the default is emit-all
 
@@ -153,6 +155,11 @@ describes; such gateways stay unscoped.
 Claims are collected once, when the controller starts, before its caches sync,
 and hold for its lifetime: derive them from how the plugin names the clusters it
 computes, not from cluster state.
+
+A claim is trusted as complete. A cluster the plugin can compute that the claim
+does not keep is pruned, and the plugin's fallback then takes its traffic with
+no 503 to show for it. Claiming fits destinations derived from the plugin's own
+naming; no claim can bound a destination taken freely from the request.
 
 A claim should also cover the plugin's own resources. A plugin of this shape
 commonly emits an endpointless placeholder cluster so an unmatched request fails

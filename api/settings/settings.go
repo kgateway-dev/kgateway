@@ -50,8 +50,11 @@ const (
 	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
 	// ClusterDiscoveryReferenced emits only referenced clusters, including filter
 	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
-	// with a request-time selector, such as a cluster header or specifier plugin,
-	// reverts to ALL: pruning could silently select the plugin's fallback.
+	// with a request-time selector reverts to ALL, since pruning could silently
+	// select the plugin's fallback, unless every such selector is a cluster
+	// specifier plugin that a valid pluginsdk.ClusterEmissionClaim accounts for.
+	// Cluster headers, filter-state overrides, undecodable typed configs and
+	// unknown specifier kinds cannot be claimed and always revert.
 	ClusterDiscoveryReferenced ClusterDiscoveryMode = "REFERENCED"
 )
 
@@ -480,11 +483,12 @@ type Settings struct {
 	// are discovered and few are routed. It is experimental: Envoy does not
 	// necessarily apply CDS before RDS within a snapshot, so a cluster entering
 	// or leaving CDS could briefly 503 NC. ClusterReferenceAhead and
-	// ClusterDereferenceGrace cover the two transitions. Both are elapsed time,
-	// not acknowledgements, so each must exceed the fleet's worst-case
-	// propagation. A gateway whose routes pick a destination at request time
-	// stays unscoped unless a plugin claims that selector
-	// (pluginsdk.ClusterEmissionClaim).
+	// ClusterDereferenceGrace narrow the two transitions. Both are elapsed time
+	// from publication, not acknowledgements, so each must exceed the fleet's
+	// worst-case propagation, and neither makes a transition hitless. A gateway
+	// whose routes pick a destination at request time stays unscoped unless a
+	// valid claim accounts for each such selector (see
+	// ClusterDiscoveryReferenced).
 	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
 
 	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays

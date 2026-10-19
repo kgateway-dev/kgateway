@@ -163,13 +163,20 @@ type ProcessBaseClusterResources func(
 // is missing. So an unclaimed request-time selector reverts its whole gateway
 // to emitting every cluster, and a claim lets the gateway stay scoped.
 //
+// A claim is trusted as complete. A cluster the script can pick that the claim
+// does not keep is pruned, and the fallback then takes its traffic unnoticed.
+// Claim only destinations derived from the plugin's own naming; no claim can
+// bound a destination taken freely from the request.
+//
 // Also claim the plugin's endpointless placeholder cluster, used to fail
 // closed. Once no route names it, scoping would prune it.
 type ClusterEmissionClaim struct {
 	// Selectors are the cluster specifier plugin extension names this claim
 	// accounts for: the `name` of the TypedExtensionConfig in
-	// RouteAction.cluster_specifier_plugin or its inline form. Cluster-header
-	// selectors cannot be claimed, since the client picks the destination.
+	// RouteAction.cluster_specifier_plugin or its inline form. No other selector
+	// can be claimed: a cluster header's destination is whatever the client
+	// sends, and filter-state overrides, undecodable typed configs and unknown
+	// specifier kinds always revert the gateway to emitting every cluster.
 	//
 	// A claim accounts for its selectors only with at least one of Names or
 	// NamePrefixes and no rejected prefix. Otherwise it logs an error and

@@ -189,3 +189,6 @@ They do not show when Envoy receives, accepts or applies them.
 * Its rate follows how often proxies go away for good: scale-downs, rollouts and
   deleted gateways. A proxy that reconnects within the grace period keeps its
   entry and is not counted.
+
+The settings behind these metrics are described in
+[xDS publication and cluster discovery settings](../../docs/guides/xds-publication-settings.md).
