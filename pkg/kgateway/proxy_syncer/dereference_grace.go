@@ -29,7 +29,7 @@ type dereferenceState struct {
 // route still targeting it, causing 503 NC. The grace gives the route update
 // time to land whatever the delivery order; elapsing does not confirm Envoy
 // applied it. Ordered ADS cannot replace the grace: it sends CDS first.
-// Callers must hold the gate lock. A zero grace disables retention.
+// Callers must hold the gate lock. A nonpositive grace disables retention.
 func (g *publishGate) graceDereferencedClustersLocked(
 	proxyKey string,
 	published envoycache.ResourceSnapshot,

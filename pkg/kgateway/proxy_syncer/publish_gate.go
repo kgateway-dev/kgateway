@@ -149,9 +149,9 @@ type publishGate struct {
 	// catch entries re-created after departure. Set before first use.
 	afterPublish func(proxyKey string)
 
-	// dereferenceGrace is how long a de-referenced cluster stays published; 0
-	// disables retention and is forced outside REFERENCED mode. Written once at
-	// construction.
+	// dereferenceGrace is how long a de-referenced cluster stays published;
+	// nonpositive disables retention, and it is 0 outside REFERENCED mode.
+	// Written once at construction.
 	dereferenceGrace time.Duration
 
 	mu           sync.Mutex

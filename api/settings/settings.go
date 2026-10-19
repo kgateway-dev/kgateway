@@ -488,9 +488,12 @@ type Settings struct {
 
 	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays
 	// published, in REFERENCED mode only. Removing it at once can let CDS remove it
-	// before RDS updates the route still targeting it, causing 503 NC. The grace
-	// gives the route update time to land; elapsed time does not confirm Envoy
-	// received or applied it. Set it above the fleet's worst-case RDS propagation.
+	// before RDS updates the route still targeting it, causing 503 NC. The clock
+	// starts when the controller first publishes a build without the cluster, not
+	// when Envoy gets the route update. The grace gives that update time to land;
+	// it does not confirm Envoy received or applied it, so it narrows the race
+	// rather than closing it. Set it above the fleet's worst-case RDS propagation.
+	// Negative values act as 0:
 	// 0 removes immediately and accepts the race.
 	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
 
