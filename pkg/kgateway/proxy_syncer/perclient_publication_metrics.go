@@ -111,7 +111,7 @@ var (
 				"construction, so any increment is a kgateway bug — please " +
 				"report it with the accompanying error log line.",
 		},
-		[]string{gatewayLabel, namespaceLabel},
+		nil,
 	)
 )
 
@@ -179,14 +179,11 @@ func recordWithheldClients(labels resourceNameDetails, pending, warm int) {
 }
 
 // recordInconsistentSnapshot counts a pre-publication consistency violation
-// (see snapshotConsistencyError).
-func recordInconsistentSnapshot(proxyKey string) {
+// (see snapshotConsistencyError). It carries no gateway labels: any increment
+// is a bug, and the error logged with it names the client.
+func recordInconsistentSnapshot() {
 	if !metrics.Active() {
 		return
 	}
-	cd := getDetailsFromXDSClientResourceName(proxyKey)
-	snapshotPerClientInconsistentTotal.Inc(
-		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-	)
+	snapshotPerClientInconsistentTotal.Inc()
 }

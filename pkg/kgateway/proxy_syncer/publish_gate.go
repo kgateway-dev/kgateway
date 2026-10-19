@@ -259,7 +259,7 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 		if err := snapshotConsistencyError(proxyKey, snap); err != nil {
 			logger.Error("BUG: per-client snapshot failed consistency check before publish; publishing anyway",
 				"proxy_key", proxyKey, "error", err)
-			recordInconsistentSnapshot(proxyKey)
+			recordInconsistentSnapshot()
 		}
 	}
 	if err := cache.SetSnapshot(ctx, proxyKey, snap); err != nil {

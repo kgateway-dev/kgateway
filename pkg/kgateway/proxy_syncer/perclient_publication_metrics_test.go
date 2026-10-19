@@ -126,12 +126,8 @@ func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 
 	g := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_xds_snapshot_perclient_inconsistent_snapshots_total")
-	g.AssertMetricsInclude("kgateway_xds_snapshot_perclient_inconsistent_snapshots_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetricValueTest{
-			Labels: unknownLabels,
-			Test:   metricstest.Equal(1),
-		},
-	})
+	g.AssertMetric("kgateway_xds_snapshot_perclient_inconsistent_snapshots_total",
+		&metricstest.ExpectedMetricValueTest{Test: metricstest.Equal(1)})
 }
 
 const withheldClientsMetric = "kgateway_xds_snapshot_perclient_withheld_clients"
