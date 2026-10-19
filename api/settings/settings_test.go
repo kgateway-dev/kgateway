@@ -391,3 +391,62 @@ type validateExpectedEnvs struct {
 	// Field with acronym and split_words:false
 	FieldHTTPConfig string `split_words:"false"`
 }
+
+func TestDeprecatedEnableWaypoint(t *testing.T) {
+	tests := []struct {
+		name    string
+		envVars map[string]string
+		want    bool
+		wantErr string
+	}{
+		{
+			name: "neither set",
+			want: false,
+		},
+		{
+			name:    "deprecated true enables ingress-use-waypoint",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "true"},
+			want:    true,
+		},
+		{
+			name:    "deprecated false leaves it disabled",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "false"},
+			want:    false,
+		},
+		{
+			name:    "explicit false wins over deprecated true",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "true", "KGW_INGRESS_USE_WAYPOINTS": "false"},
+			want:    false,
+		},
+		{
+			name:    "explicit true wins over deprecated false",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "false", "KGW_INGRESS_USE_WAYPOINTS": "true"},
+			want:    true,
+		},
+		{
+			name:    "invalid deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please"},
+			wantErr: "KGW_ENABLE_WAYPOINT",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, k := range []string{"KGW_ENABLE_WAYPOINT", "KGW_INGRESS_USE_WAYPOINTS"} {
+				// t.Setenv restores the original value; Unsetenv clears it for this case.
+				t.Setenv(k, "")
+				require.NoError(t, os.Unsetenv(k))
+			}
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
+			s, err := BuildSettings()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, s.IngressUseWaypoints)
+		})
+	}
+}

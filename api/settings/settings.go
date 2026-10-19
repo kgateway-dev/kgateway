@@ -3,11 +3,15 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 // ValidationMode determines how invalid routes and policies are handled during translation.
@@ -348,5 +352,39 @@ func BuildSettings() (*Settings, error) {
 	if err := envconfig.Process("KGW", settings); err != nil {
 		return settings, err
 	}
+	if err := applyDeprecatedEnableWaypoint(settings); err != nil {
+		return settings, err
+	}
 	return settings, nil
+}
+
+var logger = logging.New("settings")
+
+const (
+	ingressUseWaypointsEnv = "KGW_INGRESS_USE_WAYPOINTS"
+	// deprecatedEnableWaypointEnv used to turn on the waypoint plugin, which also
+	// enabled ingress-use-waypoint while KGW_INGRESS_USE_WAYPOINTS defaulted to true.
+	deprecatedEnableWaypointEnv = "KGW_ENABLE_WAYPOINT"
+)
+
+// applyDeprecatedEnableWaypoint keeps KGW_ENABLE_WAYPOINT=true working for
+// deployments that don't set KGW_INGRESS_USE_WAYPOINTS, such as raw manifests or
+// a new image running under an older chart. An explicit KGW_INGRESS_USE_WAYPOINTS
+// always wins.
+func applyDeprecatedEnableWaypoint(settings *Settings) error {
+	val, ok := os.LookupEnv(deprecatedEnableWaypointEnv)
+	if !ok {
+		return nil
+	}
+	enabled, err := strconv.ParseBool(val)
+	if err != nil {
+		return fmt.Errorf("envconfig.Process: assigning %s: converting '%s' to type bool: %w", deprecatedEnableWaypointEnv, val, err)
+	}
+	if _, set := os.LookupEnv(ingressUseWaypointsEnv); set {
+		logger.Warn(deprecatedEnableWaypointEnv+" is deprecated and ignored because "+ingressUseWaypointsEnv+" is set", "value", val)
+		return nil
+	}
+	logger.Warn(deprecatedEnableWaypointEnv+" is deprecated; set "+ingressUseWaypointsEnv+" instead", "value", val)
+	settings.IngressUseWaypoints = enabled
+	return nil
 }
