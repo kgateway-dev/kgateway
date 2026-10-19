@@ -9,41 +9,27 @@ import (
 	envoyresourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 )
 
-// dereferenceState is one client's record of when each published cluster left
-// the emitted set. It lives under the publish gate's lock, alongside the other
-// per-client timed publication state.
+// dereferenceState tracks one client's de-reference windows under the publish
+// gate's lock.
 type dereferenceState struct {
-	// since is keyed by cluster name. An entry exists only while the cluster is
-	// published but no longer emitted; re-referencing deletes it, so a route
-	// that flaps keeps its cluster continuously rather than oscillating.
+	// since maps each published-but-not-emitted cluster to when it left the set.
+	// Re-referencing deletes the entry, so a flapping route keeps its cluster.
 	since map[string]time.Time
-	// wrap is the latest snapshot for this client, re-resolved when a window
-	// closes; nothing else recomputes it merely because time passed.
+	// wrap is the latest build to re-resolve at expiry; time alone produces no KRT event.
 	wrap  XdsSnapWrapper
 	timer *time.Timer
-	// epoch identifies the latest arming. A callback whose timer was
-	// re-armed or cancelled after it started acts only if both its state and
-	// its epoch are still current.
+	// epoch identifies the latest arming. Timer.Stop cannot recall a started
+	// callback, so a callback acts only if its state and epoch are current.
 	epoch uint64
 }
 
-// graceDereferencedClusters decides which of the currently-published clusters a
-// build has stopped emitting should still be published, and reports when the
-// oldest of them expires.
-//
-// Removing a de-referenced cluster the moment the last route stops naming it is
-// unsafe in the opposite direction from adding one. Envoy is delivered CDS
-// before RDS, so the cluster would go out before the route that still targets
-// it, and requests in that window get 503 NC. Retaining it briefly makes the
-// emitted set "referenced now, plus recently de-referenced", which puts the
-// route update first without depending on delivery order at all.
-//
-// The window is the removal-side fix regardless of how CDS and RDS are ordered
-// on the wire, which is why it is not replaced by ordered ADS: ordered ADS
-// fixes CDS before RDS, and that is exactly the wrong order here.
-//
-// Callers must hold the gate lock. A zero grace disables retention, and a
-// client with no state allocates none.
+// graceDereferencedClustersLocked returns the published clusters this build
+// stopped emitting that are still in their grace, and the time to the soonest
+// expiry. Removing one at once can let CDS remove it before RDS updates the
+// route still targeting it, causing 503 NC. The grace gives the route update
+// time to land whatever the delivery order; elapsing does not confirm Envoy
+// applied it. Ordered ADS cannot replace the grace: it sends CDS first.
+// Callers must hold the gate lock. A zero grace disables retention.
 func (g *publishGate) graceDereferencedClustersLocked(
 	proxyKey string,
 	published envoycache.ResourceSnapshot,
@@ -57,12 +43,9 @@ func (g *publishGate) graceDereferencedClustersLocked(
 	publishedClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 	state := g.dereferenced[proxyKey]
 	if state != nil {
-		// A record outlives its cluster when the carry declined to keep it (it
-		// errored, and errored clusters are never resurrected): the cluster is
-		// gone from the client, but its record would keep the state, and the
-		// timer that re-publishes state.wrap, alive past later publishes that
-		// never refreshed it, and would deny the cluster's next genuine
-		// de-reference its window. Records exist only for published clusters.
+		// Records exist only for published clusters. A leftover record for a
+		// dropped (errored) cluster would keep the timer re-publishing a stale
+		// state.wrap and deny the cluster's next de-reference its window.
 		for name := range state.since {
 			if _, stillPublished := publishedClusters[name]; !stillPublished {
 				delete(state.since, name)
@@ -74,9 +57,7 @@ func (g *publishGate) graceDereferencedClustersLocked(
 	var soonest time.Duration
 	for name := range publishedClusters {
 		if _, stillEmitted := building.Items[name]; stillEmitted {
-			// Re-referenced (or never de-referenced): drop any record, so the
-			// next de-reference starts a fresh window rather than inheriting an
-			// expired one.
+			// Still emitted: drop any record, so a later de-reference starts fresh.
 			if state != nil {
 				delete(state.since, name)
 			}
@@ -95,8 +76,7 @@ func (g *publishGate) graceDereferencedClustersLocked(
 
 		remaining := g.dereferenceGrace - now.Sub(left)
 		if remaining <= 0 {
-			// Grace elapsed: stop publishing it, and forget it so a later
-			// re-reference is a fresh addition rather than an expired removal.
+			// Expired: drop it; a later re-reference is a fresh addition.
 			delete(state.since, name)
 			continue
 		}
@@ -115,14 +95,10 @@ func (g *publishGate) graceDereferencedClustersLocked(
 	return graced, soonest
 }
 
-// armDereferenceTimerLocked schedules the re-publish that actually removes a
-// graced cluster. Without it, a cluster whose grace expires would linger until
-// something else about the client changed: nothing recomputes a client's
-// snapshot merely because time passed.
-//
-// The timer is re-armed to the soonest remaining expiry on every publish, so a
-// second de-reference during an open window does not extend the first one's.
-// Callers must hold the gate lock.
+// armDereferenceTimerLocked schedules the re-publish that removes expired
+// graced clusters; time passing triggers nothing else. Each publish that graces
+// re-arms it to the soonest expiry, so later de-references cannot extend
+// earlier windows. Callers must hold the gate lock.
 func (g *publishGate) armDereferenceTimerLocked(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -193,9 +169,8 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 	g.armDereferenceTimerLocked(ctx, cache, proxyKey, wrap, soonest)
 }
 
-// retainsDereferenced reports whether any cluster can outlive its last
-// reference. False is the whole feature switched off, and the coherent publish
-// path stays exactly as it was.
+// retainsDereferenced reports whether the grace is on; if not, coherent builds
+// take the plain publish path.
 func (g *publishGate) retainsDereferenced() bool { return g.dereferenceGrace > 0 }
 
 // publishWithDereferenceGrace publishes a coherent snapshot, carrying forward
@@ -220,8 +195,7 @@ func (g *publishGate) publishWithDereferenceGrace(
 
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
-		// Never published: there is nothing to carry forward, and nothing can
-		// have been de-referenced yet.
+		// Nothing published on this connection: nothing to carry or grace.
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}
 

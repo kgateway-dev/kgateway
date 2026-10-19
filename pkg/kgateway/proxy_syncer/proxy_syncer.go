@@ -236,10 +236,9 @@ type ProxyTranslator struct {
 	gate *publishGate
 }
 
-// NewProxyTranslator builds the publishing half of the syncer. dereferenceGrace
-// is how long a cluster that has left the emitted set stays published; pass 0
-// when cluster discovery emits everything, since nothing is ever de-referenced
-// then.
+// NewProxyTranslator builds the publishing half of the syncer. A nil
+// xdsClientState treats every client as cold; scoping sets the de-reference
+// grace.
 func NewProxyTranslator(
 	xdsCache envoycache.SnapshotCache,
 	xdsClientState krtcollections.XDSClientState,

@@ -16,9 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// clusterWrapperV builds a coherent wrapper publishing exactly these clusters,
-// each with its ClusterLoadAssignment, so a carried-forward cluster can be
-// checked to bring its endpoints with it.
+// clusterWrapperV builds a coherent cluster/CLA set to test retained endpoints.
 func clusterWrapperV(version string, clusters ...string) XdsSnapWrapper {
 	clusterItems := make([]envoycachetypes.ResourceWithTTL, 0, len(clusters))
 	endpointItems := make([]envoycachetypes.ResourceWithTTL, 0, len(clusters))
@@ -76,11 +74,9 @@ func TestDereferenceGraceIgnoresPreviousConnection(t *testing.T) {
 	require.Empty(t, pt.gate.dereferenced, "a first publication has no previous references to retain")
 }
 
-// TestDereferenceGraceKeepsTheClusterUntilTheWindowCloses is the removal-side
-// guarantee. Envoy is delivered CDS before RDS, so dropping a de-referenced
-// cluster in the same snapshot as the route that stopped naming it sends the
-// removal first and 503s the gap. The cluster must survive the publish that
-// de-references it, and disappear on its own afterwards.
+// TestDereferenceGraceKeepsTheClusterUntilTheWindowCloses: the de-referencing
+// publish keeps the cluster, and the timer removes it without another build.
+// This checks the cache, not Envoy ordering.
 func TestDereferenceGraceKeepsTheClusterUntilTheWindowCloses(t *testing.T) {
 	pt := newGraceTestTranslator(t, 100*time.Millisecond)
 	ctx := context.Background()
@@ -104,8 +100,7 @@ func TestDereferenceGraceKeepsTheClusterUntilTheWindowCloses(t *testing.T) {
 		"the pruned cluster's CLA must go with it, or the EDS set outlives its CDS entry")
 }
 
-// TestDereferenceGraceIsDisabledByZero: an operator who accepts the removal
-// race gets today's immediate behavior, and the gate keeps no state for it.
+// TestDereferenceGraceIsDisabledByZero: zero removes at once and keeps no state.
 func TestDereferenceGraceIsDisabledByZero(t *testing.T) {
 	pt := newGraceTestTranslator(t, 0)
 	ctx := context.Background()
@@ -117,10 +112,8 @@ func TestDereferenceGraceIsDisabledByZero(t *testing.T) {
 	assert.Empty(t, pt.gate.dereferenced, "a disabled grace must not allocate per-client state")
 }
 
-// TestDereferenceGraceDoesNotOscillateOnAFlappingRoute: a route that flips away
-// and back must leave the cluster continuously published. If re-referencing did
-// not clear the record, the original window would still expire and prune a
-// cluster the configuration currently names.
+// TestDereferenceGraceDoesNotOscillateOnAFlappingRoute: re-referencing must
+// clear the record, or the old window prunes a referenced cluster.
 func TestDereferenceGraceDoesNotOscillateOnAFlappingRoute(t *testing.T) {
 	pt := newGraceTestTranslator(t, 60*time.Millisecond)
 	ctx := context.Background()
@@ -138,9 +131,8 @@ func TestDereferenceGraceDoesNotOscillateOnAFlappingRoute(t *testing.T) {
 		"an expired window from an earlier de-reference must not prune a currently-referenced cluster")
 }
 
-// TestDereferenceGraceForgetsExpiredClusters keeps the per-client record from
-// growing without bound: once a cluster is actually pruned its entry is dropped,
-// so a long-lived proxy does not accumulate one entry per cluster it ever lost.
+// TestDereferenceGraceForgetsExpiredClusters: a pruned cluster's record is
+// dropped, so per-client state cannot grow without bound.
 func TestDereferenceGraceForgetsExpiredClusters(t *testing.T) {
 	pt := newGraceTestTranslator(t, 20*time.Millisecond)
 	ctx := context.Background()
@@ -158,9 +150,8 @@ func TestDereferenceGraceForgetsExpiredClusters(t *testing.T) {
 		"a pruned cluster's record must be dropped, not retained forever")
 }
 
-// TestClientDepartedCancelsTheGraceTimer: a timer must never publish to a key
-// whose client has gone, which is the same rule the first-publish and
-// flip-release bounds already follow.
+// TestClientDepartedCancelsTheGraceTimer: no timer may publish for a departed
+// client.
 func TestClientDepartedCancelsTheGraceTimer(t *testing.T) {
 	pt := newGraceTestTranslator(t, time.Hour)
 	ctx := context.Background()
@@ -174,10 +165,8 @@ func TestClientDepartedCancelsTheGraceTimer(t *testing.T) {
 	assert.Empty(t, pt.gate.dereferenced, "a departed client leaves no armed timer behind")
 }
 
-// TestDereferenceGraceNeverResurrectsAnErroredCluster: carrying forward is
-// fail-closed. A cluster whose current translation errored must not be served
-// from the published snapshot, or a backend that just failed validation would
-// keep serving its pre-error configuration for the length of the window.
+// TestDereferenceGraceNeverResurrectsAnErroredCluster: carries fail closed, or a
+// backend that failed validation keeps its pre-error config for the window.
 func TestDereferenceGraceNeverResurrectsAnErroredCluster(t *testing.T) {
 	pt := newGraceTestTranslator(t, time.Hour)
 	ctx := context.Background()
@@ -192,9 +181,8 @@ func TestDereferenceGraceNeverResurrectsAnErroredCluster(t *testing.T) {
 		"an errored cluster must not be carried forward by the grace window")
 }
 
-// TestGraceDereferencedClustersReportsSoonestExpiry: the timer is armed to the
-// earliest deadline, so a second de-reference during an open window cannot
-// postpone the first one's removal.
+// TestGraceDereferencedClustersReportsSoonestExpiry: a later de-reference must
+// not postpone an earlier window's removal.
 func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 	g := newPublishGate(0, false, nil, scopedClustersWithGrace(time.Minute))
 	published := &envoycache.Snapshot{}
@@ -209,8 +197,7 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 	require.Len(t, graced, 2)
 	require.InDelta(t, time.Minute, soonest, float64(time.Second))
 
-	// 30s later the first entry has half its window left; a fresh third
-	// de-reference must not push the deadline out.
+	// 30s later the first window has 30s left; a third de-reference must not extend it.
 	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v2", []envoycachetypes.ResourceWithTTL{
 		{Resource: edsClusterProto("first-out")},
 		{Resource: edsClusterProto("second-out")},
@@ -221,9 +208,8 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 		"the timer must fire for the oldest window, not the newest")
 }
 
-// TestGraceDereferencedClustersDropsExpiredEntries is the state-machine half of
-// the prune: past the window the cluster is no longer graced, which is what lets
-// the re-publish actually remove it.
+// TestGraceDereferencedClustersDropsExpiredEntries: an expired cluster is no
+// longer graced, so the re-publish removes it.
 func TestGraceDereferencedClustersDropsExpiredEntries(t *testing.T) {
 	g := newPublishGate(0, false, nil, scopedClustersWithGrace(time.Second))
 	published := &envoycache.Snapshot{}
@@ -241,10 +227,8 @@ func TestGraceDereferencedClustersDropsExpiredEntries(t *testing.T) {
 	assert.Zero(t, soonest, "with nothing graced there is nothing left to wake up for")
 }
 
-// A graced cluster that errors is not carried (fail closed), so it leaves the
-// client. Its grace record must go with it: left behind, it kept the state and
-// its timer alive past later publishes, and the timer then re-published the
-// build that armed it over a newer one.
+// A graced cluster that errors leaves the client (fail closed), and so must its
+// record, or its timer later re-publishes an older build over a newer one.
 func TestDereferenceGraceForgetsAClusterTheCarryDropped(t *testing.T) {
 	pt := newGraceTestTranslator(t, 100*time.Millisecond)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -267,9 +251,8 @@ func TestDereferenceGraceForgetsAClusterTheCarryDropped(t *testing.T) {
 	assert.Nil(t, pt.gate.dereferenced[publishGateTestClient], "no record may outlive the cluster it was kept for")
 }
 
-// The same stale record used to deny the cluster's next genuine de-reference
-// its window: by then the record was older than the grace, so the cluster was
-// pruned at once.
+// A stale record, already older than the grace, would also prune the cluster's
+// next genuine de-reference at once.
 func TestDereferenceGraceGivesARecoveredClusterAFreshWindow(t *testing.T) {
 	pt := newGraceTestTranslator(t, 100*time.Millisecond)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -287,10 +270,8 @@ func TestDereferenceGraceGivesARecoveredClusterAFreshWindow(t *testing.T) {
 	assert.Contains(t, publishedClusterNames(t, pt), "flaky", "a de-referenced cluster keeps its full window")
 }
 
-// A coherent build that still carries graced clusters supersedes a held flip
-// like any other publish without a hold: the flip release must not fire later
-// and re-publish the older held build over it (here: route back to the empty
-// placeholder for a backend that has since derived its endpoints).
+// A coherent publish carrying graced clusters must cancel a held flip's release,
+// or it later re-publishes the older held build with an empty placeholder CLA.
 func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 100*time.Millisecond, true,
 		scopedClustersWithGrace(time.Hour))
@@ -346,9 +327,8 @@ func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 	assert.True(t, ok && n == 1, "cluster-b keeps its derived endpoints")
 }
 
-// Pruning an expired grace re-publishes the latest build. If that build's
-// flip is held, it must stay held until it is ready or its own release bound
-// fires, not go out at the (shorter) grace.
+// A grace prune re-publishes the latest build; a held flip in it stays held
+// until ready or its own release bound, not the shorter grace.
 func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true,
 		scopedClustersWithGrace(80*time.Millisecond))
@@ -371,8 +351,7 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 	})
 	pt.syncXds(ctx, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient})
 
-	// The routes now name cluster-new (endpoints not derived yet, so the flip
-	// is held) and no longer name cluster-gone (graced for 80ms).
+	// Routes now name unready cluster-new (flip held) and drop cluster-gone (80ms grace).
 	flip := &envoycache.Snapshot{}
 	flip.Resources[envoycachetypes.Listener] = listeners
 	flip.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-new")
@@ -395,10 +374,8 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 	assert.False(t, snapshotReferencesCluster(served, "cluster-new"))
 }
 
-// A flip release can grace clusters its routes stopped naming. It must arm the
-// prune that removes them, storing the build to re-publish; before, it created
-// the grace state without either, so the clusters lingered until a later build,
-// and a stale prune callback that found that state dereferenced its nil build.
+// A flip release that graces clusters must arm the prune, with its build, or
+// they linger until a later build.
 func TestFlipReleaseArmsTheGracePrune(t *testing.T) {
 	pt := newGraceTestTranslator(t, 100*time.Millisecond)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -432,9 +409,8 @@ func TestFlipReleaseArmsTheGracePrune(t *testing.T) {
 	}, 2*time.Second, 10*time.Millisecond, "cluster-old is removed when its grace closes")
 }
 
-// A prune callback that was already waiting on the gate lock when its timer was
-// re-armed or cancelled must do nothing: its state or epoch is no longer
-// current.
+// A prune callback already waiting on the lock when its timer was re-armed or
+// cancelled must do nothing: its state or epoch is stale.
 func TestStaleGracePruneCallbackDoesNothing(t *testing.T) {
 	pt := newGraceTestTranslator(t, time.Hour)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -461,9 +437,8 @@ func TestStaleGracePruneCallbackDoesNothing(t *testing.T) {
 		"a callback whose state was replaced must not touch the new one")
 }
 
-// The de-reference grace path takes new builds just as publish and
-// resolveDeferred do, so it too skips a build whose client's row has moved on
-// while the build waited in the event queue.
+// The grace path, like publish and resolveDeferred, skips a build whose row
+// moved on while it was queued.
 func TestDereferenceGracePathSkipsASupersededBuild(t *testing.T) {
 	pt := newGraceTestTranslator(t, time.Minute)
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })

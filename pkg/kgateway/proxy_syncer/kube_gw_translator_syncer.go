@@ -37,32 +37,15 @@ func (s *ProxyTranslator) syncXds(
 
 	if snapWrap.deferred() {
 		recordSnapshotDefer(proxyKey, snapWrap.missingReferenced, snapWrap.missingEndpointsReferenced)
-		// Per-cluster readiness resolution. The snapshot was built while some
-		// referenced cluster was not ready; decide per cluster against the
-		// snapshot published on the client's current connection instead of
-		// withholding everything:
-		//
-		//   - a client not yet published on this connection is withheld up to
-		//     the first-publish budget (see publishGate);
-		//   - previously-published clusters that vanished from the build are
-		//     carried forward with their CLAs (make-before-break);
-		//   - previously-referenced clusters whose CLA row is not derived keep
-		//     the endpoints the client holds for them
-		//     (settleSynthesizedEndpoints): a missing row is unknown, not
-		//     empty, since a Service without EndpointSlices still derives an
-		//     empty row;
-		//   - only a route flip onto a NEWLY-referenced not-yet-derived
-		//     cluster is held: routes/listeners/secrets stay at the published
-		//     versions while the new clusters warm in the background, and the
-		//     flip goes out in a later snapshot once they are ready — or at
-		//     the flip-release bound (see publishGate), whichever comes
-		//     first, so a backend that never derives endpoints cannot pin
-		//     updates forever (#14352). The hold also gives the flip a
-		//     reference-ahead shape: the CDS carrying a new cluster is
-		//     published in an earlier snapshot than the RDS that uses it.
-		//
-		// The whole decision runs under the gate lock so it cannot race the
-		// gate's expiring budget timers (see resolveDeferred).
+		// Resolve per cluster against the snapshot published on this connection
+		// instead of withholding everything: withhold a client not yet published
+		// on it up to the first-publish budget, carry referenced clusters missing
+		// from the build, keep held endpoints for previously-referenced clusters
+		// whose CLA is underived, and hold a flip onto a newly-referenced unready
+		// cluster until it is ready or the flip-release bound expires (#14352).
+		// The hold publishes a new cluster's CDS before the RDS that uses it
+		// (reference-ahead). See resolveDeferredPerCluster. This runs under
+		// the gate lock, so budget timers cannot race it.
 		if err := s.gate.resolveDeferred(ctx, s.xdsCache, snapWrap); err != nil {
 			logPublishFailure(proxyKey, err)
 		}
@@ -90,8 +73,7 @@ func (s *ProxyTranslator) syncXds(
 	}
 
 	if err := s.gate.publish(ctx, s.xdsCache, snapWrap); err != nil {
-		// A rejected snapshot leaves the client on its previous config; surface
-		// it rather than silently dropping the update.
+		// A rejected snapshot leaves the client on its previous config.
 		logPublishFailure(proxyKey, err)
 	}
 }
@@ -153,39 +135,24 @@ func (m *referencedClustersMemo) get(
 	return refs
 }
 
-// resolveDeferredPerCluster composes the snapshot actually published for a
-// deferred wrapper, given the snapshot published on the client's current
-// connection:
+// resolveDeferredPerCluster composes the snapshot to publish for a deferred
+// wrapper against the one published on the client's current connection:
 //
-//   - missing referenced clusters present in the published snapshot are
-//     carried forward together with their CLAs, and with the listeners,
-//     secrets and clusters they need that the build lacks (carryDependencies);
-//   - if every remaining gap is a previously-referenced cluster (present in
-//     the published routes' reference set), the new routes publish as-is;
-//     clusters among them whose CLA is not derived keep the endpoints the
-//     client holds (the gate settles synthesized CLAs at publish time);
-//   - otherwise some gap is a newly-referenced cluster that has never been
-//     ready: routes, listeners, and secrets are held at their published
-//     versions (so nothing flips onto the unready cluster), every published
-//     cluster the build lacks is carried forward with its CLA (the held
-//     configuration's whole dependency closure, filter-called clusters
-//     included), and the new CDS/EDS — including the warming cluster — still
-//     goes out.
+//   - missing referenced clusters that are published are carried with their
+//     CLAs, and with what they need that the build lacks (carryDependencies);
+//   - if every other gap was already referenced, the new routes publish, and
+//     underived CLAs keep the client's endpoints (the gate settles them);
+//   - otherwise a never-ready cluster is newly referenced: routes, listeners and
+//     secrets stay published, every published cluster the build lacks is
+//     carried (the held config's whole closure, filter-called clusters
+//     included), and new CDS/EDS still go out so the cluster can warm.
 //
-// A carried cluster's CLA is taken from the published snapshot unless the
-// build already has that assignment for another cluster sharing its EDS
-// service_name; the built assignment is then kept.
-//
-// The second return value lists the flip-blocking clusters when the hold was
-// applied, nil otherwise. holdFlips=false composes the released form — the
-// new routes publish as-is even with never-ready gaps — used by the gate's
-// flip-release bound so a steady-state-unready reference cannot pin the
-// client's route/listener/secret updates forever (#14352).
-// graced names clusters whose de-reference grace is still open; they are
-// carried forward like any other published cluster. lastPublished answers for
-// assignments copied from the published snapshot with the hash each was last
-// published under (eds_set_version.go). The last result holds the
-// contributions of the composed EDS set.
+// A carried CLA yields to a built one sharing its EDS service_name. graced
+// clusters are carried too. holdFlips=false, used by the flip-release bound,
+// publishes despite never-ready gaps so an unready reference cannot pin updates
+// forever (#14352). lastPublished gives each copied CLA's last published hash.
+// Returns the snapshot, the flip-blocking clusters if held (else nil), and the
+// EDS contributions.
 func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
@@ -249,16 +216,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		}
 	}
 
-	// Clusters within their de-reference grace are carried the same way: they
-	// are absent from this build because nothing references them any more, and
-	// they stay published until the window closes so the route update that
-	// stopped naming them reaches Envoy first.
+	// Graced clusters are carried the same way, giving the route update that
+	// dropped them time to land.
 	for name := range graced {
 		carryRefs[name] = struct{}{}
 	}
 
-	// Carry forward cluster/CLA pairs (a carried CLA always travels with
-	// its cluster) for carryRefs missing from the new build.
+	// Carry missing carryRefs from the published snapshot. A CLA is carried only
+	// with its cluster.
 	newClusters := composed.Resources[envoycachetypes.Cluster]
 	newEndpoints := composed.Resources[envoycachetypes.Endpoint]
 	edsHashes := snapWrap.endpointHashes

@@ -13,15 +13,15 @@ import (
 //
 // It exists so that "is this feature on" is one question with one answer,
 // asked in the handful of places that would otherwise each re-derive it from
-// the mode. Every path it touches -- collecting the emitted set and filtering
-// CDS -- is guarded by ScopesClusters, and when that is false none of them run:
-// no walk over the generated protos, no filtering, and the published snapshot
-// is the one the syncer built.
+// the mode. Every path it touches -- collecting the emitted set, filtering CDS,
+// and the transition windows that make the emitted set safe to change -- is
+// guarded by ScopesClusters, and when that is false none of them run: no walk
+// over the generated protos, no filtering, no per-client state, and the
+// published snapshot is the one the syncer built.
 type clusterScoping struct {
 	mode apisettings.ClusterDiscoveryMode
-	// dereferenceGrace is how long a cluster that has left the emitted set is
-	// still published. Meaningless with scoping off, where no cluster ever
-	// leaves the set, so it is read only through DereferenceGrace.
+	// dereferenceGrace is the de-reference grace. Read it through
+	// DereferenceGrace, which is 0 when scoping is off.
 	dereferenceGrace time.Duration
 }
 
@@ -70,8 +70,7 @@ func scopedClusters() clusterScoping {
 	return clusterScoping{mode: apisettings.ClusterDiscoveryReferenced}
 }
 
-// scopedClustersWithGrace is the enabled configuration with a de-reference
-// window, for tests that exercise the removal transition.
+// scopedClustersWithGrace is scopedClusters with a de-reference grace.
 func scopedClustersWithGrace(grace time.Duration) clusterScoping {
 	s := scopedClusters()
 	s.dereferenceGrace = grace

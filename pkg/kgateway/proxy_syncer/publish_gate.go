@@ -149,10 +149,9 @@ type publishGate struct {
 	// catch entries re-created after departure. Set before first use.
 	afterPublish func(proxyKey string)
 
-	// dereferenceGrace is how long a cluster that has left the emitted set is
-	// still published; 0 disables retention. Only non-zero in REFERENCED
-	// cluster discovery mode, where clusters leave the set at all. Written
-	// once at construction.
+	// dereferenceGrace is how long a de-referenced cluster stays published; 0
+	// disables retention and is forced outside REFERENCED mode. Written once at
+	// construction.
 	dereferenceGrace time.Duration
 
 	mu           sync.Mutex
@@ -363,8 +362,7 @@ func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.Snapsh
 	// This build supersedes the pending carry expiry's; a deferred build
 	// re-arms it after publishing.
 	g.cancelCarryExpiryLocked(proxyKey)
-	// Deliberately NOT cancelling the de-reference timer: a publish that carried
-	// graced clusters forward still needs the timer that later removes them.
+	// Keep the de-reference timer: carried graced clusters still need it.
 	// graceDereferencedClustersLocked cancels it when the last window closes.
 	return g.setSnapshot(ctx, cache, proxyKey, snap, synthesized, edsHashes)
 }
@@ -463,10 +461,8 @@ func (g *publishGate) resolveDeferredLocked(
 	} else {
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
 	}
-	// Armed after publishing: a carried-forward graced cluster is only removed
-	// by this timer, and arming before the publish would let publishLocked's
-	// cleanup cancel the very timer that prunes what it just carried. The same
-	// holds for the carry expiry.
+	// Arm after publishing: publishLocked and publishHeldLocked cancel the carry
+	// expiry. The de-reference timer survives publishes.
 	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonestExpiry)
 	g.armCarryExpiryLocked(ctx, cache, candidate)
 	return publishErr
@@ -727,9 +723,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 		logPublishFailure(proxyKey, err)
 		return
 	}
-	// The release may grace clusters its routes stopped naming; like every
-	// other publish that graces, arm the prune that removes them, or they
-	// linger until some later build.
+	// The release may grace clusters; arm their prune, or they linger until a later build.
 	g.armDereferenceTimerLocked(ctx, cache, proxyKey, pf.wrap, soonestExpiry)
 	recordBoundedPublish(proxyKey, boundedPublishFlipRelease)
 	g.armCarryExpiryLocked(ctx, cache, pf.wrap)
@@ -796,9 +790,9 @@ func (g *publishGate) snapshotWithdrawn(proxyKey string) {
 	g.withdrawLocked(proxyKey)
 }
 
-// withdrawLocked cancels the client's pending bounded first publish, flip
-// release and de-reference prune, keeping the first-publish and warm episodes
-// for a reconnect to resume. Callers must hold g.mu.
+// withdrawLocked cancels the client's pending first publish, flip release, carry
+// expiry and de-reference prune, keeping the first-publish and warm episodes for
+// a reconnect. Callers must hold g.mu.
 func (g *publishGate) withdrawLocked(proxyKey string) {
 	if st := g.pending[proxyKey]; st != nil {
 		if st.timer != nil {

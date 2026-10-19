@@ -94,9 +94,9 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 	// erroredClusters is compared by name too. A cluster that is not in the
 	// CDS items, because the build no longer has it or scoping filtered it
 	// out, changes no version when it starts or stops erroring. A held flip
-	// can still carry it from the published snapshot, and only a new event
-	// lets the carry see the error and drop it (fail closed). Error-text-only
-	// changes stay suppressed: only names count.
+	// or a grace can still carry it from the published snapshot, and only a
+	// new event lets the carry see the error and drop it (fail closed).
+	// Error-text-only changes stay suppressed: only names count.
 	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
 		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
 		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints) &&

@@ -117,8 +117,7 @@ func newReconnectFixture(t *testing.T, routeTargets []string, backendNames []str
 	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs, f.gateways, endpoints, PerClientEnvoyClusters{perClient: perClient}, clusterScoping{})
 	f.cache = &recordingCache{SnapshotCache: newTestSnapshotCache(t), node: f.ucc.ResourceName()}
 	translator := NewProxyTranslator(f.cache, stubPriorXDS{has: true}, 15*time.Second, true, clusterScoping{})
-	// Mirror ProxySyncer.Start: the gate checks builds against the current row,
-	// and clientDeparted runs on Delete.
+	// Mirror ProxySyncer.Start's current-row check and clientDeparted on Delete.
 	translator.gate.currentBuild = f.snapshots.GetKey
 	f.snapshots.RegisterBatch(func(events []krt.Event[XdsSnapWrapper]) {
 		for _, event := range events {
