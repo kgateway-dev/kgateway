@@ -228,7 +228,6 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			"proxy_key", snapWrap.proxyKey,
 			"flip_blocking", flipBlocking,
 		)
-		recordFlipHeld(snapWrap.proxyKey)
 		for name := range oldClusters {
 			carryRefs[name] = struct{}{}
 		}

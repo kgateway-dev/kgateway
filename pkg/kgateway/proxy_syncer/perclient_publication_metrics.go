@@ -57,19 +57,6 @@ var (
 		},
 		[]string{gatewayLabel, namespaceLabel, publicationReasonLabel},
 	)
-	snapshotPerClientFlipsHeldTotal = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: snapshotSubsystem,
-			Name:      "perclient_flips_held_total",
-			Help: "Total publications in which routes/listeners/secrets were held " +
-				"at their published versions because a newly-referenced cluster was " +
-				"not yet ready. A sustained rate means a route flip is pinned " +
-				"behind a cluster that never becomes ready; each hold episode is " +
-				"released at budget expiry (bounded_publishes_total, " +
-				"mode=flip_release).",
-		},
-		[]string{gatewayLabel, namespaceLabel},
-	)
 	snapshotPerClientWarmWithheldClients = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: snapshotSubsystem,
@@ -179,18 +166,6 @@ func recordSnapshotDefer(proxyKey string, missing, missingEndpoints []string) {
 			metrics.Label{Name: publicationReasonLabel, Value: deferReasonMissingEndpoints},
 		)
 	}
-}
-
-// recordFlipHeld counts a resolution that held the route flip.
-func recordFlipHeld(proxyKey string) {
-	if !metrics.Active() {
-		return
-	}
-	cd := getDetailsFromXDSClientResourceName(proxyKey)
-	snapshotPerClientFlipsHeldTotal.Inc(
-		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-	)
 }
 
 // recordBoundedPublish counts a deferred snapshot published at budget expiry,
