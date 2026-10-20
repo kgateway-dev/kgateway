@@ -69,6 +69,11 @@ func scopedWithClaims(claims emissionClaims) clusterScoping {
 // using the inline form of the destination selector.
 func inlineSpecifierRoutes(t *testing.T, configs ...proto.Message) envoycache.Resources {
 	t.Helper()
+	return sliceToResources([]*envoyroutev3.RouteConfiguration{inlineSpecifierRouteConfig(t, configs...)})
+}
+
+func inlineSpecifierRouteConfig(t *testing.T, configs ...proto.Message) *envoyroutev3.RouteConfiguration {
+	t.Helper()
 	var routes []*envoyroutev3.Route
 	for _, config := range configs {
 		routes = append(routes, specifierRoute(&envoyroutev3.RouteAction{
@@ -79,10 +84,10 @@ func inlineSpecifierRoutes(t *testing.T, configs ...proto.Message) envoycache.Re
 			},
 		}))
 	}
-	return sliceToResources([]*envoyroutev3.RouteConfiguration{{
+	return &envoyroutev3.RouteConfiguration{
 		Name:         "http",
 		VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "vh", Domains: []string{"*"}, Routes: routes}},
-	}})
+	}
 }
 
 func specifierRoute(action *envoyroutev3.RouteAction) *envoyroutev3.Route {

@@ -11,9 +11,11 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/ghodss/yaml"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -103,10 +105,15 @@ func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 		"the completeness sweep must load every golden; inspect any unresolvable typed_config for hidden cluster references")
 }
 
+// corpusClaims are the claiming plugins the corpus was generated with; upstream
+// has none. A tree whose plugins claim selectors lists them here, so a fixture
+// whose selectors they claim must stay scoped.
+var corpusClaims sdk.ContributesPolicies
+
 // unscopableGoldens lists fixtures the scan may leave unscopable although the
-// YAML walk finds no request-time selector in them, each with its reason. Keep
-// it empty unless a fixture carries configuration the scan cannot decode and
-// the YAML walk cannot recognize.
+// YAML walk finds no unclaimed request-time selector in them, each with its
+// reason. Keep it empty unless a fixture carries configuration the scan cannot
+// decode and the YAML walk cannot recognize.
 var unscopableGoldens = map[string]string{}
 
 // TestGoldenCorpusScopabilityMatchesRequestTimeSelectors checks the direction
@@ -116,12 +123,14 @@ var unscopableGoldens = map[string]string{}
 // independent YAML walk decides which fixtures pick a destination at request
 // time:
 //
-//   - a fixture without one must be scopable, unless unscopableGoldens lists it;
-//   - a fixture with one must not be.
+//   - a fixture without one, or whose every one corpusClaims claims, must be
+//     scopable, unless unscopableGoldens lists it;
+//   - a fixture with an unclaimed one must not be.
 func TestGoldenCorpusScopabilityMatchesRequestTimeSelectors(t *testing.T) {
 	goldens := goldenCorpusFiles(t)
 	require.NotEmpty(t, goldens, "golden corpus is empty; the sweep would prove nothing")
 
+	claims := collectEmissionClaims(corpusClaims)
 	var scopable, unscopable int
 	listed := make(map[string]bool)
 	for _, path := range goldens {
@@ -134,28 +143,34 @@ func TestGoldenCorpusScopabilityMatchesRequestTimeSelectors(t *testing.T) {
 		}
 
 		t.Run(rel, func(t *testing.T) {
-			routes, listeners := goldenResources(result)
-			emission := collectReferencedClustersForEmission(routes, listeners)
+			decision := DecideClusterScoping(corpusClaims, result.Routes, result.Listeners)
 			selectors := requestTimeSelectorsInGolden(parseGolden(t, path))
+			var unclaimed []string
+			for _, selector := range selectors {
+				if !claimable(selector) || claims.bySelector[selector.Name] == nil {
+					unclaimed = append(unclaimed, selector.String())
+				}
+			}
 
-			if len(selectors) > 0 {
+			if len(unclaimed) > 0 {
 				unscopable++
-				require.Falsef(t, emission.Filterable(emissionClaims{}),
-					"the fixture picks a destination at request time (%v), but the scan reports nothing; "+
-						"scoping would prune the clusters it can select", selectors)
+				require.Falsef(t, decision.Scoped,
+					"the fixture picks a destination at request time with no claim (%v), but the scan reports nothing; "+
+						"scoping would prune the clusters it can select", unclaimed)
 				return
 			}
 			if reason, ok := unscopableGoldens[rel]; ok {
 				listed[rel] = true
 				unscopable++
-				require.Falsef(t, emission.Filterable(emissionClaims{}),
+				require.Falsef(t, decision.Scoped,
 					"unscopableGoldens lists this fixture (%s), but it is now scopable; remove the entry", reason)
 				return
 			}
 			scopable++
-			require.Truef(t, emission.Filterable(emissionClaims{}),
-				"the fixture has no request-time selector, but the scan reports %v, so its gateway would emit every "+
-					"cluster; fix the scan, or list the fixture in unscopableGoldens with the reason", emission.RequestTimeSelectors)
+			require.Truef(t, decision.Scoped,
+				"the fixture has no request-time selector, or only claimed ones (%v), but its gateway would emit every "+
+					"cluster (%v); fix the scan or the claim, or list the fixture in unscopableGoldens with the reason",
+				selectors, decision.Unaccounted)
 		})
 	}
 
@@ -325,13 +340,44 @@ func stringsMentionedInGolden(t *testing.T, path string) map[string]struct{} {
 	return mentioned
 }
 
+// TestRequestTimeSelectorsInGoldenReadsEachKind: the corpus has no fixture
+// with a request-time selector, so this pins that the YAML walk recognizes
+// each kind, the inline plugin's name included.
+func TestRequestTimeSelectorsInGoldenReadsEachKind(t *testing.T) {
+	var golden map[string]any
+	require.NoError(t, yaml.Unmarshal([]byte(`
+Routes:
+- virtualHosts:
+  - routes:
+    - route: {clusterHeader: x-target}
+    - route: {clusterSpecifierPlugin: example.dev/referenced}
+    - route:
+        inlineClusterSpecifierPlugin:
+          extension: {name: example.dev/inline}
+Listeners:
+- filterChains:
+  - filters:
+    - typedConfig: {'@type': type.googleapis.com/envoy.extensions.filters.network.sni_cluster.v3.SniCluster}
+    - typedConfig:
+        onNewConnection: [{objectKey: envoy.tcp_proxy.cluster}]
+`), &golden))
+
+	assert.ElementsMatch(t, []requestTimeSelector{
+		{selectorClusterHeader, "x-target"},
+		{selectorSpecifierPlugin, "example.dev/referenced"},
+		{selectorInlinePlugin, "example.dev/inline"},
+		{Kind: selectorSniCluster},
+		{selectorFilterState, "envoy.tcp_proxy.cluster"},
+	}, requestTimeSelectorsInGolden(golden))
+}
+
 // requestTimeSelectorsInGolden finds, in a fixture's Listeners and Routes, the
 // request-time selectors the scan must report: a cluster header (on a route, a
 // weighted entry or a mirror policy), a cluster specifier plugin, referenced or
 // inline, the sni_cluster filter, and filter state overriding a TcpProxy's
-// cluster. It reads the YAML, so it shares no code with the scan.
-func requestTimeSelectorsInGolden(golden map[string]any) []string {
-	found := make(map[string]struct{})
+// cluster. It reads the YAML, so it shares no detection code with the scan.
+func requestTimeSelectorsInGolden(golden map[string]any) []requestTimeSelector {
+	found := make(map[requestTimeSelector]struct{})
 	var walk func(node any)
 	walk = func(node any) {
 		switch typed := node.(type) {
@@ -345,21 +391,24 @@ func requestTimeSelectorsInGolden(golden map[string]any) []string {
 				switch key {
 				case "clusterHeader", "cluster_header":
 					if s != "" {
-						found["cluster_header "+s] = struct{}{}
+						found[requestTimeSelector{selectorClusterHeader, s}] = struct{}{}
 					}
 				case "clusterSpecifierPlugin", "cluster_specifier_plugin":
 					if s != "" {
-						found["cluster_specifier_plugin "+s] = struct{}{}
+						found[requestTimeSelector{selectorSpecifierPlugin, s}] = struct{}{}
 					}
 				case "inlineClusterSpecifierPlugin", "inline_cluster_specifier_plugin":
-					found["inline_cluster_specifier_plugin"] = struct{}{}
+					plugin, _ := value.(map[string]any)
+					extension, _ := plugin["extension"].(map[string]any)
+					name, _ := extension["name"].(string)
+					found[requestTimeSelector{selectorInlinePlugin, name}] = struct{}{}
 				case "@type":
 					if strings.HasSuffix(s, ".sni_cluster.v3.SniCluster") {
-						found["sni_cluster"] = struct{}{}
+						found[requestTimeSelector{Kind: selectorSniCluster}] = struct{}{}
 					}
 				case "objectKey", "object_key":
 					if s == "envoy.tcp_proxy.cluster" {
-						found["filter_state "+s] = struct{}{}
+						found[requestTimeSelector{selectorFilterState, s}] = struct{}{}
 					}
 				}
 				walk(value)
@@ -368,7 +417,7 @@ func requestTimeSelectorsInGolden(golden map[string]any) []string {
 	}
 	walk(golden["Listeners"])
 	walk(golden["Routes"])
-	return slices.Sorted(maps.Keys(found))
+	return slices.SortedFunc(maps.Keys(found), compareSelectors)
 }
 
 func parseGolden(t *testing.T, path string) map[string]any {

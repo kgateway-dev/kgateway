@@ -154,6 +154,13 @@ namespace. The function must be pure and cheap. It runs on each gateway
 rebuild, once per distinct config. A panic, an empty prefix or an empty result
 leaves the use unclaimed, and the unscoped gateway's warning names the reason.
 
+A plugin's unit tests can check its claim without a controller:
+`proxy_syncer.DecideClusterScoping` applies scoping to routes and listeners the
+plugin generates and reports whether the gateway stays scoped, why not, and
+which clusters it keeps. The golden-corpus sweep checks scopability in both
+directions: a fixture with no request-time selector, or only claimed ones, must
+stay scoped, and one with an unclaimed selector must not.
+
 A claim's names and prefixes **belong to its selectors**: they are kept only in
 a gateway whose configuration uses one of them. Claims are collected once for
 the whole controller, so this is what keeps one plugin's candidates out of
