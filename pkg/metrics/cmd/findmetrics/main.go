@@ -169,7 +169,7 @@ func parseFile(filename string) ([]metricInfo, error) {
 						switch sel.Sel.Name {
 						case "NewCounter":
 							metricType = "counter"
-						case "NewGauge":
+						case "NewGauge", "NewInfo":
 							metricType = "gauge"
 						case "NewHistogram":
 							metricType = "histogram"

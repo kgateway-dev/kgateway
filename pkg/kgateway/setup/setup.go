@@ -40,7 +40,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
-	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 type Server interface {
@@ -294,7 +293,6 @@ func (s *setup) Start(ctx context.Context) error {
 	metrics.SetRegistry(s.globalSettings.EnableBuiltinDefaultMetrics, nil)
 	metrics.SetActive(!(mgrOpts.Metrics.BindAddress == "" || mgrOpts.Metrics.BindAddress == "0"))
 	validator.RecordValidationMode(s.globalSettings.ValidationMode, s.globalSettings.ValidatorMode)
-	version.RecordBuildInfo()
 
 	mgr, err := ctrl.NewManager(s.restConfig, *mgrOpts)
 	if err != nil {
