@@ -43,6 +43,15 @@ const (
 	tcpGrpcAccessLogName = "envoy.access_loggers.tcp_grpc"
 )
 
+// accessLogTarget is the Envoy network filter an access log is rendered into. It picks the
+// flavor of the gRPC access logger: TcpProxy has no HTTP request to log.
+type accessLogTarget int
+
+const (
+	hcmAccessLog accessLogTarget = iota
+	tcpProxyAccessLog
+)
+
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
 // These access log configs can be either FileAccessLog, HttpGrpcAccessLogConfig or OpenTelemetryAccessLogConfig.
 // The default service name needs to be set to the cluster name in the OpenTelemetryAccessLogConfig.
@@ -51,6 +60,7 @@ const (
 // that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
 	configs []kgateway.AccessLog,
+	target accessLogTarget,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
@@ -80,18 +90,18 @@ func convertAccessLogConfig(
 		}
 	}
 
-	return translateAccessLogs(configs, grpcBackends)
+	return translateAccessLogs(configs, target, grpcBackends)
 }
 
 func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(configs []kgateway.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
+func translateAccessLogs(configs []kgateway.AccessLog, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
 	var results []proto.Message
 
 	for idx, logConfig := range configs {
-		accessLogCfg, err := translateAccessLog(logConfig, grpcBackends, idx)
+		accessLogCfg, err := translateAccessLog(logConfig, target, grpcBackends, idx)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +112,7 @@ func translateAccessLogs(configs []kgateway.AccessLog, grpcBackends map[string]*
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logConfig kgateway.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func translateAccessLog(logConfig kgateway.AccessLog, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
@@ -117,7 +127,7 @@ func translateAccessLog(logConfig kgateway.AccessLog, grpcBackends map[string]*i
 	case logConfig.FileSink != nil:
 		accessLogCfg, err = createFileAccessLog(logConfig.FileSink)
 	case logConfig.GrpcService != nil:
-		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, grpcBackends, accessLogId)
+		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, target, grpcBackends, accessLogId)
 	case logConfig.OpenTelemetry != nil:
 		accessLogCfg, err = createOTelAccessLog(logConfig.OpenTelemetry, grpcBackends, accessLogId)
 	default:
@@ -172,7 +182,19 @@ func createFileAccessLog(fileSink *kgateway.FileSink) (proto.Message, error) {
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+	if target == tcpProxyAccessLog {
+		config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
+		if err != nil {
+			return nil, fmt.Errorf("error converting grpc access log config: %w", err)
+		}
+		cfg := &envoygrpc.TcpGrpcAccessLogConfig{CommonConfig: config}
+		if err := cfg.Validate(); err != nil {
+			return nil, fmt.Errorf("error converting grpc access log config: %w", err)
+		}
+		return cfg, nil
+	}
+
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)

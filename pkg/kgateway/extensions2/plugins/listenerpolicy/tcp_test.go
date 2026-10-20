@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoy_open_telemetry "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/open_telemetry/v3"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -152,6 +154,43 @@ func TestValidateTcpAccessLog(t *testing.T) {
 			assert.EqualError(t, err, tc.wantErr)
 		})
 	}
+}
+
+func TestTranslateTcpProxyGrpcAccessLog(t *testing.T) {
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Kind:      "Backend",
+		Name:      "test-service",
+		Namespace: "default",
+	}, 0, "", "")
+	grpcService := &kgateway.AccessLogGrpcService{
+		CommonAccessLogGrpcService: kgateway.CommonAccessLogGrpcService{
+			CommonGrpcService: kgateway.CommonGrpcService{
+				BackendRef: gwv1.BackendRef{BackendObjectReference: gwv1.BackendObjectReference{Name: "test-service"}},
+			},
+			LogName: "grpc-log",
+		},
+	}
+
+	configs, err := translateAccessLogs(
+		[]kgateway.AccessLog{{GrpcService: grpcService}},
+		tcpProxyAccessLog,
+		map[string]*ir.BackendObjectIR{"grpc-log-0": &backend},
+	)
+	require.NoError(t, err)
+
+	want := &envoygrpc.TcpGrpcAccessLogConfig{
+		CommonConfig: &envoygrpc.CommonGrpcAccessLogConfig{
+			TransportApiVersion: envoycorev3.ApiVersion_V3,
+			LogName:             "grpc-log",
+			GrpcService: &envoycorev3.GrpcService{
+				TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{ClusterName: "backend_default_test-service_0"},
+				},
+			},
+		},
+	}
+	require.Len(t, configs, 1)
+	assert.True(t, proto.Equal(want, configs[0]), "gRPC sinks on TcpProxy should use the TCP gRPC access logger, got %v", configs[0])
 }
 
 func TestApplyTcpProxyAccessLogs(t *testing.T) {

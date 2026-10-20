@@ -491,7 +491,12 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 		if pass == nil {
 			continue
 		}
-		if h.reporter != nil {
+		// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
+		// this chain's Gateway listener only get it here, and only for kinds that apply to TCP
+		// filter chains.
+		_, appliesToTcp := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass)
+		reportStatus := h.reporter != nil && appliesToTcp && len(l.AttachedPolicies.Policies[gk]) > 0
+		if reportStatus {
 			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
@@ -510,7 +515,7 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 				})
 			}
 		}
-		if h.reporter != nil {
+		if reportStatus {
 			reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 		}
 	}

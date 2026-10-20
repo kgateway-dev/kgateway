@@ -241,6 +241,13 @@ type BackendObjectPolicyApplier interface {
 	ApplyForBackendObjectPolicies(policies []PolicyAtt, pCtx *RouteBackendContext) error
 }
 
+// TcpFilterChainPolicyPass is implemented by a ProxyTranslationPass whose policies can apply to
+// TCP filter chains, through ApplyTcpProxy or ApplyPostListener. Policies of other kinds that
+// target a TCP or TLS Gateway listener have no effect there, so they get no status for it.
+type TcpFilterChainPolicyPass interface {
+	AppliesToTcpFilterChains()
+}
+
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}

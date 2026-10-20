@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
@@ -74,19 +73,13 @@ func convertTcpAccessLogConfig(
 		}
 	}
 
-	configs, err := convertAccessLogConfig(logs, commoncol, krtctx, objSrc)
+	configs, err := convertAccessLogConfig(logs, tcpProxyAccessLog, commoncol, krtctx, objSrc)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	filters := make([]*envoyaccesslogv3.AccessLogFilter, len(configs))
-	for i, config := range configs {
-		// The TcpProxy filter has no HTTP request to log, so gRPC sinks use the TCP flavor of the
-		// gRPC access log service. validateTcpAccessLog rejected the HTTP-only fields, so only
-		// the common config needs to be carried over.
-		if httpGrpc, ok := config.(*envoygrpc.HttpGrpcAccessLogConfig); ok {
-			configs[i] = &envoygrpc.TcpGrpcAccessLogConfig{CommonConfig: httpGrpc.GetCommonConfig()}
-		}
+	for i := range configs {
 		if logs[i].Filter != nil {
 			filters[i], err = convertAccessLogFilter(logs[i].Filter)
 			if err != nil {
@@ -146,6 +139,12 @@ func validateTcpAccessLogFilter(f kgateway.FilterType) error {
 	}
 	return fmt.Errorf("filter.%s is not supported for TCP access logs", name)
 }
+
+// AppliesToTcpFilterChains marks ListenerPolicy as applying to TCP filter chains, through
+// tcpSettings and transportSocketConnectTimeout.
+func (p *listenerPolicyPluginGwPass) AppliesToTcpFilterChains() {}
+
+var _ ir.TcpFilterChainPolicyPass = &listenerPolicyPluginGwPass{}
 
 func (p *listenerPolicyPluginGwPass) ApplyTcpProxy(
 	pCtx *ir.TcpProxyContext,
