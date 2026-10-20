@@ -27,14 +27,17 @@ const goldenCorpusDir = "../translator/gateway/testutils/outputs"
 //   - every defined cluster the config mentions is in the emission set;
 //   - the gating set is a subset of it. Otherwise filtering could leave a gated
 //     cluster absent from CDS, which the gate answers with a warm-client
-//     withhold, turning a rare plugin bug into a routine freeze.
+//     withhold, turning a rare plugin bug into a routine freeze;
+//   - a cluster another emitted cluster names, as an aggregate cluster does,
+//     is in the emission set. The scan reads only routes and listeners, so this
+//     fails if a plugin's cluster hook starts naming one cluster from another.
 //
 // It covers the corpus only, not every extension.
 func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 	goldens := goldenCorpusFiles(t)
 	require.NotEmpty(t, goldens, "golden corpus is empty; the sweep would prove nothing")
 
-	var swept, definedClusters, referenced int
+	var swept, definedClusters, referenced, crossReferences int
 	var unparseable []string
 	for _, path := range goldens {
 		rel, err := filepath.Rel(goldenCorpusDir, path)
@@ -74,13 +77,25 @@ func TestEmissionSetCoversEveryGoldenCorpusReference(t *testing.T) {
 						"the subset invariant is what keeps a referenced-but-absent cluster from freezing warm clients", name)
 			}
 
+			for from, targets := range clusterReferencesToClusters(t, path, defined) {
+				if _, emitted := emission.Names[from]; !emitted {
+					continue // pruned itself, so what it names does not matter
+				}
+				for _, target := range targets {
+					crossReferences++
+					require.Containsf(t, emission.Names, target,
+						"cluster %q names cluster %q, which no route or listener names; the scan reads only routes "+
+							"and listeners, so scoping would prune %q while %q still needs it", from, target, target, from)
+				}
+			}
+
 			swept++
 			definedClusters += len(defined)
 		})
 	}
 
-	t.Logf("swept %d goldens: %d defined clusters, %d of them named by the generated config",
-		swept, definedClusters, referenced)
+	t.Logf("swept %d goldens: %d defined clusters, %d of them named by the generated config, %d named by another cluster",
+		swept, definedClusters, referenced, crossReferences)
 
 	// Every fixture must parse: an opaque typed_config can hide cluster names from
 	// the production walk too.
@@ -247,6 +262,54 @@ func definedClusterNames(t *testing.T, path string) map[string]struct{} {
 		}
 	}
 	return names
+}
+
+// TestClusterReferencesToClustersFindsAnAggregateCluster: the corpus has no
+// cluster that names another, so this pins that the guard would see one.
+func TestClusterReferencesToClustersFindsAnAggregateCluster(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "aggregate.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(`Clusters:
+- name: aggregate
+  clusterType:
+    name: envoy.clusters.aggregate
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.aggregate.v3.ClusterConfig
+      clusters:
+      - primary
+      - secondary
+- name: primary
+- name: secondary
+`), 0o600))
+
+	references := clusterReferencesToClusters(t, path, definedClusterNames(t, path))
+
+	require.Len(t, references, 1, "only the aggregate cluster names others")
+	require.ElementsMatch(t, []string{"primary", "secondary"}, references["aggregate"])
+}
+
+// clusterReferencesToClusters maps each fixture cluster to the other defined
+// clusters whose names appear anywhere in its definition.
+func clusterReferencesToClusters(t *testing.T, path string, defined map[string]struct{}) map[string][]string {
+	t.Helper()
+	golden := parseGolden(t, path)
+
+	references := make(map[string][]string)
+	clusters, _ := golden["Clusters"].([]any)
+	for _, c := range clusters {
+		cluster, ok := c.(map[string]any)
+		if !ok {
+			continue
+		}
+		self, _ := cluster["name"].(string)
+		mentioned := make(map[string]struct{})
+		collectStrings(cluster, mentioned)
+		for name := range mentioned {
+			if _, isCluster := defined[name]; isCluster && name != self {
+				references[self] = append(references[self], name)
+			}
+		}
+	}
+	return references
 }
 
 // stringsMentionedInGolden collects every string under Listeners and Routes from
