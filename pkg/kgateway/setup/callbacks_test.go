@@ -156,7 +156,6 @@ func callbackMethods() (rejecting, notifying []string) {
 	errorType := reflect.TypeFor[error]()
 	iface := reflect.TypeFor[xdsserver.Callbacks]()
 	for m := range iface.Methods() {
-		m := m
 		if m.Type.NumOut() == 1 && m.Type.Out(0) == errorType {
 			rejecting = append(rejecting, m.Name)
 		} else {
