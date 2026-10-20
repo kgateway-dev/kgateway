@@ -132,6 +132,14 @@ extension name the plugin puts in `cluster_specifier_plugin`, in either its
 referenced or inline form), which exact cluster names to keep, and which name
 prefixes to keep for candidates that cannot be enumerated ahead of time.
 
+Selectors match on the extension name alone, not on the type of its
+`typed_config`, so a plugin should use a name it owns, such as one prefixed with
+its API group. Under a generic name such as
+`envoy.router.cluster_specifier_plugin.lua`, another plugin's specifier of the
+same name counts as accounted for, and its candidates are pruned. Matching on
+the type as well would not help two plugins built on the same extension. Two
+plugins claiming one name is logged as an error.
+
 A claim's names and prefixes **belong to its selectors**: they are kept only in
 a gateway whose configuration uses one of them. Claims are collected once for
 the whole controller, so this is what keeps one plugin's candidates out of
@@ -154,7 +162,9 @@ describes; such gateways stay unscoped.
 
 Claims are collected once, when the controller starts, before its caches sync,
 and hold for its lifetime: derive them from how the plugin names the clusters it
-computes, not from cluster state.
+computes, not from cluster state. A candidate set that depends on something only
+the route knows, such as its namespace, can therefore be claimed only by a
+prefix that covers every value it could take.
 
 A claim is trusted as complete. A cluster the plugin can compute that the claim
 does not keep is pruned, and the plugin's fallback then takes its traffic with

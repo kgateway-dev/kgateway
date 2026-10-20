@@ -292,6 +292,8 @@ The exception is a cluster specifier plugin whose selector a valid plugin claim
   selectors.
 - Claims are collected once, when the controller starts and before its caches
   sync.
+- A claim matches a selector by its extension name alone, so a plugin should
+  use a name it owns. Two plugins claiming one name is logged as an error.
 
 Some selectors cannot be claimed and always revert the gateway:
 

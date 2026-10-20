@@ -52,6 +52,30 @@ func TestClaimedSelectorsAreMatchedByName(t *testing.T) {
 	assert.False(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "other"}))
 }
 
+// TestTwoPluginsClaimingOneNameShareItsDestinations: claims match on the
+// extension name alone, so two plugins claiming one name each have their
+// destinations kept wherever either uses it. The collision is logged.
+func TestTwoPluginsClaimingOneNameShareItsDestinations(t *testing.T) {
+	claims := collectEmissionClaims(sdk.ContributesPolicies{
+		{Group: "a.test", Kind: "Picker"}: {
+			Name: "a",
+			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
+				return sdk.ClusterEmissionClaim{Selectors: []string{"shared"}, NamePrefixes: []string{"a_"}}
+			},
+		},
+		{Group: "b.test", Kind: "Picker"}: {
+			Name: "b",
+			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
+				return sdk.ClusterEmissionClaim{Selectors: []string{"shared"}, Names: []string{"b-fallback"}}
+			},
+		},
+	})
+
+	kept := claims.keptFor([]requestTimeSelector{{selectorSpecifierPlugin, "shared"}})
+	assert.True(t, kept.claims("a_backend"))
+	assert.True(t, kept.claims("b-fallback"))
+}
+
 // TestClusterHeaderCanNeverBeClaimed: the client picks the header's
 // destination, so no claim can bound it and the gateway stays unscoped.
 func TestClusterHeaderCanNeverBeClaimed(t *testing.T) {

@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
@@ -39,6 +41,7 @@ type claimedDestinations struct {
 // filters.
 func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 	claims := emissionClaims{bySelector: map[string]*claimedDestinations{}}
+	claimedBy := make(map[string]schema.GroupKind)
 	for gk, policyPlugin := range policies {
 		if policyPlugin.ClaimEmittedClusters == nil {
 			continue
@@ -78,6 +81,12 @@ func collectEmissionClaims(policies sdk.ContributesPolicies) emissionClaims {
 					"plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind)
 				continue
 			}
+			if other, ok := claimedBy[selector]; ok && other != gk {
+				logger.Error("two plugins claim the same cluster specifier extension name; claims match by name alone, so each plugin's destinations are kept wherever either plugin's routes use it. Give each plugin a name it owns",
+					"selector", selector, "plugin", policyPlugin.Name, "group", gk.Group, "kind", gk.Kind,
+					"other_group", other.Group, "other_kind", other.Kind)
+			}
+			claimedBy[selector] = gk
 			kept := claims.bySelector[selector]
 			if kept == nil {
 				kept = &claimedDestinations{names: map[string]struct{}{}}

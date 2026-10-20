@@ -178,6 +178,13 @@ type ClusterEmissionClaim struct {
 	// sends, and filter-state overrides, undecodable typed configs and unknown
 	// specifier kinds always revert the gateway to emitting every cluster.
 	//
+	// A selector matches on the extension name alone, not its typed_config
+	// type, so use a name the plugin owns, such as one prefixed with its API
+	// group. Under a generic name such as
+	// envoy.router.cluster_specifier_plugin.lua, another plugin's specifier
+	// would count as accounted for, and its candidates would be pruned. Two
+	// plugins claiming one name is logged as an error.
+	//
 	// A claim accounts for its selectors only with at least one of Names or
 	// NamePrefixes and no rejected prefix. Otherwise it logs an error and
 	// covers nothing: keeping none of a selector's candidates would prune
