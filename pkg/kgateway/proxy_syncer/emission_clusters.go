@@ -253,6 +253,12 @@ func walkProtoValue(v protoreflect.Value, visit func(proto.Message)) {
 	}
 
 	if anyMsg, ok := msg.Interface().(*anypb.Any); ok {
+		if anyMsg.GetTypeUrl() == "" && len(anyMsg.GetValue()) == 0 {
+			// No payload, so no cluster name. The per-route filter-enable
+			// marker is a FilterConfig with an empty Any, which Envoy requires
+			// as is; reporting it would leave every such gateway unscoped.
+			return
+		}
 		nestedMsg, err := anyMsg.UnmarshalNew()
 		if err != nil {
 			// A typed config whose Go type is not linked into this binary (or

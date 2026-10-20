@@ -24,6 +24,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 )
 
@@ -366,4 +367,33 @@ func TestEmissionSetReportsUndecodableTypedConfig(t *testing.T) {
 
 	assert.False(t, emission.Filterable())
 	assert.Equal(t, []string{`undecodable typed_config "type.googleapis.com/example.v1.NotLinked"`}, emission.Unresolvable)
+}
+
+// TestEmissionSetIgnoresThePerRouteFilterEnableMarker: EnableFilterPerRoute is
+// a FilterConfig whose config is an empty Any. Envoy needs the marker as is.
+// It has no payload, so it names no cluster and must not make the gateway
+// unfilterable.
+func TestEmissionSetIgnoresThePerRouteFilterEnableMarker(t *testing.T) {
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
+		Name: "http",
+		VirtualHosts: []*envoyroutev3.VirtualHost{{
+			Name:    "vh",
+			Domains: []string{"*"},
+			Routes: []*envoyroutev3.Route{{
+				Match: &envoyroutev3.RouteMatch{PathSpecifier: &envoyroutev3.RouteMatch_Prefix{Prefix: "/"}},
+				Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{
+					ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "backend"},
+				}},
+				TypedPerFilterConfig: map[string]*anypb.Any{
+					"ext_auth/default/auth": mustMessageToAny(t, trafficpolicy.EnableFilterPerRoute()),
+				},
+			}},
+		}},
+	}})
+
+	emission := collectReferencedClustersForEmission(routes, envoycache.Resources{})
+
+	assert.True(t, emission.Filterable(), "the enable marker must not read as an undecodable typed_config")
+	assert.Empty(t, emission.Unresolvable)
+	assert.Contains(t, emission.Names, "backend")
 }
