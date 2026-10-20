@@ -15,7 +15,8 @@ import (
 
 var (
 	// Manifest paths
-	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	setupManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	tpAclDenyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tp-acl-deny.yaml")
 
 	// Resource names
 	gatewayName    = "gw"

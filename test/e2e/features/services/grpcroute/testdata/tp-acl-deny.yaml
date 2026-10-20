@@ -1,0 +1,17 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: grpc-acl-deny
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+      name: grpc-route
+  acl:
+    defaultAction: deny
+    denyResponse:
+      headers:
+        - name: "grpc-status"
+          value: "7"
+        - name: "grpc-message"
+          value: "Access Denied by IP ACL Policy"
