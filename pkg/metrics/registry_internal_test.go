@@ -2,14 +2,22 @@ package metrics
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	clientmetrics "k8s.io/client-go/tools/metrics"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	// Registers controller-runtime's controller metrics, including its own go
+	// and process collectors, as kgateway's manager does.
+	_ "sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 func TestSetRegistryBuiltinKeepsInitRegisteredMetrics(t *testing.T) {
@@ -33,14 +41,24 @@ func TestSetRegistryBuiltinKeepsInitRegisteredMetrics(t *testing.T) {
 
 	assert.Same(t, local, Registry(), "kgateway metrics should keep using the local registry")
 
-	families, err := ctrlmetrics.Registry.Gather()
+	// Serve the registry the way controller-runtime's metrics server does.
+	srv := httptest.NewServer(promhttp.HandlerFor(ctrlmetrics.Registry, promhttp.HandlerOpts{
+		ErrorHandling: promhttp.HTTPErrorOnError,
+	}))
+	defer srv.Close()
+	resp, err := http.Get(srv.URL)
 	require.NoError(t, err)
-	names := map[string]bool{}
-	for _, f := range families {
-		names[f.GetName()] = true
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "metrics endpoint should not fail: %s", body)
+
+	for _, name := range []string{
+		"kgateway_registry_test_info",
+		"rest_client_requests_total",
+		"go_goroutines",
+		"process_cpu_seconds_total",
+	} {
+		assert.Contains(t, string(body), "\n# TYPE "+name+" ", "%s should be served", name)
 	}
-	assert.True(t, names["kgateway_registry_test_info"], "kgateway metric registered before SetRegistry should be served")
-	assert.True(t, names["rest_client_requests_total"], "controller-runtime metrics should be served")
-	assert.True(t, names["go_goroutines"], "go runtime metrics should be served")
-	assert.True(t, names["process_cpu_seconds_total"], "process metrics should be served")
 }

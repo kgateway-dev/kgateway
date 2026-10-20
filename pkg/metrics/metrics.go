@@ -3,11 +3,13 @@ package metrics
 
 import (
 	"reflect"
+	"slices"
 	"sync"
 	"sync/atomic"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	dto "github.com/prometheus/client_model/go"
 	"istio.io/istio/pkg/kube/krt"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
@@ -378,7 +380,7 @@ func SetRegistry(useBuiltinRegistry bool, r RegistererGatherer) {
 	// its metrics alongside ours, which are already registered in registry.
 	metrics.Registry = &builtinRegistry{
 		Registerer: ctrlRegistry,
-		Gatherer:   prometheus.Gatherers{ctrlRegistry, registry},
+		kgateway:   registry,
 	}
 }
 
@@ -386,7 +388,30 @@ func SetRegistry(useBuiltinRegistry bool, r RegistererGatherer) {
 // from both controller-runtime's registry and the kgateway registry.
 type builtinRegistry struct {
 	prometheus.Registerer
-	prometheus.Gatherer
+	kgateway prometheus.Gatherer
+}
+
+// Gather skips kgateway metric families that controller-runtime already
+// gathers, such as the go and process collectors that both register.
+func (b *builtinRegistry) Gather() ([]*dto.MetricFamily, error) {
+	ctrlFamilies, ctrlErr := ctrlRegistry.Gather()
+	ctrlNames := make(map[string]struct{}, len(ctrlFamilies))
+	for _, f := range ctrlFamilies {
+		ctrlNames[f.GetName()] = struct{}{}
+	}
+
+	return prometheus.Gatherers{
+		prometheus.GathererFunc(func() ([]*dto.MetricFamily, error) {
+			return ctrlFamilies, ctrlErr
+		}),
+		prometheus.GathererFunc(func() ([]*dto.MetricFamily, error) {
+			families, err := b.kgateway.Gather()
+			return slices.DeleteFunc(families, func(f *dto.MetricFamily) bool {
+				_, ok := ctrlNames[f.GetName()]
+				return ok
+			}), err
+		}),
+	}.Gather()
 }
 
 // isNil checks if the provided interface contains nil or a nil value.
