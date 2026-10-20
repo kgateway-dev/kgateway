@@ -268,6 +268,23 @@ RDS and SDS response per reconnect.
 With `false`, these requests wait for a version change. The metric is
 `kgateway_envoy_xds_reconnect_responses_total{type_url}`.
 
+### Re-defined clusters (always on)
+
+When a CDS response changes a cluster the proxy already has (a policy change,
+for example), Envoy builds a new cluster under the same name and warms it on
+endpoints. CDS stays paused until it is warm. Envoy re-requests the endpoints at
+the version it holds, which go-control-plane does not answer. Unless the
+endpoint version changes after that CDS response, the cluster waits for Envoy's
+EDS fetch timeout (15 seconds by default), and no other cluster change reaches
+the proxy meanwhile.
+
+So for each stream the xDS server notes which clusters a CDS response changed.
+The stream's next endpoint request is answered with their assignments, even at
+the held version. There is no setting. The cost is one hash per cluster per CDS
+response, and one endpoint response carrying only the changed clusters. A
+changed cluster that still waits shows up in Envoy's log as `initial fetch timed
+out` for `ClusterLoadAssignment`.
+
 ## Cluster discovery
 
 ### `KGW_CLUSTER_DISCOVERY_MODE` (default `ALL`)
@@ -360,6 +377,11 @@ removes the cluster. The clock starts when the controller first publishes a
 build without the cluster. If the route update is rejected, or delayed past the
 grace, the removal can still land first.
 
+Only clusters that scoping stops emitting are kept. A cluster whose backend is
+deleted, or fails translation, is removed in the same publication, as in `ALL`
+mode. Otherwise a destination selector would keep routing to the deleted
+backend for the whole grace.
+
 With `0` or a negative value, the cluster is removed in the same publication,
 which accepts that race. The metric is
 `kgateway_xds_cluster_scoping_transitions_total` with `transition` set to
@@ -375,7 +397,7 @@ which accepts that race. The metric is
   cluster the held configuration names stays published, whatever the
   de-reference grace.
 - **xDS server settings.** `KGW_XDS_FIRST_CONNECT_DELAY`,
-  `KGW_XDS_SUPPRESS_NACK_RESEND` and `KGW_XDS_RESPOND_ON_RECONNECT` act in the
-  xDS server, independently of publication.
+  `KGW_XDS_SUPPRESS_NACK_RESEND`, `KGW_XDS_RESPOND_ON_RECONNECT` and the
+  re-defined-cluster rule act in the xDS server, independently of publication.
 - **Consistency check.** `KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK` observes
   publications and never changes them.

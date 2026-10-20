@@ -88,7 +88,10 @@ published for a bounded period after the controller publishes the route update
 that stops naming it, giving that update time to land first; it cannot make sure
 the update does. A build held for a new or unready cluster does not start the
 period: the hold keeps the cluster anyway, and the period starts at the release.
-Set this above worst-case RDS propagation for your fleet.
+Set this above worst-case RDS propagation for your fleet. The grace covers only
+clusters scoping stopped emitting: a cluster whose backend was deleted or fails
+translation leaves at once, as in `ALL`, since a request-time selector would
+otherwise keep routing to the deleted backend.
 
 Ordered ADS does not substitute for either window: it fixes CDS before RDS,
 which is the wrong order for removals, and it does not close the ACK-skew
