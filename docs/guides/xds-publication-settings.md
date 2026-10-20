@@ -296,9 +296,16 @@ out` for `ClusterLoadAssignment`.
   ext_proc, rate limit, access log and JWKS clusters. `REFERENCED` is
   experimental.
 
+A backend can ship listeners with its cluster, as a CONNECT tunnel does. A
+kept backend's listeners keep the clusters they name, such as the tunnel's
+proxy, and those clusters' own listeners are followed in turn.
+
 A gateway whose routes can pick a destination at request time reverts to
-emitting every cluster. A warning is logged, and
-`kgateway_xds_cluster_scoping_disabled_gateways` goes to 1 for it.
+emitting every cluster, and so does one with a request-time selector in a kept
+backend's listener. A warning names the selectors, and the backend and listener
+for one in a backend's listener.
+`kgateway_xds_cluster_scoping_disabled_gateways` is 1 for the gateway while any
+of its connected proxy groups is reverted.
 
 The exception is a cluster specifier plugin whose selector a valid plugin claim
 (`ClusterEmissionClaim` in `pkg/pluginsdk`) accounts for:
@@ -314,6 +321,9 @@ The exception is a cluster specifier plugin whose selector a valid plugin claim
   sync.
 - A claim matches a selector by its extension name alone, so a plugin should
   use a name it owns. Two plugins claiming one name is logged as an error.
+
+Claims cover the gateway's routes only. A selector in a backend's listener
+always reverts the gateway, even one a claim covers in routes.
 
 Some selectors cannot be claimed and always revert the gateway:
 

@@ -7,6 +7,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoysniclusterv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -23,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
@@ -291,6 +293,39 @@ func TestSnapshotPerClientReportsABackendListenerFallback(t *testing.T) {
 			assert.Equal(t, tc.disabled, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", labels))
 		})
 	}
+}
+
+// TestClaimsDoNotCoverABackendListenersSelector: a claim on a cluster
+// specifier plugin accounts for the gateway's routes' uses of it, not for one
+// inside a kept backend's own listener. That one still reverts the client to
+// every cluster and reports the gateway unscoped.
+func TestClaimsDoNotCoverABackendListenersSelector(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	scoping := scopedWithClaims(collectEmissionClaims(claimingPlugins(sdk.ClusterEmissionClaim{
+		Selectors: []string{"picker"},
+		Names:     []string{"picker-fallback"},
+	})))
+	picker := &envoyhcmv3.HttpConnectionManager{
+		StatPrefix: "tunnel",
+		RouteSpecifier: &envoyhcmv3.HttpConnectionManager_RouteConfig{RouteConfig: &envoyroutev3.RouteConfiguration{
+			VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "vh", Domains: []string{"*"}, Routes: []*envoyroutev3.Route{{
+				Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{
+					ClusterSpecifier: &envoyroutev3.RouteAction_ClusterSpecifierPlugin{ClusterSpecifierPlugin: "picker"},
+				}},
+			}}}},
+		}},
+	}
+
+	const gateway = "gw-claimed-backend-selector"
+	wrap := tunnelSnapshot(t, gateway, scoping, []string{"tunneled"}, picker)
+
+	assert.ElementsMatch(t, []string{"tunneled", "proxy", "unreferenced"}, mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items))
+	assert.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(
+		"kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+			{Name: gatewayLabel, Value: gateway},
+			{Name: namespaceLabel, Value: "ns"},
+		}))
 }
 
 // tunnelSnapshot builds one client's snapshot of gateway ns/gateway, whose
