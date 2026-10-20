@@ -15,6 +15,8 @@ use transformation::{
     LocalTransform, LocalTransformationConfig, TransformationError, TransformationOps,
 };
 
+mod json_fields;
+
 static EMPTY_MAP: Lazy<HashMap<String, Vec<String>>> = Lazy::new(HashMap::new);
 #[derive(Clone)]
 pub struct FilterConfig {
@@ -22,12 +24,14 @@ pub struct FilterConfig {
     env: Environment<'static>,
     request_transform_flags: TransformFlags,
     response_transform_flags: TransformFlags,
+    request_json_fields: Option<Vec<String>>,
 }
 
 struct EnvoyTransformationOps<'a, EHF: EnvoyHttpFilter> {
     envoy_filter: &'a mut EHF,
     used_received_request_body: Option<bool>,
     used_received_response_body: Option<bool>,
+    request_json_fields: Option<&'a [String]>,
 }
 
 impl<'a, EHF: EnvoyHttpFilter> EnvoyTransformationOps<'a, EHF> {
@@ -36,6 +40,7 @@ impl<'a, EHF: EnvoyHttpFilter> EnvoyTransformationOps<'a, EHF> {
             envoy_filter,
             used_received_request_body: None,
             used_received_response_body: None,
+            request_json_fields: None,
         }
     }
 }
@@ -52,12 +57,17 @@ impl<EHF: EnvoyHttpFilter> TransformationOps for EnvoyTransformationOps<'_, EHF>
     }
     fn parse_request_json_body(&mut self) -> Result<JsonValue> {
         use std::io::Read as _;
+        let fields = self.request_json_fields;
         let mut reader = self.get_request_body_reader();
         let mut peek = [0u8; 1];
         if reader.read(&mut peek)? == 0 {
             return Ok(JsonValue::Null);
         }
         let chained = std::io::Cursor::new(peek).chain(reader);
+        if let Some(fields) = fields {
+            return json_fields::parse(chained, fields)
+                .context("failed to parse request body as json");
+        }
         serde_json::from_reader(chained).context("failed to parse request body as json")
     }
     fn get_request_body_reader(&mut self) -> Box<dyn std::io::Read + '_> {
@@ -255,12 +265,17 @@ impl FilterConfig {
             .as_ref()
             .map(transformation::jinja::compute_transform_flags)
             .unwrap_or(TransformFlags::empty());
+        let request_json_fields = config
+            .request
+            .as_ref()
+            .and_then(json_fields::requested_fields);
 
         Some(FilterConfig {
             transformations: config,
             env,
             request_transform_flags,
             response_transform_flags,
+            request_json_fields,
         })
     }
 }
@@ -411,13 +426,16 @@ impl Filter {
         };
 
         let mut retval = true;
+        let config = self.get_per_route_config().unwrap_or(&self.filter_config);
+        let mut ops = EnvoyTransformationOps::new(envoy_filter);
+        ops.request_json_fields = config.request_json_fields.as_deref();
         match transformation::jinja::transform_request(
             self.get_env(),
             transform,
             self.get_request_headers_map(),
             flags,
             self.get_request_transform_flags(),
-            EnvoyTransformationOps::new(envoy_filter),
+            ops,
         ) {
             Ok(()) => {}
             Err(err) => {
