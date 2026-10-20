@@ -120,7 +120,6 @@ type callbacksCollection struct {
 
 type callbacks struct {
 	collection         atomic.Pointer[callbacksCollection]
-	extraXDSCallbacks  xdsserver.Callbacks
 	streamIDToPeerInfo sync.Map
 	xdsAuth            bool
 }
@@ -166,14 +165,12 @@ type UniquelyConnectedClientsBuilder func(ctx context.Context, krtOpts krtutil.K
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
 
-func NewUniquelyConnectedClients(
-	extraXDSCallbacks xdsserver.Callbacks,
-	xdsAuth bool,
-) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder) {
-	cb := &callbacks{
-		extraXDSCallbacks: extraXDSCallbacks,
-		xdsAuth:           xdsAuth,
-	}
+// NewUniquelyConnectedClients returns kgateway's client-tracking callbacks and the
+// builder for the collection they feed. Extra callbacks are not passed here:
+// chain them ahead of these with setup.ChainCallbacks, which delivers every hook
+// to each.
+func NewUniquelyConnectedClients(xdsAuth bool) (xdsserver.Callbacks, UniquelyConnectedClientsBuilder) {
+	cb := &callbacks{xdsAuth: xdsAuth}
 
 	envoycb := xdsserver.CallbackFuncs{
 		StreamOpenFunc:    cb.OnStreamOpen,
@@ -221,11 +218,9 @@ func (x *callbacks) OnStreamOpen(ctx context.Context, sid int64, _ string) error
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (x *callbacks) OnStreamClosed(sid int64, node *envoycorev3.Node) {
-	if x.extraXDSCallbacks != nil {
-		x.extraXDSCallbacks.OnStreamClosed(sid, node)
-	}
-
+// go-control-plane calls it even when OnStreamOpen failed, so it must tolerate a
+// stream it never saw open.
+func (x *callbacks) OnStreamClosed(sid int64, _ *envoycorev3.Node) {
 	if x.xdsAuth {
 		x.streamIDToPeerInfo.Delete(sid)
 	}
@@ -425,12 +420,6 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
-	if x.extraXDSCallbacks != nil {
-		if err := x.extraXDSCallbacks.OnStreamRequest(sid, r); err != nil {
-			return err
-		}
-	}
-
 	c := x.collection.Load()
 	if c == nil {
 		return errors.New("kgateway not initialized")
@@ -558,11 +547,6 @@ func (x *callbacksCollection) tryConfirmLocalCluster(sid int64, uccName string, 
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	if x.xdsAuth {
 		return errors.New("OnFetchRequest not supported when xDS auth is enabled")
-	}
-	if x.extraXDSCallbacks != nil {
-		if err := x.extraXDSCallbacks.OnFetchRequest(ctx, r); err != nil {
-			return err
-		}
 	}
 
 	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()

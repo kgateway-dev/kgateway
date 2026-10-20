@@ -75,6 +75,12 @@ type adsHarness struct {
 
 func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 	t.Helper()
+	return newADSHarnessWithCallbacks(t, ordered, nil)
+}
+
+// newADSHarnessWithCallbacks is newADSHarness with server callbacks.
+func newADSHarnessWithCallbacks(t *testing.T, ordered bool, callbacks xdsserver.Callbacks) *adsHarness {
+	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	stream := &mockAdsStream{
@@ -88,7 +94,7 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 	if ordered {
 		opts = append(opts, sotwv3.WithOrderedADS())
 	}
-	srv := xdsserver.NewServer(ctx, cache, nil, opts...)
+	srv := xdsserver.NewServer(ctx, cache, callbacks, opts...)
 
 	h := &adsHarness{
 		t:      t,
