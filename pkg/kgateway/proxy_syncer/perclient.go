@@ -111,6 +111,15 @@ func snapshotPerClient(
 			clusterVersions,
 		)
 		if filtered {
+			clusterResources, clusterVersions, filtered = keepBackendListenerTargets(
+				clustersForUcc.clusters,
+				clustersForUcc.clusterVersions,
+				clusterResources,
+				clusterVersions,
+				clustersForUcc.backendListeners,
+			)
+		}
+		if filtered {
 			// Re-version: an unchanged version would leave Envoy serving dropped clusters.
 			clustersHash = emittedClustersHash(clusterVersions)
 			clusterResources.Version = strconv.FormatUint(clustersHash, 10)

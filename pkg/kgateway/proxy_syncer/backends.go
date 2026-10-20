@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"maps"
 	"slices"
 	"strconv"
 
@@ -176,6 +177,9 @@ type clustersWithErrors struct {
 	clusters  envoycache.Resources
 	listeners baseResources[*envoylistenerv3.Listener]
 	secrets   baseResources[*envoytlsv3.Secret]
+	// backendListeners are the listeners of each publishable cluster that has
+	// any, so scoping can keep the clusters they name (keepBackendListenerTargets).
+	backendListeners map[string]baseResources[*envoylistenerv3.Listener]
 	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
@@ -202,6 +206,9 @@ func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 	return c.clustersHash == k.clustersHash &&
 		c.listeners.hash == k.listeners.hash &&
 		c.secrets.hash == k.secrets.hash &&
+		maps.EqualFunc(c.backendListeners, k.backendListeners, func(a, b baseResources[*envoylistenerv3.Listener]) bool {
+			return a.hash == b.hash
+		}) &&
 		c.erroredClustersHash == k.erroredClustersHash &&
 		c.resourceName == k.resourceName &&
 		slices.EqualFunc(c.perClientErrors, k.perClientErrors, uccWithCluster.Equals)
@@ -386,6 +393,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 	var (
 		listeners           baseResources[*envoylistenerv3.Listener]
 		secrets             baseResources[*envoytlsv3.Secret]
+		backendListeners    map[string]baseResources[*envoylistenerv3.Listener]
 		clustersHash        uint64
 		erroredClustersHash uint64
 		erroredClusters     []string
@@ -410,6 +418,12 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clustersHash ^= c.ClusterVersion
 		listeners.items = append(listeners.items, c.Listeners.items...)
 		listeners.hash ^= c.Listeners.hash
+		if len(c.Listeners.items) > 0 {
+			if backendListeners == nil {
+				backendListeners = make(map[string]baseResources[*envoylistenerv3.Listener])
+			}
+			backendListeners[c.Name] = c.Listeners
+		}
 		secrets.items = append(secrets.items, c.Secrets.items...)
 		secrets.hash ^= c.Secrets.hash
 		clusterVersions[c.Name] = c.ClusterVersion
@@ -422,6 +436,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
 		listeners:           listeners,
 		secrets:             secrets,
+		backendListeners:    backendListeners,
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
 		clusterVersions:     clusterVersions,
