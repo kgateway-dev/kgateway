@@ -145,7 +145,8 @@ func (m *referencedClustersMemo) get(
 // connection:
 //
 //   - missing referenced clusters present in the published snapshot are
-//     carried forward together with their CLAs;
+//     carried forward together with their CLAs, and with the listeners,
+//     secrets and clusters they need that the build lacks (carryDependencies);
 //   - if every remaining gap is a previously-referenced cluster (present in
 //     the published routes' reference set), the new routes publish as-is;
 //     clusters among them whose CLA is not derived keep the endpoints the
@@ -236,7 +237,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	var carryHash uint64
 	clusterItems := newClusters.Items
 	endpointItems := newEndpoints.Items
-	for name := range carryRefs {
+	// A carried cluster can need listeners, secrets and clusters its build
+	// lacks (carryDependencies); the clusters join the worklist under the same
+	// rules.
+	deps := newCarryDependencies(published, composed)
+	pending := slices.Collect(maps.Keys(carryRefs))
+	for len(pending) > 0 {
+		name := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
 		if name == wellknown.BlackholeClusterName {
 			continue
 		}
@@ -270,6 +278,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		// reuse a version for different protos, and a client reconnecting with
 		// that version is never resent the newer content.
 		carryHash ^= utils.HashString(name) ^ utils.HashProto(old.Resource)
+		pending = append(pending, deps.carry(old)...)
 		claName, requiresEndpointResource := endpointResourceNameForCluster(old)
 		if !requiresEndpointResource {
 			continue
@@ -300,6 +309,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			"carried", carried,
 		)
 	}
+	deps.apply(composed)
 
 	return composed, heldBlocking
 }
