@@ -41,6 +41,13 @@ limit services, access-log gRPC sinks, JWKS sources — are real clusters reache
 only from filter configuration, and they are exactly the population a narrower
 collector would drop.
 
+A backend can also ship listeners with its cluster. A CONNECT tunnel's listener,
+for one, proxies through the proxy backend's cluster, which no route names. The
+listeners of each kept backend are walked the same way, and the clusters they
+name are kept and followed in turn. A dropped backend's listeners keep nothing.
+A request-time selector in one of them turns scoping off for that client, as one
+in the gateway's own configuration does.
+
 A golden-corpus sweep enforces this: for every translator fixture, every cluster
 the configuration mentions must be in the emitted set, checked against an oracle
 that walks the fixture YAML rather than production code.
