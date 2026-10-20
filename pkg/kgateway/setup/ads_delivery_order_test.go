@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -18,6 +19,8 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	kgwxds "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -114,7 +117,7 @@ func newADSHarnessWithCallbacks(t *testing.T, ordered bool, callbacks xdsserver.
 		select {
 		case err := <-h.done:
 			if err != nil {
-				require.ErrorIs(t, err, context.Canceled)
+				require.Truef(t, isCancellation(err), "ADS stream ended with %v, not the test's cancellation", err)
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatal("ADS stream did not stop after test cancellation")
@@ -122,6 +125,19 @@ func newADSHarnessWithCallbacks(t *testing.T, ordered bool, callbacks xdsserver.
 	})
 
 	return h
+}
+
+// isCancellation reports whether err is how the ADS server reports the test
+// cancelling the stream. Ordered ADS turns a failed send into an Unavailable
+// status that keeps only the cause's message, so a response still in flight at
+// cancellation, such as the resend of a NACKed version, ends the stream with
+// Unavailable "context canceled" instead of an error wrapping context.Canceled.
+func isCancellation(err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	s, ok := status.FromError(err)
+	return ok && s.Code() == codes.Unavailable && s.Message() == context.Canceled.Error()
 }
 
 func adsTestNode(t *testing.T) *envoycorev3.Node {
