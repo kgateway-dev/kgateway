@@ -20,12 +20,12 @@ import (
 // These tests drive our ADS cache through the go-control-plane SotW server with
 // the requests Envoy sends when it rejects one resource of a CDS or LDS
 // response, and require that the proxy still gets the endpoint and route
-// updates it subscribed to. They fail on the pinned go-control-plane.
+// updates it subscribed to.
 //
 // Envoy applies the valid resources of a NACKed CDS or LDS response and never
 // subscribes to the rejected resource's endpoints or routes. In ADS mode the
-// cache answers a named EDS or RDS request only when the snapshot holds nothing
-// outside the request. So:
+// pinned go-control-plane answers a named EDS or RDS request only when the
+// snapshot holds nothing outside the request. On its plain ADS cache:
 //
 //   - while the rejected resource is in the snapshot, its CLA or
 //     RouteConfiguration holds back every endpoint or route update for the
@@ -34,7 +34,11 @@ import (
 //     is declined on the request path, which registers no watch. Removing the
 //     rejected resource then has nothing to answer, and the proxy stays on its
 //     old endpoints or routes until its subscription changes again or it
-//     reconnects.
+//     reconnects;
+//   - a proxy that connects while the rejected resource is published loses its
+//     first EDS or RDS request the same way. Its cluster initializes empty at
+//     the fetch timeout, or its listener with no routes, so it reports ready
+//     while the route fails.
 //
 // The request sequences are the ones Envoy v1.39.4 sent to this pinned
 // go-control-plane with ordered ADS, with an EDS cluster rejected for
@@ -45,13 +49,12 @@ import (
 // existing cluster and route kept their first version through two later
 // updates and the rejected resource's removal.
 //
-// SDS is not affected: since #14794 the cache serves secret watches from a
-// non-ADS copy that answers only the requested names
-// (TestADSCacheServesRequestedSecrets).
-//
-// A go-control-plane that answers named ADS requests with only the subscribed
-// resources passes all four tests. One that keeps the watch of a request it
-// declines passes the two "after it is removed" tests.
+// newSnapshotCache serves EDS, RDS and SDS (and LDS, to keep ADS's order) from
+// non-ADS caches that answer the requested names (perTypeCache), so these tests
+// pass. On the plain ADS cache they all fail. A go-control-plane that answers
+// named ADS requests with only the subscribed resources would pass them all on
+// its own; one that keeps the watch of a request it declines would pass only
+// the two "after it is removed" tests.
 
 const proxyUpdateWithin = 2 * time.Second
 
@@ -428,6 +431,66 @@ func TestADSCacheDeliversRoutesAfterARejectedListenerIsRemoved(t *testing.T) {
 				"the proxy has routes %v, want %v: go-control-plane declined the RDS request for the accepted "+
 					"listeners without keeping its watch, so nothing answers once the rejected listener is gone",
 				p.received[envoyresource.RouteType], want)
+		})
+	}
+}
+
+// A proxy that connects while a cluster it will reject is already published
+// must get the endpoints of the clusters it accepts, and their later changes.
+func TestADSCacheDeliversEndpointsToANewProxyWhileAClusterIsRejected(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(adsModeName(ordered), func(t *testing.T) {
+			p := newADSProxy(newADSHarness(t, ordered))
+			p.h.setSnapshot(clusterEndpointSnapshot("1", "1",
+				[]string{"backend", "rejected"},
+				map[string]string{"backend": "10.0.0.1", "rejected": "10.0.0.3"}))
+			// Envoy applies backend, rejects the other cluster, and requests
+			// endpoints for backend. It answers CDS only once backend warms.
+			p.subscribe(envoyresource.ClusterType)
+			rejected := p.next(envoyresource.ClusterType)
+			p.subscribeHandled(envoyresource.EndpointType, "backend")
+			want := map[string]string{"backend": "10.0.0.1"}
+			require.Truef(t, p.await(envoyresource.EndpointType, want),
+				"the new proxy has endpoints %v, want %v: go-control-plane declined its first EDS request without "+
+					"keeping a watch, so backend initializes empty and its routes fail", p.received[envoyresource.EndpointType], want)
+
+			p.h.setSnapshot(clusterEndpointSnapshot("2", "2",
+				[]string{"backend"},
+				map[string]string{"backend": "10.0.0.11"}))
+			p.reject(rejected)
+			p.accept(p.next(envoyresource.ClusterType))
+			want = map[string]string{"backend": "10.0.0.11"}
+			require.Truef(t, p.await(envoyresource.EndpointType, want),
+				"the new proxy has endpoints %v, want %v after the rejected cluster was removed", p.received[envoyresource.EndpointType], want)
+		})
+	}
+}
+
+// A proxy that connects while a listener it will reject is already published
+// must get the routes of the listeners it accepts, and their later changes.
+func TestADSCacheDeliversRoutesToANewProxyWhileAListenerIsRejected(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(adsModeName(ordered), func(t *testing.T) {
+			p := newADSProxy(newADSHarness(t, ordered))
+			p.h.setSnapshot(listenerRouteSnapshot("1", "1",
+				[]string{"front", "rejected"},
+				map[string]string{"front-routes": "backend-v1", "rejected-routes": "backend-v1"}))
+			p.subscribe(envoyresource.ListenerType)
+			rejected := p.next(envoyresource.ListenerType)
+			p.subscribeHandled(envoyresource.RouteType, "front-routes")
+			want := map[string]string{"front-routes": "backend-v1"}
+			require.Truef(t, p.await(envoyresource.RouteType, want),
+				"the new proxy has routes %v, want %v: go-control-plane declined its first RDS request without "+
+					"keeping a watch, so front initializes with no routes", p.received[envoyresource.RouteType], want)
+
+			p.h.setSnapshot(listenerRouteSnapshot("2", "2",
+				[]string{"front"},
+				map[string]string{"front-routes": "backend-v2"}))
+			p.reject(rejected)
+			p.accept(p.next(envoyresource.ListenerType))
+			want = map[string]string{"front-routes": "backend-v2"}
+			require.Truef(t, p.await(envoyresource.RouteType, want),
+				"the new proxy has routes %v, want %v after the rejected listener was removed", p.received[envoyresource.RouteType], want)
 		})
 	}
 }
