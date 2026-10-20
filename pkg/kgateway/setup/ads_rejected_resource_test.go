@@ -494,3 +494,73 @@ func TestADSCacheDeliversRoutesToANewProxyWhileAListenerIsRejected(t *testing.T)
 		})
 	}
 }
+
+// SetSnapshot installs one type at a time, so Envoy can request endpoints for a
+// new cluster after its CDS is installed and before its EDS is. The same update
+// removes a cluster, so the endpoints still installed name one that the request
+// no longer asks for, which an ADS cache would drop the request over. The EDS
+// install that follows must answer it.
+func TestADSCacheAnswersAnEndpointRequestBetweenInstalls(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(adsModeName(ordered), func(t *testing.T) {
+			h := newADSHarness(t, ordered)
+			c, ok := h.cache.(*perTypeCache)
+			require.True(t, ok, "newSnapshotCache must return a perTypeCache")
+			p := newADSProxy(h)
+			h.setSnapshot(clusterEndpointSnapshot("1", "1", []string{"backend", "retired"}, map[string]string{"backend": "10.0.0.1", "retired": "10.0.0.9"}))
+			p.subscribe(envoyresource.ClusterType)
+			p.accept(p.next(envoyresource.ClusterType))
+			p.subscribe(envoyresource.EndpointType, "backend", "retired")
+			require.True(t, p.await(envoyresource.EndpointType, map[string]string{"backend": "10.0.0.1", "retired": "10.0.0.9"}), "initial endpoints")
+			p.h.waitForOpenWatches(2)
+
+			// Version 2 replaces retired with added. As soon as its CDS is installed,
+			// Envoy applies it and requests endpoints for the clusters it now has.
+			next := clusterEndpointSnapshot("2", "2", []string{"backend", "added"}, map[string]string{"backend": "10.0.0.11", "added": "10.0.0.2"})
+			require.NoError(t, c.setSnapshot(h.ctx, adsTestNodeID, next, func(typeURL string) {
+				if typeURL != envoyresource.ClusterType {
+					return
+				}
+				p.accept(p.next(envoyresource.ClusterType))
+				p.subscribeHandled(envoyresource.EndpointType, "added", "backend")
+			}))
+			want := map[string]string{"backend": "10.0.0.11", "added": "10.0.0.2"}
+			require.Truef(t, p.await(envoyresource.EndpointType, want),
+				"the proxy has endpoints %v, want %v: the endpoint request that arrived between the CDS and EDS installs was not answered",
+				p.received[envoyresource.EndpointType], want)
+		})
+	}
+}
+
+// The listener counterpart: Envoy requests routes for a new listener after its
+// LDS is installed and before its RDS is, while the routes still installed name
+// a removed listener's RouteConfiguration. The RDS install must answer it.
+func TestADSCacheAnswersARouteRequestBetweenInstalls(t *testing.T) {
+	for _, ordered := range []bool{false, true} {
+		t.Run(adsModeName(ordered), func(t *testing.T) {
+			h := newADSHarness(t, ordered)
+			c, ok := h.cache.(*perTypeCache)
+			require.True(t, ok, "newSnapshotCache must return a perTypeCache")
+			p := newADSProxy(h)
+			h.setSnapshot(listenerRouteSnapshot("1", "1", []string{"front", "retired"}, map[string]string{"front-routes": "backend-v1", "retired-routes": "backend-v1"}))
+			p.subscribe(envoyresource.ListenerType)
+			p.accept(p.next(envoyresource.ListenerType))
+			p.subscribe(envoyresource.RouteType, "front-routes", "retired-routes")
+			require.True(t, p.await(envoyresource.RouteType, map[string]string{"front-routes": "backend-v1", "retired-routes": "backend-v1"}), "initial routes")
+			p.h.waitForOpenWatches(2)
+
+			next := listenerRouteSnapshot("2", "2", []string{"front", "added"}, map[string]string{"front-routes": "backend-v2", "added-routes": "backend-v1"})
+			require.NoError(t, c.setSnapshot(h.ctx, adsTestNodeID, next, func(typeURL string) {
+				if typeURL != envoyresource.ListenerType {
+					return
+				}
+				p.accept(p.next(envoyresource.ListenerType))
+				p.subscribeHandled(envoyresource.RouteType, "added-routes", "front-routes")
+			}))
+			want := map[string]string{"front-routes": "backend-v2", "added-routes": "backend-v1"}
+			require.Truef(t, p.await(envoyresource.RouteType, want),
+				"the proxy has routes %v, want %v: the route request that arrived between the LDS and RDS installs was not answered",
+				p.received[envoyresource.RouteType], want)
+		})
+	}
+}

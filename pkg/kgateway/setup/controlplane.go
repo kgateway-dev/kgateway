@@ -142,16 +142,32 @@ func (c *perTypeCache) CreateWatch(request *envoycache.Request, sub envoycache.S
 
 // SetSnapshot stores the snapshot in every cache even if a response fails.
 func (c *perTypeCache) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
+	return c.setSnapshot(ctx, node, snapshot, nil)
+}
+
+// setSnapshot installs snapshot one cache at a time, in publish order, and
+// calls installed, if set, after each install with the type it answered (CDS
+// for the ADS cache). The install is not atomic across types: a request can
+// arrive between two installs and see the previous version of its type, and
+// the next install answers it. Tests use installed to act between installs.
+func (c *perTypeCache) setSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot, installed func(typeURL string)) error {
 	set := func(typeURL string) error {
 		only := &envoycache.Snapshot{}
 		only.Resources[envoycache.GetResponseType(typeURL)] = envoycache.Resources{
 			Version: snapshot.GetVersion(typeURL),
 			Items:   snapshot.GetResourcesAndTTL(typeURL),
 		}
-		return c.byType[typeURL].SetSnapshot(ctx, node, only)
+		err := c.byType[typeURL].SetSnapshot(ctx, node, only)
+		if installed != nil {
+			installed(typeURL)
+		}
+		return err
 	}
 	err := set(envoyresource.SecretType)
 	err = errors.Join(err, c.SnapshotCache.SetSnapshot(ctx, node, snapshot))
+	if installed != nil {
+		installed(envoyresource.ClusterType)
+	}
 	for _, typeURL := range perTypeOrder[1:] {
 		err = errors.Join(err, set(typeURL))
 	}
