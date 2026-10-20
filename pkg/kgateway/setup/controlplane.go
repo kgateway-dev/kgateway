@@ -9,6 +9,7 @@ import (
 	"math"
 	"net"
 	"slices"
+	"sync"
 	"time"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -122,6 +123,10 @@ var perTypeOrder = []string{envoyresource.SecretType, envoyresource.EndpointType
 // resource would hold back every update of that type for the proxy, and the
 // proxy would stay stale after the resource is removed
 // (ads_rejected_resource_test.go). A non-ADS cache answers the requested names.
+// Keeping declined watches permits recovery after the blocking resource is
+// removed, but cannot deliver updates while it remains. Remove this wrapper
+// only when the upstream cache alone passes all six rejected-resource delivery
+// scenarios, including updates while a rejected resource remains published.
 //
 // LDS is served the same way only to keep ADS's order: SetSnapshot publishes
 // secrets first, so they are ready when a new listener requests them, then
@@ -131,6 +136,41 @@ var perTypeOrder = []string{envoyresource.SecretType, envoyresource.EndpointType
 type perTypeCache struct {
 	envoycache.SnapshotCache
 	byType map[string]envoycache.SnapshotCache
+
+	mutationMu sync.Mutex
+	mutations  map[string]*nodeCacheMutation
+}
+
+type nodeCacheMutation struct {
+	mu    sync.Mutex
+	users int // includes callers waiting for mu
+}
+
+// lockNode serializes installs and clears for one node. Count waiting callers
+// too, so the lock can be reclaimed without creating a second lock for that node.
+func (c *perTypeCache) lockNode(node string) func() {
+	c.mutationMu.Lock()
+	if c.mutations == nil {
+		c.mutations = make(map[string]*nodeCacheMutation)
+	}
+	m := c.mutations[node]
+	if m == nil {
+		m = &nodeCacheMutation{}
+		c.mutations[node] = m
+	}
+	m.users++
+	c.mutationMu.Unlock()
+
+	m.mu.Lock()
+	return func() {
+		m.mu.Unlock()
+		c.mutationMu.Lock()
+		defer c.mutationMu.Unlock()
+		m.users--
+		if m.users == 0 {
+			delete(c.mutations, node)
+		}
+	}
 }
 
 func (c *perTypeCache) CreateWatch(request *envoycache.Request, sub envoycache.Subscription, value chan envoycache.Response) (func(), error) {
@@ -141,6 +181,7 @@ func (c *perTypeCache) CreateWatch(request *envoycache.Request, sub envoycache.S
 }
 
 // SetSnapshot stores the snapshot in every cache even if a response fails.
+// Installs and clears for the same node cannot overlap; requests still can.
 func (c *perTypeCache) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
 	return c.setSnapshot(ctx, node, snapshot, nil)
 }
@@ -151,6 +192,9 @@ func (c *perTypeCache) SetSnapshot(ctx context.Context, node string, snapshot en
 // arrive between two installs and see the previous version of its type, and
 // the next install answers it. Tests use installed to act between installs.
 func (c *perTypeCache) setSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot, installed func(typeURL string)) error {
+	unlock := c.lockNode(node)
+	defer unlock()
+
 	set := func(typeURL string) error {
 		only := &envoycache.Snapshot{}
 		only.Resources[envoycache.GetResponseType(typeURL)] = envoycache.Resources{
@@ -175,6 +219,9 @@ func (c *perTypeCache) setSnapshot(ctx context.Context, node string, snapshot en
 }
 
 func (c *perTypeCache) ClearSnapshot(node string) {
+	unlock := c.lockNode(node)
+	defer unlock()
+
 	for _, typeURL := range perTypeOrder {
 		c.byType[typeURL].ClearSnapshot(node)
 	}
