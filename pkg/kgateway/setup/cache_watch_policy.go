@@ -2,6 +2,8 @@ package setup
 
 import (
 	"context"
+	"hash/maphash"
+	"maps"
 	"sync"
 	"time"
 
@@ -10,7 +12,9 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoyresource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 )
@@ -31,7 +35,7 @@ var (
 		}, []string{typeURLLabel})
 )
 
-// watchPolicy wraps the snapshot cache with two request rules.
+// watchPolicy wraps the snapshot cache with three request rules.
 //
 // NACKs: a NACK carries the client's old version, which differs from the
 // snapshot's, so the cache re-sends the rejected response and both sides spin
@@ -55,9 +59,25 @@ var (
 // warming on them waits for its fetch timeout, with CDS paused. CDS and LDS are
 // left alone: nothing warms on them, and a parked watch at a held version costs
 // nothing. Cost: one EDS, RDS and SDS push per reconnect.
+//
+// Re-warms: when a cluster response changes a cluster the stream already has,
+// Envoy builds the new cluster and warms it on endpoints, keeping CDS paused
+// until it is warm. It re-requests EDS at the version it holds, which the cache
+// does not answer, so the cluster waits for its fetch timeout unless the
+// endpoint version moves after the cluster response. Snapshot staging decides
+// that order: an endpoint change published before or with the cluster change
+// can reach Envoy first and update only the old cluster. So the policy notes
+// which clusters each cluster response re-defined, and the stream's next
+// endpoint watch treats them as not yet returned; the cache then answers with
+// their assignments at the current version. An endpoint response sent after
+// the cluster response ends the rule for each assignment it carries, and a
+// cluster response ends it for clusters it no longer has. Always on. Cost: one
+// hash per cluster per cluster response, and an endpoint push of the
+// re-defined clusters only.
 type watchPolicy struct {
 	envoycache.SnapshotCache
 	hasher envoycache.NodeHash
+	seed   maphash.Seed
 
 	// publish is held by SetSnapshot and ClearSnapshot, while a NACK is
 	// parked (see CreateWatch), and by a retry from its version check through
@@ -68,17 +88,27 @@ type watchPolicy struct {
 	respondOnReconnect bool
 
 	mu      sync.Mutex
-	streams map[int64]*nackStreamState
+	streams map[int64]*streamState
 	pending map[*discoveryv3.DiscoveryRequest]pendingNack
+	// rewarming associates an endpoint request with its stream while the stream
+	// has re-defined clusters to answer; consumed like pending.
+	rewarming map[*discoveryv3.DiscoveryRequest]*streamState
 }
 
 type (
 	sentNackResponse struct{ node, nonce, version string }
-	nackStreamState  struct {
+	streamState      struct {
 		sent    map[string]sentNackResponse
 		pending *discoveryv3.DiscoveryRequest
 		// rejections counts consecutive NACKs of one version per type, for the backoff.
 		rejections map[string]nackRejections
+		// clusters hashes each cluster's encoding in the last cluster response.
+		clusters map[string]uint64
+		// rewarm lists clusters a cluster response re-defined that no endpoint
+		// response has followed yet.
+		rewarm map[string]struct{}
+		// rewarmRequest is this stream's entry in watchPolicy.rewarming.
+		rewarmRequest *discoveryv3.DiscoveryRequest
 	}
 	nackRejections struct {
 		version string
@@ -87,7 +117,7 @@ type (
 )
 
 type pendingNack struct {
-	stream   *nackStreamState
+	stream   *streamState
 	response sentNackResponse
 	// retryIn is how long the parked NACK waits before its response is re-sent.
 	retryIn time.Duration
@@ -114,10 +144,12 @@ func newWatchPolicy(inner envoycache.SnapshotCache, hasher envoycache.NodeHash, 
 	return &watchPolicy{
 		SnapshotCache:      inner,
 		hasher:             hasher,
+		seed:               maphash.MakeSeed(),
 		suppressNackResend: suppressNackResend,
 		respondOnReconnect: respondOnReconnect,
-		streams:            make(map[int64]*nackStreamState),
+		streams:            make(map[int64]*streamState),
 		pending:            make(map[*discoveryv3.DiscoveryRequest]pendingNack),
+		rewarming:          make(map[*discoveryv3.DiscoveryRequest]*streamState),
 	}
 }
 
@@ -135,13 +167,19 @@ func (s *watchPolicy) onStreamRequest(streamID int64, req *discoveryv3.Discovery
 	defer s.mu.Unlock()
 	st := s.streams[streamID]
 	if st == nil {
-		st = &nackStreamState{sent: make(map[string]sentNackResponse), rejections: make(map[string]nackRejections)}
+		st = &streamState{sent: make(map[string]sentNackResponse), rejections: make(map[string]nackRejections)}
 		s.streams[streamID] = st
 	}
 	// The server may drop a stale-nonce request without calling CreateWatch, so
 	// replace any earlier association now.
 	delete(s.pending, st.pending)
 	st.pending = nil
+	delete(s.rewarming, st.rewarmRequest)
+	st.rewarmRequest = nil
+	if req.GetTypeUrl() == envoyresource.EndpointType && len(st.rewarm) > 0 {
+		st.rewarmRequest = req
+		s.rewarming[req] = st
+	}
 	if req.GetErrorDetail() == nil {
 		// An ACK (or a fresh subscription) ends a run of rejections.
 		delete(st.rejections, req.GetTypeUrl())
@@ -163,9 +201,81 @@ func (s *watchPolicy) onStreamRequest(streamID int64, req *discoveryv3.Discovery
 func (s *watchPolicy) onStreamResponse(_ context.Context, streamID int64, req *discoveryv3.DiscoveryRequest, resp *discoveryv3.DiscoveryResponse) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if st := s.streams[streamID]; st != nil {
-		st.sent[resp.GetTypeUrl()] = sentNackResponse{node: s.hasher.ID(req.GetNode()), nonce: resp.GetNonce(), version: resp.GetVersionInfo()}
+	st := s.streams[streamID]
+	if st == nil {
+		return
 	}
+	st.sent[resp.GetTypeUrl()] = sentNackResponse{node: s.hasher.ID(req.GetNode()), nonce: resp.GetNonce(), version: resp.GetVersionInfo()}
+	// The server calls this before sending, on the goroutine that sends, so the
+	// order seen here is the order on the wire.
+	switch resp.GetTypeUrl() {
+	case envoyresource.ClusterType:
+		s.noteClustersLocked(st, resp.GetResources())
+	case envoyresource.EndpointType:
+		// Envoy applies this after the cluster response, so each assignment in
+		// it reaches the re-defined cluster. Only those it carries are done: a
+		// same-version response built before the cluster response went out
+		// carries only newly subscribed names.
+		for _, resource := range resp.GetResources() {
+			if name, ok := resourceName(resource.GetValue()); ok {
+				delete(st.rewarm, name)
+			}
+		}
+	}
+}
+
+// noteClustersLocked records the clusters in a cluster response and marks the
+// ones whose encoding changed since the stream's previous cluster response.
+// The cache marshals deterministically, so equal clusters hash equal. A cluster
+// new to the stream is left alone: Envoy subscribes to its name, and the cache
+// answers new names itself. A removed cluster no longer warms, so its mark goes.
+func (s *watchPolicy) noteClustersLocked(st *streamState, resources []*anypb.Any) {
+	sent := make(map[string]uint64, len(resources))
+	for _, resource := range resources {
+		name, ok := resourceName(resource.GetValue())
+		if !ok {
+			continue
+		}
+		hash := maphash.Bytes(s.seed, resource.GetValue())
+		sent[name] = hash
+		if previous, had := st.clusters[name]; had && previous != hash {
+			if st.rewarm == nil {
+				st.rewarm = make(map[string]struct{})
+			}
+			st.rewarm[name] = struct{}{}
+		}
+	}
+	for name := range st.rewarm {
+		if _, kept := sent[name]; !kept {
+			delete(st.rewarm, name)
+		}
+	}
+	st.clusters = sent
+}
+
+// resourceName reads field 1 of an encoded Cluster (name) or
+// ClusterLoadAssignment (cluster_name) without decoding the rest.
+func resourceName(encoded []byte) (string, bool) {
+	for len(encoded) > 0 {
+		num, typ, n := protowire.ConsumeTag(encoded)
+		if n < 0 {
+			return "", false
+		}
+		encoded = encoded[n:]
+		if num == 1 && typ == protowire.BytesType {
+			name, n := protowire.ConsumeBytes(encoded)
+			if n < 0 {
+				return "", false
+			}
+			return string(name), true
+		}
+		n = protowire.ConsumeFieldValue(num, typ, encoded)
+		if n < 0 {
+			return "", false
+		}
+		encoded = encoded[n:]
+	}
+	return "", false
 }
 
 func (s *watchPolicy) onStreamClosed(streamID int64, _ *envoycorev3.Node) {
@@ -173,8 +283,47 @@ func (s *watchPolicy) onStreamClosed(streamID int64, _ *envoycorev3.Node) {
 	defer s.mu.Unlock()
 	if st := s.streams[streamID]; st != nil {
 		delete(s.pending, st.pending)
+		delete(s.rewarming, st.rewarmRequest)
 	}
 	delete(s.streams, streamID)
+}
+
+// rewarmSubscription returns sub with the stream's re-defined clusters treated
+// as not yet returned, if req is an endpoint request on a stream that has some;
+// otherwise sub itself. Matched by pointer like rejectedVersion.
+func (s *watchPolicy) rewarmSubscription(req *envoycache.Request, sub envoycache.Subscription) envoycache.Subscription {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	st, ok := s.rewarming[req]
+	if !ok {
+		return sub
+	}
+	delete(s.rewarming, req)
+	st.rewarmRequest = nil
+	if len(st.rewarm) == 0 {
+		return sub
+	}
+	envoyLogger.Debug("answering an endpoint request with the clusters a cluster response re-defined",
+		"node", s.hasher.ID(req.GetNode()), "clusters", len(st.rewarm), "held_version", req.GetVersionInfo())
+	return unreturnedSubscription{Subscription: sub, unreturned: maps.Clone(st.rewarm)}
+}
+
+// unreturnedSubscription reports the unreturned resources as not yet sent, so
+// the cache answers them even at the client's version.
+type unreturnedSubscription struct {
+	envoycache.Subscription
+	unreturned map[string]struct{}
+}
+
+func (u unreturnedSubscription) ReturnedResources() map[string]string {
+	returned := u.Subscription.ReturnedResources()
+	out := make(map[string]string, len(returned))
+	for name, version := range returned {
+		if _, unreturned := u.unreturned[name]; !unreturned {
+			out[name] = version
+		}
+	}
+	return out
 }
 
 // rejectedVersion returns the rejected version and retry delay recorded for req,
@@ -193,8 +342,9 @@ func (s *watchPolicy) rejectedVersion(req *envoycache.Request) (string, time.Dur
 	return pending.response.version, pending.retryIn, true
 }
 
-// CreateWatch applies the two rules and delegates everything else.
+// CreateWatch applies the three rules and delegates everything else.
 func (s *watchPolicy) CreateWatch(req *envoycache.Request, sub envoycache.Subscription, ch chan envoycache.Response) (func(), error) {
+	sub = s.rewarmSubscription(req, sub)
 	if req.GetErrorDetail() == nil {
 		if s.respondOnReconnect && isReconnectRequest(req) && warmedOnTypes[req.GetTypeUrl()] {
 			// Clear the held version so the current or next snapshot answers.

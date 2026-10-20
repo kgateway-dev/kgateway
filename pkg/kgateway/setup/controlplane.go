@@ -328,14 +328,12 @@ func NewControlPlane(
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 
 	hasher := xds.NewNodeRoleHasher()
-	var snapshotCache envoycache.SnapshotCache = newSnapshotCache(hasher, envoyLoggerAdapter)
-	if suppressNackResend || respondOnReconnect {
-		// watchPolicy parks NACKs of the current version and answers a reconnect's
-		// first EDS, RDS and SDS requests even at the held version.
-		policy := newWatchPolicy(snapshotCache, hasher, suppressNackResend, respondOnReconnect)
-		allCallbacks = chainCallbacks(allCallbacks, policy.callbacks())
-		snapshotCache = policy
-	}
+	// watchPolicy answers a re-defined cluster's endpoint request even at the held
+	// version, and, when enabled, parks NACKs of the current version and answers a
+	// reconnect's first EDS, RDS and SDS requests even at the held version.
+	policy := newWatchPolicy(newSnapshotCache(hasher, envoyLoggerAdapter), hasher, suppressNackResend, respondOnReconnect)
+	allCallbacks = chainCallbacks(allCallbacks, policy.callbacks())
+	var snapshotCache envoycache.SnapshotCache = policy
 
 	var xdsOpts []serverconfig.XDSOption
 	if orderedADS {
