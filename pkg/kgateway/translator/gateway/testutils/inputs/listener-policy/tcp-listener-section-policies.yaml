@@ -99,6 +99,7 @@ spec:
     - name: tcp-svc
       port: 8000
 ---
+# Applied on port 8001 but overridden on port 8000, yet reported Overridden; this golden should change to Merged once https://github.com/kgateway-dev/kgateway/issues/14861 is fixed.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: ListenerPolicy
 metadata:
