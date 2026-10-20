@@ -242,10 +242,11 @@ type BackendObjectPolicyApplier interface {
 }
 
 // TcpFilterChainPolicyPass is implemented by a ProxyTranslationPass whose policies can apply to
-// TCP filter chains, through ApplyTcpProxy or ApplyPostListener. Policies of other kinds that
-// target a TCP or TLS Gateway listener have no effect there, so they get no status for it.
+// TCP filter chains, through ApplyTcpProxy or ApplyPostListener. A policy targeting a TCP or TLS
+// Gateway listener only gets status for it when AppliesToTcpFilterChain reports that the policy
+// has an effect there; policies of kinds that don't implement this interface never do.
 type TcpFilterChainPolicyPass interface {
-	AppliesToTcpFilterChains()
+	AppliesToTcpFilterChain(policy PolicyIR, listenerPort uint32) bool
 }
 
 type UnimplementedProxyTranslationPass struct{}

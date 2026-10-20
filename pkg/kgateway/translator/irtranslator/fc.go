@@ -492,12 +492,20 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 			continue
 		}
 		// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
-		// this chain's Gateway listener only get it here, and only for kinds that apply to TCP
-		// filter chains.
-		_, appliesToTcp := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass)
-		reportStatus := h.reporter != nil && appliesToTcp && len(l.AttachedPolicies.Policies[gk]) > 0
-		if reportStatus {
-			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
+		// this chain's Gateway listener only get it here, and only when they have an effect on
+		// TCP filter chains. Gateway-wide policies are reported again alongside them so that
+		// overriding them is reflected in their attachment state.
+		var reportPols []ir.PolicyAtt
+		if tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass); ok && h.reporter != nil {
+			for _, pol := range l.AttachedPolicies.Policies[gk] {
+				if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
+					reportPols = append(reportPols, pol)
+				}
+			}
+			if len(reportPols) > 0 {
+				reportPols = append(reportPols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
+				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, reportPols...)
+			}
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
@@ -515,8 +523,8 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 				})
 			}
 		}
-		if reportStatus {
-			reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
+		if len(reportPols) > 0 {
+			reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, reportPols...)
 		}
 	}
 }

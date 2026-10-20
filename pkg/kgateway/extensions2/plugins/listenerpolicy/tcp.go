@@ -140,9 +140,13 @@ func validateTcpAccessLogFilter(f kgateway.FilterType) error {
 	return fmt.Errorf("filter.%s is not supported for TCP access logs", name)
 }
 
-// AppliesToTcpFilterChains marks ListenerPolicy as applying to TCP filter chains, through
-// tcpSettings and transportSocketConnectTimeout.
-func (p *listenerPolicyPluginGwPass) AppliesToTcpFilterChains() {}
+// AppliesToTcpFilterChain reports whether a ListenerPolicy targeting a TCP or TLS Gateway listener
+// has an effect on its filter chains. Only tcpSettings and transportSocketConnectTimeout are
+// applied per filter chain; the listener-level fields only apply to gateway-wide policies.
+func (p *listenerPolicyPluginGwPass) AppliesToTcpFilterChain(policy ir.PolicyIR, listenerPort uint32) bool {
+	cfg := p.getPolicy(policy, listenerPort)
+	return cfg.tcp != nil || cfg.transportSocketConnectTimeout != nil
+}
 
 var _ ir.TcpFilterChainPolicyPass = &listenerPolicyPluginGwPass{}
 

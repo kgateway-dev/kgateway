@@ -2,6 +2,7 @@ package listenerpolicy
 
 import (
 	"testing"
+	"time"
 
 	envoyaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
@@ -263,6 +265,58 @@ func TestApplyTcpProxyPerPort(t *testing.T) {
 		var file envoyalfile.FileAccessLog
 		require.NoError(t, out.GetAccessLog()[0].GetTypedConfig().UnmarshalTo(&file))
 		assert.Equal(t, wantPath, file.GetPath(), "port %d", port)
+	}
+}
+
+func TestAppliesToTcpFilterChain(t *testing.T) {
+	cases := []struct {
+		name   string
+		policy *ListenerPolicyIR
+		port   uint32
+		want   bool
+	}{
+		{
+			name:   "tcpSettings",
+			policy: &ListenerPolicyIR{defaultPolicy: listenerPolicy{tcp: &tcpListenerPolicyIR{}}},
+			want:   true,
+		},
+		{
+			name:   "transportSocketConnectTimeout",
+			policy: &ListenerPolicyIR{defaultPolicy: listenerPolicy{transportSocketConnectTimeout: durationpb.New(time.Second)}},
+			want:   true,
+		},
+		{
+			name:   "perConnectionBufferLimitBytes only",
+			policy: &ListenerPolicyIR{defaultPolicy: listenerPolicy{perConnectionBufferLimitBytes: new(uint32(4096))}},
+			want:   false,
+		},
+		{
+			name:   "httpSettings only",
+			policy: &ListenerPolicyIR{defaultPolicy: listenerPolicy{http: &HttpListenerPolicyIr{}}},
+			want:   false,
+		},
+		{
+			name: "tcpSettings on another port",
+			policy: &ListenerPolicyIR{perPortPolicy: map[uint32]listenerPolicy{
+				9000: {tcp: &tcpListenerPolicyIR{}},
+			}},
+			port: 8000,
+			want: false,
+		},
+		{
+			name: "tcpSettings on this port",
+			policy: &ListenerPolicyIR{perPortPolicy: map[uint32]listenerPolicy{
+				8000: {tcp: &tcpListenerPolicyIR{}},
+			}},
+			port: 8000,
+			want: true,
+		},
+	}
+	pass := &listenerPolicyPluginGwPass{}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, pass.AppliesToTcpFilterChain(tc.policy, tc.port))
+		})
 	}
 }
 

@@ -101,8 +101,8 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: Attached to all targets
-          reason: Attached
+          message: Merged with other policies in target(s) and attached
+          reason: Merged
           status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway
