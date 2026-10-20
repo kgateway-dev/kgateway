@@ -77,6 +77,7 @@ func mergeListenerPolicy(
 		mergeTransportSocketConnectTimeout,
 		mergeClientCertificateValidation,
 		mergeHttpSettings,
+		mergeTcpSettings,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -180,4 +181,20 @@ func mergeHttpSettings(
 	}
 	origin += "httpSettings."
 	MergeHttpPolicies(origin, p1.http, p2.http, p2Ref, p2MergeOrigins, opts, mergeOrigins, "" /*no merge settings*/)
+}
+
+func mergeTcpSettings(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.tcp, p2.tcp, opts) {
+		return
+	}
+
+	p1.tcp = p2.tcp
+	mergeOrigins.SetOne(origin+"tcpSettings", p2Ref, p2MergeOrigins)
 }

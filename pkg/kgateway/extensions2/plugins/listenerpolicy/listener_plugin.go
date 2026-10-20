@@ -57,6 +57,7 @@ type listenerPolicy struct {
 	clientCertificateValidation *ir.ClientCertificateValidationIR
 	// +noKrtEquals
 	http *HttpListenerPolicyIr
+	tcp  *tcpListenerPolicyIR
 }
 
 func newListenerPolicy(
@@ -75,6 +76,8 @@ func newListenerPolicy(
 		tsct = durationpb.New(i.TransportSocketConnectTimeout.Duration)
 	}
 	http, errs := NewHttpListenerPolicy(krtctx, commoncol, i.HTTPSettings, objSrc)
+	tcp, tcpErrs := newTcpListenerPolicy(krtctx, commoncol, i.TCPSettings, objSrc)
+	errs = append(errs, tcpErrs...)
 
 	return listenerPolicy{
 		proxyProtocol:                 convertProxyProtocolConfig(objSrc, i.ProxyProtocol),
@@ -82,6 +85,7 @@ func newListenerPolicy(
 		perConnectionBufferLimitBytes: perConnectionBufferLimitBytes,
 		transportSocketConnectTimeout: tsct,
 		http:                          http,
+		tcp:                           tcp,
 	}, errs
 }
 
@@ -161,6 +165,10 @@ func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 		return false
 	}
 	if d.http != nil && !d.http.Equals(d2.http) {
+		return false
+	}
+
+	if !d.tcp.Equals(d2.tcp) {
 		return false
 	}
 

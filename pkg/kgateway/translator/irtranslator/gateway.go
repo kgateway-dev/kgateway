@@ -275,7 +275,7 @@ func (t *Translator) runPostListenerPlugins(
 		chains = append(chains, struct {
 			name             string
 			attachedPolicies ir.AttachedPolicies
-		}{name: tfc.FilterChainName, attachedPolicies: ir.AttachedPolicies{}})
+		}{name: tfc.FilterChainName, attachedPolicies: tfc.AttachedPolicies})
 	}
 
 	for _, chain := range chains {

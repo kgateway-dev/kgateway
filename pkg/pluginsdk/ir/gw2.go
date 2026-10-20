@@ -151,7 +151,8 @@ type HttpFilterChainIR struct {
 
 type TcpIR struct {
 	FilterChainCommon
-	BackendRefs []BackendRefIR
+	BackendRefs      []BackendRefIR
+	AttachedPolicies AttachedPolicies
 }
 
 // this is 1:1 with envoy deployments

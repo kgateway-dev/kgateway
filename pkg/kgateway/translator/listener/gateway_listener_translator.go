@@ -546,7 +546,8 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 				StatPrefix:      buildStatPrefix("tcp", tc.parents.listener.Port, tRoute.Namespace, tRoute.Name),
 				TLS:             tlsConfig,
 			},
-			BackendRefs: backends,
+			BackendRefs:      backends,
+			AttachedPolicies: tc.parents.listener.AttachedPolicies,
 		}
 	case *ir.TlsRouteIR:
 		tRoute := r.Object.(*ir.TlsRouteIR)
@@ -634,7 +635,8 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 				Matcher:         matcher,
 				TLS:             tlsConfig,
 			},
-			BackendRefs: backends,
+			BackendRefs:      backends,
+			AttachedPolicies: tc.parents.listener.AttachedPolicies,
 		}
 	default:
 		return nil

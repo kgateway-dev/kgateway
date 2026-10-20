@@ -120,6 +120,11 @@ type ListenerConfig struct {
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
 
+	// TCPSettings is intended to be used for configuring the Envoy `TcpProxy` network filter that serves
+	// TCP listeners and TLS listeners (both Terminate and Passthrough), such as those backing TCPRoutes and TLSRoutes.
+	// +optional
+	TCPSettings *TCPSettings `json:"tcpSettings,omitempty"`
+
 	// TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
 	// If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
 	// then never complete the TLS handshake. Applied to every filter chain on the listener.
@@ -392,6 +397,18 @@ type HTTPSettings struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
 	// +optional
 	StripTrailingHostDot *bool `json:"stripTrailingHostDot,omitempty"`
+}
+
+// TCPSettings configures the Envoy `TcpProxy` network filter.
+type TCPSettings struct {
+	// AccessLog configures per-connection access logging for the `TcpProxy` filter.
+	// It accepts the same configuration as httpSettings.accessLog, except for fields that
+	// only apply to HTTP traffic: the statusCodeFilter, headerFilter, grpcStatusFilter and
+	// traceableFilter filters, and the additional*ToLog fields of grpcService.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/tcp_proxy/v3/tcp_proxy.proto#envoy-v3-api-field-extensions-filters-network-tcp-proxy-v3-tcpproxy-access-log
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	AccessLog []AccessLog `json:"accessLog,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
