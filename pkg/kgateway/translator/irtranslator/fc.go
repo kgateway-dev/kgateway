@@ -493,19 +493,26 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 		}
 		// Gateway-wide policies get their status from runListenerPlugins. Policies attached to
 		// this chain's Gateway listener only get it here, and only when they have an effect on
-		// TCP filter chains. Gateway-wide policies are reported again alongside them so that
-		// overriding them is reflected in their attachment state.
-		var reportPols []ir.PolicyAtt
-		if tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass); ok && h.reporter != nil {
+		// TCP filter chains. The others are left out of the merge as well, so that they do not
+		// show up in the merge origins of the policies that do apply.
+		reportStatus := false
+		if tcpPass, ok := pass.ProxyTranslationPass.(ir.TcpFilterChainPolicyPass); ok {
+			pols = nil
 			for _, pol := range l.AttachedPolicies.Policies[gk] {
 				if tcpPass.AppliesToTcpFilterChain(pol.PolicyIr, h.listener.BindPort) {
-					reportPols = append(reportPols, pol)
+					pols = append(pols, pol)
 				}
 			}
-			if len(reportPols) > 0 {
-				reportPols = append(reportPols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
-				reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, reportPols...)
+			// Gateway-wide policies are reported again alongside listener policies so that
+			// overriding them is reflected in their attachment state.
+			reportStatus = h.reporter != nil && len(pols) > 0
+			pols = append(pols, h.gateway.AttachedHttpPolicies.Policies[gk]...)
+			if len(pols) == 0 {
+				continue
 			}
+		}
+		if reportStatus {
+			reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		for _, pol := range policies {
@@ -523,8 +530,8 @@ func (h *filterChainTranslator) applyTcpProxyPolicies(l ir.TcpIR, out *envoytcp.
 				})
 			}
 		}
-		if len(reportPols) > 0 {
-			reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, reportPols...)
+		if reportStatus {
+			reportPolicyAttachmentStatus(h.reporter, h.listener.PolicyAncestorRef, mergeOrigins, pols...)
 		}
 	}
 }
