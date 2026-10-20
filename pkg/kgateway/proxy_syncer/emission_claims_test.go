@@ -71,7 +71,7 @@ func TestTwoPluginsClaimingOneNameShareItsDestinations(t *testing.T) {
 		},
 	})
 
-	kept := claims.keptFor([]requestTimeSelector{{selectorSpecifierPlugin, "shared"}})
+	kept := claims.keptFor(emittedClusters{RequestTimeSelectors: []requestTimeSelector{{selectorSpecifierPlugin, "shared"}}})
 	assert.True(t, kept.claims("a_backend"))
 	assert.True(t, kept.claims("b-fallback"))
 }
@@ -150,7 +150,7 @@ func TestClaimWithoutSelectorsKeepsNothing(t *testing.T) {
 	}))
 
 	assert.True(t, claims.empty())
-	assert.False(t, claims.keptFor(pickerGateway().RequestTimeSelectors).claims("tenant-a"))
+	assert.False(t, claims.keptFor(pickerGateway()).claims("tenant-a"))
 }
 
 // TestEmptyPrefixClaimIsRejected: an empty prefix would silently re-admit every
@@ -162,7 +162,7 @@ func TestEmptyPrefixClaimIsRejected(t *testing.T) {
 	}))
 
 	assert.True(t, claims.empty())
-	assert.False(t, claims.keptFor(pickerGateway().RequestTimeSelectors).claims("anything-at-all"))
+	assert.False(t, claims.keptFor(pickerGateway()).claims("anything-at-all"))
 	assert.False(t, claims.accountsFor(requestTimeSelector{selectorSpecifierPlugin, "picker"}),
 		"with its prefix dropped the claim keeps none of the selector's candidates, so it must not account for the selector")
 }
@@ -209,7 +209,7 @@ func TestNoClaimsIsTheOrdinaryCase(t *testing.T) {
 	})
 
 	assert.True(t, claims.empty())
-	assert.False(t, claims.keptFor(nil).claims("anything"))
+	assert.False(t, claims.keptFor(emittedClusters{}).claims("anything"))
 	assert.True(t, emittedClusters{Names: map[string]struct{}{"a": {}}}.Filterable(claims),
 		"a gateway with no request-time selectors is scoped regardless of claims")
 }

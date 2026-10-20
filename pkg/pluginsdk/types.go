@@ -8,6 +8,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -168,6 +169,12 @@ type ProcessBaseClusterResources func(
 // Claim only destinations derived from the plugin's own naming; no claim can
 // bound a destination taken freely from the request.
 //
+// A claim can be static, with fixed Names and NamePrefixes, or derive each
+// use's destinations from the configuration the gateway ships
+// (DestinationsFor). Deriving is more precise when the candidates depend on
+// the route, such as its namespace, and it lets the plugin decline a use it
+// did not generate.
+//
 // Also claim the plugin's endpointless placeholder cluster, used to fail
 // closed. Once no route names it, scoping would prune it.
 type ClusterEmissionClaim struct {
@@ -183,12 +190,13 @@ type ClusterEmissionClaim struct {
 	// group. Under a generic name such as
 	// envoy.router.cluster_specifier_plugin.lua, another plugin's specifier
 	// would count as accounted for, and its candidates would be pruned. Two
-	// plugins claiming one name is logged as an error.
+	// plugins claiming one name is logged as an error. DestinationsFor can
+	// also check that a use's config is the plugin's own.
 	//
-	// A claim accounts for its selectors only with at least one of Names or
-	// NamePrefixes and no rejected prefix. Otherwise it logs an error and
-	// covers nothing: keeping none of a selector's candidates would prune
-	// exactly the clusters it computes.
+	// Without DestinationsFor, a claim accounts for every use of its selectors
+	// only with at least one of Names or NamePrefixes and no rejected prefix.
+	// Otherwise it logs an error and covers nothing: keeping none of a
+	// selector's candidates would prune exactly the clusters it computes.
 	//
 	// Names and NamePrefixes are kept only in gateways that use these
 	// selectors. A claim with destinations but no selectors keeps nothing and
@@ -201,11 +209,55 @@ type ClusterEmissionClaim struct {
 	// Selectors are used, for computed names that cannot be enumerated. An
 	// empty prefix is rejected: it would silently re-admit every cluster.
 	NamePrefixes []string
+	// DestinationsFor, when set, decides each use of a claimed selector from
+	// that use's configuration, as generated and shipped.
+	//
+	// It alone decides whether a use is claimed: a use is claimed only if it
+	// returns at least one name or prefix, and Names and NamePrefixes are kept
+	// only together with a use it claims. Return nothing for a config the
+	// plugin did not generate. Then another plugin using the same extension
+	// name leaves that gateway unscoped instead of having its candidates
+	// pruned. A static claim on the same name from another plugin still
+	// accounts for every use.
+	//
+	// It must be pure and cheap: a function of the use alone, with no I/O,
+	// clocks, cluster state or memory between calls, and safe to call
+	// concurrently. It runs when a gateway's configuration is rebuilt, once
+	// per distinct config of a claimed selector. A panic, an empty prefix or
+	// an empty result leaves the use unclaimed, keeps the gateway unscoped,
+	// and is logged with its reason. No check can tell an overly broad prefix
+	// from a precise one, so keep prefixes as narrow as the naming allows.
+	DestinationsFor func(use SelectorUse) ClaimedDestinations
+}
+
+// SelectorUse is one use of a claimed selector in a gateway's generated
+// configuration. It is a struct so fields can be added without breaking
+// plugins.
+type SelectorUse struct {
+	// Name is the cluster specifier plugin extension name, as matched against
+	// Selectors.
+	Name string
+	// Config is the extension's typed_config, decoded: from the route's inline
+	// plugin, or from the cluster_specifier_plugins entry of the
+	// RouteConfiguration the route references it in. It is nil if the
+	// extension carries no typed_config. It is a copy made for this call; do
+	// not keep or modify it.
+	Config proto.Message
+}
+
+// ClaimedDestinations are the clusters one selector use may pick.
+type ClaimedDestinations struct {
+	// Names are exact cluster names.
+	Names []string
+	// NamePrefixes admit clusters whose names start with one of them. An empty
+	// prefix leaves the use unclaimed.
+	NamePrefixes []string
 }
 
 // ClaimEmittedClusters is called once, when the proxy syncer is built and
 // before its caches sync. The claim holds for the controller's lifetime, so
-// derive it from how the plugin names its clusters, not from cluster state.
+// derive it from how the plugin names its clusters, not from cluster state;
+// DestinationsFor is how a claim follows each route's configuration.
 // Return the zero value, the usual case, when the plugin routes only to
 // destinations the configuration names.
 type ClaimEmittedClusters func() ClusterEmissionClaim

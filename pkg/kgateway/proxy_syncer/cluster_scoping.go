@@ -66,12 +66,15 @@ func (c clusterScoping) ScopesClusters() bool {
 
 // emittedClustersFor returns the zero value when CDS is not scoped. Nothing
 // consults it then, and skipping the full proto walk keeps it off the
-// translation path.
+// translation path. Otherwise claims with DestinationsFor decide each cluster
+// specifier use here, once per gateway rebuild.
 func emittedClustersFor(scoping clusterScoping, routes, listeners envoycache.Resources) emittedClusters {
 	if !scoping.ScopesClusters() {
 		return emittedClusters{}
 	}
-	return collectReferencedClustersForEmission(routes, listeners)
+	emitted := collectReferencedClustersForEmission(routes, listeners)
+	emitted.deriveClaims(scoping.Claims())
+	return emitted
 }
 
 // scopedClusters returns the enabled configuration for tests; the zero value is

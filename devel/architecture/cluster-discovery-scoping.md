@@ -140,6 +140,20 @@ same name counts as accounted for, and its candidates are pruned. Matching on
 the type as well would not help two plugins built on the same extension. Two
 plugins claiming one name is logged as an error.
 
+A claim can also derive each use's destinations from the configuration the
+gateway ships, through `DestinationsFor`. The scan resolves every use of a
+claimed selector to its extension's `typed_config`, inline or from the
+RouteConfiguration's `cluster_specifier_plugins`, and the function returns the
+names and prefixes that use may pick. It alone decides whether a use is claimed.
+A use it returns nothing for stays unaccounted, and the claim's own names and
+prefixes are kept only with uses it claims. So a plugin can check that a config
+is one it generated and decline the rest: a name collision then leaves the
+gateway unscoped instead of pruning another plugin's candidates. Deriving also
+makes candidates that depend on the route precise, such as one prefix per
+namespace. The function must be pure and cheap. It runs on each gateway
+rebuild, once per distinct config. A panic, an empty prefix or an empty result
+leaves the use unclaimed, and the unscoped gateway's warning names the reason.
+
 A claim's names and prefixes **belong to its selectors**: they are kept only in
 a gateway whose configuration uses one of them. Claims are collected once for
 the whole controller, so this is what keeps one plugin's candidates out of
@@ -163,8 +177,8 @@ describes; such gateways stay unscoped.
 Claims are collected once, when the controller starts, before its caches sync,
 and hold for its lifetime: derive them from how the plugin names the clusters it
 computes, not from cluster state. A candidate set that depends on something only
-the route knows, such as its namespace, can therefore be claimed only by a
-prefix that covers every value it could take.
+the route knows, such as its namespace, needs `DestinationsFor`, or a prefix
+that covers every value it could take.
 
 A claim is trusted as complete. A cluster the plugin can compute that the claim
 does not keep is pruned, and the plugin's fallback then takes its traffic with

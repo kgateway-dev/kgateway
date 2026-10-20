@@ -286,8 +286,11 @@ emitting every cluster. A warning is logged, and
 The exception is a cluster specifier plugin whose selector a valid plugin claim
 (`ClusterEmissionClaim` in `pkg/pluginsdk`) accounts for:
 
-- A claim must keep at least one cluster name or name prefix. An empty prefix is
-  rejected, and a claim with a rejected prefix accounts for nothing.
+- A static claim must keep at least one cluster name or name prefix. An empty
+  prefix is rejected, and a claim with a rejected prefix accounts for nothing.
+- A claim can instead derive each use's destinations from that use's
+  `typed_config` (`DestinationsFor`). A use it declines, or fails on, keeps the
+  gateway unscoped, and the warning names the reason.
 - A claim's names and prefixes are kept only in gateways that use one of its
   selectors.
 - Claims are collected once, when the controller starts and before its caches

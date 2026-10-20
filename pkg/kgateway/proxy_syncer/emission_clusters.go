@@ -26,6 +26,31 @@ type emittedClusters struct {
 	// RequestTimeSelectors are the selectors the walk cannot resolve, kept
 	// structured so a claim can match the selector its plugin owns.
 	RequestTimeSelectors []requestTimeSelector
+	// SpecifierUses are the distinct uses of cluster specifier plugins, with
+	// what claims with DestinationsFor decided for each. Sorted.
+	SpecifierUses []specifierUse
+}
+
+// specifierUseKey identifies one use of a cluster specifier plugin: its
+// selector and its typed_config. Uses of one extension name with different
+// configs, such as one per namespace, stay apart, so a claim decides each.
+type specifierUseKey struct {
+	Selector requestTimeSelector
+	// ConfigType and Config are the typed_config's type URL and serialized
+	// bytes, a fingerprint that needs no re-encoding. Both are empty if the
+	// extension carries no typed_config.
+	ConfigType string
+	Config     string
+	// Unresolved marks a reference the route's RouteConfiguration does not
+	// define in its cluster_specifier_plugins.
+	Unresolved bool
+}
+
+// specifierUse is one use and what the deriving claims decided for it
+// (deriveClaims).
+type specifierUse struct {
+	specifierUseKey
+	Derived claimedUse
 }
 
 // requestTimeSelector is configuration that picks its destination per request
@@ -72,21 +97,48 @@ func (e emittedClusters) Filterable(claims emissionClaims) bool {
 }
 
 // unaccountedSelectors are the selectors no claim covers, named in logs and
-// metrics so an unscoped gateway is actionable.
+// metrics so an unscoped gateway is actionable. A static claim covers every use
+// of its selector. Where only claims with DestinationsFor cover it, each use
+// must have been claimed; one that was not is named with the reason, which
+// tells a plugin bug or name collision apart from a missing claim.
 func (e emittedClusters) unaccountedSelectors(claims emissionClaims) []string {
 	var unaccounted []string
 	for _, selector := range e.RequestTimeSelectors {
 		if claims.accountsFor(selector) {
 			continue
 		}
-		unaccounted = append(unaccounted, selector.String())
+		if !claims.derives(selector) {
+			unaccounted = append(unaccounted, selector.String())
+			continue
+		}
+		var reasons []string
+		uses := 0
+		for _, use := range e.SpecifierUses {
+			if use.Selector != selector {
+				continue
+			}
+			uses++
+			if !use.Derived.claimed() {
+				reasons = append(reasons, cmp.Or(use.Derived.Failure, claimNotEvaluated))
+			}
+		}
+		if uses == 0 {
+			reasons = append(reasons, claimNotEvaluated)
+		}
+		slices.Sort(reasons)
+		for _, reason := range slices.Compact(reasons) {
+			unaccounted = append(unaccounted, selector.String()+" ("+reason+")")
+		}
 	}
 	return unaccounted
 }
 
 func (e emittedClusters) Equals(in emittedClusters) bool {
 	return maps.Equal(e.Names, in.Names) &&
-		slices.Equal(e.RequestTimeSelectors, in.RequestTimeSelectors)
+		slices.Equal(e.RequestTimeSelectors, in.RequestTimeSelectors) &&
+		slices.EqualFunc(e.SpecifierUses, in.SpecifierUses, func(a, b specifierUse) bool {
+			return a.specifierUseKey == b.specifierUseKey && a.Derived.equal(b.Derived)
+		})
 }
 
 // collectReferencedClustersForEmission returns every cluster name reachable
@@ -106,16 +158,25 @@ func (e emittedClusters) Equals(in emittedClusters) bool {
 // name it.
 //
 // collectRequestTimeSelectors fills RequestTimeSelectors with what the walk
-// cannot see.
+// cannot see, and collectSpecifierUse records each cluster specifier use with
+// its config, for claims that decide per use (emittedClustersFor).
 func collectReferencedClustersForEmission(routes, listeners envoycache.Resources) emittedClusters {
 	out := emittedClusters{Names: map[string]struct{}{
 		wellknown.BlackholeClusterName: {},
 	}}
 
 	selectors := make(map[requestTimeSelector]struct{})
+	uses := make(map[specifierUseKey]struct{})
+	// plugins are the cluster_specifier_plugins of the RouteConfiguration being
+	// walked. The walk visits a RouteConfiguration before its routes.
+	var plugins map[string]*anypb.Any
 	visit := func(msg proto.Message) {
+		if routeConfig, ok := msg.(*envoyroutev3.RouteConfiguration); ok {
+			plugins = clusterSpecifierPluginConfigs(routeConfig)
+		}
 		extractEmissionClusterCandidates(msg, out.Names)
 		collectRequestTimeSelectors(msg, selectors)
+		collectSpecifierUse(msg, plugins, uses)
 	}
 	walkResourceProtos(routes, visit)
 	walkResourceProtos(listeners, visit)
@@ -124,14 +185,73 @@ func collectReferencedClustersForEmission(routes, listeners envoycache.Resources
 	for selector := range selectors {
 		out.RequestTimeSelectors = append(out.RequestTimeSelectors, selector)
 	}
-	slices.SortFunc(out.RequestTimeSelectors, func(a, b requestTimeSelector) int {
-		if c := cmp.Compare(a.Kind, b.Kind); c != 0 {
-			return c
-		}
-		return cmp.Compare(a.Name, b.Name)
+	slices.SortFunc(out.RequestTimeSelectors, compareSelectors)
+
+	for key := range uses {
+		out.SpecifierUses = append(out.SpecifierUses, specifierUse{specifierUseKey: key})
+	}
+	slices.SortFunc(out.SpecifierUses, func(a, b specifierUse) int {
+		return cmp.Or(
+			compareSelectors(a.Selector, b.Selector),
+			cmp.Compare(a.ConfigType, b.ConfigType),
+			cmp.Compare(a.Config, b.Config),
+			compareBool(a.Unresolved, b.Unresolved),
+		)
 	})
 
 	return out
+}
+
+func compareSelectors(a, b requestTimeSelector) int {
+	return cmp.Or(cmp.Compare(a.Kind, b.Kind), cmp.Compare(a.Name, b.Name))
+}
+
+func compareBool(a, b bool) int {
+	switch {
+	case a == b:
+		return 0
+	case !a:
+		return -1
+	default:
+		return 1
+	}
+}
+
+// clusterSpecifierPluginConfigs maps a RouteConfiguration's cluster specifier
+// plugin extension names to their typed_config, which a route references by
+// name.
+func clusterSpecifierPluginConfigs(routeConfig *envoyroutev3.RouteConfiguration) map[string]*anypb.Any {
+	configs := make(map[string]*anypb.Any, len(routeConfig.GetClusterSpecifierPlugins()))
+	for _, plugin := range routeConfig.GetClusterSpecifierPlugins() {
+		configs[plugin.GetExtension().GetName()] = plugin.GetExtension().GetTypedConfig()
+	}
+	return configs
+}
+
+// collectSpecifierUse records a route's cluster specifier plugin use with its
+// typed_config: inline, or resolved against the RouteConfiguration's
+// cluster_specifier_plugins. A reference it does not define is unresolved, so
+// no claim with DestinationsFor can claim it.
+func collectSpecifierUse(msg proto.Message, plugins map[string]*anypb.Any, uses map[specifierUseKey]struct{}) {
+	action, ok := msg.(*envoyroutev3.RouteAction)
+	if !ok {
+		return
+	}
+	var key specifierUseKey
+	switch spec := action.GetClusterSpecifier().(type) {
+	case *envoyroutev3.RouteAction_ClusterSpecifierPlugin:
+		key.Selector = requestTimeSelector{selectorSpecifierPlugin, spec.ClusterSpecifierPlugin}
+		config, defined := plugins[spec.ClusterSpecifierPlugin]
+		key.Unresolved = !defined
+		key.ConfigType, key.Config = config.GetTypeUrl(), string(config.GetValue())
+	case *envoyroutev3.RouteAction_InlineClusterSpecifierPlugin:
+		extension := spec.InlineClusterSpecifierPlugin.GetExtension()
+		key.Selector = requestTimeSelector{selectorInlinePlugin, extension.GetName()}
+		key.ConfigType, key.Config = extension.GetTypedConfig().GetTypeUrl(), string(extension.GetTypedConfig().GetValue())
+	default:
+		return
+	}
+	uses[key] = struct{}{}
 }
 
 // extractEmissionClusterCandidates collects direct string fields, list elements

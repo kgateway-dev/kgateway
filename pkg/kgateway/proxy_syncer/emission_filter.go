@@ -27,7 +27,7 @@ func filterClustersToEmitted(
 	}
 
 	// Only the claims of selectors this gateway uses keep anything here.
-	kept := claims.keptFor(emitted.RequestTimeSelectors)
+	kept := claims.keptFor(emitted)
 	retained := make(map[string]envoycachetypes.ResourceWithTTL, len(clusters.Items))
 	retainedVersions := make(map[string]uint64, len(clusterVersions))
 	for name, item := range clusters.Items {
