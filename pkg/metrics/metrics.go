@@ -22,6 +22,10 @@ var (
 	registry     RegistererGatherer = prometheus.NewRegistry()
 	registryLock                    = sync.RWMutex{}
 
+	// ctrlRegistry is controller-runtime's registry, which its packages
+	// register their metrics into at init.
+	ctrlRegistry = metrics.Registry
+
 	// DefaultBuckets defines the default buckets used for histograms.
 	DefaultBuckets = prometheus.DefBuckets
 )
@@ -361,15 +365,28 @@ func SetRegistry(useBuiltinRegistry bool, r RegistererGatherer) {
 	registryLock.Lock()
 	defer registryLock.Unlock()
 
-	if !useBuiltinRegistry {
-		metrics.Registry = registry
-	}
-
-	if isNil(r) {
-		registry = metrics.Registry
-	} else {
+	if !isNil(r) {
 		registry = r
 	}
+
+	if !useBuiltinRegistry {
+		metrics.Registry = registry
+		return
+	}
+
+	// Keep controller-runtime's registry for its own registrations, and serve
+	// its metrics alongside ours, which are already registered in registry.
+	metrics.Registry = &builtinRegistry{
+		Registerer: ctrlRegistry,
+		Gatherer:   prometheus.Gatherers{ctrlRegistry, registry},
+	}
+}
+
+// builtinRegistry registers into controller-runtime's registry and gathers
+// from both controller-runtime's registry and the kgateway registry.
+type builtinRegistry struct {
+	prometheus.Registerer
+	prometheus.Gatherer
 }
 
 // isNil checks if the provided interface contains nil or a nil value.
