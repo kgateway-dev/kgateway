@@ -59,6 +59,16 @@ type XdsSnapWrapper struct {
 	// name a cluster scoping left out of CDS. The mode is fixed for the process.
 	// +noKrtEquals
 	scopesClusters bool
+	// translatedClusters is the client's translated clusters before scoping
+	// filters them, shared read-only with the per-client cluster row. The
+	// de-reference grace keeps only clusters still in it: one that is no longer
+	// translated (its backend was deleted, or its translation failed) leaves at
+	// once, as with scoping off. Nil means unknown, and graces every
+	// de-referenced cluster.
+	// +noKrtEquals a change here alone (a backend added or removed while not
+	// emitted) changes nothing published; at worst a graced cluster whose backend
+	// is then deleted stays until its grace ends.
+	translatedClusters map[string]envoycachetypes.ResourceWithTTL
 }
 
 // deferred reports whether some referenced cluster was unready at build

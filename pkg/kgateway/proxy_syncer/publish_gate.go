@@ -451,7 +451,7 @@ func (g *publishGate) resolveDeferredLocked(
 	// Retain clusters this build stopped emitting, briefly, so the route update
 	// that de-referenced them reaches Envoy before they disappear.
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
-		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], time.Now())
+		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, time.Now())
 	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	if len(heldBlocking) > 0 {
@@ -715,7 +715,7 @@ func (g *publishGate) fireFlipRelease(ctx context.Context, cache envoycache.Snap
 		return // nothing published to resolve against; nothing was held
 	}
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
-		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
+		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, time.Now())
 	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
 	logger.Warn("flip-hold budget expired; publishing held route flip, routes to still-unready clusters will fail until they become ready",
 		"proxy_key", proxyKey, "flip_blocking", pf.blocking)

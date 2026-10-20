@@ -193,7 +193,7 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
 
 	start := time.Now()
-	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, start)
+	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start)
 	require.Len(t, graced, 2)
 	require.InDelta(t, time.Minute, soonest, float64(time.Second))
 
@@ -203,7 +203,7 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 		{Resource: edsClusterProto("second-out")},
 		{Resource: edsClusterProto("third-out")},
 	})
-	_, soonest = g.graceDereferencedClustersLocked(publishGateTestClient, published, building, start.Add(30*time.Second))
+	_, soonest = g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start.Add(30*time.Second))
 	assert.InDelta(t, 30*time.Second, soonest, float64(time.Second),
 		"the timer must fire for the oldest window, not the newest")
 }
@@ -219,12 +219,54 @@ func TestGraceDereferencedClustersDropsExpiredEntries(t *testing.T) {
 	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
 
 	start := time.Now()
-	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, start)
+	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start)
 	require.Len(t, graced, 1)
 
-	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, start.Add(2*time.Second))
+	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start.Add(2*time.Second))
 	assert.Empty(t, graced, "past the window the cluster stops being published")
 	assert.Zero(t, soonest, "with nothing graced there is nothing left to wake up for")
+}
+
+// TestGraceDereferencedClustersSkipsClustersNoLongerTranslated: only a cluster
+// scoping stopped emitting is graced. One whose backend is gone leaves at once,
+// as with scoping off.
+func TestGraceDereferencedClustersSkipsClustersNoLongerTranslated(t *testing.T) {
+	g := newPublishGate(0, false, nil, scopedClustersWithGrace(time.Minute))
+	published := &envoycache.Snapshot{}
+	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v1", []envoycachetypes.ResourceWithTTL{
+		{Resource: edsClusterProto("scoped-out")},
+		{Resource: edsClusterProto("deleted")},
+	})
+	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
+	translated := map[string]envoycachetypes.ResourceWithTTL{"scoped-out": {Resource: edsClusterProto("scoped-out")}}
+
+	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, translated, time.Now())
+	assert.Equal(t, map[string]struct{}{"scoped-out": {}}, graced)
+	assert.NotContains(t, g.dereferenced[publishGateTestClient].since, "deleted", "a gone cluster opens no window")
+}
+
+// TestDereferenceGraceRemovesADeletedBackendAtOnce: through the gate, a
+// retargeted-away cluster is kept for the grace while a deleted backend's
+// cluster leaves with the build that no longer translates it. A request-time
+// selector routes by cluster name, so keeping it would keep the deleted
+// destination routable for the whole grace.
+func TestDereferenceGraceRemovesADeletedBackendAtOnce(t *testing.T) {
+	pt := newGraceTestTranslator(t, time.Hour)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, clusterWrapperV("v1", "kept", "retargeted", "deleted"))
+
+	b2 := clusterWrapperV("v2", "kept")
+	b2.translatedClusters = map[string]envoycachetypes.ResourceWithTTL{
+		"kept":       {Resource: edsClusterProto("kept")},
+		"retargeted": {Resource: edsClusterProto("retargeted")},
+	}
+	pt.syncXds(ctx, b2)
+
+	assert.ElementsMatch(t, []string{"kept", "retargeted"}, publishedClusterNames(t, pt))
+	assert.ElementsMatch(t, []string{"kept", "retargeted"}, publishedEndpointNames(t, pt),
+		"the deleted cluster's assignment leaves with it")
 }
 
 // A graced cluster that errors leaves the client (fail closed), and so must its

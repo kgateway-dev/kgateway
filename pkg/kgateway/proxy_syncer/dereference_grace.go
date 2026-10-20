@@ -29,11 +29,19 @@ type dereferenceState struct {
 // route still targeting it, causing 503 NC. The grace gives the route update
 // time to land whatever the delivery order; elapsing does not confirm Envoy
 // applied it. Ordered ADS cannot replace the grace: it sends CDS first.
-// Callers must hold the gate lock. A nonpositive grace disables retention.
+//
+// Only a cluster scoping stopped emitting is graced: translated must still
+// have it (nil translated means unknown, and graces every one). A cluster that
+// is no longer translated is gone, not de-referenced: its backend was deleted
+// or failed. With scoping off it would leave at once, and keeping it would keep
+// sending traffic to that backend, which a request-time selector would still
+// pick by name. Callers must hold the gate lock. A nonpositive grace disables
+// retention.
 func (g *publishGate) graceDereferencedClustersLocked(
 	proxyKey string,
 	published envoycache.ResourceSnapshot,
 	building envoycache.Resources,
+	translated map[string]envoycachetypes.ResourceWithTTL,
 	now time.Time,
 ) (map[string]struct{}, time.Duration) {
 	if g.dereferenceGrace <= 0 {
@@ -58,6 +66,13 @@ func (g *publishGate) graceDereferencedClustersLocked(
 	for name := range publishedClusters {
 		if _, stillEmitted := building.Items[name]; stillEmitted {
 			// Still emitted: drop any record, so a later de-reference starts fresh.
+			if state != nil {
+				delete(state.since, name)
+			}
+			continue
+		}
+		if _, stillTranslated := translated[name]; translated != nil && !stillTranslated {
+			// Gone: removed at once, and a later return is a fresh addition.
 			if state != nil {
 				delete(state.since, name)
 			}
@@ -154,7 +169,7 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 
 	wrap := state.wrap
 	graced, soonest := g.graceDereferencedClustersLocked(
-		proxyKey, published, wrap.snap.Resources[envoycachetypes.Cluster], time.Now())
+		proxyKey, published, wrap.snap.Resources[envoycachetypes.Cluster], wrap.translatedClusters, time.Now())
 	// Keep a held flip held: its own bound (the flip release) decides when it
 	// goes out. Re-resolving with holds disabled would release it at this
 	// grace instead, onto a cluster that may still be unready.
@@ -200,7 +215,7 @@ func (g *publishGate) publishWithDereferenceGrace(
 	}
 
 	graced, soonest := g.graceDereferencedClustersLocked(
-		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], time.Now())
+		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, time.Now())
 	if len(graced) == 0 {
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}

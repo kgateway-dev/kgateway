@@ -219,6 +219,8 @@ func TestSnapshotPerClientEmitsOnlyReferencedClusters(t *testing.T) {
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items)).To(gomega.ConsistOf(toAny(tc.expected)...))
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Endpoint].Items)).To(gomega.ConsistOf(toAny(tc.expected)...),
 				"EDS must follow CDS: a dropped cluster's CLA must go with it")
+			g.Expect(mapKeys(wrap.translatedClusters)).To(gomega.ConsistOf("routed", "unreferenced-a", "unreferenced-b"),
+				"the de-reference grace tells scoped-out clusters from gone ones by the unfiltered set")
 		})
 	}
 }

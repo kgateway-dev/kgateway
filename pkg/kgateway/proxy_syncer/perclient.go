@@ -134,7 +134,11 @@ func snapshotPerClient(
 				"translated", len(clustersForUcc.clusters.Items))
 		}
 
-		snap := XdsSnapWrapper{}
+		snap := XdsSnapWrapper{translatedClusters: clustersForUcc.clusters.Items}
+		if snap.translatedClusters == nil {
+			// Known to be empty, unlike an unset field.
+			snap.translatedClusters = map[string]envoycachetypes.ResourceWithTTL{}
+		}
 		if len(listenerRouteSnapshot.Clusters) > 0 {
 			clustersProto := make(map[string]envoycachetypes.ResourceWithTTL, len(listenerRouteSnapshot.Clusters)+len(clusterResources.Items))
 			maps.Copy(clustersProto, clusterResources.Items)

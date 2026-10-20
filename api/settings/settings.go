@@ -493,6 +493,8 @@ type Settings struct {
 	// when Envoy gets the route update. The grace gives that update time to land;
 	// it does not confirm Envoy received or applied it, so it narrows the race
 	// rather than closing it. Set it above the fleet's worst-case RDS propagation.
+	// Only clusters scoping stops emitting are kept: a cluster whose backend was
+	// deleted or fails translation leaves at once, as it does in ALL mode.
 	// Negative values act as 0:
 	// 0 removes immediately and accepts the race.
 	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
