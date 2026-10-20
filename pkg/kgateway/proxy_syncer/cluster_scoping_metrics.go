@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"log/slog"
 	"sync"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
@@ -27,15 +28,16 @@ var (
 		[]string{gatewayLabel, namespaceLabel},
 	)
 	// clusterScopingDisabledGateways counts gateways whose CDS reverted to
-	// every backend because a route picks its destination at request time.
-	// Alert on it: without the revert the failure is silent, since the
-	// selecting plugin falls back instead of returning 503. A nonzero value
-	// means scoping is off for that gateway.
+	// every backend because their configuration, or a kept backend's own
+	// listeners, pick a destination at request time. Alert on it: without the
+	// revert the failure is silent, since the selecting plugin falls back
+	// instead of returning 503. A nonzero value means scoping is off for at
+	// least one of the gateway's connected proxy groups.
 	clusterScopingDisabledGateways = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: clusterScopingSubsystem,
 			Name:      "disabled_gateways",
-			Help:      "Gateways whose CDS is unscoped because a route selects its destination at request time",
+			Help:      "Gateways with a connected proxy group whose CDS is unscoped because its configuration selects a destination at request time",
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
@@ -82,14 +84,63 @@ func recordClusterScopingDropped(clientKey string, dropped int) {
 	)
 }
 
-// recordClusterScopingDisabled sets this gateway's disabled gauge to 1 or 0.
-// Recording 0 keeps the series present, so an alert fires on a change to 1
-// rather than on a new label.
-func recordClusterScopingDisabled(clientKey string, disabled bool) {
+// clusterScopingDisabledState is each gateway's scoping state per connected
+// client group. Groups of one gateway can differ, since a backend errored for
+// one client keeps or drops its listeners for that client alone, so a gateway
+// reads as unscoped while any group is, and one group's healthy build cannot
+// clear another's fallback.
+var clusterScopingDisabledState = struct {
+	sync.Mutex
+	gateways map[resourceNameDetails]*gatewayScopingState
+}{gateways: make(map[resourceNameDetails]*gatewayScopingState)}
+
+type gatewayScopingState struct {
+	// clients is each connected group's state, by client key.
+	clients map[string]bool
+	// disabled is the gateway's state as last reported.
+	disabled bool
+}
+
+// update recomputes the gateway's state from its groups and reports whether
+// it just turned unscoped.
+func (g *gatewayScopingState) update() (turnedOn bool) {
+	disabled := false
+	for _, clientDisabled := range g.clients {
+		disabled = disabled || clientDisabled
+	}
+	turnedOn = disabled && !g.disabled
+	g.disabled = disabled
+	return turnedOn
+}
+
+// reportClusterScopingDisabled records why clientKey's CDS is unscoped (no
+// reasons: it is scoped), sets its gateway's disabled gauge, and warns when the
+// gateway turns unscoped rather than on every build. Recording 0 keeps the
+// series present, so an alert fires on a change to 1 rather than on a new
+// label.
+func reportClusterScopingDisabled(log *slog.Logger, clientKey string, reasons []string) {
+	cd := getDetailsFromXDSClientResourceName(clientKey)
+	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
+	clusterScopingDisabledState.Lock()
+	defer clusterScopingDisabledState.Unlock()
+	state := clusterScopingDisabledState.gateways[gateway]
+	if state == nil {
+		state = &gatewayScopingState{clients: make(map[string]bool)}
+		clusterScopingDisabledState.gateways[gateway] = state
+	}
+	state.clients[clientKey] = len(reasons) > 0
+	if state.update() {
+		log.Warn("cluster scoping disabled for this gateway: its configuration or a kept backend's listeners select a destination at request time",
+			"client", clientKey,
+			"reasons", reasons)
+	}
+	setClusterScopingDisabledGauge(cd, state.disabled)
+}
+
+func setClusterScopingDisabledGauge(cd resourceNameDetails, disabled bool) {
 	if !metrics.Active() {
 		return
 	}
-	cd := getDetailsFromXDSClientResourceName(clientKey)
 	value := 0.0
 	if disabled {
 		value = 1.0
@@ -98,25 +149,6 @@ func recordClusterScopingDisabled(clientKey string, disabled bool) {
 		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
 		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
 	)
-}
-
-// clusterScopingDisabledState remembers each gateway's last reported state, so
-// the warning fires when a gateway turns unscoped, not on every client rebuild.
-var clusterScopingDisabledState = struct {
-	sync.Mutex
-	gateways map[resourceNameDetails]bool
-}{gateways: make(map[resourceNameDetails]bool)}
-
-// noteClusterScopingDisabled records clientKey's gateway state and reports
-// whether it just turned unscoped.
-func noteClusterScopingDisabled(clientKey string, disabled bool) bool {
-	cd := getDetailsFromXDSClientResourceName(clientKey)
-	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
-	clusterScopingDisabledState.Lock()
-	defer clusterScopingDisabledState.Unlock()
-	was := clusterScopingDisabledState.gateways[gateway]
-	clusterScopingDisabledState.gateways[gateway] = disabled
-	return disabled && !was
 }
 
 func recordClusterScopingTransition(clientKey, transition string, count int) {
@@ -144,19 +176,31 @@ func gatewayHasClients(clientKey string, clients []ir.UniquelyConnectedClient) b
 	return false
 }
 
-// forgetClusterScopingGateway drops a gateway's scoping gauges and warning
-// state once none of its clients is connected. Nothing else removes them, so a
-// deleted gateway would keep exporting disabled_gateways=1 and firing alerts. A
-// returning client re-creates them on its first build.
-func forgetClusterScopingGateway(clientKey string) {
+// forgetClusterScopingClient drops a departed client group's scoping state.
+// While the gateway still has connected clients, its disabled gauge is
+// recomputed without the group. Once none is connected, the gateway's gauges
+// and state go: nothing else removes them, so a deleted gateway would keep
+// exporting disabled_gateways=1 and firing alerts. A returning client
+// re-creates them on its first build.
+func forgetClusterScopingClient(clientKey string, gatewayConnected bool) {
 	cd := getDetailsFromXDSClientResourceName(clientKey)
+	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
+	clusterScopingDisabledState.Lock()
+	defer clusterScopingDisabledState.Unlock()
+	state := clusterScopingDisabledState.gateways[gateway]
+	if gatewayConnected {
+		if state != nil {
+			delete(state.clients, clientKey)
+			state.update()
+			setClusterScopingDisabledGauge(cd, state.disabled)
+		}
+		return
+	}
 	labels := []metrics.Label{
 		{Name: gatewayLabel, Value: cd.Gateway},
 		{Name: namespaceLabel, Value: cd.Namespace},
 	}
 	clusterScopingDroppedClusters.DeletePartialMatch(labels...)
 	clusterScopingDisabledGateways.DeletePartialMatch(labels...)
-	clusterScopingDisabledState.Lock()
-	defer clusterScopingDisabledState.Unlock()
-	delete(clusterScopingDisabledState.gateways, resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway})
+	delete(clusterScopingDisabledState.gateways, gateway)
 }

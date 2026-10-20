@@ -1,6 +1,7 @@
 package proxy_syncer
 
 import (
+	"strconv"
 	"testing"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -12,7 +13,6 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
@@ -21,6 +21,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
@@ -51,7 +53,7 @@ func backendListenersOf(listeners ...*envoylistenerv3.Listener) baseResources[*e
 
 // TestKeepBackendListenerTargets: a kept backend's own listeners keep the
 // clusters they name, a dropped backend's do not, and a request-time selector
-// among them keeps everything.
+// among them keeps everything and is reported, even when nothing was dropped.
 func TestKeepBackendListenerTargets(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -60,6 +62,7 @@ func TestKeepBackendListenerTargets(t *testing.T) {
 		listeners  map[string]baseResources[*envoylistenerv3.Listener]
 		want       []string
 		filtered   bool
+		fallback   []string
 	}{
 		{
 			name:       "a kept tunnel keeps its proxy",
@@ -121,18 +124,62 @@ func TestKeepBackendListenerTargets(t *testing.T) {
 			},
 			want:     []string{"tunneled", "proxy", "unreferenced"},
 			filtered: false,
+			fallback: []string{`backend "tunneled" listener "tunnel_tunneled": sni_cluster`},
+		},
+		{
+			name:       "a kept target's selector keeps every cluster",
+			translated: []string{"tunneled", "proxy", "upstream-proxy", "unreferenced"},
+			kept:       []string{"tunneled"},
+			listeners: map[string]baseResources[*envoylistenerv3.Listener]{
+				"tunneled": backendListenersOf(tunnelListener("tunnel_tunneled", "proxy")),
+				"proxy":    backendListenersOf(tunnelListener("tunnel_proxy", "upstream-proxy", &envoysniclusterv3.SniCluster{})),
+			},
+			want:     []string{"tunneled", "proxy", "upstream-proxy", "unreferenced"},
+			filtered: false,
+			fallback: []string{`backend "proxy" listener "tunnel_proxy": sni_cluster`},
+		},
+		{
+			name:       "a dropped backend's selector changes nothing",
+			translated: []string{"routed", "tunneled", "proxy"},
+			kept:       []string{"routed"},
+			listeners: map[string]baseResources[*envoylistenerv3.Listener]{
+				"tunneled": backendListenersOf(tunnelListener("tunnel_tunneled", "proxy", &envoysniclusterv3.SniCluster{})),
+			},
+			want:     []string{"routed"},
+			filtered: true,
+		},
+		{
+			name:       "a selector is reported when every cluster is already kept",
+			translated: []string{"tunneled", "proxy"},
+			kept:       []string{"tunneled", "proxy"},
+			listeners: map[string]baseResources[*envoylistenerv3.Listener]{
+				"tunneled": backendListenersOf(tunnelListener("tunnel_tunneled", "proxy", &envoysniclusterv3.SniCluster{})),
+			},
+			want:     []string{"tunneled", "proxy"},
+			filtered: false,
+			fallback: []string{`backend "tunneled" listener "tunnel_tunneled": sni_cluster`},
+		},
+		{
+			name:       "everything kept with no selector is not a fallback",
+			translated: []string{"tunneled", "proxy"},
+			kept:       []string{"tunneled", "proxy"},
+			listeners: map[string]baseResources[*envoylistenerv3.Listener]{
+				"tunneled": backendListenersOf(tunnelListener("tunnel_tunneled", "proxy")),
+			},
+			want:     []string{"tunneled", "proxy"},
+			filtered: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			translated, translatedVersions := clusterResourcesFor(tc.translated...)
-			kept, keptVersions, filtered := filterClustersToEmitted(
+			kept, keptVersions, _ := filterClustersToEmitted(
 				scopedClusters(), emissionSet(tc.kept...), translated, translatedVersions)
-			require.True(t, filtered, "the fixture must drop something before the targets are kept")
 
-			got, gotVersions, filtered := keepBackendListenerTargets(
+			got, gotVersions, filtered, fallback := keepBackendListenerTargets(
 				translated, translatedVersions, kept, keptVersions, tc.listeners)
 
 			assert.Equal(t, tc.filtered, filtered)
+			assert.Equal(t, tc.fallback, fallback)
 			assert.ElementsMatch(t, tc.want, resourceNames(got))
 			wantVersions := make(map[string]uint64, len(tc.want))
 			for _, name := range tc.want {
@@ -172,79 +219,7 @@ func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 
-			role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
-			ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
-			uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
-
-			routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
-				Name: "route-config",
-				VirtualHosts: []*envoyroutev3.VirtualHost{{
-					Name:    "vhost",
-					Domains: []string{"*"},
-					Routes: []*envoyroutev3.Route{{
-						Name: "tunneled",
-						Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{
-							ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "tunneled"},
-						}},
-					}},
-				}},
-			}})
-			listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
-			mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
-				NamespacedName:     types.NamespacedName{Namespace: "ns", Name: "gw"},
-				Routes:             routes,
-				Listeners:          listeners,
-				ReferencedClusters: collectReferencedClusters(routes, listeners),
-				EmittedClusters:    collectReferencedClustersForEmission(routes, listeners),
-			}})
-
-			tunnel := tunnelListener("tunnel_tunneled", "proxy")
-			clusterRows := make([]uccWithCluster, 0, 3)
-			endpointRows := make([]UccWithEndpoints, 0, 3)
-			var version uint64
-			for _, name := range []string{"tunneled", "proxy", "unreferenced"} {
-				version++
-				row := uccWithCluster{
-					Client:         ucc,
-					Name:           name,
-					Cluster:        sharedproto.Wrap(edsClusterProto(name)),
-					ClusterVersion: version,
-				}
-				switch name {
-				case "tunneled":
-					row.Listeners = backendListenersOf(tunnel)
-					row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "tunneled-header"}})
-				case "unreferenced":
-					row.Listeners = backendListenersOf(tunnelListener("tunnel_unreferenced", "proxy"))
-					row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "unreferenced-header"}})
-				}
-				clusterRows = append(clusterRows, row)
-				endpointRows = append(endpointRows, UccWithEndpoints{
-					Client:        ucc,
-					endpointsName: name,
-					resourceName:  uccEndpointsResourceName(ucc, name),
-					Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name}),
-					EndpointsHash: version,
-				})
-			}
-			clusterCol := krt.NewStaticCollection[uccWithCluster](nil, clusterRows)
-			endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, endpointRows)
-
-			snapshots := snapshotPerClient(
-				krtutil.KrtOptions{},
-				uccs,
-				mostXdsSnapshots,
-				PerClientEnvoyEndpoints{
-					endpoints: endpointCol,
-					index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
-						return []string{ep.Client.ResourceName()}
-					}),
-				},
-				newTestPerClientClustersFromCol(clusterCol, uccs),
-				tc.scoping,
-			)
-
-			wrap := eventuallyCoherentWrapper(t, snapshots)
+			wrap := tunnelSnapshot(t, "gw-keeps-proxy", tc.scoping, []string{"tunneled"})
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items)).To(gomega.ConsistOf(toAny(tc.expected)...))
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Endpoint].Items)).To(gomega.ConsistOf(toAny(tc.expected)...),
 				"EDS must follow CDS")
@@ -254,4 +229,146 @@ func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 				"a backend's secrets ship with its cluster, and only then")
 		})
 	}
+}
+
+// TestSnapshotPerClientReportsABackendListenerFallback: a selector in a kept
+// backend's listener reverts the client to every cluster and reports the
+// gateway unscoped. Without one, the gateway reads scoped, including when its
+// routes already name every cluster.
+func TestSnapshotPerClientReportsABackendListenerFallback(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	for _, tc := range []struct {
+		name     string
+		routed   []string
+		filters  []proto.Message
+		expected []string
+		dropped  float64
+		disabled float64
+	}{
+		{
+			name:     "a selector in the tunnel's listener",
+			routed:   []string{"tunneled"},
+			filters:  []proto.Message{&envoysniclusterv3.SniCluster{}},
+			expected: []string{"tunneled", "proxy", "unreferenced"},
+			dropped:  0,
+			disabled: 1,
+		},
+		{
+			name:     "a selector when the routes already name every cluster",
+			routed:   []string{"tunneled", "proxy", "unreferenced"},
+			filters:  []proto.Message{&envoysniclusterv3.SniCluster{}},
+			expected: []string{"tunneled", "proxy", "unreferenced"},
+			dropped:  0,
+			disabled: 1,
+		},
+		{
+			name:     "no selector",
+			routed:   []string{"tunneled"},
+			expected: []string{"tunneled", "proxy"},
+			dropped:  1,
+			disabled: 0,
+		},
+		{
+			name:     "no selector, every cluster named",
+			routed:   []string{"tunneled", "proxy", "unreferenced"},
+			expected: []string{"tunneled", "proxy", "unreferenced"},
+			dropped:  0,
+			disabled: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := "gw-fallback-" + strconv.Itoa(len(tc.routed)) + "-" + strconv.Itoa(len(tc.filters))
+			wrap := tunnelSnapshot(t, gateway, scopedClusters(), tc.routed, tc.filters...)
+			assert.ElementsMatch(t, tc.expected, mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items))
+
+			labels := []metrics.Label{
+				{Name: gatewayLabel, Value: gateway},
+				{Name: namespaceLabel, Value: "ns"},
+			}
+			gathered := metricstest.MustGatherMetrics(t)
+			assert.Equal(t, tc.dropped, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", labels))
+			assert.Equal(t, tc.disabled, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", labels))
+		})
+	}
+}
+
+// tunnelSnapshot builds one client's snapshot of gateway ns/gateway, whose
+// routes name routed, over three backends: "tunneled", whose listener is a
+// tunnel through "proxy" behind filters, "proxy", and "unreferenced".
+func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed []string, filters ...proto.Message) XdsSnapWrapper {
+	t.Helper()
+	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", gateway)
+	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+	t.Cleanup(func() { forgetClusterScopingClient(ucc.ResourceName(), false) })
+	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+
+	var vhRoutes []*envoyroutev3.Route
+	for _, cluster := range routed {
+		vhRoutes = append(vhRoutes, &envoyroutev3.Route{
+			Name: cluster,
+			Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{
+				ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: cluster},
+			}},
+		})
+	}
+	routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
+		Name:         "route-config",
+		VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "vhost", Domains: []string{"*"}, Routes: vhRoutes}},
+	}})
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	mostXdsSnapshots := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+		NamespacedName:     types.NamespacedName{Namespace: "ns", Name: gateway},
+		Routes:             routes,
+		Listeners:          listeners,
+		ReferencedClusters: collectReferencedClusters(routes, listeners),
+		EmittedClusters:    emittedClustersFor(scoping, routes, listeners),
+	}})
+
+	tunnel := tunnelListener("tunnel_tunneled", "proxy", filters...)
+	clusterRows := make([]uccWithCluster, 0, 3)
+	endpointRows := make([]UccWithEndpoints, 0, 3)
+	var version uint64
+	for _, name := range []string{"tunneled", "proxy", "unreferenced"} {
+		version++
+		row := uccWithCluster{
+			Client:         ucc,
+			Name:           name,
+			Cluster:        sharedproto.Wrap(edsClusterProto(name)),
+			ClusterVersion: version,
+		}
+		switch name {
+		case "tunneled":
+			row.Listeners = backendListenersOf(tunnel)
+			row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "tunneled-header"}})
+		case "unreferenced":
+			row.Listeners = backendListenersOf(tunnelListener("tunnel_unreferenced", "proxy"))
+			row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "unreferenced-header"}})
+		}
+		clusterRows = append(clusterRows, row)
+		endpointRows = append(endpointRows, UccWithEndpoints{
+			Client:        ucc,
+			endpointsName: name,
+			resourceName:  uccEndpointsResourceName(ucc, name),
+			Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name}),
+			EndpointsHash: version,
+		})
+	}
+	clusterCol := krt.NewStaticCollection[uccWithCluster](nil, clusterRows)
+	endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, endpointRows)
+
+	snapshots := snapshotPerClient(
+		krtutil.KrtOptions{},
+		uccs,
+		mostXdsSnapshots,
+		PerClientEnvoyEndpoints{
+			endpoints: endpointCol,
+			index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+				return []string{ep.Client.ResourceName()}
+			}),
+		},
+		newTestPerClientClustersFromCol(clusterCol, uccs),
+		scoping,
+	)
+	return eventuallyCoherentWrapper(t, snapshots)
 }

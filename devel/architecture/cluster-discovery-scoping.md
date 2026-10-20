@@ -105,8 +105,13 @@ No walk over the generated protos can find those candidates, nor the clusters
 inside a `typed_config` the controller cannot decode, nor behind a
 `cluster_specifier` kind it does not know.
 
+The same holds for a kept backend's own listeners: a selector in one of them
+reverts the client to every cluster too. A dropped backend's listeners are
+never walked, so one there changes nothing.
+
 Such a gateway reverts to emitting every cluster, a warning is logged when it
-does, and `kgateway_xds_cluster_scoping_disabled_gateways` goes to 1 for it. Detection
+does, naming the selectors and, for a backend's listener, the backend and
+listener, and `kgateway_xds_cluster_scoping_disabled_gateways` goes to 1 for it. Detection
 matters more than it looks: a plugin like that usually falls back when its
 computed cluster is absent, so pruning a candidate does not produce a visible
 503 — every affected request quietly goes somewhere else instead. The metric is
@@ -140,7 +145,7 @@ one whose windows close first is not a bounded publish.
 | Metric | Type | Meaning |
 | --- | --- | --- |
 | `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | Clusters withheld because nothing references them. |
-| `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 when a gateway reverted to emit-all. Worth an alert. |
+| `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 while any connected proxy group of a gateway reverted to emit-all. Worth an alert. |
 | `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters, for each proxy group. |
 
 A proxy group is the proxies of a gateway that share labels and locality; they
@@ -152,8 +157,13 @@ How many clusters a gateway's proxies do receive is
 `kgateway_xds_snapshot_resources{resource="Cluster"}`, which counts the published
 snapshot after scoping.
 
-The two gauges are removed when a gateway's last connected proxy goes away, so a
-deleted gateway does not keep a `disabled_gateways` alert firing.
+`disabled_gateways` is kept per proxy group and reported for the gateway as
+whether any group is unscoped: groups can differ, since a backend can fail
+translation for one group's proxies alone, and a healthy group must not clear
+another's fallback. The warning fires when the gateway turns unscoped, not on
+every rebuild. A departing group's state goes with it, and both gauges are
+removed when a gateway's last connected proxy goes away, so a deleted gateway
+does not keep a `disabled_gateways` alert firing.
 
 `dropped_clusters` at zero with scoping on means the deployment routes to
 everything it discovers and has nothing to gain here. A steadily rising

@@ -1,12 +1,16 @@
 package proxy_syncer
 
 import (
+	"bytes"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
 	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -36,26 +40,21 @@ func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 func TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
-
-	recordClusterScopingDisabled(publishGateTestClient, false)
-	metricstest.MustGatherMetrics(t).AssertMetric(
-		"kgateway_xds_cluster_scoping_disabled_gateways", &metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: gatewayLabel, Value: "unknown"},
-				{Name: namespaceLabel, Value: "unknown"},
-			},
-			Value: 0,
+	const client = "kube-gateway-api~ns-zero~gw-zero"
+	t.Cleanup(func() { forgetClusterScopingClient(client, false) })
+	disabled := func() float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+			{Name: gatewayLabel, Value: "gw-zero"},
+			{Name: namespaceLabel, Value: "ns-zero"},
 		})
+	}
 
-	recordClusterScopingDisabled(publishGateTestClient, true)
-	metricstest.MustGatherMetrics(t).AssertMetric(
-		"kgateway_xds_cluster_scoping_disabled_gateways", &metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: gatewayLabel, Value: "unknown"},
-				{Name: namespaceLabel, Value: "unknown"},
-			},
-			Value: 1,
-		})
+	reportClusterScopingDisabled(discardLogger(), client, nil)
+	assert.Equal(t, float64(0), disabled())
+
+	reportClusterScopingDisabled(discardLogger(), client, []string{`cluster_header "x-target"`})
+	assert.Equal(t, float64(1), disabled())
 }
 
 // TestDereferenceTransitionsAreCountedOncePerWindow: an open window is not
@@ -134,14 +133,73 @@ func TestReferenceAheadTransitionsCountWindowsNotBuilds(t *testing.T) {
 	assert.Equal(t, float64(2), held(), "the deferred path's hold counts its new cluster")
 }
 
-// The unscoped warning fires on the transition, not on every client rebuild.
-func TestClusterScopingDisabledIsNotedOnTransition(t *testing.T) {
-	const gateway = "kube-gateway-api~ns-note~gw-note"
-	assert.False(t, noteClusterScopingDisabled(gateway, false))
-	assert.True(t, noteClusterScopingDisabled(gateway, true), "scoped to unscoped is a transition")
-	assert.False(t, noteClusterScopingDisabled(gateway, true), "staying unscoped is not")
-	assert.False(t, noteClusterScopingDisabled(gateway, false))
-	assert.True(t, noteClusterScopingDisabled(gateway, true), "turning unscoped again is")
+// TestClusterScopingDisabledWarnsOnTransitions: the warning fires when the
+// gateway turns unscoped, names why, and stays quiet while it stays unscoped
+// or recovers.
+func TestClusterScopingDisabledWarnsOnTransitions(t *testing.T) {
+	const client = "kube-gateway-api~ns-note~gw-note"
+	t.Cleanup(func() { forgetClusterScopingClient(client, false) })
+	log, logged := bufferLogger()
+	reason := []string{`backend "tunneled" listener "tunnel_tunneled": sni_cluster`}
+	warnings := func() int {
+		return strings.Count(logged.String(), "cluster scoping disabled for this gateway")
+	}
+
+	reportClusterScopingDisabled(log, client, nil)
+	assert.Equal(t, 0, warnings(), "scoped is not a warning")
+	reportClusterScopingDisabled(log, client, reason)
+	assert.Equal(t, 1, warnings(), "scoped to unscoped is a transition")
+	assert.Contains(t, logged.String(), "tunnel_tunneled", "the warning names why")
+	assert.Contains(t, logged.String(), "sni_cluster")
+	reportClusterScopingDisabled(log, client, reason)
+	reportClusterScopingDisabled(log, client, reason)
+	assert.Equal(t, 1, warnings(), "staying unscoped is not")
+	reportClusterScopingDisabled(log, client, nil)
+	assert.Equal(t, 1, warnings(), "recovering is not")
+	reportClusterScopingDisabled(log, client, reason)
+	assert.Equal(t, 2, warnings(), "turning unscoped again is")
+}
+
+// TestClusterScopingDisabledIsAnyOfTheGatewaysClientGroups: a gateway reads as
+// unscoped while any of its connected proxy groups is, through builds,
+// departures and a reconnect, and warns only when that changes to unscoped.
+func TestClusterScopingDisabledIsAnyOfTheGatewaysClientGroups(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	const (
+		zoneA = "kube-gateway-api~ns-groups~gw-groups~zone-a"
+		zoneB = "kube-gateway-api~ns-groups~gw-groups~zone-b"
+	)
+	t.Cleanup(func() { forgetClusterScopingClient(zoneA, false) })
+	log, logged := bufferLogger()
+	reason := []string{"sni_cluster"}
+	disabled := func() float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+			{Name: gatewayLabel, Value: "gw-groups"},
+			{Name: namespaceLabel, Value: "ns-groups"},
+		})
+	}
+	warnings := func() int {
+		return strings.Count(logged.String(), "cluster scoping disabled for this gateway")
+	}
+
+	reportClusterScopingDisabled(log, zoneA, reason)
+	reportClusterScopingDisabled(log, zoneB, nil)
+	assert.Equal(t, float64(1), disabled(), "zone b's healthy build must not clear zone a's fallback")
+	reportClusterScopingDisabled(log, zoneB, nil)
+	assert.Equal(t, float64(1), disabled())
+	reportClusterScopingDisabled(log, zoneB, reason)
+	assert.Equal(t, 1, warnings(), "a second unscoped group does not turn the gateway unscoped again")
+
+	reportClusterScopingDisabled(log, zoneA, nil)
+	assert.Equal(t, float64(1), disabled(), "zone b is still unscoped")
+	forgetClusterScopingClient(zoneB, true)
+	assert.Equal(t, float64(0), disabled(), "zone b's departure takes its fallback with it")
+
+	reportClusterScopingDisabled(log, zoneB, reason)
+	assert.Equal(t, float64(1), disabled(), "a reconnecting group counts again")
+	assert.Equal(t, 2, warnings(), "and the gateway turning unscoped again warns again")
 }
 
 // Keep gateway gauges while clients remain; remove them after the last leaves
@@ -156,16 +214,17 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 		leaving = "kube-gateway-api~ns-forget~gw-forget"
 		other   = "kube-gateway-api~ns-forget~gw-other"
 	)
+	t.Cleanup(func() { forgetClusterScopingClient(other, false) })
+	log, logged := bufferLogger()
 	for _, client := range []string{leaving, other} {
 		recordClusterScopingDropped(client, 17)
-		recordClusterScopingDisabled(client, true)
-		noteClusterScopingDisabled(client, true)
+		reportClusterScopingDisabled(log, client, []string{"sni_cluster"})
 	}
 	stillThere := []ir.UniquelyConnectedClient{newTestUcc(leaving)}
 	require.True(t, gatewayHasClients(leaving, stillThere), "another client of the gateway is still connected")
 	require.False(t, gatewayHasClients(leaving, []ir.UniquelyConnectedClient{newTestUcc(other)}))
 
-	forgetClusterScopingGateway(leaving)
+	forgetClusterScopingClient(leaving, false)
 
 	gathered := metricstest.MustGatherMetrics(t)
 	for _, name := range []string{
@@ -177,5 +236,19 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 			{Name: namespaceLabel, Value: "ns-forget"},
 		})
 	}
-	assert.True(t, noteClusterScopingDisabled(leaving, true), "a returning gateway that is unscoped warns again")
+	reportClusterScopingDisabled(log, leaving, []string{"sni_cluster"})
+	assert.Equal(t, 3, strings.Count(logged.String(), "cluster scoping disabled for this gateway"),
+		"a returning gateway that is unscoped warns again")
+}
+
+// bufferLogger returns a logger that writes warnings to the returned buffer.
+func bufferLogger() (*slog.Logger, *bytes.Buffer) {
+	var logged bytes.Buffer
+	warn := slog.LevelWarn
+	return logging.NewWithOptions("proxy_syncer_test", logging.Options{Writer: &logged, Level: &warn, Format: logging.TextFormat}), &logged
+}
+
+func discardLogger() *slog.Logger {
+	log, _ := bufferLogger()
+	return log
 }
