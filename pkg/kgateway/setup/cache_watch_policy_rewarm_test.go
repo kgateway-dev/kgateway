@@ -165,6 +165,109 @@ func TestRewarmEndsPerAssignmentSent(t *testing.T) {
 	require.Empty(t, policy.streams[1].rewarm, "a removed cluster no longer warms")
 }
 
+// serviceCluster is an EDS cluster whose endpoints Envoy requests under
+// service rather than its own name.
+func serviceCluster(name, service string, connectTimeout time.Duration) *envoyclusterv3.Cluster {
+	cluster := rewarmCluster(name, connectTimeout)
+	cluster.EdsClusterConfig.ServiceName = service
+	return cluster
+}
+
+// Marks are kept under the name Envoy requests a cluster's endpoints by, the
+// EDS service_name when set, since that is what an endpoint response carries and
+// the subscription records. A cluster that takes no endpoints is not marked, and
+// a service shared by two re-defined clusters stays marked until both leave or an
+// endpoint response carries it.
+func TestRewarmTracksTheEndpointResourceName(t *testing.T) {
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, true)
+	node := &envoycorev3.Node{Id: "node"}
+	cdsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
+	edsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.EndpointType}
+	response := func(typeURL string, resources ...proto.Message) *discoveryv3.DiscoveryResponse {
+		resp := &discoveryv3.DiscoveryResponse{TypeUrl: typeURL, VersionInfo: "1", Nonce: "1"}
+		for _, resource := range resources {
+			resp.Resources = append(resp.Resources, utils.MustMessageToAny(resource))
+		}
+		return resp
+	}
+	static := func(timeout time.Duration) *envoyclusterv3.Cluster {
+		return &envoyclusterv3.Cluster{Name: "static", ConnectTimeout: durationpb.New(timeout)}
+	}
+	cds := func(timeout time.Duration, clusters ...string) *discoveryv3.DiscoveryResponse {
+		var resources []proto.Message
+		for _, name := range clusters {
+			switch name {
+			case "static":
+				resources = append(resources, static(timeout))
+			case "backend":
+				resources = append(resources, serviceCluster("backend", "shared-service", timeout))
+			default:
+				resources = append(resources, serviceCluster(name, "shared", timeout))
+			}
+		}
+		return response(envoyresource.ClusterType, resources...)
+	}
+	stream := func() *streamState { return policy.streams[1] }
+	require.NoError(t, policy.onStreamRequest(1, cdsRequest))
+
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(time.Second, "backend", "static"))
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(2*time.Second, "backend", "static"))
+	require.Equal(t, map[string]struct{}{"shared-service": {}}, stream().rewarm,
+		"marked under its service name; a cluster without endpoint resources is not marked")
+
+	policy.onStreamResponse(t.Context(), 1, edsRequest, response(envoyresource.EndpointType,
+		&envoyendpointv3.ClusterLoadAssignment{ClusterName: "shared-service"}))
+	require.Empty(t, stream().rewarm, "an endpoint response for the service ends the mark")
+	require.Empty(t, stream().rewarmBy)
+
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(3*time.Second, "backend"))
+	require.Equal(t, map[string]struct{}{"shared-service": {}}, stream().rewarm)
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(3*time.Second))
+	require.Empty(t, stream().rewarm, "a removed cluster takes its mark with it")
+
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(time.Second, "b1", "b2"))
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(2*time.Second, "b1", "b2"))
+	require.Equal(t, map[string]struct{}{"shared": {}}, stream().rewarm)
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(2*time.Second, "b2"))
+	require.Equal(t, map[string]struct{}{"shared": {}}, stream().rewarm, "the other cluster on the service still warms")
+	policy.onStreamResponse(t.Context(), 1, cdsRequest, cds(2*time.Second))
+	require.Empty(t, stream().rewarm)
+}
+
+// End to end in both ADS modes: a re-defined cluster whose endpoints are
+// requested under a service name gets them at the held version.
+func TestRewarmedClusterWithAServiceNameIsAnswered(t *testing.T) {
+	const service = "shared-service"
+	snapshot := func(clusterVersion string, connectTimeout time.Duration) *envoycache.Snapshot {
+		snap := snapshotFor(adsVersions{cluster: clusterVersion, endpoint: "e1", listener: "1", route: "1"},
+			[]*envoyclusterv3.Cluster{serviceCluster(adsTestCluster, service, connectTimeout)}, nil)
+		snap.Resources[cachetypes.Endpoint] = envoycache.NewResources("e1", []cachetypes.Resource{
+			&envoyendpointv3.ClusterLoadAssignment{ClusterName: service},
+		})
+		return snap
+	}
+	for _, ordered := range []bool{false, true} {
+		t.Run(adsModeName(ordered), func(t *testing.T) {
+			h := newPolicyHarness(t, ordered, true, true)
+			h.setSnapshot(snapshot("c1", time.Second))
+			h.subscribeAndAck(envoyresource.ClusterType, "c1", 1)
+			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{service}})
+			eds := h.receiveType(envoyresource.EndpointType, "e1")
+			h.ackNamed(eds, service)
+			h.waitForOpenWatches(2)
+
+			h.setSnapshot(snapshot("c2", 2*time.Second))
+			h.ack(h.receiveType(envoyresource.ClusterType, "c2"))
+			h.ackNamed(eds, service)
+			resp := h.receiveType(envoyresource.EndpointType, "e1")
+			require.Len(t, resp.GetResources(), 1)
+
+			h.ackNamed(resp, service)
+			h.expectSilence("ACK of the re-warm response")
+		})
+	}
+}
+
 // The rule is per stream: a re-definition sent on one stream does not answer
 // another stream's endpoint request.
 func TestRewarmIsPerStream(t *testing.T) {

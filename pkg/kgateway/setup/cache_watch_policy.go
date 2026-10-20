@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -104,9 +105,15 @@ type (
 		rejections map[string]nackRejections
 		// clusters hashes each cluster's encoding in the last cluster response.
 		clusters map[string]uint64
-		// rewarm lists clusters a cluster response re-defined that no endpoint
-		// response has followed yet.
+		// rewarm lists the endpoint resource names (EDS service_name, else the
+		// cluster's name) of EDS clusters a cluster response re-defined that no
+		// endpoint response has followed yet. Envoy requests endpoints, and the
+		// subscription tracks them, by that name.
 		rewarm map[string]struct{}
+		// rewarmBy maps each re-defined cluster to its rewarm entry, so a
+		// cluster that leaves takes its mark with it while another cluster
+		// sharing the service name keeps it.
+		rewarmBy map[string]string
 		// rewarmRequest is this stream's entry in watchPolicy.rewarming.
 		rewarmRequest *discoveryv3.DiscoveryRequest
 	}
@@ -218,17 +225,20 @@ func (s *watchPolicy) onStreamResponse(_ context.Context, streamID int64, req *d
 		// carries only newly subscribed names.
 		for _, resource := range resp.GetResources() {
 			if name, ok := resourceName(resource.GetValue()); ok {
-				delete(st.rewarm, name)
+				st.rewarmDone(name)
 			}
 		}
 	}
 }
 
 // noteClustersLocked records the clusters in a cluster response and marks the
-// ones whose encoding changed since the stream's previous cluster response.
-// The cache marshals deterministically, so equal clusters hash equal. A cluster
-// new to the stream is left alone: Envoy subscribes to its name, and the cache
-// answers new names itself. A removed cluster no longer warms, so its mark goes.
+// EDS ones whose encoding changed since the stream's previous cluster response,
+// under the name Envoy requests their endpoints by. The cache marshals
+// deterministically, so equal clusters hash equal, and only a changed cluster
+// is decoded. A cluster new to the stream is left alone: Envoy subscribes to
+// its endpoints, and the cache answers new names itself. A cluster that takes
+// no endpoint resources, or no longer does, is not marked. A removed cluster no
+// longer warms, so its mark goes unless another re-defined cluster shares it.
 func (s *watchPolicy) noteClustersLocked(st *streamState, resources []*anypb.Any) {
 	sent := make(map[string]uint64, len(resources))
 	for _, resource := range resources {
@@ -238,19 +248,61 @@ func (s *watchPolicy) noteClustersLocked(st *streamState, resources []*anypb.Any
 		}
 		hash := maphash.Bytes(s.seed, resource.GetValue())
 		sent[name] = hash
-		if previous, had := st.clusters[name]; had && previous != hash {
-			if st.rewarm == nil {
-				st.rewarm = make(map[string]struct{})
-			}
-			st.rewarm[name] = struct{}{}
+		if previous, had := st.clusters[name]; !had || previous == hash {
+			continue
+		}
+		endpoints, eds := endpointResourceName(resource.GetValue())
+		if !eds {
+			delete(st.rewarmBy, name)
+			continue
+		}
+		if st.rewarm == nil {
+			st.rewarm = make(map[string]struct{})
+			st.rewarmBy = make(map[string]string)
+		}
+		st.rewarm[endpoints] = struct{}{}
+		st.rewarmBy[name] = endpoints
+	}
+	for cluster := range st.rewarmBy {
+		if _, kept := sent[cluster]; !kept {
+			delete(st.rewarmBy, cluster)
 		}
 	}
-	for name := range st.rewarm {
-		if _, kept := sent[name]; !kept {
-			delete(st.rewarm, name)
+	marked := make(map[string]struct{}, len(st.rewarmBy))
+	for _, endpoints := range st.rewarmBy {
+		marked[endpoints] = struct{}{}
+	}
+	for endpoints := range st.rewarm {
+		if _, ok := marked[endpoints]; !ok {
+			delete(st.rewarm, endpoints)
 		}
 	}
 	st.clusters = sent
+}
+
+// rewarmDone ends the mark on an endpoint resource an endpoint response
+// carried, for every cluster re-defined under it.
+func (st *streamState) rewarmDone(endpoints string) {
+	delete(st.rewarm, endpoints)
+	for cluster, name := range st.rewarmBy {
+		if name == endpoints {
+			delete(st.rewarmBy, cluster)
+		}
+	}
+}
+
+// endpointResourceName decodes a cluster for the name Envoy requests its
+// endpoints by: its EDS service_name, else its name. ok is false for a cluster
+// that takes no endpoint resources.
+func endpointResourceName(encoded []byte) (string, bool) {
+	var cluster envoyclusterv3.Cluster
+	if err := proto.Unmarshal(encoded, &cluster); err != nil || cluster.GetType() != envoyclusterv3.Cluster_EDS {
+		return "", false
+	}
+	if name := cluster.GetEdsClusterConfig().GetServiceName(); name != "" {
+		return name, true
+	}
+	return cluster.GetName(), true
 }
 
 // resourceName reads field 1 of an encoded Cluster (name) or
