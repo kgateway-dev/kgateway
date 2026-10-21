@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -18,6 +19,8 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	kgwxds "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -75,6 +78,12 @@ type adsHarness struct {
 
 func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 	t.Helper()
+	return newADSHarnessWithCallbacks(t, ordered, nil)
+}
+
+// newADSHarnessWithCallbacks is newADSHarness with server callbacks.
+func newADSHarnessWithCallbacks(t *testing.T, ordered bool, callbacks xdsserver.Callbacks) *adsHarness {
+	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	stream := &mockAdsStream{
@@ -82,13 +91,13 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 		sent: make(chan *discoveryv3.DiscoveryResponse, 16),
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
-	cache := envoycache.NewSnapshotCache(true, kgwxds.NewNodeRoleHasher(), nil)
+	cache := newSnapshotCache(kgwxds.NewNodeRoleHasher(), nil)
 
 	var opts []serverconfig.XDSOption
 	if ordered {
 		opts = append(opts, sotwv3.WithOrderedADS())
 	}
-	srv := xdsserver.NewServer(ctx, cache, nil, opts...)
+	srv := xdsserver.NewServer(ctx, cache, callbacks, opts...)
 
 	h := &adsHarness{
 		t:      t,
@@ -108,7 +117,7 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 		select {
 		case err := <-h.done:
 			if err != nil {
-				require.ErrorIs(t, err, context.Canceled)
+				require.Truef(t, isCancellation(err), "ADS stream ended with %v, not the test's cancellation", err)
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatal("ADS stream did not stop after test cancellation")
@@ -116,6 +125,19 @@ func newADSHarness(t *testing.T, ordered bool) *adsHarness {
 	})
 
 	return h
+}
+
+// isCancellation reports whether err is how the ADS server reports the test
+// cancelling the stream. Ordered ADS turns a failed send into an Unavailable
+// status that keeps only the cause's message, so a response still in flight at
+// cancellation, such as the resend of a NACKed version, ends the stream with
+// Unavailable "context canceled" instead of an error wrapping context.Canceled.
+func isCancellation(err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	s, ok := status.FromError(err)
+	return ok && s.Code() == codes.Unavailable && s.Message() == context.Canceled.Error()
 }
 
 func adsTestNode(t *testing.T) *envoycorev3.Node {
@@ -135,21 +157,23 @@ func (h *adsHarness) setSnapshot(snapshot envoycache.ResourceSnapshot) {
 	require.NoError(h.t, h.cache.SetSnapshot(h.ctx, adsTestNodeID, snapshot))
 }
 
-func (h *adsHarness) subscribe(typeURL string) {
+func (h *adsHarness) subscribe(typeURL string, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
-		Node:    h.node,
-		TypeUrl: typeURL,
+		Node:          h.node,
+		TypeUrl:       typeURL,
+		ResourceNames: names,
 	})
 }
 
-func (h *adsHarness) ack(resp *discoveryv3.DiscoveryResponse) {
+func (h *adsHarness) ack(resp *discoveryv3.DiscoveryResponse, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
 		Node:          h.node,
 		TypeUrl:       resp.GetTypeUrl(),
+		ResourceNames: names,
 		VersionInfo:   resp.GetVersionInfo(),
 		ResponseNonce: resp.GetNonce(),
 	})

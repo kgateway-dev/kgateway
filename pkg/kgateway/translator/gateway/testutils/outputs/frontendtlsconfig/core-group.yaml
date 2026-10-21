@@ -20,7 +20,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https
-        statPrefix: http
+        statPrefix: https_443_https
         useRemoteAddress: true
     name: https
     transportSocket:
@@ -63,7 +63,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-mtls-strict-validation
-        statPrefix: http
+        statPrefix: https_8443_https-mtls-strict-validation
         useRemoteAddress: true
     name: https-mtls-strict-validation
     transportSocket:
@@ -115,7 +115,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-insecure-fallback
-        statPrefix: http
+        statPrefix: https_9443_https-insecure-fallback
         useRemoteAddress: true
     name: https-insecure-fallback
     transportSocket:

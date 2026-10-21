@@ -296,7 +296,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 		localClusterEpPerClient,
 	)
 
-	backendPolicyContributions := backendPolicyStatusContributions(finalBackendsWithPolicyStatus, krtopts)
+	backendPolicyContributions := backendPolicyStatusContributions(finalBackendsWithPolicyStatus, clustersPerClient.StatusClusters(), krtopts)
 
 	// Backend status is reduced per Backend. Indexed cluster and plugin-condition
 	// dependencies ensure one client's error only recomputes its owning Backend.

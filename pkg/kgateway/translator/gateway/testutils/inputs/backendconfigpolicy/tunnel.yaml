@@ -1,0 +1,117 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: external
+  namespace: default
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: external.example.com
+      port: 443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: external-egress
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: external
+  tls:
+    sni: external.example.com
+    wellKnownCACertificates: System
+  tunnel:
+    proxy:
+      backendRef:
+        name: egress-proxy
+        port: 3128
+    headers:
+    - name: Proxy-Authorization
+      value: Basic dXNlcjpwYXNz
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress-proxy
+  namespace: default
+spec:
+  ports:
+  - name: https
+    port: 3128
+    targetPort: 3128
+  selector:
+    app: egress-proxy
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: egress-proxy
+  namespace: default
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: egress-proxy
+  tls:
+    sni: proxy.example.com
+    wellKnownCACertificates: System
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: api
+  namespace: default
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: api.example.com
+      port: 443
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: api-egress
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: api
+  tunnel:
+    proxy:
+      backendRef:
+        group: gateway.kgateway.dev
+        kind: Backend
+        name: proxy-pool
+    headers:
+    - name: Proxy-Authorization
+      value: Basic dXNlcjpwYXNz
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: proxy-pool
+  namespace: default
+spec:
+  type: Static
+  static:
+    hosts:
+    - host: proxy-a.example.com
+      port: 3128
+    - host: proxy-b.example.com
+      port: 3128

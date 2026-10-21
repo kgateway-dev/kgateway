@@ -33,9 +33,14 @@ type Options struct {
 	// When set, this generator will be used instead of the built-in GatewayParameters-based generator
 	// for all Gateways. This is a 1:1 replacement - you provide one generator that handles everything.
 	HelmValuesGeneratorOverride func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
-	ExtraXDSCallbacks           xdsserver.Callbacks
-	RestConfig                  *rest.Config
-	CtrlMgrOptions              func(context.Context) *ctrl.Options
+	// ExtraXDSCallbacks receive every xDS server hook: SotW stream, fetch, and
+	// delta. They run before kgateway's own callbacks, so an error from a hook that
+	// can reject (see setup.ChainCallbacks) ends the stream or request before
+	// kgateway identifies the client. They must tolerate a close for a stream whose
+	// open they did not see.
+	ExtraXDSCallbacks xdsserver.Callbacks
+	RestConfig        *rest.Config
+	CtrlMgrOptions    func(context.Context) *ctrl.Options
 	// extra controller manager config, like registering additional controllers
 	ExtraManagerConfig []func(context.Context, manager.Manager, kubetypes.DynamicObjectFilter) error
 	// ExtraRunnables are additional runnables to add to the manager

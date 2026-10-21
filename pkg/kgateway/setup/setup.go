@@ -115,6 +115,11 @@ func WithControllerManagerOptions(f func(context.Context) *ctrl.Options) func(*s
 	}
 }
 
+// WithExtraXDSCallbacks adds callbacks that receive every xDS server hook: SotW
+// stream, fetch, and delta. They run before kgateway's own callbacks, so an error
+// from a hook that can reject (see ChainCallbacks) ends the stream or request
+// before kgateway identifies the client. They must tolerate a close for a stream
+// whose open they did not see.
 func WithExtraXDSCallbacks(extraXDSCallbacks xdsserver.Callbacks) func(*setup) {
 	return func(s *setup) {
 		s.extraXDSCallbacks = extraXDSCallbacks
@@ -296,7 +301,7 @@ func (s *setup) Start(ctx context.Context) error {
 		return err
 	}
 
-	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.extraXDSCallbacks, s.globalSettings.XdsAuth)
+	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients(s.globalSettings.XdsAuth)
 
 	authenticators := []security.Authenticator{
 		NewKubeJWTAuthenticator(s.apiClient.Kube()),
@@ -318,7 +323,10 @@ func (s *setup) Start(ctx context.Context) error {
 		}
 	}
 
-	cache := NewControlPlane(ctx, s.xdsListener, uniqueClientCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
+	// Extra callbacks go first in the chain, so they receive every hook by
+	// construction instead of through forwarding.
+	xdsCallbacks := ChainCallbacks(s.extraXDSCallbacks, uniqueClientCallbacks)
+	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,

@@ -7,6 +7,7 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -160,4 +161,46 @@ func TestADSCacheDropsNewNamedRequestItCannotAnswer(t *testing.T) {
 
 	require.NoError(t, cache.SetSnapshot(ctx, retentionNode, edsOnlySnapshot(t, "3", "backend")))
 	requireNoResponse(t, dropped, "nothing to answer: the request left no watch behind")
+}
+
+// TestADSCacheServesRequestedSecrets checks our cache through the ADS server: a
+// secret Envoy never requests, such as one of a rejected listener, must not hold
+// back the secrets it requested, their rotation, or a later request for it.
+func TestADSCacheServesRequestedSecrets(t *testing.T) {
+	h := newADSHarness(t, false)
+	secret := func(name, value string) *envoytlsv3.Secret {
+		return &envoytlsv3.Secret{Name: name, Type: &envoytlsv3.Secret_GenericSecret{GenericSecret: &envoytlsv3.GenericSecret{
+			Secret: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_InlineString{InlineString: value}},
+		}}}
+	}
+	snapshot := func(version, value string) *envoycache.Snapshot {
+		s, err := envoycache.NewSnapshot(version, map[envoyresource.Type][]cachetypes.Resource{
+			envoyresource.SecretType: {secret("requested", value), secret("unrequested", "later")},
+		})
+		require.NoError(t, err)
+		return s
+	}
+	values := func(resp *discoveryv3.DiscoveryResponse) map[string]string {
+		out := map[string]string{}
+		for _, r := range resp.GetResources() {
+			secret := &envoytlsv3.Secret{}
+			require.NoError(t, r.UnmarshalTo(secret))
+			out[secret.GetName()] = secret.GetGenericSecret().GetSecret().GetInlineString()
+		}
+		return out
+	}
+
+	h.setSnapshot(snapshot("1", "initial"))
+	h.subscribe(envoyresource.SecretType, "requested")
+	first := h.receiveType(envoyresource.SecretType, "1")
+	require.Equal(t, map[string]string{"requested": "initial"}, values(first))
+
+	h.ack(first, "requested")
+	h.setSnapshot(snapshot("2", "rotated"))
+	rotated := h.receiveType(envoyresource.SecretType, "2")
+	require.Equal(t, map[string]string{"requested": "rotated"}, values(rotated))
+
+	// A listener accepted later requests its secret at the current version.
+	h.ack(rotated, "requested", "unrequested")
+	require.Equal(t, map[string]string{"unrequested": "later"}, values(h.receiveType(envoyresource.SecretType, "2")))
 }

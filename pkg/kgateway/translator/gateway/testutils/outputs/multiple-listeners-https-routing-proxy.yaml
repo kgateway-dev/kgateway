@@ -23,7 +23,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-bookinfo
-        statPrefix: http
+        statPrefix: https_443_https-bookinfo
         useRemoteAddress: true
     name: https-bookinfo
     transportSocket:
@@ -58,7 +58,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https-httpbin
-        statPrefix: http
+        statPrefix: https_443_https-httpbin
         useRemoteAddress: true
     name: https-httpbin
     transportSocket:
