@@ -28,6 +28,10 @@ type clusterScoping struct {
 }
 
 func clusterScopingFrom(s apisettings.Settings, policies sdk.ContributesPolicies) clusterScoping {
+	if s.ClusterDiscoveryMode != apisettings.ClusterDiscoveryReferenced {
+		// Unscoped: no transition windows, and no plugin's claim code runs.
+		return clusterScoping{mode: s.ClusterDiscoveryMode}
+	}
 	return clusterScoping{
 		mode:             s.ClusterDiscoveryMode,
 		dereferenceGrace: s.ClusterDereferenceGrace,

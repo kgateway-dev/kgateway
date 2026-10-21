@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
 // TestClusterScopingIsOffByDefault: an upgrade must not change what proxies are sent.
@@ -23,6 +24,33 @@ func TestClusterScopingIsOffByDefault(t *testing.T) {
 	assert.True(t, clusterScopingFrom(apisettings.Settings{
 		ClusterDiscoveryMode: apisettings.ClusterDiscoveryReferenced,
 	}, nil).ScopesClusters())
+}
+
+// TestUnscopedModeRunsNoPluginClaims: without REFERENCED, no plugin's claim
+// code runs and the transition windows are off, whatever they are set to.
+func TestUnscopedModeRunsNoPluginClaims(t *testing.T) {
+	plugins := sdk.ContributesPolicies{
+		{Group: "test", Kind: "Picker"}: {
+			Name: "picker",
+			ClaimEmittedClusters: func() sdk.ClusterEmissionClaim {
+				t.Error("a claim was collected while cluster scoping is off")
+				return sdk.ClusterEmissionClaim{}
+			},
+		},
+	}
+	for name, mode := range map[string]apisettings.ClusterDiscoveryMode{"zero": "", "ALL": apisettings.ClusterDiscoveryAll} {
+		t.Run(name, func(t *testing.T) {
+			scoping := clusterScopingFrom(apisettings.Settings{
+				ClusterDiscoveryMode:    mode,
+				ClusterDereferenceGrace: time.Minute,
+				ClusterReferenceAhead:   time.Minute,
+			}, plugins)
+			assert.False(t, scoping.ScopesClusters())
+			assert.Zero(t, scoping.DereferenceGrace())
+			assert.Zero(t, scoping.ReferenceAhead())
+			assert.Empty(t, scoping.Claims().bySelector)
+		})
+	}
 }
 
 // TestDisabledScopingSkipsTheEmissionWalkEntirely: disabled scoping must skip the
