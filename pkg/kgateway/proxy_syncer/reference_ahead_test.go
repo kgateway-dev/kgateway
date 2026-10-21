@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
@@ -330,4 +331,60 @@ func TestDereferencePruneKeepsAReferenceAheadHold(t *testing.T) {
 	pt.gate.mu.Unlock()
 	assert.True(t, held, "the hold is still pending its own release")
 	assertSnapshotCoherent(t, served)
+}
+
+// The de-reference grace runs from the publish that ships the routes no longer
+// naming the cluster. A reference-ahead hold (300ms) delays that publish; timed
+// from the held build, the grace (400ms) would leave old only 100ms after the
+// route update.
+func TestDereferenceGraceStartsWhenAReferenceAheadHoldReleases(t *testing.T) {
+	scoping := scopedClustersWithReferenceAhead(300 * time.Millisecond)
+	scoping.dereferenceGrace = 400 * time.Millisecond
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scoping)
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new")) // retarget: held for new's window
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the retarget is held")
+
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v2" }, 2*time.Second, 5*time.Millisecond)
+	shipped := time.Now()
+	time.Sleep(200 * time.Millisecond)
+	if time.Since(shipped) < 400*time.Millisecond {
+		assert.Contains(t, publishedClusterNames(t, pt), "old",
+			"old must stay for its whole grace after the routes that stop naming it ship")
+	}
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
+		"old still leaves once its grace closes")
+}
+
+// The same for a flip held on an unready cluster: the grace (400ms) opens when
+// the flip publishes, not when the held build dropped the cluster.
+func TestDereferenceGraceStartsWhenAHeldFlipPublishes(t *testing.T) {
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true,
+		scopedClustersWithGrace(400*time.Millisecond))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	unready := routedBuild(t, "v2", "new", "new")
+	unready.missingEndpointsReferenced = []string{"new"}
+	unready.synthesizedEndpoints = []string{"new"}
+	pt.syncXds(ctx, unready)
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the flip onto an unready cluster is held")
+
+	time.Sleep(300 * time.Millisecond)
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new")) // new is ready: the flip publishes
+	shipped := time.Now()
+	require.Equal(t, "v3", publishedListenerVersionOf(t, pt))
+	time.Sleep(200 * time.Millisecond)
+	if time.Since(shipped) < 400*time.Millisecond {
+		assert.Contains(t, publishedClusterNames(t, pt), "old",
+			"old must stay for its whole grace after the routes that stop naming it ship")
+	}
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
+		"old still leaves once its grace closes")
 }

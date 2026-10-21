@@ -193,7 +193,7 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
 
 	start := time.Now()
-	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start)
+	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start)
 	require.Len(t, graced, 2)
 	require.InDelta(t, time.Minute, soonest, float64(time.Second))
 
@@ -203,7 +203,7 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 		{Resource: edsClusterProto("second-out")},
 		{Resource: edsClusterProto("third-out")},
 	})
-	_, soonest = g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start.Add(30*time.Second))
+	_, soonest = g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start.Add(30*time.Second))
 	assert.InDelta(t, 30*time.Second, soonest, float64(time.Second),
 		"the timer must fire for the oldest window, not the newest")
 }
@@ -219,10 +219,10 @@ func TestGraceDereferencedClustersDropsExpiredEntries(t *testing.T) {
 	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
 
 	start := time.Now()
-	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start)
+	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start)
 	require.Len(t, graced, 1)
 
-	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, start.Add(2*time.Second))
+	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start.Add(2*time.Second))
 	assert.Empty(t, graced, "past the window the cluster stops being published")
 	assert.Zero(t, soonest, "with nothing graced there is nothing left to wake up for")
 }
@@ -240,7 +240,7 @@ func TestGraceDereferencedClustersSkipsClustersNoLongerTranslated(t *testing.T) 
 	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
 	translated := map[string]envoycachetypes.ResourceWithTTL{"scoped-out": {Resource: edsClusterProto("scoped-out")}}
 
-	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, translated, time.Now())
+	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, translated, false, time.Now())
 	assert.Equal(t, map[string]struct{}{"scoped-out": {}}, graced)
 	assert.NotContains(t, g.dereferenced[publishGateTestClient].since, "deleted", "a gone cluster opens no window")
 }

@@ -37,11 +37,19 @@ type dereferenceState struct {
 // sending traffic to that backend, which a request-time selector would still
 // pick by name. Callers must hold the gate lock. A nonpositive grace disables
 // retention.
+//
+// A window opens when the routes that stop naming the cluster are published.
+// holding means this publish keeps the routing types at their published
+// versions (a held flip or a reference-ahead hold), so it opens no window:
+// timed from the held build, the hold would use up the grace, and the cluster
+// could leave right behind the route update. Every hold keeps all published
+// clusters, so nothing is lost meanwhile. Windows already open keep running.
 func (g *publishGate) graceDereferencedClustersLocked(
 	proxyKey string,
 	published envoycache.ResourceSnapshot,
 	building envoycache.Resources,
 	translated map[string]envoycachetypes.ResourceWithTTL,
+	holding bool,
 	now time.Time,
 ) (map[string]struct{}, time.Duration) {
 	if g.dereferenceGrace <= 0 {
@@ -85,6 +93,9 @@ func (g *publishGate) graceDereferencedClustersLocked(
 		}
 		left, recorded := state.since[name]
 		if !recorded {
+			if holding {
+				continue // the hold keeps it; its window opens when the routes ship
+			}
 			left = now
 			state.since[name] = left
 		}
@@ -221,13 +232,13 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}
 
-	graced, soonest := g.graceDereferencedClustersLocked(
-		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, time.Now())
-
 	// Routes, listeners and secrets stay published while the new cluster's CDS
 	// goes out; the flip-release timer sends them when the window closes.
 	now := time.Now()
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
+	graced, soonest := g.graceDereferencedClustersLocked(
+		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters,
+		len(newlyEmitted) > 0, now)
 
 	if len(graced) == 0 && len(newlyEmitted) == 0 {
 		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)

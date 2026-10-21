@@ -129,6 +129,37 @@ func (m *referencedClustersMemo) get(
 	return refs
 }
 
+// flipBlockingClusters returns the clusters a deferred build would hold its
+// flip for: missing ones the published configuration does not yet reference.
+// Missing clusters still in published CDS are carried instead.
+func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot) []string {
+	publishedRefs := publishedReferencedClusters(published)
+	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
+	var flipBlocking []string
+	for _, name := range snapWrap.missingReferenced {
+		if _, wasReferenced := publishedRefs[name]; wasReferenced {
+			continue // already live, including a missing cluster published at budget expiry
+		}
+		if _, wasPublished := oldClusters[name]; wasPublished {
+			continue // carried forward
+		}
+		flipBlocking = append(flipBlocking, name)
+	}
+	for _, name := range snapWrap.missingEndpointsReferenced {
+		// Previously referenced: the client keeps its endpoints. When scoped, a
+		// dropped backend's listener still ships and can name a cluster scoping
+		// left out of CDS; the client has no endpoints for that one.
+		_, wasReferenced := publishedRefs[name]
+		_, wasPublished := oldClusters[name]
+		if wasReferenced && (wasPublished || !snapWrap.scopesClusters) {
+			continue
+		}
+		flipBlocking = append(flipBlocking, name)
+	}
+	slices.Sort(flipBlocking)
+	return flipBlocking
+}
+
 // resolveDeferredPerCluster composes the snapshot to publish for a deferred
 // wrapper against the one published on the client's current connection:
 //
@@ -148,33 +179,8 @@ func (m *referencedClustersMemo) get(
 // Returns the snapshot, the flip-blocking clusters if held (else nil), and the
 // EDS contributions.
 func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
-	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
-
-	// Only gaps the published config does not yet reference block the flip.
-	// Missing clusters still in published CDS are carried instead.
-	var flipBlocking []string
-	for _, name := range snapWrap.missingReferenced {
-		if _, wasReferenced := publishedRefs[name]; wasReferenced {
-			continue // already live, including a missing cluster published at budget expiry
-		}
-		if _, wasPublished := oldClusters[name]; wasPublished {
-			continue // carried forward below
-		}
-		flipBlocking = append(flipBlocking, name)
-	}
-	for _, name := range snapWrap.missingEndpointsReferenced {
-		// Previously referenced: the client keeps its endpoints. When scoped, a
-		// dropped backend's listener still ships and can name a cluster scoping
-		// left out of CDS; the client has no endpoints for that one.
-		_, wasReferenced := publishedRefs[name]
-		_, wasPublished := oldClusters[name]
-		if wasReferenced && (wasPublished || !snapWrap.scopesClusters) {
-			continue
-		}
-		flipBlocking = append(flipBlocking, name)
-	}
-	slices.Sort(flipBlocking)
+	flipBlocking := flipBlockingClusters(snapWrap, published)
 
 	composed := &envoycache.Snapshot{}
 	*composed = *snapWrap.snap

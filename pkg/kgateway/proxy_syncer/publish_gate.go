@@ -429,11 +429,12 @@ func (g *publishGate) resolveDeferredLocked(
 	// Keep de-referenced clusters for their grace, giving the route update time
 	// to land first.
 	now := time.Now()
-	graced, soonestExpiry := g.graceDereferencedClustersLocked(
-		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, now)
 	// A deferred build can add a new cluster too (a retarget alongside an
 	// unrelated gap) and gets the same hold.
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
+	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published)) > 0
+	graced, soonestExpiry := g.graceDereferencedClustersLocked(
+		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, holding, now)
 	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	switch {
@@ -779,8 +780,10 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	if published == nil {
 		return // nothing published to resolve against; nothing was held
 	}
+	// The release publishes the held routes, so their de-references' windows
+	// open now.
 	graced, soonestExpiry := g.graceDereferencedClustersLocked(
-		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, time.Now())
+		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, false, time.Now())
 	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
 	// A reference-ahead window closing on its own is expected. Warn and count a
 	// bounded publish only when the budget cut one short.
