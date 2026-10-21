@@ -128,12 +128,13 @@ func snapshotPerClient(
 			clusterResources.Version = strconv.FormatUint(clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
-		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
+		// Exclude CLAs for STATIC clusters so the snapshot only contains resources Envoy will request.
 		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
 		// Backend translation errors remove the corresponding cluster from CDS above. Remove
 		// its CLA as well: after Envoy observes the CDS removal it stops naming that resource
-		// in EDS requests, and go-control-plane otherwise withholds the entire named EDS
-		// response, including updates for healthy clusters.
+		// in EDS requests. newSnapshotCache serves EDS per request, so an unrequested CLA no
+		// longer holds back healthy clusters' endpoints (#14498); this keeps the snapshot
+		// consistent with CDS and keeps that protection if the cache changes.
 		//
 		// Keep this filtering explicitly error-scoped. Some endpoint resources, such as the
 		// bootstrap-defined local cluster, intentionally have no cluster in this CDS snapshot.
@@ -260,8 +261,8 @@ func mergeBackendResources[M proto.Message](gateway envoycache.Resources, backen
 }
 
 // filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters
-// that are STATIC (inline endpoints). Envoy does not request EDS for those; including them in the
-// snapshot triggers the ADS cache "not listed" warning when responding to EDS requests.
+// that are STATIC (inline endpoints). Envoy does not request EDS for those, so the snapshot
+// should not carry them.
 func filterEndpointResourcesForStaticClusters(clusters envoycache.Resources, endpoints envoycache.Resources) envoycache.Resources {
 	staticClusterNames := make(map[string]struct{})
 	for _, item := range clusters.Items {
