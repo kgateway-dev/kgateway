@@ -174,24 +174,25 @@ func (p *adsProxy) subscribe(typeURL string, names ...string) {
 	p.request(typeURL, nil)
 }
 
-// subscribeHandled is subscribe, then waits until the cache has handled a
-// request carrying the new names, whatever it did with it. CreateWatch stamps
-// the node's last watch request time while holding the cache lock that
-// SetSnapshot takes, so a snapshot set afterwards is ordered after the request,
-// as it is with Envoy, which sends it milliseconds after the CDS or LDS
-// response. If a response raced the request, the server drops the request for
-// its stale nonce; handling that response sends the names again, as Envoy's
-// ACK does.
+// subscribeHandled is subscribe, then waits until CreateWatch has returned for
+// a request of typeURL carrying the new names, whatever the cache did with it.
+// Requests of other types, such as the CDS or LDS ACK sent just before, do not
+// count, and every caller subscribes to names it has not requested before, so
+// no earlier request does either. A
+// snapshot set afterwards is therefore ordered after the request, as it is with
+// Envoy, which sends it milliseconds after the CDS or LDS response. If a
+// response raced the request, the server drops the request for its stale nonce
+// without calling CreateWatch; handling that response sends the names again, as
+// Envoy's ACK does.
 func (p *adsProxy) subscribeHandled(typeURL string, names ...string) {
 	p.h.t.Helper()
 
-	sent := time.Now()
+	before := p.h.watches.count(typeURL, names)
 	p.subscribe(typeURL, names...)
 	handled := p.pump(proxyUpdateWithin, func() bool {
-		info := p.h.cache.GetStatusInfo(adsTestNodeID)
-		return info != nil && !info.GetLastWatchRequestTime().Before(sent)
+		return p.h.watches.count(typeURL, names) > before
 	})
-	require.True(p.h.t, handled, "the cache never handled the %s request", typeURL)
+	require.True(p.h.t, handled, "the cache never handled the %s request for %v", typeURL, names)
 }
 
 func (p *adsProxy) accept(resp *discoveryv3.DiscoveryResponse) {
