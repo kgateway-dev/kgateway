@@ -236,7 +236,7 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 	var publishErr error
 	if len(newlyEmitted) > 0 {
 		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
-		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes, now)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes)
 	} else {
 		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 		// publishLocked cancels a pending first publish or flip release, whose

@@ -439,10 +439,10 @@ func (g *publishGate) resolveDeferredLocked(
 	switch {
 	case len(heldBlocking) > 0:
 		// Publish CDS/EDS while holding the flip, and arm its release timer.
-		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, newlyEmitted, aheadFor, edsHashes, now)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, newlyEmitted, aheadFor, edsHashes)
 	case len(newlyEmitted) > 0:
 		held, aheadHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
-		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, aheadHashes, now)
+		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, aheadHashes)
 	default:
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
 	}
@@ -659,7 +659,6 @@ func (g *publishGate) publishHeldLocked(
 	ahead []string,
 	aheadFor time.Duration,
 	edsHashes map[string]uint64,
-	now time.Time,
 ) error {
 	proxyKey := snapWrap.proxyKey
 	// Like any publish, this supersedes the pending carry expiry; a deferred
@@ -668,8 +667,14 @@ func (g *publishGate) publishHeldLocked(
 	if err := g.setSnapshot(ctx, cache, proxyKey, held, snapWrap.synthesizedEndpoints, edsHashes); err != nil {
 		return err
 	}
+	// The hold's clock starts once the held snapshot is installed, so a slow
+	// install does not use up the budget.
+	now := time.Now()
 	pf := g.pendingFlips[proxyKey]
 	if pf == nil {
+		if g.budget <= 0 && len(ahead) == 0 {
+			return nil // nothing bounds this hold: it lasts until the flip resolves
+		}
 		pf = &pendingFlipRelease{since: now}
 		g.pendingFlips[proxyKey] = pf
 		logger.Info("holding route flip until its clusters are ready and delivered",
