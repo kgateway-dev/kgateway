@@ -758,11 +758,11 @@ func settleSynthesizedEndpoints(snap *envoycache.Snapshot, synthesized []string,
 // snapshotConsistencyError reports resources the snapshot publishes that none
 // of its other resources reference: a CLA whose cluster is not an EDS cluster
 // in its CDS, or a RouteConfiguration no listener names. Envoy requests those
-// types by the names CDS and LDS give it, and go-control-plane withholds an
-// ADS response that carries a resource the client did not request (#14471),
-// freezing that type for the client. The gateway's bootstrap local cluster is
-// the one intended exception: its CLA is published without a dynamic cluster
-// to clients that subscribed to it.
+// types by the names CDS and LDS give it, so it never receives them; with an
+// ADS cache they also held back that whole type for the client (#14471),
+// which newSnapshotCache no longer does (#14865). The gateway's bootstrap
+// local cluster is the one intended exception: its CLA is published without a
+// dynamic cluster to clients that subscribed to it.
 //
 // It also reports a listener that names a RouteConfiguration the snapshot
 // lacks. No publication path leaves one out on purpose (a held flip keeps

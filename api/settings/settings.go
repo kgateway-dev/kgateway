@@ -413,8 +413,8 @@ type Settings struct {
 
 	// XdsSnapshotConsistencyCheck checks each per-client snapshot before
 	// publish for EDS or RDS resources that no CDS or LDS resource references
-	// (go-control-plane withholds an ADS response carrying an unrequested
-	// resource) and for listeners naming a missing RouteConfiguration.
+	// (Envoy never requests them) and for listeners naming a missing
+	// RouteConfiguration.
 	// Violations are logged and counted in
 	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total; any
 	// increment is a kgateway bug. The snapshot still publishes: blocking would

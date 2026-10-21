@@ -108,9 +108,10 @@ func snapshotPerClient(
 			clusterResources.Items,
 			clustersForUcc.erroredClusters,
 		)
-		// Envoy requests CLAs by the names CDS gives it, and go-control-plane
-		// withholds an ADS response carrying an unrequested CLA, so EDS must match
-		// this snapshot's CDS.
+		// Envoy requests CLAs by the names CDS gives it, so EDS matches this
+		// snapshot's CDS. newSnapshotCache serves EDS per request (#14865), so an
+		// unrequested CLA no longer holds back the rest; matching keeps the
+		// snapshot consistent, and keeps that protection if the cache changes.
 		bootstrapEndpoint := ""
 		if ucc.KnowsLocalCluster {
 			bootstrapEndpoint, _, _ = ucc.LocalClusterInfo()
@@ -439,8 +440,9 @@ func stringSet(values []string) map[string]struct{} {
 // filterEndpointResourcesForClusters returns the EDS resources that belong with
 // the EDS clusters in the same CDS snapshot. It drops CLAs for clusters that do
 // not use EDS or are not in CDS: Envoy requests EDS resources by the names CDS
-// gives it, and go-control-plane withholds a whole ADS response that carries
-// one the client did not request (#14471). It adds an empty CLA for every EDS
+// gives it, so it never requests those, and an ADS cache withholds a whole
+// response that carries one (#14471; newSnapshotCache serves EDS per request
+// since #14865). It adds an empty CLA for every EDS
 // cluster with no derived one and returns their names, so the snapshot stays
 // EDS-consistent; the publish gate decides which of those synthesized CLAs the
 // client receives (settleSynthesizedEndpoints), because an empty CLA would
