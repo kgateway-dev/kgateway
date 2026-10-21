@@ -293,15 +293,14 @@ func TestRejectionMetricsFollowResolvedIdentity(t *testing.T) {
 	// The request's role deliberately disagrees with both the pod label and SA.
 	req.Node.Metadata.Fields[xds.RoleKey] = structpb.NewStringValue(owner + "~spoofed-ns~spoofed-gateway")
 	require.NoError(t, chain.OnStreamRequest(1, req))
+	// Look each series up by its labels: AssertMetricsInclude skips series it
+	// does not expect, so it would pass with no second-gateway series at all.
 	assertMetrics := func(gateway string, total, active float64) {
 		t.Helper()
 		gathered := metricstest.MustGatherMetrics(t)
-		gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_total", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetric{Labels: labels(ns, gateway, typeURL), Value: total},
-		})
-		gathered.AssertMetricsInclude("kgateway_envoy_xds_rejects_active", []metricstest.ExpectMetric{
-			&metricstest.ExpectedMetric{Labels: labels(ns, gateway, typeURL), Value: active},
-		})
+		want := labels(ns, gateway, typeURL)
+		require.Equal(t, total, gathered.MustGetMetricValueByLabels("kgateway_envoy_xds_rejects_total", want))
+		require.Equal(t, active, gathered.MustGetMetricValueByLabels("kgateway_envoy_xds_rejects_active", want))
 	}
 	assertMetrics("first-gateway", 1, 1)
 	// Follow-ups reuse the rewritten node, just like go-control-plane.
