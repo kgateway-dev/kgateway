@@ -57,7 +57,7 @@ func newNackHarness(t *testing.T, ordered bool) *adsHarness {
 		select {
 		case err := <-h.done:
 			if err != nil {
-				require.ErrorIs(t, err, context.Canceled)
+				require.Truef(t, isCancellation(err), "ADS stream ended with %v, not the test's cancellation", err)
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatal("ADS stream did not stop after test cancellation")

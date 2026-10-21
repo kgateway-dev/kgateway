@@ -37,6 +37,14 @@ func parkNamedEndpointNack(t *testing.T, h *adsHarness) {
 	h.waitForOpenWatches(1)
 }
 
+// adsOnlyCache is a single ADS snapshot cache. newSnapshotCache serves EDS per
+// request (#14865) and answers a named request whatever else the snapshot
+// holds; the tests below need a cache that cannot answer one, as the ADS cache
+// still cannot for the types it serves.
+func adsOnlyCache() envoycache.SnapshotCache {
+	return envoycache.NewSnapshotCache(true, kgwxds.NewNodeRoleHasher(), nil)
+}
+
 // The ADS cache keeps a named watch it cannot answer, but drops a new one. A
 // retry that replaced the kept watch while the snapshot held an endpoint set
 // the proxy does not request would leave the stream with no EDS watch, so a
@@ -45,7 +53,7 @@ func TestParkedNackRetryKeepsAWatchTheCacheCannotAnswer(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
 			shortenNackRetry(t, 100*time.Millisecond, time.Second)
-			h := newNackHarness(t, ordered)
+			h := newNackHarnessOver(t, ordered, adsOnlyCache())
 			parkNamedEndpointNack(t, h)
 
 			// The cache cannot answer the parked watch while the snapshot holds
@@ -68,7 +76,7 @@ func TestParkedNackRetryResumesWhenTheRejectedVersionReturns(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
 			shortenNackRetry(t, 50*time.Millisecond, 50*time.Millisecond)
-			h := newNackHarness(t, ordered)
+			h := newNackHarnessOver(t, ordered, adsOnlyCache())
 			parkNamedEndpointNack(t, h)
 
 			h.setSnapshot(edsOnlySnapshot(t, "2", adsTestCluster, "unrequested"))
@@ -116,9 +124,8 @@ func (g *snapshotReadGate) GetSnapshot(node string) (envoycache.ResourceSnapshot
 	return snapshot, err
 }
 
-// newGatedNackHarness is newNackHarness with gate between the suppressor and
-// the cache.
-func newGatedNackHarness(t *testing.T, ordered bool, gate *snapshotReadGate) *adsHarness {
+// newNackHarnessOver is newNackHarness with the suppressor in front of inner.
+func newNackHarnessOver(t *testing.T, ordered bool, inner envoycache.SnapshotCache) *adsHarness {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -127,7 +134,7 @@ func newGatedNackHarness(t *testing.T, ordered bool, gate *snapshotReadGate) *ad
 		sent: make(chan *discoveryv3.DiscoveryResponse, 16),
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
-	suppressor := newNackResendSuppressor(gate, kgwxds.NewNodeRoleHasher())
+	suppressor := newNackResendSuppressor(inner, kgwxds.NewNodeRoleHasher())
 	var opts []serverconfig.XDSOption
 	if ordered {
 		opts = append(opts, sotwv3.WithOrderedADS())
@@ -142,7 +149,7 @@ func newGatedNackHarness(t *testing.T, ordered bool, gate *snapshotReadGate) *ad
 		select {
 		case err := <-h.done:
 			if err != nil {
-				require.ErrorIs(t, err, context.Canceled)
+				require.Truef(t, isCancellation(err), "ADS stream ended with %v, not the test's cancellation", err)
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatal("ADS stream did not stop after test cancellation")
@@ -160,11 +167,11 @@ func TestParkedNackRetryHoldsPublicationOffUntilItReplacesTheWatch(t *testing.T)
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
 			shortenNackRetry(t, 100*time.Millisecond, time.Second)
 			gate := &snapshotReadGate{
-				SnapshotCache: envoycache.NewSnapshotCache(true, kgwxds.NewNodeRoleHasher(), nil),
+				SnapshotCache: adsOnlyCache(),
 				read:          make(chan struct{}),
 				resume:        make(chan struct{}),
 			}
-			h := newGatedNackHarness(t, ordered, gate)
+			h := newNackHarnessOver(t, ordered, gate)
 			t.Cleanup(gate.release)
 			parkNamedEndpointNack(t, h)
 
@@ -207,11 +214,11 @@ func TestNackParkingHoldsPublicationOffUntilTheWatchIsRegistered(t *testing.T) {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
 			shortenNackRetry(t, time.Minute, time.Minute)
 			gate := &snapshotReadGate{
-				SnapshotCache: envoycache.NewSnapshotCache(true, kgwxds.NewNodeRoleHasher(), nil),
+				SnapshotCache: adsOnlyCache(),
 				read:          make(chan struct{}),
 				resume:        make(chan struct{}),
 			}
-			h := newGatedNackHarness(t, ordered, gate)
+			h := newNackHarnessOver(t, ordered, gate)
 			t.Cleanup(gate.release)
 			h.setSnapshot(edsOnlySnapshot(t, "1", adsTestCluster))
 			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}})
