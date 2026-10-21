@@ -84,13 +84,15 @@ func openWatches(cache envoycache.SnapshotCache, node string) (n int, ok bool) {
 }
 
 // nack sends a NACK of resp: accepted as the held version, resp's nonce, and an
-// error detail, which is what marks a NACK on the wire.
-func (h *adsHarness) nack(resp *discoveryv3.DiscoveryResponse, accepted string) {
+// error detail, which is what marks a NACK on the wire. A named type passes
+// the names it still subscribes to.
+func (h *adsHarness) nack(resp *discoveryv3.DiscoveryResponse, accepted string, names ...string) {
 	h.t.Helper()
 
 	h.send(&discoveryv3.DiscoveryRequest{
 		Node:          h.node,
 		TypeUrl:       resp.GetTypeUrl(),
+		ResourceNames: names,
 		VersionInfo:   accepted,
 		ResponseNonce: resp.GetNonce(),
 		ErrorDetail:   &status.Status{Message: "rejected by test"},
@@ -285,8 +287,13 @@ func TestReconnectEndpointRequestIsAnsweredWhenSnapshotArrivesAtHeldVersion(t *t
 			h.waitForOpenWatches(1)
 			h.setSnapshot(reconnectSnapshot("2"))
 			second := h.receiveType(envoyresource.EndpointType, "2")
-			h.nack(second, "1")
+			// The NACK keeps the subscription; without its names it would
+			// unsubscribe, and the silence would prove nothing.
+			h.nack(second, "1", adsTestCluster)
 			h.expectSilence("NACK of version 2 after a reconnect")
+			h.waitForOpenWatches(1)
+			h.setSnapshot(reconnectSnapshot("3"))
+			h.receiveType(envoyresource.EndpointType, "3")
 		})
 	}
 }
