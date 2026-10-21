@@ -469,10 +469,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// Reclaim departed clients' SnapshotCache entries (see snapshotReclaimer).
 	if s.clientState != nil {
-		// Clear a returning client's old entry before answering it.
-		s.proxyTranslator.registerConnectionStartHooks(ctx, s.clientState, func(proxyKey string) *XdsSnapWrapper {
-			return s.perclientSnapCollection.GetKey(proxyKey)
-		})
 		reclaimer := newSnapshotReclaimer(func(resourceName string) bool {
 			return s.proxyTranslator.gate.reclaimDeparted(s.proxyTranslator.xdsCache, resourceName, s.clientState)
 		})
@@ -484,6 +480,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				reclaimer.clientDeparted(resourceName)
 			}
 		}
+		// Clear a returning client's old entry before answering it. Registered
+		// after afterPublish is set: the server is already serving, and a
+		// connection start publishes, which reads it.
+		s.proxyTranslator.registerConnectionStartHooks(ctx, s.clientState, func(proxyKey string) *XdsSnapWrapper {
+			return s.perclientSnapCollection.GetKey(proxyKey)
+		})
 		s.uniqueClients.RegisterBatch(func(events []krt.Event[ir.UniquelyConnectedClient]) {
 			for _, e := range events {
 				name := e.Latest().ResourceName()
