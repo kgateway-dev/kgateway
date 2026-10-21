@@ -82,9 +82,11 @@ response is sent before its RDS response, and without it CDS can still arrive
 first. Dropping a cluster in the same snapshot as the route that stopped naming
 it then applies the removal first, and requests on the old route get a 503 NC
 until the route update lands. `KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster
-published for a bounded period after the controller first publishes a build
-without it, giving the route update time to land first; it cannot make sure the
-update does. Set this above worst-case RDS propagation for your fleet.
+published for a bounded period after the controller publishes the route update
+that stops naming it, giving that update time to land first; it cannot make sure
+the update does. A build held for a new or unready cluster does not start the
+period: the hold keeps the cluster anyway, and the period starts at the release.
+Set this above worst-case RDS propagation for your fleet.
 
 Ordered ADS does not substitute for either window: it fixes CDS before RDS,
 which is the wrong order for removals, and it does not close the ACK-skew
