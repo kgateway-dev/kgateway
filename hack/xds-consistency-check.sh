@@ -24,22 +24,29 @@ consistency_check_enabled() {
         -o jsonpath='{.spec.template.spec.containers[*].env[?(@.name=="KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK")].value}' 2>/dev/null || true
 }
 
-# Scrape the controller metrics endpoint via a short-lived port-forward.
-PORT=19092
-"${KUBECTL[@]}" -n "${INSTALL_NAMESPACE}" port-forward deploy/kgateway "${PORT}:9092" >/dev/null 2>&1 &
-PF_PID=$!
-trap 'kill "${PF_PID}" 2>/dev/null || true' EXIT
+# Scrape every running controller pod through the API server's pod proxy, so no
+# local port is involved: a port-forward could lose its port to another
+# listener, and the check would then read some other controller's metrics.
+# shellcheck disable=SC2016 # a go-template, not a shell expansion
+SELECTOR=$("${KUBECTL[@]}" -n "${INSTALL_NAMESPACE}" get deploy kgateway \
+    -o go-template='{{range $k, $v := .spec.selector.matchLabels}}{{$k}}={{$v}},{{end}}' 2>/dev/null || true)
+PODS=()
+if [[ -n "${SELECTOR}" ]]; then
+    read -r -a PODS <<<"$("${KUBECTL[@]}" -n "${INSTALL_NAMESPACE}" get pods -l "${SELECTOR%,}" \
+        --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}' 2>/dev/null || true)"
+fi
 
 METRICS=""
-for _ in $(seq 1 20); do
-    if METRICS=$(curl -sf "localhost:${PORT}/metrics" 2>/dev/null); then
-        break
+for pod in ${PODS[@]+"${PODS[@]}"}; do
+    if ! scraped=$("${KUBECTL[@]}" get --raw "/api/v1/namespaces/${INSTALL_NAMESPACE}/pods/${pod}:9092/proxy/metrics" 2>/dev/null); then
+        echo "ERROR: could not scrape controller metrics from pod ${pod} in ${INSTALL_NAMESPACE}" >&2
+        exit 2
     fi
-    sleep 0.5
+    METRICS+="${scraped}"$'\n'
 done
 
 if [[ -z "${METRICS}" ]]; then
-    echo "ERROR: could not scrape controller metrics from deploy/kgateway in ${INSTALL_NAMESPACE}" >&2
+    echo "ERROR: no running deploy/kgateway pod to scrape in ${INSTALL_NAMESPACE}" >&2
     exit 2
 fi
 
