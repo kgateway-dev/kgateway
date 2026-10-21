@@ -62,6 +62,11 @@ type nackResendSuppressor struct {
 	envoycache.SnapshotCache
 	hasher envoycache.NodeHash
 
+	// publish is held by SetSnapshot and ClearSnapshot, while a NACK is
+	// parked (see CreateWatch), and by a retry from its version check through
+	// replacing the parked watch (see retryLater).
+	publish sync.Mutex
+
 	mu      sync.Mutex
 	streams map[int64]*nackStreamState
 	pending map[*discoveryv3.DiscoveryRequest]pendingNack
@@ -201,6 +206,15 @@ func (s *nackResendSuppressor) CreateWatch(req *envoycache.Request, sub envoycac
 	if !tracked {
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
 	}
+	// Park under the publication lock, so the snapshot cannot move between the
+	// version check and registering the parked watch: the cache drops a parked
+	// request it cannot answer at a snapshot published in between. The stream
+	// never waits on a publication, which may be sending to this stream, so
+	// while one is in progress the NACK is handled as the plain cache would.
+	if !s.publish.TryLock() {
+		return s.SnapshotCache.CreateWatch(req, sub, ch)
+	}
+	defer s.publish.Unlock()
 	snapshot, err := s.SnapshotCache.GetSnapshot(node)
 	if err != nil {
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
@@ -221,50 +235,81 @@ func (s *nackResendSuppressor) CreateWatch(req *envoycache.Request, sub envoycac
 	if err != nil {
 		return cancel, err
 	}
-	return s.retryLater(cancel, req, sub, ch, retryIn), nil
+	// The timer reads its own copy: later requests on the stream that omit Node
+	// share req's Node, whose metadata the unique-client callback rewrites.
+	retry := proto.Clone(req).(*discoveryv3.DiscoveryRequest)
+	return s.retryLater(cancel, node, rejected, retry, sub, ch, retryIn), nil
 }
 
-// retryLater wraps a parked watch so that, after delay, it is replaced by a
-// watch for the original NACK, which the cache answers at once with the
-// snapshot's current version: the rejected response again if nothing changed,
-// a correction if the snapshot just moved.
+// SetSnapshot publishes under the publication lock; see retryLater.
+func (s *nackResendSuppressor) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
+	s.publish.Lock()
+	defer s.publish.Unlock()
+	return s.SnapshotCache.SetSnapshot(ctx, node, snapshot)
+}
+
+// ClearSnapshot clears under the publication lock; see retryLater.
+func (s *nackResendSuppressor) ClearSnapshot(node string) {
+	s.publish.Lock()
+	defer s.publish.Unlock()
+	s.SnapshotCache.ClearSnapshot(node)
+}
+
+// retryLater wraps a parked watch so that, every delay, it retries the rejected
+// response: while the snapshot still holds the rejected version, it creates a
+// watch for the original NACK, and only if the cache answers that watch at once
+// does it replace the parked watch. Otherwise it keeps the parked watch and
+// tries again after delay. The cache keeps a parked watch it cannot answer yet
+// (an ADS named watch, while the snapshot holds resources outside its names)
+// but drops a new one, so replacing the parked watch before a replacement is
+// answered could leave the stream with no watch for that type. The snapshot
+// can also move away from the rejected version and come back while the parked
+// watch waits, so the retry keeps its schedule until the watch is cancelled.
 //
-// The replacement runs on a timer, beside the stream's own goroutine, so it is
-// careful in two ways. The cache reads the stream's subscription while
-// creating a watch, and the server modifies the subscription right after
-// cancelling the watch; the replacement therefore holds the watch's lock while
-// it creates one, and the returned cancel takes that lock, so it cannot return
-// while the cache is still reading. And creating the watch must never block
-// with that lock held, or the server, waiting in cancel, could not drain the
-// stream's channel; the new watch therefore answers into a channel of its own,
-// and a forwarder hands the response to the stream's channel holding no lock,
-// giving up once the watch is cancelled.
-func (s *nackResendSuppressor) retryLater(parked func(), original *envoycache.Request, sub envoycache.Subscription, ch chan envoycache.Response, delay time.Duration) func() {
+// The retry runs on a timer goroutine. It holds the publication lock, so no
+// snapshot is published between its version check and the replacement, and the
+// watch's lock, because the server modifies the subscription the cache reads
+// once cancel returns, and cancel takes that lock. Nothing under these locks
+// blocks: the replacement answers into a channel of its own, and a lock-free
+// forwarder hands the response on until the watch is cancelled. The server
+// never waits on the publication lock (CreateWatch only tries it), so a
+// publication blocked on a stream's channel cannot wait on the retry.
+func (s *nackResendSuppressor) retryLater(parked func(), node, rejected string, original *envoycache.Request, sub envoycache.Subscription, ch chan envoycache.Response, delay time.Duration) func() {
 	w := &retryingWatch{inner: parked, done: make(chan struct{})}
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	w.timer = time.AfterFunc(delay, func() {
+		s.publish.Lock()
+		defer s.publish.Unlock()
 		w.mu.Lock()
 		defer w.mu.Unlock()
 		if w.cancelled {
 			return
 		}
-		if w.inner != nil {
-			w.inner() // the cache must not also answer the parked watch
-		}
-		own := make(chan envoycache.Response, 1)
-		inner, err := s.SnapshotCache.CreateWatch(original, sub, own)
-		if err != nil {
-			envoyLogger.Error("failed to re-send a NACKed xDS response", "type_url", original.GetTypeUrl(), "error", err)
-			w.inner = nil
+		if snapshot, err := s.SnapshotCache.GetSnapshot(node); err != nil || snapshot.GetVersion(original.GetTypeUrl()) != rejected {
+			w.timer.Reset(delay)
 			return
 		}
-		w.inner = inner
+		own := make(chan envoycache.Response, 1)
+		replacement, err := s.SnapshotCache.CreateWatch(original, sub, own)
+		if err != nil {
+			envoyLogger.Error("failed to re-send a NACKed xDS response", "type_url", original.GetTypeUrl(), "error", err)
+			w.timer.Reset(delay)
+			return
+		}
+		var resp envoycache.Response
+		select {
+		case resp = <-own:
+		default:
+			replacement()
+			w.timer.Reset(delay)
+			return
+		}
+		w.inner() // the cache must not also answer the parked watch
+		w.inner = replacement
 		go func() {
 			select {
-			case resp := <-own:
-				select {
-				case ch <- resp:
-				case <-w.done:
-				}
+			case ch <- resp:
 			case <-w.done:
 			}
 		}()
@@ -283,13 +328,13 @@ type retryingWatch struct {
 }
 
 func (w *retryingWatch) cancel() {
-	w.timer.Stop()
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.cancelled {
 		return
 	}
 	w.cancelled = true
+	w.timer.Stop()
 	if w.inner != nil {
 		w.inner()
 		w.inner = nil
