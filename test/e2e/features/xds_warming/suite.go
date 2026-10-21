@@ -244,6 +244,9 @@ func (s *testingSuite) TestSteadyStateEmptyBackendSurvivesControllerRestart() {
 	s.applyManifest(canaryRouteManifest)
 	s.assertGatewayEventuallyServes("xds-warming-canary.example.com", oldBody)
 
+	// The restart resets the counters, so check the steps so far before it.
+	s.assertNoXdsInvariantViolations()
+
 	// Restart the controller: empty cache, every client reconnects warm. The empty
 	// backend must not withhold their snapshots.
 	err := s.TestInstallation.Actions.Kubectl().RestartDeploymentAndWait(s.Ctx, "kgateway",
@@ -308,6 +311,8 @@ func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
 
 	response := transforms.WithCurlResponse(curlResponse)
 	defer response.Body.Close()
+	// curl exits 0 on an HTTP error, and an error body parses as no samples.
+	s.Require().Equal(http.StatusOK, response.StatusCode, "controller metrics scrape failed: %s", curlResponse.StdErr)
 	body, err := io.ReadAll(response.Body)
 	s.Require().NoError(err, "can read controller metrics body")
 
