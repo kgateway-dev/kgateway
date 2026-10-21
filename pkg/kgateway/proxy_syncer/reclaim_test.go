@@ -73,12 +73,13 @@ func TestReclaim_DepartedEntryClearedAfterGrace(t *testing.T) {
 	}, 2*time.Second, 5*time.Millisecond, "departed client's entry must be reclaimed after the grace period")
 	assert.Equal(t, []string{"c1"}, f.reclaimedNodes())
 
-	require.Eventually(t, func() bool {
-		return metricstest.MustGatherMetrics(t).MetricLength(reclaimedMetric) == 1
+	// ResetMetrics creates the series at 0, and the fake records the reclaim
+	// before it is counted, so wait for the value rather than the series.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		metricstest.MustGatherMetrics(c).AssertMetric(reclaimedMetric, &metricstest.ExpectedMetricValueTest{
+			Test: metricstest.Equal(1),
+		})
 	}, 2*time.Second, 5*time.Millisecond, "the reclaim is counted")
-	metricstest.MustGatherMetrics(t).AssertMetric(reclaimedMetric, &metricstest.ExpectedMetricValueTest{
-		Test: metricstest.Equal(1),
-	})
 }
 
 func TestReclaim_ReconnectWithinGraceCancels(t *testing.T) {
