@@ -29,6 +29,9 @@ const (
 	GatewayStatusSource       StatusSourceKind = "gateway"
 	BackendPolicyStatusSource StatusSourceKind = "backend-policy"
 	BackendStatusSource       StatusSourceKind = "backend-status"
+	// GatewayExtensionStatusSource contributions report the translation result of a
+	// GatewayExtension resource itself, independently of any TrafficPolicy that consumes it.
+	GatewayExtensionStatusSource StatusSourceKind = "gateway-extension-status"
 	// PolicyTargetStatusSource contributions come from checking a policy's own targetRefs
 	// against the objects they name, independently of any Gateway translation. They are the
 	// only source that can report on a policy whose target does not exist.
@@ -50,11 +53,12 @@ func (s StatusSource) String() string {
 // StatusReport is the compact report fragment retained for one status owner.
 // Exactly one field is populated.
 type StatusReport struct {
-	Gateway     *GatewayReport
-	ListenerSet *ListenerSetReport
-	Route       *RouteReport
-	Policy      *PolicyReport
-	Backend     *BackendReport
+	Gateway          *GatewayReport
+	ListenerSet      *ListenerSetReport
+	Route            *RouteReport
+	Policy           *PolicyReport
+	Backend          *BackendReport
+	GatewayExtension *GatewayExtensionReport
 }
 
 func (r StatusReport) Equals(other StatusReport) bool {
@@ -62,7 +66,8 @@ func (r StatusReport) Equals(other StatusReport) bool {
 		listenerSetReportEqual(r.ListenerSet, other.ListenerSet) &&
 		routeReportEqual(r.Route, other.Route) &&
 		policyReportEqual(r.Policy, other.Policy) &&
-		backendReportEqual(r.Backend, other.Backend)
+		backendReportEqual(r.Backend, other.Backend) &&
+		gatewayExtensionReportEqual(r.GatewayExtension, other.GatewayExtension)
 }
 
 // StatusContribution is one translation unit's status facts for one Kubernetes
@@ -206,6 +211,7 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 	// themselves say whether one was seen, since a non-nil contribution always clones to a
 	// non-nil report.
 	var gatewaySource, listenerSetSource, backendSource StatusSource
+	var gatewayExtensionSource StatusSource
 	for _, contribution := range contributions {
 		switch {
 		case contribution.Gateway != nil:
@@ -232,6 +238,10 @@ func ReduceStatusContributions(contributions []StatusContribution) StatusReport 
 			warnOnMultipleSingleWriterContributions("Backend", contribution, backendSource, reduced.Backend != nil)
 			reduced.Backend = cloneBackendReport(contribution.Backend)
 			backendSource = contribution.Source
+		case contribution.GatewayExtension != nil:
+			warnOnMultipleSingleWriterContributions("GatewayExtension", contribution, gatewayExtensionSource, reduced.GatewayExtension != nil)
+			reduced.GatewayExtension = cloneGatewayExtensionReport(contribution.GatewayExtension)
+			gatewayExtensionSource = contribution.Source
 		}
 	}
 	return reduced
