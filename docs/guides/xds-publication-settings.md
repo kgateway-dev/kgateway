@@ -383,9 +383,11 @@ The metric is
 
 When a build stops naming a published cluster, the cluster stays published for
 this long. That gives the route update that dropped it time to land before CDS
-removes the cluster. The clock starts when the controller first publishes a
-build without the cluster. If the route update is rejected, or delayed past the
-grace, the removal can still land first.
+removes the cluster. The clock starts when the controller publishes the route
+update that stops naming the cluster. If that update is held for a new or
+unready cluster, the clock starts at the release, so the hold does not shorten
+the grace. If the route update is rejected, or delayed past the grace, the
+removal can still land first.
 
 Only clusters that scoping stops emitting are kept. A cluster whose backend is
 deleted, or fails translation, is removed in the same publication, as in `ALL`
