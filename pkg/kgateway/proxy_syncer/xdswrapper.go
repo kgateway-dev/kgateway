@@ -27,8 +27,7 @@ type XdsSnapWrapper struct {
 	// erroredClusters lists clusters whose current translation failed. The
 	// publish-time per-cluster resolution treats them fail-closed: they are
 	// never resurrected from the previously-published snapshot (see
-	// resolveDeferredPerCluster).
-	// +noKrtEquals
+	// resolveDeferredPerCluster). Sorted.
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
@@ -85,12 +84,15 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 	// budget is disabled — or keeps leaving out a CLA that is now derived. The
 	// same applies to a referenced cluster arriving errored-from-birth
 	// (missingReferenced shrinks, no version changes).
-	// erroredClusters needs no comparison: membership changes always change
-	// the CDS version (an errored cluster leaves/enters the cluster items and
-	// hash), and error-text-only changes are deliberately suppressed.
+	// erroredClusters is compared by name too. A cluster that is not in the
+	// CDS items changes no version when it starts or stops erroring, yet a
+	// carry (a held flip) can still serve it from the published snapshot, and
+	// only a new event lets the carry see the error and drop it (fail closed).
+	// Error-text-only changes stay suppressed: only names count.
 	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
 		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
-		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints)
+		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints) &&
+		slices.Equal(p.erroredClusters, in.erroredClusters)
 }
 
 func (p XdsSnapWrapper) ResourceName() string {

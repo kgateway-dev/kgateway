@@ -136,7 +136,7 @@ func snapshotPerClient(
 			}
 		}
 		slices.Sort(snap.synthesizedEndpoints)
-		snap.erroredClusters = clustersForUcc.erroredClusters
+		snap.erroredClusters = slices.Sorted(slices.Values(clustersForUcc.erroredClusters))
 		snap.proxyKey = ucc.ResourceName()
 		snapshot := &envoycache.Snapshot{}
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources

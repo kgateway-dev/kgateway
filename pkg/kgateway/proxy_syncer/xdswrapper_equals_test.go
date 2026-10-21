@@ -55,3 +55,22 @@ func TestXdsSnapWrapperEquals_ComparesGapClassification(t *testing.T) {
 	assert.False(t, readyWrap.Equals(synthesizedOnly),
 		"a change in which CLAs are synthesized must not be equal")
 }
+
+// A cluster the build no longer has is already out of CDS, so its erroring
+// changes no version. The wrapper must still differ, or a held flip's carry of
+// that cluster never sees the error and keeps serving its pre-error config.
+func TestXdsSnapWrapperEquals_ComparesErroredClusters(t *testing.T) {
+	newSnap := func() *envoycache.Snapshot {
+		snap := &envoycache.Snapshot{}
+		snap.Resources[envoycachetypes.Cluster] = envoycache.NewResources("c1", nil)
+		return snap
+	}
+	healthy := XdsSnapWrapper{snap: newSnap(), proxyKey: "client"}
+	errored := XdsSnapWrapper{snap: newSnap(), proxyKey: "client", erroredClusters: []string{"cluster-carried"}}
+
+	assert.False(t, healthy.Equals(errored), "a cluster erroring without a version change must not be equal")
+	assert.False(t, errored.Equals(healthy), "a cluster recovering without a version change must not be equal")
+	same := errored
+	same.snap = newSnap()
+	assert.True(t, errored.Equals(same))
+}
