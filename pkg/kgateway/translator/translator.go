@@ -7,6 +7,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/endpoints"
@@ -151,6 +152,11 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	xdsSnap := s.irtranslator.Translate(ctx, *gwir, r)
 
 	return &xdsSnap, rm
+}
+
+// ForgetGateway drops what translation cached for a Gateway that was deleted.
+func (s *CombinedTranslator) ForgetGateway(gateway types.NamespacedName) {
+	s.irtranslator.ForgetGateway(gateway)
 }
 
 // ResolveEndpoints runs the endpoint plugins for a (ucc, backend) pair and captures

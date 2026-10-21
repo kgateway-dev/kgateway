@@ -43,6 +43,8 @@ type httpRouteConfigurationTranslator struct {
 	validationLevel           apisettings.ValidationMode
 	validator                 validator.Validator
 	enableRouteSourceMetadata bool
+	// routeCache, if set, replays the translation of routes unchanged since the last translation.
+	routeCache *routeCacheGeneration
 }
 
 const (
@@ -161,6 +163,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 	envoyRoutes := make([]*envoyroutev3.Route, 0, len(virtualHost.Rules))
 	computedRoutes := make([]computedHTTPRoute, 0, len(virtualHost.Rules))
+	shareCached := h.shareCachedRoutes(virtualHost)
 	for i := range virtualHost.Rules {
 		route := &virtualHost.Rules[i]
 		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
@@ -171,7 +174,18 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
 		}
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-		computedRoute := h.envoyRoutes(routeReport, *route, generatedName)
+		key, cacheable := h.routeCacheKey(route, generatedName)
+		var computedRoute *envoyroutev3.Route
+		if cacheable {
+			computedRoute = h.routeCache.get(key, shareCached)
+		}
+		if computedRoute == nil {
+			var ok bool
+			computedRoute, ok = h.envoyRoutes(routeReport, *route, generatedName)
+			if cacheable && ok && computedRoute != nil {
+				computedRoute = h.routeCache.put(key, computedRoute, shareCached)
+			}
+		}
 		if computedRoute != nil {
 			envoyRoutes = append(envoyRoutes, computedRoute)
 			computedRoutes = append(computedRoutes, computedHTTPRoute{
@@ -357,11 +371,12 @@ func (c vhostRouteValidationContext) forRoute(route *envoyroutev3.Route, finalNa
 	return computedRoute, ok
 }
 
+// envoyRoutes translates one route, and reports whether it translated without errors.
 func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	routeReport reportssdk.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
-) *envoyroutev3.Route {
+) (*envoyroutev3.Route, bool) {
 	out := h.initRoutes(in, generatedName)
 
 	if h.enableRouteSourceMetadata {
@@ -414,7 +429,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		}
 	}
 
-	return h.finalizeRoute(routeReport, in, out, routeProcessingErr)
+	return h.finalizeRoute(routeReport, in, out, routeProcessingErr), routeProcessingErr == nil
 }
 
 func (h *httpRouteConfigurationTranslator) finalizeRoute(
@@ -478,6 +493,8 @@ func replaceRouteWithDirectResponse(out *envoyroutev3.Route) *envoyroutev3.Route
 	if out == nil {
 		return nil
 	}
+	// The route may be shared with the route cache, so replace a copy.
+	out = proto.Clone(out).(*envoyroutev3.Route)
 	// Clear all headers and filter configs when the route is replaced with a direct response.
 	out.TypedPerFilterConfig = nil
 	out.RequestHeadersToAdd = nil
