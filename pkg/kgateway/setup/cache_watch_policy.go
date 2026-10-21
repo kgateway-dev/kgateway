@@ -59,7 +59,8 @@ var (
 // so the current or next snapshot answers; otherwise a cluster or listener
 // warming on them waits for its fetch timeout, with CDS paused. CDS and LDS are
 // left alone: nothing warms on them, and a parked watch at a held version costs
-// nothing. Cost: one EDS, RDS and SDS push per reconnect.
+// nothing. Cost: one EDS, RDS and SDS push per proxy that reconnects to an
+// empty cache; a warm cache answers the request anyway.
 //
 // Re-warms: when a cluster response changes a cluster the stream already has,
 // Envoy builds the new cluster and warms it on endpoints, keeping CDS paused
