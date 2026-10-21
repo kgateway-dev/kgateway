@@ -33,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	apifake "github.com/kgateway-dev/kgateway/v2/pkg/apiclient/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
@@ -173,6 +174,11 @@ func benchRefresh(b *testing.B, templates map[string]*template.Template, configs
 	for _, scope := range istiolog.Scopes() {
 		scope.SetOutputLevel(istiolog.WarnLevel)
 	}
+	// TestMain arms the shared-proto mutation tripwire for this package. It re-hashes every
+	// shared proto on each snapshot build, which production does not do.
+	prevAssert := sharedproto.AssertImmutability
+	sharedproto.AssertImmutability = false
+	b.Cleanup(func() { sharedproto.AssertImmutability = prevAssert })
 	ctx, cancel := context.WithCancel(context.Background())
 	stop := ctx.Done()
 	before := liveHeapBytes()
@@ -244,6 +250,10 @@ func benchRefresh(b *testing.B, templates map[string]*template.Template, configs
 		if (i/len(refreshes))%2 == 1 {
 			objs = r.revert
 		}
+		// The fake clientset rebuilds a REST mapper on every update (about 2 MB), so leave the
+		// writes out of the measurement. Each object's event is emitted as its update returns, so
+		// little of the work it triggers happens while the timer is stopped.
+		b.StopTimer()
 		for _, o := range objs {
 			// The fake tracker never bumps resourceVersion; stamp one so updates look real.
 			resourceVersion++
@@ -252,6 +262,7 @@ func benchRefresh(b *testing.B, templates map[string]*template.Template, configs
 				b.Fatalf("update %T %s/%s: %v", o, o.GetNamespace(), o.GetName(), err)
 			}
 		}
+		b.StartTimer()
 		waitIdle()
 	}
 	b.ReportMetric(float64(xdsChanges.Load())/float64(b.N), "xds-changes/op")
