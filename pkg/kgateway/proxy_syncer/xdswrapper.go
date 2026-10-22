@@ -55,6 +55,10 @@ type XdsSnapWrapper struct {
 	// Folded into the EDS version compared by Equals.
 	// +noKrtEquals
 	endpointHashes map[string]uint64
+	// scopesClusters is set in REFERENCED mode, where a published listener can
+	// name a cluster scoping left out of CDS. The mode is fixed for the process.
+	// +noKrtEquals
+	scopesClusters bool
 }
 
 // deferred reports whether some referenced cluster was unready at build

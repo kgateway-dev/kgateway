@@ -188,8 +188,13 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		flipBlocking = append(flipBlocking, name)
 	}
 	for _, name := range snapWrap.missingEndpointsReferenced {
-		if _, wasReferenced := publishedRefs[name]; wasReferenced {
-			continue // previously-referenced: the client keeps its endpoints
+		// Previously referenced: the client keeps its endpoints. When scoped, a
+		// dropped backend's listener still ships and can name a cluster scoping
+		// left out of CDS; the client has no endpoints for that one.
+		_, wasReferenced := publishedRefs[name]
+		_, wasPublished := oldClusters[name]
+		if wasReferenced && (wasPublished || !snapWrap.scopesClusters) {
+			continue
 		}
 		flipBlocking = append(flipBlocking, name)
 	}
