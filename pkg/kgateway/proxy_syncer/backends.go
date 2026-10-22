@@ -178,8 +178,12 @@ type clustersWithErrors struct {
 	listeners baseResources[*envoylistenerv3.Listener]
 	secrets   baseResources[*envoytlsv3.Secret]
 	// backendListeners are the listeners of each publishable cluster that has
-	// any, so scoping can keep the clusters they name (keepBackendListenerTargets).
+	// any, so scoping can keep the clusters they name (keepBackendListenerTargets)
+	// and send only kept clusters' listeners.
 	backendListeners map[string]baseResources[*envoylistenerv3.Listener]
+	// backendSecrets are the secrets of each publishable cluster that has any,
+	// so scoping sends only kept clusters' secrets.
+	backendSecrets map[string]baseResources[*envoytlsv3.Secret]
 	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
@@ -207,6 +211,9 @@ func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 		c.listeners.hash == k.listeners.hash &&
 		c.secrets.hash == k.secrets.hash &&
 		maps.EqualFunc(c.backendListeners, k.backendListeners, func(a, b baseResources[*envoylistenerv3.Listener]) bool {
+			return a.hash == b.hash
+		}) &&
+		maps.EqualFunc(c.backendSecrets, k.backendSecrets, func(a, b baseResources[*envoytlsv3.Secret]) bool {
 			return a.hash == b.hash
 		}) &&
 		c.erroredClustersHash == k.erroredClustersHash &&
@@ -250,6 +257,20 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 type baseResources[M proto.Message] struct {
 	items []sharedproto.Shared[M]
 	hash  uint64
+}
+
+// keptBackendResources returns the resources generated with the clusters in
+// kept, and their combined hash, in cluster-name order.
+func keptBackendResources[M proto.Message](kept map[string]envoycachetypes.ResourceWithTTL, byCluster map[string]baseResources[M]) baseResources[M] {
+	var out baseResources[M]
+	for _, name := range slices.Sorted(maps.Keys(byCluster)) {
+		if _, ok := kept[name]; !ok {
+			continue
+		}
+		out.items = append(out.items, byCluster[name].items...)
+		out.hash ^= byCluster[name].hash
+	}
+	return out
 }
 
 // wrapBaseResources shares generated resources across clients with a content hash.
@@ -394,6 +415,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		listeners           baseResources[*envoylistenerv3.Listener]
 		secrets             baseResources[*envoytlsv3.Secret]
 		backendListeners    map[string]baseResources[*envoylistenerv3.Listener]
+		backendSecrets      map[string]baseResources[*envoytlsv3.Secret]
 		clustersHash        uint64
 		erroredClustersHash uint64
 		erroredClusters     []string
@@ -426,6 +448,12 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		}
 		secrets.items = append(secrets.items, c.Secrets.items...)
 		secrets.hash ^= c.Secrets.hash
+		if len(c.Secrets.items) > 0 {
+			if backendSecrets == nil {
+				backendSecrets = make(map[string]baseResources[*envoytlsv3.Secret])
+			}
+			backendSecrets[c.Name] = c.Secrets
+		}
 		clusterVersions[c.Name] = c.ClusterVersion
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
@@ -437,6 +465,7 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		listeners:           listeners,
 		secrets:             secrets,
 		backendListeners:    backendListeners,
+		backendSecrets:      backendSecrets,
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
 		clusterVersions:     clusterVersions,

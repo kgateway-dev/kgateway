@@ -119,7 +119,12 @@ func snapshotPerClient(
 				clustersForUcc.backendListeners,
 			)
 		}
+		backendListeners, backendSecrets := clustersForUcc.listeners, clustersForUcc.secrets
 		if filtered {
+			// A dropped backend's own listeners and secrets go too: kept, they would
+			// sit on every proxy, naming a cluster it does not have.
+			backendListeners = keptBackendResources(clusterResources.Items, clustersForUcc.backendListeners)
+			backendSecrets = keptBackendResources(clusterResources.Items, clustersForUcc.backendSecrets)
 			// Re-version: an unchanged version would leave Envoy serving dropped clusters.
 			clustersHash = emittedClustersHash(clusterVersions)
 			clusterResources.Version = strconv.FormatUint(clustersHash, 10)
@@ -180,8 +185,8 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
-		snapshot.Resources[envoycachetypes.Listener] = mergeBackendResources(listenerRouteSnapshot.Listeners, clustersForUcc.listeners)
-		snapshot.Resources[envoycachetypes.Secret] = mergeBackendResources(listenerRouteSnapshot.Secrets, clustersForUcc.secrets)
+		snapshot.Resources[envoycachetypes.Listener] = mergeBackendResources(listenerRouteSnapshot.Listeners, backendListeners)
+		snapshot.Resources[envoycachetypes.Secret] = mergeBackendResources(listenerRouteSnapshot.Secrets, backendSecrets)
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
 		if snap.deferred() {

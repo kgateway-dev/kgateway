@@ -8,6 +8,7 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoysniclusterv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
@@ -144,22 +145,28 @@ func TestKeepBackendListenerTargets(t *testing.T) {
 
 // TestSnapshotPerClientKeepsClustersBackendListenersName: scoped, a routed
 // tunnel keeps the proxy cluster its listener names, the listener ships in LDS,
-// and EDS follows CDS.
+// and EDS follows CDS. An unrouted tunnel's listener and secret do not ship.
 func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		scoping  clusterScoping
-		expected []string
+		name      string
+		scoping   clusterScoping
+		expected  []string
+		listeners []string
+		secrets   []string
 	}{
 		{
-			name:     "all emits every translated backend",
-			scoping:  clusterScoping{},
-			expected: []string{"tunneled", "proxy", "unreferenced"},
+			name:      "all emits every translated backend",
+			scoping:   clusterScoping{},
+			expected:  []string{"tunneled", "proxy", "unreferenced"},
+			listeners: []string{"listener", "tunnel_tunneled", "tunnel_unreferenced"},
+			secrets:   []string{"tunneled-header", "unreferenced-header"},
 		},
 		{
-			name:     "referenced keeps the tunnel's proxy",
-			scoping:  scopedClusters(),
-			expected: []string{"tunneled", "proxy"},
+			name:      "referenced keeps the tunnel's proxy",
+			scoping:   scopedClusters(),
+			expected:  []string{"tunneled", "proxy"},
+			listeners: []string{"listener", "tunnel_tunneled"},
+			secrets:   []string{"tunneled-header"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -203,8 +210,13 @@ func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 					Cluster:        sharedproto.Wrap(edsClusterProto(name)),
 					ClusterVersion: version,
 				}
-				if name == "tunneled" {
+				switch name {
+				case "tunneled":
 					row.Listeners = backendListenersOf(tunnel)
+					row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "tunneled-header"}})
+				case "unreferenced":
+					row.Listeners = backendListenersOf(tunnelListener("tunnel_unreferenced", "proxy"))
+					row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "unreferenced-header"}})
 				}
 				clusterRows = append(clusterRows, row)
 				endpointRows = append(endpointRows, UccWithEndpoints{
@@ -236,8 +248,10 @@ func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items)).To(gomega.ConsistOf(toAny(tc.expected)...))
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Endpoint].Items)).To(gomega.ConsistOf(toAny(tc.expected)...),
 				"EDS must follow CDS")
-			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Listener].Items)).To(gomega.ConsistOf("listener", "tunnel_tunneled"),
-				"the tunnel's listener ships with its cluster")
+			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Listener].Items)).To(gomega.ConsistOf(toAny(tc.listeners)...),
+				"a backend's listeners ship with its cluster, and only then")
+			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Secret].Items)).To(gomega.ConsistOf(toAny(tc.secrets)...),
+				"a backend's secrets ship with its cluster, and only then")
 		})
 	}
 }
