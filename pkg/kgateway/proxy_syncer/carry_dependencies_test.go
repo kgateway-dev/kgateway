@@ -300,3 +300,37 @@ func TestGracedTunnelKeepsItsListenerAndSecret(t *testing.T) {
 	assert.True(t, hasResource(served.Resources[envoycachetypes.Secret].Items, "tunnel_x/h"), "and the secret that listener reads")
 	assertSnapshotCoherent(t, served)
 }
+
+// TestHeldFlipPublishesTheListenersItsClustersNeed: a flip held for an unready
+// cluster pins listeners and secrets while the build's clusters go out. A
+// backend tunneled in the same build sends its cluster at once, now pointing
+// at the tunnel's pipe, so the tunnel's listener and its secret go out with it.
+func TestHeldFlipPublishesTheListenersItsClustersNeed(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "x", "x"))
+	heldRoutes := servedSnapshot(t, pt).GetVersion(envoyresourcev3.RouteType)
+	snap := tunnelBuild{version: "v2", withTunnel: true, withProxy: true, secretValue: "s"}.snapshot(t)
+	snap.Resources[envoycachetypes.Cluster].Items["unready"] = envoycachetypes.ResourceWithTTL{Resource: edsClusterProto("unready")}
+	snap.Resources[envoycachetypes.Endpoint].Items["unready"] = envoycachetypes.ResourceWithTTL{
+		Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "unready"},
+	}
+	routes := routeResourcesForClusters("x", "unready")
+	routes.Version = "rds-v2"
+	snap.Resources[envoycachetypes.Route] = routes
+	pt.syncXds(ctx, XdsSnapWrapper{
+		snap:                       snap,
+		proxyKey:                   publishGateTestClient,
+		missingEndpointsReferenced: []string{"unready"},
+		synthesizedEndpoints:       []string{"unready"},
+	})
+
+	served := servedSnapshot(t, pt)
+	require.Equal(t, heldRoutes, served.GetVersion(envoyresourcev3.RouteType), "the flip onto the unready cluster is held")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Listener].Items, "tunnel_x"),
+		"the listener on the tunneled cluster's pipe goes out with the cluster")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Secret].Items, "tunnel_x/h"), "with the secret it reads")
+	assertSnapshotCoherent(t, served)
+}

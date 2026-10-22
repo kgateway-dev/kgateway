@@ -308,6 +308,9 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		)
 	}
 	deps.apply(composed)
+	if len(heldBlocking) > 0 {
+		addBuiltClusterListeners(composed, snapWrap.snap)
+	}
 
 	return composed, heldBlocking, edsHashes
 }

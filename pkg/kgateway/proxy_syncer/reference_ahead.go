@@ -113,7 +113,9 @@ func (g *publishGate) referenceAheadHoldLocked(
 		closure[name] = struct{}{}
 	}
 	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, closure, g.lastPublishedEDSLocked(snapWrap.proxyKey))
-	return holdRoutingTypes(resolved, published), edsHashes
+	held := holdRoutingTypes(resolved, published)
+	addBuiltClusterListeners(held, snapWrap.snap)
+	return held, edsHashes
 }
 
 // holdRoutingTypes returns snap with routes, listeners and secrets pinned at

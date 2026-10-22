@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"context"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -387,4 +388,29 @@ func TestDereferenceGraceStartsWhenAHeldFlipPublishes(t *testing.T) {
 	}
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
 		"old still leaves once its grace closes")
+}
+
+// Enabling a CONNECT tunnel on a routed backend adds the proxy's cluster, so
+// the build is held for that cluster's window, but the backend's cluster goes
+// out at once, now pointing at the tunnel's pipe. The tunnel's listener and
+// the secret it reads must go out with it: held back, the cluster would point
+// at a socket nothing listens on until the window closes.
+func TestReferenceAheadHoldPublishesTheListenersItsClustersNeed(t *testing.T) {
+	pt := newReferenceAheadTranslator(t, time.Hour)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "x", "x"))
+	heldRoutes := servedSnapshot(t, pt).GetVersion(resourcev3.RouteType)
+	pt.syncXds(ctx, tunnelBuild{version: "v2", withTunnel: true, withProxy: true, secretValue: "s"}.wrapper(t))
+
+	served := servedSnapshot(t, pt)
+	require.True(t, strings.HasPrefix(served.GetVersion(resourcev3.ListenerType), "v1"), "the build is held for the proxy cluster's window")
+	assert.Equal(t, heldRoutes, served.GetVersion(resourcev3.RouteType), "the routes stay held")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Cluster].Items, "proxy"), "the new cluster goes out")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Listener].Items, "listener"), "the held listener stays")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Listener].Items, "tunnel_x"),
+		"the listener on the tunneled cluster's pipe goes out with the cluster")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Secret].Items, "tunnel_x/h"), "with the secret it reads")
+	assertSnapshotCoherent(t, served)
 }
