@@ -174,9 +174,11 @@ invariants:
   local cluster;
 - every RouteConfiguration a listener names is present.
 
-go-control-plane holds back an ADS response that carries a resource the client
-did not request, so an unreferenced resource can freeze that resource type for
-the client. A violation is logged as an error and counted in
+These are structural checks. Envoy never requests an unreferenced assignment
+or route, and the xDS cache answers EDS and RDS requests by the names Envoy
+asks for, so such a resource no longer holds back updates of its type. A
+violation still means the snapshot is not the one kgateway meant to build. It
+is logged as an error and counted in
 `kgateway_xds_snapshot_perclient_inconsistent_snapshots_total`.
 
 The check only monitors: the snapshot is still published. It checks only these
