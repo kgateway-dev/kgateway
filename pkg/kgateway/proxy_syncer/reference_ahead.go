@@ -54,10 +54,14 @@ func (g *publishGate) referenceAheadLocked(
 	building := snapWrap.snap.Resources[envoycachetypes.Cluster].Items
 	alreadySent := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 	sent := g.aheadSent[proxyKey]
-	// Forget closed windows and no-longer-emitted clusters; a later return is
-	// new.
+	// Forget closed windows and clusters that left the published snapshot; a
+	// later return is new. A cluster still published (a de-reference grace, or
+	// a hold carrying it) keeps its window even while this build does not emit
+	// it, so a retarget back onto it waits for the rest of the window.
 	for name, since := range sent {
-		if _, emitting := building[name]; !emitting || now.Sub(since) >= g.referenceAhead {
+		_, emitting := building[name]
+		_, stillPublished := alreadySent[name]
+		if (!emitting && !stillPublished) || now.Sub(since) >= g.referenceAhead {
 			delete(sent, name)
 		}
 	}

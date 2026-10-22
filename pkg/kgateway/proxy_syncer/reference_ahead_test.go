@@ -414,3 +414,27 @@ func TestReferenceAheadHoldPublishesTheListenersItsClustersNeed(t *testing.T) {
 	assert.True(t, hasResource(served.Resources[envoycachetypes.Secret].Items, "tunnel_x/h"), "with the secret it reads")
 	assertSnapshotCoherent(t, served)
 }
+
+// A cluster still published through a de-reference grace keeps its open
+// window: retarget onto b, revert, and retarget onto b again inside b's
+// window, and the second retarget waits for the rest of the window.
+func TestReferenceAheadWindowSurvivesARevertWhileTheClusterIsPublished(t *testing.T) {
+	scoping := scopedClustersWithReferenceAhead(500 * time.Millisecond)
+	scoping.dereferenceGrace = time.Hour
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scoping)
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "a", "a"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "b", "b")) // b's window opens; the retarget is held
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
+	pt.syncXds(ctx, routedBuild(t, "v3", "a", "a")) // revert: b stays published through its grace
+	require.Equal(t, "v3", publishedListenerVersionOf(t, pt))
+	require.Contains(t, publishedClusterNames(t, pt), "b")
+
+	pt.syncXds(ctx, routedBuild(t, "v4", "b", "b"))
+	assert.Equal(t, "v3", publishedListenerVersionOf(t, pt), "the second retarget waits for the rest of b's window")
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v4" }, 3*time.Second, 5*time.Millisecond,
+		"and publishes when it closes")
+}
