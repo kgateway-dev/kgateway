@@ -245,6 +245,156 @@ spec:
 `,
 		},
 		{
+			name: "BackendConfigPolicy: sessionPersistence valid cookie",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-valid-cookie
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Cookie
+    absoluteTimeout: 1h
+    cookie:
+      name: my-session
+      path: /app
+      lifetimeType: Permanent
+`,
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence valid header",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-valid-header
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Header
+    header:
+      name: x-session
+`,
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence cookie required for default Cookie type",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-cookie-required
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    absoluteTimeout: 1h
+`,
+			wantErrors: []string{`cookie must be specified for Cookie type`},
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence cookie not allowed for Header type",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-cookie-not-allowed
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Header
+    header:
+      name: x-session
+    cookie:
+      name: my-session
+`,
+			wantErrors: []string{`cookie must be nil if type is not Cookie`},
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence header required for Header type",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-header-required
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Header
+`,
+			wantErrors: []string{`header must be specified for Header type`},
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence header not allowed for Cookie type",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-header-not-allowed
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Cookie
+    cookie: {}
+    header:
+      name: x-session
+`,
+			wantErrors: []string{`header must be nil if type is not Header`},
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence Permanent requires absoluteTimeout",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-permanent-timeout
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    cookie:
+      lifetimeType: Permanent
+`,
+			wantErrors: []string{`AbsoluteTimeout must be specified when cookie lifetimeType is Permanent`},
+		},
+		{
+			name: "BackendConfigPolicy: sessionPersistence invalid cookie name",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-invalid-cookie-name
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    cookie:
+      name: "bad name"
+`,
+			wantErrors: []string{`should match`},
+		},
+		{
 			name: "BackendConfigPolicy: invalid target reference",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1

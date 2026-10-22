@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -34,6 +37,15 @@ var (
 		"TestHeaderSessionPersistence": {
 			Manifests: []string{headerSessionPersistenceManifest},
 		},
+		"TestBackendConfigPolicyCookieSessionPersistence": {
+			Manifests: []string{bcpCookieSessionPersistenceManifest},
+		},
+		"TestBackendConfigPolicyHeaderSessionPersistence": {
+			Manifests: []string{bcpHeaderSessionPersistenceManifest},
+		},
+		"TestBackendConfigPolicySessionPersistenceDynamicUpdate": {
+			Manifests: []string{bcpDynamicRouteManifest},
+		},
 	}
 )
 
@@ -50,17 +62,72 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestCookieSessionPersistence() {
-	s.assertSessionPersistence("cookie")
+	s.assertSessionPersistence("gw-cookie", "cookie")
 }
 
 func (s *testingSuite) TestHeaderSessionPersistence() {
-	s.assertSessionPersistence("header")
+	s.assertSessionPersistence("gw-header", "header")
 }
 
-// assertSessionPersistence makes multiple requests and verifies they go to the same backend pod
-func (s *testingSuite) assertSessionPersistence(persistenceType string) {
+func (s *testingSuite) TestBackendConfigPolicyCookieSessionPersistence() {
+	s.assertSessionPersistence("gw-bcp-cookie", "cookie")
+}
+
+func (s *testingSuite) TestBackendConfigPolicyHeaderSessionPersistence() {
+	s.assertSessionPersistence("gw-bcp-header", "header")
+}
+
+// TestBackendConfigPolicySessionPersistenceDynamicUpdate verifies that adding and removing a
+// BackendConfigPolicy on a Service that an existing route already uses updates the route config.
+func (s *testingSuite) TestBackendConfigPolicySessionPersistenceDynamicUpdate() {
+	const gatewayName = "gw-bcp-dynamic"
+
+	s.T().Log("Phase 1: route without a policy does not set a session cookie")
+	s.eventuallySessionCookie(gatewayName, false)
+
+	s.T().Log("Phase 2: adding the policy enables session persistence on the existing route")
+	policyApplied := true
+	testutils.Cleanup(s.T(), func() {
+		if policyApplied {
+			s.DeleteManifests(&base.TestCase{Manifests: []string{bcpDynamicPolicyManifest}})
+		}
+	})
+	s.ApplyManifests(&base.TestCase{Manifests: []string{bcpDynamicPolicyManifest}})
+	s.eventuallySessionCookie(gatewayName, true)
+	s.assertSessionPersistence(gatewayName, "cookie")
+
+	s.T().Log("Phase 3: removing the policy disables session persistence again")
+	s.DeleteManifests(&base.TestCase{Manifests: []string{bcpDynamicPolicyManifest}})
+	policyApplied = false
+	s.eventuallySessionCookie(gatewayName, false)
+}
+
+// eventuallySessionCookie waits until responses from the gateway do (or do not) set the session cookie.
+func (s *testingSuite) eventuallySessionCookie(gatewayName string, want bool) {
+	gatewayService := metav1.ObjectMeta{Name: gatewayName, Namespace: "default"}
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
+		resp, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(s.Ctx, testdefaults.CurlPodExecOpt,
+			curl.WithHost(kubeutils.ServiceFQDN(gatewayService)),
+			curl.WithHostHeader("echo.local"),
+			curl.WithPort(8080),
+			curl.Silent(),
+			curl.WithArgs([]string{"-i"}),
+			curl.WithConnectionTimeout(10),
+		)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "request should succeed")
+		g.Expect(s.extractPodNameFromResponse(resp.StdOut)).NotTo(gomega.BeEmpty(), "request should reach the echo backend")
+		if want {
+			g.Expect(s.extractSessionCookieFromResponse(resp.StdOut)).NotTo(gomega.BeEmpty(), "response should set the session cookie")
+		} else {
+			g.Expect(s.extractSessionCookieFromResponse(resp.StdOut)).To(gomega.BeEmpty(), "response should not set the session cookie")
+		}
+	}).WithTimeout(60 * time.Second).WithPolling(2 * time.Second).Should(gomega.Succeed())
+}
+
+// assertSessionPersistence makes multiple requests through the given gateway and verifies they go to the same backend pod
+func (s *testingSuite) assertSessionPersistence(gatewayName, persistenceType string) {
 	gatewayService := metav1.ObjectMeta{
-		Name:      "gw-" + persistenceType,
+		Name:      gatewayName,
 		Namespace: "default",
 	}
 

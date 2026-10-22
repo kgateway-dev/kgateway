@@ -60,6 +60,7 @@ type BackendConfigPolicyIR struct {
 	respectDnsTtl                 *bool
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 	tunnel                        *tunnelIR
+	sessionPersistence            *sessionPersistenceIR
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -142,6 +143,9 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	if !d.tunnel.Equals(d2.tunnel) {
 		return false
 	}
+	if !d.sessionPersistence.Equals(d2.sessionPersistence) {
+		return false
+	}
 	return true
 }
 
@@ -186,6 +190,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
 				Name:                        "BackendConfigPolicy",
 				Policies:                    backendConfigPolicyCol,
+				NewGatewayTranslationPass:   newGatewayTranslationPass,
 				ProcessBackend:              processBackend,
 				ProcessBaseClusterResources: newTunnelHook(commoncol),
 				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
@@ -235,6 +240,13 @@ func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
 
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
+	if pol.sessionPersistence != nil {
+		// Session persistence is applied per route (see ApplyForBackendObjectPolicies); warn here, once per
+		// backend translation, when it cannot have any effect for this backend.
+		if reason := sessionPersistenceHasNoEffect(backend); reason != "" {
+			logger.Warn("sessionPersistence has no effect for backend", "backend", backend.ResourceName(), "reason", reason)
+		}
+	}
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
 	}
@@ -420,6 +432,21 @@ func translate(
 			errs = append(errs, err)
 		}
 		ir.tunnel = tunnel
+	}
+	if pol.Spec.SessionPersistence != nil {
+		sp, err := translateSessionPersistence(pol.Spec.SessionPersistence)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		ir.sessionPersistence = sp
+		if absoluteTimeoutIgnored(pol.Spec.SessionPersistence) {
+			logger.Warn("sessionPersistence absoluteTimeout has no effect unless cookie lifetimeType is Permanent",
+				"policy", pol.Namespace+"/"+pol.Name)
+		}
+		if hasHashPolicies(pol.Spec.LoadBalancer) {
+			logger.Warn("sessionPersistence overrides loadBalancer hashPolicies for requests with an established session",
+				"policy", pol.Namespace+"/"+pol.Name)
+		}
 	}
 	return &ir, errs
 }

@@ -13,16 +13,20 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reportssdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
@@ -43,6 +47,15 @@ type httpRouteConfigurationTranslator struct {
 	validationLevel           apisettings.ValidationMode
 	validator                 validator.Validator
 	enableRouteSourceMetadata bool
+
+	// backendObjectPolicyAppliers caches the plugin passes implementing ir.BackendObjectPolicyApplier,
+	// computed on first use. See runBackendObjectPolicies.
+	backendObjectPolicyAppliers []backendObjectPolicyApplier
+}
+
+type backendObjectPolicyApplier struct {
+	gk      schema.GroupKind
+	applier ir.BackendObjectPolicyApplier
 }
 
 const (
@@ -391,6 +404,8 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 			}
 		}
 	}
+
+	h.warnSessionPersistenceCollisions(out)
 
 	// Apply the headers to the route
 	out.RequestHeadersToAdd = append(out.GetRequestHeadersToAdd(), backendConfigCtx.RequestHeadersToAdd...)
@@ -961,9 +976,118 @@ func (h *httpRouteConfigurationTranslator) runBackend(in ir.HttpBackend, pCtx *i
 				errs = append(errs, err)
 			}
 		}
+		errs = append(errs, h.runBackendObjectPolicies(in.Backend.BackendObject, pCtx))
 	}
 	// TODO: check return value, if error returned, log error and report condition
 	return errors.Join(errs...)
+}
+
+// warnSessionPersistenceCollisions logs a warning when different backends of a traffic split
+// use the same session persistence cookie or header name and at least one of them gets it from
+// a backend policy (e.g. BackendConfigPolicy). Such backends override each other's session, so a
+// client loses its session each time the split switches backends. Backends without their own
+// config inherit the route level config (from the route rule), which is also considered.
+func (h *httpRouteConfigurationTranslator) warnSessionPersistenceCollisions(out *envoyroutev3.Route) {
+	clusters := out.GetRoute().GetWeightedClusters().GetClusters()
+	if len(clusters) < 2 {
+		return
+	}
+	// Return early, without allocating, when no backend sets its own session persistence config:
+	// collisions only matter when at least one backend gets its config from a backend policy.
+	if !slices.ContainsFunc(clusters, func(cw *envoyroutev3.WeightedCluster_ClusterWeight) bool {
+		return cw.GetTypedPerFilterConfig()[sessionpersistence.FilterName] != nil
+	}) {
+		return
+	}
+	routeKey := sessionKeyFromAny(out.GetTypedPerFilterConfig()[sessionpersistence.FilterName])
+
+	type usage struct {
+		clusters    []string
+		fromBackend bool
+	}
+	byKey := map[string]*usage{}
+	for _, cw := range clusters {
+		key, fromBackend := routeKey, false
+		if k := sessionKeyFromAny(cw.GetTypedPerFilterConfig()[sessionpersistence.FilterName]); k != "" {
+			key, fromBackend = k, true
+		}
+		if key == "" {
+			continue
+		}
+		u := byKey[key]
+		if u == nil {
+			u = &usage{}
+			byKey[key] = u
+		}
+		// The same backend listed twice in a split shares its session, which is fine.
+		if !slices.Contains(u.clusters, cw.GetName()) {
+			u.clusters = append(u.clusters, cw.GetName())
+		}
+		u.fromBackend = u.fromBackend || fromBackend
+	}
+	for key, u := range byKey {
+		if len(u.clusters) > 1 && u.fromBackend {
+			h.logger.Warn("backends in a traffic split use the same session persistence name; sessions reset when the split switches backends",
+				"route", out.GetName(), "session", key, "clusters", u.clusters)
+		}
+	}
+}
+
+func sessionKeyFromAny(a *anypb.Any) string {
+	if a == nil {
+		return ""
+	}
+	sp := &stateful_sessionv3.StatefulSessionPerRoute{}
+	if err := a.UnmarshalTo(sp); err != nil {
+		return ""
+	}
+	return sessionpersistence.SessionKey(sp)
+}
+
+// runBackendObjectPolicies lets the plugins of policies attached to the backend object
+// (via targetRefs/targetSelectors, e.g. a BackendConfigPolicy targeting a Service)
+// contribute per-route config for that backend. Only plugins implementing
+// ir.BackendObjectPolicyApplier are called; they get the unmerged attachments so they can
+// skip merging when no policy needs per-route config.
+func (h *httpRouteConfigurationTranslator) runBackendObjectPolicies(backend *ir.BackendObjectIR, pCtx *ir.RouteBackendContext) error {
+	if len(backend.AttachedPolicies.Policies) == 0 {
+		return nil
+	}
+	var errs []error
+	// This runs for every route backend, so only look up the policy kinds that have an applier
+	// instead of iterating (and sorting) all attached policy kinds.
+	for _, a := range h.getBackendObjectPolicyAppliers() {
+		pols := backend.AttachedPolicies.Policies[a.gk]
+		if len(pols) == 0 {
+			continue
+		}
+		if err := a.applier.ApplyForBackendObjectPolicies(pols, pCtx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// getBackendObjectPolicyAppliers returns the plugin passes implementing ir.BackendObjectPolicyApplier,
+// sorted by GroupKind for a deterministic order. They are computed once per translator.
+func (h *httpRouteConfigurationTranslator) getBackendObjectPolicyAppliers() []backendObjectPolicyApplier {
+	if h.backendObjectPolicyAppliers != nil {
+		return h.backendObjectPolicyAppliers
+	}
+	appliers := []backendObjectPolicyApplier{}
+	for gk, pass := range h.pluginPass {
+		if pass == nil {
+			continue
+		}
+		if applier, ok := pass.ProxyTranslationPass.(ir.BackendObjectPolicyApplier); ok {
+			appliers = append(appliers, backendObjectPolicyApplier{gk: gk, applier: applier})
+		}
+	}
+	slices.SortFunc(appliers, func(a, b backendObjectPolicyApplier) int {
+		return strings.Compare(a.gk.String(), b.gk.String())
+	})
+	h.backendObjectPolicyAppliers = appliers
+	return appliers
 }
 
 func (h *httpRouteConfigurationTranslator) translateRouteAction(

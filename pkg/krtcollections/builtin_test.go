@@ -13,6 +13,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
@@ -1016,4 +1017,33 @@ func TestRequestRedirectLowerPriorityPolicyDoesNotPostProcessWinningRedirect(t *
 		expectedRedirect,
 		outputRoute.GetRedirect(),
 	)
+}
+
+func TestSessionPersistenceBackendPolicyTakesPrecedence(t *testing.T) {
+	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{SessionName: new("route-cookie")})
+	require.NotNil(t, routeSP)
+	newRoute := func() *envoyroutev3.Route {
+		return &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}}
+	}
+
+	t.Run("route rule applies when the backend has no session persistence", func(t *testing.T) {
+		pass := &builtinPluginGwPass{needStatefulSession: map[string]bool{}}
+		out := newRoute()
+		require.NoError(t, pass.applyRulePolicy(&ir.RouteContext{FilterChainName: "fc"}, ruleIR{sessionPersistence: routeSP}, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}, out))
+		assert.Contains(t, out.GetTypedPerFilterConfig(), sessionpersistence.FilterName, "route rule session persistence should be set")
+		assert.True(t, pass.needStatefulSession["fc"], "filter chain should need the stateful session filter")
+	})
+
+	t.Run("backend session persistence wins over the route rule", func(t *testing.T) {
+		backendSP, err := sessionpersistence.Build(sessionpersistence.Config{Type: sessionpersistence.Cookie, Name: "policy-cookie"})
+		require.NoError(t, err)
+		pCtx := &ir.RouteContext{FilterChainName: "fc"}
+		pCtx.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSP)
+
+		pass := &builtinPluginGwPass{needStatefulSession: map[string]bool{}}
+		out := newRoute()
+		require.NoError(t, pass.applyRulePolicy(pCtx, ruleIR{sessionPersistence: routeSP}, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}, out))
+		assert.NotContains(t, out.GetTypedPerFilterConfig(), sessionpersistence.FilterName, "route rule session persistence should be skipped")
+		assert.Equal(t, backendSP, pCtx.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName), "backend session persistence should be kept")
+	})
 }

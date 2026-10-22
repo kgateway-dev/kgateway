@@ -45,6 +45,7 @@ func mergeBackendConfigPolicies(
 		mergeRespectDnsTtl,
 		mergeUpstreamProxyProtocol,
 		mergeTunnel,
+		mergeSessionPersistence,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -179,4 +180,12 @@ func mergeTunnel(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2M
 	}
 	p1.tunnel = p2.tunnel
 	mergeOrigins.SetOne("tunnel", p2Ref, p2MergeOrigins)
+}
+
+func mergeSessionPersistence(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.sessionPersistence, p2.sessionPersistence, opts) {
+		return
+	}
+	p1.sessionPersistence = p2.sessionPersistence
+	mergeOrigins.SetOne("sessionPersistence", p2Ref, p2MergeOrigins)
 }

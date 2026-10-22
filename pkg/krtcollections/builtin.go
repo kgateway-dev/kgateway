@@ -12,9 +12,6 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
-	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
-	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
-	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -30,6 +27,7 @@ import (
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -38,8 +36,6 @@ import (
 )
 
 const (
-	statefulSessionFilterName = "envoy.filters.http.stateful_session"
-
 	httpRedirectStatusCodesAllowedMsg = "must be one of 301, 302, 303, 307, 308"
 )
 
@@ -200,7 +196,12 @@ func (p *builtinPluginGwPass) applyRulePolicy(
 	r.applyTimeouts(outputRoute.GetRoute(), r.retry != nil, mergeOpts)
 	r.applyRetry(outputRoute.GetRoute(), mergeOpts)
 
-	if r.sessionPersistence != nil && policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName], mergeOpts) {
+	// Session persistence from a BackendConfigPolicy attached to the backend takes precedence over the route rule.
+	// For a single backend, the backend's per filter config is shared with the route via pCtx.TypedFilterConfig.
+	// For multiple backends, it is set on each weighted cluster, which Envoy prefers over the route.
+	backendHasSessionPersistence := pCtx != nil && pCtx.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName) != nil
+	if r.sessionPersistence != nil && !backendHasSessionPersistence &&
+		policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName], mergeOpts) {
 		if outputRoute.GetTypedPerFilterConfig() == nil {
 			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
@@ -209,7 +210,7 @@ func (p *builtinPluginGwPass) applyRulePolicy(
 			logger.Error("error marshalling SessionPersistence", "error", err)
 			return err
 		}
-		outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] = anyMsg
+		outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName] = anyMsg
 		p.needStatefulSession[pCtx.FilterChainName] = true
 	}
 	return nil
@@ -339,69 +340,38 @@ func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *sta
 		return nil
 	}
 
-	// Handle session persistence if specified
-	var sessionState proto.Message
-	spType := gwv1.CookieBasedSessionPersistence
-	if sessionPersistence.Type != nil {
-		spType = *sessionPersistence.Type
+	cfg := sessionpersistence.Config{
+		Type: sessionpersistence.Type(ptr.Deref(sessionPersistence.Type, gwv1.CookieBasedSessionPersistence)),
+		// Always set path to root to set cookie for all requests to hostname.
+		// Default browser behavior otherwise is to use the current "directory" of the request.
+		// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
+		// requests to unrelated subpaths could get routed to a different upstream.
+		// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
+		// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
+		CookiePath: "/",
+	}
+	if sessionPersistence.AbsoluteTimeout != nil {
+		if parsed, err := time.ParseDuration(string(*sessionPersistence.AbsoluteTimeout)); err == nil {
+			cfg.AbsoluteTimeout = &parsed
+		}
+	}
+	switch cfg.Type {
+	case sessionpersistence.Cookie:
+		cfg.Name = ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")
+		// Only set LifetimeType if present in CookieConfig
+		if sessionPersistence.CookieConfig != nil && sessionPersistence.CookieConfig.LifetimeType != nil {
+			cfg.LifetimeType = sessionpersistence.LifetimeType(*sessionPersistence.CookieConfig.LifetimeType)
+		}
+	case sessionpersistence.Header:
+		cfg.Name = ptr.Deref(sessionPersistence.SessionName, "x-session-persistence")
 	}
 
-	switch spType {
-	case gwv1.CookieBasedSessionPersistence:
-		var ttl *durationpb.Duration
-		if sessionPersistence.AbsoluteTimeout != nil {
-			if parsed, err := time.ParseDuration(string(*sessionPersistence.AbsoluteTimeout)); err == nil {
-				ttl = durationpb.New(parsed)
-			}
-		}
-		cookie := &httpv3.Cookie{
-			Name: utils.SanitizeCookieName(ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")),
-			Ttl:  ttl,
-			// Always set path to root to set cookie for all requests to hostname.
-			// Default browser behavior otherwise is to use the current "directory" of the request.
-			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
-			// requests to unrelated subpaths could get routed to a different upstream.
-			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
-			// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
-			Path: "/",
-		}
-		// Only set LifetimeType if present in CookieConfig
-		if sessionPersistence.CookieConfig != nil &&
-			sessionPersistence.CookieConfig.LifetimeType != nil {
-			switch *sessionPersistence.CookieConfig.LifetimeType {
-			case gwv1.SessionCookieLifetimeType:
-				// Session cookies — cookies without a Max-Age or Expires attribute – are deleted when the current session ends
-				cookie.Ttl = nil
-			case gwv1.PermanentCookieLifetimeType:
-				if cookie.GetTtl() == nil {
-					cookie.Ttl = durationpb.New(time.Hour * 24 * 365)
-				}
-			}
-		}
-		sessionState = &stateful_cookie.CookieBasedSessionState{
-			Cookie: cookie,
-		}
-	case gwv1.HeaderBasedSessionPersistence:
-		sessionState = &stateful_header.HeaderBasedSessionState{
-			Name: utils.SanitizeHeaderName(ptr.Deref(sessionPersistence.SessionName, "x-session-persistence")),
-		}
-	}
-	sessionStateAny, err := utils.MessageToAny(sessionState)
+	out, err := sessionpersistence.Build(cfg)
 	if err != nil {
-		logger.Error("failed to create session state: %v", "error", err)
+		logger.Error("failed to create session state", "error", err)
 		return nil
 	}
-	statefulSession := &stateful_sessionv3.StatefulSession{
-		SessionState: &envoycorev3.TypedExtensionConfig{
-			Name:        "envoy.http.stateful_session." + strings.ToLower(string(spType)),
-			TypedConfig: sessionStateAny,
-		},
-	}
-	return &stateful_sessionv3.StatefulSessionPerRoute{
-		Override: &stateful_sessionv3.StatefulSessionPerRoute_StatefulSession{
-			StatefulSession: statefulSession,
-		},
-	}
+	return out
 }
 
 func translatePathRewrite(outputRoute *envoyroutev3.RedirectAction, pathRewrite *gwv1.HTTPPathModifier) {
@@ -769,12 +739,7 @@ func (p *builtinPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.Filter
 	}
 
 	if p.needStatefulSession[fcc.FilterChainName] {
-		stagedFilter, err := filters.NewStagedFilter(statefulSessionFilterName, &stateful_sessionv3.StatefulSession{}, filters.DuringStage(filters.AcceptedStage))
-		if err != nil {
-			return nil, err
-		}
-		stagedFilter.Filter.Disabled = true
-		builtinStaged = append(builtinStaged, stagedFilter)
+		builtinStaged = append(builtinStaged, sessionpersistence.DisabledFilter())
 	}
 
 	return builtinStaged, nil

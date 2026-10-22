@@ -1,0 +1,105 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-a
+  namespace: default
+spec:
+  selector:
+    app: backend-a
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-b
+  namespace: default
+spec:
+  selector:
+    app: backend-b
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-c
+  namespace: default
+spec:
+  selector:
+    app: backend-c
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-a-sp
+  namespace: default
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: backend-a
+  sessionPersistence:
+    cookie: {}
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-b-sp
+  namespace: default
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: backend-b
+  sessionPersistence:
+    cookie: {}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /both
+      backendRefs:
+        - name: backend-a
+          port: 3000
+          weight: 50
+        - name: backend-b
+          port: 3000
+          weight: 50
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /one
+      backendRefs:
+        - name: backend-a
+          port: 3000
+          weight: 50
+        - name: backend-c
+          port: 3000
+          weight: 50
