@@ -11,7 +11,6 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
-	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -60,9 +59,11 @@ type timeouts struct {
 }
 
 type ruleIR struct {
-	timeouts           *timeouts
-	retry              *envoyroutev3.RetryPolicy
-	sessionPersistence *stateful_sessionv3.StatefulSessionPerRoute
+	timeouts *timeouts
+	retry    *envoyroutev3.RetryPolicy
+	// sessionPersistence is the per route stateful session config, marshaled once when the rule is built
+	// so route translation does not marshal it again for every route. It is shared and must not be modified.
+	sessionPersistence *anypb.Any
 }
 
 type filterIR struct {
@@ -187,11 +188,11 @@ func (p *builtinPluginGwPass) applyRulePolicy(
 	r ruleIR,
 	mergeOpts policy.MergeOptions,
 	outputRoute *envoyroutev3.Route,
-) error {
+) {
 	// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
 	// but the plugin will be invoked on the rule, so treat this as a no-op call
 	if outputRoute == nil || outputRoute.GetRoute() == nil {
-		return nil
+		return
 	}
 	r.applyTimeouts(outputRoute.GetRoute(), r.retry != nil, mergeOpts)
 	r.applyRetry(outputRoute.GetRoute(), mergeOpts)
@@ -205,15 +206,9 @@ func (p *builtinPluginGwPass) applyRulePolicy(
 		if outputRoute.GetTypedPerFilterConfig() == nil {
 			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
-		anyMsg, err := utils.MessageToAny(r.sessionPersistence)
-		if err != nil {
-			logger.Error("error marshalling SessionPersistence", "error", err)
-			return err
-		}
-		outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName] = anyMsg
+		outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName] = r.sessionPersistence
 		p.needStatefulSession[pCtx.FilterChainName] = true
 	}
-	return nil
 }
 
 func convertTimeouts(timeout *gwv1.HTTPRouteTimeouts) *timeouts {
@@ -335,41 +330,71 @@ func (r ruleIR) applyRetry(
 	action.RetryPolicy = r.retry
 }
 
-func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *stateful_sessionv3.StatefulSessionPerRoute {
+func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *anypb.Any {
 	if sessionPersistence == nil {
 		return nil
 	}
-
-	cfg := sessionpersistence.Config{
-		Type: sessionpersistence.Type(ptr.Deref(sessionPersistence.Type, gwv1.CookieBasedSessionPersistence)),
-		// Always set path to root to set cookie for all requests to hostname.
-		// Default browser behavior otherwise is to use the current "directory" of the request.
-		// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
-		// requests to unrelated subpaths could get routed to a different upstream.
-		// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
-		// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
-		CookiePath: "/",
-	}
-	if sessionPersistence.AbsoluteTimeout != nil {
-		if parsed, err := time.ParseDuration(string(*sessionPersistence.AbsoluteTimeout)); err == nil {
-			cfg.AbsoluteTimeout = &parsed
-		}
-	}
-	switch cfg.Type {
-	case sessionpersistence.Cookie:
-		cfg.Name = ptr.Deref(sessionPersistence.SessionName, "sessionPersistence")
-		// Only set LifetimeType if present in CookieConfig
-		if sessionPersistence.CookieConfig != nil && sessionPersistence.CookieConfig.LifetimeType != nil {
-			cfg.LifetimeType = sessionpersistence.LifetimeType(*sessionPersistence.CookieConfig.LifetimeType)
-		}
-	case sessionpersistence.Header:
-		cfg.Name = ptr.Deref(sessionPersistence.SessionName, "x-session-persistence")
-	}
-
-	out, err := sessionpersistence.Build(cfg)
+	cfg, err := sessionpersistence.ConfigFromAPI(sessionPersistenceToAPI(sessionPersistence))
 	if err != nil {
 		logger.Error("failed to create session state", "error", err)
 		return nil
+	}
+	perRoute, err := sessionpersistence.Build(cfg)
+	if err != nil {
+		logger.Error("failed to create session state", "error", err)
+		return nil
+	}
+	out, err := utils.MessageToAny(perRoute)
+	if err != nil {
+		logger.Error("error marshalling SessionPersistence", "error", err)
+		return nil
+	}
+	return out
+}
+
+// sessionPersistenceToAPI converts the Gateway API v1.6 route rule sessionPersistence into the kgateway
+// SessionPersistence API, so route rules and BackendConfigPolicy share the same conversion code. It sets
+// every value the route rule implies explicitly, to keep the Envoy config route rules have always produced.
+// TODO: with Gateway API v1.7 the route rule type has the same shape as the kgateway type, so this becomes a field copy.
+func sessionPersistenceToAPI(sp *gwv1.SessionPersistence) *kgateway.SessionPersistence {
+	spType := kgateway.SessionPersistenceType(ptr.Deref(sp.Type, gwv1.CookieBasedSessionPersistence))
+	out := &kgateway.SessionPersistence{Type: &spType}
+	if sp.AbsoluteTimeout != nil {
+		if _, err := time.ParseDuration(string(*sp.AbsoluteTimeout)); err != nil {
+			// Header sessions never use the timeout, so only warn for cookies.
+			if spType == kgateway.CookieBasedSessionPersistence {
+				logger.Warn("ignoring invalid sessionPersistence absoluteTimeout", "absolute_timeout", *sp.AbsoluteTimeout, "error", err)
+			}
+		} else {
+			out.AbsoluteTimeout = sp.AbsoluteTimeout
+		}
+	}
+
+	switch spType {
+	case kgateway.CookieBasedSessionPersistence:
+		lifetime := kgateway.SessionCookieLifetimeType
+		if sp.CookieConfig != nil && sp.CookieConfig.LifetimeType != nil {
+			lifetime = kgateway.CookieLifetimeType(*sp.CookieConfig.LifetimeType)
+		} else if out.AbsoluteTimeout != nil {
+			// Without a lifetimeType, the route rule has always used absoluteTimeout as the cookie Max-Age,
+			// which is a Permanent cookie in the kgateway API.
+			lifetime = kgateway.PermanentCookieLifetimeType
+		}
+		out.Cookie = &kgateway.SessionPersistenceCookieConfig{
+			Name: new(kgateway.CookieName(ptr.Deref(sp.SessionName, "sessionPersistence"))),
+			// Always set path to root to set cookie for all requests to hostname.
+			// Default browser behavior otherwise is to use the current "directory" of the request.
+			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
+			// requests to unrelated subpaths could get routed to a different upstream.
+			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
+			// This intentionally ignores the specification in GEP-1619 as computing the "correct" path can lead to unintended consequences.
+			Path:         new("/"),
+			LifetimeType: &lifetime,
+		}
+	case kgateway.HeaderBasedSessionPersistence:
+		out.Header = &kgateway.SessionPersistenceHeaderConfig{
+			Name: gwv1.HeaderName(ptr.Deref(sp.SessionName, "x-session-persistence")),
+		}
 	}
 	return out
 }

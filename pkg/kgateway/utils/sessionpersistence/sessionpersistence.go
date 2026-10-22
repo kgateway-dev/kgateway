@@ -5,6 +5,7 @@
 package sessionpersistence
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -17,7 +18,9 @@ import (
 	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"k8s.io/utils/ptr"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
@@ -55,6 +58,42 @@ type Config struct {
 	CookiePath      string
 	AbsoluteTimeout *time.Duration
 	LifetimeType    LifetimeType
+}
+
+// ConfigFromAPI converts the kgateway SessionPersistence API into a Config. It is shared by
+// BackendConfigPolicy and the route rule sessionPersistence (converted into the kgateway API first).
+// An unset cookie name is returned as an empty Name so the caller can choose a default.
+func ConfigFromAPI(in *kgateway.SessionPersistence) (Config, error) {
+	if in == nil {
+		return Config{}, errors.New("session persistence is not set")
+	}
+	cfg := Config{
+		Type: Type(ptr.Deref(in.Type, kgateway.CookieBasedSessionPersistence)),
+	}
+	if in.AbsoluteTimeout != nil {
+		d, err := time.ParseDuration(string(*in.AbsoluteTimeout))
+		if err != nil {
+			return Config{}, fmt.Errorf("invalid sessionPersistence.absoluteTimeout: %w", err)
+		}
+		cfg.AbsoluteTimeout = &d
+	}
+	switch cfg.Type {
+	case Cookie:
+		cfg.LifetimeType = LifetimeSession
+		if c := in.Cookie; c != nil {
+			cfg.Name = string(ptr.Deref(c.Name, ""))
+			cfg.CookiePath = ptr.Deref(c.Path, "")
+			cfg.LifetimeType = LifetimeType(ptr.Deref(c.LifetimeType, kgateway.SessionCookieLifetimeType))
+		}
+	case Header:
+		if in.Header == nil {
+			return Config{}, errors.New("sessionPersistence.header must be specified for Header type")
+		}
+		cfg.Name = string(in.Header.Name)
+	default:
+		return Config{}, fmt.Errorf("unsupported session persistence type %q", cfg.Type)
+	}
+	return cfg, nil
 }
 
 // CookieState builds the Envoy cookie based session state for cfg.
@@ -95,7 +134,7 @@ func HeaderState(cfg Config) *stateful_header.HeaderBasedSessionState {
 // Build converts cfg into the per route config of the stateful session filter.
 func Build(cfg Config) (*stateful_sessionv3.StatefulSessionPerRoute, error) {
 	switch cfg.Type {
-	case Cookie, "":
+	case Cookie:
 		return PerRoute(CookieState(cfg))
 	case Header:
 		return PerRoute(HeaderState(cfg))

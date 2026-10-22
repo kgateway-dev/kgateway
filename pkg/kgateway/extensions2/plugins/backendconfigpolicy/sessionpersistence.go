@@ -1,10 +1,9 @@
 package backendconfigpolicy
 
 import (
-	"fmt"
+	"errors"
 	"net"
 	"slices"
-	"time"
 
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	"google.golang.org/protobuf/proto"
@@ -44,7 +43,7 @@ func (s *sessionPersistenceIR) perRouteFor(backend *ir.BackendObjectIR) (*anypb.
 		return s.perRoute, nil
 	}
 	if backend == nil {
-		return nil, fmt.Errorf("session persistence cookie name cannot be generated without a backend")
+		return nil, errors.New("session persistence cookie name cannot be generated without a backend")
 	}
 	state := proto.Clone(s.cookieState).(*stateful_cookie.CookieBasedSessionState)
 	state.Cookie.Name = sessionpersistence.GeneratedCookieName(backend.ResourceName())
@@ -59,40 +58,14 @@ func translateSessionPersistence(in *kgateway.SessionPersistence) (*sessionPersi
 	if in == nil {
 		return nil, nil
 	}
-	cfg := sessionpersistence.Config{
-		Type: sessionpersistence.Type(ptr.Deref(in.Type, kgateway.CookieBasedSessionPersistence)),
+	cfg, err := sessionpersistence.ConfigFromAPI(in)
+	if err != nil {
+		return nil, err
 	}
-	if in.AbsoluteTimeout != nil {
-		d, err := time.ParseDuration(string(*in.AbsoluteTimeout))
-		if err != nil {
-			return nil, fmt.Errorf("invalid sessionPersistence.absoluteTimeout: %w", err)
-		}
-		cfg.AbsoluteTimeout = &d
+	if cfg.Type == sessionpersistence.Cookie && cfg.Name == "" {
+		// The cookie name is generated for each backend when the route is translated.
+		return &sessionPersistenceIR{cookieState: sessionpersistence.CookieState(cfg)}, nil
 	}
-
-	switch cfg.Type {
-	case sessionpersistence.Cookie:
-		var nameSet bool
-		if c := in.Cookie; c != nil {
-			if c.Name != nil {
-				cfg.Name = string(*c.Name)
-				nameSet = true
-			}
-			cfg.CookiePath = ptr.Deref(c.Path, "")
-			cfg.LifetimeType = sessionpersistence.LifetimeType(ptr.Deref(c.LifetimeType, kgateway.SessionCookieLifetimeType))
-		} else {
-			cfg.LifetimeType = sessionpersistence.LifetimeSession
-		}
-		if !nameSet {
-			return &sessionPersistenceIR{cookieState: sessionpersistence.CookieState(cfg)}, nil
-		}
-	case sessionpersistence.Header:
-		if in.Header == nil {
-			return nil, fmt.Errorf("sessionPersistence.header must be specified for Header type")
-		}
-		cfg.Name = string(in.Header.Name)
-	}
-
 	perRoute, err := sessionpersistence.Build(cfg)
 	if err != nil {
 		return nil, err

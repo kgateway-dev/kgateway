@@ -10,7 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 )
 
@@ -125,4 +127,62 @@ func TestDisabledFilter(t *testing.T) {
 	assert.True(t, proto.Equal(want.Filter, got.Filter), "filter should match the previously built filter")
 	assert.Equal(t, want.Stage, got.Stage, "filter stage")
 	assert.NotSame(t, DisabledFilter().Filter, got.Filter, "each call returns its own filter")
+}
+
+func TestConfigFromAPI(t *testing.T) {
+	timeout := time.Hour
+	tests := []struct {
+		name    string
+		in      *kgateway.SessionPersistence
+		want    Config
+		wantErr string
+	}{
+		{name: "nil", in: nil, wantErr: "session persistence is not set"},
+		{
+			name: "cookie defaults to a session lifetime and leaves the name unset",
+			in:   &kgateway.SessionPersistence{Cookie: &kgateway.SessionPersistenceCookieConfig{}},
+			want: Config{Type: Cookie, LifetimeType: LifetimeSession},
+		},
+		{
+			name: "cookie with all fields",
+			in: &kgateway.SessionPersistence{
+				AbsoluteTimeout: new(gwv1.Duration("1h")),
+				Cookie: &kgateway.SessionPersistenceCookieConfig{
+					Name: new(kgateway.CookieName("s")), Path: new("/app"), LifetimeType: new(kgateway.PermanentCookieLifetimeType),
+				},
+			},
+			want: Config{Type: Cookie, Name: "s", CookiePath: "/app", AbsoluteTimeout: &timeout, LifetimeType: LifetimePermanent},
+		},
+		{
+			name: "header",
+			in:   &kgateway.SessionPersistence{Type: new(kgateway.HeaderBasedSessionPersistence), Header: &kgateway.SessionPersistenceHeaderConfig{Name: "x-s"}},
+			want: Config{Type: Header, Name: "x-s"},
+		},
+		{
+			name:    "header without header config",
+			in:      &kgateway.SessionPersistence{Type: new(kgateway.HeaderBasedSessionPersistence)},
+			wantErr: "sessionPersistence.header must be specified for Header type",
+		},
+		{
+			name:    "invalid timeout",
+			in:      &kgateway.SessionPersistence{AbsoluteTimeout: new(gwv1.Duration("bogus")), Cookie: &kgateway.SessionPersistenceCookieConfig{}},
+			wantErr: `invalid sessionPersistence.absoluteTimeout: time: invalid duration "bogus"`,
+		},
+		{
+			name:    "unknown type",
+			in:      &kgateway.SessionPersistence{Type: new(kgateway.SessionPersistenceType("Unknown"))},
+			wantErr: `unsupported session persistence type "Unknown"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ConfigFromAPI(tt.in)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
