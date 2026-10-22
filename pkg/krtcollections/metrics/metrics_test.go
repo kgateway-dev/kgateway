@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -328,4 +329,63 @@ func TestSyncChannelFull(t *testing.T) {
 			Value:  float64(overflowCount),
 		})
 	}
+}
+
+func TestResourcesManagedDeletedAtZero(t *testing.T) {
+	setupTest()
+
+	gw := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "ns"}}
+	moved := &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "r", Namespace: "ns"},
+		Spec: gwv1.HTTPRouteSpec{CommonRouteSpec: gwv1.CommonRouteSpec{
+			ParentRefs: []gwv1.ParentReference{{Name: "gw"}},
+		}},
+	}
+	movedTo := moved.DeepCopy()
+	movedTo.Spec.ParentRefs[0].Name = "other"
+	gwHandler := GetResourceMetricEventHandler[*gwv1.Gateway]()
+	routeHandler := GetResourceMetricEventHandler[*gwv1.HTTPRoute]()
+	managed := func(parent, resource string) []metrics.Label {
+		return []metrics.Label{
+			{Name: "namespace", Value: "ns"},
+			{Name: "parent", Value: parent},
+			{Name: "resource", Value: resource},
+		}
+	}
+
+	gwHandler(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &gw})
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventAdd, New: &moved})
+	// An update that keeps its parent leaves the series in place.
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventUpdate, Old: &moved, New: &moved})
+	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_resources_managed",
+		[][]metrics.Label{managed("gw", "Gateway"), managed("gw", "HTTPRoute")})
+
+	// A deleted Gateway and a route moved to another parent leave no zero series in a
+	// namespace that stays.
+	gwHandler(krt.Event[*gwv1.Gateway]{Event: controllers.EventDelete, Old: &gw})
+	routeHandler(krt.Event[*gwv1.HTTPRoute]{Event: controllers.EventUpdate, Old: &moved, New: &movedTo})
+	metricstest.MustGatherMetrics(t).AssertMetricsLabels("kgateway_resources_managed",
+		[][]metrics.Label{managed("other", "HTTPRoute")})
+}
+
+func TestGatewayDeleteDropsPendingXDSSync(t *testing.T) {
+	setupTest()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	t.Cleanup(cancel)
+	StartResourceSyncMetricsProcessing(ctx)
+
+	deleted := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "deleted"}}
+	live := &gwv1.Gateway{ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: "live"}}
+	handler := GetResourceMetricEventHandler[*gwv1.Gateway]()
+	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &deleted})
+	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventAdd, New: &live})
+	handler(krt.Event[*gwv1.Gateway]{Event: controllers.EventDelete, Old: &deleted})
+
+	// The next sync of the same-name Gateway ends only its own pending sync.
+	EndResourceXDSSync(ResourceSyncDetails{Gateway: "gw", Namespace: "live", ResourceType: "Gateway", ResourceName: "gw"})
+	// Only the live Gateway's sync is recorded, not the deleted Gateway's pending one.
+	metricstest.MustGatherMetricsContext(ctx, t, "kgateway_xds_snapshot_sync_duration_seconds").
+		AssertMetricsLabels("kgateway_xds_snapshot_sync_duration_seconds", [][]metrics.Label{
+			{{Name: "gateway", Value: "gw"}, {Name: "namespace", Value: "live"}},
+		})
 }

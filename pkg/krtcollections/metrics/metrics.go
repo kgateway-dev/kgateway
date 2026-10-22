@@ -64,6 +64,12 @@ var (
 	}, nil)
 )
 
+func init() {
+	// A Gateway's snapshot syncs carry the Gateway's own namespace.
+	metrics.RegisterGatewayScoped(xdsSnapshotSyncsTotal, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(xdsSnapshotSyncDuration, namespaceLabel, gatewayLabel)
+}
+
 type resourceMetricLabels struct {
 	Parent    string
 	Namespace string
@@ -78,22 +84,37 @@ func (r resourceMetricLabels) toMetricsLabels() []metrics.Label {
 	}
 }
 
-// ResourceSyncStartTime represents the start time of a resource sync.
-type ResourceSyncStartTime struct {
-	Time         time.Time
-	ResourceType string
-	ResourceName string
-	Namespace    string
-	Gateway      string
+// managedCounts is the source of truth for resourcesManaged, which is always written with
+// Set. A series whose count reaches zero is deleted, so a deleted parent or namespace does
+// not leave one behind. Deleting a series kept with Add and Sub would race a concurrent
+// update to it.
+var managedCounts = struct {
+	sync.Mutex
+	counts map[resourceMetricLabels]int
+}{counts: map[resourceMetricLabels]int{}}
+
+// addResourcesManaged adjusts the count of managed resources for labels and publishes it.
+func addResourcesManaged(labels resourceMetricLabels, delta int) {
+	metricLabels := labels.toMetricsLabels()
+
+	managedCounts.Lock()
+	defer managedCounts.Unlock()
+
+	count := managedCounts.counts[labels] + delta
+	if count == 0 {
+		delete(managedCounts.counts, labels)
+		resourcesManaged.Delete(metricLabels...)
+		return
+	}
+	managedCounts.counts[labels] = count
+	resourcesManaged.Set(float64(count), metricLabels...)
 }
 
-// resourceSyncStartTimes tracks the start times of resource syncs.
-type resourceSyncStartTimes struct {
-	sync.RWMutex
-	times map[string]map[string]map[string]map[string]ResourceSyncStartTime
-}
-
-var startTimes = &resourceSyncStartTimes{}
+// startTimes tracks the start times of pending XDS snapshot syncs, keyed by xdsSyncKey.
+var startTimes = struct {
+	sync.Mutex
+	times map[ResourceSyncDetails]time.Time
+}{times: map[ResourceSyncDetails]time.Time{}}
 
 // ResourceSyncDetails holds the details of a resource sync operation.
 type ResourceSyncDetails struct {
@@ -101,6 +122,12 @@ type ResourceSyncDetails struct {
 	Gateway      string
 	ResourceType string
 	ResourceName string
+}
+
+// xdsSyncKey is the startTimes key of the XDS snapshot sync of the Gateway in d. A Gateway
+// has at most one pending XDS sync, so the key leaves out the resource.
+func (d ResourceSyncDetails) xdsSyncKey() ResourceSyncDetails {
+	return ResourceSyncDetails{Namespace: d.Namespace, Gateway: d.Gateway}
 }
 
 type syncStartInfo struct {
@@ -151,31 +178,18 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
-	}
+	startTimes.times[details.xdsSyncKey()] = time.Now()
+}
 
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
-	}
+// dropResourceXDSSync forgets the pending XDS sync of a deleted Gateway. A Gateway whose
+// translation produced no snapshot has a sync that nothing ends, so it would otherwise be
+// held forever, and the first sync of a Gateway recreated with the same name would record
+// its age.
+func dropResourceXDSSync(details ResourceSyncDetails) {
+	startTimes.Lock()
+	defer startTimes.Unlock()
 
-	st := ResourceSyncStartTime{
-		Time:         time.Now(),
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-		Namespace:    details.Namespace,
-		Gateway:      details.Gateway,
-	}
-
-	if startTimes.times[details.Gateway][snapshotResourceType] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType] = make(map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][snapshotResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
-	}
-
-	startTimes.times[details.Gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
+	delete(startTimes.times, details.xdsSyncKey())
 }
 
 // EndResourceXDSSync records the end time of an XDS snapshot sync.
@@ -219,59 +233,19 @@ func endResourceSync(syncInfo *syncStartInfo) {
 	startTimes.Lock()
 	defer startTimes.Unlock()
 
-	if startTimes.times == nil {
-		return
-	}
-
-	if startTimes.times[syncInfo.details.Gateway] == nil {
-		return
-	}
-
-	rt := snapshotResourceType
-	resourceTypeStartTimes, exists := startTimes.times[syncInfo.details.Gateway][rt]
+	key := syncInfo.details.xdsSyncKey()
+	start, exists := startTimes.times[key]
 	if !exists {
 		return
 	}
+	delete(startTimes.times, key)
 
-	deleteResources := map[string]map[string]struct{}{}
-
-	for _, namespaceStartTimes := range resourceTypeStartTimes {
-		for resourceName, st := range namespaceStartTimes {
-			xdsSnapshotSyncsTotal.Inc(
-				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-			)
-
-			xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-			)
-
-			if deleteResources[st.Namespace] == nil {
-				deleteResources[st.Namespace] = map[string]struct{}{}
-			}
-
-			deleteResources[st.Namespace][resourceName] = struct{}{}
-		}
+	labels := []metrics.Label{
+		{Name: gatewayLabel, Value: key.Gateway},
+		{Name: namespaceLabel, Value: key.Namespace},
 	}
-
-	for namespace, resources := range deleteResources {
-		for resourceName := range resources {
-			delete(startTimes.times[syncInfo.details.Gateway][rt][namespace], resourceName)
-
-			if len(startTimes.times[syncInfo.details.Gateway][rt][namespace]) == 0 {
-				delete(startTimes.times[syncInfo.details.Gateway][rt], namespace)
-			}
-
-			if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
-				delete(startTimes.times[syncInfo.details.Gateway], rt)
-			}
-
-			if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
-				delete(startTimes.times, syncInfo.details.Gateway)
-			}
-		}
-	}
+	xdsSnapshotSyncsTotal.Inc(labels...)
+	xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(start).Seconds(), labels...)
 }
 
 // GetResourceMetricEventHandler returns a function that handles krt events for various Gateway API resources.
@@ -417,11 +391,11 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 		switch eventType {
 		case controllers.EventAdd:
 			for _, name := range names {
-				resourcesManaged.Add(1, resourceMetricLabels{
+				addResourcesManaged(resourceMetricLabels{
 					Parent:    name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, 1)
 
 				startResourceSync(ResourceSyncDetails{
 					Gateway:      name,
@@ -431,21 +405,22 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 				})
 			}
 		case controllers.EventUpdate:
+			// Apply the net change, so an update that keeps a parent does not delete and
+			// re-create its series as the count passes through zero.
+			deltas := make(map[resourceMetricLabels]int, len(namesOld)+len(names))
 			for _, name := range namesOld {
-				resourcesManaged.Sub(1, resourceMetricLabels{
-					Parent:    name,
-					Namespace: namespaceOld,
-					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				deltas[resourceMetricLabels{Parent: name, Namespace: namespaceOld, Resource: resourceType}]--
+			}
+			for _, name := range names {
+				deltas[resourceMetricLabels{Parent: name, Namespace: namespace, Resource: resourceType}]++
+			}
+			for labels, delta := range deltas {
+				if delta != 0 {
+					addResourcesManaged(labels, delta)
+				}
 			}
 
 			for _, name := range names {
-				resourcesManaged.Add(1, resourceMetricLabels{
-					Parent:    name,
-					Namespace: namespace,
-					Resource:  resourceType,
-				}.toMetricsLabels()...)
-
 				startResourceSync(ResourceSyncDetails{
 					Gateway:      name,
 					Namespace:    namespace,
@@ -455,18 +430,22 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			}
 		case controllers.EventDelete:
 			for _, name := range names {
-				resourcesManaged.Sub(1, resourceMetricLabels{
+				addResourcesManaged(resourceMetricLabels{
 					Parent:    name,
 					Namespace: namespace,
 					Resource:  resourceType,
-				}.toMetricsLabels()...)
+				}, -1)
 
-				startResourceSync(ResourceSyncDetails{
+				details := ResourceSyncDetails{
 					Gateway:      name,
 					Namespace:    namespace,
 					ResourceType: resourceType,
 					ResourceName: resourceName,
-				})
+				}
+				if resourceType == wellknown.GatewayKind {
+					// A deleted Gateway gets no further XDS sync.
+					dropResourceXDSSync(details)
+				}
 			}
 		}
 	}
@@ -480,9 +459,13 @@ func ResetMetrics() {
 	resourcesManaged.Reset()
 	resourcesUpdatesDroppedTotal.Reset()
 
+	managedCounts.Lock()
+	managedCounts.counts = map[resourceMetricLabels]int{}
+	managedCounts.Unlock()
+
 	startTimes.Lock()
 	defer startTimes.Unlock()
-	startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
+	startTimes.times = map[ResourceSyncDetails]time.Time{}
 
 	syncChLock.Lock()
 	syncCh = make(chan *syncStartInfo, 1024)

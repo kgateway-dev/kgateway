@@ -59,6 +59,13 @@ var (
 	)
 )
 
+func init() {
+	metrics.RegisterGatewayScoped(snapshotTransformsTotal, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(snapshotTransformDuration, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(snapshotResources, namespaceLabel, gatewayLabel)
+	metrics.RegisterGatewayScoped(snapshotDeferredClients, namespaceLabel, gatewayLabel)
+}
+
 // snapshotResourcesMetricLabels defines the labels for XDS snapshot resources metrics.
 type snapshotResourcesMetricLabels struct {
 	Gateway   string
