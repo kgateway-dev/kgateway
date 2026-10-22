@@ -14,16 +14,18 @@ const (
 )
 
 var (
-	// clusterScopingDroppedClusters is what scoping saves a client: clusters
-	// translated for it and withheld because nothing references them.
-	// xds_snapshot_resources{resource="Cluster"} already counts what it
-	// receives. Zero with scoping on means the deployment has nothing to gain
-	// from the feature.
+	// clusterScopingDroppedClusters is what scoping saves a gateway's proxies:
+	// clusters translated for them and withheld because nothing references
+	// them. A gateway's proxy groups can differ (one that reverted to every
+	// cluster drops none), so it reports the most any connected group drops.
+	// xds_snapshot_resources{resource="Cluster"} already counts what they
+	// receive. Zero with scoping on means no connected group gains from the
+	// feature.
 	clusterScopingDroppedClusters = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: clusterScopingSubsystem,
 			Name:      "dropped_clusters",
-			Help:      "Backend clusters withheld from a client because its configuration references none of them",
+			Help:      "Most backend clusters withheld from any of a gateway's connected proxy groups because their configuration references none of them",
 		},
 		[]string{gatewayLabel, namespaceLabel},
 	)
@@ -70,25 +72,49 @@ const (
 	transitionReferenceAheadHeld = "reference_ahead_held"
 )
 
-// recordClusterScopingDropped reports how many clusters scoping kept out of a
-// client's CDS. Called on every scoped build, so the gauge tracks the current
-// state.
+// recordClusterScopingDropped records how many clusters scoping kept out of a
+// client's CDS and sets its gateway's gauge to the most any connected group
+// drops. Called on every scoped build, so the gauge tracks the current state.
 func recordClusterScopingDropped(clientKey string, dropped int) {
 	if !metrics.Active() {
 		return
 	}
 	cd := getDetailsFromXDSClientResourceName(clientKey)
-	clusterScopingDroppedClusters.Set(float64(dropped),
-		metrics.Label{Name: gatewayLabel, Value: cd.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: cd.Namespace},
-	)
+	clusterScopingDisabledState.Lock()
+	defer clusterScopingDisabledState.Unlock()
+	state := gatewayScopingStateLocked(cd)
+	state.dropped[clientKey] = dropped
+	setClusterScopingDroppedGauge(cd, state)
+}
+
+// setClusterScopingDroppedGauge sets cd's gauge to the most any of its groups
+// drops, or removes it while none has reported. Callers hold
+// clusterScopingDisabledState.
+func setClusterScopingDroppedGauge(cd resourceNameDetails, state *gatewayScopingState) {
+	if !metrics.Active() {
+		return
+	}
+	labels := []metrics.Label{
+		{Name: gatewayLabel, Value: cd.Gateway},
+		{Name: namespaceLabel, Value: cd.Namespace},
+	}
+	if len(state.dropped) == 0 {
+		clusterScopingDroppedClusters.DeletePartialMatch(labels...)
+		return
+	}
+	most := 0
+	for _, dropped := range state.dropped {
+		most = max(most, dropped)
+	}
+	clusterScopingDroppedClusters.Set(float64(most), labels...)
 }
 
 // clusterScopingDisabledState is each gateway's scoping state per connected
 // client group. Groups of one gateway can differ, since a backend errored for
 // one client keeps or drops its listeners for that client alone, so a gateway
 // reads as unscoped while any group is, and one group's healthy build cannot
-// clear another's fallback.
+// clear another's fallback. It also keeps each group's dropped count, for the
+// same reason.
 var clusterScopingDisabledState = struct {
 	sync.Mutex
 	gateways map[resourceNameDetails]*gatewayScopingState
@@ -97,8 +123,22 @@ var clusterScopingDisabledState = struct {
 type gatewayScopingState struct {
 	// clients is each connected group's state, by client key.
 	clients map[string]bool
+	// dropped is each connected group's dropped-cluster count, by client key.
+	dropped map[string]int
 	// disabled is the gateway's state as last reported.
 	disabled bool
+}
+
+// gatewayScopingStateLocked returns cd's gateway state, creating it. Callers
+// hold clusterScopingDisabledState.
+func gatewayScopingStateLocked(cd resourceNameDetails) *gatewayScopingState {
+	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
+	state := clusterScopingDisabledState.gateways[gateway]
+	if state == nil {
+		state = &gatewayScopingState{clients: make(map[string]bool), dropped: make(map[string]int)}
+		clusterScopingDisabledState.gateways[gateway] = state
+	}
+	return state
 }
 
 // update recomputes the gateway's state from its groups and reports whether
@@ -120,14 +160,9 @@ func (g *gatewayScopingState) update() (turnedOn bool) {
 // label.
 func reportClusterScopingDisabled(log *slog.Logger, clientKey string, reasons []string) {
 	cd := getDetailsFromXDSClientResourceName(clientKey)
-	gateway := resourceNameDetails{Namespace: cd.Namespace, Gateway: cd.Gateway}
 	clusterScopingDisabledState.Lock()
 	defer clusterScopingDisabledState.Unlock()
-	state := clusterScopingDisabledState.gateways[gateway]
-	if state == nil {
-		state = &gatewayScopingState{clients: make(map[string]bool)}
-		clusterScopingDisabledState.gateways[gateway] = state
-	}
+	state := gatewayScopingStateLocked(cd)
 	state.clients[clientKey] = len(reasons) > 0
 	if state.update() {
 		log.Warn("cluster scoping disabled for this gateway: its configuration or a kept backend's listeners select a destination at request time",
@@ -177,8 +212,8 @@ func gatewayHasClients(clientKey string, clients []ir.UniquelyConnectedClient) b
 }
 
 // forgetClusterScopingClient drops a departed client group's scoping state.
-// While the gateway still has connected clients, its disabled gauge is
-// recomputed without the group. Once none is connected, the gateway's gauges
+// While the gateway still has connected clients, its gauges are recomputed
+// without the group. Once none is connected, the gateway's gauges
 // and state go: nothing else removes them, so a deleted gateway would keep
 // exporting disabled_gateways=1 and firing alerts. A returning client
 // re-creates them on its first build.
@@ -191,8 +226,10 @@ func forgetClusterScopingClient(clientKey string, gatewayConnected bool) {
 	if gatewayConnected {
 		if state != nil {
 			delete(state.clients, clientKey)
+			delete(state.dropped, clientKey)
 			state.update()
 			setClusterScopingDisabledGauge(cd, state.disabled)
+			setClusterScopingDroppedGauge(cd, state)
 		}
 		return
 	}

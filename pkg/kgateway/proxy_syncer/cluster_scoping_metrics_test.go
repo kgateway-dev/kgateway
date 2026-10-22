@@ -32,6 +32,34 @@ func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 	}))
 }
 
+// TestClusterScopingDroppedIsTheMostAnyConnectedGroupDrops: one group falling
+// back to every cluster, or leaving, must not hide what another group saves.
+func TestClusterScopingDroppedIsTheMostAnyConnectedGroupDrops(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	const (
+		zoneA = "kube-gateway-api~ns-dropped~gw-dropped~zone-a"
+		zoneB = "kube-gateway-api~ns-dropped~gw-dropped~zone-b"
+	)
+	t.Cleanup(func() { forgetClusterScopingClient(zoneA, false) })
+	dropped := func() float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", []metrics.Label{
+			{Name: gatewayLabel, Value: "gw-dropped"},
+			{Name: namespaceLabel, Value: "ns-dropped"},
+		})
+	}
+
+	recordClusterScopingDropped(zoneA, 17)
+	recordClusterScopingDropped(zoneB, 0) // zone b reverted to every cluster
+	assert.Equal(t, float64(17), dropped(), "zone b's build must not overwrite what zone a saves")
+	recordClusterScopingDropped(zoneA, 5)
+	assert.Equal(t, float64(5), dropped(), "the gauge follows the groups' current builds")
+	recordClusterScopingDropped(zoneB, 9)
+	forgetClusterScopingClient(zoneB, true)
+	assert.Equal(t, float64(5), dropped(), "a departing group takes its count with it")
+}
+
 // TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot: the series exists at 0
 // while healthy, so an alert can fire on the change to 1 instead of on a label
 // appearing.

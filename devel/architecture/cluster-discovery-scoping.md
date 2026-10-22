@@ -146,7 +146,7 @@ one whose windows close first is not a bounded publish.
 
 | Metric | Type | Meaning |
 | --- | --- | --- |
-| `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | Clusters withheld because nothing references them. |
+| `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | The most clusters any connected proxy group of a gateway has withheld because nothing references them. |
 | `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 while any connected proxy group of a gateway reverted to emit-all. Worth an alert. |
 | `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters, for each proxy group. |
 
@@ -162,13 +162,17 @@ snapshot after scoping.
 `disabled_gateways` is kept per proxy group and reported for the gateway as
 whether any group is unscoped: groups can differ, since a backend can fail
 translation for one group's proxies alone, and a healthy group must not clear
-another's fallback. The warning fires when the gateway turns unscoped, not on
-every rebuild. A departing group's state goes with it, and both gauges are
+another's fallback. `dropped_clusters` is kept per group the same way and
+reported as the most any connected group drops, so a group that reverted to
+emit-all does not hide what the others save. The warning fires when the
+gateway turns unscoped, not on every rebuild. A departing group's state goes
+with it, and both gauges are
 removed when a gateway's last connected proxy goes away, so a deleted gateway
 does not keep a `disabled_gateways` alert firing.
 
-`dropped_clusters` at zero with scoping on means the deployment routes to
-everything it discovers and has nothing to gain here. A steadily rising
+`dropped_clusters` at zero with scoping on means no connected proxy group
+drops anything: the deployment routes to everything it discovers and has
+nothing to gain here. A steadily rising
 `transitions_total{transition="reference_ahead_held"}` means route edits keep
 landing on clusters missing from the proxy's published snapshot, each paying
 the hold once,
