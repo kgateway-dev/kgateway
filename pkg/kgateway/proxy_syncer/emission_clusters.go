@@ -147,7 +147,10 @@ const tcpProxyClusterFilterStateKey = "envoy.tcp_proxy.cluster"
 // string blob, not a name. The same holds for a weighted-cluster entry or a
 // mirror policy that reads its cluster from a header, and for a TcpProxy whose
 // cluster a network filter overrides through filter state (the sni_cluster
-// filter, or set_filter_state writing envoy.tcp_proxy.cluster).
+// filter, or set_filter_state writing envoy.tcp_proxy.cluster). Code does it
+// too: a Lua script's httpCall or a Wasm plugin's HTTP or gRPC call names its
+// cluster inside the script or the module, and the walk sees only the script
+// as one string.
 //
 // Detection matters more than it first appears. Such a plugin usually checks
 // whether its computed cluster exists and falls back when it does not, so
@@ -194,7 +197,20 @@ func collectUnresolvableSelectors(msg proto.Message, unresolvable map[string]str
 		// The walk hands over only typed configs it could not decode; any
 		// cluster they name is invisible to it.
 		unresolvable[fmt.Sprintf("undecodable typed_config %q", m.GetTypeUrl())] = struct{}{}
+	default:
+		// Matched by name: importing these packages would link them into the
+		// controller, and an unlinked one is reported as undecodable above.
+		if name := msg.ProtoReflect().Descriptor().FullName(); scriptedConfigs[name] {
+			unresolvable[fmt.Sprintf("script %q", name)] = struct{}{}
+		}
 	}
+}
+
+// scriptedConfigs are configurations that run code able to call any cluster.
+var scriptedConfigs = map[protoreflect.FullName]bool{
+	"envoy.extensions.filters.http.lua.v3.Lua":         true,
+	"envoy.extensions.filters.http.lua.v3.LuaPerRoute": true,
+	"envoy.extensions.wasm.v3.PluginConfig":            true,
 }
 
 // walkResourceProtos visits every message reachable from resources, descending

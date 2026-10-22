@@ -11,10 +11,13 @@ import (
 	envoygrpcaccesslogv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	sfsvalue "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/set_filter_state/v3"
 	envoyjwtauthnv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/jwt_authn/v3"
+	envoyluav3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/lua/v3"
+	envoywasmfilterv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/wasm/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	sfsnetwork "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/set_filter_state/v3"
 	envoysniclusterv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoywasmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/wasm/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/stretchr/testify/assert"
@@ -367,6 +370,54 @@ func TestEmissionSetReportsUndecodableTypedConfig(t *testing.T) {
 
 	assert.False(t, emission.Filterable())
 	assert.Equal(t, []string{`undecodable typed_config "type.googleapis.com/example.v1.NotLinked"`}, emission.Unresolvable)
+}
+
+// A Lua script or Wasm module can call a cluster named only in its code. The
+// walk sees the script as one string, so the configuration makes the gateway
+// unfilterable even when it decodes.
+func TestEmissionSetReportsScriptedFilters(t *testing.T) {
+	listenerWith := func(name string, config proto.Message) envoycache.Resources {
+		hcm := &envoyhttpv3.HttpConnectionManager{
+			StatPrefix: "http",
+			HttpFilters: []*envoyhttpv3.HttpFilter{{
+				Name:       name,
+				ConfigType: &envoyhttpv3.HttpFilter_TypedConfig{TypedConfig: mustMessageToAny(t, config)},
+			}},
+		}
+		return sliceToResources([]*envoylistenerv3.Listener{{
+			Name: "http",
+			FilterChains: []*envoylistenerv3.FilterChain{{Filters: []*envoylistenerv3.Filter{{
+				Name:       envoywellknown.HTTPConnectionManager,
+				ConfigType: &envoylistenerv3.Filter_TypedConfig{TypedConfig: mustMessageToAny(t, hcm)},
+			}}}},
+		}})
+	}
+	script := `function envoy_on_request(h) h:httpCall("side-service", {[":method"]="GET", [":path"]="/", [":authority"]="side"}, "", 1000) end`
+
+	for name, tc := range map[string]struct {
+		filter   string
+		config   proto.Message
+		expected string
+	}{
+		"lua": {
+			filter: "envoy.filters.http.lua",
+			config: &envoyluav3.Lua{DefaultSourceCode: &envoycorev3.DataSource{
+				Specifier: &envoycorev3.DataSource_InlineString{InlineString: script},
+			}},
+			expected: `script "envoy.extensions.filters.http.lua.v3.Lua"`,
+		},
+		"wasm": {
+			filter:   "envoy.filters.http.wasm",
+			config:   &envoywasmfilterv3.Wasm{Config: &envoywasmv3.PluginConfig{Name: "plugin"}},
+			expected: `script "envoy.extensions.wasm.v3.PluginConfig"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			emission := collectReferencedClustersForEmission(envoycache.Resources{}, listenerWith(tc.filter, tc.config))
+			assert.False(t, emission.Filterable(), "a cluster named only in code would be pruned")
+			assert.Equal(t, []string{tc.expected}, emission.Unresolvable)
+		})
+	}
 }
 
 // TestEmissionSetIgnoresThePerRouteFilterEnableMarker: EnableFilterPerRoute is
