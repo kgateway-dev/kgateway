@@ -58,3 +58,30 @@ func TestFlipHold_WithoutBudgetKeepsNoRecord(t *testing.T) {
 	defer pt.gate.mu.Unlock()
 	assert.Empty(t, pt.gate.pendingFlips)
 }
+
+// With the budget off, an unready flip joining a reference-ahead hold leaves it
+// unbounded. A window release that already fired and waits on the gate lock
+// while that build publishes must then do nothing.
+func TestFlipHold_UnboundedHoldStopsAReleaseAlreadyFiring(t *testing.T) {
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, 0, true,
+		scopedClustersWithReferenceAhead(20*time.Millisecond))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "old", "new")) // reference-ahead hold
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt))
+
+	unready := routedBuild(t, "v3", "unready", "old", "new", "unready")
+	unready.missingEndpointsReferenced = []string{"unready"}
+	unready.synthesizedEndpoints = []string{"unready"}
+	pt.gate.mu.Lock()
+	time.Sleep(100 * time.Millisecond) // the window's release fires and waits on the lock
+	err := pt.gate.resolveDeferredLocked(ctx, pt.xdsCache, unready)
+	pt.gate.mu.Unlock()
+	require.NoError(t, err)
+
+	require.Never(t, func() bool { return publishedListenerVersionOf(t, pt) != "v1" }, 300*time.Millisecond, 10*time.Millisecond,
+		"with the budget off, the flip onto the unready cluster stays held")
+}

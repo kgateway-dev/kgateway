@@ -692,10 +692,12 @@ func (g *publishGate) publishHeldLocked(
 	deadline, capped, bounded := g.flipReleaseDeadline(pf, now, aheadFor)
 	pf.capped = capped
 	if !bounded {
-		// Bound disabled: hold until the flip resolves.
+		// Bound disabled: hold until the flip resolves. Stop cannot recall a
+		// callback already waiting on g.mu; the new epoch makes it do nothing.
 		if pf.timer != nil {
 			pf.timer.Stop()
 			pf.timer = nil
+			pf.epoch++
 		}
 		return nil
 	}
