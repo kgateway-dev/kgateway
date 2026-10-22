@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"bytes"
 	"log/slog"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -104,6 +105,43 @@ func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 		{Name: namespaceLabel, Value: "unknown"},
 		{Name: transitionLabel, Value: transitionDereferenceGraced},
 	}))
+}
+
+// TestDereferencePruneIsCountedOnceWhenAHoldOutlastsTheGrace: a grace (200ms)
+// that closes during a reference-ahead hold (300ms) cannot remove the cluster,
+// which the hold still carries. The release removes it, and that one removal
+// is counted once, not again after a fresh grace.
+func TestDereferencePruneIsCountedOnceWhenAHoldOutlastsTheGrace(t *testing.T) {
+	metrics.SetRegistry(false, nil)
+	metrics.SetActive(true)
+	clusterScopingTransitionsTotal.Reset() // series persist across tests in this package
+	count := func(transition string) float64 {
+		t.Helper()
+		return metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+			{Name: gatewayLabel, Value: "unknown"},
+			{Name: namespaceLabel, Value: "unknown"},
+			{Name: transitionLabel, Value: transition},
+		})
+	}
+	scoping := scopedClustersWithReferenceAhead(300 * time.Millisecond)
+	scoping.dereferenceGrace = 200 * time.Millisecond
+	translator := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scoping)
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := t.Context()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old", "gone"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "old", "old")) // gone's grace opens
+	time.Sleep(100 * time.Millisecond)
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "old", "new")) // held past gone's grace
+	require.Equal(t, "v2", publishedListenerVersionOf(t, pt), "the retarget is held")
+
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v3" }, 2*time.Second, 5*time.Millisecond)
+	assert.NotContains(t, publishedClusterNames(t, pt), "gone", "the release removes a cluster whose grace closed during the hold")
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "gone") }, 2*time.Second, 5*time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, float64(1), count(transitionDereferencePruned), "one removal, one prune")
+	assert.Equal(t, float64(1), count(transitionDereferenceGraced), "and one window")
 }
 
 // TestReferenceAheadTransitionsAreCountedOncePerCluster: a retarget onto

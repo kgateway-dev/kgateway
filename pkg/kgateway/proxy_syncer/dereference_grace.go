@@ -43,7 +43,10 @@ type dereferenceState struct {
 // versions (a held flip or a reference-ahead hold), so it opens no window:
 // timed from the held build, the hold would use up the grace, and the cluster
 // could leave right behind the route update. Every hold keeps all published
-// clusters, so nothing is lost meanwhile. Windows already open keep running.
+// clusters, so nothing is lost meanwhile. Windows already open keep running;
+// one that closes during a hold stays recorded, so the release removes the
+// cluster instead of opening a fresh grace, and the prune is counted once,
+// when the cluster leaves.
 //
 // The windows it opens are recorded at now, before the snapshot is installed;
 // the caller passes them to settleDereferenceWindowsLocked once it is.
@@ -105,6 +108,9 @@ func (g *publishGate) graceDereferencedClustersLocked(
 
 		remaining := g.dereferenceGrace - now.Sub(left)
 		if remaining <= 0 {
+			if holding {
+				continue // the hold still carries it; the release removes it
+			}
 			// Expired: drop it; a later re-reference is a fresh addition.
 			delete(state.since, name)
 			pruned++

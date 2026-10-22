@@ -374,7 +374,8 @@ func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 // release the flip, whatever the publish budget: with it 0 or negative there is
 // no release record, and the prune still makes a new build's hold decision. The
 // window opens with a publish that ships (cluster-gone dropped), so its prune
-// runs during the hold; the held build itself opens none.
+// runs during the hold; the held build itself opens none, and the closed window
+// stays recorded until the release removes the cluster.
 func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 	for _, budget := range []time.Duration{time.Hour, 0, -time.Second} {
 		t.Run(budget.String(), func(t *testing.T) {
@@ -429,11 +430,11 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 			})
 			require.True(t, snapshotReferencesCluster(servedSnapshot(t, pt), "cluster-old"), "the flip is held")
 
-			require.Eventually(t, func() bool {
-				pt.gate.mu.Lock()
-				defer pt.gate.mu.Unlock()
-				return pt.gate.dereferenced[publishGateTestClient] == nil
-			}, 2*time.Second, 5*time.Millisecond, "cluster-gone's grace prune runs")
+			time.Sleep(250 * time.Millisecond) // well past cluster-gone's 80ms grace: its prune has run
+			pt.gate.mu.Lock()
+			expired := pt.gate.dereferenced[publishGateTestClient] != nil
+			pt.gate.mu.Unlock()
+			assert.True(t, expired, "the closed window stays recorded while the hold carries cluster-gone")
 			served := servedSnapshot(t, pt)
 			assert.True(t, snapshotReferencesCluster(served, "cluster-old"),
 				"a flip onto an unready cluster stays held until it is ready or its release bound, not the 80ms grace")
