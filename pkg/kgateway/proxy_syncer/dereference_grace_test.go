@@ -193,9 +193,9 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 	building := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{}}
 
 	start := time.Now()
-	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start)
+	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start)
 	require.Len(t, graced, 2)
-	require.InDelta(t, time.Minute, soonest, float64(time.Second))
+	require.InDelta(t, time.Minute, g.soonestDereferenceExpiryLocked(publishGateTestClient, start), float64(time.Second))
 
 	// 30s later the first window has 30s left; a third de-reference must not extend it.
 	published.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("v2", []envoycachetypes.ResourceWithTTL{
@@ -203,7 +203,8 @@ func TestGraceDereferencedClustersReportsSoonestExpiry(t *testing.T) {
 		{Resource: edsClusterProto("second-out")},
 		{Resource: edsClusterProto("third-out")},
 	})
-	_, soonest = g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start.Add(30*time.Second))
+	g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start.Add(30*time.Second))
+	soonest := g.soonestDereferenceExpiryLocked(publishGateTestClient, start.Add(30*time.Second))
 	assert.InDelta(t, 30*time.Second, soonest, float64(time.Second),
 		"the timer must fire for the oldest window, not the newest")
 }
@@ -222,9 +223,9 @@ func TestGraceDereferencedClustersDropsExpiredEntries(t *testing.T) {
 	graced, _ := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start)
 	require.Len(t, graced, 1)
 
-	graced, soonest := g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start.Add(2*time.Second))
+	graced, _ = g.graceDereferencedClustersLocked(publishGateTestClient, published, building, nil, false, start.Add(2*time.Second))
 	assert.Empty(t, graced, "past the window the cluster stops being published")
-	assert.Zero(t, soonest, "with nothing graced there is nothing left to wake up for")
+	assert.Zero(t, g.soonestDereferenceExpiryLocked(publishGateTestClient, start.Add(2*time.Second)), "with nothing graced there is nothing left to wake up for")
 }
 
 // TestGraceDereferencedClustersSkipsClustersNoLongerTranslated: only a cluster

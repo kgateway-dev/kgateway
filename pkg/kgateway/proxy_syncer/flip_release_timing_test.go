@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -84,4 +85,51 @@ func TestFlipHold_UnboundedHoldStopsAReleaseAlreadyFiring(t *testing.T) {
 
 	require.Never(t, func() bool { return publishedListenerVersionOf(t, pt) != "v1" }, 300*time.Millisecond, 10*time.Millisecond,
 		"with the budget off, the flip onto the unready cluster stays held")
+}
+
+// A de-reference grace starts once the route update that opens it is
+// installed. An installation slower than the grace must not use it up: the
+// next build still keeps the old cluster.
+func TestDereferenceGraceStartsAfterASlowInstall(t *testing.T) {
+	grace := 300 * time.Millisecond
+	cache := &slowInstallCache{SnapshotCache: newTestSnapshotCache(t)}
+	translator := NewProxyTranslator(cache, stubPriorXDS{has: true}, time.Hour, true, scopedClustersWithGrace(grace))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	cache.delay.Store(int64(2 * grace))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new")) // stops naming old, installed slowly
+	cache.delay.Store(0)
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new"))
+	assert.Contains(t, publishedClusterNames(t, pt), "old", "old keeps its grace after the slow installation")
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
+		"old still leaves once its grace closes")
+}
+
+// The same for a held flip's release: the grace opens when the released routes
+// are installed, not when the release starts.
+func TestDereferenceGraceStartsAfterASlowFlipReleaseInstall(t *testing.T) {
+	grace := 300 * time.Millisecond
+	cache := &slowInstallCache{SnapshotCache: newTestSnapshotCache(t)}
+	translator := NewProxyTranslator(cache, stubPriorXDS{has: true}, 100*time.Millisecond, true, scopedClustersWithGrace(grace))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	unready := routedBuild(t, "v2", "new", "new")
+	unready.missingEndpointsReferenced = []string{"new"}
+	unready.synthesizedEndpoints = []string{"new"}
+	pt.syncXds(ctx, unready) // held; the budget releases it
+	require.Equal(t, "v1", publishedListenerVersionOf(t, pt), "the flip onto the unready cluster is held")
+	cache.delay.Store(int64(2 * grace))
+	require.Eventually(t, func() bool { return publishedListenerVersionOf(t, pt) == "v2" }, 3*time.Second, 5*time.Millisecond,
+		"the budget releases the flip")
+	cache.delay.Store(0)
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new"))
+	assert.Contains(t, publishedClusterNames(t, pt), "old", "old keeps its grace after the slow installation")
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
+		"old still leaves once its grace closes")
 }

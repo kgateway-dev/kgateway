@@ -24,8 +24,8 @@ type dereferenceState struct {
 }
 
 // graceDereferencedClustersLocked returns the published clusters this build
-// stopped emitting that are still in their grace, and the time to the soonest
-// expiry. Removing one at once can let CDS remove it before RDS updates the
+// stopped emitting that are still in their grace, and the ones whose windows it
+// opened. Removing one at once can let CDS remove it before RDS updates the
 // route still targeting it, causing 503 NC. The grace gives the route update
 // time to land whatever the delivery order; elapsing does not confirm Envoy
 // applied it. Ordered ADS cannot replace the grace: it sends CDS first.
@@ -44,6 +44,9 @@ type dereferenceState struct {
 // timed from the held build, the hold would use up the grace, and the cluster
 // could leave right behind the route update. Every hold keeps all published
 // clusters, so nothing is lost meanwhile. Windows already open keep running.
+//
+// The windows it opens are recorded at now, before the snapshot is installed;
+// the caller passes them to settleDereferenceWindowsLocked once it is.
 func (g *publishGate) graceDereferencedClustersLocked(
 	proxyKey string,
 	published envoycache.ResourceSnapshot,
@@ -51,9 +54,9 @@ func (g *publishGate) graceDereferencedClustersLocked(
 	translated map[string]envoycachetypes.ResourceWithTTL,
 	holding bool,
 	now time.Time,
-) (map[string]struct{}, time.Duration) {
+) (graced map[string]struct{}, opened []string) {
 	if g.dereferenceGrace <= 0 {
-		return nil, 0
+		return nil, nil
 	}
 
 	publishedClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
@@ -69,8 +72,6 @@ func (g *publishGate) graceDereferencedClustersLocked(
 		}
 	}
 
-	var graced map[string]struct{}
-	var soonest time.Duration
 	for name := range publishedClusters {
 		if _, stillEmitted := building.Items[name]; stillEmitted {
 			// Still emitted: drop any record, so a later de-reference starts fresh.
@@ -98,6 +99,7 @@ func (g *publishGate) graceDereferencedClustersLocked(
 			}
 			left = now
 			state.since[name] = left
+			opened = append(opened, name)
 		}
 
 		remaining := g.dereferenceGrace - now.Sub(left)
@@ -110,15 +112,62 @@ func (g *publishGate) graceDereferencedClustersLocked(
 			graced = make(map[string]struct{})
 		}
 		graced[name] = struct{}{}
-		if soonest == 0 || remaining < soonest {
-			soonest = remaining
-		}
 	}
 
 	if state != nil && len(state.since) == 0 {
 		g.cancelDereferenceTimerLocked(proxyKey)
 	}
-	return graced, soonest
+	return graced, opened
+}
+
+// settleDereferenceWindowsLocked runs after a publish that computed its graced
+// clusters. The windows that publish opened start once its snapshot is
+// installed: the grace gives the route update time to land, and an
+// installation that blocks answering watches must not use it up. A publish
+// that installed nothing (failed, or computed for a superseded connection)
+// opens none. Windows already open keep their start. The prune is armed from
+// the recorded starts. Callers must hold the gate lock.
+func (g *publishGate) settleDereferenceWindowsLocked(
+	ctx context.Context,
+	cache envoycache.SnapshotCache,
+	proxyKey string,
+	wrap XdsSnapWrapper,
+	opened []string,
+	installed bool,
+) {
+	state := g.dereferenced[proxyKey]
+	if state == nil {
+		return
+	}
+	at := time.Now()
+	for _, name := range opened {
+		if installed {
+			state.since[name] = at
+		} else {
+			delete(state.since, name)
+		}
+	}
+	if len(state.since) == 0 {
+		g.cancelDereferenceTimerLocked(proxyKey)
+		return
+	}
+	g.armDereferenceTimerLocked(ctx, cache, proxyKey, wrap, g.soonestDereferenceExpiryLocked(proxyKey, at))
+}
+
+// soonestDereferenceExpiryLocked returns the time from at until the soonest
+// open window closes, or 0 if none is open. Callers must hold the gate lock.
+func (g *publishGate) soonestDereferenceExpiryLocked(proxyKey string, at time.Time) time.Duration {
+	state := g.dereferenced[proxyKey]
+	if state == nil {
+		return 0
+	}
+	var soonest time.Duration
+	for _, left := range state.since {
+		if remaining := g.dereferenceGrace - at.Sub(left); remaining > 0 && (soonest == 0 || remaining < soonest) {
+			soonest = remaining
+		}
+	}
+	return soonest
 }
 
 // armDereferenceTimerLocked schedules the re-publish that removes expired
@@ -236,7 +285,7 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 	// goes out; the flip-release timer sends them when the window closes.
 	now := time.Now()
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
-	graced, soonest := g.graceDereferencedClustersLocked(
+	graced, opened := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters,
 		len(newlyEmitted) > 0, now)
 
@@ -254,9 +303,6 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 		// timer would otherwise re-publish an older build.
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
 	}
-	if publishErr != nil {
-		return publishErr
-	}
-	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonest)
-	return nil
+	g.settleDereferenceWindowsLocked(ctx, cache, snapWrap.proxyKey, snapWrap, opened, publishErr == nil)
+	return publishErr
 }

@@ -433,7 +433,7 @@ func (g *publishGate) resolveDeferredLocked(
 	// unrelated gap) and gets the same hold.
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
 	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published)) > 0
-	graced, soonestExpiry := g.graceDereferencedClustersLocked(
+	graced, opened := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, holding, now)
 	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
@@ -449,7 +449,7 @@ func (g *publishGate) resolveDeferredLocked(
 	}
 	// Arm after publishing: publishLocked and publishHeldLocked cancel the carry
 	// expiry. The de-reference timer survives publishes.
-	g.armDereferenceTimerLocked(ctx, cache, snapWrap.proxyKey, snapWrap, soonestExpiry)
+	g.settleDereferenceWindowsLocked(ctx, cache, snapWrap.proxyKey, snapWrap, opened, publishErr == nil)
 	g.armCarryExpiryLocked(ctx, cache, candidate)
 	return publishErr
 }
@@ -784,7 +784,7 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	}
 	// The release publishes the held routes, so their de-references' windows
 	// open now.
-	graced, soonestExpiry := g.graceDereferencedClustersLocked(
+	graced, opened := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, false, time.Now())
 	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
 	// A reference-ahead window closing on its own is expected. Warn and count a
@@ -803,12 +803,13 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 		logger.Debug("reference-ahead windows closed; publishing the held configuration",
 			"proxy_key", proxyKey, "reference_ahead", pf.ahead)
 	}
-	if err := g.setSnapshot(ctx, cache, proxyKey, released, pf.wrap.synthesizedEndpoints, edsHashes); err != nil {
+	err := g.setSnapshot(ctx, cache, proxyKey, released, pf.wrap.synthesizedEndpoints, edsHashes)
+	// The release may grace clusters; arm their prune, or they linger until a later build.
+	g.settleDereferenceWindowsLocked(ctx, cache, proxyKey, pf.wrap, opened, err == nil)
+	if err != nil {
 		logPublishFailure(proxyKey, err)
 		return
 	}
-	// The release may grace clusters; arm their prune, or they linger until a later build.
-	g.armDereferenceTimerLocked(ctx, cache, proxyKey, pf.wrap, soonestExpiry)
 	if mode != "" {
 		recordBoundedPublish(proxyKey, mode)
 	}
