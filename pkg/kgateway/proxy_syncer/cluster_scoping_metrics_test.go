@@ -21,17 +21,15 @@ import (
 func TestClusterScopingMetricsReportWhatWasDroppedAndWhy(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
+	t.Cleanup(func() { forgetClusterScopingClient(publishGateTestClient, false) })
 
 	recordClusterScopingDropped(publishGateTestClient, 17)
 
-	gathered := metricstest.MustGatherMetrics(t)
-	gathered.AssertMetric("kgateway_xds_cluster_scoping_dropped_clusters", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: gatewayLabel, Value: "unknown"},
-			{Name: namespaceLabel, Value: "unknown"},
-		},
-		Value: 17,
-	})
+	// Other tests' series persist in this package; read only this gateway's.
+	assert.Equal(t, float64(17), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", []metrics.Label{
+		{Name: gatewayLabel, Value: "unknown"},
+		{Name: namespaceLabel, Value: "unknown"},
+	}))
 }
 
 // TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot: the series exists at 0
@@ -63,6 +61,7 @@ func TestClusterScopingDisabledIsAZeroSeriesUntilItIsNot(t *testing.T) {
 func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 	metrics.SetRegistry(false, nil)
 	metrics.SetActive(true)
+	clusterScopingTransitionsTotal.Reset() // series persist across tests in this package
 
 	pt := newGraceTestTranslator(t, time.Hour)
 	ctx := t.Context()
@@ -72,15 +71,11 @@ func TestDereferenceTransitionsAreCountedOncePerWindow(t *testing.T) {
 	pt.syncXds(ctx, clusterWrapperV("v3", "kept"))
 	pt.syncXds(ctx, clusterWrapperV("v4", "kept"))
 
-	gathered := metricstest.MustGatherMetrics(t)
-	gathered.AssertMetric("kgateway_xds_cluster_scoping_transitions_total", &metricstest.ExpectedMetric{
-		Labels: []metrics.Label{
-			{Name: gatewayLabel, Value: "unknown"},
-			{Name: namespaceLabel, Value: "unknown"},
-			{Name: transitionLabel, Value: transitionDereferenceGraced},
-		},
-		Value: 1,
-	})
+	assert.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_transitions_total", []metrics.Label{
+		{Name: gatewayLabel, Value: "unknown"},
+		{Name: namespaceLabel, Value: "unknown"},
+		{Name: transitionLabel, Value: transitionDereferenceGraced},
+	}))
 }
 
 // TestReferenceAheadTransitionsAreCountedOncePerCluster: a retarget onto
@@ -214,7 +209,10 @@ func TestClusterScopingSeriesAreForgottenWithTheGatewaysLastClient(t *testing.T)
 		leaving = "kube-gateway-api~ns-forget~gw-forget"
 		other   = "kube-gateway-api~ns-forget~gw-other"
 	)
-	t.Cleanup(func() { forgetClusterScopingClient(other, false) })
+	t.Cleanup(func() {
+		forgetClusterScopingClient(leaving, false)
+		forgetClusterScopingClient(other, false)
+	})
 	log, logged := bufferLogger()
 	for _, client := range []string{leaving, other} {
 		recordClusterScopingDropped(client, 17)
