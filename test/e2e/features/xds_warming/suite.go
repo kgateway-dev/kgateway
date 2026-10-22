@@ -85,6 +85,9 @@ type testingSuite struct {
 	activeCase *base.TestCase
 	// invariantBaseline records counters at test start; AfterTest checks growth.
 	invariantBaseline xdsInvariantCounters
+	// baselineCaptured is false when BeforeTest failed before recording one;
+	// testify still runs AfterTest then.
+	baselineCaptured bool
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -99,7 +102,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // BaseTestingSuite deletes each test's manifests in no fixed order, even on failure.
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	s.baselineCaptured = false
 	s.invariantBaseline = s.scrapeXdsInvariantCounters()
+	s.baselineCaptured = true
 	s.activeCase = &base.TestCase{Manifests: []string{setupManifest}}
 	s.TestCases[testName] = s.activeCase
 	s.BaseTestingSuite.BeforeTest(suiteName, testName)
@@ -107,7 +112,9 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
 	defer s.BaseTestingSuite.AfterTest(suiteName, testName)
-	s.assertNoXdsInvariantViolations()
+	if s.baselineCaptured {
+		s.assertNoXdsInvariantViolations()
+	}
 }
 
 func (s *testingSuite) applyManifest(manifest string) {
@@ -295,26 +302,47 @@ type xdsInvariantCounters struct {
 // scrapeXdsInvariantCounters reads controller metrics; absent counters are zero
 // because they appear only on first increment.
 func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
+	// The Service setup creates, or a controller restart, can leave the metrics
+	// endpoint briefly unreachable. Retry; record counters only from a full scrape.
+	ctx, cancel := context.WithTimeout(s.Ctx, 30*time.Second)
+	defer cancel()
+	var counters xdsInvariantCounters
+	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func() error {
+		var err error
+		counters, err = s.tryScrapeXdsInvariantCounters(ctx)
+		return err
+	}).WithContext(ctx).WithTimeout(30*time.Second).WithPolling(500*time.Millisecond).Should(gomega.Succeed(),
+		"can scrape controller metrics")
+	return counters
+}
+
+func (s *testingSuite) tryScrapeXdsInvariantCounters(ctx context.Context) (xdsInvariantCounters, error) {
 	metricsService := metav1.ObjectMeta{
 		Name:      "kgateway-metrics",
 		Namespace: s.TestInstallation.Metadata.InstallNamespace,
 	}
 	curlResponse, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
-		s.Ctx,
+		ctx,
 		testdefaults.CurlPodExecOpt,
 		curl.WithHost(kubeutils.ServiceFQDN(metricsService)),
 		curl.WithPort(9092),
 		curl.WithPath("/metrics"),
 		curl.WithConnectionTimeout(5),
 	)
-	s.Require().NoError(err, "can scrape controller metrics")
+	if err != nil {
+		return xdsInvariantCounters{}, fmt.Errorf("scrape controller metrics: %w; stderr: %s", err, curlResponse.StdErr)
+	}
 
 	response := transforms.WithCurlResponse(curlResponse)
 	defer response.Body.Close()
 	// curl exits 0 on an HTTP error, and an error body parses as no samples.
-	s.Require().Equal(http.StatusOK, response.StatusCode, "controller metrics scrape failed: %s", curlResponse.StdErr)
+	if response.StatusCode != http.StatusOK {
+		return xdsInvariantCounters{}, fmt.Errorf("controller metrics returned HTTP %d; stderr: %s", response.StatusCode, curlResponse.StdErr)
+	}
 	body, err := io.ReadAll(response.Body)
-	s.Require().NoError(err, "can read controller metrics body")
+	if err != nil {
+		return xdsInvariantCounters{}, fmt.Errorf("read controller metrics body: %w", err)
+	}
 
 	counters := xdsInvariantCounters{totals: map[string]float64{}, lines: map[string][]string{}}
 	for line := range strings.SplitSeq(string(body), "\n") {
@@ -331,11 +359,13 @@ func (s *testingSuite) scrapeXdsInvariantCounters() xdsInvariantCounters {
 			continue
 		}
 		value, err := strconv.ParseFloat(fields[len(fields)-1], 64)
-		s.Require().NoError(err, "can parse metric sample %q", line)
+		if err != nil {
+			return xdsInvariantCounters{}, fmt.Errorf("parse metric sample %q: %w", line, err)
+		}
 		counters.totals[name] += value
 		counters.lines[name] = append(counters.lines[name], line)
 	}
-	return counters
+	return counters, nil
 }
 
 // assertNoXdsInvariantViolations fails on counter growth since BeforeTest
