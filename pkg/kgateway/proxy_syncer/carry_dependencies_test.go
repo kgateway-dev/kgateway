@@ -266,3 +266,37 @@ func TestCarryDependencyCyclesEnd(t *testing.T) {
 	assert.ElementsMatch(t, []string{"listener", "tunnel_x", "tunnel_y"}, mapKeys(composed.Resources[envoycachetypes.Listener].Items))
 	assert.ElementsMatch(t, []string{"sx", "sy"}, mapKeys(composed.Resources[envoycachetypes.Secret].Items))
 }
+
+// A scoped build that stops routing to a tunneled backend drops its cluster
+// and, with it, the tunnel's listener and header secret. The de-reference grace
+// keeps the cluster, so the listener on its pipe and the secret that listener
+// reads stay with it; otherwise the kept cluster would point at a socket
+// nothing listens on while the route update lands.
+func TestGracedTunnelKeepsItsListenerAndSecret(t *testing.T) {
+	pt := newGraceTestTranslator(t, time.Minute)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+	ucc := newTestUcc(publishGateTestClient)
+
+	pt.syncXds(ctx, tunnelBuild{version: "v1", withTunnel: true, withProxy: true, secretValue: "s"}.wrapper(t))
+
+	other := edsClusterForClient(ucc, "other", 3)
+	retarget, err := envoycache.NewSnapshot("v2", map[envoyresourcev3.Type][]envoycachetypes.Resource{
+		envoyresourcev3.ListenerType: {httpListenerWithRDS(t, "listener", "route-config")},
+		envoyresourcev3.ClusterType:  {other.Cluster.BorrowForRead()},
+		envoyresourcev3.EndpointType: {endpointsForClient(ucc, "other", 4).Endpoints.BorrowForRead()},
+	})
+	require.NoError(t, err)
+	routes := routeResourcesForClusters("other")
+	routes.Version = "rds-v2"
+	retarget.Resources[envoycachetypes.Route] = routes
+	pt.syncXds(ctx, XdsSnapWrapper{snap: retarget, proxyKey: publishGateTestClient})
+
+	served := servedSnapshot(t, pt)
+	require.Equal(t, "rds-v2", served.GetVersion(envoyresourcev3.RouteType), "the route update ships")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Cluster].Items, "x"), "the grace keeps the tunneled cluster")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Listener].Items, "tunnel_x"),
+		"and the listener on its pipe")
+	assert.True(t, hasResource(served.Resources[envoycachetypes.Secret].Items, "tunnel_x/h"), "and the secret that listener reads")
+	assertSnapshotCoherent(t, served)
+}
