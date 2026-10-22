@@ -9,6 +9,7 @@ import (
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -127,12 +128,13 @@ func snapshotPerClient(
 			clusterResources.Version = strconv.FormatUint(clustersForUcc.clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
-		// Exclude CLAs for STATIC clusters so ADS snapshot only contains resources Envoy will request.
+		// Exclude CLAs for STATIC clusters so the snapshot only contains resources Envoy will request.
 		endpointRes := filterEndpointResourcesForStaticClusters(clusterResources, clientEndpointResources.endpoints)
 		// Backend translation errors remove the corresponding cluster from CDS above. Remove
 		// its CLA as well: after Envoy observes the CDS removal it stops naming that resource
-		// in EDS requests, and go-control-plane otherwise withholds the entire named EDS
-		// response, including updates for healthy clusters.
+		// in EDS requests. newSnapshotCache serves EDS per request, so an unrequested CLA no
+		// longer holds back healthy clusters' endpoints (#14498); this keeps the snapshot
+		// consistent with CDS and keeps that protection if the cache changes.
 		//
 		// Keep this filtering explicitly error-scoped. Some endpoint resources, such as the
 		// bootstrap-defined local cluster, intentionally have no cluster in this CDS snapshot.
@@ -144,16 +146,16 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
-		snapshot.Resources[envoycachetypes.Listener] = listenerRouteSnapshot.Listeners
-		snapshot.Resources[envoycachetypes.Secret] = listenerRouteSnapshot.Secrets
+		snapshot.Resources[envoycachetypes.Listener] = mergeBackendResources(listenerRouteSnapshot.Listeners, clustersForUcc.listeners)
+		snapshot.Resources[envoycachetypes.Secret] = mergeBackendResources(listenerRouteSnapshot.Secrets, clustersForUcc.secrets)
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
 		logger.Debug("snapshots", "proxy_key", snap.proxyKey,
-			"listeners", resourcesStringer(listenerRouteSnapshot.Listeners).String(),
+			"listeners", resourcesStringer(snapshot.Resources[envoycachetypes.Listener]).String(),
 			"clusters", resourcesStringer(clusterResources).String(),
 			"routes", resourcesStringer(listenerRouteSnapshot.Routes).String(),
 			"endpoints", resourcesStringer(endpointRes).String(),
-			"secrets", resourcesStringer(listenerRouteSnapshot.Secrets).String(),
+			"secrets", resourcesStringer(snapshot.Resources[envoycachetypes.Secret]).String(),
 		)
 
 		return &snap
@@ -239,9 +241,28 @@ func snapshotPerClient(
 	return xdsSnapshotsForUcc
 }
 
+// mergeBackendResources combines Gateway resources with those generated with
+// backend clusters, without mutating shared resources. Gateway resources take
+// precedence on name collisions.
+func mergeBackendResources[M proto.Message](gateway envoycache.Resources, backend baseResources[M]) envoycache.Resources {
+	if len(backend.items) == 0 {
+		return gateway
+	}
+	items := make(map[string]envoycachetypes.ResourceWithTTL, len(gateway.Items)+len(backend.items))
+	for _, r := range backend.items {
+		res := r.ResourceWithTTL()
+		items[envoycache.GetResourceName(res.Resource)] = res
+	}
+	maps.Copy(items, gateway.Items)
+	return envoycache.Resources{
+		Version: fmt.Sprintf("%s-backend-%d", gateway.Version, backend.hash),
+		Items:   items,
+	}
+}
+
 // filterEndpointResourcesForStaticClusters returns endpoint resources excluding CLAs for clusters
-// that are STATIC (inline endpoints). Envoy does not request EDS for those; including them in the
-// snapshot triggers the ADS cache "not listed" warning when responding to EDS requests.
+// that are STATIC (inline endpoints). Envoy does not request EDS for those, so the snapshot
+// should not carry them.
 func filterEndpointResourcesForStaticClusters(clusters envoycache.Resources, endpoints envoycache.Resources) envoycache.Resources {
 	staticClusterNames := make(map[string]struct{})
 	for _, item := range clusters.Items {

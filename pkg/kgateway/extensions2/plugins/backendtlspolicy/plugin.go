@@ -140,9 +140,6 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 						return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 					},
 					BuildDesiredPolicyStatus,
-					// This status reports the Gateway API's own PolicyReasonAccepted, not the
-					// kgateway Valid/Pending vocabulary the standard grading expects.
-					pluginutils.NoConditionErrorMetric,
 				),
 			},
 		},

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -542,6 +543,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
+				StatPrefix:      buildStatPrefix("tcp", tc.parents.listener.Port, tRoute.Namespace, tRoute.Name),
 				TLS:             tlsConfig,
 			},
 			BackendRefs: backends,
@@ -628,6 +630,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
+				StatPrefix:      buildStatPrefix("tls", tc.parents.listener.Port, tRoute.Namespace, tRoute.Name),
 				Matcher:         matcher,
 				TLS:             tlsConfig,
 			},
@@ -816,6 +819,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	return ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: parentName,
+			StatPrefix:      buildStatPrefix("http", httpFilterChain.parents[0].gatewayListener.Port),
 		},
 		// Http plain text filter chains do not have attached policies.
 		// Because a single chain is shared across multiple gateway-api listeners, we don't have a clean way
@@ -916,6 +920,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: hfc.gatewayListenerName,
+			StatPrefix:      buildStatPrefix("https", hfc.listener.Port, listenerStatSegments(hfc.listener)...),
 			Matcher:         matcher,
 			TLS:             tlsConfig,
 		},
@@ -1053,9 +1058,8 @@ func translateTLSConfig(
 			continue
 		}
 
-		// The resulting sslconfig will still have to go through a real translation where we run through this again.
-		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
-		if _, err := sslutils.ValidateTlsSecretData(secret.Name, secret.Namespace, secret.Data); err != nil {
+		// Only the validation result is used here; the IR carries the Secret's data as is.
+		if err := secret.ValidateTLS(); err != nil {
 			certErr = errors.Join(certErr, err)
 			continue
 		}
@@ -1433,4 +1437,30 @@ func GenerateListenerName(listener ir.Listener) string {
 func GenerateListenerNameFromPort(port gwv1.PortNumber) string {
 	// Add a ~ to make sure the name won't collide with user provided names in other listeners
 	return fmt.Sprintf("listener~%d", port)
+}
+
+// Stat prefixes surface in user-facing metrics (e.g. the
+// envoy_http_conn_manager_prefix and envoy_tcp_prefix tags), so they follow
+// their own stable format instead of reusing filter chain names:
+//
+//	http_<port>                                        plain HTTP (all listeners on the port share one chain)
+//	https_<port>_<section>                             HTTPS Gateway listener
+//	https_<port>_<lsNamespace>_<lsName>_<section>      HTTPS ListenerSet listener
+//	tcp_<port>_<routeNamespace>_<routeName>            TCPRoute
+//	tls_<port>_<routeNamespace>_<routeName>            TLSRoute
+//
+// Segments are joined with "_", which Kubernetes names never contain, and the
+// IR translator replaces "." with "_" so each prefix is a single stat segment.
+func buildStatPrefix(protocol string, port gwv1.PortNumber, segments ...string) string {
+	return strings.Join(append([]string{protocol, strconv.Itoa(int(port))}, segments...), "_")
+}
+
+// listenerStatSegments identifies a Gateway API listener within its Gateway:
+// the section name alone for a Gateway, prefixed by namespace and name for a
+// ListenerSet.
+func listenerStatSegments(listener ir.Listener) []string {
+	if _, ok := listener.Parent.(*gwv1.Gateway); ok || listener.Parent == nil {
+		return []string{string(listener.Name)}
+	}
+	return []string{listener.Parent.GetNamespace(), listener.Parent.GetName(), string(listener.Name)}
 }

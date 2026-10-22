@@ -53,7 +53,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: https
-        statPrefix: http
+        statPrefix: https_8443_https
         useRemoteAddress: true
     name: https
   listenerFilters:

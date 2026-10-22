@@ -26,11 +26,20 @@ type ObjWithAttachedPolicies interface {
 
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-// GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
+// GenerateBackendPolicyReport reports the policies attached to the given
+// backends, attributing base row errors in clusters to the policy they name.
 // Exported for testing.
-func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithCluster) reports.ReportMap {
 	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
+
+	// Only base rows are attributed; translation stops at the first error.
+	baseErrs := make(map[string]error, len(clusters))
+	for _, c := range clusters {
+		if c.Error != nil && !c.PerClientError {
+			baseErrs[c.Name] = c.Error
+		}
+	}
 
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
@@ -38,6 +47,8 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
+		var policyErr *ir.PolicyError
+		errors.As(baseErrs[obj.ClusterName()], &policyErr)
 		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
 		targetRef := backendAncestorRef(obj.GetObjectSource())
 
@@ -73,6 +84,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+				if len(polAtt.Errors) == 0 && policyErr != nil && policyErr.Ref != nil && policyErr.Ref.ID() == polAtt.PolicyRef.ID() {
+					polAtt.Errors = []error{policyErr.Err}
+				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    string(shared.PolicyConditionAccepted),

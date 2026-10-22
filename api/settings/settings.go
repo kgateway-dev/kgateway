@@ -24,8 +24,6 @@ const (
 	// (e.g. RDS, CDS, and security-related policies). Routes that fail these
 	// checks are also replaced with direct responses, and helps prevent unsafe
 	// config from reaching Envoy.
-	// Strict Validation is not supported with Rustformation yet,
-	// see docs/guides/transformation.md for details
 	ValidationStrict ValidationMode = "STRICT"
 )
 
@@ -316,6 +314,18 @@ type Settings struct {
 	// AwsEc2RefreshInterval controls how often the controller refreshes EC2 instance discovery
 	// for Backend resources when AWS EC2 discovery is enabled.
 	AwsEc2RefreshInterval time.Duration `split_words:"true" default:"30s"`
+
+	// TranslationDebounce batches changes to translation inputs before they trigger Gateway translation: changes
+	// are delivered once no further change has arrived for this long. Each change otherwise rebuilds the whole
+	// translation of every Gateway it affects, so batching a burst saves a rebuild per change, at the cost of
+	// delaying each change by about this much. It currently applies to route changes. Set to 0 to deliver every
+	// change immediately.
+	TranslationDebounce time.Duration `split_words:"true" default:"10ms"`
+
+	// TranslationDebounceMax bounds how long changes can be held while new changes keep arriving.
+	// It is the main trade-off between translation work during a burst of changes and how stale
+	// Gateway configuration and status can get. Values below TranslationDebounce are raised to it.
+	TranslationDebounceMax time.Duration `split_words:"true" default:"100ms"`
 
 	PolicyMerge string `split_words:"true" default:"{}"`
 

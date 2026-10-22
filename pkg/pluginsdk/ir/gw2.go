@@ -121,8 +121,12 @@ type TLSCertificate struct {
 }
 
 type FilterChainCommon struct {
-	Matcher              FilterChainMatch
-	FilterChainName      string
+	Matcher         FilterChainMatch
+	FilterChainName string
+	// StatPrefix is the stat_prefix for the chain's HCM or TcpProxy. It is kept
+	// separate from FilterChainName because it surfaces in user-facing metrics
+	// and must follow a stable format. Empty falls back to a protocol default.
+	StatPrefix           string
 	CustomNetworkFilters []CustomEnvoyFilter
 	NetworkFilters       []*anypb.Any
 	TLS                  *TLSConfig

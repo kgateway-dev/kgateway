@@ -87,7 +87,7 @@ func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 // listener on a port, so their names match none and the result is nil.
 func findListenerForFilterChain(gw ir.GatewayIR, filterChainName string) *ir.Listener {
 	return istioslices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
-		return filterChainName == query.GenerateRouteKey(l.Parent, string(l.Name))
+		return query.RouteKeyMatches(filterChainName, l.Parent, string(l.Name))
 	})
 }
 
