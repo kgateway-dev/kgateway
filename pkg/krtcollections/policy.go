@@ -70,6 +70,22 @@ func (e *UnsupportedRouteKindError) Error() string {
 		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.RouteKind.Kind, strings.Join(supported, ", "))
 }
 
+// UnweightableBackendError reports a backend with inline endpoints in a UDPRoute
+// rule that has several backendRefs. udp_proxy routes such a rule to one cluster
+// whose endpoints are the weighted union of its backends' endpoint rows, and this
+// backend has none. Like an UnsupportedRouteKindError, the route translator
+// reports it as ResolvedRefs=False/InvalidKind, and the backend's weight is
+// dropped rather than sent to the other backends.
+type UnweightableBackendError struct {
+	Backend   ir.ObjectSource
+	RouteKind schema.GroupKind
+}
+
+func (e *UnweightableBackendError) Error() string {
+	return fmt.Sprintf("%s %s/%s carries its endpoints in its own cluster, so it can only be the sole backendRef of a %s rule",
+		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.RouteKind.Kind)
+}
+
 // BackendPortNotFoundError is returned instead of NotFoundError when the referenced
 // backend exists but does not define the referenced port.
 type BackendPortNotFoundError struct {
@@ -1511,12 +1527,33 @@ func (h *RoutesIndex) transformUdpRoute(kctx krt.HandlerContext, i *gwv1.UDPRout
 		backends = i.Spec.Rules[0].BackendRefs
 	}
 
+	resolved := h.getTcpBackends(kctx, src, backends)
+	if len(resolved) > 1 {
+		rejectUnweightableBackends(src, resolved)
+	}
 	return &ir.UdpRouteIR{
 		ObjectSource:     src,
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
-		Backends:         h.getTcpBackends(kctx, src, backends),
+		Backends:         resolved,
 		AttachedPolicies: ToAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "", i.GetLabels())),
+	}
+}
+
+// rejectUnweightableBackends rejects the backends with inline endpoints in a
+// UDPRoute rule with several backendRefs. Each one routes to the blackhole
+// cluster with an UnweightableBackendError, so its weight is dropped.
+func rejectUnweightableBackends(src ir.ObjectSource, backends []ir.BackendRefIR) {
+	for i, b := range backends {
+		if b.BackendObject == nil || !b.BackendObject.InlineEndpoints {
+			continue
+		}
+		backends[i].Err = &UnweightableBackendError{
+			Backend:   b.BackendObject.GetObjectSource(),
+			RouteKind: src.GetGroupKind(),
+		}
+		backends[i].BackendObject = nil
+		backends[i].ClusterName = wellknown.BlackholeClusterName
 	}
 }
 

@@ -202,9 +202,9 @@ func TestNewPerClientUdpAggregateEndpointsScopesToGatewayWithCluster(t *testing.
 	g.Expect(got[0].Endpoints.Clone().GetClusterName()).To(gomega.Equal(clusterName))
 }
 
-// TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes asserts a member with no EDS source
-// at all (len(efbs)==0, e.g. a Static backend) is not treated as an empty Service, so its weight
-// redistributes rather than drops. Only a Service that yields an empty EndpointsForBackend drops.
+// TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes asserts a member whose endpoint rows
+// are not built yet (len(efbs)==0) is not treated as an empty Service, so its weight redistributes
+// until they are rather than drops. Only a Service that yields an empty EndpointsForBackend drops.
 func TestMergeUdpAggregateLoadAssignment_NoEdsSourceRedistributes(t *testing.T) {
 	members := []udpMemberEndpoints{
 		{weight: 80, efbs: []ir.EndpointsForBackend{efbInDefaultLocality(udpTestEndpoint("10.0.0.1"))}},

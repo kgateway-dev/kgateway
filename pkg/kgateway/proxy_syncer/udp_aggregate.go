@@ -228,7 +228,9 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 			}
 		}
 		// A Service with no endpoints is invalid per the UDPRoute spec, so its share drops, not
-		// redistributes. A member with no EDS source (len(efbs)==0, e.g. Static) keeps its share.
+		// redistributes. A member with no endpoint rows yet (len(efbs)==0) adds nothing until they
+		// are built. Backends that never have rows (InlineEndpoints) are rejected at route
+		// resolution, so their weight already counts in dropWeight.
 		if count == 0 {
 			if len(m.efbs) > 0 {
 				dropWeight += m.weight
