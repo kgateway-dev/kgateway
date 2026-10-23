@@ -27,6 +27,7 @@ spec:
     - name: echo
       port: 8080
     sessionPersistence:
-      sessionName: Session-A
       type: Header
       absoluteTimeout: 100s 
+      header:
+        name: Session-A
