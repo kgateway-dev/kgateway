@@ -447,6 +447,15 @@ e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
 
+# Compiles the e2e test binary with the same build flags as e2e-test, but runs
+# nothing (-exec=true), so a later e2e-test starts from a warm build cache. CI
+# runs this in the background while the cluster is being set up.
+.PHONY: warm-e2e-test
+warm-e2e-test: go-test
+warm-e2e-test: TEST_TAG = e2e
+warm-e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+warm-e2e-test: GO_TEST_USER_ARGS = -exec=true
+
 .PHONY: e2e-shared-images-docker
 e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
 
