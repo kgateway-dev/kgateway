@@ -45,7 +45,8 @@ clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       autoConfig:
-        http2ProtocolOptions: {}
+        http2ProtocolOptions:
+          allowConnect: true
         httpProtocolOptions: {}
 - commonLbConfig:
     localityWeightedLbConfig: {}
@@ -93,7 +94,8 @@ clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       autoConfig:
-        http2ProtocolOptions: {}
+        http2ProtocolOptions:
+          allowConnect: true
         httpProtocolOptions: {}
 - commonLbConfig:
     localityWeightedLbConfig: {}

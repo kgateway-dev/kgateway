@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -56,11 +57,18 @@ func processBaseCluster(_ krt.HandlerContext, _ context.Context, in ir.BackendOb
 	if !upstreamProtocolUnset(existing) {
 		return
 	}
+	// Use the BackendConfigPolicy HTTP/2 options, if any, for when HTTP/2 is negotiated. Allow
+	// extended CONNECT so WebSocket upgrades can still reach the backend over HTTP/2 (RFC 8441).
+	http2 := &envoycorev3.Http2ProtocolOptions{}
+	if bcp := backendconfigpolicy.Http2ProtocolOptions(in); bcp != nil {
+		http2 = proto.CloneOf(bcp)
+	}
+	http2.AllowConnect = true
 	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_AutoConfig{
 			AutoConfig: &envoy_upstreams_v3.HttpProtocolOptions_AutoHttpConfig{
 				HttpProtocolOptions:  &envoycorev3.Http1ProtocolOptions{},
-				Http2ProtocolOptions: &envoycorev3.Http2ProtocolOptions{},
+				Http2ProtocolOptions: http2,
 			},
 		}
 	}); err != nil {

@@ -45,7 +45,8 @@ Clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       autoConfig:
-        http2ProtocolOptions: {}
+        http2ProtocolOptions:
+          allowConnect: true
         httpProtocolOptions: {}
 - clusterType:
     name: envoy.clusters.dns
@@ -108,7 +109,8 @@ Clusters:
     envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       autoConfig:
-        http2ProtocolOptions: {}
+        http2ProtocolOptions:
+          allowConnect: true
         httpProtocolOptions: {}
 Listeners:
 - address:
