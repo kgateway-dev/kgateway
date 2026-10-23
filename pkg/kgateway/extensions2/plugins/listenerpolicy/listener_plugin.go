@@ -137,6 +137,16 @@ func (d *ListenerPolicyIR) GetClientCertificateValidation() *ir.ClientCertificat
 	return d.defaultPolicy.clientCertificateValidation
 }
 
+// clone returns a copy of d that can be merged into without changing d. Merging assigns
+// fields, except for httpSettings, whose fields are merged into the struct in place.
+func (d listenerPolicy) clone() listenerPolicy {
+	if d.http != nil {
+		http := *d.http
+		d.http = &http
+	}
+	return d
+}
+
 func (d listenerPolicy) Equals(d2 listenerPolicy) bool {
 	if !proto.Equal(d.proxyProtocol, d2.proxyProtocol) {
 		return false
