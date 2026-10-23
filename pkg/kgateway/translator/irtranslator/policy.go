@@ -230,7 +230,7 @@ func reportBackendObjectPolicyStatus(
 // policies fail. The last SetCondition call wins, which is typically Gateway-wide due to processing order. For HTTP
 // listeners, policy errors are handled in runVhostPlugins at the vhost scope and do not call this function,
 // avoiding the overwrite issue.
-func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, chainListeners filterChainListeners, listener ir.ListenerIR, routeConfigName string, policies ...ir.PolicyAtt) {
+func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, listener ir.ListenerIR, fc ir.FilterChainCommon, policies ...ir.PolicyAtt) {
 	for _, policy := range policies {
 		if policy.PolicyRef == nil {
 			continue
@@ -239,7 +239,7 @@ func reportRouteConfigPolicyErrors(r reporter.Reporter, gw ir.GatewayIR, chainLi
 			continue
 		}
 		if policy.PolicyRef.SectionName != "" || *listener.PolicyAncestorRef.Kind == wellknown.XListenerSetKind {
-			listenerReporter := getReporterForFilterChain(gw, r, chainListeners, routeConfigName)
+			listenerReporter := getReporterForFilterChain(gw, r, fc)
 			listenerReporter.SetCondition(reporter.ListenerCondition{
 				Type:    gwv1.ListenerConditionAccepted,
 				Status:  metav1.ConditionFalse,

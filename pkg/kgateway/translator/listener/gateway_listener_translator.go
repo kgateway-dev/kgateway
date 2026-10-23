@@ -355,9 +355,10 @@ func (ml *MergedListener) TranslateListener(
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
 	}
 
-	// Translate HTTPS filter chains
-	for _, mfc := range ml.httpsFilterChains {
-		httpsFilterChain, err := mfc.translateHttpsFilterChain(
+	// Translate HTTPS filter chains. Index the slice so each chain's Listener points
+	// into it rather than at a per-iteration copy.
+	for i := range ml.httpsFilterChains {
+		httpsFilterChain, err := ml.httpsFilterChains[i].translateHttpsFilterChain(
 			kctx,
 			ctx,
 			queries,
@@ -920,6 +921,7 @@ func (hfc *httpsFilterChain) translateHttpsFilterChain(
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: hfc.gatewayListenerName,
+			Listener:        &hfc.listener,
 			StatPrefix:      buildStatPrefix("https", hfc.listener.Port, listenerStatSegments(hfc.listener)...),
 			Matcher:         matcher,
 			TLS:             tlsConfig,
