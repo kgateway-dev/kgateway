@@ -11,6 +11,7 @@ import (
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
 //
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
+// +kubebuilder:validation:AtMostOneOf=withRequestBody;disableRequestBodyBuffering
 type ExtAuthPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for auth.
 	// +optional
@@ -20,6 +21,12 @@ type ExtAuthPolicy struct {
 	// Warning buffering has implications for streaming and therefore performance.
 	// +optional
 	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
+
+	// DisableRequestBodyBuffering disables request body buffering for this route,
+	// even when the GatewayExtension enables it with withRequestBody.
+	// Defaults to false. Mutually exclusive with WithRequestBody.
+	// +optional
+	DisableRequestBodyBuffering *bool `json:"disableRequestBodyBuffering,omitempty"`
 
 	// Additional context for the auth service.
 	// +optional

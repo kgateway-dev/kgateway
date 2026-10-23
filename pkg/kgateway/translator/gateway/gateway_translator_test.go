@@ -501,6 +501,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy ExtAuth disable request body buffering", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/extauth-disable-request-body-buffering.yaml"},
+			outputFile: "traffic-policy/extauth-disable-request-body-buffering.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	// test the default and fully configured values for HTTP ExtAuth
 	t.Run("TrafficPolicy HTTP ExtAuth Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{
