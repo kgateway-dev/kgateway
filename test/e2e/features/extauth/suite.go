@@ -47,6 +47,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestDefaultBufferStageDoesNotEnforceBehindExtAuth": {
 			Manifests: []string{bufferedRouteDefaultStageManifest},
 		},
+		"TestDisableRequestBodyBuffering": {
+			Manifests: []string{bufferingOptOutManifest},
+		},
 	}
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
@@ -266,6 +269,33 @@ func (s *testingSuite) TestDefaultBufferStageDoesNotEnforceBehindExtAuth() {
 			// Auth runs first at the default placement, so the oversized body is denied, not 413'd.
 			name:           "oversized body without allow header is denied by auth",
 			hostname:       "bufferedroute-default.com",
+			bodySize:       1500,
+			expectedStatus: http.StatusForbidden,
+		},
+	})
+}
+
+// TestDisableRequestBodyBuffering checks that a route can opt out of provider-level
+// buffering without disabling authorization or changing buffering on sibling routes.
+func (s *testingSuite) TestDisableRequestBodyBuffering() {
+	s.sendBufferedRequests([]bufferedRequest{
+		{
+			name:           "provider buffering rejects an oversized body",
+			hostname:       "provider-buffered.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       1500,
+			expectedStatus: http.StatusRequestEntityTooLarge,
+		},
+		{
+			name:           "opted-out route accepts an oversized body",
+			hostname:       "buffering-opt-out.com",
+			headers:        map[string]string{"x-ext-authz": "allow"},
+			bodySize:       1500,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "opted-out route still enforces authorization",
+			hostname:       "buffering-opt-out.com",
 			bodySize:       1500,
 			expectedStatus: http.StatusForbidden,
 		},
