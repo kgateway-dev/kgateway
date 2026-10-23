@@ -150,6 +150,14 @@ type Service struct {
 	// This field is only honored for Services that allocate a cluster IP, and the
 	// families requested here must be configured on the cluster.
 	//
+	// Kubernetes does not allow the first family to change on an existing Service:
+	// the second family can be added or dropped, but a change to the first one,
+	// including setting it on a Gateway whose Service took a different cluster
+	// default, is rejected. The proxy Service then stops being updated, and so do
+	// the resources applied after it, such as the Deployment. To change the first
+	// family, delete the proxy Service or recreate the Gateway; either gives the
+	// Service new cluster and LoadBalancer addresses.
+	//
 	// Note: This feature is experimental and subject to breaking changes in future releases.
 	//
 	// +optional

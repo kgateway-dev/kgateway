@@ -109,8 +109,10 @@ func (s *testingSuite) TestDualStackService() {
 			"ipFamilyPolicy should be set on the proxy Service")
 		g.Expect(*svc.Spec.IPFamilyPolicy).To(gomega.Equal(corev1.IPFamilyPolicyRequireDualStack))
 		// The configured order, not the cluster's default order: ipFamilies[0]
-		// decides which family the primary cluster IP comes from.
-		g.Expect(svc.Spec.IPFamilies).To(gomega.Equal([]corev1.IPFamily{corev1.IPv4Protocol, corev1.IPv6Protocol}),
+		// decides which family the primary cluster IP comes from, and kind's
+		// dual-stack default is IPv4 first, so IPv6 first can only come from
+		// the GatewayParameters.
+		g.Expect(svc.Spec.IPFamilies).To(gomega.Equal([]corev1.IPFamily{corev1.IPv6Protocol, corev1.IPv4Protocol}),
 			"the proxy Service should carry the configured families, in order")
 
 		v4, v6 := partitionIPsByFamily(svc.Spec.ClusterIPs)

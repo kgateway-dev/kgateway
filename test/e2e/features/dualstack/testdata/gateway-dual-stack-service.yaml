@@ -43,6 +43,9 @@ spec:
       # cluster rejects it outright instead of quietly handing back one family,
       # so the test either exercises two families or does not run at all.
       ipFamilyPolicy: RequireDualStack
+      # IPv6 first on purpose: kind's dual-stack mode is IPv4-primary, so the
+      # cluster default is [IPv4, IPv6] and only the reverse order shows that
+      # the configured order reaches the Service.
       ipFamilies:
-        - IPv4
         - IPv6
+        - IPv4
