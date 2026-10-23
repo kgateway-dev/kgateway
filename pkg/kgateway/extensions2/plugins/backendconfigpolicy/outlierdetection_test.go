@@ -54,10 +54,9 @@ func TestTranslateOutlierDetection(t *testing.T) {
 			},
 		},
 		{
-			name: "enforce consecutive gateway failures",
+			name: "consecutive gateway failures are fully enforced",
 			config: &kgateway.OutlierDetection{
-				ConsecutiveGatewayFailure:          new(int32(3)),
-				EnforcingConsecutiveGatewayFailure: new(int32(100)),
+				ConsecutiveGatewayFailure: new(int32(3)),
 			},
 			expected: &envoyclusterv3.OutlierDetection{
 				ConsecutiveGatewayFailure:          &wrapperspb.UInt32Value{Value: 3},
