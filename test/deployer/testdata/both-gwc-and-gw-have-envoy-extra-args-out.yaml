@@ -304,6 +304,10 @@ spec:
         - $(POD_NAME).$(POD_NAMESPACE)
         - --log-level
         - info
+        - --drain-time-s
+        - "60"
+        - --drain-strategy
+        - immediate
         - --disable-test-feature
         - from-gatewayclass
         - --enable-test-feature

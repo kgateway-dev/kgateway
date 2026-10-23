@@ -956,6 +956,13 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Maximum=100
 	EnforcingConsecutive5xx *int32 `json:"enforcingConsecutive5xx,omitempty"`
 
+	// The number of consecutive gateway failures (502, 503 and 504 status
+	// codes) before a host is ejected. When set, ejection is always enforced.
+	// When unset, consecutive gateway failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ConsecutiveGatewayFailure *int32 `json:"consecutiveGatewayFailure,omitempty"`
+
 	// Determines whether to distinguish locally originated failures from
 	// externally generated errors. When true, consecutiveLocalOriginFailure and
 	// enforcingConsecutiveLocalOriginFailure are used for locally originated
