@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	istioslices "istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
@@ -32,6 +33,8 @@ type Translator struct {
 	ValidationLevel           apisettings.ValidationMode
 	Validator                 validator.Validator
 	EnableRouteSourceMetadata bool
+
+	routeCache routeCache
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -43,10 +46,24 @@ type TranslationResult struct {
 	Secrets       []*envoytlsv3.Secret
 }
 
+// ForgetGateway drops what the translator cached for a Gateway that was deleted.
+func (t *Translator) ForgetGateway(gateway types.NamespacedName) {
+	t.routeCache.forgetGateway(gateway)
+}
+
+func gatewayName(gw ir.GatewayIR) types.NamespacedName {
+	if gw.SourceObject == nil {
+		return types.NamespacedName{}
+	}
+	return types.NamespacedName{Namespace: gw.SourceObject.Namespace, Name: gw.SourceObject.Name}
+}
+
 // Translate IR to gateway. IR is self contained, so no need for krt context
 func (t *Translator) Translate(ctx context.Context, gw ir.GatewayIR, reporter sdkreporter.Reporter) TranslationResult {
 	pass := t.newPass(reporter)
 	var res TranslationResult
+	t.routeCache.beginGateway(gatewayName(gw))
+	defer t.routeCache.endGateway(gatewayName(gw))
 
 	for _, l := range gw.Listeners {
 		outListener, routes := t.ComputeListener(ctx, pass, gw, l, reporter)
@@ -150,7 +167,9 @@ func (t *Translator) ComputeListener(
 			validator:                 t.Validator,
 			enableRouteSourceMetadata: t.EnableRouteSourceMetadata,
 		}
+		hr.routeCache = t.routeCache.begin(gatewayName(gw), hfc.FilterChainName)
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
+		t.routeCache.end(hr.routeCache)
 		if rc != nil {
 			routes = append(routes, rc)
 

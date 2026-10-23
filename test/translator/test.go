@@ -4,6 +4,7 @@ import (
 	stdcmp "cmp"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"maps"
@@ -890,7 +891,9 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	v := validator.NewDocker()
+	// Cache verdicts as the controller does by default, so the repeated translation below
+	// reuses them rather than running Envoy again.
+	v := validator.NewCaching(validator.NewDocker(), 1024)
 	plugins := registry.Plugins(ctx, commoncol, *settings, v)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
@@ -998,6 +1001,20 @@ func (tc TestCase) Run(
 
 	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
+		// Translate again: the translator caches what it translated, so this pass reuses it,
+		// and must produce the same output and status.
+		// It may share unchanged protos with the first translation, which must then be left as they were.
+		if xdsSnap != nil {
+			first := &irtranslator.TranslationResult{
+				Routes:        cloneProtos(xdsSnap.Routes),
+				Listeners:     cloneProtos(xdsSnap.Listeners),
+				ExtraClusters: cloneProtos(xdsSnap.ExtraClusters),
+				Secrets:       cloneProtos(xdsSnap.Secrets),
+			}
+			again, againReports := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
+			r.NoError(sameTranslation(first, reportsMap, again, againReports), "retranslating gateway %s/%s", gw.Namespace, gw.Name)
+			r.NoError(sameTranslation(first, reportsMap, xdsSnap, reportsMap), "retranslating gateway %s/%s changed its first translation", gw.Namespace, gw.Name)
+		}
 
 		// Backend policies (e.g. BackendConfigPolicy) use a different reporting pipeline than gateway policies.
 		// Gateway policies (ListenerPolicy, TrafficPolicy) are reported during gateway translation via the
@@ -1196,4 +1213,39 @@ func extractRouteConfigurationClusterNames(routeConfigs []*envoyroutev3.RouteCon
 		}
 	}
 	return clusterNames
+}
+
+// sameTranslation reports how a repeated translation differs from the first one.
+func sameTranslation(a *irtranslator.TranslationResult, ar reports.ReportMap, b *irtranslator.TranslationResult, br reports.ReportMap) error {
+	if b == nil {
+		return errors.New("second translation returned no result")
+	}
+	if diff := compareProxy(&translationResult{
+		Routes: a.Routes, Listeners: a.Listeners, ExtraClusters: a.ExtraClusters, Secrets: a.Secrets,
+	}, b); diff != "" {
+		return fmt.Errorf("xDS differs:\n%s", diff)
+	}
+	src := reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "retranslate"}
+	ac := reports.StatusContributionsFromReportMap(src, ar)
+	bc := reports.StatusContributionsFromReportMap(src, br)
+	if len(ac) != len(bc) {
+		return fmt.Errorf("status contributions differ: %d vs %d", len(ac), len(bc))
+	}
+	for i := range ac {
+		if !ac[i].Equals(bc[i]) {
+			return fmt.Errorf("status contribution %s differs", ac[i].ResourceName())
+		}
+	}
+	return nil
+}
+
+func cloneProtos[T proto.Message](in []T) []T {
+	if in == nil {
+		return nil
+	}
+	out := make([]T, len(in))
+	for i, m := range in {
+		out[i] = proto.Clone(m).(T)
+	}
+	return out
 }
