@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_namespace-two_foo-svc_8080
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -36,7 +34,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: namespace-two/ls-1/https-ls1
-        statPrefix: http
+        statPrefix: https_443_namespace-two_ls-1_https-ls1
         useRemoteAddress: true
     name: namespace-two/ls-1/https-ls1
     transportSocket:
@@ -83,7 +81,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80

@@ -49,8 +49,7 @@ var (
 		[]string{gatewayLabel, namespaceLabel},
 	)
 
-	resourcesHistogramBuckets = []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 1200, 1800}
-	resourcesManaged          = metrics.NewGauge(
+	resourcesManaged = metrics.NewGauge(
 		metrics.GaugeOpts{
 			Subsystem: resourcesSubsystem,
 			Name:      "managed",
@@ -58,35 +57,10 @@ var (
 		},
 		[]string{namespaceLabel, parentLabel, resourceLabel},
 	)
-	resourcesStatusSyncsStartedTotal = metrics.NewCounter(metrics.CounterOpts{
-		Subsystem: resourcesSubsystem,
-		Name:      "status_syncs_started_total",
-		Help:      "Total number of status syncs started",
-	},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel})
-	resourcesStatusSyncsCompletedTotal = metrics.NewCounter(
-		metrics.CounterOpts{
-			Subsystem: resourcesSubsystem,
-			Name:      "status_syncs_completed_total",
-			Help:      "Total number of status syncs completed for resources",
-		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel})
-	resourcesStatusSyncDuration = metrics.NewHistogram(
-		metrics.HistogramOpts{
-			Subsystem:                       resourcesSubsystem,
-			Name:                            "status_sync_duration_seconds",
-			Help:                            "Duration of time for a resource update to receive a status report",
-			Buckets:                         resourcesHistogramBuckets,
-			NativeHistogramBucketFactor:     1.1,
-			NativeHistogramMaxBucketNumber:  100,
-			NativeHistogramMinResetDuration: time.Hour,
-		},
-		[]string{gatewayLabel, namespaceLabel, resourceLabel},
-	)
 	resourcesUpdatesDroppedTotal = metrics.NewCounter(metrics.CounterOpts{
 		Subsystem: resourcesSubsystem,
 		Name:      "updates_dropped_total",
-		Help:      "Total number of resources metrics updates dropped. If this metric is ever greater than 0, all resources subsystem metrics should be considered invalid until process restart",
+		Help:      "Total number of xds_snapshot sync metrics updates dropped. If this metric is ever greater than 0, the xds_snapshot sync metrics should be considered invalid until process restart",
 	}, nil)
 )
 
@@ -130,9 +104,8 @@ type ResourceSyncDetails struct {
 }
 
 type syncStartInfo struct {
-	endTime     time.Time
-	details     ResourceSyncDetails
-	xdsSnapshot bool
+	endTime time.Time
+	details ResourceSyncDetails
 }
 
 // Buffered channel to handle resource sync metrics updates.
@@ -167,51 +140,6 @@ func StartResourceSyncMetricsProcessing(ctx context.Context) {
 			}
 		}
 	}()
-}
-
-// StartResourceStatusSync records the start time of a status sync for a given resource and
-// increments the resource syncs started counter.
-func StartResourceStatusSync(details ResourceSyncDetails) {
-	if !metrics.Active() {
-		return
-	}
-
-	startTimes.Lock()
-	defer startTimes.Unlock()
-
-	if startTimes.times == nil {
-		startTimes.times = make(map[string]map[string]map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway] == nil {
-		startTimes.times[details.Gateway] = make(map[string]map[string]map[string]ResourceSyncStartTime)
-	}
-
-	st := ResourceSyncStartTime{
-		Time:         time.Now(),
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-		Namespace:    details.Namespace,
-		Gateway:      details.Gateway,
-	}
-
-	if startTimes.times[details.Gateway][details.ResourceType] == nil {
-		startTimes.times[details.Gateway][details.ResourceType] = make(map[string]map[string]ResourceSyncStartTime)
-	}
-
-	if startTimes.times[details.Gateway][details.ResourceType][details.Namespace] == nil {
-		startTimes.times[details.Gateway][details.ResourceType][details.Namespace] = make(map[string]ResourceSyncStartTime)
-	}
-
-	if _, exists := startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName]; !exists {
-		startTimes.times[details.Gateway][details.ResourceType][details.Namespace][details.ResourceName] = st
-
-		resourcesStatusSyncsStartedTotal.Inc(
-			metrics.Label{Name: gatewayLabel, Value: details.Gateway},
-			metrics.Label{Name: namespaceLabel, Value: details.Namespace},
-			metrics.Label{Name: resourceLabel, Value: details.ResourceType},
-		)
-	}
 }
 
 // StartResourceXDSSync records the start time of a XDS snapshot sync.
@@ -250,46 +178,6 @@ func StartResourceXDSSync(details ResourceSyncDetails) {
 	startTimes.times[details.Gateway][snapshotResourceType][details.Namespace][details.ResourceName] = st
 }
 
-// EndResourceStatusSync records the end time of a status sync for a given resource and
-// updates the resource sync metrics accordingly.
-// Returns true if the sync was added to the channel, false if the channel is full.
-// If the channel is full, an error is logged to call attention to the issue.
-// The caller is not expected to handle this case.
-func EndResourceStatusSync(details ResourceSyncDetails) bool {
-	if !metrics.Active() {
-		return true
-	}
-
-	// Add syncStartInfo to the channel for metrics processing.
-	// If the channel is full, something is probably wrong, but translations shouldn't stop because of a metrics processing issue.
-	// In that case, updating the metrics will be dropped, and translations will continue processing.
-	// This will cause the metrics to become invalid, so an error is logged to call attention to the issue.
-	syncChLock.RLock()
-	select {
-	case syncCh <- &syncStartInfo{
-		endTime:     time.Now(),
-		details:     details,
-		xdsSnapshot: false,
-	}:
-		syncChLock.RUnlock()
-
-		return true
-	default:
-		syncChLock.RUnlock()
-
-		logger.Error(
-			"resource metrics sync channel is full, dropping end sync metrics update",
-			"gateway", details.Gateway,
-			"namespace", details.Namespace,
-			"resourceType", details.ResourceType,
-			"resourceName", details.ResourceName,
-			"xdsSnapshot", false,
-		)
-		resourcesUpdatesDroppedTotal.Inc()
-		return false
-	}
-}
-
 // EndResourceXDSSync records the end time of an XDS snapshot sync.
 // Returns true if the sync was added to the channel, false if the channel is full.
 // If the channel is full, an error is logged to call attention to the issue.
@@ -306,9 +194,8 @@ func EndResourceXDSSync(details ResourceSyncDetails) bool {
 	syncChLock.RLock()
 	select {
 	case syncCh <- &syncStartInfo{
-		endTime:     time.Now(),
-		details:     details,
-		xdsSnapshot: true,
+		endTime: time.Now(),
+		details: details,
 	}:
 		syncChLock.RUnlock()
 
@@ -322,7 +209,6 @@ func EndResourceXDSSync(details ResourceSyncDetails) bool {
 			"namespace", details.Namespace,
 			"resourceType", details.ResourceType,
 			"resourceName", details.ResourceName,
-			"xdsSnapshot", true,
 		)
 		resourcesUpdatesDroppedTotal.Inc()
 		return false
@@ -341,96 +227,50 @@ func endResourceSync(syncInfo *syncStartInfo) {
 		return
 	}
 
-	rn := syncInfo.details.ResourceName
-	rt := syncInfo.details.ResourceType
-
-	if syncInfo.xdsSnapshot {
-		rt = snapshotResourceType
-		resourceTypeStartTimes, exists := startTimes.times[syncInfo.details.Gateway][rt]
-		if !exists {
-			return
-		}
-
-		deleteResources := map[string]map[string]struct{}{}
-
-		for _, namespaceStartTimes := range resourceTypeStartTimes {
-			for resourceName, st := range namespaceStartTimes {
-				xdsSnapshotSyncsTotal.Inc(
-					metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-					metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-				)
-
-				xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-					metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-					metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-				)
-
-				if deleteResources[st.Namespace] == nil {
-					deleteResources[st.Namespace] = map[string]struct{}{}
-				}
-
-				deleteResources[st.Namespace][resourceName] = struct{}{}
-			}
-		}
-
-		for namespace, resources := range deleteResources {
-			for resourceName := range resources {
-				delete(startTimes.times[syncInfo.details.Gateway][rt][namespace], resourceName)
-
-				if len(startTimes.times[syncInfo.details.Gateway][rt][namespace]) == 0 {
-					delete(startTimes.times[syncInfo.details.Gateway][rt], namespace)
-				}
-
-				if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
-					delete(startTimes.times[syncInfo.details.Gateway], rt)
-				}
-
-				if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
-					delete(startTimes.times, syncInfo.details.Gateway)
-				}
-			}
-		}
-
-		return
-	}
-
-	if startTimes.times[syncInfo.details.Gateway][rt] == nil {
-		return
-	}
-
-	if startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace] == nil {
-		return
-	}
-
-	st, exists := startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace][rn]
+	rt := snapshotResourceType
+	resourceTypeStartTimes, exists := startTimes.times[syncInfo.details.Gateway][rt]
 	if !exists {
 		return
 	}
 
-	resourcesStatusSyncsCompletedTotal.Inc(
-		metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-		metrics.Label{Name: resourceLabel, Value: st.ResourceType},
-	)
+	deleteResources := map[string]map[string]struct{}{}
 
-	resourcesStatusSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
-		metrics.Label{Name: gatewayLabel, Value: st.Gateway},
-		metrics.Label{Name: namespaceLabel, Value: st.Namespace},
-		metrics.Label{Name: resourceLabel, Value: st.ResourceType},
-	)
+	for _, namespaceStartTimes := range resourceTypeStartTimes {
+		for resourceName, st := range namespaceStartTimes {
+			xdsSnapshotSyncsTotal.Inc(
+				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
+				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
+			)
 
-	delete(startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace], rn)
+			xdsSnapshotSyncDuration.Observe(syncInfo.endTime.Sub(st.Time).Seconds(),
+				metrics.Label{Name: gatewayLabel, Value: st.Gateway},
+				metrics.Label{Name: namespaceLabel, Value: st.Namespace},
+			)
 
-	if len(startTimes.times[syncInfo.details.Gateway][rt][syncInfo.details.Namespace]) == 0 {
-		delete(startTimes.times[syncInfo.details.Gateway][rt], syncInfo.details.Namespace)
+			if deleteResources[st.Namespace] == nil {
+				deleteResources[st.Namespace] = map[string]struct{}{}
+			}
+
+			deleteResources[st.Namespace][resourceName] = struct{}{}
+		}
 	}
 
-	if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
-		delete(startTimes.times[syncInfo.details.Gateway], rt)
-	}
+	for namespace, resources := range deleteResources {
+		for resourceName := range resources {
+			delete(startTimes.times[syncInfo.details.Gateway][rt][namespace], resourceName)
 
-	if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
-		delete(startTimes.times, syncInfo.details.Gateway)
+			if len(startTimes.times[syncInfo.details.Gateway][rt][namespace]) == 0 {
+				delete(startTimes.times[syncInfo.details.Gateway][rt], namespace)
+			}
+
+			if len(startTimes.times[syncInfo.details.Gateway][rt]) == 0 {
+				delete(startTimes.times[syncInfo.details.Gateway], rt)
+			}
+
+			if len(startTimes.times[syncInfo.details.Gateway]) == 0 {
+				delete(startTimes.times, syncInfo.details.Gateway)
+			}
+		}
 	}
 }
 
@@ -568,18 +408,12 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 			// Promoted ListenerSets and legacy XListenerSets both normalize to
 			// *gwv1.ListenerSet, so this arm reports the two flavors as ONE metric series,
 			// under the legacy label value "XListenerSet" — including resources that were
-			// never XListenerSets. The value is part of the start/end join key
-			// (startTimes.times[Gateway][ResourceType][Namespace][ResourceName]), so it must
-			// stay byte-identical to the ResourceType that listenerSetStatusMetricsHook reports
-			// in proxy_syncer/status_collections.go — a hook both ListenerSet writers share for
-			// exactly this reason: rename either site alone and every listener
-			// set sync starts but never ends, permanently raising the out-of-sync gauge.
+			// never XListenerSets.
 			//
 			// TODO: Rename the label value to "ListenerSet" (or split the two flavors into
 			// separate series keyed by their real GVK, if per-flavor visibility is wanted) in
-			// one follow-up that updates both emit sites, the unit and e2e metrics tests that
-			// assert resource="XListenerSet", and release notes for anyone with dashboards or
-			// alerts on the old value.
+			// a follow-up that updates the metrics tests that assert resource="XListenerSet",
+			// and release notes for anyone with dashboards or alerts on the old value.
 			resourceType = "XListenerSet"
 			resourceName = obj.Name
 			namespace = obj.Namespace
@@ -592,8 +426,6 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 		}
 
 		startResourceSync := func(details ResourceSyncDetails) {
-			StartResourceStatusSync(details)
-
 			if resourceType == wellknown.GatewayKind {
 				StartResourceXDSSync(details)
 			}
@@ -652,15 +484,6 @@ func GetResourceMetricEventHandler[T any]() func(krt.Event[T]) {
 					ResourceType: resourceType,
 					ResourceName: resourceName,
 				})
-
-				// There will not be a status sync for a deleted resource,
-				// so end the resource status sync immediately.
-				EndResourceStatusSync(ResourceSyncDetails{
-					Gateway:      name,
-					Namespace:    namespace,
-					ResourceType: resourceType,
-					ResourceName: resourceName,
-				})
 			}
 		}
 	}
@@ -672,9 +495,6 @@ func ResetMetrics() {
 	xdsSnapshotSyncsTotal.Reset()
 	xdsSnapshotSyncDuration.Reset()
 	resourcesManaged.Reset()
-	resourcesStatusSyncsStartedTotal.Reset()
-	resourcesStatusSyncsCompletedTotal.Reset()
-	resourcesStatusSyncDuration.Reset()
 	resourcesUpdatesDroppedTotal.Reset()
 
 	startTimes.Lock()

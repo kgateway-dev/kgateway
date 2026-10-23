@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.1
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.4
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
@@ -1373,6 +1373,13 @@ conformance-%:  ## Run only the specified Gateway API conformance test by ShortN
 .PHONY: all-conformance
 all-conformance: conformance ## Run all conformance test suites
 	@echo "All conformance suites have completed."
+
+# Fail if the controller recorded a client NACK or an inconsistent snapshot.
+# Consistency needs KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK=true; the script warns
+# otherwise. Example: make conformance xds-consistency-check
+.PHONY: xds-consistency-check
+xds-consistency-check: ## Fail on recorded client NACKs or inconsistent snapshots
+	INSTALL_NAMESPACE=$(INSTALL_NAMESPACE) ./hack/xds-consistency-check.sh
 
 #----------------------------------------------------------------------------------
 # Dependency Bumping

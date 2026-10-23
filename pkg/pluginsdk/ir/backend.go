@@ -453,6 +453,13 @@ type Secret struct {
 
 	// +krtEqualsTodo evaluate secret data equality handling
 	Data map[string][]byte
+
+	// TLSValidation keeps the result of ValidateTLS, so the listeners that reference this
+	// Secret validate it once instead of once each. Copies of a Secret share it. The Secret
+	// collection builds a new Secret for each version of the object, so a changed Secret is
+	// validated again. When nil, ValidateTLS checks on every call.
+	// +noKrtEquals derived from Data
+	TLSValidation *SecretValidation
 }
 
 func (c Secret) ResourceName() string {
