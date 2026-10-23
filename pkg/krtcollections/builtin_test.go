@@ -1017,3 +1017,42 @@ func TestRequestRedirectLowerPriorityPolicyDoesNotPostProcessWinningRedirect(t *
 		outputRoute.GetRedirect(),
 	)
 }
+
+func TestAbsoluteTimeoutIgnored(t *testing.T) {
+	timeout := gwv1.Duration("1h")
+	cookie := gwv1.CookieBasedSessionPersistence
+	header := gwv1.HeaderBasedSessionPersistence
+	permanent := gwv1.PermanentCookieLifetimeType
+	session := gwv1.SessionCookieLifetimeType
+
+	tests := []struct {
+		name string
+		sp   *gwv1.SessionPersistence
+		want bool
+	}{
+		{name: "nil", sp: nil, want: false},
+		{name: "no timeout", sp: &gwv1.SessionPersistence{Type: &cookie, Cookie: &gwv1.CookieConfig{}}, want: false},
+		{
+			name: "permanent cookie",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{LifetimeType: &permanent}},
+			want: false,
+		},
+		{
+			name: "session cookie",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{LifetimeType: &session}},
+			want: true,
+		},
+		{
+			name: "cookie lifetime defaults to session",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{}},
+			want: true,
+		},
+		{name: "type defaults to cookie", sp: &gwv1.SessionPersistence{AbsoluteTimeout: &timeout}, want: true},
+		{name: "header", sp: &gwv1.SessionPersistence{Type: &header, AbsoluteTimeout: &timeout}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, absoluteTimeoutIgnored(tt.sp))
+		})
+	}
+}
