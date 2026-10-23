@@ -17,7 +17,8 @@ import (
 // Each file in the directory is a yaml file containing documents to be validated.
 // The file name is the name of the test, and subtests are named after the object name.
 // The test data is split into multiple documents by the '---' delimiter.
-// If an error is expected, the error message should be in the _err field of the yaml document, for example:
+// If an error is expected, the error message should be in the _err field of the yaml document. When several
+// errors are expected, list them in the _errs field instead; each must appear in the result. For example:
 // ```
 // _err: some validation error message
 // apiVersion: gateway.kgateway.dev/v1alpha1
@@ -48,23 +49,30 @@ func TestCRValidation(t *testing.T, v *crd.Validator, testDataDir string) {
 					t.Fatal(err)
 				}
 				delete(obj.Object, "_err")
+				delete(obj.Object, "_errs")
 				t.Run(obj.GetName(), func(t *testing.T) {
 					want := testExpectation{}
 					if err := yaml.Unmarshal([]byte(item), &want); err != nil {
 						t.Fatal(err)
 					}
 					res := v.ValidateCustomResource(obj)
-					if want.WantErr == "" {
+					wantErrs := want.WantErrs
+					if want.WantErr != "" {
+						wantErrs = append(wantErrs, want.WantErr)
+					}
+					if len(wantErrs) == 0 {
 						// Want no error
 						if res != nil {
 							t.Fatalf("configuration was invalid: %v", res)
 						}
 					} else {
 						if res == nil {
-							t.Fatalf("wanted error like %q, got none", want.WantErr)
+							t.Fatalf("wanted errors like %q, got none", wantErrs)
 						}
-						if !strings.Contains(res.Error(), want.WantErr) {
-							t.Fatalf("wanted error like %q, got %q", want.WantErr, res)
+						for _, wantErr := range wantErrs {
+							if !strings.Contains(res.Error(), wantErr) {
+								t.Errorf("wanted error like %q, got %q", wantErr, res)
+							}
 						}
 					}
 				})
@@ -92,5 +100,6 @@ func splitString(yamlText string) []string {
 }
 
 type testExpectation struct {
-	WantErr string `json:"_err,omitempty"`
+	WantErr  string   `json:"_err,omitempty"`
+	WantErrs []string `json:"_errs,omitempty"`
 }

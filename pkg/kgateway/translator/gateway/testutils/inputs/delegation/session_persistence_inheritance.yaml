@@ -1,0 +1,69 @@
+# A parent route rule with sessionPersistence delegates to a child route whose backend has a
+# BackendConfigPolicy with sessionPersistence.
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to routes in "a" namespace, with sessionPersistence (cookie parent-cookie)
+#   - Everything else goes to infra/example-svc
+# - Child a/route-a1: /a/1 -> a/svc-a, inherits the parent rule's sessionPersistence
+# - BackendConfigPolicy a/svc-a-sp targets a/svc-a with sessionPersistence (cookie policy-cookie)
+#
+# Expected output:
+# - /a/1 uses policy-cookie
+# - the parent route infra/example-route reports kgateway.dev/Programmed=True with reason
+#   SessionPersistenceOverridden for its rule 1; the child route a/route-a1 does not
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: a
+    sessionPersistence:
+      sessionName: parent-cookie
+      type: Cookie
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a1
+  namespace: a
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: svc-a
+      port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: svc-a-sp
+  namespace: a
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: svc-a
+  sessionPersistence:
+    cookie:
+      name: policy-cookie

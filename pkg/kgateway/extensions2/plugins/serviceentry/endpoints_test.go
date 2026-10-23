@@ -30,7 +30,7 @@ func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 			},
 		},
 	}
-	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil)
+	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "")
 
 	podWorkload := func(name, ip string, ready bool) selectedWorkload {
 		return selectedWorkload{
@@ -50,6 +50,7 @@ func TestEndpointsFromWorkloads_SkipsNotReadyPods(t *testing.T) {
 		nil, nil, nil,
 		&networking.WorkloadEntry{Address: "10.0.0.3"},
 		nil,
+		"",
 	)
 	assert.True(t, weWorkload.Ready, "WorkloadEntry-backed workloads must be treated as Ready")
 
@@ -95,7 +96,7 @@ func TestEndpointsFromWorkloads_SkipsTerminatingPods(t *testing.T) {
 			},
 		},
 	}
-	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil)
+	be := BuildServiceEntryBackendObjectIR(se, "server.server.mesh.internal", 80, "HTTP", nil, "")
 
 	podWorkload := func(name, ip string, ready, terminating bool) selectedWorkload {
 		return selectedWorkload{
@@ -117,6 +118,7 @@ func TestEndpointsFromWorkloads_SkipsTerminatingPods(t *testing.T) {
 		nil, nil, nil,
 		&networking.WorkloadEntry{Address: "10.0.0.3"},
 		nil,
+		"",
 	)
 	assert.True(t, weWorkload.Ready, "WorkloadEntry-backed workloads must be treated as Ready")
 	assert.False(t, weWorkload.Terminating, "WorkloadEntry-backed workloads must never be Terminating")

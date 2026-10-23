@@ -158,6 +158,8 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"envoy bootstrap local cluster should use EDS for multi-zone locality distribution")
 				assert.Contains(t, outputYaml, "eds_cluster_config:",
 					"envoy bootstrap local cluster should request endpoints over ADS")
+				assert.NotContains(t, outputYaml, "overload_manager:",
+					"envoy bootstrap should not configure a downstream connection limit unless opted in")
 			},
 		},
 		{
@@ -238,6 +240,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-dns-resolver-zero",
 		},
 		{
+			Name:      "envoy max downstream connections override",
+			InputFile: "envoy-max-downstream-connections",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.resource_monitors.global_downstream_max_connections",
+					"bootstrap should configure the global downstream max connections resource monitor")
+				assert.Contains(t, outputYaml, "max_active_downstream_connections: 5000",
+					"maxDownstreamConnections from GatewayParameters should be rendered")
+			},
+		},
+		{
 			Name:      "envoy readiness listener proxy protocol",
 			InputFile: "envoy-readiness-listener-proxy-protocol",
 			Validate: func(t *testing.T, outputYaml string) {
@@ -294,6 +307,24 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"Gateway envoy extra arg should be present in the rendered Deployment")
 				assert.Less(t, gwcIdx, gwIdx,
 					"GatewayClass extraArgs should be rendered before Gateway extraArgs so Gateway can win with last-arg semantics")
+			},
+		},
+		{
+			// Envoy rejects a repeated flag, so drain flags in extraArgs must
+			// replace the chart defaults rather than be appended after them.
+			Name:      "envoy drain args override",
+			InputFile: "envoy-drain-args-override",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				assert.Equal(t, 1, strings.Count(outputYaml, "- --drain-time-s"),
+					"--drain-time-s should be rendered once")
+				assert.Equal(t, 1, strings.Count(outputYaml, "- --drain-strategy"),
+					"--drain-strategy should be rendered once")
+				assert.Contains(t, outputYaml, "- gradual",
+					"the extraArgs drain strategy should win")
+				assert.NotContains(t, outputYaml, "- immediate",
+					"the default drain strategy should be omitted")
 			},
 		},
 		{

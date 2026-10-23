@@ -724,6 +724,10 @@ func deepMergeEnvoyBootstrap(dst, src *kgateway.EnvoyBootstrap) *kgateway.EnvoyB
 		dst.EnableReadinessProbeProxyProtocol = src.GetEnableReadinessProbeProxyProtocol()
 	}
 
+	if src.GetMaxDownstreamConnections() != nil {
+		dst.MaxDownstreamConnections = src.GetMaxDownstreamConnections()
+	}
+
 	return dst
 }
 

@@ -23,13 +23,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
       - name: Setup Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Restore envoyinit BuildKit cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/.buildx-cache-envoyinit
           key: ${{ runner.os }}-buildx-envoyinit-v1-${{ hashFiles('internal/envoy_modules/Cargo.lock', 'internal/envoy_modules/**/Cargo.toml', 'cmd/envoyinit/Dockerfile.tmpl', 'cmd/envoyinit/generate-dockerfile.sh') }}
@@ -41,7 +41,9 @@ jobs:
           ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
         run: |
           mkdir -p /tmp/.buildx-cache-envoyinit
-          make save-e2e-shared-images
+          # Build the images in parallel. --output-sync keeps each target's log
+          # together, so a target's output only appears once it finishes.
+          make -j --output-sync=target save-e2e-shared-images
       - name: Rotate envoyinit BuildKit cache
         if: always()
         run: |
@@ -50,7 +52,7 @@ jobs:
             mv /tmp/.buildx-cache-envoyinit-new /tmp/.buildx-cache-envoyinit
           fi
       - name: Upload shared e2e images
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-shared-images
           path: _output/e2e-images/shared-images.tar
@@ -107,7 +109,7 @@ jobs:
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$|^TestKgateway$$/^XdsIdentityRace$$'
+            go-test-run-regex: '^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$|^TestKgateway$$/^XdsIdentityRace$$|^TestKgateway$$/^XdsWarming$$'
             localstack: 'false'
             ordered-ads: 'false'
           # May 29, 2026: ~5 minutes
@@ -132,19 +134,29 @@ jobs:
         version-files:
           - file: './.github/workflows/.env/pr-tests/versions.env'
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
+      # Compiling the e2e test binary takes ~2-3 minutes; do it while the cluster
+      # is being set up. "Wait for e2e test compile" collects the result.
+      - name: Start e2e test compile
+        shell: bash
+        env:
+          TEST_PKG: ./test/e2e/tests
+        run: |
+          # Redirect the whole subshell so it holds no handle on this step's output.
+          (make warm-e2e-test; echo $? > "$RUNNER_TEMP/warm-e2e-test.exit") \
+            < /dev/null > "$RUNNER_TEMP/warm-e2e-test.log" 2>&1 &
       # The dotenv action is used to load key-value pairs from files.
       # In this case, the file is specified in the matrix and will contain the versions of the tools to use
       - name: Dotenv Action
-        uses: falti/dotenv-action@a33be0b8cf6a6e6f1b82cc9f3782061ab1022be5 # v1.1.4
+        uses: falti/dotenv-action@fff81fa3263fb96221c521b5e526e57c0c56d760 # v1.2.1
         id: dotenv
         with:
           path: ${{ matrix.version-files.file }}
           log-variables: true
       - name: Download shared e2e images
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: e2e-shared-images
           path: _output/e2e-images
@@ -192,6 +204,12 @@ jobs:
           yq -i '.controller.extraEnv.KGW_ENABLE_ORDERED_ADS = "false"' \
             test/e2e/tests/manifests/common-recommendations.yaml
           echo "Set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=false for ${{ matrix.test.cluster-name }}"
+      - name: Wait for e2e test compile
+        shell: bash
+        run: |
+          while [ ! -f "$RUNNER_TEMP/warm-e2e-test.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/warm-e2e-test.log"
+          exit "$(cat "$RUNNER_TEMP/warm-e2e-test.exit")"
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
         env:

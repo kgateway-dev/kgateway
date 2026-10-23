@@ -214,6 +214,21 @@ type ProxyTranslationPass interface {
 	ResourcesToAdd() Resources
 }
 
+// BackendObjectPolicyApplier is an optional interface a ProxyTranslationPass can implement to
+// contribute per-route config for policies attached to the backend object itself (via targetRefs
+// or targetSelectors on the policy, e.g. a policy targeting a Service), as opposed to
+// ApplyForRouteBackend which handles policies attached via extensionRef on the BackendRef.
+//
+// ApplyForBackendObjectPolicies is called for every backend in a route that has policies of the
+// plugin's kind attached, with the unmerged attachments. It runs on every route translation, so
+// implementations should return early when none of the policies need per-route config, and only
+// then merge them (skipping a merged policy with errors, like cluster translation does).
+// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend,
+// ApplyForRouteBackend and ApplyForBackendObjectPolicies
+type BackendObjectPolicyApplier interface {
+	ApplyForBackendObjectPolicies(policies []PolicyAtt, pCtx *RouteBackendContext) error
+}
+
 type UnimplementedProxyTranslationPass struct{}
 
 var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
@@ -355,6 +370,12 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	}
 
 	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
+}
+
+// VersionEquals reports whether a and b are the same version of a source object, by the rule
+// the IR Equals methods apply to the objects they hold (see versionEquals).
+func VersionEquals(a, b metav1.Object) bool {
+	return versionEquals(a, b)
 }
 
 var ErrNotAttachable = errors.New("policy is not attachable to this object")

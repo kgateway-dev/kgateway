@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -400,6 +401,9 @@ func (s *StrictChurnSuite) setControllerEnv(envExprs ...string) error {
 
 func (s *StrictChurnSuite) TestStrictChurnConvergence() {
 	s.T().Log("=== StrictChurn: strict validation + route/Service churn + controller restart ===")
+	// Runs before TearDownSuite deletes the test namespace, so a failure
+	// leaves the proxy pod/event/controller state in the job log.
+	defer s.dumpDiagnosticsOnFailure()
 
 	// Phase 1: scale fixture — fake Services/EndpointSlices and baseline routes.
 	s.Require().NoError(s.loadTestManager.SetupSimulation(strictChurnBackends, "strict-churn"),
@@ -421,6 +425,17 @@ func (s *StrictChurnSuite) TestStrictChurnConvergence() {
 
 	// Phase 2: a stable route to a real backend, verified working before any
 	// churn. This is the route that must never break.
+	//
+	// WaitForGatewayReadiness only checks the controller-written Programmed
+	// listener condition, which does not wait for the proxy pod. Wait for
+	// each gateway's Envoy deployment to become Ready first, using the same
+	// bound the churn phase gives rolled gateways. A cold Envoy only reports
+	// Ready after it receives its first xDS snapshot, so a withheld first
+	// snapshot (#14184 mode B) still fails here. Otherwise the 30s
+	// stableRouteBound would also have to cover pod scheduling and Envoy
+	// startup, and "connection refused" from a proxy that is not up yet
+	// would look the same as a stable route that broke.
+	s.waitForGatewayProxies(strictChurnGateways)
 	s.createRouteToNginx("stable-route", strictChurnGateways[0], stableRouteHost)
 	s.assertRouteServes(strictChurnGateways[0], stableRouteHost, stableRouteBound)
 	s.T().Log("Stable route serving 200 — starting churn")
@@ -613,6 +628,62 @@ func (s *StrictChurnSuite) startEndpointChurner(ctx context.Context) {
 			writes++
 		}
 	}()
+}
+
+// waitForGatewayProxies requires every gateway's Envoy deployment (named
+// after the Gateway by the deployer) to be created and finish rolling out
+// within a single gatewayRolloutBound per gateway.
+func (s *StrictChurnSuite) waitForGatewayProxies(gateways []string) {
+	bound, err := time.ParseDuration(gatewayRolloutBound)
+	s.Require().NoError(err, "gateway rollout bound must be a duration")
+	for _, gw := range gateways {
+		var lastErr error
+		err := wait.PollUntilContextTimeout(s.ctx, translationPollingInterval, bound, true, func(ctx context.Context) (bool, error) {
+			deployment := &appsv1.Deployment{}
+			lastErr = s.testInstallation.ClusterContext.Client.Get(ctx,
+				types.NamespacedName{Namespace: s.loadTestManager.testNamespace, Name: gw}, deployment)
+			if lastErr != nil {
+				return false, nil //nolint:nilerr // Retry lookup failures until the deadline; lastErr is reported if polling times out.
+			}
+			desired := int32(1)
+			if deployment.Spec.Replicas != nil {
+				desired = *deployment.Spec.Replicas
+			}
+			if !deploymentRolloutReady(deployment, deployment.Generation, desired) {
+				lastErr = fmt.Errorf("deployment rollout incomplete: %s", deploymentRolloutStatus(deployment))
+				return false, nil
+			}
+			return true, nil
+		})
+		s.Require().NoError(err,
+			"gateway %s proxy must become Ready before the stable route is asserted (a cold Envoy must receive its first xDS snapshot); last rollout error: %v; proxy pods: %s",
+			gw, lastErr, s.loadTestManager.proxyPodSummary())
+	}
+}
+
+// dumpDiagnosticsOnFailure logs proxy pod, event and controller state when
+// the test failed, before teardown deletes the namespace.
+func (s *StrictChurnSuite) dumpDiagnosticsOnFailure() {
+	if !s.T().Failed() || s.loadTestManager == nil {
+		return
+	}
+	kubectl := s.testInstallation.Actions.Kubectl()
+	ns := s.loadTestManager.testNamespace
+	s.T().Logf("StrictChurn failure diagnostics: proxy pods: %s", s.loadTestManager.proxyPodSummary())
+	for _, args := range [][]string{
+		{"get", "deploy,pods", "-n", ns, "-o", "wide"},
+		{"get", "events", "-n", ns, "--sort-by=.lastTimestamp"},
+		{"get", "pods", "-n", s.installNamespace, "-o", "wide"},
+		{"logs", "-l", controllerSelector(), "-n", s.installNamespace, "--all-containers", "--prefix", "--tail=300"},
+	} {
+		stdout, stderr, err := kubectl.Execute(s.ctx, args...)
+		s.T().Logf("kubectl %s (err=%v):\n%s%s", strings.Join(args, " "), err, stdout, stderr)
+	}
+	for _, gw := range strictChurnGateways {
+		selector := "gateway.networking.k8s.io/gateway-name=" + gw
+		stdout, stderr, err := kubectl.Execute(s.ctx, "logs", "-l", selector, "-n", ns, "--all-containers", "--prefix", "--tail=100")
+		s.T().Logf("kubectl logs -l %s (err=%v):\n%s%s", selector, err, stdout, stderr)
+	}
 }
 
 // rollGateway triggers a rolling restart of a gateway's Envoy deployment

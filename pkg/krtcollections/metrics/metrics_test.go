@@ -261,51 +261,6 @@ func TestResourceSync(t *testing.T) {
 
 	StartResourceSyncMetricsProcessing(ctx)
 
-	// Test for resource status sync metrics.
-	StartResourceStatusSync(ResourceSyncDetails{
-		Gateway:      details.Gateway,
-		Namespace:    details.Namespace,
-		ResourceType: details.ResourceType,
-		ResourceName: details.ResourceName,
-	})
-
-	EndResourceStatusSync(details)
-
-	gathered := metricstest.MustGatherMetricsContext(ctx, t,
-		"kgateway_resources_status_syncs_started_total",
-		"kgateway_resources_status_syncs_completed_total",
-		"kgateway_resources_status_sync_duration_seconds",
-	)
-
-	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_started_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: "gateway", Value: details.Gateway},
-				{Name: "namespace", Value: details.Namespace},
-				{Name: "resource", Value: details.ResourceType},
-			},
-			Value: 1,
-		},
-	})
-
-	gathered.AssertMetricsInclude("kgateway_resources_status_syncs_completed_total", []metricstest.ExpectMetric{
-		&metricstest.ExpectedMetric{
-			Labels: []metrics.Label{
-				{Name: "gateway", Value: details.Gateway},
-				{Name: "namespace", Value: details.Namespace},
-				{Name: "resource", Value: details.ResourceType},
-			},
-			Value: 1,
-		},
-	})
-
-	gathered.AssertMetricsLabels("kgateway_resources_status_sync_duration_seconds", [][]metrics.Label{{
-		{Name: "gateway", Value: details.Gateway},
-		{Name: "namespace", Value: details.Namespace},
-		{Name: "resource", Value: details.ResourceType},
-	}})
-	gathered.AssertHistogramPopulated("kgateway_resources_status_sync_duration_seconds")
-
 	// Test for resource XDS snapshot sync metrics.
 	StartResourceXDSSync(ResourceSyncDetails{
 		Gateway:      details.Gateway,
@@ -316,7 +271,7 @@ func TestResourceSync(t *testing.T) {
 
 	EndResourceXDSSync(details)
 
-	gathered = metricstest.MustGatherMetricsContext(ctx, t,
+	gathered := metricstest.MustGatherMetricsContext(ctx, t,
 		"kgateway_xds_snapshot_syncs_total",
 		"kgateway_xds_snapshot_sync_duration_seconds",
 	)

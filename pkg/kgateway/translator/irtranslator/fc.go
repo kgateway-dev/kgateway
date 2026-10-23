@@ -2,6 +2,7 @@ package irtranslator
 
 import (
 	"fmt"
+	"strings"
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -31,6 +32,18 @@ const (
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
+
+// statPrefixOrDefault returns the chain's StatPrefix, or def when it is unset,
+// with "." replaced by "_". Envoy uses "." as the stats-tree separator and its
+// default tag extractors (e.g. "tcp.$.**") capture a single segment, so a
+// dotted stat_prefix would leak into the metric name instead of the tag.
+func statPrefixOrDefault(fcc ir.FilterChainCommon, def string) string {
+	statPrefix := fcc.StatPrefix
+	if statPrefix == "" {
+		statPrefix = def
+	}
+	return strings.ReplaceAll(statPrefix, ".", "_")
+}
 
 type filterChainTranslator struct {
 	listener        ir.ListenerIR
@@ -118,6 +131,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(l ir.HttpFilterChai
 		pluginPass:        n.pluginPass,
 		listenerReporter:  listenerReporter,
 		reporter:          n.reporter,
+		listener:          l,         // policies attached to listener; also used to derive HCM stat_prefix
 		gateway:           n.gateway, // corresponds to Gateway API listener
 		policyAncestorRef: n.listener.PolicyAncestorRef,
 	}
@@ -250,10 +264,7 @@ func (h *hcmNetworkFilterTranslator) computeNetworkFilters(l ir.HttpFilterChainI
 }
 
 func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionManager {
-	statPrefix := h.listener.FilterChainName
-	if statPrefix == "" {
-		statPrefix = DefaultHttpStatPrefix
-	}
+	statPrefix := statPrefixOrDefault(h.listener.FilterChainCommon, DefaultHttpStatPrefix)
 
 	return &envoyhttp.HttpConnectionManager{
 		CodecType:        envoyhttp.HttpConnectionManager_AUTO,
@@ -433,7 +444,7 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 	networkFilters := sortNetworkFilters(h.computeCustomFilters(l.CustomNetworkFilters, listenerReporter))
 
 	cfg := &envoytcp.TcpProxy{
-		StatPrefix: l.FilterChainName,
+		StatPrefix: statPrefixOrDefault(l.FilterChainCommon, l.FilterChainName),
 	}
 	if h.reporter != nil {
 		for _, backend := range l.BackendRefs {

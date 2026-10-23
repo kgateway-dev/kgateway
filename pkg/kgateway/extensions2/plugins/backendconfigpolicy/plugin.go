@@ -33,7 +33,6 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -60,6 +59,8 @@ type BackendConfigPolicyIR struct {
 	dnsJitter                     *durationpb.Duration
 	respectDnsTtl                 *bool
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
+	tunnel                        *tunnelIR
+	sessionPersistence            *sessionPersistenceIR
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -139,6 +140,12 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
 		return false
 	}
+	if !d.tunnel.Equals(d2.tunnel) {
+		return false
+	}
+	if !d.sessionPersistence.Equals(d2.sessionPersistence) {
+		return false
+	}
 	return true
 }
 
@@ -148,7 +155,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 		wellknown.BackendConfigPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
-	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
+	// Expose only redacted policy copies in KRT diagnostics.
+	rawOpts := commoncol.KrtOpts
+	rawOpts.Debugger = nil
+	col := krt.WrapClient(cli, rawOpts.ToOptions("BackendConfigPolicy")...)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) *ir.PolicyWrapper {
@@ -164,7 +174,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Namespace: b.Namespace,
 				Name:      b.Name,
 			},
-			Policy:     b,
+			Policy:     redactPolicyCredentials(b),
 			PolicyIR:   policyIR,
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
 			Errors:     errs,
@@ -178,17 +188,17 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:                   "BackendConfigPolicy",
-				Policies:               backendConfigPolicyCol,
-				ProcessBackend:         processBackend,
-				PerClientEditEndpoints: endpointPlugin.processEndpoints,
+				Name:                        "BackendConfigPolicy",
+				Policies:                    backendConfigPolicyCol,
+				NewGatewayTranslationPass:   newGatewayTranslationPass,
+				ProcessBackend:              processBackend,
+				ProcessBaseClusterResources: newTunnelHook(commoncol),
+				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
 				// processEndpoints reads only the BackendConfigPolicies attached
 				// to the backend, so a backend with none attached can have its
 				// inline CLA built once on the shared base.
 				PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
-				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
-				},
+				MergePolicies:              mergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					wellknown.BackendConfigPolicyGVK,
 					col,
@@ -230,6 +240,14 @@ func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
 
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
+	if pol.sessionPersistence != nil {
+		// Session persistence is applied per route (see ApplyForBackendObjectPolicies). Notes about how it
+		// behaves for this backend are logged here; the ones that need attention are also reported in the
+		// policy status (see PartiallyValidMessages).
+		if note, _ := sessionPersistenceBackendNote(backend); note != "" {
+			logger.Debug("sessionPersistence behaves differently for this backend", "backend", backend.ResourceName(), "note", note)
+		}
+	}
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
 	}
@@ -408,6 +426,23 @@ func translate(
 	}
 	if pol.Spec.UpstreamProxyProtocol != nil {
 		ir.upstreamProxyProtocol = translateUpstreamProxyProtocol(pol.Spec.UpstreamProxyProtocol)
+	}
+	if pol.Spec.Tunnel != nil {
+		tunnel, err := translateTunnel(krtctx, commoncol.Secrets, pol.Namespace, pol.Name, pol.Spec.Tunnel)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		ir.tunnel = tunnel
+	}
+	if pol.Spec.SessionPersistence != nil {
+		sp, err := translateSessionPersistence(pol.Spec.SessionPersistence)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if sp != nil {
+			sp.absoluteTimeoutIgnored = absoluteTimeoutIgnored(pol.Spec.SessionPersistence)
+		}
+		ir.sessionPersistence = sp
 	}
 	return &ir, errs
 }

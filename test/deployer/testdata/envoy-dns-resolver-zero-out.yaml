@@ -299,6 +299,10 @@ spec:
         - $(POD_NAME).$(POD_NAMESPACE)
         - --log-level
         - info
+        - --drain-time-s
+        - "60"
+        - --drain-strategy
+        - immediate
         env:
         - name: POD_NAME
           valueFrom:
@@ -331,9 +335,6 @@ spec:
                 sleep 10
         name: kgateway-proxy
         ports:
-        - containerPort: 8080
-          name: listener-8080
-          protocol: TCP
         - containerPort: 9091
           name: http-monitoring
         readinessProbe:

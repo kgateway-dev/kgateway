@@ -43,6 +43,14 @@ data:
           envoy.restart_features.use_eds_cache_for_ads: true
       - name: admin_layer
         admin_layer: {}
+    {{- with $gateway.maxDownstreamConnections }}
+    overload_manager:
+      resource_monitors:
+        - name: envoy.resource_monitors.global_downstream_max_connections
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+            max_active_downstream_connections: {{ . }}
+    {{- end }}
     node:
       cluster: {{ $localClusterName | quote }}
       metadata:

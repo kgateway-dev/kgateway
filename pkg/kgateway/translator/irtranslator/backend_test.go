@@ -28,6 +28,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
 func newTestBackend(objSrc ir.ObjectSource, port int32) *ir.BackendObjectIR {
@@ -609,7 +610,7 @@ func TestApplyPerClient_StrictModePassesValidOverlay(t *testing.T) {
 	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = &mockValidator{
 		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-			validated = append(validated, config.GetStaticResources().GetClusters()...)
+			validated = append(validated, bootstrap.ValidatedClusters(config)...)
 			return nil
 		},
 	}
@@ -652,7 +653,7 @@ func inlineCLAStrictTranslator(distribution wellknown.TrafficDistribution, valid
 	bt.Mode = apisettings.ValidationStrict
 	bt.Validator = &mockValidator{
 		validateFunc: func(ctx context.Context, config *envoybootstrapv3.Bootstrap) error {
-			for _, c := range config.GetStaticResources().GetClusters() {
+			for _, c := range bootstrap.ValidatedClusters(config) {
 				*validated = append(*validated, c)
 				if c.GetLoadAssignment() == nil {
 					return errors.New("clusters must have a load_assignment")

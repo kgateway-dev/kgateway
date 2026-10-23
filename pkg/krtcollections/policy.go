@@ -27,7 +27,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -483,6 +482,7 @@ type GatewayIndexConfig struct {
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
 	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwv1.ListenerSet]
+	listenerSetIRsByParentRef             krt.Index[TargetRefIndexKey, listenerSetIRRef]
 }
 
 func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption) *GatewayIndex {
@@ -494,9 +494,59 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 		return h
 	}
 
-	h.Gateways = krt.NewCollection(config.Gateways, config.gatewaysForEnvoyTransformationFunc(&config), config.KrtOpts.ToOptions("gateways")...)
+	// Each ListenerSet's listeners and attached policies are built in a collection of their own,
+	// so a change to one ListenerSet rebuilds only that one instead of every ListenerSet on the
+	// Gateway. ir.ListenerSet.Equals compares the source object by version, so a status-only
+	// write to a ListenerSet rebuilds only its IR and stops there.
+	listenerSetIRs := krt.NewCollection(config.ListenerSets, func(kctx krt.HandlerContext, ls *gwv1.ListenerSet) *listenerSetIRRef {
+		// Nothing reads the IR of a ListenerSet under another controller's Gateway, so skip its
+		// policy lookups.
+		if !envoyOwnsParent(kctx, &config, ls) {
+			return nil
+		}
+		return &listenerSetIRRef{listenerSetIR(kctx, config.PolicyIndex, ls)}
+	}, config.KrtOpts.ToOptions("ListenerSetIRs")...)
+	config.listenerSetIRsByParentRef = krtpkg.UnnamedIndex(listenerSetIRs, func(in listenerSetIRRef) []TargetRefIndexKey {
+		return listenerSetParentRefKeys(in.Obj.(*gwv1.ListenerSet))
+	})
+	// The Envoy transformation reads only the Gateway's spec and metadata, so feed it from a
+	// projection that drops status-only writes. Otherwise every Gateway status write re-runs it
+	// over all of the Gateway's ListenerSets, only for Gateway.Equals to discard the result.
+	gatewaySpecs := krt.NewCollection(config.Gateways, func(_ krt.HandlerContext, gw *gwv1.Gateway) *gatewaySpec {
+		return &gatewaySpec{gw: gw}
+	}, config.KrtOpts.ToOptions("GatewaySpecs")...)
+	envoyTransformation := config.gatewaysForEnvoyTransformationFunc(&config)
+	h.Gateways = krt.NewCollection(gatewaySpecs, func(kctx krt.HandlerContext, gw gatewaySpec) *ir.Gateway {
+		return envoyTransformation(kctx, gw.gw)
+	}, config.KrtOpts.ToOptions("gateways")...)
 
 	return h
+}
+
+// gatewaySpec wraps a Gateway so that KRT compares it with ir.VersionEquals rather than by
+// value: a status-only write bumps resourceVersion but leaves generation, labels and
+// annotations alone, so it stops here. The wrapped Gateway is the one from the last change
+// that got through.
+type gatewaySpec struct {
+	gw *gwv1.Gateway
+}
+
+func (g gatewaySpec) ResourceName() string {
+	return krt.GetKey(g.gw)
+}
+
+func (g gatewaySpec) Equals(in gatewaySpec) bool {
+	return ir.VersionEquals(g.gw, in.gw)
+}
+
+// listenerSetIRRef holds a ListenerSet's IR by pointer, so that fetching every ListenerSet on a
+// Gateway copies pointers rather than ir.ListenerSet values.
+type listenerSetIRRef struct {
+	*ir.ListenerSet
+}
+
+func (r listenerSetIRRef) Equals(in listenerSetIRRef) bool {
+	return r.ListenerSet.Equals(*in.ListenerSet)
 }
 
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
@@ -587,80 +637,39 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
+		listenerSets := config.listenerSetIRsByParentRef.Fetch(kctx, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
-		}))
+		})
+		// Make room for every ListenerSet listener up front rather than regrowing per ListenerSet.
+		numListeners := len(gwIR.Listeners)
+		for _, ls := range listenerSets {
+			numListeners += len(ls.Listeners)
+		}
+		gwIR.Listeners = append(make([]ir.Listener, 0, numListeners), gwIR.Listeners...)
 
 		// Sort by listener precedence
 		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
 		// - ListenerSet ordered by creation time (oldest first)
 		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
+		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int {
 			// primary sort: creation timestamp (oldest first)
-			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
+			if cmp := a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time); cmp != 0 {
 				return cmp
 			}
 			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls *gwv1.ListenerSet) string {
-				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
+			nnsString := func(ls listenerSetIRRef) string {
+				return ls.Namespace + "/" + ls.Name
 			}
 			return strings.Compare(nnsString(a), nnsString(b))
 		})
 
-		// Start the resource sync metrics for all ListenerSets before they are processed,
-		// so they do not have staggered start times.
 		for _, ls := range listenerSets {
-			metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-				Namespace: ls.Namespace,
-				Gateway:   gw.GetName(),
-				// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
-				// follow-up cleanup so dashboards, tests, and emitters can be updated together.
-				ResourceType: "XListenerSet",
-				ResourceName: ls.Name,
-			})
-		}
-
-		for _, ls := range listenerSets {
-			if ls.GroupVersionKind().Empty() {
-				ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
-			}
-			lsGVK := ls.GroupVersionKind()
-
-			lsIR := ir.ListenerSet{
-				ObjectSource: ir.ObjectSource{
-					Group:     lsGVK.Group,
-					Kind:      lsGVK.Kind,
-					Namespace: ls.Namespace,
-					Name:      ls.Name,
-				},
-				Obj:       ls,
-				Listeners: make([]ir.Listener, 0),
-			}
-			listenerSetPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
-
-			for _, l := range ls.Spec.Listeners {
-				listenerSpecificPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
-				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
-				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
-				// Ensure the sectioned policies are first
-				listenerPolicies := slices.Clone(listenerSpecificPolicies)
-				listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
-
-				lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
-					Listener:         utils.ToListener(l),
-					Parent:           ls,
-					AttachedPolicies: ToAttachedPolicies(listenerPolicies),
-					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     new(gwv1.Group(lsGVK.Group)),
-						Kind:      new(gwv1.Kind(lsGVK.Kind)),
-						Name:      gwv1.ObjectName(ls.Name),
-						Namespace: new(gwv1.Namespace(ls.Namespace)),
-					},
-				})
-			}
+			// A copy, since Err is set per Gateway.
+			lsIR := *ls.ListenerSet
+			lsGVK := lsIR.Obj.GetObjectKind().GroupVersionKind()
 
 			if gw.Spec.AllowedListeners == nil {
 				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
@@ -677,7 +686,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
-			if !allowedNs(kctx, ls.GetNamespace()) {
+			if !allowedNs(kctx, lsIR.Namespace) {
 				lsIR.Err = errors.New("Attachment not allowed")
 				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
@@ -698,6 +707,67 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 		return gwIR
 	}
+}
+
+// envoyOwnsParent reports whether a ListenerSet's parent Gateway has a class that the Envoy
+// controller owns, the check the Envoy Gateway transformation makes. It reads only the Gateway's
+// class name and the class's controller name, so other writes to either do not rebuild the
+// ListenerSet's IR.
+func envoyOwnsParent(kctx krt.HandlerContext, config *GatewayIndexConfig, ls *gwv1.ListenerSet) bool {
+	parent := listenerSetParentRefKeys(ls)[0]
+	className := krt.PartialFetchComparable(kctx, config.Gateways, func(gw *gwv1.Gateway) gwv1.ObjectName {
+		return gw.Spec.GatewayClassName
+	}, krt.FilterKey(parent.Namespace+"/"+parent.Name))
+	if len(className) == 0 {
+		return false
+	}
+	controller := krt.PartialFetchComparable(kctx, config.GatewayClasses, func(gc *gwv1.GatewayClass) gwv1.GatewayController {
+		return gc.Spec.ControllerName
+	}, krt.FilterKey(string(className[0])))
+	return len(controller) > 0 && string(controller[0]) == config.EnvoyControllerName
+}
+
+// listenerSetIR builds a ListenerSet's listeners with the policies attached to them. Whether the
+// parent Gateway admits the ListenerSet is left to the Gateway transformation, which sets Err.
+func listenerSetIR(kctx krt.HandlerContext, policyIndex *PolicyIndex, ls *gwv1.ListenerSet) *ir.ListenerSet {
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	lsGVK := ls.GroupVersionKind()
+
+	lsIR := &ir.ListenerSet{
+		ObjectSource: ir.ObjectSource{
+			Group:     lsGVK.Group,
+			Kind:      lsGVK.Kind,
+			Namespace: ls.Namespace,
+			Name:      ls.Name,
+		},
+		Obj:       ls,
+		Listeners: make([]ir.Listener, 0),
+	}
+	listenerSetPolicies := policyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
+
+	for _, l := range ls.Spec.Listeners {
+		listenerSpecificPolicies := policyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
+		// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
+		// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
+		// Ensure the sectioned policies are first
+		listenerPolicies := slices.Clone(listenerSpecificPolicies)
+		listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
+
+		lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
+			Listener:         utils.ToListener(l),
+			Parent:           ls,
+			AttachedPolicies: ToAttachedPolicies(listenerPolicies),
+			PolicyAncestorRef: gwv1.ParentReference{
+				Group:     new(gwv1.Group(lsGVK.Group)),
+				Kind:      new(gwv1.Kind(lsGVK.Kind)),
+				Name:      gwv1.ObjectName(ls.Name),
+				Namespace: new(gwv1.Namespace(ls.Namespace)),
+			},
+		})
+	}
+	return lsIR
 }
 
 func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
@@ -1224,9 +1294,11 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.httpRoutes = krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
+	// Each route collection is debounced where it is built, so Gateway translation sees a burst of route changes as
+	// one batch, whether it reads routes by parent or follows delegation to child routes.
+	h.httpRoutes = debounceForTranslation(krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 		return h.transformHttpRoute(kctx, i)
-	}, krtopts.ToOptions("http-routes-with-policy")...)
+	}, krtopts.ToOptions("http-routes-with-policy")...), krtopts, globalSettings, "http-routes-debounced")
 
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
@@ -1234,17 +1306,17 @@ func NewRoutesIndex(
 
 	var tcpRoutesCollection, tlsRoutesCollection, grpcRoutesCollection krt.Collection[RouteWrapper]
 
-	grpcRoutesCollection = krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
+	grpcRoutesCollection = debounceForTranslation(krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformGRPCRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
+	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...), krtopts, globalSettings, "routes-grpc-routes-debounced")
 
-	tcpRoutesCollection = krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
+	tcpRoutesCollection = debounceForTranslation(krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTcpRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
+	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...), krtopts, globalSettings, "routes-tcp-routes-debounced")
 
-	tlsRoutesCollection = krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
+	tlsRoutesCollection = debounceForTranslation(krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
+	}, krtopts.ToOptions("routes-tls-routes-with-policy")...), krtopts, globalSettings, "routes-tls-routes-debounced")
 
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
@@ -1678,6 +1750,9 @@ func weight(w *int32) uint32 {
 }
 
 func ToAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts) ir.AttachedPolicies {
+	if len(policies) == 0 {
+		return ir.AttachedPolicies{}
+	}
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -1791,6 +1866,9 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 		// Validate all CA certificate references
 		validCARefs := make([]gwv1.ObjectReference, 0)
 		for _, ref := range frontendTLS.Default.Validation.CACertificateRefs {
+			// Normalize "core" to "" before validating and storing the ref, so the
+			// listener translator later resolves it as a core ConfigMap/Secret.
+			ref.Group = gwv1.Group(emptyIfCore(string(ref.Group)))
 			if err := validateCAReferenceType(ref); err != nil {
 				result.DefaultError = errors.Join(result.DefaultError, err)
 			} else {
@@ -1814,6 +1892,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 			// Validate all CA certificate references
 			validCARefs := make([]gwv1.ObjectReference, 0)
 			for _, ref := range portConfig.TLS.Validation.CACertificateRefs {
+				ref.Group = gwv1.Group(emptyIfCore(string(ref.Group)))
 				if err := validateCAReferenceType(ref); err != nil {
 					result.PortErrors[portConfig.Port] = errors.Join(result.PortErrors[portConfig.Port], err)
 				} else {

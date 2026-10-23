@@ -40,6 +40,8 @@ type BackendConfigPolicyList struct {
 // BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
 //
 // +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || !has(self.targetSelectors)",message="tunnel does not support targetSelectors"
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r, r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="tunnel requires targetRefs that reference Backends"
 type BackendConfigPolicySpec struct {
 	// TargetRefs specifies the target references to attach the policy to.
 	// +optional
@@ -86,12 +88,12 @@ type BackendConfigPolicySpec struct {
 
 	// Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
 	// Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
-	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http2protocoloptions) for more details.
 	// +optional
 	Http2ProtocolOptions *Http2ProtocolOptions `json:"http2ProtocolOptions,omitempty"`
 
 	// TLS contains the options necessary to configure a backend to use TLS origination.
-	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-upstreamtlscontext) for more details.
 	// +optional
 	TLS *TLS `json:"tls,omitempty"`
 
@@ -118,6 +120,180 @@ type BackendConfigPolicySpec struct {
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
 	// +optional
 	UpstreamProxyProtocol *UpstreamProxyProtocol `json:"upstreamProxyProtocol,omitempty"`
+
+	// Tunnel sends Backend connections through an HTTP CONNECT proxy.
+	// Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+	// Requires Backend targetRefs; targetSelectors are not supported.
+	// +optional
+	Tunnel *Tunnel `json:"tunnel,omitempty"`
+
+	// SessionPersistence pins a client to one endpoint of the backend using a
+	// cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+	// the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+	// splits traffic, it only pins a client to an endpoint within the backend
+	// chosen by the split. When set, it takes precedence over the
+	// sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+	//
+	// This field is experimental and subject to breaking changes. It mirrors the
+	// experimental Gateway API SessionPersistence type (v1.7).
+	// +optional
+	SessionPersistence *SessionPersistence `json:"sessionPersistence,omitempty"`
+}
+
+// SessionPersistence defines the desired state of SessionPersistence.
+// It mirrors the Gateway API v1.7 SessionPersistence type.
+//
+// This type is experimental and subject to breaking changes.
+// +kubebuilder:validation:XValidation:message="AbsoluteTimeout must be specified when cookie lifetimeType is Permanent",rule="!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType != 'Permanent' || has(self.absoluteTimeout)"
+// +kubebuilder:validation:XValidation:message="cookie must be nil if type is not Cookie",rule="!has(self.cookie) || self.type == 'Cookie'"
+// +kubebuilder:validation:XValidation:message="cookie must be specified for Cookie type",rule="self.type != 'Cookie' || has(self.cookie)"
+// +kubebuilder:validation:XValidation:message="header must be nil if type is not Header",rule="!has(self.header) || self.type == 'Header'"
+// +kubebuilder:validation:XValidation:message="header must be specified for Header type",rule="self.type != 'Header' || has(self.header)"
+type SessionPersistence struct {
+	// AbsoluteTimeout defines the absolute timeout of the persistent
+	// session. Once the AbsoluteTimeout duration has elapsed, the
+	// session becomes invalid.
+	//
+	// Only cookie sessions with lifetimeType Permanent support this field, where it
+	// sets the cookie lifetime. It has no effect for header sessions and for Session
+	// cookies (the default lifetimeType), as the gateway does not track the session
+	// lifetime separately from the cookie.
+	//
+	// +optional
+	AbsoluteTimeout *gwv1.Duration `json:"absoluteTimeout,omitempty"`
+
+	// Type defines the type of session persistence such as through
+	// the use of a header or cookie. Defaults to cookie based session
+	// persistence.
+	//
+	// +unionDiscriminator
+	// +optional
+	// +kubebuilder:default=Cookie
+	Type *SessionPersistenceType `json:"type,omitempty"`
+
+	// Cookie provides configuration settings that are specific
+	// to cookie-based session persistence.
+	//
+	// +optional
+	Cookie *SessionPersistenceCookieConfig `json:"cookie,omitempty"`
+
+	// Header provides configuration settings that are specific
+	// to header-based session persistence.
+	//
+	// +optional
+	Header *SessionPersistenceHeaderConfig `json:"header,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Cookie;Header
+type SessionPersistenceType string
+
+const (
+	// CookieBasedSessionPersistence specifies cookie-based session
+	// persistence.
+	CookieBasedSessionPersistence SessionPersistenceType = "Cookie"
+
+	// HeaderBasedSessionPersistence specifies header-based session
+	// persistence.
+	HeaderBasedSessionPersistence SessionPersistenceType = "Header"
+)
+
+// SessionPersistenceCookieConfig defines the configuration for cookie-based session persistence.
+type SessionPersistenceCookieConfig struct {
+	// Name defines the name of the cookie used for session persistence.
+	// If not specified, a unique cookie name is generated for each backend.
+	// Users should avoid reusing cookie names to prevent unintended
+	// consequences, such as rejection or unpredictable behavior. Avoid using the
+	// same cookie name for backends in the same traffic split, as clients lose
+	// their session whenever the split switches backends.
+	//
+	// +optional
+	Name *CookieName `json:"name,omitempty"`
+
+	// Path defines the cookie Path attribute. Defaults to "/".
+	//
+	// +optional
+	// +kubebuilder:default="/"
+	// +kubebuilder:validation:MaxLength=1024
+	Path *string `json:"path,omitempty"`
+
+	// LifetimeType specifies whether the cookie has a permanent or
+	// session-based lifetime. A permanent cookie persists until its
+	// specified expiry time, defined by the Expires or Max-Age cookie
+	// attributes, while a session cookie is deleted when the current
+	// session ends.
+	//
+	// When set to "Permanent", AbsoluteTimeout indicates the
+	// cookie's lifetime via the Expires or Max-Age cookie attributes
+	// and is required.
+	//
+	// When set to "Session", AbsoluteTimeout has no effect, as the
+	// gateway does not track the session lifetime separately from
+	// the cookie.
+	//
+	// Defaults to "Session".
+	//
+	// +optional
+	// +kubebuilder:default=Session
+	LifetimeType *CookieLifetimeType `json:"lifetimeType,omitempty"`
+}
+
+// CookieName is the name of a cookie. Cookie names and header names share the
+// same RFC token character set (RFC 6265 defines cookie-name = token).
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
+// +k8s:deepcopy-gen=false
+type CookieName string
+
+// +kubebuilder:validation:Enum=Permanent;Session
+type CookieLifetimeType string
+
+const (
+	// SessionCookieLifetimeType specifies the type for a session
+	// cookie.
+	SessionCookieLifetimeType CookieLifetimeType = "Session"
+
+	// PermanentCookieLifetimeType specifies the type for a permanent
+	// cookie.
+	PermanentCookieLifetimeType CookieLifetimeType = "Permanent"
+)
+
+// SessionPersistenceHeaderConfig defines the configuration for header-based session persistence.
+type SessionPersistenceHeaderConfig struct {
+	// Name defines the name of the header used for session persistence.
+	// The client must include this header in subsequent requests to
+	// maintain the session. Avoid using the same header name for backends in
+	// the same traffic split, as clients lose their session whenever the split
+	// switches backends.
+	//
+	// +required
+	Name gwv1.HeaderName `json:"name"`
+}
+
+// Tunnel configures HTTP CONNECT tunneling through a forward proxy.
+type Tunnel struct {
+	// Proxy identifies the forward proxy that establishes the tunnel.
+	// +required
+	Proxy TunnelProxy `json:"proxy"`
+
+	// Headers are sent only on CONNECT requests. Each requires a name and
+	// exactly one of value or secretRef.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(h, has(h.name))",message="tunnel headers require a name"
+	// +kubebuilder:validation:XValidation:rule="self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')",message="tunnel headers cannot set Host"
+	Headers []shared.HTTPHeader `json:"headers,omitempty"`
+}
+
+// TunnelProxy identifies the forward proxy for a tunnel.
+type TunnelProxy struct {
+	// BackendRef references the proxy Service or Backend. CONNECT uses that
+	// backend's HTTP protocol.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="(self.group == '' && self.kind == 'Service') || (self.group == 'gateway.kgateway.dev' && self.kind == 'Backend')",message="proxy backendRef must reference a Service or a Backend"
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 }
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
@@ -779,6 +955,13 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	EnforcingConsecutive5xx *int32 `json:"enforcingConsecutive5xx,omitempty"`
+
+	// The number of consecutive gateway failures (502, 503 and 504 status
+	// codes) before a host is ejected. When set, ejection is always enforced.
+	// When unset, consecutive gateway failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ConsecutiveGatewayFailure *int32 `json:"consecutiveGatewayFailure,omitempty"`
 
 	// Determines whether to distinguish locally originated failures from
 	// externally generated errors. When true, consecutiveLocalOriginFailure and
