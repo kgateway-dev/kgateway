@@ -42,6 +42,7 @@ func getLocalChartPath(rootDir string, chartName string, assetDir string) (strin
 		if err == nil {
 			return chartPath, nil
 		}
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Info("falling back to unpackaged Helm chart", "chart", chartName, "assetDir", testAssetDir, "error", err)
 	}
 

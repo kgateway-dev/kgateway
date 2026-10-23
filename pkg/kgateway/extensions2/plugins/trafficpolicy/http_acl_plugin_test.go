@@ -20,7 +20,7 @@ func TestHttpACLIREquals(t *testing.T) {
 				Name: httpACLModuleName,
 			},
 			FilterName:         httpACLFilterName,
-			PerRouteConfigName: httpACLFilterName,
+			PerRouteConfigName: httpACLFilterName, //nolint:staticcheck // SA1019: PerRouteConfigName is kept for legacy migration purposes
 			FilterConfig:       filterCfg,
 		}
 	}
