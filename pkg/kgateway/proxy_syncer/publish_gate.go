@@ -432,10 +432,14 @@ func (g *publishGate) resolveDeferredLocked(
 	// A deferred build can add a new cluster too (a retarget alongside an
 	// unrelated gap) and gets the same hold.
 	newlyEmitted, aheadFor := g.referenceAheadLocked(snapWrap.proxyKey, snapWrap, published, now)
-	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published)) > 0
+	var pending []string
+	if pf := g.pendingFlips[snapWrap.proxyKey]; pf != nil {
+		pending = pf.blocking
+	}
+	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published, pending)) > 0
 	graced, opened := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, holding, now)
-	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, pending, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	switch {
 	case len(heldBlocking) > 0:
@@ -673,9 +677,6 @@ func (g *publishGate) publishHeldLocked(
 	now := time.Now()
 	pf := g.pendingFlips[proxyKey]
 	if pf == nil {
-		if g.budget <= 0 && len(ahead) == 0 {
-			return nil // nothing bounds this hold: it lasts until the flip resolves
-		}
 		pf = &pendingFlipRelease{since: now}
 		g.pendingFlips[proxyKey] = pf
 		logger.Info("holding route flip until its clusters are ready and delivered",
@@ -786,7 +787,7 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	// open now.
 	graced, opened := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, false, time.Now())
-	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, graced, g.lastPublishedEDSLocked(proxyKey))
+	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, nil, graced, g.lastPublishedEDSLocked(proxyKey))
 	// A reference-ahead window closing on its own is expected. Warn and count a
 	// bounded publish only when the budget cut one short.
 	mode := boundedPublishFlipRelease
