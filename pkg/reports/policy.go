@@ -250,16 +250,13 @@ func addAttachmentCondition(conditions []metav1.Condition, attachmentState repor
 	// avoid modifying the existing Conditions on the report
 	existing := slices.Clone(conditions)
 
+	// A policy attached or merged on at least one target and overridden on another
+	// is partially applied, so report Attached=True with reason Merged.
+	// Attached=False with reason Overridden is only reported when it was overridden everywhere
+	// under this ancestor and attached nowhere.
 	switch {
-	case attachmentState.Has(reporter.PolicyAttachmentStateOverridden):
-		meta.SetStatusCondition(&existing, metav1.Condition{
-			Type:    string(shared.PolicyConditionAttached),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(shared.PolicyReasonOverridden),
-			Message: reporter.PolicyOverriddenMsg,
-		})
-
-	case attachmentState.Has(reporter.PolicyAttachmentStateMerged):
+	case attachmentState.Has(reporter.PolicyAttachmentStateMerged) ||
+		(attachmentState.Has(reporter.PolicyAttachmentStateAttached) && attachmentState.Has(reporter.PolicyAttachmentStateOverridden)):
 		meta.SetStatusCondition(&existing, metav1.Condition{
 			Type:    string(shared.PolicyConditionAttached),
 			Status:  metav1.ConditionTrue,
@@ -273,6 +270,14 @@ func addAttachmentCondition(conditions []metav1.Condition, attachmentState repor
 			Status:  metav1.ConditionTrue,
 			Reason:  string(shared.PolicyReasonAttached),
 			Message: reporter.PolicyAttachedMsg,
+		})
+
+	case attachmentState.Has(reporter.PolicyAttachmentStateOverridden):
+		meta.SetStatusCondition(&existing, metav1.Condition{
+			Type:    string(shared.PolicyConditionAttached),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(shared.PolicyReasonOverridden),
+			Message: reporter.PolicyOverriddenMsg,
 		})
 	}
 
