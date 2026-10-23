@@ -133,3 +133,26 @@ func TestDereferenceGraceStartsAfterASlowFlipReleaseInstall(t *testing.T) {
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
 		"old still leaves once its grace closes")
 }
+
+// An installation that crosses an open window's deadline leaves that
+// deadline's prune queued on the gate lock. The prune must re-publish the build
+// just installed, not the older one it was armed with.
+func TestDereferencePruneQueuedDuringASlowInstallKeepsTheNewerBuild(t *testing.T) {
+	grace := 200 * time.Millisecond
+	cache := &slowInstallCache{SnapshotCache: newTestSnapshotCache(t)}
+	translator := NewProxyTranslator(cache, stubPriorXDS{has: true}, time.Hour, true, scopedClustersWithGrace(grace))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new")) // old's window opens; its prune is armed with v2
+	time.Sleep(grace * 3 / 4)
+	cache.delay.Store(int64(grace))
+	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new")) // still keeps old, and installs past its deadline
+	cache.delay.Store(0)
+
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
+		"old's prune runs")
+	assert.Equal(t, "v3", publishedListenerVersionOf(t, pt), "the prune re-publishes the newer build, not the one it was armed with")
+}

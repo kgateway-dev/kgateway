@@ -196,10 +196,17 @@ func (g *publishGate) armDereferenceTimerLocked(
 	in time.Duration,
 ) {
 	state := g.dereferenced[proxyKey]
-	if state == nil || in <= 0 {
+	if state == nil {
 		return
 	}
+	// Record the latest build even when no window is still open. An
+	// installation that crossed a deadline leaves that deadline's prune queued
+	// on the gate lock, and the prune re-publishes state.wrap: an older build
+	// there would roll the client's routes back.
 	state.wrap = wrap
+	if in <= 0 {
+		return
+	}
 	if state.timer != nil {
 		state.timer.Stop()
 	}
