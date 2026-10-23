@@ -26,7 +26,7 @@ MAX=${SUBNET}.255.231
 # Note: each line below must begin with one tab character; this is to get EOF working within
 # an if block. The `-` in the `<<-EOF`` strips out the leading tab from each line, see
 # https://tldp.org/LDP/abs/html/here-docs.html
-kubectl apply -f - <<-EOF
+POOL_CONFIG=$(cat <<-EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -45,3 +45,17 @@ spec:
   ipAddressPools:
     - address-pool
 EOF
+)
+
+# The controller can turn Ready a few seconds before its validating webhook accepts
+# connections, so retry until the webhook admits the pool.
+for attempt in $(seq 1 60); do
+  if kubectl apply -f - <<<"${POOL_CONFIG}"; then
+    break
+  fi
+  if [[ ${attempt} -eq 60 ]]; then
+    echo "MetalLB webhook did not admit the address pool after 60 attempts" >&2
+    exit 1
+  fi
+  sleep 1
+done
