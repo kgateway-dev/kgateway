@@ -837,6 +837,7 @@ func (g *publishGate) clientDeparted(proxyKey string) {
 // forgetConnectionLocked is clientDeparted for callers that hold g.mu.
 func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	g.withdrawLocked(proxyKey)
+	g.cancelFlipReleaseLocked(proxyKey)
 	delete(g.published, proxyKey)
 	delete(g.carriedSince, proxyKey)
 	delete(g.publishedEDS, proxyKey)
@@ -865,6 +866,8 @@ func (g *publishGate) connectionStarted(proxyKey string) {
 // such as during GatewayClass recreation. It cancels pending timers but keeps
 // the published mark: the client still runs that config, so a returning build
 // carries and holds flips against it instead of restarting first publish.
+// Pending routing blockers and their budget start times survive the withdrawal;
+// listeners published during a hold do not resolve its missing resources.
 func (g *publishGate) snapshotWithdrawn(proxyKey string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -873,7 +876,8 @@ func (g *publishGate) snapshotWithdrawn(proxyKey string) {
 
 // withdrawLocked cancels the client's pending first publish, flip release, carry
 // expiry and de-reference prune, keeping the first-publish and warm episodes for
-// a reconnect. Callers must hold g.mu.
+// a reconnect. Routing blockers and their budget timing remain until a new
+// build or connection departure. Callers must hold g.mu.
 func (g *publishGate) withdrawLocked(proxyKey string) {
 	if st := g.pending[proxyKey]; st != nil {
 		if st.timer != nil {
@@ -885,7 +889,15 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 		g.unmarkWarmWithheldLocked(proxyKey, st)
 		delete(g.pending, proxyKey)
 	}
-	g.cancelFlipReleaseLocked(proxyKey)
+	if pf := g.pendingFlips[proxyKey]; pf != nil {
+		if pf.timer != nil {
+			pf.timer.Stop()
+			pf.timer = nil
+		}
+		// Stop cannot recall a callback already waiting on g.mu. Invalidate it
+		// while retaining the blockers and original deadline for a returning row.
+		pf.epoch++
+	}
 	g.cancelCarryExpiryLocked(proxyKey)
 	g.cancelDereferenceTimerLocked(proxyKey)
 }
