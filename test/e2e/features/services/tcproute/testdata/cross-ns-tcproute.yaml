@@ -2,9 +2,12 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: TCPRoute
 metadata:
   name: tcp-route
+  namespace: cross-namespace-allowed-client-ns
 spec:
   parentRefs:
-    - name: gateway
+    - name: tcp-gateway
+      namespace: tcp-route
+      sectionName: listener-8080
   rules:
     - backendRefs:
         - name: backend-svc

@@ -2,9 +2,12 @@ apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TLSRoute
 metadata:
   name: tls-route
+  namespace: client-ns-no-refgrant
 spec:
   parentRefs:
-    - name: gateway
+    - name: tls-gateway
+      namespace: tls-route
+      sectionName: listener-8445
   hostnames:
     - "example.com"
   rules:
