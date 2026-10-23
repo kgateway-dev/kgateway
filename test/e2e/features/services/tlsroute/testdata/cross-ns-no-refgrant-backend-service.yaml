@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend-svc
-  namespace: backend-ns-no-refgrant
+  namespace: tls-no-refgrant-backend
 spec:
   selector:
     app: backend-svc
@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-svc
-  namespace: backend-ns-no-refgrant
+  namespace: tls-no-refgrant-backend
   labels:
     app: backend-svc
 spec:

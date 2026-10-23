@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend-svc
-  namespace: cross-namespace-allowed-backend-ns
+  namespace: tls-cross-ns-backend
 spec:
   selector:
     app: backend-svc
@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-svc
-  namespace: cross-namespace-allowed-backend-ns
+  namespace: tls-cross-ns-backend
   labels:
     app: backend-svc
 spec:

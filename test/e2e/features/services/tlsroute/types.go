@@ -36,16 +36,16 @@ const (
 
 	// Constants for CrossNamespaceTLSRouteWithReferenceGrant
 	crossNsTestName       = "CrossNamespaceTLSRouteWithReferenceGrant"
-	crossNsClientName     = "cross-namespace-allowed-client-ns"
-	crossNsBackendNsName  = "cross-namespace-allowed-backend-ns"
+	crossNsClientName     = "tls-cross-ns-client"
+	crossNsBackendNsName  = "tls-cross-ns-backend"
 	crossNsListenerName   = "listener-8444"
 	crossNsBackendSvcName = "backend-svc"
 	crossNsTLSRouteName   = "tls-route"
 
 	// Constants for CrossNamespaceTLSRouteWithoutReferenceGrant
 	crossNsNoRefGrantTestName      = "CrossNamespaceTLSRouteWithoutReferenceGrant"
-	crossNsNoRefGrantClientNsName  = "client-ns-no-refgrant"
-	crossNsNoRefGrantBackendNsName = "backend-ns-no-refgrant"
+	crossNsNoRefGrantClientNsName  = "tls-no-refgrant-client"
+	crossNsNoRefGrantBackendNsName = "tls-no-refgrant-backend"
 	crossNsNoRefGrantListenerName  = "listener-8445"
 	crossNsNoRefGrantTLSRouteName  = "tls-route"
 )

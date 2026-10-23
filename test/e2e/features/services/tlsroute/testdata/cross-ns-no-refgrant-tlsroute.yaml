@@ -2,7 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TLSRoute
 metadata:
   name: tls-route
-  namespace: client-ns-no-refgrant
+  namespace: tls-no-refgrant-client
 spec:
   parentRefs:
     - name: tls-gateway
@@ -13,5 +13,5 @@ spec:
   rules:
     - backendRefs:
         - name: backend-svc
-          namespace: backend-ns-no-refgrant
+          namespace: tls-no-refgrant-backend
           port: 443
