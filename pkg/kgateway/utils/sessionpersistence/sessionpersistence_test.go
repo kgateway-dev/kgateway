@@ -98,18 +98,6 @@ func TestBuild(t *testing.T) {
 	assert.EqualError(t, err, `unsupported session persistence type "Unknown"`)
 }
 
-func TestSessionKey(t *testing.T) {
-	cookie, err := Build(Config{Type: Cookie, Name: "my-session"})
-	require.NoError(t, err)
-	assert.Equal(t, "Cookie/my-session", SessionKey(cookie))
-
-	header, err := Build(Config{Type: Header, Name: "x-session"})
-	require.NoError(t, err)
-	assert.Equal(t, "Header/x-session", SessionKey(header))
-
-	assert.Empty(t, SessionKey(nil), "nil config has no session key")
-}
-
 func TestGeneratedCookieName(t *testing.T) {
 	a := GeneratedCookieName("default/backend-a:3000")
 	assert.Equal(t, a, GeneratedCookieName("default/backend-a:3000"), "name must be stable")

@@ -1,21 +1,15 @@
 package irtranslator
 
 import (
-	"bytes"
 	"errors"
-	"log/slog"
 	"testing"
 	"time"
 
-	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
@@ -93,56 +87,4 @@ func TestRunBackendObjectPolicies(t *testing.T) {
 
 		require.NoError(t, h.runBackendObjectPolicies(backendWith(ir.PolicyAtt{PolicyIr: first}), &ir.RouteBackendContext{}))
 	})
-}
-
-func TestWarnSessionPersistenceCollisions(t *testing.T) {
-	spAny := func(name string) *anypb.Any {
-		sp, err := sessionpersistence.Build(sessionpersistence.Config{Type: sessionpersistence.Cookie, Name: name})
-		require.NoError(t, err)
-		a, err := utils.MessageToAny(sp)
-		require.NoError(t, err)
-		return a
-	}
-	cluster := func(name string, sp *anypb.Any) *envoyroutev3.WeightedCluster_ClusterWeight {
-		cw := &envoyroutev3.WeightedCluster_ClusterWeight{Name: name}
-		if sp != nil {
-			cw.TypedPerFilterConfig = map[string]*anypb.Any{sessionpersistence.FilterName: sp}
-		}
-		return cw
-	}
-	route := func(routeSP *anypb.Any, clusters ...*envoyroutev3.WeightedCluster_ClusterWeight) *envoyroutev3.Route {
-		r := &envoyroutev3.Route{Name: "r", Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{
-			ClusterSpecifier: &envoyroutev3.RouteAction_WeightedClusters{WeightedClusters: &envoyroutev3.WeightedCluster{Clusters: clusters}},
-		}}}
-		if routeSP != nil {
-			r.TypedPerFilterConfig = map[string]*anypb.Any{sessionpersistence.FilterName: routeSP}
-		}
-		return r
-	}
-
-	tests := []struct {
-		name     string
-		route    *envoyroutev3.Route
-		wantWarn bool
-	}{
-		{name: "policies with the same name", route: route(nil, cluster("a", spAny("s")), cluster("b", spAny("s"))), wantWarn: true},
-		{name: "policies with different names", route: route(nil, cluster("a", spAny("s1")), cluster("b", spAny("s2")))},
-		{name: "same backend listed twice", route: route(nil, cluster("a", spAny("s")), cluster("a", spAny("s")))},
-		{name: "policy name equals the route rule name", route: route(spAny("s"), cluster("a", spAny("s")), cluster("b", nil)), wantWarn: true},
-		{name: "only the route rule config", route: route(spAny("s"), cluster("a", nil), cluster("b", nil))},
-		{name: "policy name differs from the route rule name", route: route(spAny("r"), cluster("a", spAny("s")), cluster("b", nil))},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			h := testHTTPRouteTranslator(nil, "")
-			h.logger = slog.New(slog.NewTextHandler(&buf, nil))
-			h.warnSessionPersistenceCollisions(tt.route)
-			if tt.wantWarn {
-				assert.Contains(t, buf.String(), "use the same session persistence name", "collision should be logged")
-			} else {
-				assert.Empty(t, buf.String(), "no collision should be logged")
-			}
-		})
-	}
 }

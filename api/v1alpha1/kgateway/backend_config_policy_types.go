@@ -202,7 +202,9 @@ type SessionPersistenceCookieConfig struct {
 	// Name defines the name of the cookie used for session persistence.
 	// If not specified, a unique cookie name is generated for each backend.
 	// Users should avoid reusing cookie names to prevent unintended
-	// consequences, such as rejection or unpredictable behavior.
+	// consequences, such as rejection or unpredictable behavior. Avoid using the
+	// same cookie name for backends in the same traffic split, as clients lose
+	// their session whenever the split switches backends.
 	//
 	// +optional
 	Name *CookieName `json:"name,omitempty"`
@@ -261,7 +263,9 @@ const (
 type SessionPersistenceHeaderConfig struct {
 	// Name defines the name of the header used for session persistence.
 	// The client must include this header in subsequent requests to
-	// maintain the session.
+	// maintain the session. Avoid using the same header name for backends in
+	// the same traffic split, as clients lose their session whenever the split
+	// switches backends.
 	//
 	// +required
 	Name gwv1.HeaderName `json:"name"`

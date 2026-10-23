@@ -194,23 +194,3 @@ func DisabledFilter() filters.StagedHttpFilter {
 func GeneratedCookieName(backendID string) string {
 	return fmt.Sprintf("kgw-sp-%016x", utils.HashString(backendID))
 }
-
-// SessionKey returns the type and cookie or header name used by perRoute, for
-// example "Cookie/my-session". It returns "" if perRoute has no session state.
-func SessionKey(perRoute *stateful_sessionv3.StatefulSessionPerRoute) string {
-	state := perRoute.GetStatefulSession().GetSessionState().GetTypedConfig()
-	if state == nil {
-		return ""
-	}
-	msg, err := state.UnmarshalNew()
-	if err != nil {
-		return ""
-	}
-	switch s := msg.(type) {
-	case *stateful_cookie.CookieBasedSessionState:
-		return string(Cookie) + "/" + s.GetCookie().GetName()
-	case *stateful_header.HeaderBasedSessionState:
-		return string(Header) + "/" + s.GetName()
-	}
-	return ""
-}

@@ -7,6 +7,7 @@ import (
 
 	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
+	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -82,7 +83,9 @@ func TestTranslateSessionPersistence(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, got.perRoute)
-		assert.Equal(t, "Header/x-session", sessionpersistence.SessionKey(perRouteOf(t, got.perRoute)))
+		headerState := &stateful_header.HeaderBasedSessionState{}
+		require.NoError(t, perRouteOf(t, got.perRoute).GetStatefulSession().GetSessionState().GetTypedConfig().UnmarshalTo(headerState))
+		assert.Equal(t, "x-session", headerState.GetName())
 	})
 
 	t.Run("header without header config", func(t *testing.T) {
