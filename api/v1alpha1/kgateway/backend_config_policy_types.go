@@ -219,24 +219,26 @@ type DNS struct {
 	// +optional
 	RespectTTL *bool `json:"respectTTL,omitempty"`
 
-	// LookupFamily selects which address families Envoy resolves for this backend's
-	// hostnames, overriding the cluster-wide KGW_DNS_LOOKUP_FAMILY setting.
+	// LookupFamily selects the address families used to resolve this backend's
+	// hostnames. It applies only to backends resolved through DNS, such as a
+	// Backend with a hostname, and has no effect on Kubernetes Services. When
+	// omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+	// equivalent to IPv4Preferred.
 	//
-	// In an IPv6-only cluster, the right value depends on how IPv4-only upstreams
-	// are reached, and the two common mechanisms want opposite things:
+	// For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+	// or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+	// selects IPv4 addresses when available, even if those addresses are
+	// unreachable, so a cluster that reaches all IPv4 destinations this way should
+	// change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
 	//
-	// With DNS64/NAT64 the pod has no IPv4 stack. A DNS64 resolver synthesizes an
-	// AAAA record for an IPv4-only name and the NAT64 gateway translates the
-	// traffic, so Envoy must dial the synthesized IPv6 address. Use IPv6Only or
-	// Auto. Do not use IPv4Preferred here: it returns the real IPv4 addresses
-	// whenever any exist, bypassing the synthesized record and leaving Envoy
-	// dialing an address the pod cannot route. All also reaches the backend, but
-	// only after attempting the unroutable IPv4 addresses.
+	// Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+	// through a host-local IPv4 address and node SNAT, so the default reaches
+	// IPv4-only backends without an override.
 	//
-	// Where the pod instead keeps an IPv4 egress path - an IPv6 EKS cluster gives
-	// the pod a host-local IPv4 address and SNATs it through the node - IPv4-only
-	// upstreams are reachable over real IPv4 and no override is needed; set
-	// IPv4Preferred or All only to prefer that path explicitly.
+	// IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+	// for the preferred family, not when a connection fails. All returns both
+	// families, and for most backends each address becomes a separate endpoint,
+	// so requests sent to an unreachable family fail rather than fall back.
 	//
 	// Note: This feature is experimental and subject to breaking changes in future releases.
 	// +optional
@@ -245,7 +247,7 @@ type DNS struct {
 
 // DnsLookupFamily selects the address families Envoy resolves for a DNS backend.
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily) for more details.
-// +kubebuilder:validation:Enum=IPv4Preferred;IPv4Only;IPv6Only;Auto;All
+// +kubebuilder:validation:Enum=IPv4Preferred;IPv4Only;IPv6Only;IPv6Preferred;All
 type DnsLookupFamily string
 
 const (
@@ -257,11 +259,13 @@ const (
 	DnsLookupFamilyIPv4Only DnsLookupFamily = "IPv4Only"
 	// DnsLookupFamilyIPv6Only resolves only IPv6 addresses.
 	DnsLookupFamilyIPv6Only DnsLookupFamily = "IPv6Only"
-	// DnsLookupFamilyAuto resolves IPv6 first and falls back to IPv4. This is
-	// Envoy's own default, not kgateway's.
-	DnsLookupFamilyAuto DnsLookupFamily = "Auto"
-	// DnsLookupFamilyAll resolves both families and returns every address, leaving
-	// the choice of family to happy eyeballs.
+	// DnsLookupFamilyIPv6Preferred resolves both families and prefers IPv6, falling
+	// back to IPv4 when no IPv6 address is returned. Equivalent to the AUTO value
+	// of the KGW_DNS_LOOKUP_FAMILY setting, which is also Envoy's own default.
+	DnsLookupFamilyIPv6Preferred DnsLookupFamily = "IPv6Preferred"
+	// DnsLookupFamilyAll resolves both families and returns every address. Only
+	// backends that keep all addresses in a single endpoint use happy eyeballs;
+	// for others, each address is load-balanced as a separate endpoint.
 	DnsLookupFamilyAll DnsLookupFamily = "All"
 )
 

@@ -448,7 +448,7 @@ func toDnsLookupFamily(family kgateway.DnsLookupFamily) (envoycommondnsv3.DnsLoo
 		return envoycommondnsv3.DnsLookupFamily_V4_ONLY, nil
 	case kgateway.DnsLookupFamilyIPv6Only:
 		return envoycommondnsv3.DnsLookupFamily_V6_ONLY, nil
-	case kgateway.DnsLookupFamilyAuto:
+	case kgateway.DnsLookupFamilyIPv6Preferred:
 		return envoycommondnsv3.DnsLookupFamily_AUTO, nil
 	case kgateway.DnsLookupFamilyAll:
 		return envoycommondnsv3.DnsLookupFamily_ALL, nil

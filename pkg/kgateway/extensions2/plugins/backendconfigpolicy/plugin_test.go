@@ -646,7 +646,7 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 			kgateway.DnsLookupFamilyIPv4Preferred: envoycommondnsv3.DnsLookupFamily_V4_PREFERRED,
 			kgateway.DnsLookupFamilyIPv4Only:      envoycommondnsv3.DnsLookupFamily_V4_ONLY,
 			kgateway.DnsLookupFamilyIPv6Only:      envoycommondnsv3.DnsLookupFamily_V6_ONLY,
-			kgateway.DnsLookupFamilyAuto:          envoycommondnsv3.DnsLookupFamily_AUTO,
+			kgateway.DnsLookupFamilyIPv6Preferred: envoycommondnsv3.DnsLookupFamily_AUTO,
 			kgateway.DnsLookupFamilyAll:           envoycommondnsv3.DnsLookupFamily_ALL,
 		} {
 			got, err := toDnsLookupFamily(family)
