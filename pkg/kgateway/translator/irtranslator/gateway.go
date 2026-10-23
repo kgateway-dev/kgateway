@@ -11,12 +11,10 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	istioslices "istio.io/istio/pkg/slices"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -82,22 +80,15 @@ func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 	return ""
 }
 
-// findListenerForFilterChain returns the Gateway API listener that owns a filter chain
-// named for exactly one listener, as HTTPS chains are. Plain HTTP chains merge every
-// listener on a port, so their names match none and the result is nil.
-func findListenerForFilterChain(gw ir.GatewayIR, filterChainName string) *ir.Listener {
-	return istioslices.FindFunc(gw.SourceObject.Listeners, func(l ir.Listener) bool {
-		return query.RouteKeyMatches(filterChainName, l.Parent, string(l.Name))
-	})
-}
-
-func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, filterChainName string) sdkreporter.ListenerReporter {
-	listener := findListenerForFilterChain(gw, filterChainName)
-	if listener == nil {
-		// This should never happen, but keep this as a safeguard.
-		return reporter.Gateway(gw.SourceObject.Obj).ListenerName(filterChainName)
+// getReporterForFilterChain reports on the listener a filter chain serves alone.
+func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, fc ir.FilterChainCommon) sdkreporter.ListenerReporter {
+	if fc.Listener == nil {
+		// TODO: plain HTTP, TCP, and TLS chains have no Listener, so their conditions
+		// go to a Gateway listener entry named for the chain. Gateway status lists only
+		// spec listeners, so these conditions are dropped.
+		return reporter.Gateway(gw.SourceObject.Obj).ListenerName(fc.FilterChainName)
 	}
-	return listener.GetParentReporter(reporter).ListenerName(string(listener.Name))
+	return fc.Listener.GetParentReporter(reporter).ListenerName(string(fc.Listener.Name))
 }
 
 func (t *Translator) ComputeListener(
@@ -167,7 +158,7 @@ func (t *Translator) ComputeListener(
 		// compute chains
 
 		// TODO: make sure that all matchers are unique
-		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainName)
+		rl := getReporterForFilterChain(gw, reporter, hfc.FilterChainCommon)
 		fc := fct.initFilterChain(hfc.FilterChainCommon)
 		fc.Filters = fct.computeHttpFilters(hfc, lis, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)
@@ -191,7 +182,7 @@ func (t *Translator) ComputeListener(
 	}
 
 	for _, tfc := range lis.TcpFilterChain {
-		rl := getReporterForFilterChain(gw, reporter, tfc.FilterChainName)
+		rl := getReporterForFilterChain(gw, reporter, tfc.FilterChainCommon)
 		fc := fct.initFilterChain(tfc.FilterChainCommon)
 		fc.Filters = fct.computeTcpFilters(tfc, rl)
 		ret.FilterChains = append(ret.GetFilterChains(), fc)

@@ -92,7 +92,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.routeConfigName, pols...)
+		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.listener, h.fc, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
 				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
@@ -700,7 +700,7 @@ func (h *httpRouteConfigurationTranslator) replaceInvalidVirtualHost(virtualHost
 // reportListenerReplacement marks every listener whose traffic a replacement now
 // answers with a 500. HTTP virtual hosts carry their listener. HTTPS virtual hosts
 // do not, but an HTTPS route configuration belongs to exactly one listener, which
-// its name identifies, as in reportRouteConfigPolicyErrors.
+// its filter chain records, as in reportRouteConfigPolicyErrors.
 func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHosts []*ir.VirtualHost, message string) {
 	if h.reporter == nil {
 		return
@@ -732,7 +732,7 @@ func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHost
 	if !needFilterChainListener {
 		return
 	}
-	listener := findListenerForFilterChain(h.gw, h.routeConfigName)
+	listener := h.fc.Listener
 	if listener == nil {
 		return
 	}
