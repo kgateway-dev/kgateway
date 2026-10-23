@@ -28,7 +28,7 @@ func TestTunnelProxyHoldSurvivesRepeatedBuilds(t *testing.T) {
 				wrap.missingEndpointsReferenced = []string{"proxy"}
 				wrap.synthesizedEndpoints = []string{"proxy"}
 				wrap.snap.Resources[envoycachetypes.Endpoint].Items["proxy"] = envoycachetypes.ResourceWithTTL{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "proxy"}}
-				for i := 0; i < 2; i++ {
+				for i := range 2 {
 					pt.syncXds(ctx, wrap)
 					served := servedSnapshot(t, pt)
 					require.Equal(t, heldRoutes, served.GetVersion(envoyresourcev3.RouteType), "build %d must keep the route held", i)
