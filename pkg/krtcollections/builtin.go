@@ -288,8 +288,9 @@ func convertRetry(
 		},
 		StatusCodes: retry.Codes,
 	}
-	if retry.Attempts > 0 {
-		in.Attempts = int32(retry.Attempts) //nolint:gosec // G115: retry attempts are small positive integers
+	// An explicit zero disables retries (num_retries: 0).
+	if retry.Attempts != nil {
+		in.Attempts = int32(*retry.Attempts) //nolint:gosec // G115: retry attempts are small non-negative integers
 	}
 	if retry.Backoff != nil {
 		duration, err := time.ParseDuration(string(*retry.Backoff))
