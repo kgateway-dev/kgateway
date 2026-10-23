@@ -357,6 +357,12 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
 }
 
+// VersionEquals reports whether a and b are the same version of a source object, by the rule
+// the IR Equals methods apply to the objects they hold (see versionEquals).
+func VersionEquals(a, b metav1.Object) bool {
+	return versionEquals(a, b)
+}
+
 var ErrNotAttachable = errors.New("policy is not attachable to this object")
 
 type PolicyRun interface {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -92,9 +93,9 @@ func (r *RouteInfo) Clone() *RouteInfo {
 // and the given indexes.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int, ruleName string) string {
 	if ruleName == "" {
-		return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
+		return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx, ruleName)
+	return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx) + "-" + ruleName
 }
 
 // GetRouteChain recursively resolves all backends for the given route object.
