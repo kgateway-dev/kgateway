@@ -334,3 +334,47 @@ func TestHeldFlipPublishesTheListenersItsClustersNeed(t *testing.T) {
 	assert.True(t, hasResource(served.Resources[envoycachetypes.Secret].Items, "tunnel_x/h"), "with the secret it reads")
 	assertSnapshotCoherent(t, served)
 }
+
+// Under REFERENCED, a tunneled backend whose row is missing hides the listener
+// that keeps its proxy cluster, so the build leaves the proxy out though it
+// still translates it. The carry brings the proxy's current cluster and
+// endpoints, not the copies published before the row went missing, and the EDS
+// version moves with them.
+func TestCarriedTunnelUsesItsProxyClustersCurrentTranslation(t *testing.T) {
+	pt := newPublishGateTestTranslator(t, false, time.Hour)
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+	ucc := newTestUcc(publishGateTestClient)
+
+	pt.syncXds(ctx, tunnelBuild{version: "v1", withTunnel: true, withProxy: true, secretValue: "s", proxyStatName: "published"}.wrapper(t))
+	publishedEDS := servedSnapshot(t, pt).GetVersion(envoyresourcev3.EndpointType)
+
+	current := proto.Clone(edsClusterForClient(ucc, "proxy", 1).Cluster.BorrowForRead()).(*envoyclusterv3.Cluster)
+	current.AltStatName = "current"
+	currentCLA := &envoyendpointv3.ClusterLoadAssignment{
+		ClusterName: "proxy",
+		Endpoints: []*envoyendpointv3.LocalityLbEndpoints{{LbEndpoints: []*envoyendpointv3.LbEndpoint{{
+			HostIdentifier: &envoyendpointv3.LbEndpoint_Endpoint{Endpoint: &envoyendpointv3.Endpoint{
+				Address: &envoycorev3.Address{Address: &envoycorev3.Address_SocketAddress{SocketAddress: &envoycorev3.SocketAddress{
+					Address: "10.0.0.9", PortSpecifier: &envoycorev3.SocketAddress_PortValue{PortValue: 3128},
+				}}},
+			}},
+		}}}},
+	}
+	lagging := tunnelBuild{version: "v2"}.wrapper(t, "x") // the tunnel's row is missing; scoping left the proxy out
+	lagging.translatedClusters = map[string]envoycachetypes.ResourceWithTTL{"proxy": {Resource: current}}
+	lagging.translatedEndpoints = map[string]envoycachetypes.ResourceWithTTL{"proxy": {Resource: currentCLA}}
+	lagging.translatedEndpointHashes = map[string]uint64{"proxy": 7}
+	lagging.translatedEndpointsVersion = "7"
+	pt.syncXds(ctx, lagging)
+
+	served := servedSnapshot(t, pt)
+	require.True(t, hasResource(served.Resources[envoycachetypes.Cluster].Items, "x"), "the tunneled cluster is carried")
+	require.True(t, hasResource(served.Resources[envoycachetypes.Listener].Items, "tunnel_x"), "with the listener on its pipe")
+	proxy, ok := served.Resources[envoycachetypes.Cluster].Items["proxy"].Resource.(*envoyclusterv3.Cluster)
+	require.True(t, ok, "the proxy cluster is present")
+	assert.Equal(t, "current", proxy.GetAltStatName(), "the proxy cluster comes from the current translation")
+	assert.True(t, proto.Equal(currentCLA, served.Resources[envoycachetypes.Endpoint].Items["proxy"].Resource),
+		"and so do its endpoints")
+	assert.NotEqual(t, publishedEDS, served.GetVersion(envoyresourcev3.EndpointType), "the EDS version moves with them")
+}
