@@ -56,7 +56,6 @@ helm upgrade <release> <chart> --namespace <namespace> --reuse-values \
 | `KGW_PER_CLIENT_PUBLISH_BUDGET` | `15s` | duration | No first-publish or flip-release deadline. |
 | `KGW_PER_CLIENT_WARM_WITHHOLD_BOUND` | `10m` | duration | Warm withholds and missing-cluster carries have no limit. |
 | `KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK` | `false` | boolean | `false`: no check. |
-| `KGW_XDS_SUPPRESS_NACK_RESEND` | `true` | boolean | `false`: every NACK is answered at once. |
 | `KGW_XDS_RESPOND_ON_RECONNECT` | `true` | boolean | `false`: held-version requests wait for a version change. |
 | `KGW_CLUSTER_DISCOVERY_MODE` | `ALL` | `ALL`, `REFERENCED`, any case | `ALL`: no scoping and no transition windows. |
 | `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | duration | A de-referenced cluster is removed at once. |
@@ -226,13 +225,14 @@ The same value means different things in different places:
 
 ## xDS server behavior
 
-### `KGW_XDS_SUPPRESS_NACK_RESEND` (default `true`)
+### NACK retry throttling
 
 go-control-plane answers a NACK by re-sending the rejected response at once, so
 both sides spin at the rejection rate.
 
-With this setting on, a NACK of the response last sent on its stream, while the
-snapshot still has that version, waits for a snapshot change or a retry delay:
+kgateway always throttles NACK retries. A NACK of the response last sent on its
+stream, while the snapshot still has that version, waits for a snapshot change
+or a retry delay:
 
 - The delay starts at 1s and doubles for each consecutive rejection of the same
   version, up to 1m.
@@ -242,8 +242,6 @@ snapshot still has that version, waits for a snapshot change or a retry delay:
   recovers without a configuration change.
 - A NACK of an older version is answered at once.
 - Rejections are still logged and counted.
-
-With `false`, every NACK is answered at once.
 
 Metrics:
 
@@ -411,7 +409,7 @@ which accepts that race. The metric is
   cluster the held configuration names stays published, whatever the
   de-reference grace.
 - **xDS server settings.** `KGW_XDS_FIRST_CONNECT_DELAY`,
-  `KGW_XDS_SUPPRESS_NACK_RESEND`, `KGW_XDS_RESPOND_ON_RECONNECT` and the
+  `KGW_XDS_RESPOND_ON_RECONNECT`, NACK retry throttling and the
   re-defined-cluster rule act in the xDS server, independently of publication.
 - **Consistency check.** `KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK` observes
   publications and never changes them.
