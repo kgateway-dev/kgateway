@@ -163,8 +163,11 @@ func snapshotPerClient(
 			clusterResources.Version = strconv.FormatUint(clustersHash^listenerRouteSnapshot.ClustersHash, 10)
 			clusterResources.Items = clustersProto
 		}
+		// A referenced backend's own listeners route on to clusters no gateway
+		// route names (a CONNECT tunnel's proxy), so its routes wait for those too.
+		referenced := withBackendListenerRoutingTargets(listenerRouteSnapshot.ReferencedClusters, clustersForUcc.backendListeners)
 		missingClusters := findMissingReferencedClusters(
-			listenerRouteSnapshot.ReferencedClusters,
+			referenced,
 			clusterResources.Items,
 			clustersForUcc.erroredClusters,
 		)
@@ -180,7 +183,7 @@ func snapshotPerClient(
 		// Every EDS cluster now has a CLA; synthesized ones mark underived rows.
 		// A derived empty CLA is not a gap.
 		missingEndpointClusters := findMissingReferencedEndpointResources(
-			listenerRouteSnapshot.ReferencedClusters,
+			referenced,
 			clusterResources.Items,
 			synthesizedEndpoints,
 			clustersForUcc.erroredClusters,
