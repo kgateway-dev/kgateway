@@ -198,12 +198,14 @@ type pendingFlipRelease struct {
 	// in open reference-ahead windows. At least one is non-empty.
 	blocking []string
 	ahead    []string
-	// since is when the hold episode began, zero while its row is withdrawn;
-	// unreadySince when its current run of unready holds began, zero without
-	// one. flipReleaseDeadline uses both.
+	// since is when the hold episode began; unreadySince when its current run
+	// of unready holds began, zero without one. flipReleaseDeadline uses both.
 	since        time.Time
 	unreadySince time.Time
 	timer        *time.Timer
+	// withdrawn defers the decision to start a new episode until the returning
+	// build establishes whether the missing-resource hold continues.
+	withdrawn bool
 	// deadline is when the timer fires; epoch identifies its arming, so a stale
 	// callback does nothing. capped records that the episode budget cut the
 	// deadline short.
@@ -683,8 +685,14 @@ func (g *publishGate) publishHeldLocked(
 		logger.Info("holding route flip until its clusters are ready and delivered",
 			"proxy_key", proxyKey, "flip_blocking", unready, "reference_ahead", ahead)
 	}
-	if pf.since.IsZero() {
-		pf.since = now // the row returned after a withdrawal
+	if pf.withdrawn {
+		// A continuing missing-resource hold retains its original budget cap,
+		// even if the returning row opens new reference-ahead windows. Once
+		// that run ends, a fresh delivery hold gets a fresh episode budget.
+		if len(unready) == 0 || pf.unreadySince.IsZero() {
+			pf.since = now
+		}
+		pf.withdrawn = false
 	}
 	pf.wrap = snapWrap
 	pf.blocking = unready
@@ -901,10 +909,9 @@ func (g *publishGate) withdrawLocked(proxyKey string) {
 		// Stop cannot recall a callback already waiting on g.mu. Invalidate it
 		// while retaining the blockers and original deadline for a returning row.
 		pf.epoch++
-		// The returning row starts a new episode. An old start would cap a new
-		// cluster's reference-ahead window at a time already past; blockers
-		// still release from unreadySince.
-		pf.since = time.Time{}
+		// Decide whether a new episode can start only when the row returns:
+		// continuing blockers must keep the earlier episode's budget cap.
+		pf.withdrawn = true
 	}
 	g.cancelCarryExpiryLocked(proxyKey)
 	g.cancelDereferenceTimerLocked(proxyKey)

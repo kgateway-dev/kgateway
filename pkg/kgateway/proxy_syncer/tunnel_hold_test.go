@@ -110,8 +110,8 @@ func TestTunnelProxyHoldSurvivesConnectedRowWithdrawal(t *testing.T) {
 	}
 }
 
-// A row returning after a withdrawal starts a new hold episode, so a hold that
-// began long before cannot cap a new cluster's reference-ahead window.
+// A returning row whose missing-resource blockers have resolved starts a new
+// hold episode, so the old budget cannot cap a new reference-ahead window.
 func TestReturningRowGetsAFullReferenceAheadWindow(t *testing.T) {
 	pt := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scopedClustersWithReferenceAhead(time.Hour))
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -143,4 +143,60 @@ func TestReturningRowGetsAFullReferenceAheadWindow(t *testing.T) {
 	require.NotNil(t, returned, "the routes naming new cluster y wait for its window")
 	require.False(t, capped, "the withdrawn hold's start must not cap the new window")
 	require.Equal(t, "v1", publishedListenerVersionOf(t, &pt))
+}
+
+func TestReturningRowPreservesSurvivingBlockerBudgetCap(t *testing.T) {
+	for name, addCluster := range map[string]bool{"same clusters": false, "new reference ahead windows": true} {
+		t.Run(name, func(t *testing.T) {
+			pt := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scopedClustersWithReferenceAhead(time.Hour))
+			t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+			ctx := context.Background()
+			pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+			pt.syncXds(ctx, routedBuild(t, "v2", "new", "old", "new"))
+			blocked := routedBuild(t, "v3", "blocked", "old", "new")
+			blocked.missingReferenced = []string{"blocked"}
+			pt.syncXds(ctx, blocked)
+
+			// The delivery hold began before the missing-resource hold. Advance
+			// their ages without sleeping and let the original delivery window close.
+			now := time.Now()
+			pt.gate.mu.Lock()
+			pending := pt.gate.pendingFlips[publishGateTestClient]
+			pending.since = now.Add(-20 * time.Minute)
+			pending.unreadySince = now.Add(-10 * time.Minute)
+			for cluster := range pt.gate.aheadSent[publishGateTestClient] {
+				pt.gate.aheadSent[publishGateTestClient][cluster] = now.Add(-2 * time.Hour)
+			}
+			pt.gate.mu.Unlock()
+			pt.syncXds(ctx, blocked)
+			pt.gate.mu.Lock()
+			before := *pt.gate.pendingFlips[publishGateTestClient]
+			pt.gate.mu.Unlock()
+			require.Equal(t, before.since.Add(time.Hour), before.deadline)
+			require.True(t, before.capped)
+
+			clusters := []string{"old", "new"}
+			for _, cluster := range []string{"y", "z"} {
+				pt.clientSnapshotDeleted(publishGateTestClient, true)
+				if addCluster {
+					clusters = append(clusters, cluster)
+				}
+				returning := routedBuild(t, "return-"+cluster, "blocked", clusters...)
+				returning.missingReferenced = []string{"blocked"}
+				pt.syncXds(ctx, returning)
+				pt.gate.mu.Lock()
+				after := *pt.gate.pendingFlips[publishGateTestClient]
+				pt.gate.mu.Unlock()
+				require.Equal(t, before.deadline, after.deadline, "withdrawal must not extend a surviving blocker's budget cap")
+				require.Equal(t, before.since, after.since)
+				require.Equal(t, before.unreadySince, after.unreadySince)
+				if addCluster {
+					require.Contains(t, after.ahead, cluster)
+				} else {
+					require.Empty(t, after.ahead)
+				}
+				require.Equal(t, "v1", publishedListenerVersionOf(t, &pt))
+			}
+		})
+	}
 }
