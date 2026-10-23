@@ -39,6 +39,7 @@ func init() {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		Version = UndefinedVersion
+		registerBuildInfo(version{Controller: UndefinedVersion, OS: runtime.GOOS, Arch: runtime.GOARCH})
 		return
 	}
 	v := Version
@@ -59,4 +60,5 @@ func init() {
 			ref.Date = setting.Value
 		}
 	}
+	registerBuildInfo(*ref)
 }

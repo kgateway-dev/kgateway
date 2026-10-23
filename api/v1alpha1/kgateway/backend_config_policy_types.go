@@ -40,6 +40,8 @@ type BackendConfigPolicyList struct {
 // BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
 //
 // +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || !has(self.targetSelectors)",message="tunnel does not support targetSelectors"
+// +kubebuilder:validation:XValidation:rule="!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r, r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="tunnel requires targetRefs that reference Backends"
 type BackendConfigPolicySpec struct {
 	// TargetRefs specifies the target references to attach the policy to.
 	// +optional
@@ -118,6 +120,37 @@ type BackendConfigPolicySpec struct {
 	// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto) for more details.
 	// +optional
 	UpstreamProxyProtocol *UpstreamProxyProtocol `json:"upstreamProxyProtocol,omitempty"`
+
+	// Tunnel sends Backend connections through an HTTP CONNECT proxy.
+	// Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+	// Requires Backend targetRefs; targetSelectors are not supported.
+	// +optional
+	Tunnel *Tunnel `json:"tunnel,omitempty"`
+}
+
+// Tunnel configures HTTP CONNECT tunneling through a forward proxy.
+type Tunnel struct {
+	// Proxy identifies the forward proxy that establishes the tunnel.
+	// +required
+	Proxy TunnelProxy `json:"proxy"`
+
+	// Headers are sent only on CONNECT requests. Each requires a name and
+	// exactly one of value or secretRef.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(h, has(h.name))",message="tunnel headers require a name"
+	// +kubebuilder:validation:XValidation:rule="self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')",message="tunnel headers cannot set Host"
+	Headers []shared.HTTPHeader `json:"headers,omitempty"`
+}
+
+// TunnelProxy identifies the forward proxy for a tunnel.
+type TunnelProxy struct {
+	// BackendRef references the proxy Service or Backend. CONNECT uses that
+	// backend's HTTP protocol.
+	// +required
+	// +kubebuilder:validation:XValidation:rule="(self.group == '' && self.kind == 'Service') || (self.group == 'gateway.kgateway.dev' && self.kind == 'Backend')",message="proxy backendRef must reference a Service or a Backend"
+	BackendRef gwv1.BackendObjectReference `json:"backendRef"`
 }
 
 // CircuitBreakers contains the options to configure circuit breaker thresholds for the default priority.
