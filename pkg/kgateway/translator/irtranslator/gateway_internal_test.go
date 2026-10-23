@@ -68,14 +68,16 @@ func TestFilterChainListeners(t *testing.T) {
 	}
 }
 
-// An HTTPS chain reports on the listener that owns it. A merged plain HTTP chain has
-// no single owner, so it reports on a listener of the Gateway named for the chain.
+// An HTTPS chain reports on the listener that owns it. Plain HTTP and TLS chains have
+// no single owner, so their conditions go to a Gateway listener entry named for the
+// chain. Gateway status lists only spec listeners, so those conditions are never shown.
 func TestGetReporterForFilterChain(t *testing.T) {
 	gw, _ := listenerSetGatewayIR(2)
+	gw.SourceObject.Obj.Spec.Listeners = []gwv1.Listener{{Name: "https"}}
 	chainListeners := newFilterChainListeners(gw)
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
-	for _, name := range []string{"default/ls-1/https", "listener~80"} {
+	for _, name := range []string{"default/ls-1/https", "listener~80", "listener~8443-default.example-tls-route-rule-0"} {
 		getReporterForFilterChain(gw, r, chainListeners, name).SetCondition(reportssdk.ListenerCondition{
 			Type:   gwv1.ListenerConditionAccepted,
 			Status: metav1.ConditionFalse,
@@ -83,16 +85,18 @@ func TestGetReporterForFilterChain(t *testing.T) {
 		})
 	}
 
-	accepted := func(lr reportssdk.ListenerReporter) *metav1.Condition {
-		return meta.FindStatusCondition(lr.(*reports.ListenerReport).Status.Conditions, string(gwv1.ListenerConditionAccepted))
-	}
 	lsReport := rm.ListenerSet(gw.SourceObject.Listeners[2].Parent)
 	require.NotNil(t, lsReport, "the ListenerSet that owns the HTTPS chain must have a report")
-	assert.NotNil(t, accepted(lsReport.ListenerName("https")), "the HTTPS chain should report on its own listener")
+	listener := lsReport.ListenerName("https").(*reports.ListenerReport)
+	condition := meta.FindStatusCondition(listener.Status.Conditions, string(gwv1.ListenerConditionAccepted))
+	require.NotNil(t, condition, "the HTTPS chain should report on its own listener")
+	assert.Equal(t, string(reportssdk.ListenerReplacedReason), condition.Reason)
 	assert.Nil(t, rm.ListenerSet(gw.SourceObject.Listeners[1].Parent), "other ListenerSets must not get a report")
 
-	gwReport := rm.Gateway(gw.SourceObject.Obj)
-	require.NotNil(t, gwReport, "the merged plain HTTP chain should fall back to the Gateway")
-	assert.NotNil(t, accepted(gwReport.ListenerName("listener~80")), "the fallback should name the chain")
-	assert.Nil(t, accepted(gwReport.ListenerName("https")), "the Gateway's own HTTPS listener must not get the condition")
+	status := rm.BuildGWStatus(*gw.SourceObject.Obj, nil)
+	require.NotNil(t, status, "the fallback should create a report for the Gateway")
+	require.Len(t, status.Listeners, 1, "Gateway status should list only spec listeners, not entries named for chains")
+	condition = meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+	require.NotNil(t, condition, "Gateway status should default the Accepted condition")
+	assert.Equal(t, metav1.ConditionTrue, condition.Status, "the fallback must not reach the Gateway's own listener")
 }

@@ -31,10 +31,12 @@ import (
 
 type httpRouteConfigurationTranslator struct {
 	gw               ir.GatewayIR
-	chainListeners   filterChainListeners
 	listener         ir.ListenerIR
 	fc               ir.FilterChainCommon
 	attachedPolicies ir.AttachedPolicies
+	// chainListeners caches newFilterChainListeners(gw) so that a Gateway's filter
+	// chains share one. Read it through filterChainListeners.
+	chainListeners filterChainListeners
 
 	routeConfigName           string
 	reporter                  reportssdk.Reporter
@@ -93,7 +95,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(
 		}
 		policies, mergeOrigins := mergePolicies(pass, pols)
 		reportPolicyAcceptanceStatus(h.reporter, h.listener.PolicyAncestorRef, pols...)
-		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.chainListeners, h.listener, h.routeConfigName, pols...)
+		reportRouteConfigPolicyErrors(h.reporter, h.gw, h.filterChainListeners(), h.listener, h.routeConfigName, pols...)
 		for _, pol := range policies {
 			if len(pol.Errors) > 0 {
 				errs = append(errs, ir.WrapPolicyErrors(pol.PolicyRef, pol.Errors)...)
@@ -698,6 +700,15 @@ func (h *httpRouteConfigurationTranslator) replaceInvalidVirtualHost(virtualHost
 	return fallback
 }
 
+// filterChainListeners returns h.chainListeners, first building it from h.gw if the
+// translator was constructed without one, so a missing index cannot misreport status.
+func (h *httpRouteConfigurationTranslator) filterChainListeners() filterChainListeners {
+	if h.chainListeners == nil {
+		h.chainListeners = newFilterChainListeners(h.gw)
+	}
+	return h.chainListeners
+}
+
 // reportListenerReplacement marks every listener whose traffic a replacement now
 // answers with a 500. HTTP virtual hosts carry their listener. HTTPS virtual hosts
 // do not, but an HTTPS route configuration belongs to exactly one listener, which
@@ -733,7 +744,7 @@ func (h *httpRouteConfigurationTranslator) reportListenerReplacement(virtualHost
 	if !needFilterChainListener {
 		return
 	}
-	listener := h.chainListeners[h.routeConfigName]
+	listener := h.filterChainListeners()[h.routeConfigName]
 	if listener == nil {
 		return
 	}

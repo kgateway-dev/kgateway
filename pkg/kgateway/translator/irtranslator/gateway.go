@@ -84,8 +84,9 @@ func findOriginalListenerName(gw ir.GatewayIR, listener ir.ListenerIR) string {
 
 // filterChainListeners maps the name of a filter chain named for exactly one Gateway
 // API listener, as HTTPS chains are, to that listener. Plain HTTP chains merge every
-// listener on a port, so their names match none. Translate builds it once per Gateway:
-// a scan per filter chain is quadratic in the number of listeners.
+// listener on a port, and TCP and TLS chains are named for their route, so neither
+// matches. Translate builds it once per Gateway: a scan per filter chain is quadratic
+// in the number of listeners.
 type filterChainListeners map[string]*ir.Listener
 
 func newFilterChainListeners(gw ir.GatewayIR) filterChainListeners {
@@ -104,7 +105,9 @@ func newFilterChainListeners(gw ir.GatewayIR) filterChainListeners {
 func getReporterForFilterChain(gw ir.GatewayIR, reporter sdkreporter.Reporter, chainListeners filterChainListeners, filterChainName string) sdkreporter.ListenerReporter {
 	listener := chainListeners[filterChainName]
 	if listener == nil {
-		// This should never happen, but keep this as a safeguard.
+		// Conditions on a chain that no listener owns go to a Gateway listener entry
+		// named for the chain. Gateway status lists only spec listeners, so they are
+		// never shown.
 		return reporter.Gateway(gw.SourceObject.Obj).ListenerName(filterChainName)
 	}
 	return listener.GetParentReporter(reporter).ListenerName(string(listener.Name))

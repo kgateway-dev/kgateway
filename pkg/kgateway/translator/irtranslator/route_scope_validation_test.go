@@ -605,7 +605,6 @@ func TestHTTPSReplacementReportsFilterChainListener(t *testing.T) {
 			h := testHTTPRouteTranslator(v, apisettings.ValidationStrict)
 			gateway := h.gw.SourceObject.Obj
 			h.gw.SourceObject.Listeners = []ir.Listener{{Parent: gateway, Listener: gwv1.Listener{Name: "https"}}}
-			h.chainListeners = newFilterChainListeners(h.gw)
 			h.routeConfigName = "https"
 			rm := reports.NewReportMap()
 			h.reporter = reports.NewReporter(&rm)
