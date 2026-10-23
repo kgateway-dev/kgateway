@@ -1675,6 +1675,11 @@ func (in *ExtAuthPolicy) DeepCopyInto(out *ExtAuthPolicy) {
 		*out = new(ExtAuthBufferSettings)
 		**out = **in
 	}
+	if in.DisableRequestBodyBuffering != nil {
+		in, out := &in.DisableRequestBodyBuffering, &out.DisableRequestBodyBuffering
+		*out = new(bool)
+		**out = **in
+	}
 	if in.ContextExtensions != nil {
 		in, out := &in.ContextExtensions, &out.ContextExtensions
 		*out = make(map[string]string, len(*in))

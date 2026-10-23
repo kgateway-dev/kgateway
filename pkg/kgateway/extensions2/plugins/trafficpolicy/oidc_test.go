@@ -723,8 +723,8 @@ func TestOIDCConfigDiscoveryPrunesDeletedIssuers(t *testing.T) {
 		}
 		return []string{issuer}
 	})
-	// Expire immediately so every refresh pass re-discovers a live issuer.
-	o.cacheRefreshInterval = 0
+	// Expire in the past so refresh does not depend on the platform clock resolution.
+	o.cacheRefreshInterval = -time.Nanosecond
 	o.failureRetryInterval = 0
 
 	_, err := o.get(context.Background(), issuer)
@@ -887,8 +887,8 @@ func TestOIDCConfigDiscoveryPrunesIssuerNoLongerDiscovered(t *testing.T) {
 	o := newOIDCProviderConfigDiscoverer(func() []string {
 		return oidcIssuerURIs([]ir.GatewayExtension{{OAuth2: ext}})
 	})
-	// Expire immediately so every pass re-discovers whatever is still live.
-	o.cacheRefreshInterval = 0
+	// Expire in the past so refresh does not depend on the platform clock resolution.
+	o.cacheRefreshInterval = -time.Nanosecond
 	o.failureRetryInterval = 0
 
 	_, err := o.get(context.Background(), issuer)

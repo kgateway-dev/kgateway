@@ -152,6 +152,10 @@ func buildExtAuthPerRouteFilterConfig(
 ) *envoy_ext_authz_v3.ExtAuthzPerRoute {
 	checkSettings := &envoy_ext_authz_v3.CheckSettings{}
 
+	if spec.DisableRequestBodyBuffering != nil {
+		checkSettings.DisableRequestBodyBuffering = *spec.DisableRequestBodyBuffering
+	}
+
 	if spec.WithRequestBody != nil {
 		checkSettings.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
 			MaxRequestBytes:     uint32(spec.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
