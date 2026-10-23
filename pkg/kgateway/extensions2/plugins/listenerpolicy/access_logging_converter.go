@@ -343,9 +343,6 @@ func newAccessLogWithConfig(name string, config proto.Message) *envoyaccesslogv3
 }
 
 func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog, configs []proto.Message) ([]*envoyaccesslogv3.AccessLog, error) {
-	if len(policies) != len(configs) {
-		return nil, fmt.Errorf("access log policies (%d) and configs (%d) are out of sync", len(policies), len(configs))
-	}
 	accessLogs := make([]*envoyaccesslogv3.AccessLog, len(configs))
 	if len(configs) == 0 {
 		return accessLogs, nil
@@ -363,7 +360,7 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 			cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
 		}
 		// Add filter if specified
-		policy := &policies[i] //nolint:gosec // G602: len(policies) == len(configs) is checked above
+		policy := &policies[i] //nolint:gosec // G602: configs is built 1:1 from policies, or is nil on conversion error
 		if policy.Filter != nil {
 			filter, err := convertAccessLogFilter(policy.Filter)
 			if err != nil {
