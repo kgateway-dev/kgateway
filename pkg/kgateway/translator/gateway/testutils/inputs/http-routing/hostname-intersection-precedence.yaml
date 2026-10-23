@@ -1,7 +1,9 @@
 # Routes whose hostnames intersect with the listener hostname to the same
 # virtual host are ordered by the specificity of their own hostnames before
 # their matches, so the newer exact-hostname route takes precedence over the
-# older wildcard route, even for a more specific path.
+# older wildcard route, even for a more specific path. Routes without
+# hostnames are the least specific, so the no-hostnames /api route sorts after
+# every route with hostnames, even ones with shorter paths.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -60,6 +62,23 @@ spec:
   rules:
   - backendRefs:
     - name: exact-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: no-hostnames-api
+  creationTimestamp: "2025-06-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    backendRefs:
+    - name: catch-all-svc
       port: 8080
 ---
 apiVersion: v1

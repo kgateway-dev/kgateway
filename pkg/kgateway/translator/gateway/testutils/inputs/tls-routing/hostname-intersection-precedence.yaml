@@ -1,7 +1,9 @@
 # TLSRoutes whose hostnames intersect with the listener hostname to the same
 # SNI domain are resolved by the specificity of their own hostnames, so the
 # newer exact-hostname route owns the SNI domain and the older wildcard route
-# is reported as conflicted.
+# is reported as conflicted. The oldest route has no hostnames, so it is the
+# least specific and is conflicted too; it is not translated, but its missing
+# backend is still reported with ResolvedRefs=False.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -44,6 +46,19 @@ spec:
   rules:
   - backendRefs:
     - name: exact-svc
+      port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: no-hostnames-oldest
+  creationTimestamp: "2025-01-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - backendRefs:
+    - name: missing-svc
       port: 443
 ---
 apiVersion: v1

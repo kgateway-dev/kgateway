@@ -61,7 +61,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 2
+      - attachedRoutes: 3
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -111,11 +111,36 @@ Statuses:
           group: ""
           kind: ""
           name: example-gateway
+    default/no-hostnames-oldest:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Not programmed, all SNI domains are owned by other routes: abc.example.com
+            (owned by TLSRoute default/exact-newer)'
+          reason: Conflicted
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Service default/missing-svc not found
+          reason: BackendNotFound
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
     default/wildcard-older:
       parents:
       - conditions:
         - lastTransitionTime: null
-          message: ""
+          message: 'Not programmed, all SNI domains are owned by other routes: abc.example.com
+            (owned by TLSRoute default/exact-newer)'
           reason: Conflicted
           status: "False"
           type: kgateway.dev/Programmed

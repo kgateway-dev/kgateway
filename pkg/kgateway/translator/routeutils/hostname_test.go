@@ -77,3 +77,21 @@ func TestCompareToRouteHostnameBeforeMatch(t *testing.T) {
 	exact.Route.PrecedenceWeight = -1
 	assert.Equal(t, 1, exact.CompareTo(wildcardWithLongerPath), "precedence weight should be compared before route hostname")
 }
+
+// A route without hostnames is the least specific; it does not inherit the
+// listener hostname (kubernetes-sigs/gateway-api#5392). On a foo.com listener,
+// a route with hostnames [foo.com] and PathPrefix / sorts before a route
+// without hostnames and PathPrefix /api.
+func TestCompareToRouteWithoutHostnamesIsLeastSpecific(t *testing.T) {
+	noHostnames := &SortableRoute{
+		Route:       ir.HttpRouteRuleMatchIR{Match: prefixMatcher("/api")},
+		RouteObject: defaultRt(),
+	}
+	withHostname := &SortableRoute{
+		Route:         ir.HttpRouteRuleMatchIR{Match: defaultMatcher()},
+		RouteObject:   defaultRtB(),
+		RouteHostname: MostSpecificRouteHostname([]string{"foo.com"}, "foo.com"),
+	}
+	assert.Equal(t, -1, withHostname.CompareTo(noHostnames), "the route with hostnames should sort first despite its shorter path")
+	assert.Equal(t, 1, noHostnames.CompareTo(withHostname), "the route without hostnames should sort last")
+}
