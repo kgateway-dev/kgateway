@@ -137,6 +137,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prep Go Runner
         uses: ./.github/actions/prep-go-runner
+      # Compiling the e2e test binary takes ~2-3 minutes; do it while the cluster
+      # is being set up. "Wait for e2e test compile" collects the result.
+      - name: Start e2e test compile
+        shell: bash
+        env:
+          TEST_PKG: ./test/e2e/tests
+        run: |
+          # Redirect the whole subshell so it holds no handle on this step's output.
+          (make warm-e2e-test; echo $? > "$RUNNER_TEMP/warm-e2e-test.exit") \
+            < /dev/null > "$RUNNER_TEMP/warm-e2e-test.log" 2>&1 &
       # The dotenv action is used to load key-value pairs from files.
       # In this case, the file is specified in the matrix and will contain the versions of the tools to use
       - name: Dotenv Action
@@ -194,6 +204,12 @@ jobs:
           yq -i '.controller.extraEnv.KGW_ENABLE_ORDERED_ADS = "false"' \
             test/e2e/tests/manifests/common-recommendations.yaml
           echo "Set controller.extraEnv.KGW_ENABLE_ORDERED_ADS=false for ${{ matrix.test.cluster-name }}"
+      - name: Wait for e2e test compile
+        shell: bash
+        run: |
+          while [ ! -f "$RUNNER_TEMP/warm-e2e-test.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/warm-e2e-test.log"
+          exit "$(cat "$RUNNER_TEMP/warm-e2e-test.exit")"
       - id: run-tests
         uses: ./.github/actions/kubernetes-e2e-tests
         env:

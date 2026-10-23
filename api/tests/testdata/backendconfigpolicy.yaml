@@ -197,3 +197,129 @@ spec:
     roundRobin:
       slowStart:
         window: 10s
+---
+# BackendConfigPolicy: sessionPersistence valid cookie
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-valid-cookie
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Cookie
+    absoluteTimeout: 1h
+    cookie:
+      name: my-session
+      path: /app
+      lifetimeType: Permanent
+---
+# BackendConfigPolicy: sessionPersistence valid header
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-valid-header
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Header
+    header:
+      name: x-session
+---
+# BackendConfigPolicy: sessionPersistence cookie required for default Cookie type
+_err: cookie must be specified for Cookie type
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-cookie-required
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    absoluteTimeout: 1h
+---
+# BackendConfigPolicy: sessionPersistence cookie not allowed for Header type
+_err: cookie must be nil if type is not Cookie
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-cookie-not-allowed
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Header
+    header:
+      name: x-session
+    cookie:
+      name: my-session
+---
+# BackendConfigPolicy: sessionPersistence header required for Header type
+_err: header must be specified for Header type
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-header-required
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Header
+---
+# BackendConfigPolicy: sessionPersistence header not allowed for Cookie type
+_err: header must be nil if type is not Header
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-header-not-allowed
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    type: Cookie
+    cookie: {}
+    header:
+      name: x-session
+---
+# BackendConfigPolicy: sessionPersistence Permanent requires absoluteTimeout
+_err: AbsoluteTimeout must be specified when cookie lifetimeType is Permanent
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-permanent-timeout
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    cookie:
+      lifetimeType: Permanent
+---
+# BackendConfigPolicy: sessionPersistence invalid cookie name
+_err: should match
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: sp-invalid-cookie-name
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  sessionPersistence:
+    cookie:
+      name: "bad name"

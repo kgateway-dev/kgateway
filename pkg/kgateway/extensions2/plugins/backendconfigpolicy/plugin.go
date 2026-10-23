@@ -60,6 +60,7 @@ type BackendConfigPolicyIR struct {
 	respectDnsTtl                 *bool
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
 	tunnel                        *tunnelIR
+	sessionPersistence            *sessionPersistenceIR
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -142,6 +143,9 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	if !d.tunnel.Equals(d2.tunnel) {
 		return false
 	}
+	if !d.sessionPersistence.Equals(d2.sessionPersistence) {
+		return false
+	}
 	return true
 }
 
@@ -186,6 +190,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
 				Name:                        "BackendConfigPolicy",
 				Policies:                    backendConfigPolicyCol,
+				NewGatewayTranslationPass:   newGatewayTranslationPass,
 				ProcessBackend:              processBackend,
 				ProcessBaseClusterResources: newTunnelHook(commoncol),
 				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
@@ -235,6 +240,14 @@ func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
 
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
+	if pol.sessionPersistence != nil {
+		// Session persistence is applied per route (see ApplyForBackendObjectPolicies). Notes about how it
+		// behaves for this backend are logged here; the ones that need attention are also reported in the
+		// policy status (see PartiallyValidMessages).
+		if note, _ := sessionPersistenceBackendNote(backend); note != "" {
+			logger.Debug("sessionPersistence behaves differently for this backend", "backend", backend.ResourceName(), "note", note)
+		}
+	}
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
 	}
@@ -420,6 +433,16 @@ func translate(
 			errs = append(errs, err)
 		}
 		ir.tunnel = tunnel
+	}
+	if pol.Spec.SessionPersistence != nil {
+		sp, err := translateSessionPersistence(pol.Spec.SessionPersistence)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if sp != nil {
+			sp.absoluteTimeoutIgnored = absoluteTimeoutIgnored(pol.Spec.SessionPersistence)
+		}
+		ir.sessionPersistence = sp
 	}
 	return &ir, errs
 }
