@@ -41,7 +41,9 @@ jobs:
           ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
         run: |
           mkdir -p /tmp/.buildx-cache-envoyinit
-          make save-e2e-shared-images
+          # Build the images in parallel. --output-sync keeps each target's log
+          # together, so a target's output only appears once it finishes.
+          make -j --output-sync=target save-e2e-shared-images
       - name: Rotate envoyinit BuildKit cache
         if: always()
         run: |
