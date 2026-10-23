@@ -47,14 +47,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		features.GatewayRouteHostnameIntersectionPrecedenceFeature,
 		features.HTTPRouteBackendURLRewriteFeature,
 	)
-	if !enableExperimentalGatewayAPIFeatures {
-		// TLSRoute and TLSRouteModeTerminate are standard as of Gateway API v1.5.
-		// TLSRouteModeMixed remains experimental and must not be advertised when
-		// experimental Gateway API features are disabled.
-		exemptFeatures.Insert(
-			features.TLSRouteModeMixedFeature,
-		)
-	}
 	for _, feature := range features.UDPRouteFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}

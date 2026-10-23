@@ -51,10 +51,10 @@ require (
 	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/sync v0.24.0
-	golang.org/x/time v0.15.0
+	golang.org/x/time v0.16.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d
 	google.golang.org/grpc v1.84.0
-	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
+	google.golang.org/protobuf v1.36.12
 	helm.sh/helm/v3 v3.21.3
 	istio.io/api v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271
 	istio.io/client-go v1.30.0-alpha.1.0.20260603032842-2edf997e399d
@@ -69,8 +69,8 @@ require (
 	k8s.io/kubectl v0.37.1
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 	sigs.k8s.io/controller-runtime v0.25.2
-	sigs.k8s.io/gateway-api v1.7.0-rc.1
-	sigs.k8s.io/gateway-api/conformance v1.7.0-rc.1
+	sigs.k8s.io/gateway-api v1.7.0-rc.2
+	sigs.k8s.io/gateway-api/conformance v1.7.0-rc.1.0.20261023162120-d57b8ba6f1b1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -223,13 +223,13 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/net v0.61.0 // indirect
-	golang.org/x/oauth2 v0.36.0 // indirect
+	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/tools v0.51.0 // indirect
+	golang.org/x/tools v0.52.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
@@ -246,7 +246,7 @@ require (
 	oras.land/oras-go/v2 v2.6.2 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.36.0 // indirect
 	sigs.k8s.io/controller-tools v0.20.1 // indirect
-	sigs.k8s.io/gateway-api-conformance-images v0.1.0 // indirect
+	sigs.k8s.io/gateway-api-conformance-images v0.2.0 // indirect
 	sigs.k8s.io/gateway-api-inference-extension v1.5.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kind v0.33.0 // indirect
@@ -270,7 +270,3 @@ tool (
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
-
-replace sigs.k8s.io/gateway-api => sigs.k8s.io/gateway-api v1.7.0-rc.1.0.20261009135604-faab3342b467
-
-replace sigs.k8s.io/gateway-api/conformance => sigs.k8s.io/gateway-api/conformance v1.7.0-rc.1.0.20261009135604-faab3342b467
