@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"maps"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -42,27 +43,34 @@ type translatorTestCase struct {
 	extraConfig translatortest.ExtraConfig
 }
 
-// pinVersion fixes the reported kgateway version for the duration of a test.
-// version.Version reaches translation output through the OTel access-log resource
-// attributes (see access_logging_converter.go), so without it a golden recorded from
-// a locally stamped build would not match one recorded in CI.
+// TestMain sets the package-level state translation reads, once and before any test
+// runs, so that the tests below can run in parallel.
 //
-// It writes a package-level global, which is only safe because nothing in this package
-// calls t.Parallel().
-func pinVersion(t *testing.T) {
-	t.Helper()
-	prev := version.Version
+// version.Version reaches translation output through the OTel access-log resource
+// attributes (see access_logging_converter.go), so without pinning it a golden recorded
+// from a locally stamped build would not match one recorded in CI.
+//
+// Every backend plugin reads the EC2 instance lister when it is built, but only a
+// gateway with EnableAwsEc2Discovery set (the "AWS EC2 backend" case) ever lists.
+func TestMain(m *testing.M) {
 	version.Version = "v1.0.0-ci1"
-	t.Cleanup(func() { version.Version = prev })
+	backendplugin.SetEc2InstancesForTest([]backendplugin.TestEc2Instance{{
+		InstanceID: "i-1234567890",
+		PrivateIP:  "10.0.0.10",
+		Zone:       "us-east-1a",
+		Tags: map[string]string{
+			"app": "payments",
+		},
+	}})
+	os.Exit(m.Run())
 }
 
 func TestBasic(t *testing.T) {
 	test := func(t *testing.T, in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
+		t.Parallel()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
-
-		pinVersion(t)
 
 		// Prepend settings to true so they can be overwritten by settingOpts
 		settingOpts = append([]translatortest.SettingsOpts{
@@ -1614,17 +1622,8 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// The EC2 instances this case discovers are installed by TestMain.
 	t.Run("AWS EC2 backend", func(t *testing.T) {
-		restore := backendplugin.SetEc2InstancesForTest([]backendplugin.TestEc2Instance{{
-			InstanceID: "i-1234567890",
-			PrivateIP:  "10.0.0.10",
-			Zone:       "us-east-1a",
-			Tags: map[string]string{
-				"app": "payments",
-			},
-		}})
-		defer restore()
-
 		test(t, translatorTestCase{
 			inputFiles: []string{"backends/aws_ec2.yaml"},
 			outputFile: "backends/aws_ec2.yaml",
@@ -3799,7 +3798,6 @@ func TestSetupScenarios(t *testing.T) {
 	ctx := t.Context()
 	dir := fsutils.MustGetThisDir()
 
-	pinVersion(t)
 	structuralSchemas := setupStructuralSchemas(t)
 
 	groups := []struct {
@@ -3829,6 +3827,7 @@ func TestSetupScenarios(t *testing.T) {
 			rel, err := filepath.Rel(filepath.Join(dir, "testutils/inputs"), input)
 			require.NoError(t, err)
 			t.Run(strings.TrimSuffix(filepath.ToSlash(rel), ".yaml"), func(t *testing.T) {
+				t.Parallel()
 				translatortest.TestTranslationWithExtraPlugins(t, ctx, []string{
 					filepath.Join(dir, "testutils/inputs/setup/common.yaml"),
 					input,
@@ -3848,7 +3847,6 @@ func TestGatewayBackendClientCertificateVariantsRemainGatewayScoped(t *testing.T
 	ctx := t.Context()
 
 	dir := fsutils.MustGetThisDir()
-	pinVersion(t)
 
 	tc := translatortest.TestCase{
 		InputFiles: []string{
@@ -4242,6 +4240,7 @@ func TestValidation(t *testing.T) {
 					continue
 				}
 				t.Run(fmt.Sprintf("%s/%s", test.category, test.name), func(t *testing.T) {
+					t.Parallel()
 					runTest(t, test, mode)
 				})
 			}
@@ -4251,6 +4250,7 @@ func TestValidation(t *testing.T) {
 
 func TestRouteDelegation(t *testing.T) {
 	test := func(t *testing.T, inputFile string) {
+		t.Parallel()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
@@ -4393,6 +4393,7 @@ func TestRouteDelegation(t *testing.T) {
 
 func TestDiscoveryNamespaceSelector(t *testing.T) {
 	test := func(t *testing.T, cfgJSON string, inputFile string, outputFile string) {
+		t.Parallel()
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()

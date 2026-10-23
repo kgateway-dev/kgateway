@@ -781,7 +781,7 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			} else {
 				client = fake.NewClient(t, objs...)
 			}
-			tester.RunHelmChartTest(t, tt, scheme, dir, crdDir, client, envTestCfg)
+			tester.RunHelmChartTestWithObjects(t, tt, scheme, dir, objs, client, envTestCfg)
 		})
 	}
 }
