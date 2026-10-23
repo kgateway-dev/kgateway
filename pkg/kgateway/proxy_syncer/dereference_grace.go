@@ -49,7 +49,7 @@ type dereferenceState struct {
 // when the cluster leaves.
 //
 // The windows it opens are recorded at now, before the snapshot is installed;
-// the caller passes them to settleDereferenceWindowsLocked once it is.
+// the caller passes them and now to settleDereferenceWindowsLocked once it is.
 func (g *publishGate) graceDereferencedClustersLocked(
 	proxyKey string,
 	published envoycache.ResourceSnapshot,
@@ -135,7 +135,8 @@ func (g *publishGate) graceDereferencedClustersLocked(
 // installation that blocks answering watches must not use it up. A publish
 // that installed nothing (failed, or computed for a superseded connection)
 // opens none. Windows already open keep their start. The prune is armed from
-// the recorded starts. Callers must hold the gate lock.
+// the recorded starts. began is when the publish computed its graced clusters.
+// Callers must hold the gate lock.
 func (g *publishGate) settleDereferenceWindowsLocked(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
@@ -143,6 +144,7 @@ func (g *publishGate) settleDereferenceWindowsLocked(
 	wrap XdsSnapWrapper,
 	opened []string,
 	installed bool,
+	began time.Time,
 ) {
 	state := g.dereferenced[proxyKey]
 	if state == nil {
@@ -165,7 +167,19 @@ func (g *publishGate) settleDereferenceWindowsLocked(
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
-	g.armDereferenceTimerLocked(ctx, cache, proxyKey, wrap, g.soonestDereferenceExpiryLocked(proxyKey, at))
+	in := g.soonestDereferenceExpiryLocked(proxyKey, at)
+	for _, left := range state.since {
+		if closed := left.Add(g.dereferenceGrace); closed.After(began) && !closed.After(at) {
+			// A window closed while this publish ran. Its prune is queued on
+			// the gate lock, and re-arming for the windows still open would
+			// cancel it, keeping the cluster until the next one closes. Prune
+			// at once instead (a zero delay arms nothing); that publish re-arms
+			// for the rest. It cannot repeat: it begins after the window closed.
+			in = time.Nanosecond
+			break
+		}
+	}
+	g.armDereferenceTimerLocked(ctx, cache, proxyKey, wrap, in)
 }
 
 // soonestDereferenceExpiryLocked returns the time from at until the soonest
@@ -199,10 +213,10 @@ func (g *publishGate) armDereferenceTimerLocked(
 	if state == nil {
 		return
 	}
-	// Record the latest build even when no window is still open. An
-	// installation that crossed a deadline leaves that deadline's prune queued
-	// on the gate lock, and the prune re-publishes state.wrap: an older build
-	// there would roll the client's routes back.
+	// Record the latest build even when no window is still open. A prune that
+	// fired before this publish took the gate lock may still be queued on it,
+	// and the prune re-publishes state.wrap: an older build there would roll
+	// the client's configuration back.
 	state.wrap = wrap
 	if in <= 0 {
 		return
@@ -324,6 +338,6 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 		// timer would otherwise re-publish an older build.
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
 	}
-	g.settleDereferenceWindowsLocked(ctx, cache, snapWrap.proxyKey, snapWrap, opened, publishErr == nil)
+	g.settleDereferenceWindowsLocked(ctx, cache, snapWrap.proxyKey, snapWrap, opened, publishErr == nil, now)
 	return publishErr
 }

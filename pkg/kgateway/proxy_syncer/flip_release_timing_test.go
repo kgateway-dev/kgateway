@@ -3,10 +3,12 @@ package proxy_syncer
 import (
 	"context"
 	"slices"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	resourcev3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/stretchr/testify/assert"
@@ -14,15 +16,35 @@ import (
 )
 
 // slowInstallCache delays SetSnapshot while delay is set, standing in for an
-// install blocked on a stream.
+// install blocked on a stream. It counts installs and keeps the slow ones.
 type slowInstallCache struct {
 	envoycache.SnapshotCache
-	delay atomic.Int64
+	delay    atomic.Int64
+	installs atomic.Int64
+
+	mu   sync.Mutex
+	slow []envoycache.ResourceSnapshot
 }
 
 func (c *slowInstallCache) SetSnapshot(ctx context.Context, node string, snapshot envoycache.ResourceSnapshot) error {
-	time.Sleep(time.Duration(c.delay.Load()))
+	c.installs.Add(1)
+	if delay := time.Duration(c.delay.Load()); delay > 0 {
+		c.mu.Lock()
+		c.slow = append(c.slow, snapshot)
+		c.mu.Unlock()
+		time.Sleep(delay)
+	}
 	return c.SnapshotCache.SetSnapshot(ctx, node, snapshot)
+}
+
+// firstSlowInstallClusters returns the clusters of the first snapshot installed
+// while delay was set.
+func (c *slowInstallCache) firstSlowInstallClusters(t *testing.T) map[string]envoycachetypes.ResourceWithTTL {
+	t.Helper()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	require.NotEmpty(t, c.slow, "nothing was installed slowly")
+	return c.slow[0].GetResourcesAndTTL(resourcev3.ClusterType)
 }
 
 // A held flip's budget starts once its held snapshot is installed: an install
@@ -147,12 +169,68 @@ func TestDereferencePruneQueuedDuringASlowInstallKeepsTheNewerBuild(t *testing.T
 
 	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
 	pt.syncXds(ctx, routedBuild(t, "v2", "new", "new")) // old's window opens; its prune is armed with v2
-	time.Sleep(grace * 3 / 4)
+	time.Sleep(grace / 2)
 	cache.delay.Store(int64(grace))
 	pt.syncXds(ctx, routedBuild(t, "v3", "new", "new")) // still keeps old, and installs past its deadline
 	cache.delay.Store(0)
+	require.Contains(t, cache.firstSlowInstallClusters(t), "old", "v3 must begin inside old's window, or its prune runs before v3")
 
 	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "old") }, 2*time.Second, 5*time.Millisecond,
 		"old's prune runs")
 	assert.Equal(t, "v3", publishedListenerVersionOf(t, pt), "the prune re-publishes the newer build, not the one it was armed with")
+}
+
+// A window that closes during an installation must not wait for a later
+// window: re-arming the prune for b would cancel a's, keeping a published
+// until b's window closes.
+func TestDereferenceWindowClosingDuringASlowInstallIsNotExtendedByALaterOne(t *testing.T) {
+	grace := 300 * time.Millisecond
+	cache := &slowInstallCache{SnapshotCache: newTestSnapshotCache(t)}
+	translator := NewProxyTranslator(cache, stubPriorXDS{has: true}, time.Hour, true, scopedClustersWithGrace(grace))
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "c", "a", "b", "c"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "c", "b", "c")) // a's window opens
+	time.Sleep(grace / 2)
+	cache.delay.Store(int64(grace))
+	pt.syncXds(ctx, routedBuild(t, "v3", "c", "c")) // b's window opens; a's closes during the installation
+	cache.delay.Store(0)
+	require.Contains(t, cache.firstSlowInstallClusters(t), "a", "v3 must begin inside a's window, or a's prune runs before v3")
+
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "a") }, grace/2, 5*time.Millisecond,
+		"a leaves once the installation lands, not when b's window closes")
+	assert.Contains(t, publishedClusterNames(t, pt), "b", "b keeps its window")
+	assert.Equal(t, "v3", publishedListenerVersionOf(t, pt))
+	require.Eventually(t, func() bool { return !slices.Contains(publishedClusterNames(t, pt), "b") }, 2*time.Second, 5*time.Millisecond,
+		"b still leaves once its window closes")
+}
+
+// The same during a reference-ahead hold, which keeps the expired cluster
+// until it releases: the prune for a window that closed during the
+// installation runs once, not on every publish it makes.
+func TestDereferenceWindowClosingDuringASlowHeldInstallIsPrunedOnce(t *testing.T) {
+	grace := 300 * time.Millisecond
+	scoping := scopedClustersWithReferenceAhead(time.Hour)
+	scoping.dereferenceGrace = grace
+	cache := &slowInstallCache{SnapshotCache: newTestSnapshotCache(t)}
+	translator := NewProxyTranslator(cache, stubPriorXDS{has: true}, time.Hour, true, scoping)
+	pt := &translator
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+
+	pt.syncXds(ctx, routedBuild(t, "v1", "c", "a", "c"))
+	pt.syncXds(ctx, routedBuild(t, "v2", "c", "c")) // a's window opens
+	time.Sleep(grace / 2)
+	cache.delay.Store(int64(grace))
+	pt.syncXds(ctx, routedBuild(t, "v3", "n", "c", "n")) // held for n; a's window closes during the installation
+	cache.delay.Store(0)
+	require.Contains(t, cache.firstSlowInstallClusters(t), "a", "v3 must begin inside a's window, or a's prune runs before v3")
+	installed := cache.installs.Load()
+
+	time.Sleep(grace)
+	assert.LessOrEqual(t, cache.installs.Load()-installed, int64(1), "the prune runs once")
+	assert.Equal(t, "v2", publishedListenerVersionOf(t, pt), "the retarget is still held")
+	assert.Contains(t, publishedClusterNames(t, pt), "a", "the hold keeps a until it releases")
 }
