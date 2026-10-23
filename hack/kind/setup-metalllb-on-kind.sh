@@ -4,7 +4,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-# By default, apply the vendored manifest (upstream v0.13.7 with faster startup probes).
+# By default, apply the vendored manifest (upstream v0.16.1 with faster startup probes).
 # Set METALLB_VERSION to apply that upstream release instead, or METALLB_MANIFEST to apply
 # any other manifest path or URL.
 if [[ -n "${METALLB_VERSION:-}" ]]; then
