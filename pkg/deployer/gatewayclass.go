@@ -41,10 +41,8 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		features.GatewayAddressRoutabilityClusterFeature,
 		features.GatewayListenerFiltersFeature,
 		features.ClusterTrustBundleFeature,
-		// Gateway API v1.7 standard features that are not implemented yet: hostname
-		// intersection precedence across routes attached to the same hostname, and
-		// URLRewrite filters on backendRefs.
-		features.GatewayRouteHostnameIntersectionPrecedenceFeature,
+		// Gateway API v1.7 standard feature that is not implemented yet: URLRewrite
+		// filters on backendRefs.
 		features.HTTPRouteBackendURLRewriteFeature,
 	)
 	for _, feature := range features.UDPRouteFeatures.UnsortedList() {

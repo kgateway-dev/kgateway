@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -271,8 +272,18 @@ func (ml *MergedListeners) AppendTlsListener(
 	if len(routeInfos) == 0 {
 		appendFilterChain(nil, listenerSNIDomains(listener))
 	} else {
-		for _, routeInfo := range routeInfos {
-			appendFilterChain([]*query.RouteInfo{routeInfo}, tlsRouteSNIDomains(listener, routeInfo))
+		var conflicted []*query.RouteInfo
+		for i, owned := range resolveTLSRouteSNIDomains(listener, routeInfos) {
+			if !owned.ok {
+				conflicted = append(conflicted, routeInfos[i])
+				continue
+			}
+			appendFilterChain([]*query.RouteInfo{routeInfos[i]}, owned.sniDomains)
+		}
+		// Every SNI domain has a winning route, so there is at least one filter
+		// chain to report the conflicts from.
+		if len(conflicted) > 0 && len(filterChains) > 0 {
+			filterChains[0].conflictedRoutes = conflicted
 		}
 	}
 
@@ -311,6 +322,95 @@ func tlsRouteSNIDomains(listener ir.Listener, routeInfo *query.RouteInfo) []stri
 	}
 
 	return listenerSNIDomains(listener)
+}
+
+type ownedSNIDomains struct {
+	// sniDomains are the SNI domains the route owns; nil matches any SNI.
+	sniDomains []string
+	// ok is false when every SNI domain of the route is owned by another route.
+	ok bool
+}
+
+// resolveTLSRouteSNIDomains assigns each SNI domain of a TLS listener to a
+// single route, since Envoy rejects filter chains with identical matches. The
+// result is indexed like routeInfos.
+//
+// Routes whose hostnames intersect with the listener hostname to the same SNI
+// domain are ordered by the specificity of their own hostnames, then by
+// creation timestamp (oldest first), then by namespace/name.
+func resolveTLSRouteSNIDomains(listener ir.Listener, routeInfos []*query.RouteInfo) []ownedSNIDomains {
+	type candidate struct {
+		idx           int
+		routeHostname string
+	}
+	precedes := func(a, b candidate) bool {
+		if c := routeutils.CompareHostnameSpecificity(a.routeHostname, b.routeHostname); c != 0 {
+			return c < 0
+		}
+		aObj, bObj := routeInfos[a.idx].Object.GetSourceObject(), routeInfos[b.idx].Object.GetSourceObject()
+		if c := aObj.GetCreationTimestamp().Compare(bObj.GetCreationTimestamp().Time); c != 0 {
+			return c < 0
+		}
+		return types.NamespacedName{Namespace: aObj.GetNamespace(), Name: aObj.GetName()}.String() <
+			types.NamespacedName{Namespace: bObj.GetNamespace(), Name: bObj.GetName()}.String()
+	}
+
+	// A route without SNI domains matches any SNI; track it under "".
+	domainsOrCatchAll := func(domains []string) []string {
+		if len(domains) == 0 {
+			return []string{""}
+		}
+		return domains
+	}
+
+	domains := make([][]string, len(routeInfos))
+	winners := map[string]candidate{}
+	for i, routeInfo := range routeInfos {
+		domains[i] = tlsRouteSNIDomains(listener, routeInfo)
+		if !producesTcpFilterChain(routeInfo) {
+			// Rejected later; it must not take SNI domains from valid routes.
+			continue
+		}
+		routeHostnames := specHostnames(routeInfo)
+		for _, domain := range domainsOrCatchAll(domains[i]) {
+			c := candidate{idx: i, routeHostname: routeutils.MostSpecificRouteHostname(routeHostnames, domain)}
+			if w, ok := winners[domain]; !ok || precedes(c, w) {
+				winners[domain] = c
+			}
+		}
+	}
+
+	out := make([]ownedSNIDomains, len(routeInfos))
+	for i, routeInfo := range routeInfos {
+		if !producesTcpFilterChain(routeInfo) {
+			out[i] = ownedSNIDomains{sniDomains: domains[i], ok: true}
+			continue
+		}
+		if len(domains[i]) == 0 {
+			out[i].ok = winners[""].idx == i
+			continue
+		}
+		for _, domain := range domains[i] {
+			if winners[domain].idx == i {
+				out[i].sniDomains = append(out[i].sniDomains, domain)
+			}
+		}
+		out[i].ok = len(out[i].sniDomains) > 0
+	}
+	return out
+}
+
+// producesTcpFilterChain reports whether translateTcpFilterChain can produce a
+// filter chain for the route.
+func producesTcpFilterChain(routeInfo *query.RouteInfo) bool {
+	switch r := routeInfo.Object.(type) {
+	case *ir.TcpRouteIR:
+		return len(r.SourceObject.Spec.Rules) == 1 && len(r.Backends) > 0
+	case *ir.TlsRouteIR:
+		return len(r.SourceObject.Spec.Rules) == 1 && len(r.Backends) > 0
+	default:
+		return false
+	}
 }
 
 func (ml *MergedListeners) translateListeners(
@@ -423,6 +523,9 @@ type tcpFilterChain struct {
 	tls              *gwv1.ListenerTLSConfig
 	sniDomains       []string
 	listenerReporter reports.ListenerReporter
+	// conflictedRoutes are routes on the same Gateway listener whose SNI
+	// domains are all owned by other routes.
+	conflictedRoutes []*query.RouteInfo
 }
 
 type tcpFilterChainParent struct {
@@ -440,6 +543,10 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
 	gatewayNamespace string,
 ) *ir.TcpIR {
+	for _, ri := range tc.conflictedRoutes {
+		rejectConflictingRoute(ri, reporter)
+	}
+
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
@@ -641,8 +748,9 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	}
 }
 
-// rejectConflictingRoute sets Accepted=False on the specific listener
-// attachment of a route that lost the oldest-wins selection.
+// rejectConflictingRoute sets Programmed=False on the specific listener
+// attachment of a route that lost to another route attached to the same
+// listener.
 func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
 		Type:   conditions.KgatewayConditionProgrammed,
@@ -967,9 +1075,24 @@ func buildRoutesPerHostWithHostnamesFilter(
 		if len(hostnames) == 0 {
 			continue
 		}
+		routeHostnames := specHostnames(routeWithHosts)
 		for _, host := range hostnames {
-			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routes)...)
+			routeHostname := routeutils.MostSpecificRouteHostname(routeHostnames, host)
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routeHostname, routes)...)
 		}
+	}
+}
+
+// specHostnames returns the hostnames set on the route itself, before they are
+// intersected with the listener hostname.
+func specHostnames(routeInfo *query.RouteInfo) []string {
+	switch r := routeInfo.Object.(type) {
+	case *ir.HttpRouteIR:
+		return r.GetHostnames()
+	case *ir.TlsRouteIR:
+		return r.GetHostnames()
+	default:
+		return nil
 	}
 }
 

@@ -203,6 +203,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("httproutes with the same hostname intersection sort by route hostname specificity", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/hostname-intersection-precedence.yaml"},
+			outputFile: "http-routing/hostname-intersection-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/basic.yaml"},
@@ -1493,6 +1504,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/multi-backend.yaml"},
 			outputFile: "tls-routing/multi-backend-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroutes with the same hostname intersection resolve by route hostname specificity", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/hostname-intersection-precedence.yaml"},
+			outputFile: "tls-routing/hostname-intersection-precedence.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
