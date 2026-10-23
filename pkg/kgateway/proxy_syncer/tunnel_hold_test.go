@@ -86,8 +86,7 @@ func TestTunnelProxyHoldSurvivesConnectedRowWithdrawal(t *testing.T) {
 				pt.gate.mu.Lock()
 				after := *pt.gate.pendingFlips[publishGateTestClient]
 				pt.gate.mu.Unlock()
-				require.Equal(t, before.since, after.since, "withdrawal must not restart the hold budget")
-				require.Equal(t, before.unreadySince, after.unreadySince)
+				require.Equal(t, before.unreadySince, after.unreadySince, "withdrawal must not restart the hold budget")
 				require.Equal(t, before.deadline, after.deadline)
 				require.Greater(t, after.epoch, before.epoch, "callbacks from before withdrawal must be invalidated")
 				if budget == 0 {
@@ -109,4 +108,39 @@ func TestTunnelProxyHoldSurvivesConnectedRowWithdrawal(t *testing.T) {
 			})
 		}
 	}
+}
+
+// A row returning after a withdrawal starts a new hold episode, so a hold that
+// began long before cannot cap a new cluster's reference-ahead window.
+func TestReturningRowGetsAFullReferenceAheadWindow(t *testing.T) {
+	pt := NewProxyTranslator(newTestSnapshotCache(t), stubPriorXDS{has: true}, time.Hour, true, scopedClustersWithReferenceAhead(time.Hour))
+	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
+	ctx := context.Background()
+	pt.syncXds(ctx, routedBuild(t, "v1", "old", "old"))
+	blocked := routedBuild(t, "v2", "new", "old")
+	blocked.missingReferenced = []string{"new"}
+	pt.syncXds(ctx, blocked)
+	require.Equal(t, "v1", publishedListenerVersionOf(t, &pt), "the flip is held for the unready cluster")
+
+	// Stand in for a withdrawal that outlasts the budget.
+	pt.gate.mu.Lock()
+	held := pt.gate.pendingFlips[publishGateTestClient]
+	if held != nil {
+		held.since = held.since.Add(-2 * time.Hour)
+	}
+	pt.gate.mu.Unlock()
+	require.NotNil(t, held)
+	pt.clientSnapshotDeleted(publishGateTestClient, true)
+
+	pt.syncXds(ctx, routedBuild(t, "v3", "y", "old", "y"))
+	pt.gate.mu.Lock()
+	returned := pt.gate.pendingFlips[publishGateTestClient]
+	var capped bool
+	if returned != nil {
+		capped = returned.capped
+	}
+	pt.gate.mu.Unlock()
+	require.NotNil(t, returned, "the routes naming new cluster y wait for its window")
+	require.False(t, capped, "the withdrawn hold's start must not cap the new window")
+	require.Equal(t, "v1", publishedListenerVersionOf(t, &pt))
 }
