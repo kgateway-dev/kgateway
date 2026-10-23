@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/annotations"
@@ -271,8 +272,24 @@ func (ml *MergedListeners) AppendTlsListener(
 	if len(routeInfos) == 0 {
 		appendFilterChain(nil, listenerSNIDomains(listener))
 	} else {
-		for _, routeInfo := range routeInfos {
-			appendFilterChain([]*query.RouteInfo{routeInfo}, tlsRouteSNIDomains(listener, routeInfo))
+		var conflicted []conflictedRoute
+		for i, owned := range resolveTLSRouteSNIDomains(listener, routeInfos) {
+			if len(owned.lost) > 0 {
+				conflicted = append(conflicted, conflictedRoute{
+					routeInfo: routeInfos[i],
+					message:   sniConflictMessage(owned, routeInfos),
+					partial:   owned.ok,
+				})
+			}
+			// A duplicate shares the filter chain of its first entry.
+			if owned.ok && !owned.duplicate {
+				appendFilterChain([]*query.RouteInfo{routeInfos[i]}, owned.sniDomains)
+			}
+		}
+		// Every lost SNI domain has a winning route, so there is at least one
+		// filter chain to report the conflicts from.
+		if len(conflicted) > 0 && len(filterChains) > 0 {
+			filterChains[0].conflictedRoutes = conflicted
 		}
 	}
 
@@ -311,6 +328,164 @@ func tlsRouteSNIDomains(listener ir.Listener, routeInfo *query.RouteInfo) []stri
 	}
 
 	return listenerSNIDomains(listener)
+}
+
+type ownedSNIDomains struct {
+	// sniDomains are the SNI domains the route owns; nil matches any SNI.
+	sniDomains []string
+	// ok is false when every SNI domain of the route is owned by another route.
+	ok bool
+	// lost are the SNI domains of the route that are owned by other routes.
+	lost []lostSNIDomain
+	// duplicate is true when an earlier entry is the same route attached to the
+	// listener through another parentRef. Only the earlier entry is resolved;
+	// a duplicate copies its result, so every parentRef reports a conflict.
+	duplicate bool
+}
+
+type lostSNIDomain struct {
+	// domain is the lost SNI domain; "" matches any SNI.
+	domain string
+	// winner is the index in routeInfos of the route that owns the domain.
+	winner int
+}
+
+// sniConflictMessage describes the SNI domains a route lost and the routes
+// that own them.
+func sniConflictMessage(owned ownedSNIDomains, routeInfos []*query.RouteInfo) string {
+	lost := make([]string, 0, len(owned.lost))
+	for _, l := range owned.lost {
+		domain := l.domain
+		if domain == "" {
+			domain = "any SNI"
+		}
+		w := routeInfos[l.winner].Object
+		lost = append(lost, fmt.Sprintf("%s (owned by %s %s/%s)", domain, w.GetGroupKind().Kind, w.GetNamespace(), w.GetName()))
+	}
+	if owned.ok {
+		return fmt.Sprintf("Programmed for SNI domains [%s]; not programmed for SNI domains owned by other routes: %s",
+			strings.Join(owned.sniDomains, ", "), strings.Join(lost, ", "))
+	}
+	return "Not programmed, all SNI domains are owned by other routes: " + strings.Join(lost, ", ")
+}
+
+// resolveTLSRouteSNIDomains assigns each SNI domain of a TLS listener to a
+// single route, since Envoy rejects filter chains with identical matches. The
+// result is indexed like routeInfos.
+//
+// Routes whose hostnames intersect with the listener hostname to the same SNI
+// domain are ordered by the specificity of their own hostnames, then by
+// creation timestamp (oldest first), then by namespace/name.
+func resolveTLSRouteSNIDomains(listener ir.Listener, routeInfos []*query.RouteInfo) []ownedSNIDomains {
+	type candidate struct {
+		idx           int
+		routeHostname string
+	}
+	precedes := func(a, b candidate) bool {
+		if c := routeutils.CompareHostnameSpecificity(a.routeHostname, b.routeHostname); c != 0 {
+			return c < 0
+		}
+		aObj, bObj := routeInfos[a.idx].Object.GetSourceObject(), routeInfos[b.idx].Object.GetSourceObject()
+		if c := aObj.GetCreationTimestamp().Compare(bObj.GetCreationTimestamp().Time); c != 0 {
+			return c < 0
+		}
+		return types.NamespacedName{Namespace: aObj.GetNamespace(), Name: aObj.GetName()}.String() <
+			types.NamespacedName{Namespace: bObj.GetNamespace(), Name: bObj.GetName()}.String()
+	}
+
+	// A route without SNI domains matches any SNI; track it under "".
+	domainsOrCatchAll := func(domains []string) []string {
+		if len(domains) == 0 {
+			return []string{""}
+		}
+		return domains
+	}
+
+	// The same route can reach the listener through more than one parentRef
+	// (for example one by sectionName and one by port). It must not conflict
+	// with itself, so only its first entry is resolved.
+	first := map[routeKey]int{}
+	duplicateOf := make([]int, len(routeInfos))
+	duplicate := make([]bool, len(routeInfos))
+	for i, routeInfo := range routeInfos {
+		key := keyOfRoute(routeInfo)
+		if j, ok := first[key]; ok {
+			duplicate[i], duplicateOf[i] = true, j
+			continue
+		}
+		first[key] = i
+	}
+
+	domains := make([][]string, len(routeInfos))
+	winners := map[string]candidate{}
+	for i, routeInfo := range routeInfos {
+		if duplicate[i] {
+			continue
+		}
+		domains[i] = tlsRouteSNIDomains(listener, routeInfo)
+		if !producesTcpFilterChain(routeInfo) {
+			// Rejected later; it must not take SNI domains from valid routes.
+			continue
+		}
+		routeHostnames := specHostnames(routeInfo)
+		for _, domain := range domainsOrCatchAll(domains[i]) {
+			c := candidate{idx: i, routeHostname: routeutils.MostSpecificRouteHostname(routeHostnames, domain)}
+			if w, ok := winners[domain]; !ok || precedes(c, w) {
+				winners[domain] = c
+			}
+		}
+	}
+
+	out := make([]ownedSNIDomains, len(routeInfos))
+	for i, routeInfo := range routeInfos {
+		switch {
+		case duplicate[i]:
+			continue
+		case !producesTcpFilterChain(routeInfo):
+			out[i] = ownedSNIDomains{sniDomains: domains[i], ok: true}
+			continue
+		}
+		for _, domain := range domainsOrCatchAll(domains[i]) {
+			if w := winners[domain].idx; w != i {
+				out[i].lost = append(out[i].lost, lostSNIDomain{domain: domain, winner: w})
+			} else if domain != "" {
+				out[i].sniDomains = append(out[i].sniDomains, domain)
+			}
+		}
+		out[i].ok = len(out[i].lost) == 0 || len(out[i].sniDomains) > 0
+	}
+	// Duplicates come after their first entry, which is resolved by now.
+	for i := range routeInfos {
+		if duplicate[i] {
+			out[i] = out[duplicateOf[i]]
+			out[i].duplicate = true
+		}
+	}
+	return out
+}
+
+// routeKey identifies a route regardless of the parentRef it is attached through.
+type routeKey struct {
+	gk        schema.GroupKind
+	namespace string
+	name      string
+}
+
+func keyOfRoute(routeInfo *query.RouteInfo) routeKey {
+	return routeKey{gk: routeInfo.Object.GetGroupKind(), namespace: routeInfo.Object.GetNamespace(), name: routeInfo.Object.GetName()}
+}
+
+// producesTcpFilterChain reports whether translateTcpFilterChain can produce a
+// filter chain for the route.
+func producesTcpFilterChain(routeInfo *query.RouteInfo) bool {
+	switch r := routeInfo.Object.(type) {
+	case *ir.TcpRouteIR:
+		return len(r.SourceObject.Spec.Rules) == 1 && len(r.Backends) > 0
+	case *ir.TlsRouteIR:
+		return len(r.SourceObject.Spec.Rules) == 1 && len(r.Backends) > 0
+	default:
+		return false
+	}
 }
 
 func (ml *MergedListeners) translateListeners(
@@ -423,6 +598,17 @@ type tcpFilterChain struct {
 	tls              *gwv1.ListenerTLSConfig
 	sniDomains       []string
 	listenerReporter reports.ListenerReporter
+	// conflictedRoutes are routes on the same Gateway listener that lost some
+	// or all of their SNI domains to other routes.
+	conflictedRoutes []conflictedRoute
+}
+
+type conflictedRoute struct {
+	routeInfo *query.RouteInfo
+	message   string
+	// partial is true when the route still owns some SNI domains, so it is
+	// translated, and its backends validated, in its own filter chain.
+	partial bool
 }
 
 type tcpFilterChainParent struct {
@@ -440,6 +626,15 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	frontendTLSConfig *ir.FrontendTLSConfigIR,
 	gatewayNamespace string,
 ) *ir.TcpIR {
+	for _, c := range tc.conflictedRoutes {
+		rejectConflictingRoute(c.routeInfo, c.message, reporter)
+		if !c.partial {
+			// The route is never translated, so validate its backends here to
+			// report ResolvedRefs.
+			reportBackendErrors(c.routeInfo, reporter)
+		}
+	}
+
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
@@ -455,11 +650,16 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
 	if len(parent.routesWithHosts) > 1 {
+		winner := keyOfRoute(r)
 		for _, other := range parent.routesWithHosts {
-			if other == r {
+			// The winning route can also be attached through another parentRef;
+			// it must not conflict with itself.
+			if keyOfRoute(other) == winner {
 				continue
 			}
-			rejectConflictingRoute(other, reporter)
+			rejectConflictingRoute(other, fmt.Sprintf("Not programmed, the listener can only serve one route and the older %s %s/%s is programmed",
+				r.Object.GetGroupKind().Kind, r.Object.GetNamespace(), r.Object.GetName()), reporter)
+			reportBackendErrors(other, reporter)
 		}
 	}
 
@@ -641,19 +841,47 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 	}
 }
 
-// rejectConflictingRoute sets Accepted=False on the specific listener
-// attachment of a route that lost the oldest-wins selection.
-func rejectConflictingRoute(ri *query.RouteInfo, reporter reports.Reporter) {
+// rejectConflictingRoute sets Programmed=False on the specific listener
+// attachment of a route that lost to another route attached to the same
+// listener.
+func rejectConflictingRoute(ri *query.RouteInfo, message string, reporter reports.Reporter) {
 	condition := reports.RouteCondition{
-		Type:   conditions.KgatewayConditionProgrammed,
-		Status: metav1.ConditionFalse,
-		Reason: gwv1.RouteConditionReason("Conflicted"),
+		Type:    conditions.KgatewayConditionProgrammed,
+		Status:  metav1.ConditionFalse,
+		Reason:  gwv1.RouteConditionReason("Conflicted"),
+		Message: message,
 	}
 	switch o := ri.Object.(type) {
 	case *ir.TcpRouteIR:
 		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
 	case *ir.TlsRouteIR:
 		reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef).SetCondition(condition)
+	}
+}
+
+// reportBackendErrors reports the backend errors of a TCP or TLS route on the
+// specific listener attachment, for a route that is not translated.
+func reportBackendErrors(ri *query.RouteInfo, reporter reports.Reporter) {
+	var parentRefReporter reports.ParentRefReporter
+	var backends []ir.BackendRefIR
+	switch o := ri.Object.(type) {
+	case *ir.TcpRouteIR:
+		parentRefReporter = reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef)
+		backends = o.Backends
+	case *ir.TlsRouteIR:
+		parentRefReporter = reporter.Route(o.SourceObject).ParentRef(&ri.ParentRef)
+		backends = o.Backends
+	default:
+		return
+	}
+	for _, backend := range backends {
+		if backend.Err != nil || backend.BackendObject == nil {
+			err := backend.Err
+			if err == nil {
+				err = errors.New("not found")
+			}
+			query.ProcessBackendError(err, parentRefReporter)
+		}
 	}
 }
 
@@ -967,9 +1195,24 @@ func buildRoutesPerHostWithHostnamesFilter(
 		if len(hostnames) == 0 {
 			continue
 		}
+		routeHostnames := specHostnames(routeWithHosts)
 		for _, host := range hostnames {
-			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routes)...)
+			routeHostname := routeutils.MostSpecificRouteHostname(routeHostnames, host)
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object.GetSourceObject(), routeHostname, routes)...)
 		}
+	}
+}
+
+// specHostnames returns the hostnames set on the route itself, before they are
+// intersected with the listener hostname.
+func specHostnames(routeInfo *query.RouteInfo) []string {
+	switch r := routeInfo.Object.(type) {
+	case *ir.HttpRouteIR:
+		return r.GetHostnames()
+	case *ir.TlsRouteIR:
+		return r.GetHostnames()
+	default:
+		return nil
 	}
 }
 
