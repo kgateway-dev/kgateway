@@ -152,12 +152,32 @@ func (r *claRetainer) forgetIfAbsent(backend string, absent bool) {
 type PerClientEnvoyEndpoints struct {
 	endpoints krt.Collection[UccWithEndpoints]
 	index     krt.Index[string, UccWithEndpoints]
+	// sources are the backend endpoint inputs, indexed by the CLA each produces.
+	// Nil when unknown (test doubles).
+	sources          krt.Collection[ir.EndpointsForBackend]
+	sourcesByCluster krt.Index[string, ir.EndpointsForBackend]
 }
 
 // FetchEndpointsForClient returns every CLA belonging to ucc, registering a KRT
 // dependency narrowed to that client's rows.
 func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) []UccWithEndpoints {
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
+}
+
+// HasEndpointsSource reports whether some backend derives endpoints for the
+// named CLA. If one does, a client without that row is waiting for it (every
+// reconnect rebuilds rows). If none does, no row comes until a source appears.
+// Upstream EDS backends always have one, even with no endpoints (a Service
+// without EndpointSlices, an EDS ServiceEntry without workloads, an EC2 Backend
+// not yet discovered; with discovery disabled an EC2 Backend is an errored
+// cluster), so a sourceless cluster comes from a plugin that contributes no
+// endpoint rows. It registers a KRT dependency on the name. Without a source
+// index (test doubles) it reports true, assuming the endpoints are on their way.
+func (ie *PerClientEnvoyEndpoints) HasEndpointsSource(kctx krt.HandlerContext, claName string) bool {
+	if ie.sources == nil {
+		return true
+	}
+	return len(krt.Fetch(kctx, ie.sources, krt.FilterIndex(ie.sourcesByCluster, claName))) > 0
 }
 
 // NewPerClientEnvoyEndpoints resolves endpoints for each (client, backend) pair
@@ -213,10 +233,15 @@ func NewPerClientEnvoyEndpoints(
 	idx := krtpkg.UnnamedIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
+	sourcesByCluster := krtpkg.UnnamedIndex(kgatewayEndpoints, func(ep ir.EndpointsForBackend) []string {
+		return []string{ep.ClusterName}
+	})
 
 	return PerClientEnvoyEndpoints{
-		endpoints: eps,
-		index:     idx,
+		endpoints:        eps,
+		index:            idx,
+		sources:          kgatewayEndpoints,
+		sourcesByCluster: sourcesByCluster,
 	}
 }
 

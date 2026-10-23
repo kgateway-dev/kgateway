@@ -293,7 +293,7 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 	if err != nil {
 		// Not reachable in practice: the entry could only have been cached by a get() that
 		// parsed the same URI successfully.
-		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI, "error", err)
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", redactURL(issuerURI), "error", err)
 		return false
 	}
 
@@ -329,7 +329,7 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, issuer
 	o.mu.Unlock()
 
 	if err != nil {
-		logger.Warn("error refreshing OpenID provider config", "issuer_uri", issuerURI,
+		logger.Warn("error refreshing OpenID provider config", "issuer_uri", redactURL(issuerURI),
 			"serving_last_known_good", servingLastKnownGood, "consecutive_failures", next.failures,
 			"error", err)
 	}
@@ -416,7 +416,22 @@ func oidcDiscoveryURL(issuerURI string) (string, error) {
 	return u.String(), nil
 }
 
+// redactURL masks the password in rawURL's userinfo so the URL can be logged and surfaced in
+// status. The query string is kept, since parameters such as Azure AD B2C's ?p=<policy> help
+// tell which provider configuration failed.
+func redactURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "<invalid URL>"
+	}
+	return u.Redacted()
+}
+
 func (o *oidcProviderConfigDiscoverer) discover(ctx context.Context, discoveryURL string) (*oidcProviderConfig, error) {
+	// Name the URL in the errors built below: they end up in the status of every TrafficPolicy
+	// that references the GatewayExtension. Errors from client.Do already name it, with the
+	// password masked.
+	redactedURL := redactURL(discoveryURL)
 	cfg := &oidcProviderConfig{}
 	client := &http.Client{Timeout: oidcDiscoveryHTTPTimeout}
 	err := retry.Do(func() error {
@@ -438,15 +453,15 @@ func (o *oidcProviderConfigDiscoverer) discover(ctx context.Context, discoveryUR
 		switch resp.StatusCode {
 		// retry on specific 5xx status codes
 		case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
-			return fmt.Errorf("error discovering OpenID provider config; unexpected status code %d", resp.StatusCode)
+			return fmt.Errorf("error discovering OpenID provider config at %s; unexpected status code %d", redactedURL, resp.StatusCode)
 
 		case http.StatusOK:
 			if err := json.NewDecoder(resp.Body).Decode(&cfg); err != nil {
-				return retry.Unrecoverable(fmt.Errorf("error decoding OpenID provider config: %w", err))
+				return retry.Unrecoverable(fmt.Errorf("error decoding OpenID provider config at %s: %w", redactedURL, err))
 			}
 
 		default:
-			return retry.Unrecoverable(fmt.Errorf("error discovering OpenID provider config; unexpected status code %d", resp.StatusCode))
+			return retry.Unrecoverable(fmt.Errorf("error discovering OpenID provider config at %s; unexpected status code %d", redactedURL, resp.StatusCode))
 		}
 		return nil
 	}, retry.Attempts(5), retry.Delay(100*time.Millisecond), retry.MaxDelay(5*time.Second), retry.DelayType(retry.BackOffDelay), retry.Context(ctx))

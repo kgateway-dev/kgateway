@@ -17,9 +17,6 @@ import (
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
-	kmetrics "github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
-	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/statussync"
@@ -79,13 +76,11 @@ type policyStatusFixture struct {
 // newPolicyStatusFixture registers a policy status hook against a fake API server holding
 // one policy, and returns the writer it registered. A nil buildDesired selects the standard
 // builder (RegisterPolicyStatus); anything else goes through RegisterPolicyStatusWithBuilder.
-// The metric choice is always stated: a custom builder no longer implies anything about it.
 func newPolicyStatusFixture(
 	t *testing.T,
 	existing *gwv1.BackendTLSPolicy,
 	contributions []reports.StatusContribution,
 	buildDesired BuildDesiredPolicyStatusFn[*gwv1.BackendTLSPolicy],
-	conditionMetric ConditionErrorMetric,
 ) policyStatusFixture {
 	t.Helper()
 	stop := test.NewStop(t)
@@ -110,8 +105,8 @@ func newPolicyStatusFixture(
 		return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 	}
 	register := RegisterPolicyStatusWithBuilder(policyGVK, policies, cl, testController,
-		getStatus, buildObject, buildDesired, conditionMetric)
-	if buildDesired == nil && conditionMetric == StandardConditionErrorMetric {
+		getStatus, buildObject, buildDesired)
+	if buildDesired == nil {
 		// The arguments a standard policy plugin passes, so go through the entry point it calls.
 		register = RegisterPolicyStatus(policyGVK, policies, cl, testController, getStatus, buildObject)
 	}
@@ -165,7 +160,7 @@ func emptyPolicy() *gwv1.BackendTLSPolicy {
 // RegisterPolicyStatus uses the standard typed policy status builder.
 func TestRegisterPolicyStatusUsesTheStandardBuilder(t *testing.T) {
 	f := newPolicyStatusFixture(t, emptyPolicy(),
-		[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, nil, StandardConditionErrorMetric)
+		[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, nil)
 
 	f.writer.ApplyStatus(context.Background(), policyResource())
 
@@ -188,7 +183,7 @@ func TestRegisterPolicyStatusUsesSuppliedBuilder(t *testing.T) {
 	}
 
 	f := newPolicyStatusFixture(t, emptyPolicy(),
-		[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, custom, NoConditionErrorMetric)
+		[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, custom)
 
 	f.writer.ApplyStatus(context.Background(), policyResource())
 
@@ -230,7 +225,7 @@ func TestRegisterPolicyStatusWriterIsIdempotent(t *testing.T) {
 	}}
 
 	f := newPolicyStatusFixture(t, existing,
-		[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, nil, StandardConditionErrorMetric)
+		[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, nil)
 
 	writer, ok := f.writer.(statussync.Writer[*gwv1.BackendTLSPolicy, gwv1.PolicyStatus])
 	require.True(t, ok, "the registered syncer should be the generic writer")
@@ -268,7 +263,7 @@ func TestRegisterPolicyStatusWithNilReportClearsOnlyOurAncestors(t *testing.T) {
 		},
 		Source: reports.StatusSource{Kind: reports.GatewayStatusSource, Name: testNamespace + "/gw"},
 	}
-	f := newPolicyStatusFixture(t, existing, []reports.StatusContribution{emptyContribution}, nil, StandardConditionErrorMetric)
+	f := newPolicyStatusFixture(t, existing, []reports.StatusContribution{emptyContribution}, nil)
 
 	f.writer.ApplyStatus(context.Background(), policyResource())
 
@@ -276,93 +271,6 @@ func TestRegisterPolicyStatusWithNilReportClearsOnlyOurAncestors(t *testing.T) {
 	require.Len(t, status.Ancestors, 1, "our stale ancestor must be cleared")
 	require.Equal(t, gwv1.GatewayController(otherController), status.Ancestors[0].ControllerName,
 		"another controller's ancestor must survive")
-}
-
-func TestRegisterPolicyStatusDefaultBuilderRecordsConditionErrors(t *testing.T) {
-	tests := map[string]struct {
-		reason     shared.PolicyConditionReason
-		wantResult string
-	}{
-		"valid":   {reason: shared.PolicyReasonValid, wantResult: "success"},
-		"pending": {reason: shared.PolicyReasonPending, wantResult: "success"},
-		"invalid": {reason: shared.PolicyReasonInvalid, wantResult: "error"},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			statussync.ResetMetrics()
-			kmetrics.ResetMetrics()
-
-			f := newPolicyStatusFixture(t, emptyPolicy(),
-				[]reports.StatusContribution{policyReport(tc.reason)}, nil, StandardConditionErrorMetric)
-			f.writer.ApplyStatus(context.Background(), policyResource())
-
-			gathered := metricstest.MustGatherMetrics(t)
-			gathered.AssertMetricsInclude("kgateway_status_syncer_status_syncs_total", []metricstest.ExpectMetric{
-				&metricstest.ExpectedMetric{
-					Labels: []metrics.Label{
-						{Name: "name", Value: policyGVK.Kind},
-						{Name: "namespace", Value: testNamespace},
-						{Name: "result", Value: tc.wantResult},
-						{Name: "syncer", Value: "PolicyStatusSyncer"},
-					},
-					Value: 1,
-				},
-			})
-		})
-	}
-}
-
-// Whether conditions are graded against the standard Accepted reasons is the caller's
-// explicit choice, independent of which builder it supplies. It used to be inferred from
-// "buildDesired == nil", which silently dropped the metric for a plugin that built its own
-// standard-shaped status — the failure this pair of cases pins down.
-func TestRegisterPolicyStatusGradesConditionsWhenAsked(t *testing.T) {
-	// A custom builder publishing an invalid standard condition. Both cases below use it, so
-	// the only difference between them is the ConditionErrorMetric argument.
-	custom := func(*reports.PolicyReport, *gwv1.BackendTLSPolicy, string) *gwv1.PolicyStatus {
-		return &gwv1.PolicyStatus{Ancestors: []gwv1.PolicyAncestorStatus{{
-			AncestorRef:    gwv1.ParentReference{Name: "gw"},
-			ControllerName: gwv1.GatewayController(testController),
-			Conditions: []metav1.Condition{{
-				Type:   string(shared.PolicyConditionAccepted),
-				Status: metav1.ConditionFalse,
-				Reason: string(shared.PolicyReasonInvalid),
-			}},
-		}}}
-	}
-
-	tests := map[string]struct {
-		metric     ConditionErrorMetric
-		wantResult string
-	}{
-		"graded":     {metric: StandardConditionErrorMetric, wantResult: "error"},
-		"not graded": {metric: NoConditionErrorMetric, wantResult: "success"},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			statussync.ResetMetrics()
-			kmetrics.ResetMetrics()
-
-			f := newPolicyStatusFixture(t, emptyPolicy(),
-				[]reports.StatusContribution{policyReport(shared.PolicyReasonValid)}, custom, tc.metric)
-			f.writer.ApplyStatus(context.Background(), policyResource())
-
-			gathered := metricstest.MustGatherMetrics(t)
-			gathered.AssertMetricsInclude("kgateway_status_syncer_status_syncs_total", []metricstest.ExpectMetric{
-				&metricstest.ExpectedMetric{
-					Labels: []metrics.Label{
-						{Name: "name", Value: policyGVK.Kind},
-						{Name: "namespace", Value: testNamespace},
-						{Name: "result", Value: tc.wantResult},
-						{Name: "syncer", Value: "PolicyStatusSyncer"},
-					},
-					Value: 1,
-				},
-			})
-		})
-	}
 }
 
 // A policy no Gateway we translate ever attached still reaches the writer: the report
@@ -392,7 +300,7 @@ func TestRegisterPolicyStatusSkipsPoliciesWeDoNotOwn(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			existing := emptyPolicy()
 			existing.Status = existingStatus
-			f := newPolicyStatusFixture(t, existing, nil, nil, StandardConditionErrorMetric)
+			f := newPolicyStatusFixture(t, existing, nil, nil)
 
 			f.writer.ApplyStatus(context.Background(), policyResource())
 

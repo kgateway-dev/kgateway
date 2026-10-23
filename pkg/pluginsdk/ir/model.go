@@ -41,11 +41,11 @@ type UniquelyConnectedClient struct {
 	// have no matching static cluster in their bootstrap and can never name it,
 	// so this must default to false and only ever be set by observing a real
 	// request (see pkg/krtcollections/uniqueclients.go) — never assume support.
-	// Without this gate, go-control-plane's ADS "superset" check
-	// (github.com/envoyproxy/go-control-plane pkg/cache/v3/simple.go) withholds
-	// the *entire* EDS response to a client that doesn't ask for every resource
-	// in the snapshot, breaking all endpoint updates for that client, not just
-	// the local cluster (see https://github.com/kgateway-dev/kgateway/issues/14471).
+	// The local-cluster CLA is built only for clients with this set. Before EDS
+	// was served per request (newSnapshotCache in pkg/kgateway/setup), an
+	// unrequested CLA made go-control-plane's ADS cache withhold the client's
+	// *entire* EDS response, breaking all endpoint updates for that client, not
+	// just the local cluster (https://github.com/kgateway-dev/kgateway/issues/14471).
 	KnowsLocalCluster bool
 
 	// modified role that includes the namespace and the hash of the labels.

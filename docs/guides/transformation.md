@@ -27,9 +27,9 @@ Here are the differences between [minijinja](https://github.com/mitsuhiko/miniji
 
 ## Strict Mode Validation
 
-Strict Mode Validation is not supported yet with Rustformation. This is due to build complexity to include the dynamic module in the control plane image. This will be addressed in future updates.
+Starting from v2.4.0, Strict Mode Validation supports Rustformation. The control plane image bundles the Rustformation dynamic module, so the Envoy binary that the control plane runs in validate mode can load it and reject invalid transformation templates.
 
-If Strict Mode Validation is needed, see the [Classic Transformation Deprecation](#classic-transformation-deprecation) section below to switch back to Classic Transformation on x86 architecture.
+In v2.2.x, Strict Mode Validation is not supported with Rustformation, because the dynamic module is not in the control plane image. If Strict Mode Validation is needed on v2.2.x, see the [Classic Transformation Deprecation](#classic-transformation-deprecation) section below to switch back to Classic Transformation on x86 architecture. Classic Transformation was removed in v2.3.0, so v2.3.x supports neither.
 
 ## Initial arm64 support
 

@@ -336,9 +336,6 @@ spec:
                 sleep 10
         name: kgateway-proxy
         ports:
-        - containerPort: 8080
-          name: listener-8080
-          protocol: TCP
         - containerPort: 9091
           name: http-monitoring
         readinessProbe:

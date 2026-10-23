@@ -9,6 +9,7 @@ import (
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -241,4 +242,31 @@ func TestStrictValidationMemoKeepsInvalidVerdictIdentity(t *testing.T) {
 	}
 	require.Equal(t, errs[0].Error(), errs[1].Error(), "the memoized message must match the original")
 	require.EqualValues(t, 2, counting.calls.Load(), "base once, the shared invalid verdict once")
+}
+
+// TestStrictListenerValidationIsAttributedAndMemoized: a generated listener that
+// fails strict validation fails its backend with an error attributed to the
+// listener's policy, and its verdict is memoized like a cluster's.
+func TestStrictListenerValidationIsAttributedAndMemoized(t *testing.T) {
+	invalid := &recordingValidator{err: fmt.Errorf("%w: bad listener", validator.ErrInvalidXDS)}
+	tr := memoTestTranslator(invalid, validator.NewMemo(0))
+	policy := &ir.AttachedPolicyRef{Group: "test.example.io", Kind: "Tunnel", Namespace: "default", Name: "tunnel"}
+	tr.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test.example.io", Kind: "Tunnel"}: {
+			ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+				return sdk.BaseClusterResources{
+					Listeners: []*envoylistenerv3.Listener{{Name: "generated_" + out.GetName()}},
+					Policy:    policy,
+				}, nil
+			},
+		},
+	}
+
+	for range 2 {
+		_, err := translateValidationTestBase(t, tr, validationTestBackend("b1"))
+		var policyErr *ir.PolicyError
+		require.ErrorAs(t, err, &policyErr, "the failure must be attributed to the listener's policy")
+		require.Equal(t, policy, policyErr.Ref)
+	}
+	require.EqualValues(t, 1, invalid.calls.Load(), "an unchanged listener must be validated once")
 }

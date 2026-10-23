@@ -832,3 +832,12 @@ func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
 	require.NoError(t, err, "failed to convert message to Any")
 	return a
 }
+
+func TestBackendConfigPolicyIREqualsTunnel(t *testing.T) {
+	a := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
+	b := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
+	assert.True(t, a.Equals(b), "identical tunnels should be equal")
+
+	b.tunnel = nil
+	assert.False(t, a.Equals(b), "removing the tunnel must change the policy IR")
+}

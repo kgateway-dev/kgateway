@@ -1,0 +1,15 @@
+# Exposes controller metrics so the suite can check for NACKs and inconsistent
+# snapshots after each test. Mirrors the metrics suite's Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kgateway-metrics
+  namespace: kgateway-test
+spec:
+  selector:
+    app.kubernetes.io/name: kgateway
+  ports:
+    - protocol: TCP
+      port: 9092
+      targetPort: metrics
+      name: metrics
