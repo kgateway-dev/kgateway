@@ -1,0 +1,199 @@
+# BackendConfigPolicy: enforce AtMostOneOf for HTTP protocol options
+_err: 'at most one of the fields in [http1ProtocolOptions http2ProtocolOptions] may be set'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-both-http-options
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http1ProtocolOptions:
+    enableTrailers: true
+  http2ProtocolOptions:
+    maxConcurrentStreams: 100
+    overrideStreamErrorOnInvalidHttpMessage: true
+---
+# BackendConfigPolicy: HTTP2 protocol options with integer values
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-integers
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: 65535
+    initialStreamWindowSize: 2147483647
+    maxConcurrentStreams: 100
+---
+# BackendConfigPolicy: HTTP2 protocol options with string values
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-strings
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: "65535"
+    initialStreamWindowSize: "2147483647"
+    maxConcurrentStreams: 100
+---
+# BackendConfigPolicy: HTTP2 protocol options with invalid integer values
+_err: InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-invalid-integers
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: 1000
+    initialStreamWindowSize: 2147483648
+---
+# BackendConfigPolicy: valid target references
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-valid-targets
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: test-backend
+  targetSelectors:
+  - group: ""
+    kind: Service
+    matchLabels:
+      app: myapp
+  http1ProtocolOptions:
+    enableTrailers: true
+---
+# BackendConfigPolicy: invalid target reference
+_err: TargetRefs must reference either a Kubernetes Service, a Backend, or an Istio Hostname
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-target
+spec:
+  targetRefs:
+  - group: apps
+    kind: Deployment
+    name: test-deployment
+---
+# BackendConfigPolicy: invalid target selector
+_err: TargetSelectors must reference either a Kubernetes Service, a Backend, or an Istio Hostname
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-selector
+spec:
+  targetSelectors:
+  - group: apps
+    kind: Deployment
+    matchLabels:
+      app: myapp
+---
+# BackendConfigPolicy: invalid aggression
+_err: Aggression, if specified, must be a string representing a number greater than 0.0
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-aggression
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  loadBalancer:
+    roundRobin:
+      slowStart:
+        window: 10s
+        aggression: ""
+        minWeightPercent: 10
+---
+# BackendConfigPolicy: refreshRate must be at least 1ms
+_err: 'spec.dns.refreshRate: Invalid value: "0s": refreshRate must be at least 1ms'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-refresh-too-small
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 0s
+---
+# BackendConfigPolicy: jitter must not exceed refreshRate
+_err: jitter must be less than or equal to refreshRate
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-dns-jitter-too-large
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  dns:
+    refreshRate: 5s
+    jitter: 10s
+---
+# BackendConfigPolicy: invalid durations
+_errs:
+- 'spec.commonHttpProtocolOptions.idleTimeout: Invalid value: "1x": invalid duration value'
+- 'spec.commonHttpProtocolOptions.maxStreamDuration: Invalid value: "abc": invalid duration value'
+- 'spec.connectTimeout: Invalid value: "-1s": invalid duration value'
+- 'spec.healthCheck.interval: Invalid value: "b": invalid duration value'
+- 'spec.healthCheck.timeout: Invalid value: "a": invalid duration value'
+- 'spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: "1x": invalid duration value'
+- 'spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: "string": type conversion error from ''string'' to ''google.protobuf.Duration'' evaluating rule: interval must be at least 1ms'
+- 'spec.http2ProtocolOptions.connectionKeepalive.timeout: Invalid value: "0s": timeout must be at least 1ms'
+- 'spec.loadBalancer.updateMergeWindow: Invalid value: "z": invalid duration value'
+- 'spec.tcpKeepalive.keepAliveInterval: Invalid value: "0": invalid duration value'
+- 'spec.tcpKeepalive.keepAliveInterval: Invalid value: "0": keepAliveInterval must be at least 1 second'
+- 'spec.tcpKeepalive.keepAliveTime: Invalid value: "0s": keepAliveTime must be at least 1 second'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-invalid-duration
+spec:
+  connectTimeout: -1s
+  commonHttpProtocolOptions:
+    idleTimeout: 1x
+    maxStreamDuration: abc
+  tcpKeepalive:
+    keepAliveTime: 0s
+    keepAliveInterval: "0"
+  http2ProtocolOptions:
+    connectionKeepalive:
+      timeout: 0s
+      interval: 1x
+  healthCheck:
+    timeout: a
+    interval: b
+    unhealthyThreshold: 3
+    healthyThreshold: 2
+    http:
+      path: /healthz
+      host: example.com
+      method: HEAD
+  loadBalancer:
+    updateMergeWindow: z
+    roundRobin:
+      slowStart:
+        window: 10s

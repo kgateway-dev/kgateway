@@ -852,6 +852,14 @@ spec:
                     format: int32
                     minimum: 0
                     type: integer
+                  consecutiveGatewayFailure:
+                    description: |-
+                      The number of consecutive gateway failures (502, 503 and 504 status
+                      codes) before a host is ejected. When set, ejection is always enforced.
+                      When unset, consecutive gateway failure ejection is disabled.
+                    format: int32
+                    minimum: 1
+                    type: integer
                   consecutiveLocalOriginFailure:
                     description: |-
                       The number of consecutive locally originated failures before an ejection
