@@ -23,6 +23,12 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: from-btp.example.com
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions: {}
+        httpProtocolOptions: {}
 Listeners:
 - address:
     socketAddress:
