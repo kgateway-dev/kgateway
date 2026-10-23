@@ -1,8 +1,10 @@
 package proxy_syncer
 
 import (
+	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -333,6 +335,13 @@ func TestClaimsDoNotCoverABackendListenersSelector(t *testing.T) {
 // tunnel through "proxy" behind filters, "proxy", and "unreferenced".
 func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed []string, filters ...proto.Message) XdsSnapWrapper {
 	t.Helper()
+	return eventuallyCoherentWrapper(t, tunnelSnapshots(t, gateway, scoping, routed, nil, filters...))
+}
+
+// tunnelSnapshots is tunnelSnapshot's collection; the clusters in
+// underived have no endpoint row.
+func tunnelSnapshots(t *testing.T, gateway string, scoping clusterScoping, routed, underived []string, filters ...proto.Message) krt.Collection[XdsSnapWrapper] {
+	t.Helper()
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", gateway)
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 	t.Cleanup(func() { forgetClusterScopingClient(ucc.ResourceName(), false) })
@@ -381,6 +390,9 @@ func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed
 			row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "unreferenced-header"}})
 		}
 		clusterRows = append(clusterRows, row)
+		if slices.Contains(underived, name) {
+			continue
+		}
 		endpointRows = append(endpointRows, UccWithEndpoints{
 			Client:        ucc,
 			endpointsName: name,
@@ -405,5 +417,24 @@ func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed
 		newTestPerClientClustersFromCol(clusterCol, uccs),
 		scoping,
 	)
-	return eventuallyCoherentWrapper(t, snapshots)
+	return snapshots
+}
+
+// The publication gate follows a referenced backend's own listeners: a route to
+// a tunneled backend is not ready while the proxy cluster its tunnel listener
+// sends to has no endpoints, in either discovery mode.
+func TestRouteToATunneledBackendWaitsForItsProxyCluster(t *testing.T) {
+	for name, scoping := range map[string]clusterScoping{"all": {}, "referenced": scopedClusters()} {
+		t.Run(name, func(t *testing.T) {
+			snapshots := tunnelSnapshots(t, "gw-proxy-unready-"+name, scoping, []string{"tunneled"}, []string{"proxy"})
+			gomega.NewWithT(t).Eventually(func() []string {
+				list := snapshots.List()
+				if len(list) != 1 {
+					return nil
+				}
+				return list[0].missingEndpointsReferenced
+			}, time.Second, 20*time.Millisecond).Should(gomega.ConsistOf("proxy"),
+				"the route to the tunneled backend waits for the proxy's endpoints")
+		})
+	}
 }
