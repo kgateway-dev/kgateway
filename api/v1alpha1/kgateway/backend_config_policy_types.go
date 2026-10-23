@@ -237,6 +237,8 @@ type DNS struct {
 	// the pod a host-local IPv4 address and SNATs it through the node - IPv4-only
 	// upstreams are reachable over real IPv4 and no override is needed; set
 	// IPv4Preferred or All only to prefer that path explicitly.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	// +optional
 	LookupFamily *DnsLookupFamily `json:"lookupFamily,omitempty"`
 }

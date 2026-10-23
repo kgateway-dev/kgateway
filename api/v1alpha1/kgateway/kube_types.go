@@ -150,6 +150,8 @@ type Service struct {
 	// This field is only honored for Services that allocate a cluster IP, and the
 	// families requested here must be configured on the cluster.
 	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	//
 	// +optional
 	// +listType=atomic
 	// +kubebuilder:validation:MaxItems=2
@@ -161,6 +163,8 @@ type Service struct {
 	// cluster has dual-stack configured and falls back to one when it does not, and
 	// `RequireDualStack` fails allocation unless two families are available.
 	// If unset, the cluster's default is used.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
 	//
 	// +optional
 	// +kubebuilder:validation:Enum=SingleStack;PreferDualStack;RequireDualStack

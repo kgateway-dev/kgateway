@@ -7126,6 +7126,8 @@ spec:
                           https://kubernetes.io/docs/concepts/services-networking/dual-stack/
                           This field is only honored for Services that allocate a cluster IP, and the
                           families requested here must be configured on the cluster.
+
+                          Note: This feature is experimental and subject to breaking changes in future releases.
                         items:
                           description: |-
                             IPFamily represents the IP Family (IPv4 or IPv6). This type is used
@@ -7144,6 +7146,8 @@ spec:
                           cluster has dual-stack configured and falls back to one when it does not, and
                           `RequireDualStack` fails allocation unless two families are available.
                           If unset, the cluster's default is used.
+
+                          Note: This feature is experimental and subject to breaking changes in future releases.
                         enum:
                         - SingleStack
                         - PreferDualStack
