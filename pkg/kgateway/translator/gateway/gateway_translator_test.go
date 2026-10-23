@@ -1368,6 +1368,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcp route attached through two parentRefs does not conflict with itself", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/duplicate-parentref.yaml"},
+			outputFile: "tcp-routing/duplicate-parentref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/basic.yaml"},
@@ -1526,6 +1537,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/hostname-intersection-precedence.yaml"},
 			outputFile: "tls-routing/hostname-intersection-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute losing its SNI domain through two parentRefs is conflicted on both", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/hostname-intersection-precedence-duplicate-parentref.yaml"},
+			outputFile: "tls-routing/hostname-intersection-precedence-duplicate-parentref.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",

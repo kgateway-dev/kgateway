@@ -274,9 +274,6 @@ func (ml *MergedListeners) AppendTlsListener(
 	} else {
 		var conflicted []conflictedRoute
 		for i, owned := range resolveTLSRouteSNIDomains(listener, routeInfos) {
-			if owned.duplicate {
-				continue
-			}
 			if len(owned.lost) > 0 {
 				conflicted = append(conflicted, conflictedRoute{
 					routeInfo: routeInfos[i],
@@ -284,7 +281,8 @@ func (ml *MergedListeners) AppendTlsListener(
 					partial:   owned.ok,
 				})
 			}
-			if owned.ok {
+			// A duplicate shares the filter chain of its first entry.
+			if owned.ok && !owned.duplicate {
 				appendFilterChain([]*query.RouteInfo{routeInfos[i]}, owned.sniDomains)
 			}
 		}
@@ -340,7 +338,8 @@ type ownedSNIDomains struct {
 	// lost are the SNI domains of the route that are owned by other routes.
 	lost []lostSNIDomain
 	// duplicate is true when an earlier entry is the same route attached to the
-	// listener through another parentRef; only the earlier entry is resolved.
+	// listener through another parentRef. Only the earlier entry is resolved;
+	// a duplicate copies its result, so every parentRef reports a conflict.
 	duplicate bool
 }
 
@@ -405,17 +404,16 @@ func resolveTLSRouteSNIDomains(listener ir.Listener, routeInfos []*query.RouteIn
 	// The same route can reach the listener through more than one parentRef
 	// (for example one by sectionName and one by port). It must not conflict
 	// with itself, so only its first entry is resolved.
-	type routeKey struct {
-		gk        schema.GroupKind
-		namespace string
-		name      string
-	}
-	seen := map[routeKey]bool{}
+	first := map[routeKey]int{}
+	duplicateOf := make([]int, len(routeInfos))
 	duplicate := make([]bool, len(routeInfos))
 	for i, routeInfo := range routeInfos {
-		key := routeKey{gk: routeInfo.Object.GetGroupKind(), namespace: routeInfo.Object.GetNamespace(), name: routeInfo.Object.GetName()}
-		duplicate[i] = seen[key]
-		seen[key] = true
+		key := keyOfRoute(routeInfo)
+		if j, ok := first[key]; ok {
+			duplicate[i], duplicateOf[i] = true, j
+			continue
+		}
+		first[key] = i
 	}
 
 	domains := make([][]string, len(routeInfos))
@@ -442,7 +440,6 @@ func resolveTLSRouteSNIDomains(listener ir.Listener, routeInfos []*query.RouteIn
 	for i, routeInfo := range routeInfos {
 		switch {
 		case duplicate[i]:
-			out[i].duplicate = true
 			continue
 		case !producesTcpFilterChain(routeInfo):
 			out[i] = ownedSNIDomains{sniDomains: domains[i], ok: true}
@@ -457,7 +454,25 @@ func resolveTLSRouteSNIDomains(listener ir.Listener, routeInfos []*query.RouteIn
 		}
 		out[i].ok = len(out[i].lost) == 0 || len(out[i].sniDomains) > 0
 	}
+	// Duplicates come after their first entry, which is resolved by now.
+	for i := range routeInfos {
+		if duplicate[i] {
+			out[i] = out[duplicateOf[i]]
+			out[i].duplicate = true
+		}
+	}
 	return out
+}
+
+// routeKey identifies a route regardless of the parentRef it is attached through.
+type routeKey struct {
+	gk        schema.GroupKind
+	namespace string
+	name      string
+}
+
+func keyOfRoute(routeInfo *query.RouteInfo) routeKey {
+	return routeKey{gk: routeInfo.Object.GetGroupKind(), namespace: routeInfo.Object.GetNamespace(), name: routeInfo.Object.GetName()}
 }
 
 // producesTcpFilterChain reports whether translateTcpFilterChain can produce a
@@ -635,11 +650,15 @@ func (tc *tcpFilterChain) translateTcpFilterChain(
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
 	if len(parent.routesWithHosts) > 1 {
+		winner := keyOfRoute(r)
 		for _, other := range parent.routesWithHosts {
-			if other == r {
+			// The winning route can also be attached through another parentRef;
+			// it must not conflict with itself.
+			if keyOfRoute(other) == winner {
 				continue
 			}
-			rejectConflictingRoute(other, "", reporter)
+			rejectConflictingRoute(other, fmt.Sprintf("Not programmed, the listener can only serve one route and the older %s %s/%s is programmed",
+				r.Object.GetGroupKind().Kind, r.Object.GetNamespace(), r.Object.GetName()), reporter)
 			reportBackendErrors(other, reporter)
 		}
 	}

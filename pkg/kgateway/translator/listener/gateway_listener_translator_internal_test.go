@@ -437,8 +437,27 @@ func TestResolveTLSRouteSNIDomains(t *testing.T) {
 			},
 			want: []ownedSNIDomains{
 				{sniDomains: []string{"abc.example.com"}, ok: true},
-				{duplicate: true},
+				{sniDomains: []string{"abc.example.com"}, ok: true, duplicate: true},
 				{lost: []lostSNIDomain{{domain: "abc.example.com", winner: 0}}},
+			},
+		},
+		{
+			name:             "a losing route through two parentRefs loses on both",
+			listenerHostname: listenerIsolationHostname("abc.example.com"),
+			routeInfos: func() []*query.RouteInfo {
+				bySection := tlsRouteInfo("route", tlsRouteInfoOpts{created: t0, hostnames: []string{"*.example.com"}, sni: []string{"abc.example.com"}})
+				byPort := *bySection
+				byPort.ParentRef = gwv1.ParentReference{Name: "gw", Port: new(gwv1.PortNumber(8443))}
+				return []*query.RouteInfo{
+					bySection,
+					&byPort,
+					tlsRouteInfo("exact-newer", tlsRouteInfoOpts{created: t1, hostnames: []string{"abc.example.com"}, sni: []string{"abc.example.com"}}),
+				}
+			},
+			want: []ownedSNIDomains{
+				{lost: []lostSNIDomain{{domain: "abc.example.com", winner: 2}}},
+				{lost: []lostSNIDomain{{domain: "abc.example.com", winner: 2}}, duplicate: true},
+				{sniDomains: []string{"abc.example.com"}, ok: true},
 			},
 		},
 	}
@@ -515,4 +534,32 @@ func TestAppendTlsListenerReportsSNIConflicts(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestAppendTlsListenerReportsConflictOnEveryParentRef(t *testing.T) {
+	t0 := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	t1 := t0.Add(time.Hour)
+
+	bySection := tlsRouteInfo("wildcard-older", tlsRouteInfoOpts{created: t0, hostnames: []string{"*.example.com"}, sni: []string{"abc.example.com"}})
+	byPort := *bySection
+	byPort.ParentRef = gwv1.ParentReference{Name: "gw", Port: new(gwv1.PortNumber(8443))}
+	routeInfos := []*query.RouteInfo{
+		bySection,
+		&byPort,
+		tlsRouteInfo("exact-newer", tlsRouteInfoOpts{created: t1, hostnames: []string{"abc.example.com"}, sni: []string{"abc.example.com"}}),
+	}
+
+	ml := &MergedListeners{}
+	listener := ir.Listener{Listener: gwv1.Listener{Name: "tls", Protocol: gwv1.TLSProtocolType, Port: 8443}}
+	ml.AppendTlsListener(listener, routeInfos, nil)
+	require.Len(t, ml.Listeners, 1)
+
+	var conflicted []*query.RouteInfo
+	for _, fc := range ml.Listeners[0].TcpFilterChains {
+		for _, c := range fc.conflictedRoutes {
+			conflicted = append(conflicted, c.routeInfo)
+		}
+	}
+	assert.Equal(t, []*query.RouteInfo{bySection, &byPort}, conflicted, "each parentRef of the losing route must report the conflict")
+	assert.Len(t, ml.Listeners[0].TcpFilterChains, 1, "only the winning route gets a filter chain")
 }
