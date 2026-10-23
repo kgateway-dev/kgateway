@@ -310,6 +310,24 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			},
 		},
 		{
+			// Envoy rejects a repeated flag, so drain flags in extraArgs must
+			// replace the chart defaults rather than be appended after them.
+			Name:      "envoy drain args override",
+			InputFile: "envoy-drain-args-override",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				assert.Equal(t, 1, strings.Count(outputYaml, "- --drain-time-s"),
+					"--drain-time-s should be rendered once")
+				assert.Equal(t, 1, strings.Count(outputYaml, "- --drain-strategy"),
+					"--drain-strategy should be rendered once")
+				assert.Contains(t, outputYaml, "- gradual",
+					"the extraArgs drain strategy should win")
+				assert.NotContains(t, outputYaml, "- immediate",
+					"the default drain strategy should be omitted")
+			},
+		},
+		{
 			// GWC params set replicas:2 AND runAsGroup:5555 on envoy container.
 			// GW params set omitDefaultSecurityContext:true with a custom envoy
 			// securityContext (NET_BIND_SERVICE + drop ALL).

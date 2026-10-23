@@ -82,6 +82,12 @@ type StartConfig struct {
 	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniquelyConnectedClient]
+	// XDSClientState is the third result of NewUniquelyConnectedClients. If
+	// nil, reconnects look cold, departed proxies' snapshots are never
+	// reclaimed (memory grows with proxy churn), and a returning proxy is
+	// answered from its previous snapshot, possibly older than config it got
+	// from another replica, until the next publish to it.
+	XDSClientState krtcollections.XDSClientState
 
 	KrtOptions krtutil.KrtOptions
 
@@ -152,6 +158,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
+		cfg.XDSClientState,
 		cfg.StatusSyncerOptions...,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)

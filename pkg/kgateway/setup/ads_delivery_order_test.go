@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"slices"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -67,13 +70,45 @@ func (s *mockAdsStream) Recv() (*discoveryv3.DiscoveryRequest, error) {
 }
 
 type adsHarness struct {
-	t      *testing.T
-	ctx    context.Context
-	cancel context.CancelFunc
-	cache  envoycache.SnapshotCache
-	stream *mockAdsStream
-	done   chan error
-	node   *envoycorev3.Node
+	t       *testing.T
+	ctx     context.Context
+	cancel  context.CancelFunc
+	cache   envoycache.SnapshotCache
+	watches *watchRecorder
+	stream  *mockAdsStream
+	done    chan error
+	node    *envoycorev3.Node
+}
+
+// watchRecorder counts the CreateWatch calls the server has completed, by type
+// and resource names, so a test can wait until the cache has handled one
+// particular request. A call counts once it returns: the cache has registered,
+// answered or declined the watch.
+type watchRecorder struct {
+	envoycache.Cache
+
+	mu      sync.Mutex
+	handled map[string]int
+}
+
+func (r *watchRecorder) CreateWatch(request *envoycache.Request, sub envoycache.Subscription, value chan envoycache.Response) (func(), error) {
+	cancel, err := r.Cache.CreateWatch(request, sub, value)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.handled[watchKey(request.GetTypeUrl(), request.GetResourceNames())]++
+	return cancel, err
+}
+
+// count returns how many requests for typeURL naming exactly names, in any
+// order, the cache has handled.
+func (r *watchRecorder) count(typeURL string, names []string) int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.handled[watchKey(typeURL, names)]
+}
+
+func watchKey(typeURL string, names []string) string {
+	return typeURL + " " + strings.Join(slices.Sorted(slices.Values(names)), ",")
 }
 
 func newADSHarness(t *testing.T, ordered bool) *adsHarness {
@@ -92,21 +127,23 @@ func newADSHarnessWithCallbacks(t *testing.T, ordered bool, callbacks xdsserver.
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
 	cache := newSnapshotCache(kgwxds.NewNodeRoleHasher(), nil)
+	watches := &watchRecorder{Cache: cache, handled: map[string]int{}}
 
 	var opts []serverconfig.XDSOption
 	if ordered {
 		opts = append(opts, sotwv3.WithOrderedADS())
 	}
-	srv := xdsserver.NewServer(ctx, cache, callbacks, opts...)
+	srv := xdsserver.NewServer(ctx, watches, callbacks, opts...)
 
 	h := &adsHarness{
-		t:      t,
-		ctx:    ctx,
-		cancel: cancel,
-		cache:  cache,
-		stream: stream,
-		done:   make(chan error, 1),
-		node:   adsTestNode(t),
+		t:       t,
+		ctx:     ctx,
+		cancel:  cancel,
+		cache:   cache,
+		watches: watches,
+		stream:  stream,
+		done:    make(chan error, 1),
+		node:    adsTestNode(t),
 	}
 	go func() {
 		h.done <- srv.StreamAggregatedResources(stream)
@@ -229,8 +266,8 @@ func (h *adsHarness) waitForOpenWatches(count int) {
 	h.t.Helper()
 
 	require.Eventually(h.t, func() bool {
-		info := h.cache.GetStatusInfo(adsTestNodeID)
-		return info != nil && info.GetNumWatches() == count
+		n, ok := openWatches(h.cache, adsTestNodeID)
+		return ok && n == count
 	}, 2*time.Second, 10*time.Millisecond)
 }
 

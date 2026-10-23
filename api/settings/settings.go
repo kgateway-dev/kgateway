@@ -43,6 +43,37 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
+// ClusterDiscoveryMode selects backends for CDS and their corresponding EDS assignments.
+type ClusterDiscoveryMode string
+
+const (
+	// ClusterDiscoveryAll emits every backend in discovery scope, referenced or not.
+	// A retarget to an existing backend is safe because its cluster already
+	// exists, but every proxy carries, and reports stats for, the whole
+	// inventory.
+	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
+	// ClusterDiscoveryReferenced emits only referenced clusters, including filter
+	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
+	// with a request-time selector reverts to ALL, since pruning could silently
+	// select the plugin's fallback, unless every such selector is a cluster
+	// specifier plugin that a valid pluginsdk.ClusterEmissionClaim accounts for.
+	// Cluster headers, filter-state overrides, undecodable typed configs and
+	// unknown specifier kinds cannot be claimed and always revert.
+	ClusterDiscoveryReferenced ClusterDiscoveryMode = "REFERENCED"
+)
+
+// Decode implements envconfig.Decoder.
+func (c *ClusterDiscoveryMode) Decode(value string) error {
+	mode := ClusterDiscoveryMode(strings.ToUpper(value))
+	switch mode {
+	case ClusterDiscoveryAll, ClusterDiscoveryReferenced:
+		*c = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid cluster discovery mode: %q", value)
+	}
+}
+
 // ValidatorMode selects the strict-validation execution strategy.
 type ValidatorMode string
 
@@ -268,6 +299,27 @@ type Settings struct {
 	// when resource-type watches are open.
 	EnableOrderedAds bool `split_words:"true" default:"true"`
 
+	// XdsSuppressNackResend throttles re-sending an xDS response the proxy just
+	// rejected. Without it, the snapshot cache answers every NACK with the same
+	// response, spinning at the proxy's reject rate. With it, a NACK of the current
+	// snapshot version waits for a snapshot change or a retry delay (1s, doubling to
+	// 1m while the same version keeps failing). The rejected version is retried,
+	// never suppressed for good, so a transient rejection recovers. A NACK of an
+	// older version is answered at once. Rejections are still logged and counted.
+	XdsSuppressNackResend bool `split_words:"true" default:"true"`
+
+	// XdsRespondOnReconnect answers a reconnecting proxy's first EDS, RDS and SDS
+	// request even when it asks at the version it already holds. Without it, if
+	// the controller has no snapshot for that proxy yet (after a restart, for
+	// example), go-control-plane parks the request, and a rebuilt snapshot at the
+	// same version never answers it. A cluster or listener warming on those
+	// resources then waits for Envoy's fetch timeout, and a warming cluster keeps
+	// CDS paused meanwhile. CDS and LDS requests are left alone, since nothing
+	// warms on them. The cost is one EDS, RDS and SDS response, with content the
+	// proxy already holds, per proxy that reconnects before its snapshot is
+	// rebuilt.
+	XdsRespondOnReconnect bool `split_words:"true" default:"true"`
+
 	// WeightedRoutePrecedence enables routes with a larger weight to take precedence over routes with a smaller weight.
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
@@ -347,6 +399,133 @@ type Settings struct {
 
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
+
+	// PerClientPublishBudget bounds how long per-client xDS publication may be
+	// withheld while referenced clusters are not ready. A build whose referenced
+	// clusters are all in CDS with derived endpoints publishes at once. Derived
+	// endpoints may be empty, which is the backend's real state; endpoints not
+	// yet derived are a gap.
+	//
+	//   - first publish: a client not yet published on its current connection
+	//     gets the latest deferred snapshot at expiry, so a new gateway pod gets
+	//     listeners instead of crash-looping; routes to unready clusters return
+	//     503 until ready. The budget starts when the gate receives the
+	//     client's first deferred build, not at connect; a client that left
+	//     mid-withhold less than a budget earlier resumes its start. A warm
+	//     client stays withheld while referenced clusters are missing from CDS,
+	//     for at most PerClientWarmWithholdBound after expiry. If its only gaps
+	//     are underived endpoints, it publishes at expiry and keeps the endpoints
+	//     it holds: such gaps may never converge, and withholding would freeze
+	//     its config.
+	//   - flip release: a route flip held for a newly-referenced unready
+	//     cluster publishes one budget after the hold began, so it cannot pin
+	//     route, listener and secret updates indefinitely.
+	//
+	// A client is warm when its first listener request on the connection
+	// carries a previously accepted version. That suggests, but does not prove,
+	// that it still serves that config.
+	//
+	// The budget times installation in the controller's xDS cache. It is not a
+	// deadline for a pod to go Ready, or for Envoy to receive or apply config:
+	// translation before the first deferred build, KGW_XDS_FIRST_CONNECT_DELAY,
+	// delivery, Envoy's fetch timeouts and cluster warming all add to it. Keep
+	// it well below the proxy's startup probe window (60s by default); above
+	// it, the first publish comes too late and the crash loop returns.
+	//
+	// 0 or a negative value removes both deadlines: an unpublished client waits
+	// for a coherent build, and a held flip for its cluster, indefinitely.
+	// PerClientWarmWithholdBound then has no effect. Timers that other settings
+	// configure keep running.
+	PerClientPublishBudget time.Duration `split_words:"true" default:"15s"`
+
+	// PerClientWarmWithholdBound bounds how long a warm client (see
+	// PerClientPublishBudget) stays withheld because referenced clusters are
+	// missing from CDS. Without it, a cluster that never appears would freeze
+	// the client's config, including certificate rotations, until the proxy
+	// restarts. The withhold starts when the first-publish budget expires and
+	// resumes if the client reconnects within the bound. At the bound the
+	// latest deferred snapshot publishes, and routes to missing clusters fail
+	// until they appear.
+	//
+	// It separately bounds how long a published client is still sent a missing
+	// cluster's last config (make-before-break carry), so stale endpoints are
+	// not served forever. Each carried cluster's clock starts with the first
+	// build that lacks it and stops when it returns.
+	//
+	// Keep it well above how long translation takes to catch up after a
+	// controller restart; a shorter bound fails warm routes on every restart.
+	// Applies only while PerClientPublishBudget is positive. 0 or a negative
+	// value removes the bound: warm clients stay withheld, and missing clusters
+	// are carried, indefinitely.
+	PerClientWarmWithholdBound time.Duration `split_words:"true" default:"10m"`
+
+	// XdsSnapshotConsistencyCheck checks each per-client snapshot before
+	// publish for EDS or RDS resources that no CDS or LDS resource references
+	// (Envoy never requests them) and for listeners naming a missing
+	// RouteConfiguration.
+	// Violations are logged and counted in
+	// kgateway_xds_snapshot_perclient_inconsistent_snapshots_total; any
+	// increment is a kgateway bug. The snapshot still publishes: blocking would
+	// reintroduce unbounded withholds. For test and CI; off by default.
+	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
+
+	// ClusterDiscoveryMode selects which backends reach a proxy's CDS.
+	// Supported values are:
+	//
+	//   - "ALL" (default): every backend in discovery scope becomes a cluster.
+	//   - "REFERENCED": only clusters the generated configuration references.
+	//
+	// REFERENCED shrinks config_dump and per-proxy stats where many Services
+	// are discovered and few are routed. It is experimental: Envoy does not
+	// necessarily apply CDS before RDS within a snapshot, so a cluster entering
+	// or leaving CDS could briefly 503 NC. ClusterReferenceAhead and
+	// ClusterDereferenceGrace narrow the two transitions. Both are elapsed time
+	// from publication, not acknowledgements, so each must exceed the fleet's
+	// worst-case propagation, and neither makes a transition hitless. A gateway
+	// whose routes pick a destination at request time stays unscoped unless a
+	// valid claim accounts for each such selector (see
+	// ClusterDiscoveryReferenced).
+	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
+
+	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays
+	// published, in REFERENCED mode only. Removing it at once can let CDS remove it
+	// before RDS updates the route still targeting it, causing 503 NC. The clock
+	// starts when the controller publishes the route update that stops naming the
+	// cluster, not when Envoy gets it. A build held for a new or unready cluster
+	// does not start it; the release does. The grace gives that update time to land;
+	// it does not confirm Envoy received or applied it, so it narrows the race
+	// rather than closing it. Set it above the fleet's worst-case RDS propagation.
+	// Only clusters scoping stops emitting are kept: a cluster whose backend was
+	// deleted or fails translation leaves at once, as it does in ALL mode.
+	// Negative values act as 0:
+	// 0 removes immediately and accepts the race.
+	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
+
+	// ClusterReferenceAhead is how long routes, listeners and secrets that name
+	// a cluster new to a proxy are held after the controller first publishes
+	// that cluster to it, in REFERENCED mode only. A cluster is new when the
+	// proxy's published snapshot lacks it. Clusters only a filter calls count
+	// too, such as a new ext_authz cluster.
+	//
+	// One snapshot carrying both is not enough. After a CDS response is sent
+	// its watch stays closed until Envoy ACKs, so a route update in that window
+	// goes out on the open RDS watch first. Any retarget during an un-ACKed CDS
+	// update hits this, and no server option prevents it.
+	//
+	// The clock starts at the publish that first carries the cluster, just
+	// before the controller installs it in its xDS cache. The send, Envoy's ACK,
+	// and Envoy applying and warming the cluster are later events that nothing
+	// observes. A send held back by an un-ACKed CDS response, or slow warming,
+	// can outlast the window, so it narrows the race rather than closing it.
+	//
+	// Only edits that introduce a cluster the proxy's published snapshot lacks
+	// pay the latency. 0 or a negative value publishes cluster and route
+	// together and accepts that race. With PerClientPublishBudget positive, a
+	// hold ends at most one budget after it began, so a misconfigured window or
+	// a stream of new clusters cannot pin updates. With the budget at 0 or
+	// less, a hold still ends when its windows close, but new clusters that
+	// keep arriving can extend it.
+	ClusterReferenceAhead time.Duration `split_words:"true" default:"2s"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:

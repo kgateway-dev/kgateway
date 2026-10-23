@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"maps"
 	"slices"
 	"strconv"
 
@@ -176,10 +177,21 @@ type clustersWithErrors struct {
 	clusters  envoycache.Resources
 	listeners baseResources[*envoylistenerv3.Listener]
 	secrets   baseResources[*envoytlsv3.Secret]
+	// backendListeners are the listeners of each publishable cluster that has
+	// any, so scoping can keep the clusters they name (keepBackendListenerTargets)
+	// and send only kept clusters' listeners.
+	backendListeners map[string]baseResources[*envoylistenerv3.Listener]
+	// backendSecrets are the secrets of each publishable cluster that has any,
+	// so scoping sends only kept clusters' secrets.
+	backendSecrets map[string]baseResources[*envoytlsv3.Secret]
 	// +noKrtEquals
 	erroredClusters     []string
 	erroredClustersHash uint64
 	clustersHash        uint64
+	// clusterVersions stores per-row ClusterVersion hashes so emission filtering
+	// can version retained clusters without digesting protos.
+	// +noKrtEquals folded into clustersHash
+	clusterVersions map[string]uint64
 	// perClientErrors are the rows whose Error was produced for this client
 	// alone, sorted by cluster name; the status projection reads them. Base
 	// errors are attributed from the base rows instead, once rather than once
@@ -198,6 +210,12 @@ func (c clustersWithErrors) Equals(k clustersWithErrors) bool {
 	return c.clustersHash == k.clustersHash &&
 		c.listeners.hash == k.listeners.hash &&
 		c.secrets.hash == k.secrets.hash &&
+		maps.EqualFunc(c.backendListeners, k.backendListeners, func(a, b baseResources[*envoylistenerv3.Listener]) bool {
+			return a.hash == b.hash
+		}) &&
+		maps.EqualFunc(c.backendSecrets, k.backendSecrets, func(a, b baseResources[*envoytlsv3.Secret]) bool {
+			return a.hash == b.hash
+		}) &&
 		c.erroredClustersHash == k.erroredClustersHash &&
 		c.resourceName == k.resourceName &&
 		slices.EqualFunc(c.perClientErrors, k.perClientErrors, uccWithCluster.Equals)
@@ -239,6 +257,20 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 type baseResources[M proto.Message] struct {
 	items []sharedproto.Shared[M]
 	hash  uint64
+}
+
+// keptBackendResources returns the resources generated with the clusters in
+// kept, and their combined hash, in cluster-name order.
+func keptBackendResources[M proto.Message](kept map[string]envoycachetypes.ResourceWithTTL, byCluster map[string]baseResources[M]) baseResources[M] {
+	var out baseResources[M]
+	for _, name := range slices.Sorted(maps.Keys(byCluster)) {
+		if _, ok := kept[name]; !ok {
+			continue
+		}
+		out.items = append(out.items, byCluster[name].items...)
+		out.hash ^= byCluster[name].hash
+	}
+	return out
 }
 
 // wrapBaseResources shares generated resources across clients with a content hash.
@@ -378,9 +410,12 @@ func clustersForClient(
 // the status projection.
 func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithCluster) *clustersWithErrors {
 	clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(rows))
+	clusterVersions := make(map[string]uint64, len(rows))
 	var (
 		listeners           baseResources[*envoylistenerv3.Listener]
 		secrets             baseResources[*envoytlsv3.Secret]
+		backendListeners    map[string]baseResources[*envoylistenerv3.Listener]
+		backendSecrets      map[string]baseResources[*envoytlsv3.Secret]
 		clustersHash        uint64
 		erroredClustersHash uint64
 		erroredClusters     []string
@@ -405,8 +440,21 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clustersHash ^= c.ClusterVersion
 		listeners.items = append(listeners.items, c.Listeners.items...)
 		listeners.hash ^= c.Listeners.hash
+		if len(c.Listeners.items) > 0 {
+			if backendListeners == nil {
+				backendListeners = make(map[string]baseResources[*envoylistenerv3.Listener])
+			}
+			backendListeners[c.Name] = c.Listeners
+		}
 		secrets.items = append(secrets.items, c.Secrets.items...)
 		secrets.hash ^= c.Secrets.hash
+		if len(c.Secrets.items) > 0 {
+			if backendSecrets == nil {
+				backendSecrets = make(map[string]baseResources[*envoytlsv3.Secret])
+			}
+			backendSecrets[c.Name] = c.Secrets
+		}
+		clusterVersions[c.Name] = c.ClusterVersion
 	}
 	clustersVersion := strconv.FormatUint(clustersHash, 10)
 	// Base rows arrive in map order; sort so Equals compares like with like.
@@ -416,8 +464,11 @@ func assemblePerClientClusters(ucc ir.UniquelyConnectedClient, rows []uccWithClu
 		clusters:            envoycache.NewResourcesWithTTL(clustersVersion, clustersProto),
 		listeners:           listeners,
 		secrets:             secrets,
+		backendListeners:    backendListeners,
+		backendSecrets:      backendSecrets,
 		erroredClusters:     erroredClusters,
 		clustersHash:        clustersHash,
+		clusterVersions:     clusterVersions,
 		erroredClustersHash: erroredClustersHash,
 		perClientErrors:     perClientErrors,
 		resourceName:        ucc.ResourceName(),
