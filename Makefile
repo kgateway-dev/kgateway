@@ -134,7 +134,8 @@ $(BUG_REPORT_DIR):
 # release picks up the freshly patched image.
 export DISTROLESS_BASE_IMAGE ?= cgr.dev/chainguard/glibc-dynamic:latest
 
-GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
+# Build with the toolchain directive of go.mod, falling back to the go directive.
+GO_VERSION := $(shell (grep -E '^toolchain go' go.mod | sed 's/^toolchain go//'; grep -E '^go ' go.mod | awk '{print $$2}') | head -n1)
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
 DEPSGOBIN ?= $(OUTPUT_DIR)
@@ -204,7 +205,7 @@ analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override go
 	$(MAKE) --no-print-directory fmt-yaml
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
-$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
+$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum tools/go.mod tools/go.sum .custom-gcl.yml
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom
 
 ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint

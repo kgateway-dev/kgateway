@@ -1,6 +1,10 @@
 module github.com/kgateway-dev/kgateway/v2
 
-go 1.27.3
+// The go directive is the minimum version for modules that import kgateway;
+// the toolchain directive is the version kgateway is built with.
+go 1.27.0
+
+toolchain go1.27.3
 
 godebug x509negativeserial=1
 
