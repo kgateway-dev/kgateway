@@ -288,7 +288,8 @@ func (p *listenerPolicyPluginGwPass) ApplyListenerPlugin(
 	pCtx *ir.ListenerContext,
 	out *envoylistenerv3.Listener,
 ) {
-	logger.Debug("applying to listener", "listener", out.Name, "policy_type", fmt.Sprintf("%T", pCtx.Policy))
+	//nolint:sloglint // keep the existing log key; renaming it would break log queries
+	logger.Debug("applying to listener", "listener", out.Name, "policyType", fmt.Sprintf("%T", pCtx.Policy))
 	cfg := p.getPolicy(pCtx.Policy, pCtx.Port)
 
 	logger.Debug("listenerPolicy found", "proxy_protocol", cfg.proxyProtocol, "per_connection_buffer_limit_bytes", cfg.perConnectionBufferLimitBytes)
