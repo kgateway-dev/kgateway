@@ -284,9 +284,10 @@ func (k *kgatewayParameters) resolveGatewayClassParameters(gwc *gwv1.GatewayClas
 	gwpName := paramRef.Name
 	if gwpName == "" {
 		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error("could not get gateway parameters for gateway class",
 			"error", err,
-			"gateway_class_name", gwc.GetName(),
+			"gatewayClassName", gwc.GetName(),
 		)
 		return nil, err
 	}
