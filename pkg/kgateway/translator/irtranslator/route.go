@@ -164,9 +164,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	for i, route := range virtualHost.Rules {
 		var routeReport reportssdk.ParentRefReporter = &reports.ParentRefReport{}
 		if route.Parent != nil {
-			// route may be a fake one that we don't really report,
-			// such as in the waypoint translator where we produce
-			// synthetic routes if there none are attached to the Gateway/Service.
+			// route may be a synthetic one without a parent that we don't report.
 			routeReport = h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
 		}
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)

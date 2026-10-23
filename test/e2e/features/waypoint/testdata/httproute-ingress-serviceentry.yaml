@@ -23,7 +23,7 @@ spec:
     labels:
       app: svc-a
 ---
-# Route attached to the ServiceEntry hostname. The waypoint applies it, adding the
+# Route attached to the ServiceEntry. The waypoint applies it, adding the
 # traversed-waypoint header so a response proves traffic went through the waypoint.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -31,9 +31,9 @@ metadata:
   name: hr-se-autoalloc-waypoint-header
 spec:
   parentRefs:
-  - name: se-autoalloc.serviceentry.com
+  - name: se-autoalloc
     group: networking.istio.io
-    kind: Hostname
+    kind: ServiceEntry
   rules:
   - backendRefs:
     - name: se-autoalloc.serviceentry.com

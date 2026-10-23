@@ -16,7 +16,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/istio"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/serviceentry"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/trafficpolicy"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
@@ -88,7 +87,6 @@ func Plugins(
 		listenerpolicy.NewPlugin(ctx, commoncol),
 		backendtlspolicy.NewPlugin(ctx, commoncol),
 		serviceentry.NewPlugin(ctx, commoncol),
-		sandwich.NewPlugin(),
 		backendconfigpolicy.NewPlugin(ctx, commoncol, validator),
 	}
 }

@@ -78,12 +78,6 @@ func WithGatewayClassName(name string) func(*setup) {
 	}
 }
 
-func WithWaypointClassName(name string) func(*setup) {
-	return func(s *setup) {
-		s.waypointClassName = name
-	}
-}
-
 func WithAdditionalGatewayClasses(classes map[string]*deployer.GatewayClassInfo) func(*setup) {
 	return func(s *setup) {
 		s.additionalGatewayClasses = classes
@@ -187,7 +181,6 @@ type setup struct {
 	gatewayControllerExtension     sdk.GatewayControllerExtension
 	gatewayControllerName          string
 	gatewayClassName               string
-	waypointClassName              string
 	additionalGatewayClasses       map[string]*deployer.GatewayClassInfo
 	extraPlugins                   func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	helmValuesGeneratorOverride    func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -217,7 +210,6 @@ func New(opts ...func(*setup)) (*setup, error) {
 	s := &setup{
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
-		waypointClassName:     wellknown.DefaultWaypointClassName,
 		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
@@ -419,7 +411,6 @@ func (s *setup) buildKgatewayWithConfig(
 	gatewayClassInfos := controller.GetDefaultClassInfo(
 		setupOpts.GlobalSettings,
 		s.gatewayClassName,
-		s.waypointClassName,
 		s.gatewayControllerName,
 		s.additionalGatewayClasses,
 	)
@@ -429,7 +420,6 @@ func (s *setup) buildKgatewayWithConfig(
 		Manager:                     mgr,
 		ControllerName:              s.gatewayControllerName,
 		GatewayClassName:            s.gatewayClassName,
-		WaypointGatewayClassName:    s.waypointClassName,
 		AdditionalGatewayClasses:    s.additionalGatewayClasses,
 		GatewayClassInfos:           gatewayClassInfos,
 		ExtraPlugins:                s.extraPlugins,
