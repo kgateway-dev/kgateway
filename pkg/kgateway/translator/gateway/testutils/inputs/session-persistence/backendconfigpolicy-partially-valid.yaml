@@ -55,7 +55,7 @@ spec:
   type: DynamicForwardProxy
   dynamicForwardProxy: {}
 ---
-# absoluteTimeout is ignored for a Session cookie, and session persistence bypasses the ring hash policies
+# absoluteTimeout is ignored for a Session cookie. The ring hash policies still apply (requests without a session), so they are not reported.
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: BackendConfigPolicy
 metadata:

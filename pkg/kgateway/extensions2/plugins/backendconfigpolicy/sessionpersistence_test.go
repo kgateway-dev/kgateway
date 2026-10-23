@@ -266,11 +266,11 @@ func TestAbsoluteTimeoutIgnored(t *testing.T) {
 		{name: "permanent lifetime", in: &kgateway.SessionPersistence{AbsoluteTimeout: timeout, Cookie: &kgateway.SessionPersistenceCookieConfig{
 			LifetimeType: new(kgateway.PermanentCookieLifetimeType),
 		}}},
-		{name: "header", in: &kgateway.SessionPersistence{
+		{name: "header sessions never use the timeout", in: &kgateway.SessionPersistence{
 			AbsoluteTimeout: timeout,
 			Type:            new(kgateway.HeaderBasedSessionPersistence),
 			Header:          &kgateway.SessionPersistenceHeaderConfig{Name: "x-session"},
-		}},
+		}, want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -291,8 +291,6 @@ func TestPartiallyValidMessages(t *testing.T) {
 	sp := func(timeoutIgnored bool) *sessionPersistenceIR {
 		return &sessionPersistenceIR{perRoute: &anypb.Any{}, absoluteTimeoutIgnored: timeoutIgnored}
 	}
-	hashLB := &LoadBalancerConfigIR{hasHashPolicies: true}
-	roundRobin := &LoadBalancerConfigIR{}
 	service := ir.BackendObjectIR{}
 	dfp := ir.NewBackendObjectIR(ir.ObjectSource{Group: "gateway.kgateway.dev", Kind: "Backend", Namespace: "default", Name: "dfp"}, 0, "", "")
 	dfp.Obj = &kgateway.Backend{Spec: kgateway.BackendSpec{DynamicForwardProxy: &kgateway.DynamicForwardProxyBackend{}}}
@@ -303,30 +301,13 @@ func TestPartiallyValidMessages(t *testing.T) {
 		backend  ir.BackendObjectIR
 		want     map[string]string
 	}{
-		{name: "no session persistence", policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, loadBalancerConfig: hashLB})}, backend: service},
+		{name: "no session persistence", policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, loadBalancerConfig: &LoadBalancerConfigIR{}})}, backend: service},
 		{name: "nothing to report", policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(false)})}, backend: service},
 		{
-			name:     "single policy",
-			policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(true), loadBalancerConfig: hashLB})},
+			name:     "ignored absoluteTimeout",
+			policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(true)})},
 			backend:  service,
-			want:     map[string]string{id("a"): msgHashPoliciesBypassed + "; " + msgAbsoluteTimeoutIgnored},
-		},
-		{
-			name: "hash policies from another policy are bypassed",
-			policies: []ir.PolicyAtt{
-				att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(false)}),
-				att("b", &BackendConfigPolicyIR{ct: newer, loadBalancerConfig: hashLB}),
-			},
-			backend: service,
-			want:    map[string]string{id("a"): msgHashPoliciesBypassed},
-		},
-		{
-			name: "hash policies that lose the merge are not reported",
-			policies: []ir.PolicyAtt{
-				att("a", &BackendConfigPolicyIR{ct: older, loadBalancerConfig: roundRobin}),
-				att("b", &BackendConfigPolicyIR{ct: newer, sessionPersistence: sp(false), loadBalancerConfig: hashLB}),
-			},
-			backend: service,
+			want:     map[string]string{id("a"): msgAbsoluteTimeoutIgnored},
 		},
 		{
 			name: "only the applied session persistence is reported",
@@ -357,5 +338,4 @@ func TestPartiallyValidMessages(t *testing.T) {
 
 	a := &sessionPersistenceIR{perRoute: &anypb.Any{}, absoluteTimeoutIgnored: true}
 	assert.False(t, a.Equals(sp(false)), "absoluteTimeoutIgnored must be part of Equals")
-	assert.False(t, hashLB.Equals(roundRobin), "hasHashPolicies must be part of Equals")
 }

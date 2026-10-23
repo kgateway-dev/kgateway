@@ -275,9 +275,8 @@ Statuses:
           namespace: default
         conditions:
         - lastTransitionTime: null
-          message: spec.sessionPersistence overrides the spec.loadBalancer hash policies
-            for requests with an established session; spec.sessionPersistence.absoluteTimeout
-            has no effect unless spec.sessionPersistence.cookie.lifetimeType is Permanent
+          message: spec.sessionPersistence.absoluteTimeout only has an effect for
+            Cookie sessions with spec.sessionPersistence.cookie.lifetimeType Permanent
           reason: PartiallyValid
           status: "True"
           type: Accepted

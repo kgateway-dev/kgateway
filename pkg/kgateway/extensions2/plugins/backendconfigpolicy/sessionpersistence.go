@@ -89,7 +89,8 @@ func absoluteTimeoutIgnored(in *kgateway.SessionPersistence) bool {
 		return false
 	}
 	if ptr.Deref(in.Type, kgateway.CookieBasedSessionPersistence) != kgateway.CookieBasedSessionPersistence {
-		return false
+		// Header sessions never use the timeout.
+		return true
 	}
 	lifetime := kgateway.SessionCookieLifetimeType
 	if in.Cookie != nil {
@@ -99,18 +100,16 @@ func absoluteTimeoutIgnored(in *kgateway.SessionPersistence) bool {
 }
 
 const (
-	msgAbsoluteTimeoutIgnored = "spec.sessionPersistence.absoluteTimeout has no effect unless " +
-		"spec.sessionPersistence.cookie.lifetimeType is Permanent"
-	msgHashPoliciesBypassed = "spec.sessionPersistence overrides the spec.loadBalancer hash policies " +
-		"for requests with an established session"
+	msgAbsoluteTimeoutIgnored = "spec.sessionPersistence.absoluteTimeout only has an effect for Cookie sessions " +
+		"with spec.sessionPersistence.cookie.lifetimeType Permanent"
 	msgNoEffectOnBackendFmt = "spec.sessionPersistence has no effect on %s %s/%s: %s"
 )
 
 // PartiallyValidMessages returns the message for the PartiallyValid reason of the Accepted condition, keyed by
 // policy ref ID, for the BackendConfigPolicies attached to backend. It is judged on the merged config that is
 // actually applied to the backend, and reported on the policy whose sessionPersistence is applied: an ignored
-// absoluteTimeout, load balancer hash policies (from any of the policies) that session persistence bypasses,
-// and backends where session persistence has no effect. It returns nil when there is nothing to report.
+// absoluteTimeout and backends where session persistence has no effect. Load balancer hash policies are not
+// reported: they still pick the host for requests without a session. It returns nil when there is nothing to report.
 func PartiallyValidMessages(policies []ir.PolicyAtt, backend ir.BackendObjectIR) map[string]string {
 	if !slices.ContainsFunc(policies, hasSessionPersistence) {
 		return nil
@@ -133,9 +132,6 @@ func PartiallyValidMessages(policies []ir.PolicyAtt, backend ir.BackendObjectIR)
 	if pol.sessionPersistence.absoluteTimeoutIgnored {
 		msgs = append(msgs, msgAbsoluteTimeoutIgnored)
 	}
-	if pol.loadBalancerConfig != nil && pol.loadBalancerConfig.hasHashPolicies {
-		msgs = append(msgs, msgHashPoliciesBypassed)
-	}
 	if note, report := sessionPersistenceBackendNote(backend); report {
 		gk := backend.GetGroupKind()
 		msgs = append(msgs, fmt.Sprintf(msgNoEffectOnBackendFmt, gk.Kind, backend.GetNamespace(), backend.GetName(), note))
@@ -145,15 +141,6 @@ func PartiallyValidMessages(policies []ir.PolicyAtt, backend ir.BackendObjectIR)
 	}
 	slices.Sort(msgs)
 	return map[string]string{owners[0]: strings.Join(msgs, "; ")}
-}
-
-// hasHashPolicies reports whether the load balancer config uses hash policies.
-func hasHashPolicies(lb *kgateway.LoadBalancer) bool {
-	if lb == nil {
-		return false
-	}
-	return (lb.RingHash != nil && len(lb.RingHash.HashPolicies) > 0) ||
-		(lb.Maglev != nil && len(lb.Maglev.HashPolicies) > 0)
 }
 
 // sessionPersistenceBackendNote returns a note about how session persistence behaves for backend, and whether

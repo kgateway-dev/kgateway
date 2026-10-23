@@ -40,8 +40,6 @@ const (
 type LifetimeType string
 
 const (
-	// LifetimeUnset leaves the cookie TTL as given by AbsoluteTimeout.
-	LifetimeUnset     LifetimeType = ""
 	LifetimeSession   LifetimeType = "Session"
 	LifetimePermanent LifetimeType = "Permanent"
 )
