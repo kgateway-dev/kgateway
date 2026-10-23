@@ -21,6 +21,12 @@ func translateOutlierDetection(od *kgateway.OutlierDetection) *envoyclusterv3.Ou
 	if od.EnforcingConsecutive5xx != nil {
 		outlierDetection.EnforcingConsecutive_5Xx = &wrapperspb.UInt32Value{Value: uint32(*od.EnforcingConsecutive5xx)} // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 	}
+	if od.ConsecutiveGatewayFailure != nil {
+		outlierDetection.ConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: uint32(*od.ConsecutiveGatewayFailure)} // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
+	if od.EnforcingConsecutiveGatewayFailure != nil {
+		outlierDetection.EnforcingConsecutiveGatewayFailure = &wrapperspb.UInt32Value{Value: uint32(*od.EnforcingConsecutiveGatewayFailure)} // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
+	}
 	if od.SplitExternalLocalOriginErrors != nil {
 		outlierDetection.SplitExternalLocalOriginErrors = *od.SplitExternalLocalOriginErrors
 	}

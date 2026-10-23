@@ -41,6 +41,8 @@ spec:
     consecutive5xx: 1
     baseEjectionTime: 4h
     maxEjectionPercent: 55
+    consecutiveGatewayFailure: 3
+    enforcingConsecutiveGatewayFailure: 100
 ---
 apiVersion: v1
 kind: Service
