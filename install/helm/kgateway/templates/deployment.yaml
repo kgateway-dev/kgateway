@@ -161,6 +161,28 @@ spec:
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
+            {{- $extraEnv := .Values.controller.extraEnv | default dict }}
+            {{- $clusterDiscovery := .Values.controller.clusterDiscovery | default dict }}
+            {{- if hasKey $extraEnv "KGW_CLUSTER_DISCOVERY_MODE" }}
+            {{- $_ := include "kgateway.clusterDiscoveryMode" (dict "value" (get $extraEnv "KGW_CLUSTER_DISCOVERY_MODE") "path" "controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE") }}
+            {{- end }}
+            {{- if $clusterDiscovery.mode }}
+            {{- $mode := include "kgateway.clusterDiscoveryMode" (dict "value" $clusterDiscovery.mode "path" "controller.clusterDiscovery.mode") }}
+            {{- if not (hasKey $extraEnv "KGW_CLUSTER_DISCOVERY_MODE") }}
+            - name: KGW_CLUSTER_DISCOVERY_MODE
+              value: {{ $mode | quote }}
+            {{- end }}
+            {{- end }}
+            {{- $referenceAhead := $clusterDiscovery.referenceAhead }}
+            {{- if and (not (kindIs "invalid" $referenceAhead)) (ne (toString $referenceAhead) "") (not (hasKey $extraEnv "KGW_CLUSTER_REFERENCE_AHEAD")) }}
+            - name: KGW_CLUSTER_REFERENCE_AHEAD
+              value: {{ $referenceAhead | toString | quote }}
+            {{- end }}
+            {{- $dereferenceGrace := $clusterDiscovery.dereferenceGrace }}
+            {{- if and (not (kindIs "invalid" $dereferenceGrace)) (ne (toString $dereferenceGrace) "") (not (hasKey $extraEnv "KGW_CLUSTER_DEREFERENCE_GRACE")) }}
+            - name: KGW_CLUSTER_DEREFERENCE_GRACE
+              value: {{ $dereferenceGrace | toString | quote }}
+            {{- end }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}

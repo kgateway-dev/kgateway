@@ -203,6 +203,14 @@ controller:
   enableAwsEc2Discovery: false
   # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
   awsEc2RefreshInterval: 30s
+  # -- Choose which clusters each gateway proxy receives. A value left empty sets nothing, so the controller uses its own default. A variable of the same name in `controller.extraEnv` takes precedence over each value here.
+  clusterDiscovery:
+    # -- `ALL` sends every discovered backend's cluster and endpoints to every gateway proxy. `REFERENCED` sends a proxy only the clusters its gateway's configuration references, including clusters that only filters call, which shrinks proxy memory, config dumps and per-cluster stats where many Services are discovered and few are routed. `REFERENCED` is experimental. Case-insensitive. The controller default is `ALL`. Sets `KGW_CLUSTER_DISCOVERY_MODE`.
+    mode: ""
+    # -- With `REFERENCED`, how long routes, listeners and secrets naming a cluster new to a proxy are held after the controller first publishes that cluster. This gives the cluster time to reach Envoy first, but does not guarantee delivery or application order. The controller default is `2s`. Sets `KGW_CLUSTER_REFERENCE_AHEAD`.
+    referenceAhead: ""
+    # -- With `REFERENCED`, how long a cluster stays published after the controller publishes the route update that stops naming it. This gives the update time to reach Envoy before the cluster is removed, but does not guarantee delivery or application order. The controller default is `5s`. Sets `KGW_CLUSTER_DEREFERENCE_GRACE`.
+    dereferenceGrace: ""
   # -- Change the rollout strategy from the Kubernetes default of a RollingUpdate with 25% maxUnavailable, 25% maxSurge.
   # E.g., to recreate pods, minimizing resources for the rollout but causing downtime:
   # strategy:

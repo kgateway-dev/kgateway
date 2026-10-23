@@ -15,36 +15,49 @@ them up does not give a bound on proxy startup or on when a change takes effect.
 
 ## Setting a value
 
-Each setting is an environment variable of the controller container. With Helm,
-set it through `controller.extraEnv`:
+Each setting is an environment variable of the controller container. The
+cluster discovery settings have their own Helm values under
+`controller.clusterDiscovery`. Set the others through `controller.extraEnv`:
 
 ```yaml
 controller:
+  clusterDiscovery:
+    mode: REFERENCED     # KGW_CLUSTER_DISCOVERY_MODE
+    referenceAhead: 3s   # KGW_CLUSTER_REFERENCE_AHEAD
+    dereferenceGrace: 5s # KGW_CLUSTER_DEREFERENCE_GRACE
   extraEnv:
     KGW_PER_CLIENT_PUBLISH_BUDGET: "20s"
-    KGW_CLUSTER_DISCOVERY_MODE: "REFERENCED"
-    KGW_CLUSTER_REFERENCE_AHEAD: "3s"
 ```
 
 or on the command line:
 
 ```sh
 helm upgrade <release> <chart> --namespace <namespace> --reuse-values \
-  --set-string controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE=REFERENCED
+  --set controller.clusterDiscovery.mode=REFERENCED
 ```
+
+A `controller.clusterDiscovery` value left empty, as it is by default, sets
+nothing, so the controller uses its own default. A variable set in
+`controller.extraEnv` takes precedence over the matching
+`controller.clusterDiscovery` value, so an install that already sets
+`KGW_CLUSTER_DISCOVERY_MODE` there keeps working.
 
 - **When values are read.** The controller reads these variables once, at
   startup. `KGW_XDS_FIRST_CONNECT_DELAY` is read once too, when the first xDS
   stream needs it. Nothing is reloaded while the controller runs. Changing
-  `controller.extraEnv` changes the controller's pod template, so a Helm upgrade
-  rolls the controller and the new values apply to the new pods.
+  `controller.extraEnv` or `controller.clusterDiscovery` changes the
+  controller's pod template, so a Helm upgrade rolls the controller and the new
+  values apply to the new pods.
 - **Accepted values.** Durations are Go duration strings, such as `500ms`, `15s`
   or `1m30s`. A bare number other than `0` is invalid. Booleans accept what Go's
   `strconv.ParseBool` does: `true` and `false`, `True`, `TRUE`, `t`, `1`, and so
   on.
 - **Invalid values.** An invalid value stops the controller from starting: it
   logs `error loading settings from env` and exits. The exception is
-  `KGW_XDS_FIRST_CONNECT_DELAY`, which logs a warning and uses its default.
+  `KGW_XDS_FIRST_CONNECT_DELAY`, which logs a warning and uses its default. An
+  invalid cluster discovery mode, in `controller.clusterDiscovery.mode` or
+  `controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE`, fails the Helm install or
+  upgrade instead.
 - **Negative durations.** Nothing rejects a negative duration. Every duration
   here treats a negative value exactly like `0`, so a stray minus sign silently
   turns that bound or window off.
@@ -296,6 +309,8 @@ out` for `ClusterLoadAssignment`.
   ext_proc, rate limit, access log and JWKS clusters. `REFERENCED` is
   experimental.
 
+Helm value: `controller.clusterDiscovery.mode`.
+
 A backend can ship listeners with its cluster, as a CONNECT tunnel does. A
 kept backend's listeners keep the clusters they name, such as the tunnel's
 proxy, and those clusters' own listeners are followed in turn.
@@ -356,6 +371,8 @@ Size both above your fleet's worst-case propagation.
 
 #### `KGW_CLUSTER_REFERENCE_AHEAD` (default `2s`)
 
+Helm value: `controller.clusterDiscovery.referenceAhead`.
+
 When a build names a cluster that the client's published snapshot lacks, the
 cluster and its endpoints are published at once. Routes, listeners and secrets
 stay at their published versions until the cluster's window closes.
@@ -380,6 +397,8 @@ The metric is
 `kgateway_xds_cluster_scoping_transitions_total{transition="reference_ahead_held"}`.
 
 #### `KGW_CLUSTER_DEREFERENCE_GRACE` (default `5s`)
+
+Helm value: `controller.clusterDiscovery.dereferenceGrace`.
 
 When a build stops naming a published cluster, the cluster stays published for
 this long. That gives the route update that dropped it time to land before CDS

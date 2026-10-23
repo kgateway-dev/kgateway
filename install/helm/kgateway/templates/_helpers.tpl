@@ -80,6 +80,21 @@ Supported values: "standard" or "strict" (case-insensitive).
 {{- end }}
 
 {{/*
+Validate a cluster discovery mode and return it upper-cased. Accepts exactly
+what the controller does: any case, but no surrounding spaces, because an
+extraEnv value reaches the controller unchanged.
+Takes a dict: "value" is the mode, "path" names it in the error.
+*/}}
+{{- define "kgateway.clusterDiscoveryMode" -}}
+{{- $mode := .value | toString | upper -}}
+{{- if or (eq $mode "ALL") (eq $mode "REFERENCED") -}}
+{{- $mode -}}
+{{- else -}}
+{{- printf "ERROR: Invalid %s '%s'. Must be 'ALL' or 'REFERENCED' (case-insensitive)." .path (toString .value) | fail -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Get the image tag with 'v' prefix for semver tags.
 If the input already starts with 'v', return it as-is.
 If the input looks like a semver version (e.g., "1.2.3"), prepend 'v'.
