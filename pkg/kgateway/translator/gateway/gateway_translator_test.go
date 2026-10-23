@@ -2892,6 +2892,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("Backend Config Policy http2 options apply to ALPN negotiated by BackendTLSPolicy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml"},
+			outputFile: "backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy TLS overridden by BackendTLSPolicy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/tls-overridden-by-backendtlspolicy.yaml"},

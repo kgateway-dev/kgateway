@@ -530,7 +530,7 @@ func TestHarnessListenerEquals(t *testing.T) {
 	cases := []equalstest.Case[Listener]{
 		{
 			// The embedded gwv1.Listener contributes flattened field names (Name,
-			// Hostname, Port, Protocol, TLS, AllowedRoutes) plus the embedding name
+			// Hostname, Port, Protocol, TLS, AllowedRoutes, Filters) plus the embedding name
 			// "Listener". Cover the embedding via a Port mutation; the flattened
 			// names are exempted below.
 			Field: "Listener",
@@ -576,7 +576,7 @@ func TestHarnessListenerEquals(t *testing.T) {
 	}
 
 	// gwv1.Listener is embedded; the harness flattens its exported field names
-	// (Name, Hostname, Port, Protocol, TLS, AllowedRoutes) plus the embedding
+	// (Name, Hostname, Port, Protocol, TLS, AllowedRoutes, Filters) plus the embedding
 	// name "Listener". We cover the embedding via the "Listener" case above;
 	// exempt the individual flattened names to avoid requiring redundant cases.
 	equalstest.Run(
@@ -584,7 +584,7 @@ func TestHarnessListenerEquals(t *testing.T) {
 		baseHarnessFullListener,
 		func(a, b Listener) bool { return a.Equals(b) },
 		cases,
-		[]string{"Name", "Hostname", "Port", "Protocol", "TLS", "AllowedRoutes"}, // embedded gwv1.Listener fields covered by "Listener" case
+		[]string{"Name", "Hostname", "Port", "Protocol", "TLS", "AllowedRoutes", "Filters"}, // embedded gwv1.Listener fields covered by "Listener" case
 		// Suppress the gk field from the AttachedPolicies map closure; the
 		// "AttachedPolicies" case above exercises it at the struct level.
 	)
