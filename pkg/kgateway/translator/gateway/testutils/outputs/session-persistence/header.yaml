@@ -115,6 +115,12 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
+          message: 'rule 0: sessionPersistence.absoluteTimeout only has an effect
+            for Cookie sessions with sessionPersistence.cookie.lifetimeType Permanent'
+          reason: SessionPersistenceAbsoluteTimeoutIgnored
+          status: "True"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
           message: Successfully accepted Route
           reason: Accepted
           status: "True"
@@ -124,11 +130,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Successfully programmed Route
-          reason: Programmed
-          status: "True"
-          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""
