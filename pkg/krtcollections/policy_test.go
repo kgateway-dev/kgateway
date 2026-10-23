@@ -82,7 +82,7 @@ func TestRoutesFor(t *testing.T) {
 		},
 	}}
 
-	routes := preRouteIndex(t, []any{
+	inputs := []any{
 		&gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{Name: "http-route", Namespace: "default"},
 			Spec: gwv1.HTTPRouteSpec{
@@ -109,14 +109,28 @@ func TestRoutesFor(t *testing.T) {
 				RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
 			},
 		},
-	})
+	}
 
 	nns := types.NamespacedName{Namespace: "default", Name: "example-gateway"}
 	group := wellknown.GatewayGVK.Group
 	kind := wellknown.GatewayGVK.Kind
 
-	rts := routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind)
-	require.Len(t, rts, 2)
+	t.Run("immediate", func(t *testing.T) {
+		routes := preRouteIndex(t, inputs)
+		require.Len(t, routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind), 2)
+	})
+	t.Run("debounced", func(t *testing.T) {
+		routes := preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{Stop: test.NewStop(t)}, apisettings.Settings{
+			TranslationDebounce:    time.Millisecond,
+			TranslationDebounceMax: 10 * time.Millisecond,
+		})
+		require.Len(t, routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind), 2,
+			"routes should be indexed by parent as soon as the debounced index syncs")
+		require.NotNil(t, routes.FetchHttp(krt.TestingDummyContext{}, "default", "http-route"),
+			"delegation lookups by name should read the debounced HTTPRoutes")
+		require.Len(t, routes.FetchHTTPRoutesBySelector(krt.TestingDummyContext{}, HTTPRouteSelector{Namespace: "default"}), 1,
+			"delegation lookups by selector should read the debounced HTTPRoutes")
+	})
 }
 
 func TestGetBackendDifNsWithRefGrant(t *testing.T) {
@@ -539,6 +553,10 @@ func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
 }
 
 func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
+	return preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{}, apisettings.Settings{})
+}
+
+func preRouteIndexWithSettings(t test.Failer, inputs []any, krtopts krtutil.KrtOptions, settings apisettings.Settings) *RoutesIndex {
 	mock := krttest.NewMock(t, inputs)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
@@ -562,7 +580,7 @@ func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, apisettings.Settings{})
+	rtidx := NewRoutesIndex(krtopts, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings)
 	services.WaitUntilSynced(nil)
 	backends.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)

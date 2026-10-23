@@ -264,6 +264,24 @@ func NewGauge(opts GaugeOpts, labels []string) Gauge {
 	return g
 }
 
+// NewInfo registers a gauge that always reports 1, with label values fixed for
+// the life of the process, following the Prometheus *_info convention.
+func NewInfo(opts GaugeOpts, labels ...Label) {
+	if opts.Namespace == "" {
+		opts.Namespace = DefaultNamespace
+	}
+	opts.ConstLabels = toPrometheusLabels(labels)
+
+	g := prometheus.NewGaugeFunc(prometheus.GaugeOpts(opts), func() float64 { return 1 })
+
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+
+	if err := registry.Register(g); err != nil {
+		panic("failed to register info metric " + opts.Name + ": " + err.Error())
+	}
+}
+
 // Labels returns the labels associated with the gauge metric.
 func (c *prometheusGauge) Labels() []string {
 	return c.labels
