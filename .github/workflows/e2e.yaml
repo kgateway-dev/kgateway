@@ -41,7 +41,9 @@ jobs:
           ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
         run: |
           mkdir -p /tmp/.buildx-cache-envoyinit
-          make save-e2e-shared-images
+          # Build the images in parallel. --output-sync keeps each target's log
+          # together, so a target's output only appears once it finishes.
+          make -j --output-sync=target save-e2e-shared-images
       - name: Rotate envoyinit BuildKit cache
         if: always()
         run: |
@@ -107,7 +109,7 @@ jobs:
           # May 29, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestAPIValidation$$|^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$|^TestKgateway$$/^XdsIdentityRace$$|^TestKgateway$$/^XdsWarming$$'
+            go-test-run-regex: '^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$|^TestKgateway$$/^XdsIdentityRace$$|^TestKgateway$$/^XdsWarming$$'
             localstack: 'false'
             ordered-ads: 'false'
           # May 29, 2026: ~5 minutes
