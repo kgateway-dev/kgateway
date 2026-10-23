@@ -6,12 +6,14 @@ import (
 	"slices"
 	"strconv"
 
+	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhcmv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyudpproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
@@ -191,7 +193,7 @@ func snapshotPerClient(
 		// Settle only placeholders whose rows are on their way. A source-less
 		// synthesized CLA is the cluster's steady state and publishes as-is.
 		for name := range synthesizedEndpoints {
-			if name == bootstrapEndpoint || endpoints.HasEndpointsSource(kctx, name) {
+			if name == bootstrapEndpoint || endpoints.HasEndpointsSource(kctx, name) || extraEndpointsSource(kctx, extraEndpointCollections, name) {
 				snap.synthesizedEndpoints = append(snap.synthesizedEndpoints, name)
 			}
 		}
@@ -327,8 +329,9 @@ func mergeBackendResources[M proto.Message](gateway envoycache.Resources, backen
 
 // collectReferencedClusters returns the routing targets of routes and
 // listeners: route-action and TCP-proxy clusters and weighted clusters,
-// including inlined route configurations. It never unpacks HTTP filter or
-// per-route configs. Translation computes it once per gateway, not per client.
+// including inlined route configurations, and UDP-proxy route clusters. It
+// never unpacks HTTP filter or per-route configs. Translation computes it once
+// per gateway, not per client.
 //
 // Filter-called clusters (ext_authz, ext_proc, JWKS, OAuth2, rate limit,
 // access logs) are not collected: one lagging side service must not block all
@@ -350,8 +353,20 @@ func collectReferencedClusters(routes, listeners envoycache.Resources) map[strin
 			addFilterChainTargets(filterChain, referenced)
 		}
 		addFilterChainTargets(listener.GetDefaultFilterChain(), referenced)
+		addListenerFilterTargets(listener, referenced)
 	}
 	return referenced
+}
+
+// extraEndpointsSource reports whether an extra endpoint collection derives the
+// named CLA. One that does not track its inputs vouches for none.
+func extraEndpointsSource(kctx krt.HandlerContext, extras []PerClientEnvoyEndpoints, claName string) bool {
+	for _, extra := range extras {
+		if extra.hasSource != nil && extra.hasSource(kctx, claName) {
+			return true
+		}
+	}
+	return false
 }
 
 func addRouteConfigurationTargets(routeConfig *envoyroutev3.RouteConfiguration, referenced map[string]struct{}) {
@@ -392,6 +407,50 @@ func addFilterChainTargets(filterChain *envoylistenerv3.FilterChain, referenced 
 				addRouteConfigurationTargets(routeConfig, referenced)
 			}
 		}
+	}
+}
+
+// addListenerFilterTargets collects UDP targets: udp_proxy is a listener
+// filter, not a network filter, and routes by its matcher's actions.
+func addListenerFilterTargets(listener *envoylistenerv3.Listener, referenced map[string]struct{}) {
+	for _, filter := range listener.GetListenerFilters() {
+		typedConfig := filter.GetTypedConfig()
+		if !typedConfig.MessageIs((*envoyudpproxyv3.UdpProxyConfig)(nil)) {
+			continue
+		}
+		var udpProxy envoyudpproxyv3.UdpProxyConfig
+		if err := typedConfig.UnmarshalTo(&udpProxy); err != nil {
+			logger.Debug("skipping unreadable udp_proxy config during cluster reference scan", "error", err)
+			continue
+		}
+		addUdpMatcherTargets(udpProxy.GetMatcher(), referenced)
+	}
+}
+
+// addUdpMatcherTargets collects the clusters of a udp_proxy matcher's route
+// actions, nested matchers included.
+func addUdpMatcherTargets(matcher *xdsmatcherv3.Matcher, referenced map[string]struct{}) {
+	onMatches := []*xdsmatcherv3.Matcher_OnMatch{matcher.GetOnNoMatch()}
+	for _, fieldMatcher := range matcher.GetMatcherList().GetMatchers() {
+		onMatches = append(onMatches, fieldMatcher.GetOnMatch())
+	}
+	onMatches = slices.AppendSeq(onMatches, maps.Values(matcher.GetMatcherTree().GetExactMatchMap().GetMap()))
+	onMatches = slices.AppendSeq(onMatches, maps.Values(matcher.GetMatcherTree().GetPrefixMatchMap().GetMap()))
+	for _, onMatch := range onMatches {
+		if nested := onMatch.GetMatcher(); nested != nil {
+			addUdpMatcherTargets(nested, referenced)
+			continue
+		}
+		action := onMatch.GetAction().GetTypedConfig()
+		if !action.MessageIs((*envoyudpproxyv3.Route)(nil)) {
+			continue
+		}
+		var route envoyudpproxyv3.Route
+		if err := action.UnmarshalTo(&route); err != nil {
+			logger.Debug("skipping unreadable udp_proxy route during cluster reference scan", "error", err)
+			continue
+		}
+		addClusterName(route.GetCluster(), referenced)
 	}
 }
 

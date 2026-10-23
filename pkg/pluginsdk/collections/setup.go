@@ -211,8 +211,18 @@ func (c *CommonCollections) InitCollections(
 
 	tlsRoutes := joinRouteCollections(tlsRouteCollections, c.KrtOpts, "TLSRoute")
 
+	// Gated on v1 being served, like TLSRoute v1: Gateway API v1.5 ships a UDPRoute CRD that
+	// serves only v1alpha2, and a v1 watch against it would never sync and block startup.
+	udproutes := krt.WrapClient(
+		newDelayedTypedInformer(ctx, c.Client, wellknown.UDPRouteGVR, func() kclient.Informer[*gwv1.UDPRoute] {
+			return kclient.NewFiltered[*gwv1.UDPRoute](c.Client, filter)
+		}),
+		c.KrtOpts.ToOptions("UDPRoute")...,
+	)
+
 	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
+	metrics.RegisterEvents(udproutes, kmetrics.GetResourceMetricEventHandler[*gwv1.UDPRoute]())
 
 	grpcRoutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.GRPCRoute](c.Client, wellknown.GRPCRouteGVR, filter), c.KrtOpts.ToOptions("GRPCRoute")...)
 	metrics.RegisterEvents(grpcRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1.GRPCRoute]())
@@ -221,6 +231,7 @@ func (c *CommonCollections) InitCollections(
 	c.RawGRPCRoutes = grpcRoutes
 	c.RawTCPRoutes = tcproutes
 	c.RawTLSRoutes = tlsRoutes
+	c.RawUDPRoutes = udproutes
 
 	// The very lists the watches above were built from: a version we watch is a version we
 	// can write, so the two cannot drift apart.
@@ -231,7 +242,8 @@ func (c *CommonCollections) InitCollections(
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, c.KrtOpts)
 
-	routes := krtcollections.NewRoutesIndex(c.KrtOpts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, c.RefGrants, globalSettings)
+	routes := krtcollections.NewRoutesIndex(c.KrtOpts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, udproutes, policies, backendIndex, c.RefGrants, globalSettings)
+	c.ResolvedUDPRoutes = routes.UDPRoutes()
 	return gateways, routes, backendIndex, endpointIRs
 }
 

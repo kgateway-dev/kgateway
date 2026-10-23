@@ -164,6 +164,8 @@ func BuildServiceEntryBackendObjectIR(
 	backend.Obj = se
 	// Carry resolved addresses so a status-only VIP update re-emits the backend.
 	backend.ObjIr = &serviceEntryBackendIR{addresses: ServiceEntryAddresses(se), systemNamespaceNetwork: systemNamespaceNetwork}
+	// Only an EDS ServiceEntry has endpoint rows; initServiceEntryBackend inlines the rest.
+	backend.InlineEndpoints = !isEDSServiceEntry(se)
 
 	// include ourselves as alias to fix issues with one-to-many se-to-backend
 	backend.Aliases = []ir.ObjectSource{objSrc}
