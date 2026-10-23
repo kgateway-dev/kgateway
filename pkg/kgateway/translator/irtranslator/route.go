@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/conditions"
@@ -43,6 +44,15 @@ type httpRouteConfigurationTranslator struct {
 	validationLevel           apisettings.ValidationMode
 	validator                 validator.Validator
 	enableRouteSourceMetadata bool
+
+	// backendObjectPolicyAppliers caches the plugin passes implementing ir.BackendObjectPolicyApplier,
+	// computed on first use. See runBackendObjectPolicies.
+	backendObjectPolicyAppliers []backendObjectPolicyApplier
+}
+
+type backendObjectPolicyApplier struct {
+	gk      schema.GroupKind
+	applier ir.BackendObjectPolicyApplier
 }
 
 const (
@@ -961,9 +971,56 @@ func (h *httpRouteConfigurationTranslator) runBackend(in ir.HttpBackend, pCtx *i
 				errs = append(errs, err)
 			}
 		}
+		errs = append(errs, h.runBackendObjectPolicies(in.Backend.BackendObject, pCtx))
 	}
 	// TODO: check return value, if error returned, log error and report condition
 	return errors.Join(errs...)
+}
+
+// runBackendObjectPolicies lets the plugins of policies attached to the backend object
+// (via targetRefs/targetSelectors, e.g. a BackendConfigPolicy targeting a Service)
+// contribute per-route config for that backend. Only plugins implementing
+// ir.BackendObjectPolicyApplier are called; they get the unmerged attachments so they can
+// skip merging when no policy needs per-route config.
+func (h *httpRouteConfigurationTranslator) runBackendObjectPolicies(backend *ir.BackendObjectIR, pCtx *ir.RouteBackendContext) error {
+	if len(backend.AttachedPolicies.Policies) == 0 {
+		return nil
+	}
+	var errs []error
+	// This runs for every route backend, so only look up the policy kinds that have an applier
+	// instead of iterating (and sorting) all attached policy kinds.
+	for _, a := range h.getBackendObjectPolicyAppliers() {
+		pols := backend.AttachedPolicies.Policies[a.gk]
+		if len(pols) == 0 {
+			continue
+		}
+		if err := a.applier.ApplyForBackendObjectPolicies(pols, pCtx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// getBackendObjectPolicyAppliers returns the plugin passes implementing ir.BackendObjectPolicyApplier,
+// sorted by GroupKind for a deterministic order. They are computed once per translator.
+func (h *httpRouteConfigurationTranslator) getBackendObjectPolicyAppliers() []backendObjectPolicyApplier {
+	if h.backendObjectPolicyAppliers != nil {
+		return h.backendObjectPolicyAppliers
+	}
+	appliers := []backendObjectPolicyApplier{}
+	for gk, pass := range h.pluginPass {
+		if pass == nil {
+			continue
+		}
+		if applier, ok := pass.ProxyTranslationPass.(ir.BackendObjectPolicyApplier); ok {
+			appliers = append(appliers, backendObjectPolicyApplier{gk: gk, applier: applier})
+		}
+	}
+	slices.SortFunc(appliers, func(a, b backendObjectPolicyApplier) int {
+		return strings.Compare(a.gk.String(), b.gk.String())
+	})
+	h.backendObjectPolicyAppliers = appliers
+	return appliers
 }
 
 func (h *httpRouteConfigurationTranslator) translateRouteAction(
