@@ -3,6 +3,7 @@ package proxy_syncer
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -14,6 +15,7 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
@@ -406,4 +408,92 @@ func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed
 		scoping,
 	)
 	return eventuallyCoherentWrapper(t, snapshots)
+}
+
+// A scoped build missing a referenced cluster keeps the client's unfiltered
+// endpoints for the gate, which may have to carry a cluster scoping left out (a
+// missing tunnel's proxy). An unscoped build has every translated cluster and
+// keeps none.
+func TestScopedBuildMissingAClusterKeepsTheTranslatedEndpoints(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		scoping clusterScoping
+		kept    bool
+	}{
+		{name: "referenced", scoping: scopedClusters(), kept: true},
+		{name: "all", scoping: clusterScoping{}, kept: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := "gw-missing-tunnel-" + tc.name
+			role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", gateway)
+			ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
+			t.Cleanup(func() { forgetClusterScopingClient(ucc.ResourceName(), false) })
+			uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{ucc})
+			routes := sliceToResources([]*envoyroutev3.RouteConfiguration{{
+				Name: "route-config",
+				VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "vhost", Domains: []string{"*"}, Routes: []*envoyroutev3.Route{{
+					Name: "tunneled",
+					Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{
+						ClusterSpecifier: &envoyroutev3.RouteAction_Cluster{Cluster: "tunneled"},
+					}},
+				}}}},
+			}})
+			listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+			gateways := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
+				NamespacedName:     types.NamespacedName{Namespace: "ns", Name: gateway},
+				Routes:             routes,
+				Listeners:          listeners,
+				ReferencedClusters: collectReferencedClusters(routes, listeners),
+				EmittedClusters:    emittedClustersFor(tc.scoping, routes, listeners),
+			}})
+			// The tunneled backend's row is missing.
+			var clusterRows []uccWithCluster
+			var endpointRows []UccWithEndpoints
+			var version uint64
+			for _, name := range []string{"proxy", "unreferenced"} {
+				version++
+				clusterRows = append(clusterRows, uccWithCluster{
+					Client: ucc, Name: name, Cluster: sharedproto.Wrap(edsClusterProto(name)), ClusterVersion: version,
+				})
+				endpointRows = append(endpointRows, UccWithEndpoints{
+					Client:        ucc,
+					endpointsName: name,
+					resourceName:  uccEndpointsResourceName(ucc, name),
+					Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name}),
+					EndpointsHash: version,
+				})
+			}
+			clusterCol := krt.NewStaticCollection[uccWithCluster](nil, clusterRows)
+			endpointCol := krt.NewStaticCollection[UccWithEndpoints](nil, endpointRows)
+			snapshots := snapshotPerClient(
+				krtutil.KrtOptions{},
+				uccs,
+				gateways,
+				PerClientEnvoyEndpoints{
+					endpoints: endpointCol,
+					index: krtpkg.UnnamedIndex(endpointCol, func(ep UccWithEndpoints) []string {
+						return []string{ep.Client.ResourceName()}
+					}),
+				},
+				newTestPerClientClustersFromCol(clusterCol, uccs),
+				tc.scoping,
+			)
+
+			var wrap XdsSnapWrapper
+			require.Eventually(t, func() bool {
+				list := snapshots.List()
+				if len(list) != 1 {
+					return false
+				}
+				wrap = list[0]
+				return len(wrap.missingReferenced) > 0
+			}, time.Second, 20*time.Millisecond)
+			if tc.kept {
+				assert.Contains(t, wrap.translatedEndpoints, "proxy", "the proxy's current endpoints are kept for the carry")
+				assert.NotEmpty(t, wrap.translatedEndpointsVersion)
+			} else {
+				assert.Nil(t, wrap.translatedEndpoints, "unscoped, every translated cluster is in the build")
+			}
+		})
+	}
 }
