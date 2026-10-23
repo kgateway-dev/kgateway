@@ -39,10 +39,10 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-A
         type: Cookie
         absoluteTimeout: 10s
-        cookieConfig:
+        cookie:
+          name: Session-A
           lifetimeType: Permanent
     - matches:
         - path:
@@ -52,10 +52,10 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-B
         type: Cookie
         absoluteTimeout: 8760h
-        cookieConfig:
+        cookie:
+          name: Session-B
           lifetimeType: Permanent 
     - matches:
         - path:
@@ -65,9 +65,9 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-B
         type: Cookie
-        cookieConfig:
+        cookie:
+          name: Session-B
           lifetimeType: Session
 
 ---
@@ -88,10 +88,10 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-A
         type: Cookie
         absoluteTimeout: 10s
-        cookieConfig:
+        cookie:
+          name: Session-A
           lifetimeType: Permanent
     - matches:
         - method:
@@ -101,10 +101,10 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-B
         type: Cookie
         absoluteTimeout: 8760h
-        cookieConfig:
+        cookie:
+          name: Session-B
           lifetimeType: Permanent 
     - matches:
         - method:
@@ -114,7 +114,7 @@ spec:
         - name: backend
           port: 3000
       sessionPersistence:
-        sessionName: Session-B
         type: Cookie
-        cookieConfig:
+        cookie:
+          name: Session-B
           lifetimeType: Session
