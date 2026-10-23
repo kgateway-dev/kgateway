@@ -45,6 +45,9 @@ func TestRetiredWaypointClassGatewaysAreIgnored(t *testing.T) {
 		gateway("renamed-waypoint", renamedWaypointClass.Name),
 	)
 
+	// newCommonCols only waits for the translated Gateways collection.
+	commonCols.GatewayIndex.GatewaysForDeployer.WaitUntilSynced(t.Context().Done())
+
 	var deployed []string
 	for _, gw := range commonCols.GatewayIndex.GatewaysForDeployer.List() {
 		deployed = append(deployed, gw.Name)
