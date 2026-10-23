@@ -4,9 +4,15 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-METALLB_VERSION=${METALLB_VERSION:-v0.13.7}
+# By default, apply the vendored manifest (upstream v0.13.7 with faster startup probes).
+# Set METALLB_VERSION to apply that upstream release instead, or METALLB_MANIFEST to apply
+# any other manifest path or URL.
+if [[ -n "${METALLB_VERSION:-}" ]]; then
+  METALLB_MANIFEST=${METALLB_MANIFEST:-https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml}
+fi
+METALLB_MANIFEST=${METALLB_MANIFEST:-"$(dirname "${BASH_SOURCE[0]}")/metallb.yaml"}
 
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml
+kubectl apply -f "${METALLB_MANIFEST}"
 
 # Wait for MetalLB to become available.
 kubectl rollout status -n metallb-system deployment/controller --timeout 5m

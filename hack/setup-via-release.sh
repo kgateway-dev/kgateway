@@ -28,7 +28,7 @@ k8s_version=""
 gateway_api_version="v1.2.1"
 gateway_api_channel="standard"
 enable_metallb=false
-metallb_version="v0.13.7"
+metallb_version=""
 enable_cloud_provider_kind=false
 enable_gateway=true
 gateway_name="kgw"
@@ -56,7 +56,7 @@ Options:
   --gateway-api-version VER      Gateway API CRD version        (default: v1.2.1)
   --gateway-api-channel CHAN     standard or experimental       (default: standard)
   --metallb                      Install MetalLB (kind only, off by default)
-  --metallb-version VER          MetalLB version                (default: v0.13.7)
+  --metallb-version VER          Upstream MetalLB version       (default: vendored v0.13.7)
   --cloud-provider-kind          Run cloud-provider-kind for LoadBalancer support (kind only, off by default)
   --no-gateway                   Skip GatewayClass/Gateway/HTTPRoute creation
   --gateway-name NAME            Name for the Gateway           (default: kgw)
@@ -219,7 +219,7 @@ maybe_setup_loadbalancer() {
 
     # kind: MetalLB and/or cloud-provider-kind
     if [[ "${enable_metallb}" == "true" ]]; then
-        echo "Installing MetalLB ${metallb_version}..."
+        echo "Installing MetalLB ${metallb_version:-(vendored)}..."
         METALLB_VERSION="${metallb_version}" . "${script_dir}/kind/setup-metalllb-on-kind.sh"
         echo "MetalLB configured"
     else
