@@ -189,6 +189,10 @@ controller:
   startupProbe: {}
   # -- Add extra environment variables to the controller container.
   extraEnv: {}
+  # -- Add extra volumes to the controller pod.
+  extraVolumes: []
+  # -- Add extra volume mounts to the controller container.
+  extraVolumeMounts: []
   admin:
     # -- Bind host for the controller admin/debug server on port 9095.
     # Set to `0.0.0.0` only in trusted environments where exposing pprof,

@@ -1,9 +1,6 @@
 name: Kubernetes Tests
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  merge_group:
-    types: [checks_requested]
+  workflow_call:
 
 env:
   VERSION: 'v1.0.0-ci1'
@@ -13,9 +10,7 @@ env:
   CONTROLLER_CACHE_REF: ghcr.io/${{ github.repository_owner }}/kgateway-cache
   SDS_CACHE_REF: ghcr.io/${{ github.repository_owner }}/sds-cache
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name }}
-  cancel-in-progress: true
+# Concurrency and cancellation are managed by the calling Tests workflow.
 
 jobs:
   build_e2e_images:
@@ -39,6 +34,8 @@ jobs:
         env:
           ENVOYINIT_LOCAL_CACHE_FROM: /tmp/.buildx-cache-envoyinit
           ENVOYINIT_LOCAL_CACHE_TO: /tmp/.buildx-cache-envoyinit-new
+          # Instrument the controller so the shards can report e2e coverage (see the Test Coverage job in unit.yaml).
+          KGATEWAY_COVER: 'true'
         run: |
           mkdir -p /tmp/.buildx-cache-envoyinit
           # Build the images in parallel. --output-sync keeps each target's log
@@ -221,6 +218,7 @@ jobs:
           run-regex: ${{ matrix.test.go-test-run-regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
           matrix-label: "pr"
+          collect-coverage: 'true'
       - id: debug-space
         shell: bash
         run: |
