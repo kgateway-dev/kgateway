@@ -38,6 +38,18 @@ const (
 
 	k8sNamespaceNameKey = "k8s.namespace.name"
 	k8sContainerNameKey = "k8s.container.name"
+
+	// go-control-plane's wellknown package has no constant for the TCP gRPC access logger
+	tcpGrpcAccessLogName = "envoy.access_loggers.tcp_grpc"
+)
+
+// accessLogTarget is the Envoy network filter an access log is rendered into. It picks the
+// flavor of the gRPC access logger: TcpProxy has no HTTP request to log.
+type accessLogTarget int
+
+const (
+	hcmAccessLog accessLogTarget = iota
+	tcpProxyAccessLog
 )
 
 // convertAccessLogConfig transforms a list of AccessLog configurations into Envoy AccessLog configurations
@@ -47,18 +59,17 @@ const (
 // we return partially translated configs. As these configs are of different types, we return an list of interfaces
 // that is stored in the IR to be fully translated during translation.
 func convertAccessLogConfig(
-	policy *kgateway.HTTPSettings,
+	configs []kgateway.AccessLog,
+	target accessLogTarget,
 	commoncol *collections.CommonCollections,
 	krtctx krt.HandlerContext,
 	parentSrc ir.ObjectSource,
 ) ([]proto.Message, error) {
-	configs := policy.AccessLog
-
 	if configs != nil && len(configs) == 0 {
 		return nil, nil
 	}
 
-	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.AccessLog))
+	grpcBackends := make(map[string]*ir.BackendObjectIR, len(configs))
 	for idx, log := range configs {
 		if log.GrpcService != nil {
 			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
@@ -79,18 +90,18 @@ func convertAccessLogConfig(
 		}
 	}
 
-	return translateAccessLogs(configs, grpcBackends)
+	return translateAccessLogs(configs, target, grpcBackends)
 }
 
 func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(configs []kgateway.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
+func translateAccessLogs(configs []kgateway.AccessLog, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR) ([]proto.Message, error) {
 	var results []proto.Message
 
 	for idx, logConfig := range configs {
-		accessLogCfg, err := translateAccessLog(logConfig, grpcBackends, idx)
+		accessLogCfg, err := translateAccessLog(logConfig, target, grpcBackends, idx)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +112,7 @@ func translateAccessLogs(configs []kgateway.AccessLog, grpcBackends map[string]*
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logConfig kgateway.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func translateAccessLog(logConfig kgateway.AccessLog, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
@@ -116,7 +127,7 @@ func translateAccessLog(logConfig kgateway.AccessLog, grpcBackends map[string]*i
 	case logConfig.FileSink != nil:
 		accessLogCfg, err = createFileAccessLog(logConfig.FileSink)
 	case logConfig.GrpcService != nil:
-		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, grpcBackends, accessLogId)
+		accessLogCfg, err = createGrpcAccessLog(logConfig.GrpcService, target, grpcBackends, accessLogId)
 	case logConfig.OpenTelemetry != nil:
 		accessLogCfg, err = createOTelAccessLog(logConfig.OpenTelemetry, grpcBackends, accessLogId)
 	default:
@@ -171,7 +182,19 @@ func createFileAccessLog(fileSink *kgateway.FileSink) (proto.Message, error) {
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+func createGrpcAccessLog(grpcService *kgateway.AccessLogGrpcService, target accessLogTarget, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (proto.Message, error) {
+	if target == tcpProxyAccessLog {
+		config, err := generateCommonAccessLogGrpcConfig(grpcService.CommonAccessLogGrpcService, grpcBackends, accessLogId)
+		if err != nil {
+			return nil, fmt.Errorf("error converting grpc access log config: %w", err)
+		}
+		cfg := &envoygrpc.TcpGrpcAccessLogConfig{CommonConfig: config}
+		if err := cfg.Validate(); err != nil {
+			return nil, fmt.Errorf("error converting grpc access log config: %w", err)
+		}
+		return cfg, nil
+	}
+
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		return nil, fmt.Errorf("error converting grpc access log config: %w", err)
@@ -349,32 +372,46 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 	}
 
 	for i, config := range configs {
-		var cfg *envoyaccesslogv3.AccessLog
-		switch t := config.(type) {
-		case *envoyalfile.FileAccessLog:
-			cfg = newAccessLogWithConfig(wellknown.FileAccessLog, t)
-		case *envoygrpc.HttpGrpcAccessLogConfig:
-			cfg = newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, t)
-		case *envoy_open_telemetry.OpenTelemetryAccessLogConfig:
-			addDefaultResourceAttributes(pCtx, t)
-			cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
-		}
+		var filter *envoyaccesslogv3.AccessLogFilter
 		// Add filter if specified
 		if policies[i].Filter != nil {
-			filter, err := convertAccessLogFilter(policies[i].Filter)
+			var err error
+			filter, err = convertAccessLogFilter(policies[i].Filter)
 			if err != nil {
 				return nil, err
 			}
-			cfg.Filter = filter
 		}
-		accessLogs[i] = cfg
+		accessLogs[i] = newGatewayAccessLog(pCtx.Gateway, config, filter)
 	}
 	return accessLogs, nil
 }
 
-func addDefaultResourceAttributes(pCtx *ir.HcmContext, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
-	gatewayName := pCtx.Gateway.SourceObject.GetName()
-	gatewayNamespace := pCtx.Gateway.SourceObject.GetNamespace()
+// newGatewayAccessLog wraps a partially translated access log config (see convertAccessLogConfig)
+// into an Envoy AccessLog for the given gateway.
+func newGatewayAccessLog(gw ir.GatewayIR, config proto.Message, filter *envoyaccesslogv3.AccessLogFilter) *envoyaccesslogv3.AccessLog {
+	var cfg *envoyaccesslogv3.AccessLog
+	switch t := config.(type) {
+	case *envoyalfile.FileAccessLog:
+		cfg = newAccessLogWithConfig(wellknown.FileAccessLog, t)
+	case *envoygrpc.HttpGrpcAccessLogConfig:
+		cfg = newAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, t)
+	case *envoygrpc.TcpGrpcAccessLogConfig:
+		cfg = newAccessLogWithConfig(tcpGrpcAccessLogName, t)
+	case *envoy_open_telemetry.OpenTelemetryAccessLogConfig:
+		// the config belongs to the policy IR, which is shared by every gateway the policy attaches to
+		t = proto.CloneOf(t)
+		addDefaultResourceAttributes(gw, t)
+		cfg = newAccessLogWithConfig("envoy.access_loggers.open_telemetry", t)
+	default:
+		return nil
+	}
+	cfg.Filter = filter
+	return cfg
+}
+
+func addDefaultResourceAttributes(gw ir.GatewayIR, config *envoy_open_telemetry.OpenTelemetryAccessLogConfig) {
+	gatewayName := gw.SourceObject.GetName()
+	gatewayNamespace := gw.SourceObject.GetNamespace()
 
 	// Set default resource attributes if not already present
 	addResourceAttributeIfMissing(config, serviceNameKey, GenerateDefaultServiceName(gatewayName, gatewayNamespace))

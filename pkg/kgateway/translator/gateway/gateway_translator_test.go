@@ -3560,6 +3560,72 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with access logs on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-access-log.yaml"},
+			outputFile: "listener-policy/tcp-access-log.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with access logs on TLS terminate and passthrough listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tls-access-log.yaml"},
+			outputFile: "listener-policy/tls-access-log.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy rejects HTTP-only access log filter on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-access-log-http-only-filter.yaml"},
+			outputFile: "listener-policy/tcp-access-log-http-only-filter.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy and HTTP-only policy targeting a TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-listener-section-policies.yaml"},
+			outputFile: "listener-policy/tcp-listener-section-policies.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy per-port entry keeps the gateway-wide transport socket connect timeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-per-port-entry.yaml"},
+			outputFile: "listener-policy/transport-socket-connect-timeout-per-port-entry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with per-listener transport socket connect timeout on TLS listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-tls-listener.yaml"},
+			outputFile: "listener-policy/transport-socket-connect-timeout-tls-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with per port settings", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/per-port.yaml"},
