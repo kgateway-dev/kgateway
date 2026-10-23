@@ -241,10 +241,11 @@ func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
 	if pol.sessionPersistence != nil {
-		// Session persistence is applied per route (see ApplyForBackendObjectPolicies); warn here, once per
-		// backend translation, when it cannot have any effect for this backend.
-		if reason := sessionPersistenceHasNoEffect(backend); reason != "" {
-			logger.Warn("sessionPersistence has no effect for backend", "backend", backend.ResourceName(), "reason", reason)
+		// Session persistence is applied per route (see ApplyForBackendObjectPolicies). Notes about how it
+		// behaves for this backend are logged here; the ones that need attention are also reported in the
+		// policy status (see PartiallyValidMessages).
+		if note, _ := sessionPersistenceBackendNote(backend); note != "" {
+			logger.Debug("sessionPersistence behaves differently for this backend", "backend", backend.ResourceName(), "note", note)
 		}
 	}
 	if pol.connectTimeout != nil {
@@ -438,15 +439,10 @@ func translate(
 		if err != nil {
 			errs = append(errs, err)
 		}
+		if sp != nil {
+			sp.absoluteTimeoutIgnored = absoluteTimeoutIgnored(pol.Spec.SessionPersistence)
+		}
 		ir.sessionPersistence = sp
-		if absoluteTimeoutIgnored(pol.Spec.SessionPersistence) {
-			logger.Warn("sessionPersistence absoluteTimeout has no effect unless cookie lifetimeType is Permanent",
-				"policy", pol.Namespace+"/"+pol.Name)
-		}
-		if hasHashPolicies(pol.Spec.LoadBalancer) {
-			logger.Warn("sessionPersistence overrides loadBalancer hashPolicies for requests with an established session",
-				"policy", pol.Namespace+"/"+pol.Name)
-		}
 	}
 	return &ir, errs
 }

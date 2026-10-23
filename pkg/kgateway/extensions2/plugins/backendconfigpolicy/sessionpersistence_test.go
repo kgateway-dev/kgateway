@@ -222,19 +222,32 @@ func TestApplyForBackendObjectPolicies(t *testing.T) {
 	assert.Empty(t, fs, "filter chain without session persistence routes gets no filter")
 }
 
-func TestSessionPersistenceHasNoEffect(t *testing.T) {
+func TestSessionPersistenceBackendNote(t *testing.T) {
 	be := func(spec kgateway.BackendSpec) ir.BackendObjectIR {
 		return ir.BackendObjectIR{Obj: &kgateway.Backend{ObjectMeta: metav1.ObjectMeta{Name: "be"}, Spec: spec}}
 	}
 	host := kgateway.Host{Host: "example.com", Port: 80}
 	ipHost := kgateway.Host{Host: "10.0.0.1", Port: 80}
-	assert.NotEmpty(t, sessionPersistenceHasNoEffect(be(kgateway.BackendSpec{Aws: &kgateway.AwsBackend{}})), "AWS")
-	assert.NotEmpty(t, sessionPersistenceHasNoEffect(be(kgateway.BackendSpec{Gcp: &kgateway.GcpBackend{}})), "GCP")
-	assert.NotEmpty(t, sessionPersistenceHasNoEffect(be(kgateway.BackendSpec{DynamicForwardProxy: &kgateway.DynamicForwardProxyBackend{}})), "DFP")
-	assert.NotEmpty(t, sessionPersistenceHasNoEffect(be(kgateway.BackendSpec{Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{ipHost}}})), "single IP static")
-	assert.Empty(t, sessionPersistenceHasNoEffect(be(kgateway.BackendSpec{Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host}}})), "single hostname static may resolve to several addresses")
-	assert.Empty(t, sessionPersistenceHasNoEffect(be(kgateway.BackendSpec{Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host, host}}})), "multi host static")
-	assert.Empty(t, sessionPersistenceHasNoEffect(ir.BackendObjectIR{}), "non Backend kinds such as Service")
+	note := func(spec kgateway.BackendSpec) (string, bool) { return sessionPersistenceBackendNote(be(spec)) }
+	n, report := note(kgateway.BackendSpec{Gcp: &kgateway.GcpBackend{}})
+	assert.NotEmpty(t, n, "GCP is noted")
+	assert.False(t, report, "GCP is only logged, not reported in status")
+	n, report = note(kgateway.BackendSpec{DynamicForwardProxy: &kgateway.DynamicForwardProxyBackend{}})
+	assert.NotEmpty(t, n, "DFP is noted")
+	assert.True(t, report, "DFP is reported in status")
+	for name, spec := range map[string]kgateway.BackendSpec{
+		"AWS Lambda has a single host, so the session is trivially kept": {Aws: &kgateway.AwsBackend{Lambda: &kgateway.AwsLambda{}}},
+		"AWS EC2 has instances to pin to":                                {Aws: &kgateway.AwsBackend{Ec2: &kgateway.AwsEc2{}}},
+		"single IP static has a single host":                             {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{ipHost}}},
+		"single hostname static may resolve to several addresses":        {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host}}},
+		"multi host static":                                              {Static: &kgateway.StaticBackend{Hosts: []kgateway.Host{host, host}}},
+	} {
+		n, report := note(spec)
+		assert.Empty(t, n, name)
+		assert.False(t, report, name)
+	}
+	n, _ = sessionPersistenceBackendNote(ir.BackendObjectIR{})
+	assert.Empty(t, n, "non Backend kinds such as Service")
 }
 
 func TestAbsoluteTimeoutIgnored(t *testing.T) {
@@ -264,4 +277,85 @@ func TestAbsoluteTimeoutIgnored(t *testing.T) {
 			assert.Equal(t, tt.want, absoluteTimeoutIgnored(tt.in))
 		})
 	}
+}
+
+func TestPartiallyValidMessages(t *testing.T) {
+	gk := schema.GroupKind{Group: "gateway.kgateway.dev", Kind: "BackendConfigPolicy"}
+	older, newer := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+	att := func(name string, pol *BackendConfigPolicyIR, errs ...error) ir.PolicyAtt {
+		return ir.PolicyAtt{GroupKind: gk, PolicyRef: &ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "default", Name: name}, PolicyIr: pol, Errors: errs}
+	}
+	id := func(name string) string {
+		return (&ir.AttachedPolicyRef{Group: gk.Group, Kind: gk.Kind, Namespace: "default", Name: name}).ID()
+	}
+	sp := func(timeoutIgnored bool) *sessionPersistenceIR {
+		return &sessionPersistenceIR{perRoute: &anypb.Any{}, absoluteTimeoutIgnored: timeoutIgnored}
+	}
+	hashLB := &LoadBalancerConfigIR{hasHashPolicies: true}
+	roundRobin := &LoadBalancerConfigIR{}
+	service := ir.BackendObjectIR{}
+	dfp := ir.NewBackendObjectIR(ir.ObjectSource{Group: "gateway.kgateway.dev", Kind: "Backend", Namespace: "default", Name: "dfp"}, 0, "", "")
+	dfp.Obj = &kgateway.Backend{Spec: kgateway.BackendSpec{DynamicForwardProxy: &kgateway.DynamicForwardProxyBackend{}}}
+
+	tests := []struct {
+		name     string
+		policies []ir.PolicyAtt
+		backend  ir.BackendObjectIR
+		want     map[string]string
+	}{
+		{name: "no session persistence", policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, loadBalancerConfig: hashLB})}, backend: service},
+		{name: "nothing to report", policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(false)})}, backend: service},
+		{
+			name:     "single policy",
+			policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(true), loadBalancerConfig: hashLB})},
+			backend:  service,
+			want:     map[string]string{id("a"): msgHashPoliciesBypassed + "; " + msgAbsoluteTimeoutIgnored},
+		},
+		{
+			name: "hash policies from another policy are bypassed",
+			policies: []ir.PolicyAtt{
+				att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(false)}),
+				att("b", &BackendConfigPolicyIR{ct: newer, loadBalancerConfig: hashLB}),
+			},
+			backend: service,
+			want:    map[string]string{id("a"): msgHashPoliciesBypassed},
+		},
+		{
+			name: "hash policies that lose the merge are not reported",
+			policies: []ir.PolicyAtt{
+				att("a", &BackendConfigPolicyIR{ct: older, loadBalancerConfig: roundRobin}),
+				att("b", &BackendConfigPolicyIR{ct: newer, sessionPersistence: sp(false), loadBalancerConfig: hashLB}),
+			},
+			backend: service,
+		},
+		{
+			name: "only the applied session persistence is reported",
+			policies: []ir.PolicyAtt{
+				att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(false)}),
+				att("b", &BackendConfigPolicyIR{ct: newer, sessionPersistence: sp(true)}),
+			},
+			backend: service,
+		},
+		{
+			name:     "backend reported in status",
+			policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(false)})},
+			backend:  dfp,
+			want: map[string]string{id("a"): "spec.sessionPersistence has no effect on Backend default/dfp: dynamic forward proxy backends " +
+				"load balance each request within the requested host's addresses and do not use the session"},
+		},
+		{
+			name:     "nothing is applied when a policy has errors",
+			policies: []ir.PolicyAtt{att("a", &BackendConfigPolicyIR{ct: older, sessionPersistence: sp(true)}, errors.New("bad"))},
+			backend:  service,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, PartiallyValidMessages(tt.policies, tt.backend))
+		})
+	}
+
+	a := &sessionPersistenceIR{perRoute: &anypb.Any{}, absoluteTimeoutIgnored: true}
+	assert.False(t, a.Equals(sp(false)), "absoluteTimeoutIgnored must be part of Equals")
+	assert.False(t, hashLB.Equals(roundRobin), "hasHashPolicies must be part of Equals")
 }

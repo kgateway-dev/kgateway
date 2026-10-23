@@ -1,0 +1,140 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: default
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: default
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: single-ip
+  namespace: default
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: 10.0.0.1
+        port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: single-hostname
+  namespace: default
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: backend.example.com
+        port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: dfp
+  namespace: default
+spec:
+  type: DynamicForwardProxy
+  dynamicForwardProxy: {}
+---
+# absoluteTimeout is ignored for a Session cookie, and session persistence bypasses the ring hash policies
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: service-partially-valid
+  namespace: default
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: backend
+  loadBalancer:
+    ringHash:
+      hashPolicies:
+        - cookie:
+            name: lb-cookie
+  sessionPersistence:
+    absoluteTimeout: 1h
+    cookie:
+      lifetimeType: Session
+---
+# session persistence has no effect on the dynamic forward proxy backend. The single IP backend has a single
+# host, so the session is trivially kept and nothing is reported; the single hostname backend can be pinned.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: static-backends
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: single-ip
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: single-hostname
+    - group: gateway.kgateway.dev
+      kind: Backend
+      name: dfp
+  sessionPersistence:
+    cookie:
+      name: static-session
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: default
+spec:
+  parentRefs:
+    - name: example-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /service
+      backendRefs:
+        - name: backend
+          port: 3000
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /single-ip
+      backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: single-ip
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /single-hostname
+      backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: single-hostname
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /dfp
+      backendRefs:
+        - group: gateway.kgateway.dev
+          kind: Backend
+          name: dfp

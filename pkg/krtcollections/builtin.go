@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -18,12 +19,16 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	apiconditions "github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
@@ -32,6 +37,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 const (
@@ -107,6 +113,20 @@ type builtinPluginGwPass struct {
 	reporter            reporter.Reporter
 	hasCorsPolicy       map[string]bool
 	needStatefulSession map[string]bool
+	// sessionPersistenceOverrides collects, per route parent, the messages for route rules whose
+	// sessionPersistence is overridden by a BackendConfigPolicy, so a route reports all of them.
+	sessionPersistenceOverrides map[sessionPersistenceOverrideKey]sets.Set[string]
+	// sessionPersistenceClaimed tracks the output routes whose effective rule sessionPersistence is already
+	// decided by a higher priority rule policy (e.g. a child rule's own over an inherited parent rule's).
+	sessionPersistenceClaimed map[*envoyroutev3.Route]*anypb.Any
+}
+
+type sessionPersistenceOverrideKey struct {
+	route     types.UID
+	routeName string
+	// parentRef matches how the reports package keys a route's parent status, so all rules reported
+	// under one parent status share one entry here.
+	parentRef reports.ParentRefKey
 }
 
 var _ ir.PolicyIR = &builtinPlugin{}
@@ -201,6 +221,15 @@ func (p *builtinPluginGwPass) applyRulePolicy(
 	// For a single backend, the backend's per filter config is shared with the route via pCtx.TypedFilterConfig.
 	// For multiple backends, it is set on each weighted cluster, which Envoy prefers over the route.
 	backendHasSessionPersistence := pCtx != nil && pCtx.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName) != nil
+	// Only the rule sessionPersistence that would apply without the BackendConfigPolicy is reported as
+	// overridden. Rule policies are applied from highest to lowest priority, so a lower priority one (e.g.
+	// inherited from a delegating parent) is only effective if the merge strategy lets it replace the first.
+	if r.sessionPersistence != nil && policy.IsSettable(p.sessionPersistenceClaimed[outputRoute], mergeOpts) {
+		if p.sessionPersistenceClaimed != nil {
+			p.sessionPersistenceClaimed[outputRoute] = r.sessionPersistence
+		}
+		p.reportSessionPersistenceOverridden(pCtx, outputRoute, backendHasSessionPersistence)
+	}
 	if r.sessionPersistence != nil && !backendHasSessionPersistence &&
 		policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName], mergeOpts) {
 		if outputRoute.GetTypedPerFilterConfig() == nil {
@@ -672,10 +701,131 @@ func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFrac
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &builtinPluginGwPass{
-		reporter:            reporter,
-		hasCorsPolicy:       make(map[string]bool),
-		needStatefulSession: make(map[string]bool),
+		reporter:                    reporter,
+		hasCorsPolicy:               make(map[string]bool),
+		needStatefulSession:         make(map[string]bool),
+		sessionPersistenceOverrides: make(map[sessionPersistenceOverrideKey]sets.Set[string]),
+		sessionPersistenceClaimed:   make(map[*envoyroutev3.Route]*anypb.Any),
 	}
+}
+
+// reportSessionPersistenceOverridden reports, on the route's parent status, a route rule whose sessionPersistence
+// is overridden by the BackendConfigPolicy of some or all of its backends. It sets kgateway.dev/Programmed=True
+// with the SessionPersistenceOverridden reason, unless the condition already reports a problem (False).
+func (p *builtinPluginGwPass) reportSessionPersistenceOverridden(
+	pCtx *ir.RouteContext,
+	outputRoute *envoyroutev3.Route,
+	singleBackendOverridden bool,
+) {
+	if p.reporter == nil || pCtx == nil {
+		return
+	}
+	// The overridden sessionPersistence belongs to the rule that owns this policy: the rule itself, or a
+	// parent rule delegating to it. Report on that rule's route.
+	owner := ruleOwner(&pCtx.In, pCtx.Policy)
+	if owner.Parent == nil || owner.Parent.SourceObject == nil {
+		return
+	}
+	var overridden []string
+	if singleBackendOverridden {
+		for _, b := range pCtx.In.Backends {
+			overridden = append(overridden, backendDisplayName(b.Backend))
+		}
+	} else {
+		// With multiple backends, the backends with a BackendConfigPolicy have the config on their weighted cluster.
+		// Return early, without allocating, in the common case where none of them has one.
+		clusters := outputRoute.GetRoute().GetWeightedClusters().GetClusters()
+		if !slices.ContainsFunc(clusters, func(cw *envoyroutev3.WeightedCluster_ClusterWeight) bool {
+			return cw.GetTypedPerFilterConfig()[sessionpersistence.FilterName] != nil
+		}) {
+			return
+		}
+		byCluster := make(map[string]ir.BackendRefIR, len(pCtx.In.Backends))
+		for _, b := range pCtx.In.Backends {
+			byCluster[b.Backend.ClusterName] = b.Backend
+		}
+		for _, cw := range clusters {
+			if cw.GetTypedPerFilterConfig()[sessionpersistence.FilterName] == nil {
+				continue
+			}
+			if b, ok := byCluster[cw.GetName()]; ok {
+				overridden = append(overridden, backendDisplayName(b))
+			}
+		}
+	}
+	if len(overridden) == 0 {
+		return
+	}
+	slices.Sort(overridden)
+	overridden = slices.Compact(overridden)
+
+	rule := owner.RuleName
+	if rule == "" {
+		rule = strconv.Itoa(owner.RuleIndex)
+	}
+	src := owner.Parent.SourceObject
+	key := sessionPersistenceOverrideKey{
+		route:     src.GetUID(),
+		routeName: src.GetNamespace() + "/" + src.GetName(),
+		parentRef: parentRefKey(owner.ParentRef),
+	}
+	msgs := p.sessionPersistenceOverrides[key]
+	if msgs == nil {
+		msgs = sets.New[string]()
+		p.sessionPersistenceOverrides[key] = msgs
+	}
+	msgs.Insert(fmt.Sprintf("rule %s: sessionPersistence is overridden by the BackendConfigPolicy of %s",
+		rule, strings.Join(overridden, ", ")))
+
+	parentReport := p.reporter.Route(src).ParentRef(&owner.ParentRef)
+	// A dropped or replaced rule reports Programmed=False; never hide it.
+	if prr, ok := parentReport.(*reports.ParentRefReport); ok {
+		if cond := meta.FindStatusCondition(prr.Conditions, apiconditions.KgatewayConditionProgrammed); cond != nil &&
+			cond.Status == metav1.ConditionFalse {
+			return
+		}
+	}
+	parentReport.SetCondition(reporter.RouteCondition{
+		Type:    gwv1.RouteConditionType(apiconditions.KgatewayConditionProgrammed),
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.RouteConditionReason(apiconditions.KgatewayReasonSessionPersistenceOverridden),
+		Message: strings.Join(sets.List(msgs), "; "),
+	})
+}
+
+// ruleOwner returns the route rule that the builtin rule policy pol belongs to: in itself, or the parent
+// rule delegating to it that the policy is inherited from. It returns in when no owner is found.
+func ruleOwner(in *ir.HttpRouteRuleMatchIR, pol ir.PolicyIR) *ir.HttpRouteRuleMatchIR {
+	for r := in; r != nil; r = r.DelegatingParent {
+		for _, att := range r.AttachedPolicies.Policies[ir.VirtualBuiltInGK] {
+			if att.PolicyIr == pol {
+				return r
+			}
+		}
+	}
+	return in
+}
+
+// parentRefKey normalizes ref the same way the reports package keys route parent status (by value,
+// ignoring the port), so references with equal values but different pointers share a key.
+func parentRefKey(ref gwv1.ParentReference) reports.ParentRefKey {
+	return reports.ParentRefKey{
+		Group: string(ptr.Deref(ref.Group, "")),
+		Kind:  string(ptr.Deref(ref.Kind, "")),
+		NamespacedName: types.NamespacedName{
+			Namespace: string(ptr.Deref(ref.Namespace, "")),
+			Name:      string(ref.Name),
+		},
+		SectionName: string(ptr.Deref(ref.SectionName, "")),
+	}
+}
+
+func backendDisplayName(b ir.BackendRefIR) string {
+	if b.BackendObject == nil {
+		return b.ClusterName
+	}
+	gk := b.BackendObject.GetGroupKind()
+	return fmt.Sprintf("%s %s/%s", gk.Kind, b.BackendObject.GetNamespace(), b.BackendObject.GetName())
 }
 
 func (p *builtinPlugin) Name() string {

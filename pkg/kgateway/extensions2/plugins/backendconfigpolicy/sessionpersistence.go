@@ -2,8 +2,9 @@ package backendconfigpolicy
 
 import (
 	"errors"
-	"net"
+	"fmt"
 	"slices"
+	"strings"
 
 	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	"google.golang.org/protobuf/proto"
@@ -27,13 +28,16 @@ type sessionPersistenceIR struct {
 	// cookieState is set instead of perRoute when the cookie name is not specified, so a
 	// unique name can be generated for each backend when the route is translated.
 	cookieState *stateful_cookie.CookieBasedSessionState
+	// absoluteTimeoutIgnored is set when the absoluteTimeout has no effect (Session cookie or header).
+	absoluteTimeoutIgnored bool
 }
 
 func (s *sessionPersistenceIR) Equals(other *sessionPersistenceIR) bool {
 	if s == nil || other == nil {
 		return s == other
 	}
-	return proto.Equal(s.perRoute, other.perRoute) && proto.Equal(s.cookieState, other.cookieState)
+	return proto.Equal(s.perRoute, other.perRoute) && proto.Equal(s.cookieState, other.cookieState) &&
+		s.absoluteTimeoutIgnored == other.absoluteTimeoutIgnored
 }
 
 // perRouteFor returns the per route config of the stateful session filter for backend,
@@ -94,6 +98,55 @@ func absoluteTimeoutIgnored(in *kgateway.SessionPersistence) bool {
 	return lifetime == kgateway.SessionCookieLifetimeType
 }
 
+const (
+	msgAbsoluteTimeoutIgnored = "spec.sessionPersistence.absoluteTimeout has no effect unless " +
+		"spec.sessionPersistence.cookie.lifetimeType is Permanent"
+	msgHashPoliciesBypassed = "spec.sessionPersistence overrides the spec.loadBalancer hash policies " +
+		"for requests with an established session"
+	msgNoEffectOnBackendFmt = "spec.sessionPersistence has no effect on %s %s/%s: %s"
+)
+
+// PartiallyValidMessages returns the message for the PartiallyValid reason of the Accepted condition, keyed by
+// policy ref ID, for the BackendConfigPolicies attached to backend. It is judged on the merged config that is
+// actually applied to the backend, and reported on the policy whose sessionPersistence is applied: an ignored
+// absoluteTimeout, load balancer hash policies (from any of the policies) that session persistence bypasses,
+// and backends where session persistence has no effect. It returns nil when there is nothing to report.
+func PartiallyValidMessages(policies []ir.PolicyAtt, backend ir.BackendObjectIR) map[string]string {
+	if !slices.ContainsFunc(policies, hasSessionPersistence) {
+		return nil
+	}
+	merged := mergePolicies(policies)
+	// Like translation, nothing is applied when a policy has errors.
+	if len(merged.Errors) > 0 {
+		return nil
+	}
+	pol, ok := merged.PolicyIr.(*BackendConfigPolicyIR)
+	if !ok || pol.sessionPersistence == nil {
+		return nil
+	}
+	owners := merged.MergeOrigins.Get("sessionPersistence")
+	if len(owners) != 1 {
+		return nil
+	}
+
+	var msgs []string
+	if pol.sessionPersistence.absoluteTimeoutIgnored {
+		msgs = append(msgs, msgAbsoluteTimeoutIgnored)
+	}
+	if pol.loadBalancerConfig != nil && pol.loadBalancerConfig.hasHashPolicies {
+		msgs = append(msgs, msgHashPoliciesBypassed)
+	}
+	if note, report := sessionPersistenceBackendNote(backend); report {
+		gk := backend.GetGroupKind()
+		msgs = append(msgs, fmt.Sprintf(msgNoEffectOnBackendFmt, gk.Kind, backend.GetNamespace(), backend.GetName(), note))
+	}
+	if len(msgs) == 0 {
+		return nil
+	}
+	slices.Sort(msgs)
+	return map[string]string{owners[0]: strings.Join(msgs, "; ")}
+}
+
 // hasHashPolicies reports whether the load balancer config uses hash policies.
 func hasHashPolicies(lb *kgateway.LoadBalancer) bool {
 	if lb == nil {
@@ -103,25 +156,26 @@ func hasHashPolicies(lb *kgateway.LoadBalancer) bool {
 		(lb.Maglev != nil && len(lb.Maglev.HashPolicies) > 0)
 }
 
-// sessionPersistenceHasNoEffect returns a reason when session persistence has no
-// effect for backend, because the backend has at most one host to pin to.
-func sessionPersistenceHasNoEffect(backend ir.BackendObjectIR) string {
+// sessionPersistenceBackendNote returns a note about how session persistence behaves for backend, and whether
+// the note is reported in the policy status (report) or only logged. It returns "" when there is nothing to note.
+// Backends with a single host (e.g. AWS Lambda or a static IP) are not noted: every request already goes to the
+// same host, so the session is trivially kept.
+func sessionPersistenceBackendNote(backend ir.BackendObjectIR) (note string, report bool) {
 	be, ok := backend.Obj.(*kgateway.Backend)
 	if !ok {
-		return ""
+		return "", false
 	}
 	switch {
-	case be.Spec.Aws != nil:
-		return "AWS backends have no endpoints to pin to"
 	case be.Spec.Gcp != nil:
-		return "GCP backends have a single host"
+		// Users of GCP backends likely know this, so it is only logged.
+		return "GCP backends are reached through Google front ends, so a session is pinned to a front end, not an instance", false
 	case be.Spec.DynamicForwardProxy != nil:
-		return "dynamic forward proxy backends resolve the host per request"
-	case be.Spec.Static != nil && len(be.Spec.Static.Hosts) == 1 && net.ParseIP(be.Spec.Static.Hosts[0].Host) != nil:
-		// A single hostname is resolved by DNS and may have several addresses to pin to.
-		return "static backends with a single IP address have nothing to pin to"
+		// Requests are load balanced by a per host sub-cluster that does not use the session's host, so
+		// session persistence has no effect (requests are never sent to a previous host either).
+		return "dynamic forward proxy backends load balance each request within the requested host's addresses " +
+			"and do not use the session", true
 	}
-	return ""
+	return "", false
 }
 
 type backendConfigPolicyGwPass struct {

@@ -177,6 +177,13 @@ Statuses:
       parents:
       - conditions:
         - lastTransitionTime: null
+          message: 'rule 0: sessionPersistence is overridden by the BackendConfigPolicy
+            of Service default/backend-a; rule 2: sessionPersistence is overridden
+            by the BackendConfigPolicy of Service default/backend-a'
+          reason: SessionPersistenceOverridden
+          status: "True"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
           message: Successfully accepted Route
           reason: Accepted
           status: "True"
@@ -186,11 +193,6 @@ Statuses:
           reason: ResolvedRefs
           status: "True"
           type: ResolvedRefs
-        - lastTransitionTime: null
-          message: Successfully programmed Route
-          reason: Programmed
-          status: "True"
-          type: kgateway.dev/Programmed
         controllerName: kgateway
         parentRef:
           group: ""

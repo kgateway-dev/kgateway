@@ -18,4 +18,6 @@ var (
 	bcpHeaderSessionPersistenceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-header-session-persistence.yaml")
 	bcpDynamicRouteManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-dynamic-route.yaml")
 	bcpDynamicPolicyManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-dynamic-policy.yaml")
+	bcpOverrideRouteManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-override-route.yaml")
+	bcpOverridePolicyManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "backendconfigpolicy-override-policy.yaml")
 )

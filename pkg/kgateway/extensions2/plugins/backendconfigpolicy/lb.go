@@ -36,10 +36,13 @@ const (
 )
 
 type LoadBalancerConfigIR struct {
-	commonLbConfig             *envoyclusterv3.Cluster_CommonLbConfig
-	loadBalancingPolicy        *envoyclusterv3.LoadBalancingPolicy
-	useHostnameForHashing      bool
-	hasZoneAware               bool
+	commonLbConfig        *envoyclusterv3.Cluster_CommonLbConfig
+	loadBalancingPolicy   *envoyclusterv3.LoadBalancingPolicy
+	useHostnameForHashing bool
+	hasZoneAware          bool
+	// hasHashPolicies is set when the ring hash or maglev config has hash policies, which session
+	// persistence bypasses for requests with an established session.
+	hasHashPolicies            bool
 	zoneAwareForceMinEndpoints *uint32
 }
 
@@ -50,6 +53,7 @@ func translateLoadBalancerConfig(config *kgateway.LoadBalancer, policyName, poli
 	if config == nil {
 		return out, nil
 	}
+	out.hasHashPolicies = hasHashPolicies(config)
 
 	if config.HealthyPanicThreshold != nil {
 		out.commonLbConfig.HealthyPanicThreshold = &typev3.Percent{
@@ -412,6 +416,9 @@ func (a *LoadBalancerConfigIR) Equals(b *LoadBalancerConfigIR) bool {
 		return false
 	}
 	if a.hasZoneAware != b.hasZoneAware {
+		return false
+	}
+	if a.hasHashPolicies != b.hasHashPolicies {
 		return false
 	}
 	if !proto.Equal(a.loadBalancingPolicy, b.loadBalancingPolicy) {
