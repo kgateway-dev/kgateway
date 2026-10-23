@@ -170,7 +170,16 @@ func NewPerClientUdpAggregateEndpoints(
 		return []string{u.Client.ResourceName()}
 	})
 
-	return PerClientEnvoyEndpoints{endpoints: endpoints, index: idx}
+	return PerClientEnvoyEndpoints{
+		endpoints: endpoints,
+		index:     idx,
+		// A route's descriptor derives its aggregate CLA. A client whose CDS has
+		// the cluster before the row lands waits for it instead of being sent an
+		// empty placeholder over the endpoints it holds.
+		hasSource: func(kctx krt.HandlerContext, claName string) bool {
+			return krt.FetchOne(kctx, aggregates, krt.FilterKey(claName)) != nil
+		},
+	}
 }
 
 // udpMemberEndpoints pairs a member's backendRef weight with its resolved endpoints, decoupling
