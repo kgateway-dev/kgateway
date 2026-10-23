@@ -40,6 +40,7 @@ func TestPublicationRetainsOnlySupportedBootstrapEndpoints(t *testing.T) {
 				krtutil.NewKrtOptions(t.Context().Done(), nil), clients,
 				krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"}}}),
 				newTestPerClientEndpoints(nil), clusters,
+				clusterScoping{},
 				newTestPerClientEndpoints([]UccWithEndpoints{{
 					Client: ucc, endpointsName: localName, resourceName: uccEndpointsResourceName(ucc, localName),
 					Endpoints: sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: localName}), EndpointsHash: 1,
@@ -128,12 +129,12 @@ func TestEndpointFilterErrorRecoveryAdvancesVersion(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "errored"}},
 	})
 	healthyOnly := envoycache.NewResourcesWithTTL("healthy-only", []envoycachetypes.ResourceWithTTL{edsCluster("healthy")})
-	filtered, _ := filterEndpointResourcesForClusters(healthyOnly, endpoints, "")
+	filtered, _, _ := filterEndpointResourcesForClusters(healthyOnly, endpoints, nil, "")
 	g.Expect(filtered.Items).To(gomega.HaveLen(1))
 	g.Expect(filtered.Items).To(gomega.HaveKey("healthy"))
 	g.Expect(filtered.Version).ToNot(gomega.Equal(endpoints.Version), "entering an error must trigger an EDS push")
 	recovered := envoycache.NewResourcesWithTTL("recovered", []envoycachetypes.ResourceWithTTL{edsCluster("healthy"), edsCluster("errored")})
-	restored, _ := filterEndpointResourcesForClusters(recovered, endpoints, "")
+	restored, _, _ := filterEndpointResourcesForClusters(recovered, endpoints, nil, "")
 	g.Expect(restored.Items).To(gomega.HaveLen(2))
 	g.Expect(restored.Version).To(gomega.Equal(endpoints.Version), "recovery must restore the original EDS version and trigger another push")
 	g.Expect(endpoints.Items).To(gomega.HaveLen(2), "filtering must not mutate the upstream EDS map")

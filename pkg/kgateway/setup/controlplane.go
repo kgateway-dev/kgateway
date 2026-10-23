@@ -313,9 +313,13 @@ func NewControlPlane(
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
 	orderedADS bool,
+	suppressNackResend bool,
+	respondOnReconnect bool,
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
-	lnc := newLogNackCallback()
+	lnc := newLogNackCallback(xdsAuth)
+	// The rejection metrics consume the role resolved by unique-client processing.
+	// Keep that callback first so failed requests never reach the metric callback.
 	allCallbacks := chainCallbacks(callbacks, lnc)
 
 	// Create separate gRPC servers for each listener
@@ -323,7 +327,13 @@ func NewControlPlane(
 	serverOpts := getGRPCServerOpts(authenticators, xdsAuth, certWatcher) //nolint:contextcheck
 	kgwGRPCServer := grpc.NewServer(serverOpts...)
 
-	snapshotCache := newSnapshotCache(xds.NewNodeRoleHasher(), envoyLoggerAdapter)
+	hasher := xds.NewNodeRoleHasher()
+	// watchPolicy answers a re-defined cluster's endpoint request even at the held
+	// version, and, when enabled, parks NACKs of the current version and answers a
+	// reconnect's first EDS, RDS and SDS requests even at the held version.
+	policy := newWatchPolicy(newSnapshotCache(hasher, envoyLoggerAdapter), hasher, suppressNackResend, respondOnReconnect)
+	allCallbacks = chainCallbacks(allCallbacks, policy.callbacks())
+	var snapshotCache envoycache.SnapshotCache = policy
 
 	var xdsOpts []serverconfig.XDSOption
 	if orderedADS {

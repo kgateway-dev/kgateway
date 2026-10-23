@@ -149,6 +149,21 @@ func (d *carryDependencies) endpointAddresses(c *envoyclusterv3.Cluster) []strin
 	return out
 }
 
+// addBuiltClusterListeners adds to a held snapshot the built listeners its
+// clusters reach at their endpoints, and the secrets those listeners read. A
+// hold pins listeners and secrets at their published versions while the
+// build's clusters go out, so a cluster whose endpoint is a listener its build
+// generates with it (a CONNECT tunnel's pipe) would otherwise point at a socket
+// nothing listens on until the hold ends. As for a carried cluster, a listener
+// or secret the held snapshot already has is kept.
+func addBuiltClusterListeners(held, build *envoycache.Snapshot) {
+	deps := newCarryDependencies(build, held)
+	for _, cluster := range held.Resources[envoycachetypes.Cluster].Items {
+		deps.carry(cluster)
+	}
+	deps.apply(held)
+}
+
 // listenerAt returns the published listener reached at address.
 func (d *carryDependencies) listenerAt(address string) (string, bool) {
 	if d.byAddress == nil {

@@ -31,6 +31,10 @@ const (
 	// carried a cluster missing from CDS for the warm withhold bound. Routes to
 	// it fail until it reappears.
 	boundedPublishCarryExpired = "carry_expired"
+	// boundedPublishReferenceAhead marks a hold kept only for reference-ahead
+	// windows (KGW_CLUSTER_REFERENCE_AHEAD) that the publish budget released
+	// early. Windows closing on their own are not a bounded publish.
+	boundedPublishReferenceAhead = "reference_ahead"
 
 	withheldStateLabel = "state"
 	// withheldWithinBudget is a client whose first publish on its connection
@@ -71,6 +75,14 @@ var (
 			Subsystem: snapshotSubsystem,
 			Name:      "perclient_inconsistent_snapshots_total",
 			Help:      "Per-client xDS snapshots that failed the pre-publication consistency check; any increment is a bug",
+		},
+		nil,
+	)
+	snapshotPerClientReclaimedTotal = metrics.NewCounter(
+		metrics.CounterOpts{
+			Subsystem: snapshotSubsystem,
+			Name:      "perclient_reclaimed_total",
+			Help:      "Per-client xDS snapshot cache entries reclaimed after their client left and stayed gone for the grace period",
 		},
 		nil,
 	)
@@ -145,4 +157,14 @@ func recordInconsistentSnapshot() {
 		return
 	}
 	snapshotPerClientInconsistentTotal.Inc()
+}
+
+// recordSnapshotReclaim counts a reclaimed cache entry. It has no gateway
+// labels: the client is gone, often with its gateway, so a labeled series
+// would outlive what it names.
+func recordSnapshotReclaim() {
+	if !metrics.Active() {
+		return
+	}
+	snapshotPerClientReclaimedTotal.Inc()
 }

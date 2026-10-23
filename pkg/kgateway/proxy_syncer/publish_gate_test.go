@@ -35,6 +35,7 @@ func newPublishGateTestTranslator(t *testing.T, prior bool, budget time.Duration
 		stubPriorXDS{has: prior},
 		budget,
 		true,
+		clusterScoping{},
 	)
 	// Stop timers at cleanup; a warm hold would otherwise re-arm forever.
 	t.Cleanup(func() { pt.gate.clientDeparted(publishGateTestClient) })
@@ -449,12 +450,12 @@ func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 
 	pt.gate.mu.Lock()
 	time.Sleep(budget + 100*time.Millisecond) // the first release timer fired and waits on the lock
-	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil))
+	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil, nil))
 	current := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
 	require.NotNil(t, current)
-	held, blocking := resolveDeferredPerCluster(flipWrap, current, true)
+	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
 	require.NotEmpty(t, blocking)
-	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking))
+	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking, nil, 0, hashes))
 	pt.gate.mu.Unlock()
 
 	require.Never(t, func() bool {
@@ -653,7 +654,7 @@ func (c installThenFailCache) SetSnapshot(ctx context.Context, node string, snap
 func TestSetSnapshotErrorAfterInstallKeepsBookkeeping(t *testing.T) {
 	ctx := context.Background()
 	newTranslator := func(budget time.Duration) *ProxyTranslator {
-		pt := NewProxyTranslator(installThenFailCache{newTestSnapshotCache(t)}, stubPriorXDS{}, budget, true)
+		pt := NewProxyTranslator(installThenFailCache{newTestSnapshotCache(t)}, stubPriorXDS{}, budget, true, clusterScoping{})
 		return &pt
 	}
 	t.Run("bounded first publish", func(t *testing.T) {
@@ -881,3 +882,6 @@ func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
 	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, refsOf(routesB))
 	assert.Equal(t, 2, walks)
 }
+
+// Publication tests model connected clients; their snapshots cannot be reclaimed.
+func (stubPriorXDS) RunIfDisconnected(string, func()) bool { return false }

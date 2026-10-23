@@ -24,10 +24,8 @@ var UseDetailedUnmarshalling = !envutils.IsEnvTruthy("DISABLE_DETAILED_SNAP_UNMA
 
 type XdsSnapWrapper struct {
 	snap *envoycache.Snapshot
-	// erroredClusters lists clusters whose current translation failed. The
-	// publish-time per-cluster resolution treats them fail-closed: they are
-	// never resurrected from the previously-published snapshot (see
-	// resolveDeferredPerCluster). Sorted.
+	// erroredClusters lists clusters whose translation failed; resolution never
+	// carries them from the published snapshot. Sorted.
 	erroredClusters []string
 	// +noKrtEquals
 	proxyKey string
@@ -39,19 +37,33 @@ type XdsSnapWrapper struct {
 	// findMissingReferencedEndpointResources). Derived empty CLAs are excluded
 	// (#14352). Sorted.
 	missingEndpointsReferenced []string
-	// synthesizedEndpoints lists every EDS resource whose CLA in snap is a
-	// synthesized empty standing in for a per-client row that is still being
-	// built (some backend derives endpoints for it), referenced or not. The
-	// publish gate decides which of them the client receives
-	// (settleSynthesizedEndpoints). A synthesized CLA with no endpoints source
-	// at all is the cluster's steady state and is not listed. Sorted.
+	// synthesizedEndpoints lists placeholder CLAs, referenced or not, whose rows
+	// are on their way; settleSynthesizedEndpoints decides which the client
+	// receives. Source-less placeholders are steady state and excluded. Sorted.
 	synthesizedEndpoints []string
-	// expiredCarry lists clusters the publish gate stopped carrying at the
-	// warm withhold bound; resolution must not carry them back with a held
-	// flip's closure. Set only on the gate's copy of a wrapper, never on a KRT
-	// row. Sorted.
+	// expiredCarry lists clusters whose carry hit the warm withhold bound, so a
+	// held flip's closure must not restore them. Set only on the gate's copy,
+	// never on a KRT row. Sorted.
 	// +noKrtEquals
 	expiredCarry []string
+	// endpointHashes holds each assignment's version contribution for carry-forward
+	// (eds_set_version.go). Equals compares their folded EDS version.
+	// +noKrtEquals
+	endpointHashes map[string]uint64
+	// scopesClusters is set in REFERENCED mode, where a published listener can
+	// name a cluster scoping left out of CDS. The mode is fixed for the process.
+	// +noKrtEquals
+	scopesClusters bool
+	// translatedClusters is the client's translated clusters before scoping
+	// filters them, shared read-only with the per-client cluster row. The
+	// de-reference grace keeps only clusters still in it: one that is no longer
+	// translated (its backend was deleted, or its translation failed) leaves at
+	// once, as with scoping off. Nil means unknown, and graces every
+	// de-referenced cluster.
+	// +noKrtEquals a change here alone (a backend added or removed while not
+	// emitted) changes nothing published; at worst a graced cluster whose backend
+	// is then deleted stays until its grace ends.
+	translatedClusters map[string]envoycachetypes.ResourceWithTTL
 }
 
 // deferred reports whether some referenced cluster was unready at build
@@ -75,20 +87,16 @@ func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
 			return false
 		}
 	}
-	// The gap classification drives publication, so it is compared directly
-	// rather than inferred from versions: a synthesized empty CLA and a
-	// derived-but-empty one are byte-identical protos. Without this, a wrapper
-	// can transition deferred->ready with every version equal, KRT suppresses
-	// the event, and syncXds keeps holding a route flip whose blocking cluster
-	// has already derived its (empty) truth — unbounded when the publish
-	// budget is disabled — or keeps leaving out a CLA that is now derived. The
-	// same applies to a referenced cluster arriving errored-from-birth
-	// (missingReferenced shrinks, no version changes).
-	// erroredClusters is compared by name too. A cluster that is not in the
-	// CDS items changes no version when it starts or stops erroring, yet a
-	// carry (a held flip) can still serve it from the published snapshot, and
-	// only a new event lets the carry see the error and drop it (fail closed).
-	// Error-text-only changes stay suppressed: only names count.
+	// Compare the gap classification directly instead of inferring it from
+	// versions: a synthesized empty CLA and a derived empty one are identical
+	// protos, yet publish differently. A missed change keeps syncXds holding a
+	// flip (unbounded with the budget off) or omitting a now-derived CLA. An
+	// errored-from-birth cluster also shrinks missingReferenced.
+	//
+	// Compare errored names too. A cluster out of CDS, gone from the build or
+	// filtered out by scoping, moves no version when it errors, yet a held flip
+	// or grace may still carry it; only a new event lets the carry drop it.
+	// Error text alone is ignored.
 	return slices.Equal(p.missingReferenced, in.missingReferenced) &&
 		slices.Equal(p.missingEndpointsReferenced, in.missingEndpointsReferenced) &&
 		slices.Equal(p.synthesizedEndpoints, in.synthesizedEndpoints) &&

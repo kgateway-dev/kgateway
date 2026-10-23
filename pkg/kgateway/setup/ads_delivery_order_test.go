@@ -266,8 +266,8 @@ func (h *adsHarness) waitForOpenWatches(count int) {
 	h.t.Helper()
 
 	require.Eventually(h.t, func() bool {
-		info := h.cache.GetStatusInfo(adsTestNodeID)
-		return info != nil && info.GetNumWatches() == count
+		n, ok := openWatches(h.cache, adsTestNodeID)
+		return ok && n == count
 	}, 2*time.Second, 10*time.Millisecond)
 }
 

@@ -334,7 +334,7 @@ func (s *setup) Start(ctx context.Context) error {
 	// Extra callbacks go first in the chain, so they receive every hook by
 	// construction instead of through forwarding.
 	xdsCallbacks := ChainCallbacks(s.extraXDSCallbacks, uniqueClientCallbacks)
-	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds)
+	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds, s.globalSettings.XdsSuppressNackResend, s.globalSettings.XdsRespondOnReconnect)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,

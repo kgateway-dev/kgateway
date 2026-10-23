@@ -138,7 +138,7 @@ func TestFilterEndpointResourcesForClusters_FiltersStaticClusterCLAs(t *testing.
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-cluster"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 endpoint resource, got %d", len(out.Items))
@@ -163,7 +163,7 @@ func TestFilterEndpointResourcesForClusters_ReturnsOriginalWhenNoFiltering(t *te
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-only"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 endpoint resource, got %d", len(out.Items))
@@ -184,7 +184,7 @@ func TestFilterEndpointResourcesForClusters_EmptyClustersAndEndpoints(t *testing
 	emptyClusters := envoycache.NewResourcesWithTTL("v1", nil)
 	emptyEndpoints := envoycache.NewResourcesWithTTL("v1", nil)
 
-	out, _ := filterEndpointResourcesForClusters(emptyClusters, emptyEndpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(emptyClusters, emptyEndpoints, nil, "")
 
 	if len(out.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(out.Items))
@@ -197,7 +197,7 @@ func TestFilterEndpointResourcesForClusters_EmptyClustersNonEmptyEndpoints(t *te
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "any"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(emptyClusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(emptyClusters, endpoints, nil, "")
 
 	if len(out.Items) != 0 {
 		t.Fatalf("expected no endpoint resources when no EDS clusters are emitted, got %d", len(out.Items))
@@ -210,7 +210,7 @@ func TestFilterEndpointResourcesForClusters_EmptyEndpoints(t *testing.T) {
 	})
 	emptyEndpoints := envoycache.NewResourcesWithTTL("v1", nil)
 
-	out, _ := filterEndpointResourcesForClusters(clusters, emptyEndpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, emptyEndpoints, nil, "")
 
 	if len(out.Items) != 0 {
 		t.Errorf("expected 0 items, got %d", len(out.Items))
@@ -232,7 +232,7 @@ func TestFilterEndpointResourcesForClusters_MixedStaticAndNonStatic(t *testing.T
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "eds-b"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 2 {
 		t.Fatalf("expected 2 endpoint resources (eds-a, eds-b), got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -260,7 +260,7 @@ func TestFilterEndpointResourcesForClusters_FiltersStaleClusterLoadAssignments(t
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "cluster-b"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected only the CLA required by CDS, got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -293,7 +293,7 @@ func TestFilterEndpointResourcesForClusters_UsesEDSServiceName(t *testing.T) {
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "service-a"}},
 	})
 
-	out, _ := filterEndpointResourcesForClusters(clusters, endpoints, "")
+	out, _, _ := filterEndpointResourcesForClusters(clusters, endpoints, nil, "")
 
 	if len(out.Items) != 1 {
 		t.Fatalf("expected only the service-name CLA required by CDS, got %d: %v", len(out.Items), mapKeys(out.Items))
@@ -369,6 +369,7 @@ func TestSnapshotPerClientDefersUntilAllReferencedClustersAreReady(t *testing.T)
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	// Built at once but deferred: cluster-b is referenced and missing.
@@ -450,6 +451,7 @@ func TestSnapshotPerClientDefersUntilReferencedEDSClustersHaveEndpoints(t *testi
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	// Deferred: the referenced cluster has no derived CLA. A placeholder keeps the
@@ -548,6 +550,7 @@ func TestSnapshotPerClientFiltersStaleEndpointResourcesWhenClusterRemoved(t *tes
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -620,6 +623,7 @@ func TestSnapshotPerClientFilteredEdsSnapshotRespondsToNamedADSRequestAfterClust
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	initialSnap := eventuallySingleSnapshot(t, snapshots)
@@ -715,10 +719,11 @@ func TestSnapshotPerClientDefersMakeBeforeBreakRouteUntilNewEndpointReady(t *tes
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -814,10 +819,11 @@ func TestSnapshotPerClientRetargetToDerivedBackend(t *testing.T) {
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -910,10 +916,11 @@ func TestSnapshotPerClientDefersWeightedRouteUntilAllEndpointsReady(t *testing.T
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
-	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true))
+	registerSyncXds(snapshots, NewProxyTranslator(cache, nil, 0, true, clusterScoping{}))
 	nodeID := ucc.ResourceName()
 
 	initialServed := eventuallyCacheSnapshot(t, cache, nodeID)
@@ -984,6 +991,7 @@ func TestSnapshotPerClientDefersUntilReferencedEDSServiceNameHasEndpoints(t *tes
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	// Deferred: a placeholder stands in under the underived service_name.
@@ -1036,6 +1044,7 @@ func TestSnapshotPerClientServiceNameEdsSnapshotRespondsToNamedADSRequestAfterCl
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	initialSnap := eventuallySingleSnapshot(t, snapshots)
@@ -1129,6 +1138,7 @@ func TestSnapshotPerClientEndpointOnlyUpdateOnlyChangesEDSVersion(t *testing.T) 
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	initialSnap := eventuallySingleSnapshot(t, snapshots)
@@ -1192,10 +1202,11 @@ func TestSnapshotPerClientPartialUpdateForOneClientDoesNotPoisonAnotherClient(t 
 			}),
 		},
 		newTestPerClientClustersFromCol(clusterCol, uccs),
+		clusterScoping{},
 	)
 
 	cache := newTestSnapshotCache(t)
-	translator := NewProxyTranslator(cache, nil, 0, true)
+	translator := NewProxyTranslator(cache, nil, 0, true, clusterScoping{})
 	snapshots.RegisterBatch(func(events []krt.Event[XdsSnapWrapper]) {
 		for _, event := range events {
 			if event.Event == controllers.EventDelete {
@@ -1324,6 +1335,7 @@ func TestSnapshotPerClientStillPublishesWhenReferencedClusterErrored(t *testing.
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -1482,6 +1494,7 @@ func TestSnapshotPerClientPublishesEvenWithUnresolvableBackendRef(t *testing.T) 
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -1546,6 +1559,7 @@ func TestSnapshotPerClientKeepsPublishingWhenMisconfiguredBackendRefArrivesAtRun
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -1646,6 +1660,7 @@ func TestSnapshotPerClientPublishesWhenAllRoutesAreRedirectOnly(t *testing.T) {
 			}),
 		},
 		pcc,
+		clusterScoping{},
 	)
 
 	g.Eventually(func() int {
@@ -2042,7 +2057,7 @@ func TestFilterEndpointResourcesForClusters_VersionTracksPublishedSet(t *testing
 		for _, name := range clusters {
 			items = append(items, edsCluster(name))
 		}
-		out, _ := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", items), endpoints, "")
+		out, _, _ := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", items), endpoints, nil, "")
 		return out.Version
 	}
 
@@ -2095,7 +2110,7 @@ func TestFilterEndpointResourcesForClusters_PublishesRequiredSet(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
-			out, synthesized := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", tc.clusters), tc.endpoints, tc.bootstrap)
+			out, _, synthesized := filterEndpointResourcesForClusters(envoycache.NewResourcesWithTTL("cds", tc.clusters), tc.endpoints, nil, tc.bootstrap)
 			g.Expect(slices.Sorted(maps.Keys(out.Items))).To(gomega.Equal(tc.wantPublished))
 			g.Expect(slices.Sorted(maps.Keys(synthesized))).To(gomega.Equal(tc.wantSynthesized))
 			if len(tc.wantSynthesized) == 0 && len(tc.wantPublished) == len(tc.endpoints.Items) {
