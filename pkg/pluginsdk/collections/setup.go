@@ -211,7 +211,14 @@ func (c *CommonCollections) InitCollections(
 
 	tlsRoutes := joinRouteCollections(tlsRouteCollections, c.KrtOpts, "TLSRoute")
 
-	udproutes := krt.WrapClient(kclient.NewFilteredDelayed[*gwv1.UDPRoute](c.Client, wellknown.UDPRouteGVR, filter), c.KrtOpts.ToOptions("UDPRoute")...)
+	// Gated on v1 being served, like TLSRoute v1: Gateway API v1.5 ships a UDPRoute CRD that
+	// serves only v1alpha2, and a v1 watch against it would never sync and block startup.
+	udproutes := krt.WrapClient(
+		newDelayedTypedInformer(ctx, c.Client, wellknown.UDPRouteGVR, func() kclient.Informer[*gwv1.UDPRoute] {
+			return kclient.NewFiltered[*gwv1.UDPRoute](c.Client, filter)
+		}),
+		c.KrtOpts.ToOptions("UDPRoute")...,
+	)
 
 	metrics.RegisterEvents(tcproutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TCPRoute]())
 	metrics.RegisterEvents(tlsRoutes, kmetrics.GetResourceMetricEventHandler[*gwv1a2.TLSRoute]())
