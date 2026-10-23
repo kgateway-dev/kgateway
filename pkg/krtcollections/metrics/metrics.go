@@ -207,8 +207,8 @@ func EndResourceXDSSync(details ResourceSyncDetails) bool {
 			"resource metrics sync channel is full, dropping end sync metrics update",
 			"gateway", details.Gateway,
 			"namespace", details.Namespace,
-			"resourceType", details.ResourceType,
-			"resourceName", details.ResourceName,
+			"resource_type", details.ResourceType,
+			"resource_name", details.ResourceName,
 		)
 		resourcesUpdatesDroppedTotal.Inc()
 		return false

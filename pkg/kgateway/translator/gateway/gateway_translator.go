@@ -127,8 +127,7 @@ func reportGatewayBackendClientCertificateError(err error, gatewayReporter repor
 	}
 
 	message := err.Error()
-	var notFoundErr *krtcollections.NotFoundError
-	if errors.As(err, &notFoundErr) {
+	if notFoundErr, ok := errors.AsType[*krtcollections.NotFoundError](err); ok {
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
 			resourceType = "Resource"

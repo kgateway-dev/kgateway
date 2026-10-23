@@ -204,7 +204,7 @@ func baseHarnessGateway() Gateway {
 		AttachedHttpPolicies: AttachedPolicies{
 			Policies: map[schema.GroupKind][]PolicyAtt{},
 		},
-		PerConnectionBufferLimitBytes: uint32ptr(65535),
+		PerConnectionBufferLimitBytes: new(uint32(65535)),
 		FrontendTLSConfig:             nil,
 		BackendTLSConfig:              nil,
 	}
@@ -269,7 +269,7 @@ func TestHarnessGatewayEquals(t *testing.T) {
 		{
 			Field: "PerConnectionBufferLimitBytes",
 			Mutate: func(g *Gateway) {
-				g.PerConnectionBufferLimitBytes = uint32ptr(32768)
+				g.PerConnectionBufferLimitBytes = new(uint32(32768))
 			},
 		},
 		{
@@ -637,6 +637,3 @@ func TestListenerEqualsIgnoresStatusOnlyParentUpdates(t *testing.T) {
 		t.Error("Listener.Equals returned true for a parent spec change (Generation bumped); expected false")
 	}
 }
-
-//go:fix inline
-func uint32ptr(v uint32) *uint32 { return new(v) }
