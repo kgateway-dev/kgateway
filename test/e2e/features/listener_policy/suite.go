@@ -41,20 +41,32 @@ func NewTestingSuite(
 	ctx context.Context,
 	testInst *e2e.TestInstallation,
 ) suite.TestingSuite {
-	// setup.yaml provides the nginx backend and the curl/curl-mtls client pods.
-	// The cert Secrets used by the forwardClientCertDetails tests are applied at
-	// suite setup time so the gw mtls-https listener is always programmable and
-	// curl-mtls can mount its volumes regardless of which test runs.
+	// setup.yaml provides the nginx backend and the curl/curl-mtls client pods,
+	// and the echo backends are shared by every test that routes to them.
+	//
+	// The forwardClientCertDetails tests share the gw-mtls Gateway, and so one
+	// proxy pod: each test owns an HTTPS listener and targets it by sectionName,
+	// and HTTPS listeners get their own filter chain. Its cert Secrets, route and
+	// mtls-validation policy are applied here too.
 	setup := base.TestCase{
 		Manifests: []string{
 			setupManifest,
+			rawHeaderEchoManifest,
+			requestIdEchoManifest,
 			forwardClientCertServerSecret,
 			forwardClientCertCASecret,
 			forwardClientCertAliceSecret,
+			forwardClientCertGateway,
+			forwardClientCertRouteManifest,
+			forwardClientCertMtlsValidation,
 		},
 	}
-	// include the gateway manifest for each test, so we recreate it (and thus
-	// dynamically provision the proxy pod) for each test run
+	// The other tests include the gw Gateway manifest, so we recreate it (and
+	// thus dynamically provision the proxy pod) for each test run. They can't
+	// share one Gateway: ListenerPolicy settings only apply to an HTTP listener
+	// when the policy targets the whole Gateway, because HTTP listeners on one
+	// port share a filter chain. A policy deleted at the end of one test could
+	// then still be in Envoy during the next.
 	testCases := map[string]*base.TestCase{
 		"TestHttpListenerPolicyAllFields":        {Manifests: []string{gatewayManifest, httpRouteManifest, allFieldsManifest}},
 		"TestListenerPolicyHTTP2ProtocolOptions": {Manifests: []string{gatewayManifest, httpRouteManifest, http2ProtocolOptionsManifest}},
@@ -66,8 +78,8 @@ func NewTestingSuite(
 		"TestProxyProtocol":                      {Manifests: []string{gatewayManifest, httpRouteManifest, proxyProtocolManifest}},
 		// RequestID configuration tests for the new RequestID feature
 		// These tests use an echo server to verify x-request-id header behavior
-		"TestListenerPolicyRequestId":                {Manifests: []string{gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdManifest}},
-		"TestListenerPolicyRequestIdPackTraceReason": {Manifests: []string{gatewayManifest, requestIdEchoManifest, listenerPolicyRequestIdPackTraceReasonManifest}},
+		"TestListenerPolicyRequestId":                {Manifests: []string{gatewayManifest, requestIdEchoRouteManifest, listenerPolicyRequestIdManifest}},
+		"TestListenerPolicyRequestIdPackTraceReason": {Manifests: []string{gatewayManifest, requestIdEchoRouteManifest, listenerPolicyRequestIdPackTraceReasonManifest}},
 		"TestListenerPolicyMaxRequestsPerConnection": {Manifests: []string{gatewayManifest, httpRouteManifest, maxRequestsPerConnectionManifest}},
 		"TestListenerPolicyMaxHeadersCount":          {Manifests: []string{gatewayManifest, httpRouteManifest, maxHeadersCountManifest}},
 		"TestStripHostPortAnyPort":                   {Manifests: []string{gatewayManifest, stripHostPortAnyPortManifest}},
@@ -76,15 +88,15 @@ func NewTestingSuite(
 		"TestLocalReplyConfigDefaultFormat": {Manifests: []string{gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest}},
 		"TestLocalReplyConfigMapper":        {Manifests: []string{gatewayManifest, localReplyHttpRouteManifest, localReplyConfigManifest}},
 
-		// forwardClientCertDetails tests. All share gateway + request-id-echo
-		// + the route + the mtls-validation policy. Each scenario adds (or
-		// omits, for the baseline) a forward-client-cert ListenerPolicy.
-		"TestForwardClientCertBaseline":           {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation}},
-		"TestForwardClientCertSanitizeSetDefault": {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetDef}},
-		"TestForwardClientCertSanitizeSetAll":     {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitizeSetAll}},
-		"TestForwardClientCertAppendForward":      {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertAppendForward}},
-		"TestForwardClientCertSanitize":           {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertSanitize}},
-		"TestForwardClientCertForwardOnly":        {Manifests: []string{gatewayManifest, requestIdEchoManifest, forwardClientCertRouteManifest, forwardClientCertMtlsValidation, forwardClientCertForwardOnly}},
+		// forwardClientCertDetails tests, on the shared gw-mtls Gateway. Each
+		// scenario adds (or omits, for the baseline) a forward-client-cert
+		// ListenerPolicy on its own listener.
+		"TestForwardClientCertBaseline":           {},
+		"TestForwardClientCertSanitizeSetDefault": {Manifests: []string{forwardClientCertSanitizeSetDef}},
+		"TestForwardClientCertSanitizeSetAll":     {Manifests: []string{forwardClientCertSanitizeSetAll}},
+		"TestForwardClientCertAppendForward":      {Manifests: []string{forwardClientCertAppendForward}},
+		"TestForwardClientCertSanitize":           {Manifests: []string{forwardClientCertSanitize}},
+		"TestForwardClientCertForwardOnly":        {Manifests: []string{forwardClientCertForwardOnly}},
 	}
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, setup, testCases),
@@ -634,12 +646,12 @@ func (s *testingSuite) TestLocalReplyConfigMapper() {
 
 // forwardClientCertCurlOpts returns the curl options used by every
 // TestForwardClientCert* test: an mTLS HTTPS GET to gateway.local on the
-// 'mtls-https' listener (port 8443), authenticating with alice's client
-// cert mounted into the curl-mtls pod.
-func forwardClientCertCurlOpts(extra ...curl.Option) []curl.Option {
+// test's gw-mtls listener port, authenticating with alice's client cert
+// mounted into the curl-mtls pod.
+func forwardClientCertCurlOpts(port int, extra ...curl.Option) []curl.Option {
 	opts := []curl.Option{
-		curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-		curl.WithPort(8443),
+		curl.WithHost(kubeutils.ServiceFQDN(mtlsProxyService.ObjectMeta)),
+		curl.WithPort(port),
 		curl.WithScheme("https"),
 		curl.WithSni("gateway.local"),
 		curl.WithHostHeader("gateway.local"),
@@ -656,7 +668,7 @@ func (s *testingSuite) TestForwardClientCertBaseline() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlMtlsPodExecOpt,
-		forwardClientCertCurlOpts(),
+		forwardClientCertCurlOpts(fccBaselinePort),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.Not(gomega.MatchRegexp(`(?i)x-forwarded-client-cert:`)),
@@ -670,7 +682,7 @@ func (s *testingSuite) TestForwardClientCertSanitizeSetDefault() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlMtlsPodExecOpt,
-		forwardClientCertCurlOpts(),
+		forwardClientCertCurlOpts(fccSanitizeSetDefaultPort),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       gomega.MatchRegexp(`(?i)x-forwarded-client-cert: .*Subject="OU=engineering,O=acme,CN=alice"`),
@@ -684,7 +696,7 @@ func (s *testingSuite) TestForwardClientCertSanitizeSetAll() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlMtlsPodExecOpt,
-		forwardClientCertCurlOpts(),
+		forwardClientCertCurlOpts(fccSanitizeSetAllPort),
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			// All six selectors must appear on the same XFCC line. Hash is
@@ -708,7 +720,7 @@ func (s *testingSuite) TestForwardClientCertAppendForward() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlMtlsPodExecOpt,
-		forwardClientCertCurlOpts(
+		forwardClientCertCurlOpts(fccAppendForwardPort,
 			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
 		),
 		&matchers.HttpResponse{
@@ -725,7 +737,7 @@ func (s *testingSuite) TestForwardClientCertSanitize() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlMtlsPodExecOpt,
-		forwardClientCertCurlOpts(
+		forwardClientCertCurlOpts(fccSanitizePort,
 			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
 		),
 		&matchers.HttpResponse{
@@ -742,7 +754,7 @@ func (s *testingSuite) TestForwardClientCertForwardOnly() {
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
 		s.Ctx,
 		curlMtlsPodExecOpt,
-		forwardClientCertCurlOpts(
+		forwardClientCertCurlOpts(fccForwardOnlyPort,
 			curl.WithHeader("X-Forwarded-Client-Cert", `By=outer-proxy;Subject="CN=spoofed"`),
 		),
 		&matchers.HttpResponse{
