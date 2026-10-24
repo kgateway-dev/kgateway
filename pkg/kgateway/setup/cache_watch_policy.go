@@ -86,7 +86,6 @@ type watchPolicy struct {
 	// replacing the parked watch (see retryLater).
 	publish sync.Mutex
 
-	suppressNackResend bool
 	respondOnReconnect bool
 
 	mu      sync.Mutex
@@ -148,12 +147,11 @@ func nackRetryDelay(n int) time.Duration {
 	return min(delay, nackRetryMax)
 }
 
-func newWatchPolicy(inner envoycache.SnapshotCache, hasher envoycache.NodeHash, suppressNackResend, respondOnReconnect bool) *watchPolicy {
+func newWatchPolicy(inner envoycache.SnapshotCache, hasher envoycache.NodeHash, respondOnReconnect bool) *watchPolicy {
 	return &watchPolicy{
 		SnapshotCache:      inner,
 		hasher:             hasher,
 		seed:               maphash.MakeSeed(),
-		suppressNackResend: suppressNackResend,
 		respondOnReconnect: respondOnReconnect,
 		streams:            make(map[int64]*streamState),
 		pending:            make(map[*discoveryv3.DiscoveryRequest]pendingNack),
@@ -408,9 +406,6 @@ func (s *watchPolicy) CreateWatch(req *envoycache.Request, sub envoycache.Subscr
 				"node", s.hasher.ID(req.GetNode()), "type_url", req.GetTypeUrl(), "held_version", req.GetVersionInfo())
 			return s.SnapshotCache.CreateWatch(fresh, sub, ch)
 		}
-		return s.SnapshotCache.CreateWatch(req, sub, ch)
-	}
-	if !s.suppressNackResend {
 		return s.SnapshotCache.CreateWatch(req, sub, ch)
 	}
 	node := s.hasher.ID(req.GetNode())

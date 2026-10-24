@@ -299,15 +299,6 @@ type Settings struct {
 	// when resource-type watches are open.
 	EnableOrderedAds bool `split_words:"true" default:"true"`
 
-	// XdsSuppressNackResend throttles re-sending an xDS response the proxy just
-	// rejected. Without it, the snapshot cache answers every NACK with the same
-	// response, spinning at the proxy's reject rate. With it, a NACK of the current
-	// snapshot version waits for a snapshot change or a retry delay (1s, doubling to
-	// 1m while the same version keeps failing). The rejected version is retried,
-	// never suppressed for good, so a transient rejection recovers. A NACK of an
-	// older version is answered at once. Rejections are still logged and counted.
-	XdsSuppressNackResend bool `split_words:"true" default:"true"`
-
 	// XdsRespondOnReconnect answers a reconnecting proxy's first EDS, RDS and SDS
 	// request even when it asks at the version it already holds. Without it, if
 	// the controller has no snapshot for that proxy yet (after a restart, for

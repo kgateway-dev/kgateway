@@ -52,13 +52,27 @@ func NewSharedEnv(crdDirs []string) (*SharedEnv, error) {
 		return nil, err
 	}
 
-	return &SharedEnv{
+	env := &SharedEnv{
 		testEnv: &envtest.Environment{
 			CRDDirectoryPaths:     crdDirs,
 			ErrorIfCRDPathMissing: false,
 			BinaryAssetsDirectory: assetsDir,
+			ControlPlane: envtest.ControlPlane{
+				APIServer: &envtest.APIServer{},
+			},
 		},
-	}, nil
+	}
+
+	// Give the API server a service CIDR of each family so it allocates
+	// dual-stack Services. envtest defaults to a single IPv4 range, and a
+	// Service asking for IPv6 or for RequireDualStack is then rejected outright
+	// -- which would leave the deployer's ipFamilies plumbing untestable here.
+	// IPv4 stays first so unqualified Services keep getting an IPv4 cluster IP.
+	// Nothing binds these addresses; the API server only allocates from them.
+	env.testEnv.ControlPlane.APIServer.Configure().
+		Set("service-cluster-ip-range", "10.0.0.0/24,fd00:10:96::/112")
+
+	return env, nil
 }
 
 // Start starts the envtest environment if not already started.
