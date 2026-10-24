@@ -350,6 +350,27 @@ type Settings struct {
 	// Controls if leader election is disabled. Defaults to false.
 	DisableLeaderElection bool `split_words:"true" default:"false"`
 
+	// LeaderElectionLeaseDuration is the duration that non-leader candidates will wait
+	// after observing a leadership renewal until attempting to acquire leadership of a
+	// led but unrenewed leader slot. It must be greater than LeaderElectionRenewDeadline.
+	// Only used when leader election is enabled (DisableLeaderElection is false).
+	// Defaults to 15s, matching the controller-runtime default.
+	LeaderElectionLeaseDuration time.Duration `split_words:"true" default:"15s"`
+
+	// LeaderElectionRenewDeadline is the interval between attempts by the acting leader to
+	// renew a leadership slot before it stops leading. It must be greater than
+	// LeaderElectionRetryPeriod and less than LeaderElectionLeaseDuration.
+	// Only used when leader election is enabled (DisableLeaderElection is false).
+	// Defaults to 10s, matching the controller-runtime default.
+	LeaderElectionRenewDeadline time.Duration `split_words:"true" default:"10s"`
+
+	// LeaderElectionRetryPeriod is the duration the leader and non-leaders should wait
+	// between attempting acquisition, and the leader between renewals, of leadership.
+	// It must be less than LeaderElectionRenewDeadline.
+	// Only used when leader election is enabled (DisableLeaderElection is false).
+	// Defaults to 2s, matching the controller-runtime default.
+	LeaderElectionRetryPeriod time.Duration `split_words:"true" default:"2s"`
+
 	// EnableAwsEc2Discovery enables dynamic discovery of AWS EC2 instances for Backend resources.
 	// This is disabled by default and must be explicitly enabled by the controller operator.
 	EnableAwsEc2Discovery bool `split_words:"true" default:"false"`
