@@ -1514,7 +1514,7 @@ func (h *RoutesIndex) transformRules(
 ) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, r.Filters, r.Name, srcAnnotations, opts...)
+		extensionRefs, err := h.getExtensionRefs(kctx, src, r.Filters, r.Name, srcAnnotations, opts...)
 
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
@@ -1541,7 +1541,7 @@ func (h *RoutesIndex) transformRules(
 
 func (h *RoutesIndex) getExtensionRefs(
 	kctx krt.HandlerContext,
-	ns string,
+	src ir.ObjectSource,
 	r []gwv1.HTTPRouteFilter,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
@@ -1552,7 +1552,7 @@ func (h *RoutesIndex) getExtensionRefs(
 	}
 	var errs []error
 	for _, ext := range r {
-		policyAtt, err := h.resolveExtension(kctx, ns, ext, ruleName, annotations)
+		policyAtt, err := h.resolveExtension(kctx, src, ext, ruleName, annotations)
 		if policyAtt != nil {
 			for _, o := range opts {
 				o(policyAtt)
@@ -1584,13 +1584,17 @@ func (h *RoutesIndex) getBuiltInRulePolicies(
 	return ret
 }
 
+// resolveExtension resolves a filter on the route identified by src. Filters on a
+// GRPCRoute are converted to HTTPRouteFilters first, so src (not the filter type)
+// decides the from-kind used for ReferenceGrant checks.
 func (h *RoutesIndex) resolveExtension(
 	kctx krt.HandlerContext,
-	ns string,
+	src ir.ObjectSource,
 	ext gwv1.HTTPRouteFilter,
 	ruleName *gwv1.SectionName,
 	annotations map[string]string,
 ) (*ir.PolicyAtt, error) {
+	ns := src.Namespace
 	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
 			// TODO: report error!!
@@ -1630,8 +1634,8 @@ func (h *RoutesIndex) resolveExtension(
 	}
 
 	fromGK := schema.GroupKind{
-		Group: gwv1.GroupVersion.Group,
-		Kind:  "HTTPRoute",
+		Group: src.Group,
+		Kind:  src.Kind,
 	}
 
 	builtinIR, err := h.NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.backends, ruleName, annotations)
@@ -1668,7 +1672,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 	for _, ref := range backendRefs {
 		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
 		// see: https://github.com/kgateway-dev/kgateway/issues/11897
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
+		extensionRefs, _ := h.getExtensionRefs(kctx, src, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
