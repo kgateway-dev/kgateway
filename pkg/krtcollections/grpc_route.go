@@ -45,7 +45,7 @@ func (h *RoutesIndex) transformGRPCRulesToHttp(
 
 		// ignore errors as they are irrelevant, GRPCRoute currently does not support extensionRef
 		// see: https://github.com/kgateway-dev/kgateway/issues/11914
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, convertFiltersToHTTP(r.Filters), r.Name, srcAnnotations, opts...)
+		extensionRefs, _ := h.getExtensionRefs(kctx, src, convertFiltersToHTTP(r.Filters), r.Name, srcAnnotations, opts...)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = ToAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, string(*r.Name), srcLabels), opts...)

@@ -11,3 +11,17 @@ func SetXdsFirstConnectDelayForTest(d time.Duration) (restore func()) {
 	prev := xdsFirstConnectDelayNanos.Swap(int64(d))
 	return func() { xdsFirstConnectDelayNanos.Store(prev) }
 }
+
+// MirrorClusterForTest returns the mirror cluster carried by a built-in route
+// filter policy, or "" when the policy holds no mirror.
+func MirrorClusterForTest(p any) string {
+	b, ok := p.(*builtinPlugin)
+	if !ok || b.filter == nil {
+		return ""
+	}
+	m, ok := b.filter.policy.(*mirrorIr)
+	if !ok {
+		return ""
+	}
+	return m.Cluster
+}
