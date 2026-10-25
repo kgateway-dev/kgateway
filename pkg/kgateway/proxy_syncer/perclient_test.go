@@ -1823,23 +1823,23 @@ func endpointsForClient(ucc ir.UniquelyConnectedClient, name string, hash uint64
 			},
 		},
 	}
-	return UccWithEndpoints{
+	return UccWithEndpoints{&uccEndpointsRow{
 		Client:        ucc,
 		Endpoints:     sharedproto.Wrap(cla),
 		EndpointsHash: hash,
 		endpointsName: name,
-	}
+	}}
 }
 
 func emptyEndpointsForClient(ucc ir.UniquelyConnectedClient, name string, hash uint64) UccWithEndpoints {
-	return UccWithEndpoints{
+	return UccWithEndpoints{&uccEndpointsRow{
 		Client: ucc,
 		Endpoints: sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{
 			ClusterName: name,
 		}),
 		EndpointsHash: hash,
 		endpointsName: name,
-	}
+	}}
 }
 
 func eventuallySingleSnapshot(t *testing.T, snapshots krt.Collection[XdsSnapWrapper]) *envoycache.Snapshot {

@@ -19,7 +19,16 @@ import (
 
 // UccWithEndpoints holds a CLA keyed by (client, backend). Equal results share
 // one interned proto across clients.
+//
+// It is a single pointer so that it is pointer-shaped: krt.Fetch boxes every
+// row it filters into an interface, and EDS assembly fetches all of a client's
+// rows on every endpoint change. A pointer boxes without allocating and copies
+// in 8 bytes; the full row would allocate and copy each time.
 type UccWithEndpoints struct {
+	*uccEndpointsRow
+}
+
+type uccEndpointsRow struct {
 	Client ir.UniquelyConnectedClient
 	// Endpoints holds the interned, read-only CLA. EndpointsHash combines endpoint
 	// content, plugin contributions, and load-balancing context into a 64-bit hash.
@@ -49,6 +58,9 @@ func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName s
 }
 
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
+	if c.uccEndpointsRow == in.uccEndpointsRow {
+		return true
+	}
 	return c.Client.Equals(in.Client) &&
 		c.EndpointsHash == in.EndpointsHash &&
 		c.endpointsName == in.endpointsName
@@ -208,13 +220,13 @@ func NewPerClientEnvoyEndpoints(
 			endpointsHash := combineEndpointHash(resolved.Inputs.EndpointsForBackend.LbEpsEqualityHash, resolved.AdditionalHash, resolved.LoadBalancingHash)
 			candidate := buildClusterLoadAssignment(ucc, resolved)
 			cla := claInterner.Intern(candidate, endpointsHash)
-			u := UccWithEndpoints{
+			u := UccWithEndpoints{&uccEndpointsRow{
 				Client:        ucc,
 				Endpoints:     cla,
 				EndpointsHash: endpointsHash,
 				endpointsName: epName,
 				resourceName:  uccEndpointsResourceName(ucc, epName),
-			}
+			}}
 			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}
 		retainer.keepIfPresent(epName, uccWithEndpointsRet, func() bool { return kgatewayEndpoints.GetKey(epName) != nil })

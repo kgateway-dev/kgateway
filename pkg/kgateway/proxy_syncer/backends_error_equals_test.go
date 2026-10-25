@@ -18,8 +18,8 @@ func TestErrorsEqualComparesNilnessBeforeMessage(t *testing.T) {
 	require.True(t, errorsEqual(errors.New("boom"), errors.New("boom")), "equal messages compare equal")
 	require.False(t, errorsEqual(errors.New("boom"), errors.New("bang")))
 
-	healthy := baseEnvoyCluster{Name: "c", ClusterVersion: 0}
-	errored := baseEnvoyCluster{Name: "c", ClusterVersion: 0, Error: errors.New("")}
+	healthy := baseEnvoyCluster{&baseClusterRow{Name: "c", ClusterVersion: 0}}
+	errored := baseEnvoyCluster{&baseClusterRow{Name: "c", ClusterVersion: 0, Error: errors.New("")}}
 	require.False(t, healthy.Equals(errored), "a base row gaining an error must not compare equal, whatever the message")
 	require.False(t, errored.Equals(healthy))
 

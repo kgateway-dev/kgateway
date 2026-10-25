@@ -41,10 +41,10 @@ func TestPublicationRetainsOnlySupportedBootstrapEndpoints(t *testing.T) {
 				krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{NamespacedName: types.NamespacedName{Namespace: "ns", Name: "gw"}}}),
 				newTestPerClientEndpoints(nil), clusters,
 				clusterScoping{},
-				newTestPerClientEndpoints([]UccWithEndpoints{{
+				newTestPerClientEndpoints([]UccWithEndpoints{{&uccEndpointsRow{
 					Client: ucc, endpointsName: localName, resourceName: uccEndpointsResourceName(ucc, localName),
 					Endpoints: sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: localName}), EndpointsHash: 1,
-				}}),
+				}}}),
 			)
 			g.Eventually(func() bool { return snapshots.GetKey(ucc.ResourceName()) != nil }, time.Second).Should(gomega.BeTrue())
 			snapshot := snapshots.GetKey(ucc.ResourceName()).snap
