@@ -265,6 +265,42 @@ func TestGetRouteChain(t *testing.T) {
 	}
 }
 
+// TestGetRouteChainMultipleDelegatesInRule verifies that each delegate backendRef in a rule
+// maps to only its own children, not to the children of the refs listed before it.
+func TestGetRouteChainMultipleDelegatesInRule(t *testing.T) {
+	a := assert.New(t)
+
+	refA := ir.ObjectSource{Group: "gateway.networking.k8s.io", Kind: "HTTPRoute", Name: "child-a", Namespace: "default"}
+	refB := ir.ObjectSource{Group: "gateway.networking.k8s.io", Kind: "HTTPRoute", Name: "child-b", Namespace: "default"}
+	parent := &ir.HttpRouteIR{
+		ObjectSource: ir.ObjectSource{Name: "parent", Namespace: "default"},
+		Rules: []ir.HttpRouteRuleIR{
+			{
+				Backends: []ir.HttpBackendOrDelegate{
+					{Delegate: &refA},
+					{Delegate: &refB},
+				},
+			},
+		},
+	}
+	routes := []client.Object{
+		&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "child-a", Namespace: "default"}},
+		&gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "child-b", Namespace: "default"}},
+	}
+
+	q := newQueries(t, routes...)
+	routeInfo := q.GetRouteChain(krt.TestingDummyContext{}, context.TODO(), parent, nil, gwv1.ParentReference{})
+	a.NotNil(routeInfo)
+
+	for _, ref := range []ir.ObjectSource{refA, refB} {
+		children, err := routeInfo.GetChildrenForRef(ref)
+		a.NoError(err)
+		if a.Len(children, 1, "ref %s should only resolve its own child", ref.Name) {
+			a.Equal(ref.Name, children[0].Object.GetName())
+		}
+	}
+}
+
 func TestRouteKeyMatches(t *testing.T) {
 	parents := []client.Object{
 		nil,
