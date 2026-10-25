@@ -1086,17 +1086,11 @@ func translateTLSConfig(
 		return nil, err
 	}
 
-	// Validate that VerifySubjectAltNames requires a trusted CA to be configured
-	hasTrustedCA := resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0
-	if len(tlsConfig.VerifySubjectAltNames) > 0 && !hasTrustedCA {
-		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
-	}
-
 	// Apply client certificate validation if present
 	// Skip if CA cert refs are empty (no validation possible)
 	var caErr error
 	var generated bool
-	if hasTrustedCA {
+	if resolvedValidation != nil && len(resolvedValidation.CACertificateRefs) > 0 {
 		// For AllowInsecureFallback mode, if CA cert fetching fails, skip validation rather than failing the listener
 		// This allows the listener to work without client certs even if the CA cert ConfigMap is missing
 		generated, caErr = applyClientCertificateValidation(kctx, ctx, queries, resolvedValidation, tlsConfig, wellknown.GatewayGVK, gatewayNamespace)
@@ -1144,6 +1138,9 @@ func translateTLSConfig(
 					"error", caErr,
 					"mode", "optional")
 				// Keep Gateway-level validation if ListenerPolicy fetch fails
+				if !subjectAltNamesHaveCA(tlsConfig) {
+					return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+				}
 				return tlsConfig, nil
 			}
 			logger.Error("failed to fetch CA certificate for ListenerPolicy client validation override, failing listener",
@@ -1155,7 +1152,21 @@ func translateTLSConfig(
 		}
 	}
 
+	if !subjectAltNamesHaveCA(tlsConfig) {
+		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+	}
+
 	return tlsConfig, errors.Join(certErr, caErr)
+}
+
+// subjectAltNamesHaveCA reports whether tlsConfig either does not verify subject alt names or has a
+// client CA configured from the Gateway-level or ListenerPolicy validation. SAN verification
+// without a trusted CA is rejected by Envoy, so a CA ref that failed to resolve does not count.
+func subjectAltNamesHaveCA(tlsConfig *ir.TLSConfig) bool {
+	if len(tlsConfig.VerifySubjectAltNames) == 0 {
+		return true
+	}
+	return tlsConfig.ClientCertificateValidation != nil && len(tlsConfig.ClientCertificateValidation.CACertificates) > 0
 }
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
