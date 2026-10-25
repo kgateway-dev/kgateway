@@ -74,7 +74,7 @@ func TestPlainCacheLeavesRewarmedClusterEndpointRequestUnanswered(t *testing.T) 
 func TestRewarmedClusterEndpointRequestIsAnswered(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(adsModeName(ordered), func(t *testing.T) {
-			h := newPolicyHarness(t, ordered, true, true)
+			h := newPolicyHarness(t, ordered, true)
 			eds := warmRewarmStream(h, "c1", "e1")
 
 			h.setSnapshot(rewarmSnapshot("c2", "e1", 2*time.Second))
@@ -95,7 +95,7 @@ func TestRewarmedClusterEndpointRequestIsAnswered(t *testing.T) {
 func TestRewarmAfterEndpointsMovedFirst(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(adsModeName(ordered), func(t *testing.T) {
-			h := newPolicyHarness(t, ordered, true, true)
+			h := newPolicyHarness(t, ordered, true)
 			warmRewarmStream(h, "c1", "e1")
 
 			h.setSnapshot(rewarmSnapshot("c1", "e2", time.Second))
@@ -114,7 +114,7 @@ func TestRewarmAfterEndpointsMovedFirst(t *testing.T) {
 
 // A cluster response that only re-sends clusters unchanged re-defines nothing.
 func TestRewarmIgnoresUnchangedClusters(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	eds := warmRewarmStream(h, "c1", "e1")
 
 	h.setSnapshot(rewarmSnapshot("c2", "e1", time.Second))
@@ -127,7 +127,7 @@ func TestRewarmIgnoresUnchangedClusters(t *testing.T) {
 // cluster first, and that endpoint response already re-warms it; the rule adds
 // nothing.
 func TestRewarmEndsWithAnEndpointResponseThatCarriesTheCluster(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	warmRewarmStream(h, "c1", "e1")
 
 	h.setSnapshot(rewarmSnapshot("c2", "e2", 2*time.Second))
@@ -140,7 +140,7 @@ func TestRewarmEndsWithAnEndpointResponseThatCarriesTheCluster(t *testing.T) {
 // Only the assignments an endpoint response carries are done: one built before
 // the cluster response went out can carry just a newly subscribed name.
 func TestRewarmEndsPerAssignmentSent(t *testing.T) {
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, true)
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true)
 	node := &envoycorev3.Node{Id: "node"}
 	cdsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
 	edsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{"a", "b", "new"}}
@@ -179,7 +179,7 @@ func serviceCluster(name, service string, connectTimeout time.Duration) *envoycl
 // a service shared by two re-defined clusters stays marked until both leave or an
 // endpoint response carries it.
 func TestRewarmTracksTheEndpointResourceName(t *testing.T) {
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, true)
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true)
 	node := &envoycorev3.Node{Id: "node"}
 	cdsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
 	edsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.EndpointType}
@@ -248,7 +248,7 @@ func TestRewarmedClusterWithAServiceNameIsAnswered(t *testing.T) {
 	}
 	for _, ordered := range []bool{false, true} {
 		t.Run(adsModeName(ordered), func(t *testing.T) {
-			h := newPolicyHarness(t, ordered, true, true)
+			h := newPolicyHarness(t, ordered, true)
 			h.setSnapshot(snapshot("c1", time.Second))
 			h.subscribeAndAck(envoyresource.ClusterType, "c1", 1)
 			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{service}})
@@ -271,7 +271,7 @@ func TestRewarmedClusterWithAServiceNameIsAnswered(t *testing.T) {
 // The rule is per stream: a re-definition sent on one stream does not answer
 // another stream's endpoint request.
 func TestRewarmIsPerStream(t *testing.T) {
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, true)
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true)
 	node := &envoycorev3.Node{Id: "node"}
 	cdsRequest := &discoveryv3.DiscoveryRequest{Node: node, TypeUrl: envoyresource.ClusterType}
 	cds := func(timeout time.Duration) *discoveryv3.DiscoveryResponse {

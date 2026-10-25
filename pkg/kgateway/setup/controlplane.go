@@ -313,7 +313,6 @@ func NewControlPlane(
 	xdsAuth bool,
 	certWatcher *certwatcher.CertWatcher,
 	orderedADS bool,
-	suppressNackResend bool,
 	respondOnReconnect bool,
 ) envoycache.SnapshotCache {
 	envoyLoggerAdapter := &slogAdapterForEnvoy{logger: controlPlaneLogger}
@@ -329,9 +328,9 @@ func NewControlPlane(
 
 	hasher := xds.NewNodeRoleHasher()
 	// watchPolicy answers a re-defined cluster's endpoint request even at the held
-	// version, and, when enabled, parks NACKs of the current version and answers a
-	// reconnect's first EDS, RDS and SDS requests even at the held version.
-	policy := newWatchPolicy(newSnapshotCache(hasher, envoyLoggerAdapter), hasher, suppressNackResend, respondOnReconnect)
+	// version and parks NACKs of the current version. When enabled, it also answers
+	// a reconnect's first EDS, RDS and SDS requests even at the held version.
+	policy := newWatchPolicy(newSnapshotCache(hasher, envoyLoggerAdapter), hasher, respondOnReconnect)
 	allCallbacks = chainCallbacks(allCallbacks, policy.callbacks())
 	var snapshotCache envoycache.SnapshotCache = policy
 
