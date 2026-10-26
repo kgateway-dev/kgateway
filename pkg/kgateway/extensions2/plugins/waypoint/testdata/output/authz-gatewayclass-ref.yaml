@@ -72,6 +72,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 8080
@@ -129,6 +130,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 8080
@@ -186,6 +188,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 8080

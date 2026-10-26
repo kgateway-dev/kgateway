@@ -13,8 +13,8 @@ Name|Version|License
 [aws/smithy-go](https://github.com/aws/smithy-go)|v1.27.1|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20260202195803-dba9d589def2|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.14.1-0.20260702184136-1cd1226616f5|Apache License 2.0
-[go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20260529185539-1175069dbb2c|Apache License 2.0
-[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.37.1-0.20260529185539-1175069dbb2c|Apache License 2.0
+[go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.36.1-0.20261017072358-cded3a6731eb|Apache License 2.0
+[go-control-plane/envoy](https://github.com/envoyproxy/go-control-plane)|v1.40.1-0.20261017072358-cded3a6731eb|Apache License 2.0
 [go-control-plane/ratelimit](https://github.com/envoyproxy/go-control-plane)|v0.1.1-0.20250507123352-93990c5ec02f|Apache License 2.0
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.10.1|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
@@ -31,9 +31,9 @@ Name|Version|License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.1.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.32.1|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.43.0|MIT License
-[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.24.0|Apache License 2.0
-[prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.2|Apache License 2.0
-[prometheus/common](https://github.com/prometheus/common)|v0.70.0|Apache License 2.0
+[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.24.1|Apache License 2.0
+[prometheus/client_model](https://github.com/prometheus/client_model)|v0.6.3|Apache License 2.0
+[prometheus/common](https://github.com/prometheus/common)|v0.71.0|Apache License 2.0
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.4.0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.15.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.10.2|Apache License 2.0
@@ -49,9 +49,9 @@ Name|Version|License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.84.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.12|BSD 3-clause "New" or "Revised" License
 [helm/v3](https://helm.sh/helm/v3)|v3.21.3|Apache License 2.0
-[istio.io/api](https://istio.io/api)|v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271|Apache License 2.0
-[istio.io/client-go](https://istio.io/client-go)|v1.30.0-alpha.1.0.20260603032842-2edf997e399d|Apache License 2.0
-[istio.io/istio](https://istio.io/istio)|v0.0.0-20260605182440-f18fd540c0e8|Apache License 2.0
+[istio.io/api](https://istio.io/api)|v1.32.0-alpha.0.0.20261021201554-855754b46d81|Apache License 2.0
+[istio.io/client-go](https://istio.io/client-go)|v1.32.0-alpha.0.0.20261021201855-5a3fa7c63379|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20261026150458-262eedb00987|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.37.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.37.1|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.37.1|Apache License 2.0

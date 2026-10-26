@@ -72,6 +72,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                   principals:
                   - andIds:
                       ids:
@@ -126,6 +127,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                   principals:
                   - andIds:
                       ids:

@@ -1,8 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2/tools
 
-go 1.27.0
-
-toolchain go1.27.3
+go 1.27.3
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint

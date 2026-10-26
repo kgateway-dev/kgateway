@@ -103,6 +103,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 5000
