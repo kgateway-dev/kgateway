@@ -281,6 +281,9 @@ type Settings struct {
 	// When enabled, ingress traffic from ambient-captured gateways (the
 	// ambient.istio.io/redirection=enabled annotation) to Services and ServiceEntries
 	// labeled istio.io/ingress-use-waypoint=true is sent through their Istio waypoint.
+	// The backend must have an Istio waypoint attached and a cluster IP: traffic goes
+	// to the VIP so ztunnel can redirect it, and a headless Service gets a cluster with
+	// no endpoints. See docs/guides/migrating-kgateway-waypoints.md.
 	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
