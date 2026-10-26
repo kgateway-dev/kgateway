@@ -49,12 +49,13 @@ spec:
         - name: backend-service
           port: 443
 ---
-# BackendConfigPolicy with non-existent TLS file paths - should cause validation error in strict mode
-# Reproduces issue: https://github.com/kgateway-dev/kgateway/issues/12336
+# BackendConfigPolicy with TLS files that exist only on the proxy. Translation and
+# strict validation cannot read them, so the policy is accepted in every mode;
+# Envoy reports bad paths when the proxy loads the config.
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
-  name: invalid-tlsfiles-policy
+  name: tlsfiles-policy
   namespace: gwtest
 spec:
   targetRefs:
@@ -63,8 +64,7 @@ spec:
       kind: Service
   tls:
     files:
-      # These file paths don't exist in the proxy filesystem
-      tlsCertificate: "/nonexistent/path/to/cert.pem"
-      tlsKey: "/invalid/path/to/key.pem"
-      rootCA: "/missing/path/to/ca.pem"
+      tlsCertificate: "/etc/proxy-certs/tls.crt"
+      tlsKey: "/etc/proxy-certs/tls.key"
+      rootCA: "/etc/ssl/certs/cacerts-custom.crt"
     sni: "backend.example.com"
