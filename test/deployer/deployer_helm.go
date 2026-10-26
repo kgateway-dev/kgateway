@@ -29,6 +29,8 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	// Register every Envoy type, so the rendered bootstrap can be parsed.
+	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
