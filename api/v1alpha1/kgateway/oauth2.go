@@ -95,8 +95,8 @@ type OAuth2Provider struct {
 	// it becomes reachable. Discovery stops once authorizationEndpoint, tokenEndpoint, endSessionEndpoint, and jwksURI
 	// (when JWT parsing is configured) are all set explicitly, since none of the discovered values are then used.
 	// Discovery is performed by the control plane and trusts the CA certificates of the BackendTLSPolicy attached to
-	// backendRef, so an issuer served under a private or self-signed CA works. The certificate must be valid for the
-	// issuer URI's own host.
+	// backendRef in addition to the system trust store, so an issuer served under a private or self-signed CA works.
+	// The certificate must be valid for the issuer URI's own host.
 	// +optional
 	//
 	// +kubebuilder:validation:Pattern=`^https://([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(:[0-9]{1,5})?(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*/?$`
