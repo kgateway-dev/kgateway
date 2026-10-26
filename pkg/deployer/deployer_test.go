@@ -39,6 +39,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
+	// Register every Envoy type, so the rendered bootstrap can be parsed.
+	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 	deployertest "github.com/kgateway-dev/kgateway/v2/test/deployer"
 	translatortest "github.com/kgateway-dev/kgateway/v2/test/translator"

@@ -32,6 +32,13 @@ Clusters:
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: issuer.example.com
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s
@@ -56,6 +63,13 @@ Clusters:
             name: SYSTEM_CA_CERT
       sni: unrouted.example.com
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 Listeners:
 - address:
     socketAddress:

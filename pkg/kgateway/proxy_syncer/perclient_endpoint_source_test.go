@@ -36,7 +36,7 @@ func newSourceFixture(t *testing.T, state krtcollections.XDSClientState, routed 
 	f := &sourceFixture{}
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
 	f.ucc = ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
-	f.uccs = krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{f.ucc})
+	f.uccs = krt.NewMutableCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{f.ucc})
 	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
 	routes := routeResourcesForClusters(routed)
 	gateways := krt.NewStaticCollection[GatewayXdsResources](nil, []GatewayXdsResources{{
@@ -62,17 +62,17 @@ func newSourceFixture(t *testing.T, state krtcollections.XDSClientState, routed 
 		hash++
 		initialRows = append(initialRows, endpointsForClient(f.ucc, name, hash))
 	}
-	f.rows = krt.NewStaticCollection[UccWithEndpoints](nil, initialRows)
+	f.rows = krt.NewMutableCollection[UccWithEndpoints](nil, initialRows)
 	endpoints := PerClientEnvoyEndpoints{
-		endpoints: f.rows,
-		index:     krtpkg.UnnamedIndex(f.rows, func(ep UccWithEndpoints) []string { return []string{ep.Client.ResourceName()} }),
+		endpoints: f.rows.AsCollection(),
+		index:     krtpkg.UnnamedIndex(f.rows.AsCollection(), func(ep UccWithEndpoints) []string { return []string{ep.Client.ResourceName()} }),
 		sources:   sourceCol,
 		sourcesByCluster: krtpkg.UnnamedIndex(sourceCol, func(ep ir.EndpointsForBackend) []string {
 			return []string{ep.ClusterName}
 		}),
 	}
-	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs, gateways, endpoints,
-		newTestPerClientClustersFromCol(krt.NewStaticCollection[uccWithCluster](nil, clusterRows), f.uccs), clusterScoping{})
+	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs.AsCollection(), gateways, endpoints,
+		newTestPerClientClustersFromCol(krt.NewStaticCollection[uccWithCluster](nil, clusterRows), f.uccs.AsCollection()), clusterScoping{})
 	f.cache = newTestSnapshotCache(t)
 	translator := NewProxyTranslator(f.cache, state, 15*time.Second, true, clusterScoping{})
 	f.snapshots.RegisterBatch(func(events []krt.Event[XdsSnapWrapper]) {
