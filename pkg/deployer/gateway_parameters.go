@@ -1,8 +1,6 @@
 package deployer
 
 import (
-	"istio.io/api/annotation"
-	"istio.io/api/label"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -17,13 +15,12 @@ const DefaultIstioProxyImageTag = "1.31.0"
 
 // Inputs is the set of options used to configure gateway/inference pool deployment.
 type Inputs struct {
-	Dev                      bool
-	IstioAutoMtlsEnabled     bool
-	ControlPlane             ControlPlaneInfo
-	ImageInfo                *ImageInfo
-	CommonCollections        *collections.CommonCollections
-	GatewayClassName         string
-	WaypointGatewayClassName string
+	Dev                  bool
+	IstioAutoMtlsEnabled bool
+	ControlPlane         ControlPlaneInfo
+	ImageInfo            *ImageInfo
+	CommonCollections    *collections.CommonCollections
+	GatewayClassName     string
 }
 
 // UpdateSecurityContexts updates the security contexts in the gateway parameters.
@@ -79,63 +76,12 @@ type InMemoryGatewayParametersConfig struct {
 	ControllerName             string
 	ClassName                  string
 	ImageInfo                  *ImageInfo
-	WaypointClassName          string
 	OmitDefaultSecurityContext bool
 }
 
 // GetInMemoryGatewayParameters returns an in-memory GatewayParameters for envoy-based gateways.
-//
-// Priority order:
-// 1. Waypoint class name (must check before envoy controller since waypoint uses the same controller)
-// 2. Default gateway parameters (for envoy controller or any other controller)
-//
-// This allows users to define their own GatewayClass that acts very much like a
-// built-in class but is not an exact name match.
 func GetInMemoryGatewayParameters(cfg InMemoryGatewayParametersConfig) (*kgateway.GatewayParameters, error) {
-	if cfg.ClassName == cfg.WaypointClassName {
-		return defaultWaypointGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
-	}
 	return defaultGatewayParameters(cfg.ImageInfo, cfg.OmitDefaultSecurityContext), nil
-}
-
-// defaultWaypointGatewayParameters returns an in-memory GatewayParameters with default values
-// set for the waypoint deployment.
-func defaultWaypointGatewayParameters(imageInfo *ImageInfo, omitDefaultSecurityContext bool) *kgateway.GatewayParameters {
-	gwp := defaultGatewayParameters(imageInfo, omitDefaultSecurityContext)
-
-	// Ensure Service is initialized before adding ports
-	if gwp.Spec.Kube.Service == nil {
-		gwp.Spec.Kube.Service = &kgateway.Service{}
-	}
-
-	gwp.Spec.Kube.Service.Type = new(corev1.ServiceTypeClusterIP)
-
-	if gwp.Spec.Kube.Service.Ports == nil {
-		gwp.Spec.Kube.Service.Ports = []kgateway.Port{}
-	}
-
-	// Similar to labeling in kubernetes, this is used to identify the service as a waypoint service.
-	meshPort := kgateway.Port{
-		Port: wellknown.IstioWaypointPort,
-	}
-	gwp.Spec.Kube.Service.Ports = append(gwp.Spec.Kube.Service.Ports, meshPort)
-
-	if gwp.Spec.Kube.PodTemplate == nil {
-		gwp.Spec.Kube.PodTemplate = &kgateway.Pod{}
-	}
-	if gwp.Spec.Kube.PodTemplate.ExtraLabels == nil {
-		gwp.Spec.Kube.PodTemplate.ExtraLabels = make(map[string]string)
-	}
-	gwp.Spec.Kube.PodTemplate.ExtraLabels[label.IoIstioDataplaneMode.Name] = "ambient"
-
-	// do not have zTunnel resolve DNS for us - this can cause traffic loops when we're doing
-	// outbound based on DNS service entries
-	// TODO do we want this on the north-south gateway class as well?
-	if gwp.Spec.Kube.PodTemplate.ExtraAnnotations == nil {
-		gwp.Spec.Kube.PodTemplate.ExtraAnnotations = make(map[string]string)
-	}
-	gwp.Spec.Kube.PodTemplate.ExtraAnnotations[annotation.AmbientDnsCapture.Name] = "false"
-	return gwp
 }
 
 // defaultGatewayParameters returns an in-memory GatewayParameters with the default values

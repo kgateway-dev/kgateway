@@ -31,8 +31,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_DEFAULT_IMAGE_REGISTRY":                    "my-registry",
 		"KGW_DEFAULT_IMAGE_TAG":                         "my-tag",
 		"KGW_DEFAULT_IMAGE_PULL_POLICY":                 "Always",
-		"KGW_WAYPOINT_LOCAL_BINDING":                    "true",
-		"KGW_INGRESS_USE_WAYPOINTS":                     "false",
+		"KGW_INGRESS_USE_WAYPOINTS":                     "true",
 		"KGW_LOG_LEVEL":                                 "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":             `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
 		"KGW_ENABLE_ORDERED_ADS":                        "false",
@@ -53,7 +52,6 @@ func allEnvVarsSet() map[string]string {
 		"KGW_TRANSLATION_DEBOUNCE_MAX":                  "250ms",
 		"KGW_POLICY_MERGE":                              `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 		"KGW_GATEWAY_CLASS_PARAMETERS_REFS":             `{"kgateway":{"name":"custom-gwp","namespace":"infra"}}`,
-		"KGW_ENABLE_WAYPOINT":                           "true",
 		"KGW_XDS_AUTH":                                  "false",
 		"KGW_XDS_TLS":                                   "true",
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES":  "false",
@@ -103,8 +101,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "cr.kgateway.dev",
 				DefaultImageTag:                       "",
 				DefaultImagePullPolicy:                "IfNotPresent",
-				WaypointLocalBinding:                  false,
-				IngressUseWaypoints:                   true,
+				IngressUseWaypoints:                   false,
 				LogLevel:                              "info",
 				DiscoveryNamespaceSelectors:           "[]",
 				EnableOrderedAds:                      true,
@@ -128,7 +125,6 @@ func TestSettings(t *testing.T) {
 				TranslationDebounce:                   10 * time.Millisecond,
 				TranslationDebounceMax:                100 * time.Millisecond,
 				PolicyMerge:                           "{}",
-				EnableWaypoint:                        false,
 				XdsAuth:                               true,
 				XdsTLS:                                false,
 				EnableExperimentalGatewayAPIFeatures:  true,
@@ -157,8 +153,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "my-registry",
 				DefaultImageTag:                       "my-tag",
 				DefaultImagePullPolicy:                "Always",
-				WaypointLocalBinding:                  true,
-				IngressUseWaypoints:                   false,
+				IngressUseWaypoints:                   true,
 				LogLevel:                              "debug",
 				DiscoveryNamespaceSelectors:           `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
 				EnableOrderedAds:                      false,
@@ -178,7 +173,6 @@ func TestSettings(t *testing.T) {
 				TranslationDebounce:                   25 * time.Millisecond,
 				TranslationDebounceMax:                250 * time.Millisecond,
 				PolicyMerge:                           `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
-				EnableWaypoint:                        true,
 				XdsAuth:                               false,
 				XdsTLS:                                true,
 				EnableExperimentalGatewayAPIFeatures:  false,
@@ -317,8 +311,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "cr.kgateway.dev",
 				DefaultImageTag:                       "",
 				DefaultImagePullPolicy:                "IfNotPresent",
-				WaypointLocalBinding:                  false,
-				IngressUseWaypoints:                   true,
+				IngressUseWaypoints:                   false,
 				LogLevel:                              "info",
 				DiscoveryNamespaceSelectors:           "[]",
 				EnableOrderedAds:                      true,
@@ -488,4 +481,73 @@ type validateExpectedEnvs struct {
 	FieldSSLConfig string `split_words:"true"`
 	// Field with acronym and split_words:false
 	FieldHTTPConfig string `split_words:"false"`
+}
+
+func TestDeprecatedEnableWaypoint(t *testing.T) {
+	tests := []struct {
+		name    string
+		envVars map[string]string
+		want    bool
+		wantErr string
+	}{
+		{
+			name: "neither set",
+			want: false,
+		},
+		{
+			name:    "deprecated true enables ingress-use-waypoint",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "true"},
+			want:    true,
+		},
+		{
+			name:    "deprecated false leaves it disabled",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "false"},
+			want:    false,
+		},
+		{
+			name:    "explicit false wins over deprecated true",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "true", "KGW_INGRESS_USE_WAYPOINTS": "false"},
+			want:    false,
+		},
+		{
+			name:    "explicit true wins over deprecated false",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "false", "KGW_INGRESS_USE_WAYPOINTS": "true"},
+			want:    true,
+		},
+		{
+			name:    "invalid deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please"},
+			wantErr: "KGW_ENABLE_WAYPOINT",
+		},
+		{
+			name:    "explicit value wins over an empty deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "", "KGW_INGRESS_USE_WAYPOINTS": "true"},
+			want:    true,
+		},
+		{
+			name:    "explicit value wins over a malformed deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please", "KGW_INGRESS_USE_WAYPOINTS": "false"},
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, k := range []string{"KGW_ENABLE_WAYPOINT", "KGW_INGRESS_USE_WAYPOINTS"} {
+				// t.Setenv restores the original value; Unsetenv clears it for this case.
+				t.Setenv(k, "")
+				require.NoError(t, os.Unsetenv(k))
+			}
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
+			s, err := BuildSettings()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, s.IngressUseWaypoints)
+		})
+	}
 }
