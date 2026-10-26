@@ -21,7 +21,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
@@ -127,10 +126,10 @@ func constructOAuth2(
 }
 
 // upstreamTLSValidationForBackend returns the trust material from the BackendTLSPolicy in
-// effect on backend, resolved with the same MergePolicies the backend translator uses so that
-// discovery trusts what the proxy does. An invalid effective policy is an error rather than a
-// silent fallback to the system trust store. BackendConfigPolicy is not consulted.
-// A nil result means the system trust store.
+// effect on backend, picked by the same creation-time/ref winner rule the BackendTLSPolicy
+// plugin merges with, so that discovery trusts what the proxy does. An invalid effective
+// policy is an error rather than a silent fallback to the system trust store.
+// BackendConfigPolicy is not consulted. A nil result means the system trust store.
 func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamTLSValidation, error) {
 	if backend == nil {
 		return nil, nil
@@ -140,7 +139,7 @@ func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamT
 		return nil, nil
 	}
 
-	effective := backendtlspolicy.MergePolicies(attached)
+	effective := attached[ir.WinnerPolicyIndexByCreationTimeAndRef(attached)]
 	if len(effective.Errors) > 0 {
 		return nil, fmt.Errorf("BackendTLSPolicy in effect on the issuer backend is invalid: %w",
 			errors.Join(effective.Errors...))

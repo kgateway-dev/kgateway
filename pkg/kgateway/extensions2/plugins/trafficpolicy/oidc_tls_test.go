@@ -545,7 +545,7 @@ func TestUpstreamTLSValidationForBackend(t *testing.T) {
 			want: winnerCA,
 		},
 		{
-			// The backend translator collapses multiple attachments through MergePolicies,
+			// The backend translator collapses multiple attachments to a single winner,
 			// which picks the oldest. Scanning attachments in slice order would disagree.
 			name: "several policies resolve to the merge winner, not the first attachment",
 			backend: backendWithPolicies(map[schema.GroupKind][]ir.PolicyAtt{
