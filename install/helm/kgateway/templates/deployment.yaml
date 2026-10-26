@@ -190,8 +190,8 @@ spec:
             {{- end }}
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: {{ .Values.gatewayClassParametersRefs | toJson | quote }}
-            {{- if .Values.waypoint.enabled }}
-            - name: KGW_ENABLE_WAYPOINT
+            {{- if and .Values.waypoint.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_INGRESS_USE_WAYPOINTS"))) }}
+            - name: KGW_INGRESS_USE_WAYPOINTS
               value: "true"
             {{- end }}
             {{- if and .Values.controller.xds.tls.enabled (not (and .Values.controller.extraEnv (hasKey .Values.controller.extraEnv "KGW_XDS_TLS"))) }}

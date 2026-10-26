@@ -52,13 +52,6 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 	return getSupportedFeatures(exemptFeatures)
 }
 
-// GetSupportedFeaturesForWaypointGateway returns the supported features for the waypoint Gateway class.
-// Waypoint gateways have similar support to standard gateways but may have some differences.
-func GetSupportedFeaturesForWaypointGateway(enableExperimentalGatewayAPIFeatures bool) []gwv1.SupportedFeature {
-	// For now, waypoint gateways support the same features as standard gateways
-	return GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures)
-}
-
 // GetCommonExemptFeatures returns the set of features that are commonly unsupported across all gateway classes.
 // Exported for use in the conformance test suite.
 func GetCommonExemptFeatures() sets.Set[features.Feature] {

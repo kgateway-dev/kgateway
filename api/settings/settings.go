@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 // ValidationMode determines how invalid routes and policies are handled during translation.
@@ -279,16 +282,14 @@ type Settings struct {
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
 
-	// WaypointLocalBinding will make the waypoint bind to a loopback address,
-	// so that only the zTunnel can make connections to it. This requires the zTunnel
-	// shipped with Istio 1.26.0+.
-	WaypointLocalBinding bool `split_words:"true" default:"false"`
-
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
-	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation and
-	// istio.io/ingress-use-waypoint=true label will be redirected through a waypoint proxy.
-	// The feature is enabled by default and can be disabled by setting this to false.
-	IngressUseWaypoints bool `split_words:"true" default:"true"`
+	// When enabled, ingress traffic from ambient-captured gateways (the
+	// ambient.istio.io/redirection=enabled annotation) to Services and ServiceEntries
+	// labeled istio.io/ingress-use-waypoint=true is sent through their Istio waypoint.
+	// The backend must have an Istio waypoint attached and a cluster IP: traffic goes
+	// to the VIP so ztunnel can redirect it, and a headless Service gets a cluster with
+	// no endpoints. See docs/guides/migrating-kgateway-waypoints.md.
+	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
 	// Defaults to "info" if not set.
@@ -377,9 +378,6 @@ type Settings struct {
 	TranslationDebounceMax time.Duration `split_words:"true" default:"100ms"`
 
 	PolicyMerge string `split_words:"true" default:"{}"`
-
-	// EnableWaypoint enables kgateway to translate istio waypoints
-	EnableWaypoint bool `split_words:"true" default:"false"`
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
@@ -562,5 +560,41 @@ func BuildSettings() (*Settings, error) {
 	if err := envconfig.Process("KGW", settings); err != nil {
 		return settings, err
 	}
+	if err := applyDeprecatedEnableWaypoint(settings); err != nil {
+		return settings, err
+	}
 	return settings, nil
+}
+
+var logger = logging.New("settings")
+
+const (
+	ingressUseWaypointsEnv = "KGW_INGRESS_USE_WAYPOINTS"
+	// deprecatedEnableWaypointEnv used to turn on the waypoint plugin, which also
+	// enabled ingress-use-waypoint while KGW_INGRESS_USE_WAYPOINTS defaulted to true.
+	deprecatedEnableWaypointEnv = "KGW_ENABLE_WAYPOINT"
+)
+
+// applyDeprecatedEnableWaypoint keeps KGW_ENABLE_WAYPOINT=true working for
+// deployments that don't set KGW_INGRESS_USE_WAYPOINTS, such as raw manifests or
+// a new image running under an older chart. An explicit KGW_INGRESS_USE_WAYPOINTS
+// always wins.
+func applyDeprecatedEnableWaypoint(settings *Settings) error {
+	val, ok := os.LookupEnv(deprecatedEnableWaypointEnv)
+	if !ok {
+		return nil
+	}
+	// Check the override before parsing, so an empty or malformed legacy value
+	// can't block startup when the new variable is set.
+	if _, set := os.LookupEnv(ingressUseWaypointsEnv); set {
+		logger.Warn(deprecatedEnableWaypointEnv+" is deprecated and ignored because "+ingressUseWaypointsEnv+" is set", "value", val)
+		return nil
+	}
+	enabled, err := strconv.ParseBool(val)
+	if err != nil {
+		return fmt.Errorf("envconfig.Process: assigning %s: converting '%s' to type bool: %w", deprecatedEnableWaypointEnv, val, err)
+	}
+	logger.Warn(deprecatedEnableWaypointEnv+" is deprecated; set "+ingressUseWaypointsEnv+" instead", "value", val)
+	settings.IngressUseWaypoints = enabled
+	return nil
 }
