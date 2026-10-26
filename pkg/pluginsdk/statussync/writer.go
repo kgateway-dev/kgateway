@@ -97,11 +97,6 @@ type Writer[O controllers.ComparableObject, S any] struct {
 	// Used to preserve multi-writer fields owned by other controllers or subsystems
 	// (e.g. route status parents, policy ancestors, gateway addresses).
 	Merge func(current O, desired S) S
-
-	// OnSync, when set, is called once per ApplyStatus invocation for which Desired returns
-	// true. current is the last object read from the collection and status the last merged
-	// status. Used to record status sync metrics.
-	OnSync func(res Resource, current O, status S, took time.Duration, err error)
 }
 
 var _ ResourceStatusSyncer = Writer[*gwv1.Gateway, *gwv1.GatewayStatus]{}
@@ -184,23 +179,20 @@ func (w Writer[O, S]) decide(res Resource, current O) writeDecision[S] {
 	return writeDecision[S]{status: merged, has: true, write: true}
 }
 
-// attemptOutcome is what the last write attempt saw, carried out of the retry closure for
-// OnSync. Keeping it in one value rather than three loose variables means the reader does not
-// have to work out which attempt last assigned each of them: they are always from the same one.
-type attemptOutcome[O controllers.ComparableObject, S any] struct {
-	current O
-	merged  S
-	has     bool
+func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
+	if result, ok := w.apply(ctx, obj); ok {
+		recordStatusWrite(obj.GroupVersionKind.Kind, result)
+	}
 }
 
-func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
-	start := time.Now()
+// apply writes the desired status for obj and reports the outcome. ok is false when there was
+// nothing to write: the resource is gone or the writer has no status for it.
+func (w Writer[O, S]) apply(ctx context.Context, obj Resource) (result writeResult, ok bool) {
 	// Log fields are passed inline rather than bound with logger.With: With clones the handler
 	// and preformats the attrs whatever the level, and the two dominant outcomes here are the
 	// debug-only "nothing to do" skips, on every informer event of every registered kind.
-	var last attemptOutcome[O, S]
 	err := retryStatusWrite(ctx, func() error {
-		last = attemptOutcome[O, S]{}
+		result = ""
 		// Fetch the current object so we can preserve status written by other controllers or
 		// subsystems, and suppress writes that would be no-ops.
 		current := w.Current(obj)
@@ -218,11 +210,11 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
 			return nil
 		}
-		last = attemptOutcome[O, S]{current: current, merged: decision.status, has: true}
 
 		if !decision.write {
 			logger.Debug("status already up to date, skipping status update",
 				"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
+			result = writeResultUnchanged
 			return nil
 		}
 
@@ -239,12 +231,14 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 				// informer delivers the newer object.
 				logger.Debug("updating stale status, skipping",
 					"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
+				result = writeResultConflict
 				return nil
 			}
 			if apierrors.IsNotFound(err) {
 				// ignore status write after resource was deleted.
 				logger.Debug("resource not found, skipping status update",
 					"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
+				result = writeResultNotFound
 				return nil
 			}
 			logger.Error("error updating status",
@@ -252,15 +246,20 @@ func (w Writer[O, S]) ApplyStatus(ctx context.Context, obj Resource) {
 			return err
 		}
 		logger.Debug("updated status", "kind", w.Name, "namespace", obj.Namespace, "name", obj.Name)
+		result = writeResultWritten
 		return nil
 	})
 	if err != nil {
 		logger.Error("failed to sync status after retries",
 			"kind", w.Name, "namespace", obj.Namespace, "name", obj.Name, "error", err)
+		if ctx.Err() != nil {
+			// Shutdown or lost leadership cut the retries short; the write did not fail.
+			return "", false
+		}
+		// Only the write returns an error, so the last attempt reached it.
+		return writeResultError, true
 	}
-	if last.has && w.OnSync != nil {
-		w.OnSync(obj, last.current, last.merged, time.Since(start), err)
-	}
+	return result, result != ""
 }
 
 // MergePolicyAncestorStatuses preserves PolicyStatus ancestors owned by other controllers,

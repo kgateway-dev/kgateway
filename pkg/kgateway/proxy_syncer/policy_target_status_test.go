@@ -130,7 +130,7 @@ func newPolicyTargetFixtureWithOptions(t *testing.T, opts []StatusSyncerOption, 
 	t.Helper()
 	krtopts := krtutil.NewKrtOptions(t.Context().Done(), nil)
 
-	gateways := krt.NewStaticCollection(nil, []*gwv1.Gateway{policyTargetGateway("gw", "http")},
+	gateways := krt.NewMutableCollection(nil, []*gwv1.Gateway{policyTargetGateway("gw", "http")},
 		krtopts.ToOptions("Gateways")...)
 	ruleName := gwv1.SectionName("rule-a")
 	routes := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{{
@@ -165,7 +165,7 @@ func newPolicyTargetFixtureWithOptions(t *testing.T, opts []StatusSyncerOption, 
 	}, krtopts.ToOptions("ServiceEntryBackends")...)
 
 	resolvers := newPolicyTargetResolvers(&collections.CommonCollections{
-		RawGateways:     gateways,
+		RawGateways:     gateways.AsCollection(),
 		RawListenerSets: listenerSets,
 		RawHTTPRoutes:   routes,
 		RawTCPRoutes:    tcpRoutes,
@@ -178,8 +178,8 @@ func newPolicyTargetFixtureWithOptions(t *testing.T, opts []StatusSyncerOption, 
 		},
 	}, processStatusSyncerOptions(opts...).policyTargetResolvers)
 
-	policyCol := krt.NewStaticCollection(nil, policies, krtopts.ToOptions("Policies")...)
-	contributions := policyTargetStatusContributions(policyCol, resolvers, krtopts)
+	policyCol := krt.NewMutableCollection(nil, policies, krtopts.ToOptions("Policies")...)
+	contributions := policyTargetStatusContributions(policyCol.AsCollection(), resolvers, krtopts)
 	require.True(t, contributions.WaitUntilSynced(t.Context().Done()), "contributions should sync")
 	return policyTargetFixture{gateways: gateways, policies: policyCol, contributions: contributions}
 }
@@ -609,7 +609,7 @@ func runStatusSummaryRemoval(
 
 	// The producer, fed the way the proxy syncer feeds it: policy wrappers derived from the
 	// informer, resolved against a Service collection that starts without the target.
-	services := krt.NewStaticCollection[*corev1.Service](nil, nil, krtopts.ToOptions("Services")...)
+	services := krt.NewMutableCollection[*corev1.Service](nil, nil, krtopts.ToOptions("Services")...)
 	policies := krt.NewCollection(btps, func(_ krt.HandlerContext, p *gwv1.BackendTLSPolicy) *ir.PolicyWrapper {
 		return &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{Group: gvk.Group, Kind: gvk.Kind, Namespace: p.Namespace, Name: p.Name},
@@ -619,7 +619,7 @@ func runStatusSummaryRemoval(
 		}
 	}, krtopts.ToOptions("BackendTLSPolicyWrappers")...)
 	targetContributions := policyTargetStatusContributions(policies,
-		newPolicyTargetResolvers(&collections.CommonCollections{Services: services}, nil, nil), krtopts)
+		newPolicyTargetResolvers(&collections.CommonCollections{Services: services.AsCollection()}, nil, nil), krtopts)
 
 	// Gateway translation's contribution, standing in for a second targetRef that is routed.
 	gatewayAncestor := gwv1.ParentReference{
@@ -656,7 +656,7 @@ func runStatusSummaryRemoval(
 		func(om metav1.ObjectMeta, st gwv1.PolicyStatus) *gwv1.BackendTLSPolicy {
 			return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 		},
-		buildDesired, pluginutils.NoConditionErrorMetric,
+		buildDesired,
 	)(sdk.PolicyStatusInputs{
 		Collections:           statusCollections,
 		StatusContributions:   contributions,

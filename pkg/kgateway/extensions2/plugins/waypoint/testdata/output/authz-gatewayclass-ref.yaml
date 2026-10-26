@@ -29,8 +29,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_infra_svc-b_9000
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -74,6 +72,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 8080
@@ -131,6 +130,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 8080
@@ -188,6 +188,7 @@ Listeners:
                               name: :method
                               stringMatch:
                                 exact: GET
+                                ignoreCase: true
                       - orRules:
                           rules:
                           - destinationPort: 8080

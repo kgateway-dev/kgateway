@@ -208,11 +208,19 @@ controller:
     renewDeadline: ""
     # -- Duration between leader election attempts (acquire or renew).
     retryPeriod: ""
-  # -- Configure TLS settings for the xDS gRPC servers.
+  # -- Configure the xDS gRPC servers.
   xds:
     tls:
       # -- Enable TLS encryption for xDS communication. When enabled, the xDS server (port 9977) uses TLS. You must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
       enabled: false
+    # -- Scope each gateway proxy's backend resources across CDS, EDS, LDS and SDS. A value left empty sets nothing, so the controller uses its own default. A variable of the same name in `controller.extraEnv` takes precedence over each value here.
+    scoping:
+      # -- `ALL` sends every discovered backend's cluster (CDS), endpoints (EDS), and backend-owned listeners (LDS) and secrets (SDS) to every gateway proxy. `REFERENCED` sends only referenced clusters, including clusters that only filters call, along with their endpoints, backend-owned listeners and secrets. Gateway-level listeners and secrets are unaffected. This shrinks proxy memory, config dumps and per-cluster stats where many Services are discovered and few are routed. `REFERENCED` is experimental. Case-insensitive. The controller default is `ALL`. Sets `KGW_XDS_SCOPING_MODE`.
+      mode: ""
+      # -- With `REFERENCED`, how long routes, listeners and secrets naming a cluster new to a proxy are held after the controller first publishes that cluster. This gives the cluster time to reach Envoy first, but does not guarantee delivery or application order. The controller default is `2s`. Sets `KGW_CLUSTER_REFERENCE_AHEAD`.
+      referenceAhead: ""
+      # -- With `REFERENCED`, how long a cluster stays published after the controller publishes the route update that stops naming it. This gives the update time to reach Envoy before the cluster is removed, but does not guarantee delivery or application order. The controller default is `5s`. Sets `KGW_CLUSTER_DEREFERENCE_GRACE`.
+      dereferenceGrace: ""
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false
   # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
@@ -311,7 +319,13 @@ waypoint:
 validation:
   # -- Validation level. Accepted values: "standard" or "strict" (case-insensitive).
   #    Standard replaces invalid routes with a direct 500 response and continues applying valid configuration.
-  #    Strict adds xDS preflight validation and blocks snapshots that would NACK in Envoy.
+  #    It does not run Envoy, so configuration that only Envoy can reject, such as an invalid RE2 regex in a
+  #    route matcher, is still sent; Envoy then NACKs the update and keeps its last accepted route configuration.
+  #    Strict also runs targeted Envoy validation, such as for routes, clusters, and security-related policies,
+  #    and replaces routes that fail with a direct 500 response. A rule with an invalid matcher, such as an invalid
+  #    RE2 regex, is dropped instead of replaced. This reduces the risk that Envoy NACKs the update,
+  #    but does not prevent all NACKs, because the complete generated configuration is not validated.
+  #    Strict mode does not keep a previous version of an invalid route.
   #    Default is "standard".
   level: standard
 

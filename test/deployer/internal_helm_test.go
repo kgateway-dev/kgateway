@@ -144,6 +144,12 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 		return nil
 	}
 
+	// Bind override for the KGW_LISTENER_BIND_IPV6=false deployment mode
+	bindIpv4Override := func(inputs *pkgdeployer.Inputs) pkgdeployer.HelmValuesGenerator {
+		inputs.CommonCollections.Settings.ListenerBindIpv6 = false
+		return nil
+	}
+
 	tests := []HelmTestCase{
 		{
 			Name:      "basic gateway with default gatewayclass and no gwparams",
@@ -158,6 +164,34 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"envoy bootstrap local cluster should use EDS for multi-zone locality distribution")
 				assert.Contains(t, outputYaml, "eds_cluster_config:",
 					"envoy bootstrap local cluster should request endpoints over ADS")
+				assert.NotContains(t, outputYaml, "overload_manager:",
+					"envoy bootstrap should not configure a downstream connection limit unless opted in")
+				// The readiness and stats listeners must bind the same family as the
+				// translated data-plane listeners. An IPv4 wildcard is unreachable on
+				// the pod address in an IPv6-only cluster, so the kubelet probe never
+				// succeeds and the proxy never goes Ready.
+				assert.Contains(t, outputYaml, `address: "::"`,
+					"the proxy's own listeners should bind the IPv6 wildcard by default")
+				assert.Contains(t, outputYaml, "ipv4_compat: true",
+					"the IPv6 wildcard bind should still accept IPv4 clients")
+				assert.NotContains(t, outputYaml, "address: 0.0.0.0",
+					"no listener should bind the IPv4 wildcard when ListenerBindIpv6 is set")
+			},
+		},
+		{
+			// Same gateway, but with KGW_LISTENER_BIND_IPV6=false: the bootstrap
+			// listeners follow the setting back to IPv4 rather than pinning a family.
+			Name:                        "gateway with ipv6 listener bind disabled",
+			InputFile:                   "envoy-bind-ipv4-only",
+			HelmValuesGeneratorOverride: bindIpv4Override,
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "address: 0.0.0.0",
+					"the proxy's own listeners should bind the IPv4 wildcard when ListenerBindIpv6 is disabled")
+				assert.NotContains(t, outputYaml, `address: "::"`,
+					"no listener should bind the IPv6 wildcard when ListenerBindIpv6 is disabled")
+				assert.NotContains(t, outputYaml, "ipv4_compat",
+					"ipv4_compat is only valid on an IPv6 bind address")
 			},
 		},
 		{
@@ -238,6 +272,17 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 			InputFile: "envoy-dns-resolver-zero",
 		},
 		{
+			Name:      "envoy max downstream connections override",
+			InputFile: "envoy-max-downstream-connections",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "envoy.resource_monitors.global_downstream_max_connections",
+					"bootstrap should configure the global downstream max connections resource monitor")
+				assert.Contains(t, outputYaml, "max_active_downstream_connections: 5000",
+					"maxDownstreamConnections from GatewayParameters should be rendered")
+			},
+		},
+		{
 			Name:      "envoy readiness listener proxy protocol",
 			InputFile: "envoy-readiness-listener-proxy-protocol",
 			Validate: func(t *testing.T, outputYaml string) {
@@ -294,6 +339,24 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"Gateway envoy extra arg should be present in the rendered Deployment")
 				assert.Less(t, gwcIdx, gwIdx,
 					"GatewayClass extraArgs should be rendered before Gateway extraArgs so Gateway can win with last-arg semantics")
+			},
+		},
+		{
+			// Envoy rejects a repeated flag, so drain flags in extraArgs must
+			// replace the chart defaults rather than be appended after them.
+			Name:      "envoy drain args override",
+			InputFile: "envoy-drain-args-override",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+
+				assert.Equal(t, 1, strings.Count(outputYaml, "- --drain-time-s"),
+					"--drain-time-s should be rendered once")
+				assert.Equal(t, 1, strings.Count(outputYaml, "- --drain-strategy"),
+					"--drain-strategy should be rendered once")
+				assert.Contains(t, outputYaml, "- gradual",
+					"the extraArgs drain strategy should win")
+				assert.NotContains(t, outputYaml, "- immediate",
+					"the default drain strategy should be omitted")
 			},
 		},
 		{
@@ -369,6 +432,21 @@ wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQBtestcertdata
 					"second CIDR range should be present")
 				assert.Contains(t, outputYaml, "type: LoadBalancer",
 					"Service type should be LoadBalancer")
+			},
+		},
+		{
+			// Without these fields the only way to get a dual-stack proxy Service
+			// was a serviceOverlay patch.
+			Name:      "gateway with service ipFamilies and ipFamilyPolicy",
+			InputFile: "service-ip-families",
+			Validate: func(t *testing.T, outputYaml string) {
+				t.Helper()
+				assert.Contains(t, outputYaml, "ipFamilyPolicy: RequireDualStack",
+					"ipFamilyPolicy should be set on the Service")
+				// Order matters: ipFamilies[0] picks the primary family, so the
+				// list has to reach the Service in the order it was written.
+				assert.Contains(t, outputYaml, "ipFamilies:\n  - IPv6\n  - IPv4",
+					"ipFamilies should be set on the Service in the configured order")
 			},
 		},
 		{

@@ -68,6 +68,9 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		"TestBackendConfigPolicyUpstreamProxyProtocol": {
 			Manifests: []string{upstreamProxyProtocolManifest},
 		},
+		"TestBackendConfigPolicyTunnel": {
+			Manifests: []string{nginxManifest, tunnelManifest},
+		},
 	}
 	return &testingSuite{
 		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
@@ -325,6 +328,36 @@ func (s *testingSuite) TestBackendConfigPolicyUpstreamProxyProtocol() {
 		curl.WithHostHeader("example.com"),
 		curl.WithPort(80),
 	)
+}
+
+// TestBackendConfigPolicyTunnel verifies that traffic to a Backend goes through
+// its HTTP CONNECT proxy.
+func (s *testingSuite) TestBackendConfigPolicyTunnel() {
+	for _, path := range []string{"/http", "/https"} {
+		common.BaseGateway.Send(
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       gomega.ContainSubstring(testdefaults.NginxResponse),
+			},
+			curl.WithHostHeader("tunnel.example.com"),
+			curl.WithPath(path),
+			curl.WithPort(80),
+		)
+	}
+
+	for _, path := range []string{"/rejected", "/proxy-down"} {
+		common.BaseGateway.SendEventuallyConsistent(
+			s.Ctx,
+			s.T(),
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusServiceUnavailable,
+			},
+			curl.WithHostHeader("tunnel.example.com"),
+			curl.WithPath(path),
+			curl.WithPort(80),
+		)
+	}
 }
 
 const (

@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -36,7 +34,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tenant-a-https
-        statPrefix: http
+        statPrefix: https_8443_tenant-a-https
         useRemoteAddress: true
     name: tenant-a-https
     transportSocket:
@@ -86,7 +84,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tenant-b-https
-        statPrefix: http
+        statPrefix: https_8444_tenant-b-https
         useRemoteAddress: true
     name: tenant-b-https
     transportSocket:
@@ -136,7 +134,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: tenant-c-https
-        statPrefix: http
+        statPrefix: https_8445_tenant-c-https
         useRemoteAddress: true
     name: tenant-c-https
     transportSocket:

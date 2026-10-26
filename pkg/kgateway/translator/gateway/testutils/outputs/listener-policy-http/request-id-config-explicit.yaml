@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -38,7 +36,7 @@ Listeners:
             '@type': type.googleapis.com/envoy.extensions.request_id.uuid.v3.UuidRequestIdConfig
             packTraceReason: false
             useRequestIdForTraceSampling: false
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   metadata:

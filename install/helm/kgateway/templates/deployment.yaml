@@ -175,6 +175,27 @@ spec:
               value: {{ .Values.controller.enableAwsEc2Discovery | quote }}
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: {{ .Values.controller.awsEc2RefreshInterval | quote }}
+            {{- $extraEnv := .Values.controller.extraEnv | default dict }}
+            {{- $xdsScoping := .Values.controller.xds.scoping | default dict }}
+            {{- /* Each entry: controller.xds.scoping key, variable, validator. A set value
+              is validated even when extraEnv overrides it, and an extraEnv value is
+              validated but rendered by the extraEnv loop below, as written. */}}
+            {{- range $setting := list (list "mode" "KGW_XDS_SCOPING_MODE" "kgateway.xdsScopingMode") (list "referenceAhead" "KGW_CLUSTER_REFERENCE_AHEAD" "kgateway.xdsScopingDuration") (list "dereferenceGrace" "KGW_CLUSTER_DEREFERENCE_GRACE" "kgateway.xdsScopingDuration") }}
+            {{- $key := index $setting 0 }}
+            {{- $env := index $setting 1 }}
+            {{- $validator := index $setting 2 }}
+            {{- if hasKey $extraEnv $env }}
+            {{- $_ := include $validator (dict "value" (get $extraEnv $env) "path" (printf "controller.extraEnv.%s" $env)) }}
+            {{- end }}
+            {{- $value := index $xdsScoping $key }}
+            {{- if and (not (kindIs "invalid" $value)) (ne (toString $value) "") }}
+            {{- $validated := include $validator (dict "value" $value "path" (printf "controller.xds.scoping.%s" $key)) }}
+            {{- if not (hasKey $extraEnv $env) }}
+            - name: {{ $env }}
+              value: {{ $validated | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.controller.extraEnv }}
             {{- range $key, $value := .Values.controller.extraEnv }}
             - name: {{ $key }}

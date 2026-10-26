@@ -170,8 +170,9 @@ func NewCommonCollections(
 				Namespace: i.Namespace,
 				Name:      i.Name,
 			},
-			Obj:  i,
-			Data: i.Data,
+			Obj:           i,
+			Data:          i.Data,
+			TLSValidation: &ir.SecretValidation{},
 		}
 		return &res
 	}, krtOptions.ToOptions("secrets")...)

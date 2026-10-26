@@ -50,6 +50,7 @@ type ConfigBuilder struct {
 	filterConfigs ir.TypedFilterConfigMap
 	routes        []*envoyroutev3.Route
 	clusters      []*envoyclusterv3.Cluster
+	listeners     []*envoylistenerv3.Listener
 	secrets       []*envoytlsv3.Secret
 	httpFilters   []*envoy_extensions_filters_network_http_connection_manager_v3.HttpFilter
 }
@@ -82,6 +83,11 @@ func (b *ConfigBuilder) SetRouteConfiguration(config *envoyroutev3.RouteConfigur
 // AddCluster adds a cluster to the builder.
 func (b *ConfigBuilder) AddCluster(cluster *envoyclusterv3.Cluster) {
 	b.clusters = append(b.clusters, cluster)
+}
+
+// AddListener adds a static listener to the bootstrap.
+func (b *ConfigBuilder) AddListener(listener *envoylistenerv3.Listener) {
+	b.listeners = append(b.listeners, listener)
 }
 
 // AddSecret adds a static secret to the bootstrap.
@@ -226,13 +232,22 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 			}},
 		}},
 	}
+	// TLS files exist only on the proxy, not where validation runs, so they
+	// are replaced with placeholders. Bad paths or contents surface when the
+	// proxy loads the config.
+	for _, cluster := range b.clusters {
+		staticResources.Clusters = append(staticResources.Clusters, withPlaceholderTLSFiles(cluster))
+	}
 	// Envoy requires the local cluster to be defined as a static cluster.
-	staticResources.Clusters = append(slices.Clone(b.clusters), &envoyclusterv3.Cluster{
+	staticResources.Clusters = append(staticResources.Clusters, &envoyclusterv3.Cluster{
 		Name:                 validationLocalClusterName,
 		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
 	})
-	if len(b.secrets) > 0 {
-		staticResources.Secrets = append(staticResources.Secrets, b.secrets...)
+	for _, listener := range b.listeners {
+		staticResources.Listeners = append(staticResources.Listeners, withPlaceholderTLSFiles(listener))
+	}
+	for _, secret := range b.secrets {
+		staticResources.Secrets = append(staticResources.Secrets, withPlaceholderTLSFiles(secret))
 	}
 	if clustersReferenceSystemCASecret(b.clusters) && !hasSecretNamed(staticResources.GetSecrets(), eiutils.SystemCaSecretName) {
 		staticResources.Secrets = append(staticResources.Secrets, SystemCAValidationSecretPlaceholder())

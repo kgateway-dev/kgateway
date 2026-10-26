@@ -51,9 +51,9 @@ func newTestPerClientClusters(initial []uccWithCluster) (PerClientEnvoyClusters,
 		clients = append(clients, client)
 	}
 
-	baseCol := krt.NewStaticCollection[baseEnvoyCluster](nil, bases)
+	baseCol := krt.NewMutableCollection[baseEnvoyCluster](nil, bases)
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, clients)
-	pcc := newPerClientEnvoyClusters(context.Background(), krtutil.KrtOptions{}, nil, baseCol, uccs)
+	pcc := newPerClientEnvoyClusters(context.Background(), krtutil.KrtOptions{}, nil, baseCol.AsCollection(), uccs)
 	return pcc, &testClusterCols{bases: baseCol}
 }
 
@@ -88,4 +88,21 @@ func storedClusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniquelyConnec
 	}
 	slices.Sort(names)
 	return names
+}
+
+// newTestPerClientClustersFromCol feeds per-client test rows through the
+// production CDS assembler. Keyed by client, it keeps an empty row after a
+// client's last backend leaves.
+func newTestPerClientClustersFromCol(col krt.Collection[uccWithCluster], clients krt.Collection[ir.UniquelyConnectedClient]) PerClientEnvoyClusters {
+	rows := krt.NewCollection(clients, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *clustersWithErrors {
+		all := krt.Fetch(kctx, col)
+		var selected []uccWithCluster
+		for _, row := range all {
+			if row.Client.ResourceName() == ucc.ResourceName() {
+				selected = append(selected, row)
+			}
+		}
+		return assemblePerClientClusters(ucc, selected)
+	})
+	return PerClientEnvoyClusters{perClient: rows}
 }

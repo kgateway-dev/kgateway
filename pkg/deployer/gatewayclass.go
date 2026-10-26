@@ -36,15 +36,15 @@ func GetSupportedFeaturesForStandardGateway(enableExperimentalGatewayAPIFeatures
 		// We do not yet implement the 421 misdirected-request behavior across HTTPS listeners
 		// sharing the same port.
 		features.GatewayHTTPSListenerDetectMisdirectedRequestsFeature,
+		// Gateway API v1.7 experimental features that are not implemented yet.
+		features.GatewayAddressRoutabilityFeature,
+		features.GatewayAddressRoutabilityClusterFeature,
+		features.GatewayListenerFiltersFeature,
+		features.ClusterTrustBundleFeature,
+		// Gateway API v1.7 standard feature that is not implemented yet: URLRewrite
+		// filters on backendRefs.
+		features.HTTPRouteBackendURLRewriteFeature,
 	)
-	if !enableExperimentalGatewayAPIFeatures {
-		// TLSRoute and TLSRouteModeTerminate are standard as of Gateway API v1.5.
-		// TLSRouteModeMixed remains experimental and must not be advertised when
-		// experimental Gateway API features are disabled.
-		exemptFeatures.Insert(
-			features.TLSRouteModeMixedFeature,
-		)
-	}
 	for _, feature := range features.UDPRouteFeatures.UnsortedList() {
 		exemptFeatures.Insert(feature)
 	}

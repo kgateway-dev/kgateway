@@ -24,8 +24,6 @@ Clusters:
       '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
       explicitHttpConfig:
         http2ProtocolOptions: {}
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -96,7 +94,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80
@@ -212,7 +210,8 @@ Statuses:
       - conditions:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/default/denied-policy:
-            extproc: failed to resolve ExtProc backend: missing reference grant'
+            extproc: denied/denied-extproc-ext: failed to resolve ExtProc backend:
+            missing reference grant'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -260,8 +259,8 @@ Statuses:
           namespace: default
         conditions:
         - lastTransitionTime: null
-          message: 'extproc: failed to resolve ExtProc backend: missing reference
-            grant'
+          message: 'extproc: denied/denied-extproc-ext: failed to resolve ExtProc
+            backend: missing reference grant'
           reason: Invalid
           status: "False"
           type: Accepted

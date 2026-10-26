@@ -678,6 +678,42 @@ func TestDeepMergeSecurityContextWindowsOptions(t *testing.T) {
 	}
 }
 
+// Keep these lists explicit: new upstream fields require a merge-semantics review,
+// even if existing fixtures are updated to populate them.
+func TestSecurityContextFieldsReviewed(t *testing.T) {
+	tests := []struct {
+		typ    reflect.Type
+		fields []string
+	}{
+		{
+			typ: reflect.TypeFor[corev1.SecurityContext](),
+			fields: []string{
+				"Capabilities", "Privileged", "SELinuxOptions", "WindowsOptions",
+				"RunAsUser", "RunAsGroup", "RunAsNonRoot", "ReadOnlyRootFilesystem",
+				"AllowPrivilegeEscalation", "ProcMount", "SeccompProfile", "AppArmorProfile",
+			},
+		},
+		{
+			typ: reflect.TypeFor[corev1.PodSecurityContext](),
+			fields: []string{
+				"SELinuxOptions", "WindowsOptions", "RunAsUser", "RunAsGroup", "RunAsNonRoot",
+				"SupplementalGroups", "SupplementalGroupsPolicy", "FSGroup", "Sysctls",
+				"FSGroupChangePolicy", "SeccompProfile", "AppArmorProfile", "SELinuxChangePolicy",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.typ.Name(), func(t *testing.T) {
+			fields := make([]string, tt.typ.NumField())
+			for i := range tt.typ.NumField() {
+				fields[i] = tt.typ.Field(i).Name
+			}
+			assert.ElementsMatch(t, tt.fields, fields,
+				"%s fields changed: review the merge logic and merge tests before updating the reviewed field list", tt.typ.Name())
+		})
+	}
+}
+
 func assertAllFieldsSet(t *testing.T, v any) {
 	t.Helper()
 	rv := reflect.ValueOf(v).Elem()
@@ -939,4 +975,46 @@ func toCapabilities(ids []int64) []corev1.Capability {
 		out = append(out, corev1.Capability(fmt.Sprintf("CAP_%d", id)))
 	}
 	return out
+}
+
+func TestDeepMergeEnvoyBootstrapMaxDownstreamConnections(t *testing.T) {
+	tests := []struct {
+		name string
+		dst  *kgateway.EnvoyBootstrap
+		src  *kgateway.EnvoyBootstrap
+		want *int64
+	}{
+		{
+			name: "nil src keeps dst",
+			dst:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(10000))},
+			src:  &kgateway.EnvoyBootstrap{},
+			want: new(int64(10000)),
+		},
+		{
+			name: "src overrides dst",
+			dst:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(10000))},
+			src:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(5000))},
+			want: new(int64(5000)),
+		},
+		{
+			name: "src populates empty dst",
+			dst:  &kgateway.EnvoyBootstrap{},
+			src:  &kgateway.EnvoyBootstrap{MaxDownstreamConnections: new(int64(5000))},
+			want: new(int64(5000)),
+		},
+		{
+			name: "both unset stays unset",
+			dst:  &kgateway.EnvoyBootstrap{},
+			src:  &kgateway.EnvoyBootstrap{},
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := deepMergeEnvoyBootstrap(tt.dst, tt.src)
+			assert.Equal(t, tt.want, got.GetMaxDownstreamConnections(),
+				"maxDownstreamConnections should follow src-wins-when-set semantics")
+		})
+	}
 }

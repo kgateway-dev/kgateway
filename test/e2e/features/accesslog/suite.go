@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -123,6 +124,36 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 		assert.Contains(c, logs, `value-1`)
 		assert.Contains(c, logs, `key-2`)
 		assert.Contains(c, logs, `value-2`)
+	}, 30*time.Second, 1*time.Second)
+}
+
+// TestAccessLogOnTCPListener tests access log on a TCP listener, rendered into the TcpProxy filter
+func (s *testingSuite) TestAccessLogOnTCPListener() {
+	address := s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayAddress(s.Ctx, tcpGatewayObjectMeta.GetName(), tcpGatewayObjectMeta.GetNamespace())
+	tcpGateway := common.Gateway{
+		NamespacedName: types.NamespacedName{Name: tcpGatewayObjectMeta.GetName(), Namespace: tcpGatewayObjectMeta.GetNamespace()},
+		Address:        address,
+	}
+	pods := s.getPods(fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, tcpGatewayObjectMeta.GetName()))
+
+	// TcpProxy logs a connection when it closes, so send inside the poll loop until
+	// the access log config has propagated and a line for a closed connection shows up.
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		tcpGateway.Send(
+			s.T(),
+			&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			curl.VerboseOutput(),
+			curl.WithPath("/status/200"),
+			curl.WithPort(8090),
+		)
+
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, tcpGatewayObjectMeta.GetNamespace(), pods[0])
+		assert.NoError(c, err)
+
+		assert.Contains(c, logs, `"log_type":"tcp"`)
+		assert.Contains(c, logs, `"upstream_cluster":"kube_kgateway-base_httpbin_8000"`)
 	}, 30*time.Second, 1*time.Second)
 }
 
