@@ -54,7 +54,7 @@ spec:
 kind: BackendConfigPolicy
 apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
-  name: invalid-tlsfiles-policy
+  name: tlsfiles-policy
   namespace: gwtest
 spec:
   targetRefs:
@@ -63,7 +63,7 @@ spec:
       kind: Service
   tls:
     files:
-      # These file paths don't exist in the proxy filesystem
+      # Paths are read by the proxy, so the controller accepts them unseen
       tlsCertificate: "/nonexistent/path/to/cert.pem"
       tlsKey: "/invalid/path/to/key.pem"
       rootCA: "/missing/path/to/ca.pem"

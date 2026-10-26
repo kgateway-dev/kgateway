@@ -151,6 +151,62 @@ func hasSecretNamed(secrets []*envoytlsv3.Secret, name string) bool {
 	return false
 }
 
+// withoutAdsSecretSources returns clusters whose TLS contexts fetch SDS secrets
+// over a gRPC source in place of ADS. Envoy's validate mode crashes on an ADS
+// secret source in a static cluster (Envoy 1.39.4), and validate mode never
+// resolves the secret either way. Clusters are shared, so changed ones are
+// cloned.
+func withoutAdsSecretSources(clusters []*envoyclusterv3.Cluster) []*envoyclusterv3.Cluster {
+	out := slices.Clone(clusters)
+	for i, cluster := range out {
+		ts := cluster.GetTransportSocket()
+		if ts.GetName() != envoywellknown.TransportSocketTls || ts.GetTypedConfig() == nil {
+			continue
+		}
+		upstreamTLS := &envoytlsv3.UpstreamTlsContext{}
+		if err := ts.GetTypedConfig().UnmarshalTo(upstreamTLS); err != nil {
+			continue
+		}
+		common := upstreamTLS.GetCommonTlsContext()
+		changed := false
+		for _, sds := range common.GetTlsCertificateSdsSecretConfigs() {
+			changed = replaceAdsSource(sds) || changed
+		}
+		changed = replaceAdsSource(common.GetValidationContextSdsSecretConfig()) || changed
+		changed = replaceAdsSource(common.GetCombinedValidationContext().GetValidationContextSdsSecretConfig()) || changed
+		if !changed {
+			continue
+		}
+		typedConfig, err := utils.MessageToAny(upstreamTLS)
+		if err != nil {
+			continue
+		}
+		clone := proto.Clone(cluster).(*envoyclusterv3.Cluster)
+		clone.TransportSocket.ConfigType = &envoycorev3.TransportSocket_TypedConfig{TypedConfig: typedConfig}
+		out[i] = clone
+	}
+	return out
+}
+
+func replaceAdsSource(sds *envoytlsv3.SdsSecretConfig) bool {
+	if sds.GetSdsConfig().GetAds() == nil {
+		return false
+	}
+	sds.SdsConfig = &envoycorev3.ConfigSource{
+		ResourceApiVersion: envoycorev3.ApiVersion_V3,
+		ConfigSourceSpecifier: &envoycorev3.ConfigSource_ApiConfigSource{ApiConfigSource: &envoycorev3.ApiConfigSource{
+			ApiType:             envoycorev3.ApiConfigSource_GRPC,
+			TransportApiVersion: envoycorev3.ApiVersion_V3,
+			GrpcServices: []*envoycorev3.GrpcService{{
+				TargetSpecifier: &envoycorev3.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoycorev3.GrpcService_EnvoyGrpc{ClusterName: validationLocalClusterName},
+				},
+			}},
+		}},
+	}
+	return true
+}
+
 // ValidatedClusters returns the bootstrap's static clusters without the placeholder local
 // cluster that Build always adds.
 func ValidatedClusters(bs *envoybootstrapv3.Bootstrap) []*envoyclusterv3.Cluster {
@@ -233,7 +289,7 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 		}},
 	}
 	// Envoy requires the local cluster to be defined as a static cluster.
-	staticResources.Clusters = append(slices.Clone(b.clusters), &envoyclusterv3.Cluster{
+	staticResources.Clusters = append(withoutAdsSecretSources(b.clusters), &envoyclusterv3.Cluster{
 		Name:                 validationLocalClusterName,
 		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
 	})

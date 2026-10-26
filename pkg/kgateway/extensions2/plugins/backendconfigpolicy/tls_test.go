@@ -150,9 +150,9 @@ func TestTranslateTLSConfig(t *testing.T) {
 			name: "file-based TLS config",
 			tlsConfig: &kgateway.TLS{
 				Files: &kgateway.TLSFiles{
-					TLSCertificate: new(CACert),
-					TLSKey:         new(TLSKey),
-					RootCA:         new(CACert),
+					TLSCertificate: new("/etc/upstream-mtls/tls.crt"),
+					TLSKey:         new("/etc/upstream-mtls/tls.key"),
+					RootCA:         new("/etc/upstream-mtls/ca.crt"),
 				},
 				Sni:                new("test.example.com"),
 				AllowRenegotiation: new(true),
@@ -161,12 +161,12 @@ func TestTranslateTLSConfig(t *testing.T) {
 			expected: &envoytlsv3.UpstreamTlsContext{
 				CommonTlsContext: &envoytlsv3.CommonTlsContext{
 					TlsCertificates: []*envoytlsv3.TlsCertificate{{
-						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
-						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: TLSKey}},
+						CertificateChain: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: "/etc/upstream-mtls/tls.crt"}},
+						PrivateKey:       &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: "/etc/upstream-mtls/tls.key"}},
 					}},
 					ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
 						ValidationContext: &envoytlsv3.CertificateValidationContext{
-							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: CACert}},
+							TrustedCa: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: "/etc/upstream-mtls/ca.crt"}},
 						},
 					},
 				},

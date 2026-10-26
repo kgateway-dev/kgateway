@@ -115,18 +115,19 @@ func buildCertificateContext(tlsData *tlsData, tlsContext *envoytlsv3.CommonTlsC
 		return errors.New("invalid TLS config: for if providing a client certificate, both certChain and privateKey must be provided")
 	}
 
-	// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
-	cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
-	if err != nil {
-		return fmt.Errorf("invalid certificate and key pair: %w", err)
-	}
-
 	var certChainData, privateKeyData *envoycorev3.DataSource
 	if tlsData.inlineDataSource {
+		// Validate the certificate and key pair, and get a sanitized version of the certificate chain.
+		cleanedCertChain, err := pluginutils.CleanedSslKeyPair(tlsData.certChain, tlsData.privateKey)
+		if err != nil {
+			return fmt.Errorf("invalid certificate and key pair: %w", err)
+		}
 		certChainData = pluginutils.InlineStringDataSource(cleanedCertChain)
 		privateKeyData = pluginutils.InlineStringDataSource(tlsData.privateKey)
 	} else {
-		certChainData = pluginutils.FileDataSource(cleanedCertChain)
+		// File paths are read by the proxy, not the controller, so the pair
+		// can only be validated by Envoy.
+		certChainData = pluginutils.FileDataSource(tlsData.certChain)
 		privateKeyData = pluginutils.FileDataSource(tlsData.privateKey)
 	}
 

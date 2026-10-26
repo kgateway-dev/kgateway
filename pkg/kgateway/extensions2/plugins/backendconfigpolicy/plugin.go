@@ -197,7 +197,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Policies:                    backendConfigPolicyCol,
 				NewGatewayTranslationPass:   newGatewayTranslationPass,
 				ProcessBackend:              processBackend,
-				ProcessBaseClusterResources: newTunnelHook(commoncol),
+				ProcessBaseClusterResources: newBaseClusterResourcesHook(newTunnelHook(commoncol)),
 				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
 				// processEndpoints reads only the BackendConfigPolicies attached
 				// to the backend, so a backend with none attached can have its
@@ -275,7 +275,8 @@ func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObje
 	// to the same backend. BCP's TLS config is only applied if there is no attached BackendTLSPolicy.
 	tlsAllowed := pol.tlsConfig != nil && !hasBackendTLSPolicy(backend)
 	if tlsAllowed {
-		typedConfig, err := utils.MessageToAny(pol.tlsConfig)
+		tlsConfig, _ := splitFileTLS(pol.tlsConfig, out.GetName())
+		typedConfig, err := utils.MessageToAny(tlsConfig)
 		if err != nil {
 			logger.Error("failed to convert tls config to any", "error", err)
 			return
