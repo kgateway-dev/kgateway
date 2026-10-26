@@ -58,8 +58,18 @@ func TestParseAppProtocol(t *testing.T) {
 			expected: HTTP2AppProtocol,
 		},
 		{
-			name:     "http is the default",
+			name:     "http",
 			input:    new("http"),
+			expected: HTTP1AppProtocol,
+		},
+		{
+			name:     "HTTP",
+			input:    new("HTTP"),
+			expected: HTTP1AppProtocol,
+		},
+		{
+			name:     "https is the default",
+			input:    new("https"),
 			expected: DefaultAppProtocol,
 		},
 		{
@@ -360,26 +370,4 @@ func TestBackendObjectIRKrtEqualUsesEquals(t *testing.T) {
 
 	assert.True(t, krt.Equal(a, b), "value collections must compare with Equals")
 	assert.True(t, krt.Equal(&a, &b), "pointer collections must compare with Equals")
-}
-
-func TestParseServicePortAppProtocol(t *testing.T) {
-	tests := []struct {
-		name        string
-		appProtocol *string
-		portName    string
-		expected    AppProtocol
-	}{
-		{name: "explicit http", appProtocol: new("http"), portName: "web", expected: HTTP1AppProtocol},
-		{name: "explicit HTTP", appProtocol: new("HTTP"), portName: "web", expected: HTTP1AppProtocol},
-		{name: "port named http is the default", portName: "http", expected: DefaultAppProtocol},
-		{name: "explicit https is the default", appProtocol: new("https"), expected: DefaultAppProtocol},
-		{name: "explicit http2", appProtocol: new("kubernetes.io/h2c"), portName: "http", expected: HTTP2AppProtocol},
-		{name: "port named grpc", portName: "grpc", expected: HTTP2AppProtocol},
-		{name: "unset", expected: DefaultAppProtocol},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, ParseServicePortAppProtocol(tt.appProtocol, tt.portName))
-		})
-	}
 }
