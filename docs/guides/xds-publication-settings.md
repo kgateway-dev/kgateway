@@ -17,14 +17,15 @@ them up does not give a bound on proxy startup or on when a change takes effect.
 
 Each setting is an environment variable of the controller container. The
 xDS scoping settings have their own Helm values under
-`controller.xdsScoping`. Set the others through `controller.extraEnv`:
+`controller.xds.scoping`. Set the others through `controller.extraEnv`:
 
 ```yaml
 controller:
-  xdsScoping:
-    mode: REFERENCED     # KGW_XDS_SCOPING_MODE
-    referenceAhead: 3s   # KGW_CLUSTER_REFERENCE_AHEAD
-    dereferenceGrace: 5s # KGW_CLUSTER_DEREFERENCE_GRACE
+  xds:
+    scoping:
+      mode: REFERENCED     # KGW_XDS_SCOPING_MODE
+      referenceAhead: 3s   # KGW_CLUSTER_REFERENCE_AHEAD
+      dereferenceGrace: 5s # KGW_CLUSTER_DEREFERENCE_GRACE
   extraEnv:
     KGW_PER_CLIENT_PUBLISH_BUDGET: "20s"
 ```
@@ -33,20 +34,20 @@ or on the command line:
 
 ```sh
 helm upgrade <release> <chart> --namespace <namespace> --reuse-values \
-  --set controller.xdsScoping.mode=REFERENCED
+  --set controller.xds.scoping.mode=REFERENCED
 ```
 
-A `controller.xdsScoping` value left empty, as it is by default, sets
+A `controller.xds.scoping` value left empty, as it is by default, sets
 nothing, so the controller uses its own default. A variable set in
 `controller.extraEnv` takes precedence over the matching
-`controller.xdsScoping` value. For example, an explicit
+`controller.xds.scoping` value. For example, an explicit
 `controller.extraEnv.KGW_XDS_SCOPING_MODE` overrides
-`controller.xdsScoping.mode`.
+`controller.xds.scoping.mode`.
 
 - **When values are read.** The controller reads these variables once, at
   startup. `KGW_XDS_FIRST_CONNECT_DELAY` is read once too, when the first xDS
   stream needs it. Nothing is reloaded while the controller runs. Changing
-  `controller.extraEnv` or `controller.xdsScoping` changes the
+  `controller.extraEnv` or `controller.xds.scoping` changes the
   controller's pod template, so a Helm upgrade rolls the controller and the new
   values apply to the new pods.
 - **Accepted values.** Durations are Go duration strings, such as `500ms`, `15s`
@@ -56,7 +57,7 @@ nothing, so the controller uses its own default. A variable set in
 - **Invalid values.** An invalid value stops the controller from starting: it
   logs `error loading settings from env` and exits. The exception is
   `KGW_XDS_FIRST_CONNECT_DELAY`, which logs a warning and uses its default. An
-  invalid xDS scoping value, in `controller.xdsScoping` or in
+  invalid xDS scoping value, in `controller.xds.scoping` or in
   `controller.extraEnv` under `KGW_XDS_SCOPING_MODE`,
   `KGW_CLUSTER_REFERENCE_AHEAD` or `KGW_CLUSTER_DEREFERENCE_GRACE`, fails the
   Helm install or upgrade instead.
@@ -313,7 +314,7 @@ out` for `ClusterLoadAssignment`.
   a backend's cluster drops those resources too. Gateway-level listeners and
   secrets are unaffected. `REFERENCED` is experimental.
 
-Helm value: `controller.xdsScoping.mode`.
+Helm value: `controller.xds.scoping.mode`.
 
 A backend can ship listeners with its cluster, as a CONNECT tunnel does. A
 kept backend's listeners keep the clusters they name, such as the tunnel's
@@ -375,7 +376,7 @@ Size both above your fleet's worst-case propagation.
 
 #### `KGW_CLUSTER_REFERENCE_AHEAD` (default `2s`)
 
-Helm value: `controller.xdsScoping.referenceAhead`.
+Helm value: `controller.xds.scoping.referenceAhead`.
 
 When a build names a cluster that the client's published snapshot lacks, the
 cluster and its endpoints are published at once. Routes, listeners and secrets
@@ -402,7 +403,7 @@ The metric is
 
 #### `KGW_CLUSTER_DEREFERENCE_GRACE` (default `5s`)
 
-Helm value: `controller.xdsScoping.dereferenceGrace`.
+Helm value: `controller.xds.scoping.dereferenceGrace`.
 
 When a build stops naming a published cluster, the cluster stays published for
 this long. That gives the route update that dropped it time to land before CDS

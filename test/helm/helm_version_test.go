@@ -561,10 +561,11 @@ func TestControllerXdsScoping(t *testing.T) {
 		{
 			name: "renders configured values",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: REFERENCED
-    referenceAhead: 3s
-    dereferenceGrace: 30s
+  xds:
+    scoping:
+      mode: REFERENCED
+      referenceAhead: 3s
+      dereferenceGrace: 30s
 `,
 			want: map[string]string{
 				"KGW_XDS_SCOPING_MODE":          "REFERENCED",
@@ -575,8 +576,9 @@ func TestControllerXdsScoping(t *testing.T) {
 		{
 			name: "upper-cases the mode",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: Referenced
+  xds:
+    scoping:
+      mode: Referenced
 `,
 			want: map[string]string{
 				"KGW_XDS_SCOPING_MODE": "REFERENCED",
@@ -586,9 +588,10 @@ func TestControllerXdsScoping(t *testing.T) {
 			// A zero duration turns its window off, so it must not be dropped as falsy.
 			name: "renders a zero duration",
 			valuesYAML: `controller:
-  xdsScoping:
-    referenceAhead: 0
-    dereferenceGrace: "0"
+  xds:
+    scoping:
+      referenceAhead: 0
+      dereferenceGrace: "0"
 `,
 			want: map[string]string{
 				"KGW_CLUSTER_REFERENCE_AHEAD":   "0",
@@ -598,9 +601,10 @@ func TestControllerXdsScoping(t *testing.T) {
 		{
 			name: "renders compound and fractional durations",
 			valuesYAML: `controller:
-  xdsScoping:
-    referenceAhead: 1m30s
-    dereferenceGrace: 1.5s
+  xds:
+    scoping:
+      referenceAhead: 1m30s
+      dereferenceGrace: 1.5s
 `,
 			want: map[string]string{
 				"KGW_CLUSTER_REFERENCE_AHEAD":   "1m30s",
@@ -621,19 +625,21 @@ func TestControllerXdsScoping(t *testing.T) {
 			},
 		},
 		{
-			name: "omits every value when xdsScoping is null",
+			name: "omits every value when xds.scoping is null",
 			valuesYAML: `controller:
-  xdsScoping: null
+  xds:
+    scoping: null
 `,
 			want: map[string]string{},
 		},
 		{
 			name: "lets extraEnv take precedence per variable",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: ALL
-    referenceAhead: 3s
-    dereferenceGrace: 5s
+  xds:
+    scoping:
+      mode: ALL
+      referenceAhead: 3s
+      dereferenceGrace: 5s
   extraEnv:
     KGW_XDS_SCOPING_MODE: REFERENCED
     KGW_CLUSTER_DEREFERENCE_GRACE: 10s
@@ -685,28 +691,31 @@ func TestControllerXdsScoping(t *testing.T) {
 		{
 			name: "rejects an unknown mode",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: some
+  xds:
+    scoping:
+      mode: some
 `,
-			message: "Invalid controller.xdsScoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xds.scoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			name: "rejects a mode that merely starts with a valid one",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: REFERENCED_ONLY
+  xds:
+    scoping:
+      mode: REFERENCED_ONLY
 `,
-			message: "Invalid controller.xdsScoping.mode 'REFERENCED_ONLY'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xds.scoping.mode 'REFERENCED_ONLY'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			name: "rejects an invalid mode that extraEnv overrides",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: some
+  xds:
+    scoping:
+      mode: some
   extraEnv:
     KGW_XDS_SCOPING_MODE: REFERENCED
 `,
-			message: "Invalid controller.xdsScoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xds.scoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			name: "rejects an invalid extraEnv mode",
@@ -717,10 +726,11 @@ func TestControllerXdsScoping(t *testing.T) {
 			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
-			name: "rejects an invalid extraEnv mode alongside a valid xdsScoping mode",
+			name: "rejects an invalid extraEnv mode alongside a valid xds.scoping mode",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: REFERENCED
+  xds:
+    scoping:
+      mode: REFERENCED
   extraEnv:
     KGW_XDS_SCOPING_MODE: some
 `,
@@ -748,27 +758,30 @@ func TestControllerXdsScoping(t *testing.T) {
 			// A non-string mode is set, not empty, so it is validated rather than skipped.
 			name: "rejects a numeric mode",
 			valuesYAML: `controller:
-  xdsScoping:
-    mode: 0
+  xds:
+    scoping:
+      mode: 0
 `,
-			message: "Invalid controller.xdsScoping.mode '0'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xds.scoping.mode '0'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			// time.ParseDuration rejects a bare number other than 0.
 			name: "rejects a duration without a unit",
 			valuesYAML: `controller:
-  xdsScoping:
-    referenceAhead: 3
+  xds:
+    scoping:
+      referenceAhead: 3
 `,
-			message: "Invalid controller.xdsScoping.referenceAhead '3'. Must be a duration such as '500ms', '3s' or '0'.",
+			message: "Invalid controller.xds.scoping.referenceAhead '3'. Must be a duration such as '500ms', '3s' or '0'.",
 		},
 		{
 			name: "rejects an unparseable duration",
 			valuesYAML: `controller:
-  xdsScoping:
-    dereferenceGrace: 5 seconds
+  xds:
+    scoping:
+      dereferenceGrace: 5 seconds
 `,
-			message: "Invalid controller.xdsScoping.dereferenceGrace '5 seconds'. Must be a duration such as '500ms', '3s' or '0'.",
+			message: "Invalid controller.xds.scoping.dereferenceGrace '5 seconds'. Must be a duration such as '500ms', '3s' or '0'.",
 		},
 		{
 			name: "rejects an invalid extraEnv duration",
@@ -1137,10 +1150,11 @@ controller:
 	{
 		name: "xds-scoping-referenced",
 		valuesYAML: `controller:
-  xdsScoping:
-    mode: REFERENCED
-    referenceAhead: 3s
-    dereferenceGrace: 30s
+  xds:
+    scoping:
+      mode: REFERENCED
+      referenceAhead: 3s
+      dereferenceGrace: 30s
 `,
 	},
 }
