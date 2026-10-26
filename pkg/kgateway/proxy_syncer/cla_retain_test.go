@@ -38,13 +38,13 @@ func newSequentialClaFixture(t *testing.T) *sequentialClaFixture {
 	}, 80, "", "")
 
 	f := &sequentialClaFixture{t: t, backendRef: backend}
-	f.uccs = krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{}, krtopts.ToOptions("UniqueClients")...)
-	f.endpoints = krt.NewStaticCollection(nil, []ir.EndpointsForBackend{*f.endpointsWith("original")}, krtopts.ToOptions("Endpoints")...)
+	f.uccs = krt.NewMutableCollection(nil, []ir.UniquelyConnectedClient{}, krtopts.ToOptions("UniqueClients")...)
+	f.endpoints = krt.NewMutableCollection(nil, []ir.EndpointsForBackend{*f.endpointsWith("original")}, krtopts.ToOptions("Endpoints")...)
 
 	f.perClient = NewPerClientEnvoyEndpoints(
 		krtopts,
-		f.uccs,
-		f.endpoints,
+		f.uccs.AsCollection(),
+		f.endpoints.AsCollection(),
 		func(_ krt.HandlerContext, _ ir.UniquelyConnectedClient, ep ir.EndpointsForBackend) translator.ResolvedEndpoints {
 			return translator.ResolvedEndpoints{Inputs: endpoints.EndpointsInputs{EndpointsForBackend: ep}}
 		},

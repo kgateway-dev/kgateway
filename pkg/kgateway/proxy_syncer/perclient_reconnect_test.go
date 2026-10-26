@@ -78,27 +78,27 @@ func newReconnectFixture(t *testing.T, routeTargets []string, backendNames []str
 	f := &reconnectFixture{release: make(chan struct{})}
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", "gw")
 	f.ucc = ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
-	f.uccs = krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{f.ucc})
+	f.uccs = krt.NewMutableCollection[ir.UniquelyConnectedClient](nil, []ir.UniquelyConnectedClient{f.ucc})
 	f.listeners = sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
-	f.gateways = krt.NewStaticCollection[GatewayXdsResources](nil, nil)
+	f.gateways = krt.NewMutableCollection[GatewayXdsResources](nil, nil)
 	f.setRoutes(routeTargets...)
 	var initial []reconnectBackend
 	for _, name := range backendNames {
 		initial = append(initial, reconnectBackend{name: name})
 	}
-	f.backends = krt.NewStaticCollection[reconnectBackend](nil, initial)
+	f.backends = krt.NewMutableCollection[reconnectBackend](nil, initial)
 
 	// Mirror production CDS: a complete backend row for each client.
-	perClient := krt.NewCollection(f.uccs, func(kctx krt.HandlerContext, c ir.UniquelyConnectedClient) *clustersWithErrors {
+	perClient := krt.NewCollection(f.uccs.AsCollection(), func(kctx krt.HandlerContext, c ir.UniquelyConnectedClient) *clustersWithErrors {
 		var rows []uccWithCluster
-		for _, b := range krt.Fetch(kctx, f.backends) {
+		for _, b := range krt.Fetch(kctx, f.backends.AsCollection()) {
 			rows = append(rows, edsClusterForClient(c, b.name, uint64(len(b.name))))
 		}
 		return assemblePerClientClusters(c, rows)
 	})
 	// Mirror NewPerClientEnvoyEndpoints: each backend builds rows for all clients.
-	endpointRows := krt.NewManyCollection(f.backends, func(kctx krt.HandlerContext, b reconnectBackend) []UccWithEndpoints {
-		clients := krt.Fetch(kctx, f.uccs)
+	endpointRows := krt.NewManyCollection(f.backends.AsCollection(), func(kctx krt.HandlerContext, b reconnectBackend) []UccWithEndpoints {
+		clients := krt.Fetch(kctx, f.uccs.AsCollection())
 		if f.stall.Load() && len(clients) > 0 {
 			<-f.release
 		}
@@ -114,7 +114,7 @@ func newReconnectFixture(t *testing.T, routeTargets []string, backendNames []str
 	}
 	f.endpoints = endpointRows
 
-	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs, f.gateways, endpoints, PerClientEnvoyClusters{perClient: perClient}, clusterScoping{})
+	f.snapshots = snapshotPerClient(krtutil.KrtOptions{}, f.uccs.AsCollection(), f.gateways.AsCollection(), endpoints, PerClientEnvoyClusters{perClient: perClient}, clusterScoping{})
 	f.cache = &recordingCache{SnapshotCache: newTestSnapshotCache(t), node: f.ucc.ResourceName()}
 	translator := NewProxyTranslator(f.cache, stubPriorXDS{has: true}, 15*time.Second, true, clusterScoping{})
 	// Mirror ProxySyncer.Start's current-row check and clientDeparted on Delete.
@@ -283,11 +283,11 @@ func TestPublishedClientKeepsEndpointsWhenRowIsNotDerived(t *testing.T) {
 	})
 	live := endpointsForClient(ucc, "cluster-a", 3)
 	liveAuthz := endpointsForClient(ucc, "cluster-authz", 4)
-	endpointRows := krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{live, liveAuthz})
+	endpointRows := krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{live, liveAuthz})
 	snapshots := snapshotPerClient(krtutil.KrtOptions{}, uccs, gateways,
 		PerClientEnvoyEndpoints{
-			endpoints: endpointRows,
-			index:     krtpkg.UnnamedIndex(endpointRows, func(ep UccWithEndpoints) []string { return []string{ep.Client.ResourceName()} }),
+			endpoints: endpointRows.AsCollection(),
+			index:     krtpkg.UnnamedIndex(endpointRows.AsCollection(), func(ep UccWithEndpoints) []string { return []string{ep.Client.ResourceName()} }),
 		},
 		newTestPerClientClustersFromCol(clusterRows, uccs),
 		clusterScoping{},

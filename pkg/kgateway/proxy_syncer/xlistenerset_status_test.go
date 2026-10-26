@@ -81,12 +81,12 @@ func newXListenerSetFixture(t *testing.T, ls *gwv1.ListenerSet) xListenerSetFixt
 		Resource: statussync.Resource{GroupVersionKind: wellknown.XListenerSetGVK, NamespacedName: nn},
 		Report:   reports.StatusReport{ListenerSet: reportMap.ListenerSet(ls)},
 	}}, krtopts.ToOptions("XListenerSetStatusReports")...)
-	objects := krt.NewStaticCollection(nil, []*gwv1.ListenerSet{ls},
+	objects := krt.NewMutableCollection(nil, []*gwv1.ListenerSet{ls},
 		krtopts.ToOptions("XListenerSets")...)
 
 	c := apifake.NewClient(t)
 	return xListenerSetFixture{
-		writer:  xListenerSetWriter(c, objects, reportCol),
+		writer:  xListenerSetWriter(c, objects.AsCollection(), reportCol),
 		objects: objects,
 		dynamic: c.Dynamic().(*dynamicfake.FakeDynamicClient),
 		res: statussync.Resource{

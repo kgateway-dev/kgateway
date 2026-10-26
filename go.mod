@@ -1,10 +1,6 @@
 module github.com/kgateway-dev/kgateway/v2
 
-// The go directive is the minimum version for modules that import kgateway;
-// the toolchain directive is the version kgateway is built with.
-go 1.27.0
-
-toolchain go1.27.3
+go 1.27.3
 
 godebug x509negativeserial=1
 
@@ -22,8 +18,8 @@ require (
 	github.com/aws/smithy-go v1.27.1
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
 	github.com/envoyproxy/go-control-plane v0.14.1-0.20260702184136-1cd1226616f5
-	github.com/envoyproxy/go-control-plane/contrib v1.36.1-0.20260529185539-1175069dbb2c
-	github.com/envoyproxy/go-control-plane/envoy v1.37.1-0.20260529185539-1175069dbb2c
+	github.com/envoyproxy/go-control-plane/contrib v1.36.1-0.20261017072358-cded3a6731eb
+	github.com/envoyproxy/go-control-plane/envoy v1.40.1-0.20261017072358-cded3a6731eb
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.1-0.20250507123352-93990c5ec02f
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -41,9 +37,9 @@ require (
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.43.0
-	github.com/prometheus/client_golang v1.24.0
-	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.70.0
+	github.com/prometheus/client_golang v1.24.1
+	github.com/prometheus/client_model v0.6.3
+	github.com/prometheus/common v0.71.0
 	github.com/sergi/go-diff v1.4.0
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/spf13/afero v1.15.0
@@ -60,9 +56,9 @@ require (
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	helm.sh/helm/v3 v3.21.3
-	istio.io/api v1.30.0-alpha.1.0.20260603032543-7eca3b2aa271
-	istio.io/client-go v1.30.0-alpha.1.0.20260603032842-2edf997e399d
-	istio.io/istio v0.0.0-20260605182440-f18fd540c0e8
+	istio.io/api v1.32.0-alpha.0.0.20261021201554-855754b46d81
+	istio.io/client-go v1.32.0-alpha.0.0.20261021201855-5a3fa7c63379
+	istio.io/istio v0.0.0-20261026150458-262eedb00987
 	k8s.io/api v0.37.1
 	k8s.io/apiextensions-apiserver v0.37.1
 	k8s.io/apimachinery v0.37.1
