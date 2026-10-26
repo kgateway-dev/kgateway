@@ -274,6 +274,11 @@ func TestDockerValidator_Validate(t *testing.T) {
 			errorMsg:    `error initializing configuration '/dev/fd/0': error adding listener named 'listener_0': address is necessary`,
 		},
 		{
+			name:        "TLS files that exist only on the proxy",
+			bootstrap:   fileTLSBootstrap(),
+			expectError: false,
+		},
+		{
 			name: "invalid regex in route match",
 			bootstrap: &envoybootstrapv3.Bootstrap{
 				Node: &envoycorev3.Node{

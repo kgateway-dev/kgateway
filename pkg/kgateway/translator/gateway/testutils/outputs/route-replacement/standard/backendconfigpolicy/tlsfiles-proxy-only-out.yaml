@@ -1,3 +1,28 @@
+Clusters:
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_gwtest_backend-service_443
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      commonTlsContext:
+        tlsCertificates:
+        - certificateChain:
+            filename: /etc/proxy-certs/tls.crt
+          privateKey:
+            filename: /etc/proxy-certs/tls.key
+        validationContext:
+          trustedCa:
+            filename: /etc/ssl/certs/cacerts-custom.crt
+      sni: backend.example.com
+  type: EDS
 Listeners:
 - address:
     socketAddress:
@@ -111,7 +136,7 @@ Statuses:
           kind: ""
           name: example-gateway
   policies:
-    BackendConfigPolicy/gwtest/invalid-tlsfiles-policy:
+    BackendConfigPolicy/gwtest/tlsfiles-policy:
       ancestors:
       - ancestorRef:
           group: ""
@@ -120,14 +145,13 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid certificate and key pair: tls: failed to find any PEM
-            data in certificate input'
-          reason: Invalid
-          status: "False"
+          message: Policy accepted
+          reason: Valid
+          status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: ""
-          reason: Pending
-          status: "False"
+          message: Attached to all targets
+          reason: Attached
+          status: "True"
           type: Attached
         controllerName: kgateway.dev/kgateway

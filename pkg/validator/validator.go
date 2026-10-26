@@ -264,6 +264,8 @@ func prepareBootstrapConfig(bootstrap *envoybootstrapv3.Bootstrap) ([]byte, erro
 	clone := proto.CloneOf(bootstrap)
 	// We set a custom log format that outputs a "raw" error message for validation purposes, so we do not want any user-provided log format.
 	clone.ApplicationLogConfig = nil
+	// TLS files exist only on the proxy, not where the validator runs.
+	replaceTLSFiles(clone.ProtoReflect())
 
 	return protojson.Marshal(clone)
 }
