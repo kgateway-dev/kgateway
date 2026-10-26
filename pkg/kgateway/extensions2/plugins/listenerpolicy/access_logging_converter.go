@@ -374,9 +374,10 @@ func generateAccessLogConfig(pCtx *ir.HcmContext, policies []kgateway.AccessLog,
 	for i, config := range configs {
 		var filter *envoyaccesslogv3.AccessLogFilter
 		// Add filter if specified
-		if policies[i].Filter != nil {
+		policy := &policies[i] //nolint:gosec // G602: configs is built 1:1 from policies, or is nil on conversion error
+		if policy.Filter != nil {
 			var err error
-			filter, err = convertAccessLogFilter(policies[i].Filter)
+			filter, err = convertAccessLogFilter(policy.Filter)
 			if err != nil {
 				return nil, err
 			}

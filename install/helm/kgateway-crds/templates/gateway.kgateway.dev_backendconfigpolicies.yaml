@@ -181,6 +181,37 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  lookupFamily:
+                    description: |-
+                      LookupFamily selects the address families used to resolve this backend's
+                      hostnames. It applies only to backends resolved through DNS, such as a
+                      Backend with a hostname, and has no effect on Kubernetes Services. When
+                      omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+                      equivalent to IPv4Preferred.
+
+                      For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+                      or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+                      selects IPv4 addresses when available, even if those addresses are
+                      unreachable, so a cluster that reaches all IPv4 destinations this way should
+                      change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+
+                      Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+                      through a host-local IPv4 address and node SNAT, so the default reaches
+                      IPv4-only backends without an override.
+
+                      IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+                      for the preferred family, not when a connection fails. All returns both
+                      families, and for most backends each address becomes a separate endpoint,
+                      so requests sent to an unreachable family fail rather than fall back.
+
+                      Note: This feature is experimental and subject to breaking changes in future releases.
+                    enum:
+                    - IPv4Preferred
+                    - IPv4Only
+                    - IPv6Only
+                    - IPv6Preferred
+                    - All
+                    type: string
                   refreshRate:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.

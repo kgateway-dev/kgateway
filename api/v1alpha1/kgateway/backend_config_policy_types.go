@@ -361,7 +361,56 @@ type DNS struct {
 	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
 	// +optional
 	RespectTTL *bool `json:"respectTTL,omitempty"`
+
+	// LookupFamily selects the address families used to resolve this backend's
+	// hostnames. It applies only to backends resolved through DNS, such as a
+	// Backend with a hostname, and has no effect on Kubernetes Services. When
+	// omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+	// equivalent to IPv4Preferred.
+	//
+	// For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+	// or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+	// selects IPv4 addresses when available, even if those addresses are
+	// unreachable, so a cluster that reaches all IPv4 destinations this way should
+	// change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+	//
+	// Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+	// through a host-local IPv4 address and node SNAT, so the default reaches
+	// IPv4-only backends without an override.
+	//
+	// IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+	// for the preferred family, not when a connection fails. All returns both
+	// families, and for most backends each address becomes a separate endpoint,
+	// so requests sent to an unreachable family fail rather than fall back.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	// +optional
+	LookupFamily *DnsLookupFamily `json:"lookupFamily,omitempty"`
 }
+
+// DnsLookupFamily selects the address families Envoy resolves for a DNS backend.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily) for more details.
+// +kubebuilder:validation:Enum=IPv4Preferred;IPv4Only;IPv6Only;IPv6Preferred;All
+type DnsLookupFamily string
+
+const (
+	// DnsLookupFamilyIPv4Preferred resolves both families and prefers IPv4, falling
+	// back to IPv6 when no IPv4 address is returned. This is kgateway's default.
+	// Equivalent to the V4_PREFERRED value of the KGW_DNS_LOOKUP_FAMILY setting.
+	DnsLookupFamilyIPv4Preferred DnsLookupFamily = "IPv4Preferred"
+	// DnsLookupFamilyIPv4Only resolves only IPv4 addresses.
+	DnsLookupFamilyIPv4Only DnsLookupFamily = "IPv4Only"
+	// DnsLookupFamilyIPv6Only resolves only IPv6 addresses.
+	DnsLookupFamilyIPv6Only DnsLookupFamily = "IPv6Only"
+	// DnsLookupFamilyIPv6Preferred resolves both families and prefers IPv6, falling
+	// back to IPv4 when no IPv6 address is returned. Equivalent to the AUTO value
+	// of the KGW_DNS_LOOKUP_FAMILY setting, which is also Envoy's own default.
+	DnsLookupFamilyIPv6Preferred DnsLookupFamily = "IPv6Preferred"
+	// DnsLookupFamilyAll resolves both families and returns every address. Only
+	// backends that keep all addresses in a single endpoint use happy eyeballs;
+	// for others, each address is load-balanced as a separate endpoint.
+	DnsLookupFamilyAll DnsLookupFamily = "All"
+)
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
 type Http1ProtocolOptions struct {
