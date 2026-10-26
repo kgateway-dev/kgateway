@@ -15,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -243,6 +244,10 @@ func parseTLSParameters(tlsParameters *kgateway.TLSParameters) (*envoytlsv3.TlsP
 	}
 	tlsMinVersion, err := parseTLSVersion(&minVersion)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := sslutils.ValidateSignatureAlgorithms(tlsParameters.SignatureAlgorithms); err != nil {
 		return nil, err
 	}
 
