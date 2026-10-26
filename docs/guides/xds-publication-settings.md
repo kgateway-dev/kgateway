@@ -92,8 +92,15 @@ it does not prove that configuration is active or complete.
 Bounds two waits.
 
 - **First publish.** A client with nothing published on its current connection
-  is withheld while its builds are deferred, because publishing routes to
-  unready clusters would fail them.
+  is withheld while its builds are deferred. Routes to a cluster missing from
+  CDS fail on any proxy, and routes to a cluster still warming fail on a
+  reconnecting proxy, which applies them at once.
+  - A new proxy waits for endpoints on its own: Envoy starts no listeners until
+    each cluster's endpoints arrive or its `initial_fetch_timeout` (`15s`)
+    passes. The withhold adds to that wait, so a new proxy whose endpoints are
+    still missing at expiry can take about the budget plus `15s` to go Ready.
+    The controller withholds anyway because it cannot tell a new proxy from a
+    reconnecting one when the first build arrives.
   - The budget starts when the controller receives the client's first deferred
     build, after per-client translation produces one, not when the proxy
     connects.
