@@ -311,6 +311,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 	gk := backend.GetGroupKind()
 	process, ok := t.ContributedBackends[gk]
 	if !ok {
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error("backend has no contributed translator", "backend", backend.GetName(), "groupKind", gk.String())
 		return &BaseCluster{
 			Cluster: buildBlackholeCluster(backend),
@@ -318,6 +319,7 @@ func (t *BackendTranslator) TranslateBackendBase(
 		}
 	}
 	if process.InitEnvoyBackend == nil {
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error("backend plugin has no cluster initializer", "backend", backend.GetName(), "groupKind", gk.String())
 		return &BaseCluster{
 			Cluster: buildBlackholeCluster(backend),
@@ -639,6 +641,7 @@ func (t *BackendTranslator) applyBasePolicies(
 		}
 		for _, polAttachment := range policies {
 			if len(polAttachment.Errors) > 0 {
+				//nolint:sloglint // keep the existing log key; renaming it would break log queries
 				logger.Error("policy has errors", "gk", gk, "errors", polAttachment.Errors, "policyRef", polAttachment.PolicyRef)
 				errs = append(errs, polAttachment.Errors...)
 				continue
