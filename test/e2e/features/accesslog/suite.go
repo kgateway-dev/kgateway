@@ -49,11 +49,18 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 // TestAccessLogWithFileSink tests access log with file sink
 func (s *testingSuite) TestAccessLogWithFileSink() {
 	pods := s.getPods(fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, gatewayObjectMeta.GetName()))
-	s.sendTestRequest()
 
+	// The file-sink HTTPListenerPolicy and the transformation TrafficPolicy that
+	// enriches the log with dynamic metadata propagate to Envoy independently of
+	// their Accepted status, so a single request sent before they are both live
+	// produces an access log missing the expected fields. Send inside the poll
+	// loop so each attempt exercises the current Envoy config until the log
+	// accumulates the fully-enriched line.
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		s.sendTestRequest()
+
 		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, gatewayObjectMeta.GetNamespace(), pods[0])
-		s.Require().NoError(err)
+		assert.NoError(c, err)
 
 		// Verify the log contains the expected JSON pattern
 		assert.Contains(c, logs, `"authority":"www.example.com"`)
@@ -64,35 +71,42 @@ func (s *testingSuite) TestAccessLogWithFileSink() {
 		assert.Contains(c, logs, `"backendCluster":"kube_kgateway-base_httpbin_8000"`)
 		assert.Contains(c, logs, `"transformation_request_metadata":"access.logs.request.metadata.value"`)
 		assert.Contains(c, logs, `"transformation_response_metadata":"access.logs.response.metadata.value"`)
-	}, 5*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 1*time.Second)
 }
 
 // TestAccessLogWithGrpcSink tests access log with grpc sink
 func (s *testingSuite) TestAccessLogWithGrpcSink() {
 	pods := s.getPods(defaults.WellKnownAppLabel + "=gateway-proxy-access-logger")
-	s.sendTestRequest()
 
+	// Send inside the poll loop so each attempt exercises the current Envoy
+	// config until the access log config propagates and a log line is emitted.
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		s.sendTestRequest()
+
 		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerObjectMeta.GetNamespace(), pods[0])
-		s.Require().NoError(err)
+		assert.NoError(c, err)
 
 		// Verify the log contains the expected JSON pattern
 		assert.Contains(c, logs, `"logger_name":"test-accesslog-service"`)
 		assert.Contains(c, logs, `"cluster":"kube_kgateway-base_httpbin_8000"`)
-	}, 5*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 1*time.Second)
 }
 
 // TestAccessLogWithOTelSink tests access log with OTel sink
 func (s *testingSuite) TestAccessLogWithOTelSink() {
 	pods := s.getPods(defaults.WellKnownAppLabel + "=otel-collector")
-	s.sendTestRequest()
 
+	// Send inside the poll loop so each attempt exercises the current Envoy
+	// config until the access log config propagates and a log line is emitted.
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		s.sendTestRequest()
+
 		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, accessLoggerObjectMeta.GetNamespace(), pods[0])
-		s.Require().NoError(err)
+		assert.NoError(c, err)
 
 		// Example log line for the access log
-		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gateway.kgateway-base.default)\n     -> node_name: Str(gateway-69c5b8cd88-ln44n.kgateway-base)\n     -> service.name: Str(gateway.kgateway-base)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_kgateway-base_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
+		// {"level":"info","ts":"2025-06-20T18:22:57.716Z","msg":"ResourceLog #0\nResource SchemaURL: \nResource attributes:\n     -> log_name: Str(test-otel-accesslog-service)\n     -> zone_name: Str()\n     -> cluster_name: Str(gateway.kgateway-base.default)\n     -> node_name: Str(gateway-69c5b8cd88-ln44n.kgateway-base)\n     -> service.name: Str(gateway.kgateway-base)\nScopeLogs #0\nScopeLogs SchemaURL: \nInstrumentationScope  \nLogRecord #0\nObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC\nTimestamp: 2025-06-20 18:22:56.807883 +0000 UTC\nSeverityText: \nSeverityNumber: Unspecified(0)\nBody: Str(\"GET /get 200 \"www.example.com\" \"kube_kgateway-base_httpbin_8000\"\\n')\nAttributes:\n     -> custom: Str(string)\n     -> kvlist: Map({\"key-1\":\"value-1\",\"key-2\":\"value-2\"})\nTrace ID: \nSpan ID: \nFlags: 0\n","kind":"exporter","data_type":"logs","name":"debug"}
+		assert.Contains(c, logs, `-> log_name: Str(test-otel-accesslog-service)`)
 		assert.Contains(c, logs, `-> service.name: Str(gateway.kgateway-base)`)
 		assert.Contains(c, logs, `-> service.namespace: Str(kgateway-base)`)
 		// Static k8s resource attributes set by the control plane
@@ -109,7 +123,7 @@ func (s *testingSuite) TestAccessLogWithOTelSink() {
 		assert.Contains(c, logs, `value-1`)
 		assert.Contains(c, logs, `key-2`)
 		assert.Contains(c, logs, `value-2`)
-	}, 5*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) sendTestRequest() {
