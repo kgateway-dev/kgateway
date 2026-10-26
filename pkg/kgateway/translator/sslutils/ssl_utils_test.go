@@ -73,6 +73,15 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "signature_algorithms_envoy_accepted_forms",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pkcs1_sha256_legacy,RSA+SHA256,ECDSA+SHA384,RSA-PSS+SHA512",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pkcs1_sha256_legacy", "RSA+SHA256", "ECDSA+SHA384", "RSA-PSS+SHA512"},
+			},
+		},
+		{
 			name: "signature_algorithms_trailing_comma",
 			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
 				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256,rsa_pkcs1_sha256,",
@@ -318,6 +327,15 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateSignatureAlgorithms(t *testing.T) {
+	assert.NoError(t, ValidateSignatureAlgorithms([]string{"rsa_pss_rsae_sha256", "RSA+SHA256", "rsa_pkcs1_sha256_legacy"}))
+
+	err := ValidateSignatureAlgorithms([]string{"rsa_pss_rsae_sha256", "not_a_real_algorithm", "RSA+SHA224"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid signature algorithm: not_a_real_algorithm")
+	assert.Contains(t, err.Error(), "invalid signature algorithm: RSA+SHA224")
 }
 
 func TestValidateCertificateHash(t *testing.T) {

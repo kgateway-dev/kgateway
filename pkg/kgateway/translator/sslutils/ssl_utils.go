@@ -45,6 +45,10 @@ var (
 
 	ErrUnknownTLSExtensionOption = errors.New("unknown tls option")
 
+	// ErrInvalidSignatureAlgorithm is returned when a signature algorithm is not
+	// accepted by Envoy/BoringSSL.
+	ErrInvalidSignatureAlgorithm = errors.New("invalid signature algorithm")
+
 	// tlsProtocolMap maps TLS version strings to Envoy TLS protocol values
 	tlsProtocolMap = map[string]envoytlsv3.TlsParameters_TlsProtocol{
 		"1.0": envoytlsv3.TlsParameters_TLSv1_0,
@@ -65,22 +69,61 @@ var (
 	}
 	ErrMissingCaCertificateRefGrant = errors.New("missing CA certificate reference grant")
 
-	// validSignatureAlgorithms is the set of signature algorithms supported by Envoy/BoringSSL
+	// validSignatureAlgorithms is the set of signature algorithms accepted by
+	// Envoy/BoringSSL. BoringSSL accepts both the IANA/TLS 1.3 names and the older
+	// OpenSSL-style "PKEY+HASH" forms, so both are included. Rejecting a name that
+	// Envoy accepts would stop a previously working listener from being programmed.
 	validSignatureAlgorithms = map[string]struct{}{
-		"rsa_pkcs1_sha256":       {},
-		"rsa_pkcs1_sha384":       {},
-		"rsa_pkcs1_sha512":       {},
-		"ecdsa_secp256r1_sha256": {},
-		"ecdsa_secp384r1_sha384": {},
-		"ecdsa_secp521r1_sha512": {},
-		"rsa_pss_rsae_sha256":    {},
-		"rsa_pss_rsae_sha384":    {},
-		"rsa_pss_rsae_sha512":    {},
-		"ed25519":                {},
-		"rsa_pkcs1_sha1":         {},
-		"ecdsa_sha1":             {},
+		// IANA/TLS 1.3 names.
+		"rsa_pkcs1_sha1":          {},
+		"rsa_pkcs1_sha256":        {},
+		"rsa_pkcs1_sha256_legacy": {},
+		"rsa_pkcs1_sha384":        {},
+		"rsa_pkcs1_sha512":        {},
+		"ecdsa_sha1":              {},
+		"ecdsa_secp256r1_sha256":  {},
+		"ecdsa_secp384r1_sha384":  {},
+		"ecdsa_secp521r1_sha512":  {},
+		"rsa_pss_rsae_sha256":     {},
+		"rsa_pss_rsae_sha384":     {},
+		"rsa_pss_rsae_sha512":     {},
+		"ed25519":                 {},
+
+		// OpenSSL-style names.
+		"RSA+SHA1":       {},
+		"RSA+SHA256":     {},
+		"RSA+SHA384":     {},
+		"RSA+SHA512":     {},
+		"ECDSA+SHA1":     {},
+		"ECDSA+SHA256":   {},
+		"ECDSA+SHA384":   {},
+		"ECDSA+SHA512":   {},
+		"RSA-PSS+SHA256": {},
+		"RSA-PSS+SHA384": {},
+		"RSA-PSS+SHA512": {},
 	}
 )
+
+// ValidateSignatureAlgorithm returns an error if alg is not accepted by
+// Envoy/BoringSSL.
+func ValidateSignatureAlgorithm(alg string) error {
+	if _, ok := validSignatureAlgorithms[alg]; ok {
+		return nil
+	}
+	return fmt.Errorf("%w: %s", ErrInvalidSignatureAlgorithm, alg)
+}
+
+// ValidateSignatureAlgorithms validates a list of signature algorithms and
+// returns all validation errors joined together.
+func ValidateSignatureAlgorithms(algorithms []string) error {
+	var errs error
+	for _, alg := range algorithms {
+		if err := ValidateSignatureAlgorithm(alg); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+	return errs
+}
 
 // GetCACertFromConfigMap validates and extracts the ca.crt string from a ConfigMap
 func GetCACertFromConfigMap(cm *corev1.ConfigMap) (string, error) {
@@ -154,8 +197,8 @@ func ApplySignatureAlgorithms(in string, out *ir.TLSConfig) error {
 			continue
 		}
 		// Validate against known signature algorithms
-		if _, ok := validSignatureAlgorithms[trimmed]; !ok {
-			errs = errors.Join(errs, fmt.Errorf("invalid signature algorithm: %s", trimmed))
+		if err := ValidateSignatureAlgorithm(trimmed); err != nil {
+			errs = errors.Join(errs, err)
 			continue
 		}
 		validAlgorithms = append(validAlgorithms, trimmed)

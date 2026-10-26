@@ -210,6 +210,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("frontendtlsconfig with invalid signature algorithm", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"frontendtlsconfig/invalid-signature-algorithm.yaml"},
+			outputFile: "frontendtlsconfig/invalid-signature-algorithm.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("frontendtlsconfig with ListenerSet in different namespace", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"frontendtlsconfig/listenerset-cross-ns.yaml"},
