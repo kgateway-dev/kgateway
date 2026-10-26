@@ -3,6 +3,7 @@
 package base
 
 import (
+	"strings"
 	"testing"
 
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -49,5 +50,37 @@ func TestImagePullerPodNameAvoidsSanitizationCollisions(t *testing.T) {
 
 	if first == second {
 		t.Fatalf("expected unique pod names for distinct images, got %q", first)
+	}
+}
+
+func TestSplitNamespaceResources(t *testing.T) {
+	content := `apiVersion: v1
+kind: Pod
+metadata:
+  name: heygw
+  namespace: hey
+---
+# comment-only document
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hey
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-svc
+`
+	namespaces, rest := splitNamespaceResources(t, content)
+
+	if len(namespaces) != 1 || !strings.Contains(namespaces[0], "name: hey") {
+		t.Fatalf("expected only the hey Namespace, got %q", namespaces)
+	}
+	if len(rest) != 2 || !strings.Contains(rest[0], "kind: Pod") || !strings.Contains(rest[1], "kind: Service") {
+		t.Fatalf("expected the Pod and Service in order, got %q", rest)
+	}
+	if got := stripNamespaceResourcesFromContent(t, content); strings.Contains(got, "kind: Namespace") {
+		t.Fatalf("stripped content still has a Namespace: %q", got)
 	}
 }

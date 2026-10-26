@@ -43,6 +43,7 @@ func listenerSets(n int) []*gwv1.ListenerSet {
 func TestToListenerAliasesEntry(t *testing.T) {
 	g := NewWithT(t)
 	entry := listenerSets(1)[0].Spec.Listeners[0]
+	entry.Filters = &gwv1.ListenerFilters{}
 
 	l := ToListener(entry)
 
@@ -52,6 +53,7 @@ func TestToListenerAliasesEntry(t *testing.T) {
 	g.Expect(l.Hostname).To(BeIdenticalTo(entry.Hostname), "Hostname should alias the entry")
 	g.Expect(l.TLS).To(BeIdenticalTo(entry.TLS), "TLS should alias the entry")
 	g.Expect(l.AllowedRoutes).To(BeIdenticalTo(entry.AllowedRoutes), "AllowedRoutes should alias the entry")
+	g.Expect(l.Filters).To(BeIdenticalTo(entry.Filters), "Filters should alias the entry")
 }
 
 // BenchmarkToListenerSlice converts the listeners of many ListenerSets, as each Gateway

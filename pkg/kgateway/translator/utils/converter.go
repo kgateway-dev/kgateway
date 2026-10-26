@@ -8,15 +8,7 @@ import (
 // aliases the entry's Hostname, TLS and AllowedRoutes, so callers must treat them as read-only,
 // as they already do for listeners taken from Gateway.Spec.Listeners.
 func ToListener(listenerEntry gwv1.ListenerEntry) gwv1.Listener {
-	// Listener has a Filters field that ListenerEntry lacks, so the struct conversion no longer applies.
-	return gwv1.Listener{
-		Name:          listenerEntry.Name,
-		Hostname:      listenerEntry.Hostname,
-		Port:          listenerEntry.Port,
-		Protocol:      listenerEntry.Protocol,
-		TLS:           listenerEntry.TLS,
-		AllowedRoutes: listenerEntry.AllowedRoutes,
-	}
+	return gwv1.Listener(listenerEntry)
 }
 
 // ToListenerSlice converts ListenerSet entries with ToListener; the results alias the entries.
