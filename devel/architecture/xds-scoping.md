@@ -69,7 +69,7 @@ in one coherent snapshot is not enough, because Envoy does not necessarily apply
 CDS before RDS within a snapshot, and after a CDS response is sent its watch
 stays closed until Envoy ACKs — so a route update landing in that window reaches
 the wire on the still-open RDS watch, ahead of its destination.
-`KGW_CLUSTER_REFERENCE_AHEAD` holds routes, listeners and secrets at their
+`KGW_XDS_SCOPING_REFERENCE_AHEAD` holds routes, listeners and secrets at their
 published versions while the new cluster goes out, then releases.
 
 The window is per cluster. It starts when the controller first publishes a
@@ -91,15 +91,16 @@ cluster they name stays published with them, whatever the de-reference grace.
 response is sent before its RDS response, and without it CDS can still arrive
 first. Dropping a cluster in the same snapshot as the route that stopped naming
 it then applies the removal first, and requests on the old route get a 503 NC
-until the route update lands. `KGW_CLUSTER_DEREFERENCE_GRACE` keeps the cluster
-published for a bounded period after the controller publishes the route update
-that stops naming it, giving that update time to land first; it cannot make sure
-the update does. A build held for a new or unready cluster does not start the
-period: the hold keeps the cluster anyway, and the period starts at the release.
-Set this above worst-case RDS propagation for your fleet. The grace covers only
-clusters scoping stopped emitting: a cluster whose backend was deleted or fails
-translation leaves at once, as in `ALL`, since a request-time selector would
-otherwise keep routing to the deleted backend.
+until the route update lands. `KGW_XDS_SCOPING_DEREFERENCE_GRACE` keeps the
+cluster published for a bounded period after the controller publishes the
+route update that stops naming it, giving that update time to land first;
+it cannot make sure the update does. A build held for a new or unready
+cluster does not start the period: the hold keeps the cluster anyway, and
+the period starts at the release. Set this above worst-case RDS propagation
+for your fleet. The grace covers only clusters scoping stopped emitting:
+a cluster whose backend was deleted or fails translation leaves at once,
+as in `ALL`, since a request-time selector would otherwise keep routing to
+the deleted backend.
 
 Ordered ADS does not substitute for either window: it fixes CDS before RDS,
 which is the wrong order for removals, and it does not close the ACK-skew
@@ -126,9 +127,9 @@ never walked, so one there changes nothing.
 
 Such a gateway reverts to emitting every cluster, a warning is logged when it
 does, naming the selectors and, for a backend's listener, the backend and
-listener, and `kgateway_xds_cluster_scoping_disabled_gateways` goes to 1 for it. Detection
-matters more than it looks: a plugin like that usually falls back when its
-computed cluster is absent, so pruning a candidate does not produce a visible
+listener, and `kgateway_xds_scoping_disabled_gateways` goes to 1 for it.
+Detection matters more than it looks: a plugin like that usually falls back when
+its computed cluster is absent, so pruning a candidate does not produce a visible
 503 — every affected request quietly goes somewhere else instead. The metric is
 what turns that into something you can alert on.
 
@@ -166,7 +167,7 @@ rebuild, once per distinct config. A panic, an empty prefix or an empty result
 leaves the use unclaimed, and the unscoped gateway's warning names the reason.
 
 A plugin's unit tests can check its claim without a controller:
-`proxy_syncer.DecideClusterScoping` applies scoping to routes and listeners the
+`proxy_syncer.DecideXdsScoping` applies scoping to routes and listeners the
 plugin generates and reports whether the gateway stays scoped, why not, and
 which clusters it keeps. The golden-corpus sweep checks scopability in both
 directions: a fixture with no request-time selector, or only claimed ones, must
@@ -213,8 +214,8 @@ very cluster that makes the feature safe.
 | Setting | Default | Effect |
 | --- | --- | --- |
 | `KGW_XDS_SCOPING_MODE` | `ALL` | `REFERENCED` scopes CDS, EDS, and backend-owned LDS/SDS resources to referenced clusters. `ALL` is the pre-existing behavior. |
-| `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` or negative removes immediately and accepts the race. |
-| `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long configuration naming a cluster new to a proxy is held after the controller first publishes that cluster. `0` or negative publishes both together and accepts the blip. |
+| `KGW_XDS_SCOPING_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` or negative removes immediately and accepts the race. |
+| `KGW_XDS_SCOPING_REFERENCE_AHEAD` | `2s` | How long configuration naming a cluster new to a proxy is held after the controller first publishes that cluster. `0` or negative publishes both together and accepts the blip. |
 
 Both windows are off in `ALL` mode, where every discovered backend is emitted,
 so a cluster enters or leaves CDS only with its backend, never because a route
@@ -235,9 +236,9 @@ one whose windows close first is not a bounded publish.
 
 | Metric | Type | Meaning |
 | --- | --- | --- |
-| `kgateway_xds_cluster_scoping_dropped_clusters` | gauge | The most clusters any connected proxy group of a gateway has withheld because nothing references them. |
-| `kgateway_xds_cluster_scoping_disabled_gateways` | gauge | 1 while any connected proxy group of a gateway reverted to emit-all. Worth an alert. |
-| `kgateway_xds_cluster_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters, for each proxy group. |
+| `kgateway_xds_scoping_dropped_clusters` | gauge | The most clusters any connected proxy group of a gateway has withheld because nothing references them. |
+| `kgateway_xds_scoping_disabled_gateways` | gauge | 1 while any connected proxy group of a gateway reverted to emit-all. Worth an alert. |
+| `kgateway_xds_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters, for each proxy group. |
 
 A proxy group is the proxies of a gateway that share labels and locality; they
 receive one snapshot, and each group keeps its own windows. A gateway whose

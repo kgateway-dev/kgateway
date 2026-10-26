@@ -292,8 +292,8 @@ func TestSnapshotPerClientReportsABackendListenerFallback(t *testing.T) {
 				{Name: namespaceLabel, Value: "ns"},
 			}
 			gathered := metricstest.MustGatherMetrics(t)
-			assert.Equal(t, tc.dropped, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", labels))
-			assert.Equal(t, tc.disabled, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", labels))
+			assert.Equal(t, tc.dropped, gathered.MustGetMetricValueByLabels("kgateway_xds_scoping_dropped_clusters", labels))
+			assert.Equal(t, tc.disabled, gathered.MustGetMetricValueByLabels("kgateway_xds_scoping_disabled_gateways", labels))
 		})
 	}
 }
@@ -325,7 +325,7 @@ func TestClaimsDoNotCoverABackendListenersSelector(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"tunneled", "proxy", "unreferenced"}, mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items))
 	assert.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(
-		"kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+		"kgateway_xds_scoping_disabled_gateways", []metrics.Label{
 			{Name: gatewayLabel, Value: gateway},
 			{Name: namespaceLabel, Value: "ns"},
 		}))

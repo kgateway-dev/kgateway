@@ -24,8 +24,8 @@ controller:
   xds:
     scoping:
       mode: REFERENCED     # KGW_XDS_SCOPING_MODE
-      referenceAhead: 3s   # KGW_CLUSTER_REFERENCE_AHEAD
-      dereferenceGrace: 5s # KGW_CLUSTER_DEREFERENCE_GRACE
+      referenceAhead: 3s   # KGW_XDS_SCOPING_REFERENCE_AHEAD
+      dereferenceGrace: 5s # KGW_XDS_SCOPING_DEREFERENCE_GRACE
   extraEnv:
     KGW_PER_CLIENT_PUBLISH_BUDGET: "20s"
 ```
@@ -59,8 +59,14 @@ nothing, so the controller uses its own default. A variable set in
   `KGW_XDS_FIRST_CONNECT_DELAY`, which logs a warning and uses its default. An
   invalid xDS scoping value, in `controller.xds.scoping` or in
   `controller.extraEnv` under `KGW_XDS_SCOPING_MODE`,
-  `KGW_CLUSTER_REFERENCE_AHEAD` or `KGW_CLUSTER_DEREFERENCE_GRACE`, fails the
-  Helm install or upgrade instead.
+  `KGW_XDS_SCOPING_REFERENCE_AHEAD` or `KGW_XDS_SCOPING_DEREFERENCE_GRACE`,
+  fails the Helm install or upgrade instead.
+- **Renamed variables.** The v2.5.0 betas read `KGW_CLUSTER_DISCOVERY_MODE`,
+  `KGW_CLUSTER_REFERENCE_AHEAD` and `KGW_CLUSTER_DEREFERENCE_GRACE`, now
+  `KGW_XDS_SCOPING_MODE`, `KGW_XDS_SCOPING_REFERENCE_AHEAD` and
+  `KGW_XDS_SCOPING_DEREFERENCE_GRACE`. Setting an old name stops the controller
+  from starting, even alongside its replacement, and the error names the new
+  variable.
 - **Negative durations.** Nothing rejects a negative duration. Every duration
   here treats a negative value exactly like `0`, so a stray minus sign silently
   turns that bound or window off.
@@ -74,8 +80,8 @@ nothing, so the controller uses its own default. A variable set in
 | `KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK` | `false` | boolean | `false`: no check. |
 | `KGW_XDS_RESPOND_ON_RECONNECT` | `true` | boolean | `false`: held-version requests wait for a version change. |
 | `KGW_XDS_SCOPING_MODE` | `ALL` | `ALL`, `REFERENCED`, any case | `ALL`: no scoping and no transition windows. |
-| `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | duration | A de-referenced cluster is removed at once. |
-| `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | duration | A new cluster and the configuration naming it publish together. |
+| `KGW_XDS_SCOPING_DEREFERENCE_GRACE` | `5s` | duration | A de-referenced cluster is removed at once. |
+| `KGW_XDS_SCOPING_REFERENCE_AHEAD` | `2s` | duration | A new cluster and the configuration naming it publish together. |
 | `KGW_XDS_FIRST_CONNECT_DELAY` | `1s` | duration | No sleep on a new stream. |
 
 ## Publication
@@ -324,7 +330,7 @@ A gateway whose routes can pick a destination at request time reverts to
 emitting every cluster, and so does one with a request-time selector in a kept
 backend's listener. A warning names the selectors, and the backend and listener
 for one in a backend's listener.
-`kgateway_xds_cluster_scoping_disabled_gateways` is 1 for the gateway while any
+`kgateway_xds_scoping_disabled_gateways` is 1 for the gateway while any
 of its connected proxy groups is reverted.
 
 The exception is a cluster specifier plugin whose selector a valid plugin claim
@@ -358,8 +364,8 @@ without an error.
 
 Metrics:
 
-- `kgateway_xds_cluster_scoping_dropped_clusters`;
-- `kgateway_xds_cluster_scoping_disabled_gateways`;
+- `kgateway_xds_scoping_dropped_clusters`;
+- `kgateway_xds_scoping_disabled_gateways`;
 - `kgateway_xds_snapshot_resources{resource="Cluster"}`.
 
 [xDS scoping](../../devel/architecture/xds-scoping.md)
@@ -374,7 +380,7 @@ just before installing it in its xDS cache. Neither observes the send, Envoy's
 ACK, or Envoy applying the change, so neither guarantees a hitless transition.
 Size both above your fleet's worst-case propagation.
 
-#### `KGW_CLUSTER_REFERENCE_AHEAD` (default `2s`)
+#### `KGW_XDS_SCOPING_REFERENCE_AHEAD` (default `2s`)
 
 Helm value: `controller.xds.scoping.referenceAhead`.
 
@@ -399,9 +405,9 @@ slowly, the window can close first, and the route can briefly fail with
   together.
 
 The metric is
-`kgateway_xds_cluster_scoping_transitions_total{transition="reference_ahead_held"}`.
+`kgateway_xds_scoping_transitions_total{transition="reference_ahead_held"}`.
 
-#### `KGW_CLUSTER_DEREFERENCE_GRACE` (default `5s`)
+#### `KGW_XDS_SCOPING_DEREFERENCE_GRACE` (default `5s`)
 
 Helm value: `controller.xds.scoping.dereferenceGrace`.
 
@@ -420,7 +426,7 @@ backend for the whole grace.
 
 With `0` or a negative value, the cluster is removed in the same publication,
 which accepts that race. The metric is
-`kgateway_xds_cluster_scoping_transitions_total` with `transition` set to
+`kgateway_xds_scoping_transitions_total` with `transition` set to
 `dereference_graced` or `dereference_pruned`.
 
 ## Interactions
