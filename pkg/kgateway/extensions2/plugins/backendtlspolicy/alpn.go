@@ -36,26 +36,36 @@ const httpProtocolOptionsKey = "envoy.extensions.upstreams.http.v3.HttpProtocolO
 //     http1ProtocolOptions with at least one field set. An empty HTTP/1.1
 //     config does not count as a choice: it is indistinguishable from the
 //     placeholder BackendConfigPolicy adds alongside commonHttpProtocolOptions.
+//
+// BackendConfigPolicy leaves its http2ProtocolOptions to this hook for backends without an app protocol
+// that have a BackendTLSPolicy attached, so a warning is logged here when they cannot be applied.
 func processBaseCluster(_ krt.HandlerContext, _ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
-	if in.AppProtocol != ir.DefaultAppProtocol {
+	if in.AppProtocol != ir.DefaultAppProtocol || len(in.AttachedPolicies.Policies[backendTlsPolicyGroupKind.GroupKind()]) == 0 {
 		return
 	}
+	if !enableALPN(in, out) && backendconfigpolicy.Http2ProtocolOptions(in) != nil {
+		logger.Warn("can't apply http2 protocol options: backend does not negotiate HTTP/2 via ALPN", "backend", in.GetName())
+	}
+}
+
+// enableALPN lets the cluster negotiate HTTP/2 or HTTP/1.1 via ALPN, and reports whether it did.
+func enableALPN(in ir.BackendObjectIR, out *envoyclusterv3.Cluster) bool {
 	if !hasBackendTLSPolicy(in) {
-		return
+		return false
 	}
 	if len(out.GetTransportSocketMatches()) > 0 {
-		return
+		return false
 	}
 	if !isTLSTransportSocket(out.GetTransportSocket()) {
-		return
+		return false
 	}
 	existing, err := httpProtocolOptions(out)
 	if err != nil {
 		logger.Error("failed to read http protocol options", "cluster", out.GetName(), "error", err)
-		return
+		return false
 	}
 	if !upstreamProtocolUnset(existing) {
-		return
+		return false
 	}
 	// Use the BackendConfigPolicy HTTP/2 options, if any, for when HTTP/2 is negotiated. Allow
 	// extended CONNECT so WebSocket upgrades can still reach the backend over HTTP/2 (RFC 8441).
@@ -73,7 +83,9 @@ func processBaseCluster(_ krt.HandlerContext, _ context.Context, in ir.BackendOb
 		}
 	}); err != nil {
 		logger.Error("failed to enable ALPN protocol selection", "cluster", out.GetName(), "error", err)
+		return false
 	}
+	return true
 }
 
 // hasBackendTLSPolicy reports whether a valid BackendTLSPolicy that sets a

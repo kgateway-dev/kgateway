@@ -170,6 +170,11 @@ func TestProcessBaseCluster(t *testing.T) {
 
 			processBaseCluster(nil, context.Background(), tt.backend(t), c)
 
+			// processBaseCluster warns about BackendConfigPolicy http2 options when enableALPN reports false.
+			if b := tt.backend(t); b.AppProtocol == ir.DefaultAppProtocol {
+				assert.Equal(t, tt.wantAuto, enableALPN(b, tt.cluster(t)), "enableALPN should report whether ALPN was enabled")
+			}
+
 			after := readOptions(t, c)
 			if !tt.wantAuto {
 				assert.Equal(t, before.GetUpstreamProtocolOptions(), after.GetUpstreamProtocolOptions(), "upstream protocol should be unchanged")
