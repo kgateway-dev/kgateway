@@ -95,6 +95,21 @@ Takes a dict: "value" is the mode, "path" names it in the error.
 {{- end }}
 
 {{/*
+Validate an xDS scoping duration and return it as a string. Accepts what the
+controller's time.ParseDuration does: "0", or signed decimal numbers each with
+a unit, such as "500ms" or "1m30s". A bare number other than 0 is rejected.
+Takes a dict: "value" is the duration, "path" names it in the error.
+*/}}
+{{- define "kgateway.xdsScopingDuration" -}}
+{{- $duration := .value | toString -}}
+{{- if regexMatch `^[-+]?(0|(([0-9]+(\.[0-9]*)?|\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$` $duration -}}
+{{- $duration -}}
+{{- else -}}
+{{- printf "ERROR: Invalid %s '%s'. Must be a duration such as '500ms', '3s' or '0'." .path $duration | fail -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Get the image tag with 'v' prefix for semver tags.
 If the input already starts with 'v', return it as-is.
 If the input looks like a semver version (e.g., "1.2.3"), prepend 'v'.

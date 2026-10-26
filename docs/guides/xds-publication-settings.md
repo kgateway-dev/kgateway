@@ -56,9 +56,10 @@ nothing, so the controller uses its own default. A variable set in
 - **Invalid values.** An invalid value stops the controller from starting: it
   logs `error loading settings from env` and exits. The exception is
   `KGW_XDS_FIRST_CONNECT_DELAY`, which logs a warning and uses its default. An
-  invalid xDS scoping mode, in `controller.xdsScoping.mode` or
-  `controller.extraEnv.KGW_XDS_SCOPING_MODE`, fails the Helm install or
-  upgrade instead.
+  invalid xDS scoping value, in `controller.xdsScoping` or in
+  `controller.extraEnv` under `KGW_XDS_SCOPING_MODE`,
+  `KGW_CLUSTER_REFERENCE_AHEAD` or `KGW_CLUSTER_DEREFERENCE_GRACE`, fails the
+  Helm install or upgrade instead.
 - **Negative durations.** Nothing rejects a negative duration. Every duration
   here treats a negative value exactly like `0`, so a stray minus sign silently
   turns that bound or window off.

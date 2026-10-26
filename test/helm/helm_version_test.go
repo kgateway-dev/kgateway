@@ -596,6 +596,31 @@ func TestControllerXdsScoping(t *testing.T) {
 			},
 		},
 		{
+			name: "renders compound and fractional durations",
+			valuesYAML: `controller:
+  xdsScoping:
+    referenceAhead: 1m30s
+    dereferenceGrace: 1.5s
+`,
+			want: map[string]string{
+				"KGW_CLUSTER_REFERENCE_AHEAD":   "1m30s",
+				"KGW_CLUSTER_DEREFERENCE_GRACE": "1.5s",
+			},
+		},
+		{
+			// A non-zero bare number is invalid, but 0 is not.
+			name: "passes a valid extraEnv zero duration through unchanged",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_CLUSTER_REFERENCE_AHEAD: "0"
+    KGW_CLUSTER_DEREFERENCE_GRACE: "0"
+`,
+			want: map[string]string{
+				"KGW_CLUSTER_REFERENCE_AHEAD":   "0",
+				"KGW_CLUSTER_DEREFERENCE_GRACE": "0",
+			},
+		},
+		{
 			name: "omits every value when xdsScoping is null",
 			valuesYAML: `controller:
   xdsScoping: null
@@ -718,6 +743,40 @@ func TestControllerXdsScoping(t *testing.T) {
     KGW_XDS_SCOPING_MODE: " REFERENCED "
 `,
 			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ' REFERENCED '. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// A non-string mode is set, not empty, so it is validated rather than skipped.
+			name: "rejects a numeric mode",
+			valuesYAML: `controller:
+  xdsScoping:
+    mode: 0
+`,
+			message: "Invalid controller.xdsScoping.mode '0'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// time.ParseDuration rejects a bare number other than 0.
+			name: "rejects a duration without a unit",
+			valuesYAML: `controller:
+  xdsScoping:
+    referenceAhead: 3
+`,
+			message: "Invalid controller.xdsScoping.referenceAhead '3'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+		{
+			name: "rejects an unparseable duration",
+			valuesYAML: `controller:
+  xdsScoping:
+    dereferenceGrace: 5 seconds
+`,
+			message: "Invalid controller.xdsScoping.dereferenceGrace '5 seconds'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+		{
+			name: "rejects an invalid extraEnv duration",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_CLUSTER_DEREFERENCE_GRACE: 10
+`,
+			message: "Invalid controller.extraEnv.KGW_CLUSTER_DEREFERENCE_GRACE '10'. Must be a duration such as '500ms', '3s' or '0'.",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
