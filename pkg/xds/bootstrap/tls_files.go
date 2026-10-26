@@ -1,4 +1,4 @@
-package validator
+package bootstrap
 
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -30,6 +30,17 @@ ppOieTqxwt1wjgS/cULiGjJG1pGhRANCAATmAGp88zdbox+LAIxHzHk6SSODfeWn
 itwaG90MDt874CzKiY+CnqlRTc9ZQQDAsbaoWAXuAPHeh63nDv1+ht8K
 -----END PRIVATE KEY-----
 `
+
+// withPlaceholderTLSFiles returns m, or a copy with TLS files replaced by
+// placeholders. Translated resources are shared with the proxy, so they are
+// never modified in place.
+func withPlaceholderTLSFiles[T proto.Message](m T) T {
+	clone := proto.CloneOf(m)
+	if replaceTLSFiles(clone.ProtoReflect()) {
+		return clone
+	}
+	return m
+}
 
 // replaceTLSFiles swaps TLS certificates, keys, and CAs given as file paths
 // for inline placeholders, recursing into Any fields. The files live on the

@@ -14,12 +14,14 @@ import (
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttpv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
 )
 
 func TestBinaryValidator_Validate(t *testing.T) {
@@ -274,8 +276,19 @@ func TestDockerValidator_Validate(t *testing.T) {
 			errorMsg:    `error initializing configuration '/dev/fd/0': error adding listener named 'listener_0': address is necessary`,
 		},
 		{
-			name:        "TLS files that exist only on the proxy",
-			bootstrap:   fileTLSBootstrap(),
+			name: "TLS files are checked against the validator's filesystem",
+			bootstrap: &envoybootstrapv3.Bootstrap{
+				Node: &envoycorev3.Node{Id: "test-id", Cluster: "test-cluster"},
+				StaticResources: &envoybootstrapv3.Bootstrap_StaticResources{
+					Clusters: []*envoyclusterv3.Cluster{fileTLSCluster()},
+				},
+			},
+			expectError: true,
+			errorMsg:    `error initializing configuration '/dev/fd/0': Invalid path: /proxy/only/ca.crt`,
+		},
+		{
+			name:        "validation bootstrap replaces TLS files that exist only on the proxy",
+			bootstrap:   mustBuildWithCluster(fileTLSCluster()),
 			expectError: false,
 		},
 		{
@@ -543,4 +556,44 @@ func createMockBinary(t *testing.T, script string) string {
 	require.NoError(t, err)
 
 	return mockPath
+}
+
+// fileTLSCluster returns a cluster that references TLS files that exist only
+// on the proxy.
+func fileTLSCluster() *envoyclusterv3.Cluster {
+	file := func(path string) *envoycorev3.DataSource {
+		return &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_Filename{Filename: path}}
+	}
+	return &envoyclusterv3.Cluster{
+		Name:                 "file-tls",
+		ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_STATIC},
+		TransportSocket: &envoycorev3.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &envoycorev3.TransportSocket_TypedConfig{
+				TypedConfig: utils.MustMessageToAny(&envoytlsv3.UpstreamTlsContext{
+					CommonTlsContext: &envoytlsv3.CommonTlsContext{
+						TlsCertificates: []*envoytlsv3.TlsCertificate{{
+							CertificateChain: file("/proxy/only/tls.crt"),
+							PrivateKey:       file("/proxy/only/tls.key"),
+						}},
+						ValidationContextType: &envoytlsv3.CommonTlsContext_ValidationContext{
+							ValidationContext: &envoytlsv3.CertificateValidationContext{
+								TrustedCa: file("/proxy/only/ca.crt"),
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+}
+
+func mustBuildWithCluster(cluster *envoyclusterv3.Cluster) *envoybootstrapv3.Bootstrap {
+	builder := bootstrap.New()
+	builder.AddCluster(cluster)
+	bs, err := builder.Build()
+	if err != nil {
+		panic(err)
+	}
+	return bs
 }
