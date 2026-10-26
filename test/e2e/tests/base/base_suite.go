@@ -102,6 +102,11 @@ var (
 		GwApiChannelStandard:     &GwApiV1_6_0,
 	}
 
+	GwApiRequireUdpRoutes = map[GwApiChannel]*GwApiVersion{
+		GwApiChannelExperimental: &GwApiV1_6_0,
+		GwApiChannelStandard:     &GwApiV1_6_0,
+	}
+
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_1_0,
 	}
