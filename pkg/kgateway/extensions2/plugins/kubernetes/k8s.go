@@ -46,7 +46,9 @@ func NewPluginFromCollections(
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, BuildServiceBackendObjectIR(svc, port.Port, ptr.OrDefault(port.AppProtocol, port.Name)))
+			be := BuildServiceBackendObjectIR(svc, port.Port, ptr.OrDefault(port.AppProtocol, port.Name))
+			be.AppProtocol = ir.ParseServicePortAppProtocol(port.AppProtocol, port.Name)
+			uss = append(uss, be)
 		}
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)

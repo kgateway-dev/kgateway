@@ -28,7 +28,7 @@ const httpProtocolOptionsKey = "envoy.extensions.upstreams.http.v3.HttpProtocolO
 // It runs as a ProcessBaseCluster hook, after every ProcessBackend hook, so the
 // decision does not depend on the order in which policy plugins ran. The
 // cluster is left untouched when:
-//   - the backend declares an app protocol (HTTP/2 and WebSocket are explicit),
+//   - the backend declares an app protocol (HTTP/1.1, HTTP/2 and WebSocket are explicit),
 //   - the cluster uses transport socket matches (e.g. Istio auto mTLS, which
 //     includes a plaintext match that cannot negotiate ALPN),
 //   - the final transport socket is not TLS (possibly wrapped in proxy protocol),

@@ -121,6 +121,12 @@ func TestProcessBaseCluster(t *testing.T) {
 			wantAuto: false,
 		},
 		{
+			name:     "HTTP/1.1 app protocol stays HTTP/1.1",
+			backend:  func(t *testing.T) ir.BackendObjectIR { return backendWithBTP(t, ir.HTTP1AppProtocol) },
+			cluster:  func(t *testing.T) *envoyclusterv3.Cluster { return clusterWithSocket(tlsSocket(t, "btp.example.com")) },
+			wantAuto: false,
+		},
+		{
 			name:     "WebSocket app protocol stays HTTP/1.1",
 			backend:  func(t *testing.T) ir.BackendObjectIR { return backendWithBTP(t, ir.WebSocketAppProtocol) },
 			cluster:  func(t *testing.T) *envoyclusterv3.Cluster { return clusterWithSocket(tlsSocket(t, "btp.example.com")) },

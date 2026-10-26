@@ -92,10 +92,26 @@ type Namespaced interface {
 type AppProtocol string
 
 const (
-	DefaultAppProtocol   AppProtocol = ""
+	DefaultAppProtocol AppProtocol = ""
+	// HTTP1AppProtocol is an explicit HTTP/1.1 app protocol. It is handled like DefaultAppProtocol,
+	// except that a backend with a BackendTLSPolicy keeps HTTP/1.1 instead of negotiating it via ALPN.
+	HTTP1AppProtocol     AppProtocol = "http1"
 	HTTP2AppProtocol     AppProtocol = "http2"
 	WebSocketAppProtocol AppProtocol = "ws"
 )
+
+// httpAppProtocol is the IANA and istio app protocol for HTTP/1.1.
+const httpAppProtocol = "http"
+
+// ParseServicePortAppProtocol maps a Kubernetes Service port to an app protocol like ParseAppProtocol, using
+// the port name when appProtocol is unset. Only an explicit appProtocol of http selects HTTP1AppProtocol:
+// a port named http is too common to be a choice of HTTP/1.1.
+func ParseServicePortAppProtocol(appProtocol *string, portName string) AppProtocol {
+	if appProtocol != nil && strings.EqualFold(*appProtocol, httpAppProtocol) {
+		return HTTP1AppProtocol
+	}
+	return ParseAppProtocol(new(ptr.Deref(appProtocol, portName)))
+}
 
 // kubernetesWssAppProtocol is the GEP-1911 app protocol for WebSocket over TLS.
 // It is only valid on Services; TLS comes from a BackendTLSPolicy.
