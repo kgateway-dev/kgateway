@@ -239,6 +239,34 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: `time: invalid duration "not-a-duration"`,
 		},
 		{
+			name: "errors on invalid leader election lease duration",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_LEASE_DURATION": "not-a-duration",
+			},
+			expectedErrorStr: `time: invalid duration "not-a-duration"`,
+		},
+		{
+			name: "errors on non-positive leader election duration",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_RETRY_PERIOD": "0s",
+			},
+			expectedErrorStr: "leader election durations must be greater than zero: leaseDuration=15s, renewDeadline=10s, retryPeriod=0s",
+		},
+		{
+			name: "errors when leader election lease duration is not greater than renew deadline",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_LEASE_DURATION": "10s",
+			},
+			expectedErrorStr: "leader election leaseDuration (10s) must be greater than renewDeadline (10s)",
+		},
+		{
+			name: "errors when leader election renew deadline is not greater than retry period with jitter",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_RETRY_PERIOD": "9s",
+			},
+			expectedErrorStr: "leader election renewDeadline (10s) must be greater than retryPeriod (9s) * 1.2",
+		},
+		{
 			name: "ignores other env vars",
 			envVars: map[string]string{
 				"KGW_DOES_NOT_EXIST":         "true",
@@ -306,6 +334,16 @@ func TestSettings(t *testing.T) {
 			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
 		})
 	}
+}
+
+// TestValidateLeaderElectionDisabled tests that leader election durations are not validated when leader election is disabled.
+func TestValidateLeaderElectionDisabled(t *testing.T) {
+	s := &Settings{
+		DisableLeaderElection:       true,
+		LeaderElectionLeaseDuration: time.Second,
+		LeaderElectionRenewDeadline: 10 * time.Second,
+	}
+	require.NoError(t, s.validateLeaderElection(), "invalid durations should be ignored when leader election is disabled")
 }
 
 // TestEnvVarCoverage tests that all settings are tested with non-default values.

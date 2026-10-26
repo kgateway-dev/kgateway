@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"k8s.io/client-go/tools/leaderelection"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -377,5 +378,29 @@ func BuildSettings() (*Settings, error) {
 	if err := envconfig.Process("KGW", settings); err != nil {
 		return settings, err
 	}
+	if err := settings.validateLeaderElection(); err != nil {
+		return settings, err
+	}
 	return settings, nil
+}
+
+// validateLeaderElection mirrors the checks client-go runs when the leader elector is created,
+// so that invalid durations fail when settings are loaded rather than when the manager starts.
+func (s *Settings) validateLeaderElection() error {
+	if s.DisableLeaderElection {
+		return nil
+	}
+	if s.LeaderElectionLeaseDuration <= 0 || s.LeaderElectionRenewDeadline <= 0 || s.LeaderElectionRetryPeriod <= 0 {
+		return fmt.Errorf("leader election durations must be greater than zero: leaseDuration=%s, renewDeadline=%s, retryPeriod=%s",
+			s.LeaderElectionLeaseDuration, s.LeaderElectionRenewDeadline, s.LeaderElectionRetryPeriod)
+	}
+	if s.LeaderElectionLeaseDuration <= s.LeaderElectionRenewDeadline {
+		return fmt.Errorf("leader election leaseDuration (%s) must be greater than renewDeadline (%s)",
+			s.LeaderElectionLeaseDuration, s.LeaderElectionRenewDeadline)
+	}
+	if s.LeaderElectionRenewDeadline <= time.Duration(leaderelection.JitterFactor*float64(s.LeaderElectionRetryPeriod)) {
+		return fmt.Errorf("leader election renewDeadline (%s) must be greater than retryPeriod (%s) * %v",
+			s.LeaderElectionRenewDeadline, s.LeaderElectionRetryPeriod, leaderelection.JitterFactor)
+	}
+	return nil
 }

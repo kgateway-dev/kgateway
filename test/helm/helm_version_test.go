@@ -571,6 +571,15 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "leader-election",
+		valuesYAML: `controller:
+  leaderElection:
+    leaseDuration: 30s
+    renewDeadline: 20s
+    retryPeriod: 5s
+`,
+	},
+	{
 		name: "pdb-min-available",
 		valuesYAML: `controller:
   podDisruptionBudget:
