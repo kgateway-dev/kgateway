@@ -178,7 +178,7 @@ duration, and failure diagnostics.
 
 ### Components
 
-- **`types.go`**: Data structures and configuration thresholds
+- **`types.go`**: Data structures and the batching configuration for the baseline and production tests
 - **`vcluster_simulator.go`**: Simulates fake cluster resources (nodes, services, endpoints)
 - **`loadtest_manager.go`**: Orchestrates test execution and resource management
 - **`attachedroutes_suite.go`**: Implements the Attached Routes performance test
