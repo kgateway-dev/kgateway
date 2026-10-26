@@ -126,6 +126,149 @@ type BackendConfigPolicySpec struct {
 	// Requires Backend targetRefs; targetSelectors are not supported.
 	// +optional
 	Tunnel *Tunnel `json:"tunnel,omitempty"`
+
+	// SessionPersistence pins a client to one endpoint of the backend using a
+	// cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+	// the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+	// splits traffic, it only pins a client to an endpoint within the backend
+	// chosen by the split. When set, it takes precedence over the
+	// sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+	//
+	// This field is experimental and subject to breaking changes. It mirrors the
+	// experimental Gateway API SessionPersistence type (v1.7).
+	// +optional
+	SessionPersistence *SessionPersistence `json:"sessionPersistence,omitempty"`
+}
+
+// SessionPersistence defines the desired state of SessionPersistence.
+// It mirrors the Gateway API v1.7 SessionPersistence type.
+//
+// This type is experimental and subject to breaking changes.
+// +kubebuilder:validation:XValidation:message="AbsoluteTimeout must be specified when cookie lifetimeType is Permanent",rule="!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType != 'Permanent' || has(self.absoluteTimeout)"
+// +kubebuilder:validation:XValidation:message="cookie must be nil if type is not Cookie",rule="!has(self.cookie) || self.type == 'Cookie'"
+// +kubebuilder:validation:XValidation:message="cookie must be specified for Cookie type",rule="self.type != 'Cookie' || has(self.cookie)"
+// +kubebuilder:validation:XValidation:message="header must be nil if type is not Header",rule="!has(self.header) || self.type == 'Header'"
+// +kubebuilder:validation:XValidation:message="header must be specified for Header type",rule="self.type != 'Header' || has(self.header)"
+type SessionPersistence struct {
+	// AbsoluteTimeout defines the absolute timeout of the persistent
+	// session. Once the AbsoluteTimeout duration has elapsed, the
+	// session becomes invalid.
+	//
+	// Only cookie sessions with lifetimeType Permanent support this field, where it
+	// sets the cookie lifetime. It has no effect for header sessions and for Session
+	// cookies (the default lifetimeType), as the gateway does not track the session
+	// lifetime separately from the cookie.
+	//
+	// +optional
+	AbsoluteTimeout *gwv1.Duration `json:"absoluteTimeout,omitempty"`
+
+	// Type defines the type of session persistence such as through
+	// the use of a header or cookie. Defaults to cookie based session
+	// persistence.
+	//
+	// +unionDiscriminator
+	// +optional
+	// +kubebuilder:default=Cookie
+	Type *SessionPersistenceType `json:"type,omitempty"`
+
+	// Cookie provides configuration settings that are specific
+	// to cookie-based session persistence.
+	//
+	// +optional
+	Cookie *SessionPersistenceCookieConfig `json:"cookie,omitempty"`
+
+	// Header provides configuration settings that are specific
+	// to header-based session persistence.
+	//
+	// +optional
+	Header *SessionPersistenceHeaderConfig `json:"header,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Cookie;Header
+type SessionPersistenceType string
+
+const (
+	// CookieBasedSessionPersistence specifies cookie-based session
+	// persistence.
+	CookieBasedSessionPersistence SessionPersistenceType = "Cookie"
+
+	// HeaderBasedSessionPersistence specifies header-based session
+	// persistence.
+	HeaderBasedSessionPersistence SessionPersistenceType = "Header"
+)
+
+// SessionPersistenceCookieConfig defines the configuration for cookie-based session persistence.
+type SessionPersistenceCookieConfig struct {
+	// Name defines the name of the cookie used for session persistence.
+	// If not specified, a unique cookie name is generated for each backend.
+	// Users should avoid reusing cookie names to prevent unintended
+	// consequences, such as rejection or unpredictable behavior. Avoid using the
+	// same cookie name for backends in the same traffic split, as clients lose
+	// their session whenever the split switches backends.
+	//
+	// +optional
+	Name *CookieName `json:"name,omitempty"`
+
+	// Path defines the cookie Path attribute. Defaults to "/".
+	//
+	// +optional
+	// +kubebuilder:default="/"
+	// +kubebuilder:validation:MaxLength=1024
+	Path *string `json:"path,omitempty"`
+
+	// LifetimeType specifies whether the cookie has a permanent or
+	// session-based lifetime. A permanent cookie persists until its
+	// specified expiry time, defined by the Expires or Max-Age cookie
+	// attributes, while a session cookie is deleted when the current
+	// session ends.
+	//
+	// When set to "Permanent", AbsoluteTimeout indicates the
+	// cookie's lifetime via the Expires or Max-Age cookie attributes
+	// and is required.
+	//
+	// When set to "Session", AbsoluteTimeout has no effect, as the
+	// gateway does not track the session lifetime separately from
+	// the cookie.
+	//
+	// Defaults to "Session".
+	//
+	// +optional
+	// +kubebuilder:default=Session
+	LifetimeType *CookieLifetimeType `json:"lifetimeType,omitempty"`
+}
+
+// CookieName is the name of a cookie. Cookie names and header names share the
+// same RFC token character set (RFC 6265 defines cookie-name = token).
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=256
+// +kubebuilder:validation:Pattern=`^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$`
+// +k8s:deepcopy-gen=false
+type CookieName string
+
+// +kubebuilder:validation:Enum=Permanent;Session
+type CookieLifetimeType string
+
+const (
+	// SessionCookieLifetimeType specifies the type for a session
+	// cookie.
+	SessionCookieLifetimeType CookieLifetimeType = "Session"
+
+	// PermanentCookieLifetimeType specifies the type for a permanent
+	// cookie.
+	PermanentCookieLifetimeType CookieLifetimeType = "Permanent"
+)
+
+// SessionPersistenceHeaderConfig defines the configuration for header-based session persistence.
+type SessionPersistenceHeaderConfig struct {
+	// Name defines the name of the header used for session persistence.
+	// The client must include this header in subsequent requests to
+	// maintain the session. Avoid using the same header name for backends in
+	// the same traffic split, as clients lose their session whenever the split
+	// switches backends.
+	//
+	// +required
+	Name gwv1.HeaderName `json:"name"`
 }
 
 // Tunnel configures HTTP CONNECT tunneling through a forward proxy.
@@ -218,7 +361,56 @@ type DNS struct {
 	// When enabled, TTLs lower than RefreshRate effectively become the refresh interval.
 	// +optional
 	RespectTTL *bool `json:"respectTTL,omitempty"`
+
+	// LookupFamily selects the address families used to resolve this backend's
+	// hostnames. It applies only to backends resolved through DNS, such as a
+	// Backend with a hostname, and has no effect on Kubernetes Services. When
+	// omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+	// equivalent to IPv4Preferred.
+	//
+	// For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+	// or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+	// selects IPv4 addresses when available, even if those addresses are
+	// unreachable, so a cluster that reaches all IPv4 destinations this way should
+	// change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+	//
+	// Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+	// through a host-local IPv4 address and node SNAT, so the default reaches
+	// IPv4-only backends without an override.
+	//
+	// IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+	// for the preferred family, not when a connection fails. All returns both
+	// families, and for most backends each address becomes a separate endpoint,
+	// so requests sent to an unreachable family fail rather than fall back.
+	//
+	// Note: This feature is experimental and subject to breaking changes in future releases.
+	// +optional
+	LookupFamily *DnsLookupFamily `json:"lookupFamily,omitempty"`
 }
+
+// DnsLookupFamily selects the address families Envoy resolves for a DNS backend.
+// See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily) for more details.
+// +kubebuilder:validation:Enum=IPv4Preferred;IPv4Only;IPv6Only;IPv6Preferred;All
+type DnsLookupFamily string
+
+const (
+	// DnsLookupFamilyIPv4Preferred resolves both families and prefers IPv4, falling
+	// back to IPv6 when no IPv4 address is returned. This is kgateway's default.
+	// Equivalent to the V4_PREFERRED value of the KGW_DNS_LOOKUP_FAMILY setting.
+	DnsLookupFamilyIPv4Preferred DnsLookupFamily = "IPv4Preferred"
+	// DnsLookupFamilyIPv4Only resolves only IPv4 addresses.
+	DnsLookupFamilyIPv4Only DnsLookupFamily = "IPv4Only"
+	// DnsLookupFamilyIPv6Only resolves only IPv6 addresses.
+	DnsLookupFamilyIPv6Only DnsLookupFamily = "IPv6Only"
+	// DnsLookupFamilyIPv6Preferred resolves both families and prefers IPv6, falling
+	// back to IPv4 when no IPv6 address is returned. Equivalent to the AUTO value
+	// of the KGW_DNS_LOOKUP_FAMILY setting, which is also Envoy's own default.
+	DnsLookupFamilyIPv6Preferred DnsLookupFamily = "IPv6Preferred"
+	// DnsLookupFamilyAll resolves both families and returns every address. Only
+	// backends that keep all addresses in a single endpoint use happy eyeballs;
+	// for others, each address is load-balanced as a separate endpoint.
+	DnsLookupFamilyAll DnsLookupFamily = "All"
+)
 
 // See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http1protocoloptions) for more details.
 type Http1ProtocolOptions struct {
@@ -812,6 +1004,13 @@ type OutlierDetection struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	EnforcingConsecutive5xx *int32 `json:"enforcingConsecutive5xx,omitempty"`
+
+	// The number of consecutive gateway failures (502, 503 and 504 status
+	// codes) before a host is ejected. When set, ejection is always enforced.
+	// When unset, consecutive gateway failure ejection is disabled.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	ConsecutiveGatewayFailure *int32 `json:"consecutiveGatewayFailure,omitempty"`
 
 	// Determines whether to distinguish locally originated failures from
 	// externally generated errors. When true, consecutiveLocalOriginFailure and

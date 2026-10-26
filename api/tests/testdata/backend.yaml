@@ -1,0 +1,92 @@
+# Backend: enforce ExactlyOneOf for backend type
+_err: 'exactly one of the fields in [aws static dynamicForwardProxy gcp priorityGroups] must be set'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-oneof
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    lambda:
+      functionName: hello-function
+      invocationMode: Async
+  static:
+    hosts:
+    - host: example.com
+      port: 80
+---
+# Backend: empty lambda qualifier does not match pattern
+_err: 'spec.aws.lambda.qualifier in body should match '
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-empty-lambda-qualifier
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    lambda:
+      functionName: hello-function
+      qualifier: ""
+---
+# Backend: AWS backend requires exactly one of lambda or ec2
+_err: 'exactly one of the fields in [lambda ec2] must be set'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-aws-oneof
+spec:
+  type: AWS
+  aws:
+    accountId: "000000000000"
+    lambda:
+      functionName: hello-function
+    ec2:
+      port: 8080
+      addressType: PrivateIP
+---
+# Backend: invalid EC2 address type
+_err: 'spec.aws.ec2.addressType: Unsupported value: "InternalIP": supported values: "PrivateIP", "PublicIP"'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-address-type
+spec:
+  type: AWS
+  aws:
+    ec2:
+      port: 8080
+      addressType: InternalIP
+---
+# Backend: invalid AssumeRole role ARN
+_err: spec.aws.auth.assumeRole.roleArn in body should match
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-assume-role-arn
+spec:
+  type: AWS
+  aws:
+    auth:
+      type: AssumeRole
+      assumeRole:
+        roleArn: not-an-arn
+    ec2:
+      port: 8080
+---
+# Backend: EC2 tag filter requires exactly one branch
+_err: 'exactly one of the fields in [key keyValue] must be set'
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: backend-ec2-tag-filter-oneof
+spec:
+  type: AWS
+  aws:
+    ec2:
+      filters:
+      - key: owner
+        keyValue:
+          key: app
+          value: payments
