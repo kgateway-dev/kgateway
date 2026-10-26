@@ -556,13 +556,15 @@ func applyDeprecatedEnableWaypoint(settings *Settings) error {
 	if !ok {
 		return nil
 	}
-	enabled, err := strconv.ParseBool(val)
-	if err != nil {
-		return fmt.Errorf("envconfig.Process: assigning %s: converting '%s' to type bool: %w", deprecatedEnableWaypointEnv, val, err)
-	}
+	// Check the override before parsing, so an empty or malformed legacy value
+	// can't block startup when the new variable is set.
 	if _, set := os.LookupEnv(ingressUseWaypointsEnv); set {
 		logger.Warn(deprecatedEnableWaypointEnv+" is deprecated and ignored because "+ingressUseWaypointsEnv+" is set", "value", val)
 		return nil
+	}
+	enabled, err := strconv.ParseBool(val)
+	if err != nil {
+		return fmt.Errorf("envconfig.Process: assigning %s: converting '%s' to type bool: %w", deprecatedEnableWaypointEnv, val, err)
 	}
 	logger.Warn(deprecatedEnableWaypointEnv+" is deprecated; set "+ingressUseWaypointsEnv+" instead", "value", val)
 	settings.IngressUseWaypoints = enabled

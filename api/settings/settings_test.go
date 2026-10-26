@@ -462,6 +462,16 @@ func TestDeprecatedEnableWaypoint(t *testing.T) {
 			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please"},
 			wantErr: "KGW_ENABLE_WAYPOINT",
 		},
+		{
+			name:    "explicit value wins over an empty deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "", "KGW_INGRESS_USE_WAYPOINTS": "true"},
+			want:    true,
+		},
+		{
+			name:    "explicit value wins over a malformed deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please", "KGW_INGRESS_USE_WAYPOINTS": "false"},
+			want:    false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
