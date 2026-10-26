@@ -73,8 +73,8 @@ require (
 	k8s.io/kubectl v0.37.1
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd
 	sigs.k8s.io/controller-runtime v0.25.2
-	sigs.k8s.io/gateway-api v1.7.0-rc.2
-	sigs.k8s.io/gateway-api/conformance v1.7.0-rc.1.0.20261023162120-d57b8ba6f1b1
+	sigs.k8s.io/gateway-api v1.7.0-rc.3
+	sigs.k8s.io/gateway-api/conformance v1.7.0-rc.3
 	sigs.k8s.io/yaml v1.6.0
 )
 

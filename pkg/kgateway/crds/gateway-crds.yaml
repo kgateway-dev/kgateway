@@ -1,10 +1,30 @@
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_backendtlspolicies.yaml
+# Copyright The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Gateway API Experimental channel install
+#
+---
+#
+# config/crd/experimental/gateway.networking.k8s.io_backendtlspolicies.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   labels:
     gateway.networking.k8s.io/policy: Direct
@@ -1432,13 +1452,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_gatewayclasses.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_gatewayclasses.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: gatewayclasses.gateway.networking.k8s.io
 spec:
@@ -1946,13 +1968,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_gateways.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_gateways.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: gateways.gateway.networking.k8s.io
 spec:
@@ -6159,13 +6183,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_grpcroutes.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_grpcroutes.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: grpcroutes.gateway.networking.k8s.io
 spec:
@@ -8505,13 +8531,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_httproutes.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_httproutes.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: httproutes.gateway.networking.k8s.io
 spec:
@@ -17200,13 +17228,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_listenersets.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_listenersets.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: listenersets.gateway.networking.k8s.io
 spec:
@@ -18347,13 +18377,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_referencegrants.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_referencegrants.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: referencegrants.gateway.networking.k8s.io
 spec:
@@ -18700,13 +18732,15 @@ spec:
     storage: true
     subresources: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_tcproutes.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_tcproutes.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: tcproutes.gateway.networking.k8s.io
 spec:
@@ -20172,13 +20206,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: tlsroutes.gateway.networking.k8s.io
 spec:
@@ -22600,13 +22636,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_udproutes.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_udproutes.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: udproutes.gateway.networking.k8s.io
 spec:
@@ -24072,12 +24110,14 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.k8s.io_vap_safeupgrades.yaml
+#
+# config/crd/experimental/gateway.networking.k8s.io_vap_safeupgrades.yaml
+#
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
   annotations:
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: standard
   name: "safe-upgrades.gateway.networking.k8s.io"
 spec:
@@ -24111,7 +24151,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
 metadata:
   annotations:
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: standard
   name: safe-upgrades.gateway.networking.k8s.io
 spec:
@@ -24124,13 +24164,15 @@ spec:
       resources:   ["customresourcedefinitions"]
       operations:  ["CREATE", "UPDATE"]
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.x-k8s.io_xbackends.yaml
+#
+# config/crd/experimental/gateway.networking.x-k8s.io_xbackends.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: xbackends.gateway.networking.x-k8s.io
 spec:
@@ -24990,13 +25032,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.x-k8s.io_xbackendtrafficpolicies.yaml
+#
+# config/crd/experimental/gateway.networking.x-k8s.io_xbackendtrafficpolicies.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   labels:
     gateway.networking.k8s.io/policy: Direct
@@ -25627,13 +25671,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.x-k8s.io_xmeshes.yaml
+#
+# config/crd/experimental/gateway.networking.x-k8s.io_xmeshes.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   name: xmeshes.gateway.networking.x-k8s.io
 spec:
@@ -25871,13 +25917,15 @@ spec:
     subresources:
       status: {}
 ---
-# Source: https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/v1.7.0-rc.2/config/crd/experimental/gateway.networking.x-k8s.io_xtelemetrypolicies.yaml
+#
+# config/crd/experimental/gateway.networking.x-k8s.io_xtelemetrypolicies.yaml
+#
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     api-approved.kubernetes.io: https://github.com/kubernetes-sigs/gateway-api/pull/5371
-    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.2
+    gateway.networking.k8s.io/bundle-version: v1.7.0-rc.3
     gateway.networking.k8s.io/channel: experimental
   labels:
     gateway.networking.k8s.io/policy: Direct
