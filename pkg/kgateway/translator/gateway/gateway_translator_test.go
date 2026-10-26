@@ -91,6 +91,35 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// KGW_LISTENER_BIND_IPV6 decides the family the data-plane listeners bind. The
+	// two cases share an input so the only difference in the goldens is the bind
+	// address: the default binds the IPv6 wildcard with ipv4_compat so it still
+	// accepts IPv4, and disabling it binds the IPv4 wildcard with no ipv4_compat,
+	// which is the only thing that works on a node with IPv6 disabled.
+	t.Run("gateway listener binds IPv6 by default", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-bind/gateway.yaml"},
+			outputFile: "listener-bind/bind-ipv6.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("gateway listener binds IPv4 when ListenerBindIpv6 is disabled", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-bind/gateway.yaml"},
+			outputFile: "listener-bind/bind-ipv4-only.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}, func(s *apisettings.Settings) {
+			s.ListenerBindIpv6 = false
+		})
+	})
+
 	t.Run("gateway with no valid listeners should report correctly", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"gateway-only/gateway-invalid-listener.yaml"},
@@ -2109,6 +2138,72 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("http gateway with BackendConfigPolicy session persistence (cookie)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-cookie.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-cookie.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (header)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-header.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (generated cookie name)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-generated-name.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-generated-name.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (traffic split)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-split.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-split.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (precedence over route rule)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-precedence.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("http gateway with BackendConfigPolicy session persistence (partially valid)", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"session-persistence/backendconfigpolicy-partially-valid.yaml"},
+			outputFile: "session-persistence/backendconfigpolicy-partially-valid.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with upgrades", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"https-listener-pol/upgrades.yaml"},
@@ -2736,6 +2831,19 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	// dns.lookupFamily overrides the cluster-wide KGW_DNS_LOOKUP_FAMILY, which is
+	// what lets a single-stack cluster reach the other family for one backend.
+	t.Run("Backend Config Policy with DNS lookup family", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/dns-lookup-family.yaml"},
+			outputFile: "backendconfigpolicy/dns-lookup-family.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("Backend Config Policy with Health Check", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/healthcheck.yaml"},
@@ -2940,6 +3048,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/zone-aware-force.yaml"},
 			outputFile: "backendconfigpolicy/zone-aware-force.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy http2 options apply to ALPN negotiated by BackendTLSPolicy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml"},
+			outputFile: "backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -4331,6 +4450,10 @@ func TestRouteDelegation(t *testing.T) {
 
 	t.Run("Child matches parent via parentRefs", func(t *testing.T) {
 		test(t, "basic_parentref_match.yaml")
+	})
+
+	t.Run("BackendConfigPolicy overrides inherited session persistence", func(t *testing.T) {
+		test(t, "session_persistence_inheritance.yaml")
 	})
 
 	t.Run("Child matches same-namespace parent via parentRefs without namespace", func(t *testing.T) {

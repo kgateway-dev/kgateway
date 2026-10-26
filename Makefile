@@ -134,7 +134,8 @@ $(BUG_REPORT_DIR):
 # release picks up the freshly patched image.
 export DISTROLESS_BASE_IMAGE ?= cgr.dev/chainguard/glibc-dynamic:latest
 
-GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
+# Build with the toolchain directive of go.mod, falling back to the go directive.
+GO_VERSION := $(shell (grep -E '^toolchain go' go.mod | sed 's/^toolchain go//'; grep -E '^go ' go.mod | awk '{print $$2}') | head -n1)
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
 DEPSGOBIN ?= $(OUTPUT_DIR)
@@ -204,7 +205,7 @@ analyze: $(CUSTOM_GOLANGCI_LINT_BIN)  ## Run repository lint checks. Override go
 	$(MAKE) --no-print-directory fmt-yaml
 	$(CUSTOM_GOLANGCI_LINT_RUN) $(ANALYZE_ARGS) ./...
 
-$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum .custom-gcl.yml
+$(CUSTOM_GOLANGCI_LINT_BIN): go.mod go.sum tools/go.mod tools/go.sum .custom-gcl.yml
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) custom
 
 ACTION_LINT ?= go tool github.com/rhysd/actionlint/cmd/actionlint
@@ -446,6 +447,15 @@ e2e-test: maybe-setup-extproc-server
 e2e-test: go-test
 e2e-test: TEST_TAG = e2e
 e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+
+# Compiles the e2e test binary with the same build flags as e2e-test, but runs
+# nothing (-exec=true), so a later e2e-test starts from a warm build cache. CI
+# runs this in the background while the cluster is being set up.
+.PHONY: warm-e2e-test
+warm-e2e-test: go-test
+warm-e2e-test: TEST_TAG = e2e
+warm-e2e-test: GO_TEST_ARGS = $(E2E_GO_TEST_ARGS)
+warm-e2e-test: GO_TEST_USER_ARGS = -exec=true
 
 .PHONY: e2e-shared-images-docker
 e2e-shared-images-docker: kgateway-docker envoy-wrapper-docker sds-docker dummy-idp-docker extproc-server-docker ## Build shared docker images for e2e shards
@@ -781,6 +791,7 @@ $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
 $(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(CONTROLLER_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
@@ -817,6 +828,7 @@ $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
 
 $(SDS_OUTPUT_DIR)/Dockerfile.sds: cmd/sds/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(SDS_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
@@ -881,9 +893,11 @@ $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so: $(ENVOY_MODULES_SRC_FILES) $(ENVOY
 		$(ENVOY_MODULES_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DOCKERFILE)
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/.docker-stamp-$(VERSION)-$(GOARCH): $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh $(ENVOY_MODULE_OUTPUT_DIR)/librust_module.so
@@ -921,6 +935,7 @@ $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH): $(DUMMY_IDP_SOURCES)
 dummy-idp: $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH)
 
 $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp: ./hack/dummy-idp/Dockerfile
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(DUMMY_IDP_OUTPUT_DIR)/.docker-stamp-$(DUMMY_IDP_VERSION)-$(GOARCH): $(DUMMY_IDP_OUTPUT_DIR)/dummy-idp-linux-$(GOARCH) $(DUMMY_IDP_OUTPUT_DIR)/Dockerfile.dummy-idp
@@ -1062,12 +1077,30 @@ CLUSTER_NODE_VERSION ?= v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e
 # If true, use cloud-provider-kind instead of MetalLB for LoadBalancer support.
 CLOUD_PROVIDER_KIND ?= false
 
+# The IP family of the kind cluster: ipv4, ipv6, or dual. ipv6 and dual require
+# IPv6 to be enabled on the docker daemon.
+IP_FAMILY ?= ipv4
+
+# Optional MetalLB address-pool prefixes, needed only when running two kind
+# clusters at once: both derive their pool from the shared docker network and
+# would otherwise advertise the same addresses. CLUSTER_SUBNET is a /24 prefix
+# (e.g. 172.18.101) and CLUSTER_SUBNET_V6 a /64 prefix (e.g.
+# fc00:f853:ccd:e793:f001); both must sit inside the docker network's subnet.
+CLUSTER_SUBNET ?=
+CLUSTER_SUBNET_V6 ?=
+
 .PHONY: kind-create
-kind-create: ## Create a KinD cluster
-	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || $(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION)
+# The export is unconditional on purpose: `kind create cluster` selects the new
+# cluster's context itself, but when creation is skipped nothing does, and the
+# targets that follow would run against whatever context happens to be current.
+kind-create: ## Create a KinD cluster. IP_FAMILY=ipv4|ipv6|dual selects the cluster's IP family.
+	$(KIND) get clusters | grep -x $(CLUSTER_NAME) || \
+		printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nnetworking:\n  ipFamily: $(IP_FAMILY)\n' | \
+		$(KIND) create cluster --name $(CLUSTER_NAME) --image kindest/node:$(CLUSTER_NODE_VERSION) --config -
+	$(KIND) export kubeconfig --name $(CLUSTER_NAME)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.7.0-rc.2
+CONFORMANCE_VERSION ?= v1.7.0-rc.3
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
@@ -1082,7 +1115,9 @@ endif
 
 .PHONY: metallb
 metallb: ## Install the MetalLB load balancer
-	./hack/kind/setup-metalllb-on-kind.sh
+	IP_FAMILY=$(IP_FAMILY) \
+		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
+		./hack/kind/setup-metalllb-on-kind.sh
 
 .PHONY: cloud-provider-kind
 cloud-provider-kind:
@@ -1127,7 +1162,9 @@ undeploy-kgateway-crds: ## Undeploy the CRD chart from the cluster
 #----------------------------------------------------------------------------------
 
 kind-setup: ## Set up the KinD cluster. Deprecated: use kind-create instead.
-	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
+	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} IP_FAMILY=$(IP_FAMILY) \
+		CLUSTER_SUBNET=$(CLUSTER_SUBNET) CLUSTER_SUBNET_V6=$(CLUSTER_SUBNET_V6) \
+		./hack/kind/setup-kind.sh
 
 kind-load-%:
 	$(KIND) load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)

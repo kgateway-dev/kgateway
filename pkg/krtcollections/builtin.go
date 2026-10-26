@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -11,10 +12,6 @@ import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	corsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
-	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
-	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
-	stateful_header "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
-	httpv3 "github.com/envoyproxy/go-control-plane/envoy/type/http/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -34,6 +31,7 @@ import (
 	apiconditions "github.com/kgateway-dev/kgateway/v2/api/conditions"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/filters"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -43,8 +41,6 @@ import (
 )
 
 const (
-	statefulSessionFilterName = "envoy.filters.http.stateful_session"
-
 	httpRedirectStatusCodesAllowedMsg = "must be one of 301, 302, 303, 307, 308"
 )
 
@@ -69,9 +65,11 @@ type timeouts struct {
 }
 
 type ruleIR struct {
-	timeouts           *timeouts
-	retry              *envoyroutev3.RetryPolicy
-	sessionPersistence *stateful_sessionv3.StatefulSessionPerRoute
+	timeouts *timeouts
+	retry    *envoyroutev3.RetryPolicy
+	// sessionPersistence is the per route stateful session config, marshaled once when the rule is built
+	// so route translation does not marshal it again for every route. It is shared and must not be modified.
+	sessionPersistence *anypb.Any
 	// absoluteTimeoutIgnored is set when the sessionPersistence absoluteTimeout has no effect
 	// (a Session cookie or a header session), so it is reported on the route status.
 	absoluteTimeoutIgnored bool
@@ -118,9 +116,23 @@ type builtinPluginGwPass struct {
 	reporter            reporter.Reporter
 	hasCorsPolicy       map[string]bool
 	needStatefulSession map[string]bool
+	// sessionPersistenceOverrides collects, per route parent, the messages for route rules whose
+	// sessionPersistence is overridden by a BackendConfigPolicy, so a route reports all of them.
+	sessionPersistenceOverrides map[sessionPersistenceOverrideKey]sets.Set[string]
+	// sessionPersistenceClaimed tracks the output routes whose effective rule sessionPersistence is already
+	// decided by a higher priority rule policy (e.g. a child rule's own over an inherited parent rule's).
+	sessionPersistenceClaimed map[*envoyroutev3.Route]*anypb.Any
 	// absoluteTimeoutIgnored collects, per route parent, the rules whose sessionPersistence
 	// absoluteTimeout has no effect, so a route reports all of them in one condition.
 	absoluteTimeoutIgnored map[absoluteTimeoutIgnoredKey]sets.Set[string]
+}
+
+type sessionPersistenceOverrideKey struct {
+	route     types.UID
+	routeName string
+	// parentRef matches how the reports package keys a route's parent status, so all rules reported
+	// under one parent status share one entry here.
+	parentRef reports.ParentRefKey
 }
 
 type absoluteTimeoutIgnoredKey struct {
@@ -201,31 +213,39 @@ func (p *builtinPluginGwPass) applyRulePolicy(
 	r ruleIR,
 	mergeOpts policy.MergeOptions,
 	outputRoute *envoyroutev3.Route,
-) error {
+) {
 	// A parent route rule with a delegated backend will not have outputRoute.RouteAction set
 	// but the plugin will be invoked on the rule, so treat this as a no-op call
 	if outputRoute == nil || outputRoute.GetRoute() == nil {
-		return nil
+		return
 	}
 	r.applyTimeouts(outputRoute.GetRoute(), r.retry != nil, mergeOpts)
 	r.applyRetry(outputRoute.GetRoute(), mergeOpts)
 
-	if r.sessionPersistence != nil && policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName], mergeOpts) {
+	// Session persistence from a BackendConfigPolicy attached to the backend takes precedence over the route rule.
+	// For a single backend, the backend's per filter config is shared with the route via pCtx.TypedFilterConfig.
+	// For multiple backends, it is set on each weighted cluster, which Envoy prefers over the route.
+	backendHasSessionPersistence := pCtx != nil && pCtx.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName) != nil
+	// Only the rule sessionPersistence that would apply without the BackendConfigPolicy is reported as
+	// overridden. Rule policies are applied from highest to lowest priority, so a lower priority one (e.g.
+	// inherited from a delegating parent) is only effective if the merge strategy lets it replace the first.
+	if r.sessionPersistence != nil && policy.IsSettable(p.sessionPersistenceClaimed[outputRoute], mergeOpts) {
+		if p.sessionPersistenceClaimed != nil {
+			p.sessionPersistenceClaimed[outputRoute] = r.sessionPersistence
+		}
+		p.reportSessionPersistenceOverridden(pCtx, outputRoute, backendHasSessionPersistence)
+	}
+	if r.sessionPersistence != nil && !backendHasSessionPersistence &&
+		policy.IsSettable(outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName], mergeOpts) {
 		if outputRoute.GetTypedPerFilterConfig() == nil {
 			outputRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
 		}
-		anyMsg, err := utils.MessageToAny(r.sessionPersistence)
-		if err != nil {
-			logger.Error("error marshalling SessionPersistence", "error", err)
-			return err
-		}
-		outputRoute.GetTypedPerFilterConfig()[statefulSessionFilterName] = anyMsg
+		outputRoute.GetTypedPerFilterConfig()[sessionpersistence.FilterName] = r.sessionPersistence
 		p.needStatefulSession[pCtx.FilterChainName] = true
 		if r.absoluteTimeoutIgnored {
 			p.reportAbsoluteTimeoutIgnored(pCtx)
 		}
 	}
-	return nil
 }
 
 const msgAbsoluteTimeoutIgnored = "sessionPersistence.absoluteTimeout only has an effect for Cookie sessions " +
@@ -289,33 +309,6 @@ func (p *builtinPluginGwPass) reportAbsoluteTimeoutIgnored(pCtx *ir.RouteContext
 		Reason:  gwv1.RouteConditionReason(apiconditions.KgatewayReasonSessionPersistenceAbsoluteTimeoutIgnored),
 		Message: strings.Join(sets.List(rules), ", ") + ": " + msgAbsoluteTimeoutIgnored,
 	})
-}
-
-// ruleOwner returns the route rule that the builtin rule policy pol belongs to: in itself, or the parent
-// rule delegating to it that the policy is inherited from. It returns in when no owner is found.
-func ruleOwner(in *ir.HttpRouteRuleMatchIR, pol ir.PolicyIR) *ir.HttpRouteRuleMatchIR {
-	for r := in; r != nil; r = r.DelegatingParent {
-		for _, att := range r.AttachedPolicies.Policies[ir.VirtualBuiltInGK] {
-			if att.PolicyIr == pol {
-				return r
-			}
-		}
-	}
-	return in
-}
-
-// parentRefKey normalizes ref the same way the reports package keys route parent status (by value,
-// ignoring the port), so references with equal values but different pointers share a key.
-func parentRefKey(ref gwv1.ParentReference) reports.ParentRefKey {
-	return reports.ParentRefKey{
-		Group: string(ptr.Deref(ref.Group, "")),
-		Kind:  string(ptr.Deref(ref.Kind, "")),
-		NamespacedName: types.NamespacedName{
-			Namespace: string(ptr.Deref(ref.Namespace, "")),
-			Name:      string(ref.Name),
-		},
-		SectionName: string(ptr.Deref(ref.SectionName, "")),
-	}
 }
 
 func convertTimeouts(timeout *gwv1.HTTPRouteTimeouts) *timeouts {
@@ -438,78 +431,69 @@ func (r ruleIR) applyRetry(
 	action.RetryPolicy = r.retry
 }
 
-func headerSessionName(header *gwv1.HeaderConfig) string {
-	if header == nil || header.Name == "" {
-		return "x-session-persistence"
-	}
-	return string(header.Name)
-}
-
-func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *stateful_sessionv3.StatefulSessionPerRoute {
+func convertSessionPersistence(sessionPersistence *gwv1.SessionPersistence) *anypb.Any {
 	if sessionPersistence == nil {
 		return nil
 	}
+	cfg, err := sessionpersistence.ConfigFromAPI(sessionPersistenceToAPI(sessionPersistence))
+	if err != nil {
+		logger.Error("failed to create session state", "error", err)
+		return nil
+	}
+	perRoute, err := sessionpersistence.Build(cfg)
+	if err != nil {
+		logger.Error("failed to create session state", "error", err)
+		return nil
+	}
+	out, err := utils.MessageToAny(perRoute)
+	if err != nil {
+		logger.Error("error marshalling SessionPersistence", "error", err)
+		return nil
+	}
+	return out
+}
 
-	// Handle session persistence if specified
-	var sessionState proto.Message
-	spType := gwv1.CookieBasedSessionPersistence
-	if sessionPersistence.Type != nil {
-		spType = *sessionPersistence.Type
+// sessionPersistenceToAPI converts the route rule sessionPersistence into the kgateway SessionPersistence
+// API, so route rules and BackendConfigPolicy share the same conversion code. Both have the same shape;
+// only the route rule default cookie and header names are filled in. An unset lifetimeType is a Session
+// cookie, as the CRD defaults it.
+func sessionPersistenceToAPI(sp *gwv1.SessionPersistence) *kgateway.SessionPersistence {
+	spType := kgateway.SessionPersistenceType(ptr.Deref(sp.Type, gwv1.CookieBasedSessionPersistence))
+	out := &kgateway.SessionPersistence{Type: &spType}
+	if sp.AbsoluteTimeout != nil {
+		if _, err := time.ParseDuration(string(*sp.AbsoluteTimeout)); err != nil {
+			// Header sessions never use the timeout, so only warn for cookies.
+			if spType == kgateway.CookieBasedSessionPersistence {
+				logger.Warn("ignoring invalid sessionPersistence absoluteTimeout", "absolute_timeout", *sp.AbsoluteTimeout, "error", err)
+			}
+		} else {
+			out.AbsoluteTimeout = sp.AbsoluteTimeout
+		}
 	}
 
 	switch spType {
-	case gwv1.CookieBasedSessionPersistence:
-		var ttl *durationpb.Duration
-		if sessionPersistence.AbsoluteTimeout != nil {
-			if parsed, err := time.ParseDuration(string(*sessionPersistence.AbsoluteTimeout)); err == nil {
-				ttl = durationpb.New(parsed)
-			}
-		}
-		cookieConfig := ptr.Deref(sessionPersistence.Cookie, gwv1.CookieConfig{})
-		cookie := &httpv3.Cookie{
-			Name: utils.SanitizeCookieName(string(ptr.Deref(cookieConfig.Name, "sessionPersistence"))),
-			Ttl:  ttl,
-			// Default path to root to set cookie for all requests to hostname.
+	case kgateway.CookieBasedSessionPersistence:
+		cookie := ptr.Deref(sp.Cookie, gwv1.CookieConfig{})
+		out.Cookie = &kgateway.SessionPersistenceCookieConfig{
+			Name: new(kgateway.CookieName(ptr.Deref(cookie.Name, "sessionPersistence"))),
+			// An unset or empty path defaults to root, to set the cookie for all requests to the hostname.
 			// Default browser behavior otherwise is to use the current "directory" of the request.
 			// When a request comes in without session cookie for a subpath, it would be limited to that subpath and
 			// requests to unrelated subpaths could get routed to a different upstream.
 			// Cf. https://httpwg.org/specs/rfc6265.html#sane-path
-			Path: ptr.Deref(cookieConfig.Path, "/"),
+			Path:         cookie.Path,
+			LifetimeType: (*kgateway.CookieLifetimeType)(cookie.LifetimeType),
 		}
-		// The lifetimeType defaults to Session, as the CRD does.
-		switch ptr.Deref(cookieConfig.LifetimeType, gwv1.SessionCookieLifetimeType) {
-		case gwv1.SessionCookieLifetimeType:
-			// Session cookies — cookies without a Max-Age or Expires attribute – are deleted when the current session ends
-			cookie.Ttl = nil
-		case gwv1.PermanentCookieLifetimeType:
-			if cookie.GetTtl() == nil {
-				cookie.Ttl = durationpb.New(time.Hour * 24 * 365)
-			}
+	case kgateway.HeaderBasedSessionPersistence:
+		name := gwv1.HeaderName("x-session-persistence")
+		if sp.Header != nil && sp.Header.Name != "" {
+			name = sp.Header.Name
 		}
-		sessionState = &stateful_cookie.CookieBasedSessionState{
-			Cookie: cookie,
-		}
-	case gwv1.HeaderBasedSessionPersistence:
-		sessionState = &stateful_header.HeaderBasedSessionState{
-			Name: utils.SanitizeHeaderName(headerSessionName(sessionPersistence.Header)),
+		out.Header = &kgateway.SessionPersistenceHeaderConfig{
+			Name: name,
 		}
 	}
-	sessionStateAny, err := utils.MessageToAny(sessionState)
-	if err != nil {
-		logger.Error("failed to create session state: %v", "error", err)
-		return nil
-	}
-	statefulSession := &stateful_sessionv3.StatefulSession{
-		SessionState: &envoycorev3.TypedExtensionConfig{
-			Name:        "envoy.http.stateful_session." + strings.ToLower(string(spType)),
-			TypedConfig: sessionStateAny,
-		},
-	}
-	return &stateful_sessionv3.StatefulSessionPerRoute{
-		Override: &stateful_sessionv3.StatefulSessionPerRoute_StatefulSession{
-			StatefulSession: statefulSession,
-		},
-	}
+	return out
 }
 
 func translatePathRewrite(outputRoute *envoyroutev3.RedirectAction, pathRewrite *gwv1.HTTPPathModifier) {
@@ -785,11 +769,132 @@ func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoycorev3.RuntimeFrac
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass {
 	return &builtinPluginGwPass{
-		reporter:               reporter,
-		hasCorsPolicy:          make(map[string]bool),
-		needStatefulSession:    make(map[string]bool),
-		absoluteTimeoutIgnored: make(map[absoluteTimeoutIgnoredKey]sets.Set[string]),
+		reporter:                    reporter,
+		hasCorsPolicy:               make(map[string]bool),
+		needStatefulSession:         make(map[string]bool),
+		sessionPersistenceOverrides: make(map[sessionPersistenceOverrideKey]sets.Set[string]),
+		sessionPersistenceClaimed:   make(map[*envoyroutev3.Route]*anypb.Any),
+		absoluteTimeoutIgnored:      make(map[absoluteTimeoutIgnoredKey]sets.Set[string]),
 	}
+}
+
+// reportSessionPersistenceOverridden reports, on the route's parent status, a route rule whose sessionPersistence
+// is overridden by the BackendConfigPolicy of some or all of its backends. It sets kgateway.dev/Programmed=True
+// with the SessionPersistenceOverridden reason, unless the condition already reports a problem (False).
+func (p *builtinPluginGwPass) reportSessionPersistenceOverridden(
+	pCtx *ir.RouteContext,
+	outputRoute *envoyroutev3.Route,
+	singleBackendOverridden bool,
+) {
+	if p.reporter == nil || pCtx == nil {
+		return
+	}
+	// The overridden sessionPersistence belongs to the rule that owns this policy: the rule itself, or a
+	// parent rule delegating to it. Report on that rule's route.
+	owner := ruleOwner(&pCtx.In, pCtx.Policy)
+	if owner.Parent == nil || owner.Parent.SourceObject == nil {
+		return
+	}
+	var overridden []string
+	if singleBackendOverridden {
+		for _, b := range pCtx.In.Backends {
+			overridden = append(overridden, backendDisplayName(b.Backend))
+		}
+	} else {
+		// With multiple backends, the backends with a BackendConfigPolicy have the config on their weighted cluster.
+		// Return early, without allocating, in the common case where none of them has one.
+		clusters := outputRoute.GetRoute().GetWeightedClusters().GetClusters()
+		if !slices.ContainsFunc(clusters, func(cw *envoyroutev3.WeightedCluster_ClusterWeight) bool {
+			return cw.GetTypedPerFilterConfig()[sessionpersistence.FilterName] != nil
+		}) {
+			return
+		}
+		byCluster := make(map[string]ir.BackendRefIR, len(pCtx.In.Backends))
+		for _, b := range pCtx.In.Backends {
+			byCluster[b.Backend.ClusterName] = b.Backend
+		}
+		for _, cw := range clusters {
+			if cw.GetTypedPerFilterConfig()[sessionpersistence.FilterName] == nil {
+				continue
+			}
+			if b, ok := byCluster[cw.GetName()]; ok {
+				overridden = append(overridden, backendDisplayName(b))
+			}
+		}
+	}
+	if len(overridden) == 0 {
+		return
+	}
+	slices.Sort(overridden)
+	overridden = slices.Compact(overridden)
+
+	rule := owner.RuleName
+	if rule == "" {
+		rule = strconv.Itoa(owner.RuleIndex)
+	}
+	src := owner.Parent.SourceObject
+	key := sessionPersistenceOverrideKey{
+		route:     src.GetUID(),
+		routeName: src.GetNamespace() + "/" + src.GetName(),
+		parentRef: parentRefKey(owner.ParentRef),
+	}
+	msgs := p.sessionPersistenceOverrides[key]
+	if msgs == nil {
+		msgs = sets.New[string]()
+		p.sessionPersistenceOverrides[key] = msgs
+	}
+	msgs.Insert(fmt.Sprintf("rule %s: sessionPersistence is overridden by the BackendConfigPolicy of %s",
+		rule, strings.Join(overridden, ", ")))
+
+	parentReport := p.reporter.Route(src).ParentRef(&owner.ParentRef)
+	// A dropped or replaced rule reports Programmed=False; never hide it.
+	if prr, ok := parentReport.(*reports.ParentRefReport); ok {
+		if cond := meta.FindStatusCondition(prr.Conditions, apiconditions.KgatewayConditionProgrammed); cond != nil &&
+			cond.Status == metav1.ConditionFalse {
+			return
+		}
+	}
+	parentReport.SetCondition(reporter.RouteCondition{
+		Type:    gwv1.RouteConditionType(apiconditions.KgatewayConditionProgrammed),
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.RouteConditionReason(apiconditions.KgatewayReasonSessionPersistenceOverridden),
+		Message: strings.Join(sets.List(msgs), "; "),
+	})
+}
+
+// ruleOwner returns the route rule that the builtin rule policy pol belongs to: in itself, or the parent
+// rule delegating to it that the policy is inherited from. It returns in when no owner is found.
+func ruleOwner(in *ir.HttpRouteRuleMatchIR, pol ir.PolicyIR) *ir.HttpRouteRuleMatchIR {
+	for r := in; r != nil; r = r.DelegatingParent {
+		for _, att := range r.AttachedPolicies.Policies[ir.VirtualBuiltInGK] {
+			if att.PolicyIr == pol {
+				return r
+			}
+		}
+	}
+	return in
+}
+
+// parentRefKey normalizes ref the same way the reports package keys route parent status (by value,
+// ignoring the port), so references with equal values but different pointers share a key.
+func parentRefKey(ref gwv1.ParentReference) reports.ParentRefKey {
+	return reports.ParentRefKey{
+		Group: string(ptr.Deref(ref.Group, "")),
+		Kind:  string(ptr.Deref(ref.Kind, "")),
+		NamespacedName: types.NamespacedName{
+			Namespace: string(ptr.Deref(ref.Namespace, "")),
+			Name:      string(ref.Name),
+		},
+		SectionName: string(ptr.Deref(ref.SectionName, "")),
+	}
+}
+
+func backendDisplayName(b ir.BackendRefIR) string {
+	if b.BackendObject == nil {
+		return b.ClusterName
+	}
+	gk := b.BackendObject.GetGroupKind()
+	return fmt.Sprintf("%s %s/%s", gk.Kind, b.BackendObject.GetNamespace(), b.BackendObject.GetName())
 }
 
 func (p *builtinPlugin) Name() string {
@@ -878,12 +983,7 @@ func (p *builtinPluginGwPass) HttpFilters(_ ir.HttpFiltersContext, fcc ir.Filter
 	}
 
 	if p.needStatefulSession[fcc.FilterChainName] {
-		stagedFilter, err := filters.NewStagedFilter(statefulSessionFilterName, &stateful_sessionv3.StatefulSession{}, filters.DuringStage(filters.AcceptedStage))
-		if err != nil {
-			return nil, err
-		}
-		stagedFilter.Filter.Disabled = true
-		builtinStaged = append(builtinStaged, stagedFilter)
+		builtinStaged = append(builtinStaged, sessionpersistence.DisabledFilter())
 	}
 
 	return builtinStaged, nil
