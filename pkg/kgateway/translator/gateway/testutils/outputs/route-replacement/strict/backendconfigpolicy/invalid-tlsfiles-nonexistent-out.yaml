@@ -120,8 +120,8 @@ Statuses:
           namespace: gwtest
         conditions:
         - lastTransitionTime: null
-          message: 'invalid certificate and key pair: tls: failed to find any PEM
-            data in certificate input'
+          message: 'invalid xds configuration: error initializing configuration ''/dev/fd/0'':
+            Invalid path: /missing/path/to/ca.pem'
           reason: Invalid
           status: "False"
           type: Accepted
