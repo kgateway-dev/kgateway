@@ -126,23 +126,11 @@ func constructOAuth2(
 	return nil
 }
 
-// upstreamTLSValidationForBackend returns the trust material the control plane should use
-// when it talks to backend itself, from the BackendTLSPolicy in effect on that backend.
-//
-// It resolves the *effective* policy with the very MergePolicies the backend translator uses
-// (see irtranslator's applyPolicies), rather than re-deriving the winner here, so that
-// discovery cannot end up trusting something the proxy does not: several policies may target
-// one backend, in which case only the merge winner applies, and a policy carrying errors
-// contributes nothing at all. An erroring winner is reported rather than skipped, because
-// skipping it would silently fall back to the system trust store while the proxy gets no TLS
-// config at all from the same policy.
-//
-// Only BackendTLSPolicy is consulted. BackendConfigPolicy's TLS is suppressed on the Envoy
-// side whenever a BackendTLSPolicy is attached, and honoring it here would need its
-// field-wise merge, which is not reachable from this transform; see the issue tracker.
-//
-// A nil result means the effective policy configures nothing a Go client can act on, leaving
-// the caller on its default of the system trust store.
+// upstreamTLSValidationForBackend returns the trust material from the BackendTLSPolicy in
+// effect on backend, resolved with the same MergePolicies the backend translator uses so that
+// discovery trusts what the proxy does. An invalid effective policy is an error rather than a
+// silent fallback to the system trust store. BackendConfigPolicy is not consulted.
+// A nil result means the system trust store.
 func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamTLSValidation, error) {
 	if backend == nil {
 		return nil, nil
@@ -183,18 +171,12 @@ func buildOAuth2ProviderConfig(
 		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
 	}
 
-	// Resolve the backend before discovering, so that discovery can validate the issuer with
-	// the CA the user configured for the data path to it. Envoy talks to the issuer through
-	// this backend's cluster; the control plane dials the issuer URL directly, but it must
-	// trust the same CA or a provider behind a private CA fails discovery even though the
-	// proxy can reach it.
+	// Resolve the backend before discovering, so discovery can trust the CA of its
+	// BackendTLSPolicy.
 	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
 	if err != nil || backend == nil {
-		// Giving up before get() leaves this extension reading no discovery entry, and the
-		// refresh loop has to be told so: the extension is still live, so on its own it would
-		// keep polling whatever the previous translation bound, under a CA or for an issuer
-		// that nothing reads any more. The backend is a tracked krt input, so its appearance
-		// re-runs this transform and binds afresh.
+		// Release the entry the previous translation bound; the backend is a tracked krt
+		// input, so its appearance re-runs this transform and binds afresh.
 		discoverer.unbind(ext.ResourceName())
 		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}

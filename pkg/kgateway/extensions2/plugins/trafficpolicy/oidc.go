@@ -62,11 +62,8 @@ const (
 	backgroundDiscoveryConcurrency = 4
 )
 
-// discoveryKey identifies a cache entry: an issuer, plus the trust material used to reach it.
-//
-// The trust material is part of the key because two GatewayExtensions naming the same issuer
-// can validate it differently, and because rotating the CA on a backend must not keep serving
-// a config discovered against the old one.
+// discoveryKey identifies a cache entry: an issuer plus the trust material used to reach it,
+// so a config discovered under one CA is never served for another.
 type discoveryKey struct {
 	issuerURI string
 	// tlsDigest is the digest of the trust configuration, empty for the system trust store.
@@ -80,12 +77,8 @@ func (k discoveryKey) String() string {
 	return k.issuerURI + "|" + k.tlsDigest
 }
 
-// tlsDigest identifies a trust configuration for cache keying. The CA bundle is not used as
-// the key itself: it is large, and a digest keeps keys cheap to compare and safe to log.
-//
-// Anything that resolves to the system trust store digests to the empty string, so a backend
-// with no policy at all and one that explicitly selects the well-known system CA set share a
-// cache entry rather than discovering the same issuer twice.
+// tlsDigest identifies a trust configuration for cache keying. The system trust store
+// digests to the empty string.
 func tlsDigest(v *ir.UpstreamTLSValidation) string {
 	if v == nil || v.CAPEM == "" {
 		return ""
@@ -94,16 +87,9 @@ func tlsDigest(v *ir.UpstreamTLSValidation) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// tlsClientConfig builds the TLS config for a discovery client. A nil validation, or one
-// carrying nothing a Go client can act on, yields a nil config so that the client falls back
-// to plain system-trust-store verification: the behavior before backend policies were
-// honored here.
-//
-// A CA bundle extends the system roots rather than replacing them. That differs from what the
-// same bundle does to the Envoy cluster's validation context, and deliberately so: the client
-// dials the issuer URL, not the backend, and the two are routinely different servers (see
-// ir.UpstreamTLSValidation). A private-CA backendRef fronting a public-CA issuer discovered
-// fine before backend policies were honored here, and must keep doing so.
+// tlsClientConfig builds the TLS config for a discovery client; nil means the system trust
+// store. A CA bundle extends the system roots rather than replacing them, since the issuer
+// URL and the backend are not necessarily the same server.
 func tlsClientConfig(v *ir.UpstreamTLSValidation) (*tls.Config, error) {
 	if v == nil || v.CAPEM == "" {
 		return nil, nil
@@ -117,13 +103,11 @@ func tlsClientConfig(v *ir.UpstreamTLSValidation) (*tls.Config, error) {
 	if !pool.AppendCertsFromPEM([]byte(v.CAPEM)) {
 		return nil, errors.New("no valid certificate found in the CA bundle configured for the issuer backend")
 	}
-	// ServerName is deliberately left unset: the client authenticates the issuer URL's own
-	// host, which is the server it dials. See ir.UpstreamTLSValidation.
+	// ServerName is left unset: the client authenticates the issuer URL's own host.
 	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}, nil
 }
 
-// discoveryClients memoizes an http.Client per distinct trust configuration. Without it every
-// refresh pass would re-parse the CA bundle and build a fresh connection pool.
+// discoveryClients memoizes an http.Client per distinct trust configuration.
 type discoveryClients struct {
 	mu      sync.Mutex
 	clients map[string]*http.Client
@@ -140,19 +124,25 @@ func (c *discoveryClients) get(digest string, v *ir.UpstreamTLSValidation) (*htt
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{Timeout: oidcDiscoveryHTTPTimeout}
-	if tlsCfg != nil {
-		// Clone the default transport rather than building one from scratch, so proxy and
-		// timeout defaults are kept and only the trust store differs.
-		transport := http.DefaultTransport.(*http.Transport).Clone()
-		transport.TLSClientConfig = tlsCfg
-		client.Transport = transport
-	}
+	// Every client owns its transport, so that retain closing its idle connections cannot
+	// affect anything else sharing http.DefaultTransport.
+	transport := newDiscoveryTransport()
+	transport.TLSClientConfig = tlsCfg
+	client := &http.Client{Timeout: oidcDiscoveryHTTPTimeout, Transport: transport}
 	if c.clients == nil {
 		c.clients = map[string]*http.Client{}
 	}
 	c.clients[digest] = client
 	return client, nil
+}
+
+// newDiscoveryTransport returns a copy of http.DefaultTransport, keeping its proxy and timeout
+// defaults, or a transport with the same proxy behavior if DefaultTransport has been replaced.
+func newDiscoveryTransport() *http.Transport {
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		return t.Clone()
+	}
+	return &http.Transport{Proxy: http.ProxyFromEnvironment}
 }
 
 // retain drops the clients whose trust configuration is no longer cached, so that a rotating
@@ -206,9 +196,8 @@ type oidcDiscoveryResult struct {
 	expiry time.Time
 	// failures counts consecutive failed discoveries, and drives the retry backoff.
 	failures int
-	// tls is the trust material this entry was discovered with. The refresh loop runs off
-	// the krt event loop and so cannot resolve a backend's policies itself, so the transform
-	// that cached the entry records them here for it to reuse.
+	// tls is the trust material this entry was discovered with, reused by the refresh loop,
+	// which cannot resolve a backend's policies itself.
 	tls *ir.UpstreamTLSValidation
 }
 
@@ -233,9 +222,8 @@ type oidcProviderConfigDiscoverer struct {
 	// control plane is restarted.
 	trigger *krt.RecomputeTrigger
 
-	// liveExtensions returns the GatewayExtensions that currently exist. The refresh loop
-	// intersects the ones relying on discovery, per oidcDiscoveryRequired, with bindings so
-	// it stops polling an entry as soon as no extension reads it.
+	// liveExtensions returns the GatewayExtensions that currently exist; the refresh loop
+	// uses it with bindings to stop polling entries no extension reads.
 	liveExtensions func() []ir.GatewayExtension
 
 	cacheRefreshInterval time.Duration
@@ -247,17 +235,10 @@ type oidcProviderConfigDiscoverer struct {
 	cache map[discoveryKey]oidcDiscoveryResult
 
 	// bindings maps a GatewayExtension's identity to the cache entry its last translation
-	// read. It is what makes cache liveness consumer-aware: the live set alone only knows
-	// which extensions exist, not which entry each one depends on, because it is resolved off
-	// the krt event loop where a backend's attached policies cannot be looked up.
-	//
-	// Without it, two extensions sharing an issuer under different CAs cannot both be cached,
-	// and neither can a CA rotation be told from a second live consumer.
+	// read, so an entry is kept exactly while some live extension reads it.
 	bindings map[string]binding
-	// bindSeq is incremented under mu on every bind. The refresh loop resolves the live set
-	// off the lock, so it records the sequence before doing so and only releases bindings
-	// created up to that point: anything bound later belongs to an extension the snapshot may
-	// not have seen yet, and is left for the next pass to judge.
+	// bindSeq is incremented under mu on every bind. The refresh loop only releases bindings
+	// older than its live snapshot, which is taken off the lock.
 	bindSeq uint64
 
 	// clients holds one http.Client per distinct trust configuration bound or cached.
@@ -310,9 +291,7 @@ func oidcDiscoveryRequired(in *kgwv1a1.OAuth2Provider) bool {
 }
 
 // oidcDiscoveryConsumers collects the identities of the given extensions that rely on
-// discovery. It feeds the discovery refresh loop, so that an entry stops being polled once no
-// extension reads it any more: because its GatewayExtension was deleted, was re-pointed at a
-// different provider, or had every endpoint filled in explicitly.
+// discovery, for the refresh loop's live set.
 func oidcDiscoveryConsumers(exts []ir.GatewayExtension) sets.Set[string] {
 	consumers := sets.New[string]()
 	for _, ext := range exts {
@@ -364,9 +343,7 @@ func (o *oidcProviderConfigDiscoverer) run(ctx context.Context) {
 // ones, and triggers a single recomputation if any outcome changed.
 func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 	// Resolve the live set outside the lock: it calls into krt, which must not be done while
-	// holding o.mu. Fence it first: a transform can bind a brand-new extension while the
-	// snapshot is being taken, and that extension may or may not appear in it. Only bindings
-	// that predate the fence are old enough for the snapshot to be authoritative about them.
+	// holding o.mu. Fence it first, since only bindings older than the snapshot may be released.
 	o.mu.RLock()
 	fence := o.bindSeq
 	o.mu.RUnlock()
@@ -377,9 +354,7 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 
 	o.mu.Lock()
 	// Release the bindings of extensions that no longer discover, then keep exactly the
-	// entries the surviving bindings name. An entry can be named by several bindings, which is
-	// what lets two extensions share an issuer, and an extension moved to a new CA releases
-	// the entry it held without disturbing anyone else's.
+	// entries the surviving bindings name.
 	for extName, b := range o.bindings {
 		if b.seq <= fence && !live.Has(extName) {
 			delete(o.bindings, extName)
@@ -405,10 +380,8 @@ func (o *oidcProviderConfigDiscoverer) refreshOnce(ctx context.Context) {
 		delete(o.cache, key)
 	}
 	if len(pruned) > 0 {
-		// Keep a client for every trust configuration that is bound, not just cached: get()
-		// binds before it discovers, so a key mid-fetch is bound but not yet in the cache, and
-		// its freshly built client must not be evicted underneath it. Retaining under o.mu is
-		// what makes that hold: no bind can slip in between the snapshot and the eviction.
+		// Keep clients for bound keys, not just cached ones: get() binds before it discovers,
+		// so a key mid-fetch is bound but not cached yet.
 		o.clients.retain(digests)
 	}
 	o.mu.Unlock()
@@ -514,13 +487,8 @@ func (o *oidcProviderConfigDiscoverer) rediscover(parent context.Context, key di
 // triggering a recomputation when the outcome changes, so callers must have registered with
 // markDependant to observe that change.
 //
-// extName identifies the GatewayExtension asking, so the refresh loop knows the entry is
-// still read; it must be the same identity liveExtensions reports.
-//
-// tlsValidation is the trust material to validate the issuer with, resolved from the
-// BackendTLSPolicy in effect on the backend the extension names, and nil to use the system
-// trust store. It is part of the cache key, so re-pointing an extension at a different CA
-// re-discovers rather than serving a config obtained under the old trust.
+// extName must be the identity liveExtensions reports. tlsValidation is the trust material to
+// validate the issuer with, nil for the system trust store; it is part of the cache key.
 func (o *oidcProviderConfigDiscoverer) get(
 	ctx context.Context,
 	extName string,
@@ -529,9 +497,7 @@ func (o *oidcProviderConfigDiscoverer) get(
 ) (*oidcProviderConfig, error) {
 	key := discoveryKey{issuerURI: issuerURI, tlsDigest: tlsDigest(tlsValidation)}
 
-	// Claim the entry before discovering, and release whatever this extension held before.
-	// Binding first matters: an entry cached by an unbound extension would be pruned by the
-	// very next refresh pass.
+	// Bind before discovering, or the next refresh pass could prune the new entry.
 	o.bind(extName, key)
 
 	if result, ok := o.load(key); ok {
@@ -581,10 +547,8 @@ func (o *oidcProviderConfigDiscoverer) bind(extName string, key discoveryKey) {
 	o.bindings[extName] = binding{key: key, seq: o.bindSeq}
 }
 
-// unbind records that extName currently reads no entry at all. Callers use it when a
-// translation that relies on discovery gives up before reaching get(): the extension is still
-// live, so the refresh loop would otherwise keep the entry from its previous translation bound,
-// re-discovering an issuer, or a CA, that nothing reads any more.
+// unbind records that extName currently reads no entry, for a translation that gives up
+// before reaching get(), so its previous entry is not kept alive.
 func (o *oidcProviderConfigDiscoverer) unbind(extName string) {
 	o.mu.Lock()
 	defer o.mu.Unlock()

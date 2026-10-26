@@ -89,16 +89,11 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	return proto.Equal(d.transportSocket, d2.transportSocket)
 }
 
-// UpstreamTLSValidation lets the control plane validate the backend the same way this policy
-// makes Envoy validate it. Today the only caller is OIDC discovery, which fetches the OpenID
-// provider configuration itself and would otherwise be limited to the system trust store.
-//
-// The CA is read back out of the transport socket rather than kept as a second copy on the
-// IR: the socket is the policy's single source of truth, so nothing can drift, and the handful
-// of backends a GatewayExtension names are the only ones that ever pay for the unpacking.
+// UpstreamTLSValidation returns the CA this policy makes Envoy trust, for OIDC discovery. It is
+// read back out of the transport socket so the IR holds no second copy.
 func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
 	if d == nil || d.transportSocket == nil {
-		// The policy failed to translate; it configures nothing, for Envoy or for us.
+		// The policy failed to translate.
 		return nil
 	}
 	tlsContext := &envoytlsv3.UpstreamTlsContext{}
@@ -106,9 +101,8 @@ func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
 		// Not reachable for a socket this plugin built; treat it as configuring nothing.
 		return nil
 	}
-	// A policy that selects the system CA set carries a combined validation context that
-	// names no trusted CA, and so resolves to an empty bundle here: exactly what the system
-	// trust store means to a control-plane client.
+	// A policy selecting the system CA set names no trusted CA, so resolves to the system
+	// trust store.
 	caPEM := tlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()
 	return &ir.UpstreamTLSValidation{CAPEM: caPEM}
 }

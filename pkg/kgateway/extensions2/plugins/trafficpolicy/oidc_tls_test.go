@@ -470,6 +470,22 @@ func TestRefreshRetainsClientForBoundButUncachedKey(t *testing.T) {
 	r.Same(inFlightClient, kept, "and be the very client the fetch is using")
 }
 
+// Releasing a client closes its idle connections, so no client may share
+// http.DefaultTransport, including the one for the system trust store.
+func TestDiscoveryClientsOwnTheirTransport(t *testing.T) {
+	r := require.New(t)
+
+	_, caPEM, _ := newTLSDiscoveryServer(t)
+	var c discoveryClients
+	for _, v := range []*ir.UpstreamTLSValidation{nil, {CAPEM: caPEM}} {
+		client, err := c.get(tlsDigest(v), v)
+		r.NoError(err)
+		transport, ok := client.Transport.(*http.Transport)
+		r.True(ok, "client should have its own *http.Transport")
+		r.NotSame(http.DefaultTransport, transport, "client must not share http.DefaultTransport")
+	}
+}
+
 // fakeTLSPolicyIR is a policy IR carrying trust material, standing in for a BackendTLSPolicy
 // IR so this package need not depend on that plugin.
 type fakeTLSPolicyIR struct {

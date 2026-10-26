@@ -359,7 +359,7 @@ func TestOIDCConfigDiscoveryErrorMasksCredentials(t *testing.T) {
 			issuer := issuerURL.String()
 			o := newTestDiscoverer(issuer)
 
-			_, err = o.get(context.Background(), issuer)
+			_, err = o.get(context.Background(), testExtName, issuer, nil)
 			r.Error(err)
 			r.Contains(err.Error(), tt.errorContains+issuerURL.Host+wellKnownOpenIDConfPath)
 			r.NotContains(err.Error(), "s3cret", "the password should be masked")
