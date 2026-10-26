@@ -143,7 +143,7 @@ func TestGoldenCorpusScopabilityMatchesRequestTimeSelectors(t *testing.T) {
 		}
 
 		t.Run(rel, func(t *testing.T) {
-			decision := DecideClusterScoping(corpusClaims, result.Routes, result.Listeners)
+			decision := DecideXdsScoping(corpusClaims, result.Routes, result.Listeners)
 			selectors := requestTimeSelectorsInGolden(parseGolden(t, path))
 			var unclaimed []string
 			for _, selector := range selectors {

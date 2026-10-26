@@ -41,9 +41,9 @@ func TestUnscopedModeRunsNoPluginClaims(t *testing.T) {
 	for name, mode := range map[string]apisettings.XdsScopingMode{"zero": "", "ALL": apisettings.XdsScopingAll} {
 		t.Run(name, func(t *testing.T) {
 			scoping := clusterScopingFrom(apisettings.Settings{
-				XdsScopingMode:          mode,
-				ClusterDereferenceGrace: time.Minute,
-				ClusterReferenceAhead:   time.Minute,
+				XdsScopingMode:             mode,
+				XdsScopingDereferenceGrace: time.Minute,
+				XdsScopingReferenceAhead:   time.Minute,
 			}, plugins)
 			assert.False(t, scoping.ScopesClusters())
 			assert.Zero(t, scoping.DereferenceGrace())
@@ -106,9 +106,9 @@ func TestDisabledScopingLeavesTheGatewayProjectionEmpty(t *testing.T) {
 // configured windows, so coherent builds take the plain publish path.
 func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 	configured := clusterScopingFrom(apisettings.Settings{
-		XdsScopingMode:          apisettings.XdsScopingAll,
-		ClusterDereferenceGrace: time.Hour,
-		ClusterReferenceAhead:   time.Hour,
+		XdsScopingMode:             apisettings.XdsScopingAll,
+		XdsScopingDereferenceGrace: time.Hour,
+		XdsScopingReferenceAhead:   time.Hour,
 	}, nil)
 
 	assert.Zero(t, configured.DereferenceGrace(),
@@ -125,9 +125,9 @@ func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 // durations must reach the gate.
 func TestScopedClustersUsesTheConfiguredWindows(t *testing.T) {
 	configured := clusterScopingFrom(apisettings.Settings{
-		XdsScopingMode:          apisettings.XdsScopingReferenced,
-		ClusterDereferenceGrace: 7 * time.Second,
-		ClusterReferenceAhead:   3 * time.Second,
+		XdsScopingMode:             apisettings.XdsScopingReferenced,
+		XdsScopingDereferenceGrace: 7 * time.Second,
+		XdsScopingReferenceAhead:   3 * time.Second,
 	}, nil)
 
 	assert.Equal(t, 7*time.Second, configured.DereferenceGrace())

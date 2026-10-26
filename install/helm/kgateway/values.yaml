@@ -203,9 +203,9 @@ controller:
     scoping:
       # -- `ALL` sends every discovered backend's cluster (CDS), endpoints (EDS), and backend-owned listeners (LDS) and secrets (SDS) to every gateway proxy. `REFERENCED` sends only referenced clusters, including clusters that only filters call, along with their endpoints, backend-owned listeners and secrets. Gateway-level listeners and secrets are unaffected. This shrinks proxy memory, config dumps and per-cluster stats where many Services are discovered and few are routed. `REFERENCED` is experimental. Case-insensitive. The controller default is `ALL`. Sets `KGW_XDS_SCOPING_MODE`.
       mode: ""
-      # -- With `REFERENCED`, how long routes, listeners and secrets naming a cluster new to a proxy are held after the controller first publishes that cluster. This gives the cluster time to reach Envoy first, but does not guarantee delivery or application order. The controller default is `2s`. Sets `KGW_CLUSTER_REFERENCE_AHEAD`.
+      # -- With `REFERENCED`, how long routes, listeners and secrets naming a cluster new to a proxy are held after the controller first publishes that cluster. This gives the cluster time to reach Envoy first, but does not guarantee delivery or application order. The controller default is `2s`. Sets `KGW_XDS_SCOPING_REFERENCE_AHEAD`.
       referenceAhead: ""
-      # -- With `REFERENCED`, how long a cluster stays published after the controller publishes the route update that stops naming it. This gives the update time to reach Envoy before the cluster is removed, but does not guarantee delivery or application order. The controller default is `5s`. Sets `KGW_CLUSTER_DEREFERENCE_GRACE`.
+      # -- With `REFERENCED`, how long a cluster stays published after the controller publishes the route update that stops naming it. This gives the update time to reach Envoy before the cluster is removed, but does not guarantee delivery or application order. The controller default is `5s`. Sets `KGW_XDS_SCOPING_DEREFERENCE_GRACE`.
       dereferenceGrace: ""
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false

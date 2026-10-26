@@ -166,7 +166,7 @@ spec:
             {{- /* Each entry: controller.xds.scoping key, variable, validator. A set value
               is validated even when extraEnv overrides it, and an extraEnv value is
               validated but rendered by the extraEnv loop below, as written. */}}
-            {{- range $setting := list (list "mode" "KGW_XDS_SCOPING_MODE" "kgateway.xdsScopingMode") (list "referenceAhead" "KGW_CLUSTER_REFERENCE_AHEAD" "kgateway.xdsScopingDuration") (list "dereferenceGrace" "KGW_CLUSTER_DEREFERENCE_GRACE" "kgateway.xdsScopingDuration") }}
+            {{- range $setting := list (list "mode" "KGW_XDS_SCOPING_MODE" "kgateway.xdsScopingMode") (list "referenceAhead" "KGW_XDS_SCOPING_REFERENCE_AHEAD" "kgateway.xdsScopingDuration") (list "dereferenceGrace" "KGW_XDS_SCOPING_DEREFERENCE_GRACE" "kgateway.xdsScopingDuration") }}
             {{- $key := index $setting 0 }}
             {{- $env := index $setting 1 }}
             {{- $validator := index $setting 2 }}

@@ -391,9 +391,9 @@ spec:
               value: "30s"
             - name: KGW_XDS_SCOPING_MODE
               value: "REFERENCED"
-            - name: KGW_CLUSTER_REFERENCE_AHEAD
+            - name: KGW_XDS_SCOPING_REFERENCE_AHEAD
               value: "3s"
-            - name: KGW_CLUSTER_DEREFERENCE_GRACE
+            - name: KGW_XDS_SCOPING_DEREFERENCE_GRACE
               value: "30s"
             - name: KGW_GATEWAY_CLASS_PARAMETERS_REFS
               value: "{}"

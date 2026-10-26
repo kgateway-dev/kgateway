@@ -178,7 +178,7 @@ type ProcessBaseClusterResources func(
 // Also claim the plugin's endpointless placeholder cluster, used to fail
 // closed. Once no route names it, scoping would prune it.
 //
-// proxy_syncer.DecideClusterScoping checks a claim against configuration the
+// proxy_syncer.DecideXdsScoping checks a claim against configuration the
 // plugin generates, without a controller.
 type ClusterEmissionClaim struct {
 	// Selectors are the cluster specifier plugin extension names this claim

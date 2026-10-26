@@ -34,8 +34,8 @@ func clusterScopingFrom(s apisettings.Settings, policies sdk.ContributesPolicies
 	}
 	return clusterScoping{
 		mode:             s.XdsScopingMode,
-		dereferenceGrace: s.ClusterDereferenceGrace,
-		referenceAhead:   s.ClusterReferenceAhead,
+		dereferenceGrace: s.XdsScopingDereferenceGrace,
+		referenceAhead:   s.XdsScopingReferenceAhead,
 		claims:           collectEmissionClaims(policies),
 	}
 }

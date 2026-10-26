@@ -63,8 +63,8 @@ func allEnvVarsSet() map[string]string {
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
 		"KGW_XDS_SCOPING_MODE":                          string(XdsScopingReferenced),
-		"KGW_CLUSTER_DEREFERENCE_GRACE":                 "30s",
-		"KGW_CLUSTER_REFERENCE_AHEAD":                   "3s",
+		"KGW_XDS_SCOPING_DEREFERENCE_GRACE":             "30s",
+		"KGW_XDS_SCOPING_REFERENCE_AHEAD":               "3s",
 	}
 }
 
@@ -112,8 +112,8 @@ func TestSettings(t *testing.T) {
 				ValidatorCacheSize:                    0,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				XdsScopingMode:                        XdsScopingAll,
-				ClusterDereferenceGrace:               5 * time.Second,
-				ClusterReferenceAhead:                 2 * time.Second,
+				XdsScopingDereferenceGrace:            5 * time.Second,
+				XdsScopingReferenceAhead:              2 * time.Second,
 				EnableBuiltinDefaultMetrics:           false,
 				GlobalPolicyNamespace:                 "",
 				DisableLeaderElection:                 false,
@@ -188,8 +188,8 @@ func TestSettings(t *testing.T) {
 				EnableRouteSourceMetadata:   true,
 				ReferenceGrantMode:          ReferenceGrantStrict,
 				XdsScopingMode:              XdsScopingReferenced,
-				ClusterDereferenceGrace:     30 * time.Second,
-				ClusterReferenceAhead:       3 * time.Second,
+				XdsScopingDereferenceGrace:  30 * time.Second,
+				XdsScopingReferenceAhead:    3 * time.Second,
 			},
 		},
 		{
@@ -233,6 +233,29 @@ func TestSettings(t *testing.T) {
 				"KGW_XDS_SCOPING_MODE": "invalid",
 			},
 			expectedErrorStr: `invalid xDS scoping mode: "invalid"`,
+		},
+		{
+			name: "errors on the pre-rename xDS scoping mode",
+			envVars: map[string]string{
+				"KGW_CLUSTER_DISCOVERY_MODE": "REFERENCED",
+			},
+			expectedErrorStr: "KGW_CLUSTER_DISCOVERY_MODE was renamed to KGW_XDS_SCOPING_MODE; set KGW_XDS_SCOPING_MODE instead",
+		},
+		{
+			name: "errors on the pre-rename reference-ahead window",
+			envVars: map[string]string{
+				"KGW_CLUSTER_REFERENCE_AHEAD": "3s",
+			},
+			expectedErrorStr: "KGW_CLUSTER_REFERENCE_AHEAD was renamed to KGW_XDS_SCOPING_REFERENCE_AHEAD; set KGW_XDS_SCOPING_REFERENCE_AHEAD instead",
+		},
+		{
+			// The old name is stale configuration even when the new one is set too.
+			name: "errors on the pre-rename de-reference grace alongside its replacement",
+			envVars: map[string]string{
+				"KGW_CLUSTER_DEREFERENCE_GRACE":     "30s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "30s",
+			},
+			expectedErrorStr: "KGW_CLUSTER_DEREFERENCE_GRACE was renamed to KGW_XDS_SCOPING_DEREFERENCE_GRACE; set KGW_XDS_SCOPING_DEREFERENCE_GRACE instead",
 		},
 		{
 			name: "errors on invalid reference grant mode",
@@ -296,8 +319,8 @@ func TestSettings(t *testing.T) {
 				TranslationDebounceMax:                100 * time.Millisecond,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
 				XdsScopingMode:                        XdsScopingAll,
-				ClusterDereferenceGrace:               5 * time.Second,
-				ClusterReferenceAhead:                 2 * time.Second,
+				XdsScopingDereferenceGrace:            5 * time.Second,
+				XdsScopingReferenceAhead:              2 * time.Second,
 				PolicyMerge:                           "{}",
 				XdsAuth:                               true,
 				XdsTLS:                                false,

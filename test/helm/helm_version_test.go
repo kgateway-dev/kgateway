@@ -543,8 +543,8 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 func TestControllerXdsScoping(t *testing.T) {
 	xdsScopingEnv := []string{
 		"KGW_XDS_SCOPING_MODE",
-		"KGW_CLUSTER_REFERENCE_AHEAD",
-		"KGW_CLUSTER_DEREFERENCE_GRACE",
+		"KGW_XDS_SCOPING_REFERENCE_AHEAD",
+		"KGW_XDS_SCOPING_DEREFERENCE_GRACE",
 	}
 
 	for _, test := range []struct {
@@ -569,8 +569,8 @@ func TestControllerXdsScoping(t *testing.T) {
 `,
 			want: map[string]string{
 				"KGW_XDS_SCOPING_MODE":          "REFERENCED",
-				"KGW_CLUSTER_REFERENCE_AHEAD":   "3s",
-				"KGW_CLUSTER_DEREFERENCE_GRACE": "30s",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "3s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "30s",
 			},
 		},
 		{
@@ -594,8 +594,8 @@ func TestControllerXdsScoping(t *testing.T) {
       dereferenceGrace: "0"
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_REFERENCE_AHEAD":   "0",
-				"KGW_CLUSTER_DEREFERENCE_GRACE": "0",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "0",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "0",
 			},
 		},
 		{
@@ -607,8 +607,8 @@ func TestControllerXdsScoping(t *testing.T) {
       dereferenceGrace: 1.5s
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_REFERENCE_AHEAD":   "1m30s",
-				"KGW_CLUSTER_DEREFERENCE_GRACE": "1.5s",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "1m30s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "1.5s",
 			},
 		},
 		{
@@ -616,12 +616,12 @@ func TestControllerXdsScoping(t *testing.T) {
 			name: "passes a valid extraEnv zero duration through unchanged",
 			valuesYAML: `controller:
   extraEnv:
-    KGW_CLUSTER_REFERENCE_AHEAD: "0"
-    KGW_CLUSTER_DEREFERENCE_GRACE: "0"
+    KGW_XDS_SCOPING_REFERENCE_AHEAD: "0"
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: "0"
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_REFERENCE_AHEAD":   "0",
-				"KGW_CLUSTER_DEREFERENCE_GRACE": "0",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "0",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "0",
 			},
 		},
 		{
@@ -642,12 +642,12 @@ func TestControllerXdsScoping(t *testing.T) {
       dereferenceGrace: 5s
   extraEnv:
     KGW_XDS_SCOPING_MODE: REFERENCED
-    KGW_CLUSTER_DEREFERENCE_GRACE: 10s
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: 10s
 `,
 			want: map[string]string{
 				"KGW_XDS_SCOPING_MODE":          "REFERENCED",
-				"KGW_CLUSTER_REFERENCE_AHEAD":   "3s",
-				"KGW_CLUSTER_DEREFERENCE_GRACE": "10s",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "3s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "10s",
 			},
 		},
 		{
@@ -787,9 +787,9 @@ func TestControllerXdsScoping(t *testing.T) {
 			name: "rejects an invalid extraEnv duration",
 			valuesYAML: `controller:
   extraEnv:
-    KGW_CLUSTER_DEREFERENCE_GRACE: 10
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: 10
 `,
-			message: "Invalid controller.extraEnv.KGW_CLUSTER_DEREFERENCE_GRACE '10'. Must be a duration such as '500ms', '3s' or '0'.",
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_DEREFERENCE_GRACE '10'. Must be a duration such as '500ms', '3s' or '0'.",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
