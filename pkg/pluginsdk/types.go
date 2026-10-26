@@ -156,7 +156,7 @@ type ProcessBaseClusterResources func(
 
 // ClusterEmissionClaim declares clusters a plugin's cluster specifier script
 // may pick at request time that the generated configuration never names, so
-// REFERENCED cluster discovery (KGW_CLUSTER_DISCOVERY_MODE) keeps emitting
+// REFERENCED xDS scoping (KGW_XDS_SCOPING_MODE) keeps emitting
 // them. The script typically composes a name from a prefix, a request value and
 // a port, so no walk of the protos can find the candidates.
 //

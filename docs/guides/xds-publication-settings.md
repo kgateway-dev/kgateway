@@ -1,4 +1,4 @@
-# xDS publication and cluster discovery settings
+# xDS publication and scoping settings
 
 The kgateway controller builds an xDS snapshot for each connected client and
 installs it in its xDS cache, from which the xDS server answers the proxy's
@@ -16,13 +16,13 @@ them up does not give a bound on proxy startup or on when a change takes effect.
 ## Setting a value
 
 Each setting is an environment variable of the controller container. The
-cluster discovery settings have their own Helm values under
-`controller.clusterDiscovery`. Set the others through `controller.extraEnv`:
+xDS scoping settings have their own Helm values under
+`controller.xdsScoping`. Set the others through `controller.extraEnv`:
 
 ```yaml
 controller:
-  clusterDiscovery:
-    mode: REFERENCED     # KGW_CLUSTER_DISCOVERY_MODE
+  xdsScoping:
+    mode: REFERENCED     # KGW_XDS_SCOPING_MODE
     referenceAhead: 3s   # KGW_CLUSTER_REFERENCE_AHEAD
     dereferenceGrace: 5s # KGW_CLUSTER_DEREFERENCE_GRACE
   extraEnv:
@@ -33,19 +33,20 @@ or on the command line:
 
 ```sh
 helm upgrade <release> <chart> --namespace <namespace> --reuse-values \
-  --set controller.clusterDiscovery.mode=REFERENCED
+  --set controller.xdsScoping.mode=REFERENCED
 ```
 
-A `controller.clusterDiscovery` value left empty, as it is by default, sets
+A `controller.xdsScoping` value left empty, as it is by default, sets
 nothing, so the controller uses its own default. A variable set in
 `controller.extraEnv` takes precedence over the matching
-`controller.clusterDiscovery` value, so an install that already sets
-`KGW_CLUSTER_DISCOVERY_MODE` there keeps working.
+`controller.xdsScoping` value. For example, an explicit
+`controller.extraEnv.KGW_XDS_SCOPING_MODE` overrides
+`controller.xdsScoping.mode`.
 
 - **When values are read.** The controller reads these variables once, at
   startup. `KGW_XDS_FIRST_CONNECT_DELAY` is read once too, when the first xDS
   stream needs it. Nothing is reloaded while the controller runs. Changing
-  `controller.extraEnv` or `controller.clusterDiscovery` changes the
+  `controller.extraEnv` or `controller.xdsScoping` changes the
   controller's pod template, so a Helm upgrade rolls the controller and the new
   values apply to the new pods.
 - **Accepted values.** Durations are Go duration strings, such as `500ms`, `15s`
@@ -55,8 +56,8 @@ nothing, so the controller uses its own default. A variable set in
 - **Invalid values.** An invalid value stops the controller from starting: it
   logs `error loading settings from env` and exits. The exception is
   `KGW_XDS_FIRST_CONNECT_DELAY`, which logs a warning and uses its default. An
-  invalid cluster discovery mode, in `controller.clusterDiscovery.mode` or
-  `controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE`, fails the Helm install or
+  invalid xDS scoping mode, in `controller.xdsScoping.mode` or
+  `controller.extraEnv.KGW_XDS_SCOPING_MODE`, fails the Helm install or
   upgrade instead.
 - **Negative durations.** Nothing rejects a negative duration. Every duration
   here treats a negative value exactly like `0`, so a stray minus sign silently
@@ -70,7 +71,7 @@ nothing, so the controller uses its own default. A variable set in
 | `KGW_PER_CLIENT_WARM_WITHHOLD_BOUND` | `10m` | duration | Warm withholds and missing-cluster carries have no limit. |
 | `KGW_XDS_SNAPSHOT_CONSISTENCY_CHECK` | `false` | boolean | `false`: no check. |
 | `KGW_XDS_RESPOND_ON_RECONNECT` | `true` | boolean | `false`: held-version requests wait for a version change. |
-| `KGW_CLUSTER_DISCOVERY_MODE` | `ALL` | `ALL`, `REFERENCED`, any case | `ALL`: no scoping and no transition windows. |
+| `KGW_XDS_SCOPING_MODE` | `ALL` | `ALL`, `REFERENCED`, any case | `ALL`: no scoping and no transition windows. |
 | `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | duration | A de-referenced cluster is removed at once. |
 | `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | duration | A new cluster and the configuration naming it publish together. |
 | `KGW_XDS_FIRST_CONNECT_DELAY` | `1s` | duration | No sleep on a new stream. |
@@ -124,7 +125,7 @@ Bounds two waits.
 referenced cluster never becomes ready is never published, so its proxy never
 goes Ready, and a held route change waits for its cluster indefinitely. The
 warm withhold bound and the carry bound depend on the budget, so they stop
-applying too. The cluster discovery windows below keep their own timers.
+applying too. The xDS scoping windows below keep their own timers.
 
 Keep the budget well below the proxy's startup probe window (60 one-second
 probes by default), or a proxy whose first publish waits the full budget
@@ -298,9 +299,9 @@ response, and one endpoint response carrying only the changed clusters. A
 changed cluster that still waits shows up in Envoy's log as `initial fetch timed
 out` for `ClusterLoadAssignment`.
 
-## Cluster discovery
+## xDS scoping
 
-### `KGW_CLUSTER_DISCOVERY_MODE` (default `ALL`)
+### `KGW_XDS_SCOPING_MODE` (default `ALL`)
 
 - **`ALL`** emits a CDS cluster and an EDS assignment for every backend in
   discovery scope.
@@ -309,7 +310,7 @@ out` for `ClusterLoadAssignment`.
   ext_proc, rate limit, access log and JWKS clusters. `REFERENCED` is
   experimental.
 
-Helm value: `controller.clusterDiscovery.mode`.
+Helm value: `controller.xdsScoping.mode`.
 
 A backend can ship listeners with its cluster, as a CONNECT tunnel does. A
 kept backend's listeners keep the clusters they name, such as the tunnel's
@@ -357,7 +358,7 @@ Metrics:
 - `kgateway_xds_cluster_scoping_disabled_gateways`;
 - `kgateway_xds_snapshot_resources{resource="Cluster"}`.
 
-[Scoping cluster discovery](../../devel/architecture/cluster-discovery-scoping.md)
+[xDS scoping](../../devel/architecture/xds-scoping.md)
 explains the design.
 
 ### Transition windows
@@ -371,7 +372,7 @@ Size both above your fleet's worst-case propagation.
 
 #### `KGW_CLUSTER_REFERENCE_AHEAD` (default `2s`)
 
-Helm value: `controller.clusterDiscovery.referenceAhead`.
+Helm value: `controller.xdsScoping.referenceAhead`.
 
 When a build names a cluster that the client's published snapshot lacks, the
 cluster and its endpoints are published at once. Routes, listeners and secrets
@@ -398,7 +399,7 @@ The metric is
 
 #### `KGW_CLUSTER_DEREFERENCE_GRACE` (default `5s`)
 
-Helm value: `controller.clusterDiscovery.dereferenceGrace`.
+Helm value: `controller.xdsScoping.dereferenceGrace`.
 
 When a build stops naming a published cluster, the cluster stays published for
 this long. That gives the route update that dropped it time to land before CDS

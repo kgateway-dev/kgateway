@@ -39,34 +39,34 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
-// ClusterDiscoveryMode selects backends for CDS and their corresponding EDS assignments.
-type ClusterDiscoveryMode string
+// XdsScopingMode selects backends for CDS and their corresponding EDS assignments.
+type XdsScopingMode string
 
 const (
-	// ClusterDiscoveryAll emits every backend in discovery scope, referenced or not.
+	// XdsScopingAll emits every backend in discovery scope, referenced or not.
 	// A retarget to an existing backend is safe because its cluster already
 	// exists, but every proxy carries, and reports stats for, the whole
 	// inventory.
-	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
-	// ClusterDiscoveryReferenced emits only referenced clusters, including filter
+	XdsScopingAll XdsScopingMode = "ALL"
+	// XdsScopingReferenced emits only referenced clusters, including filter
 	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
 	// with a request-time selector reverts to ALL, since pruning could silently
 	// select the plugin's fallback, unless every such selector is a cluster
 	// specifier plugin that a valid pluginsdk.ClusterEmissionClaim accounts for.
 	// Cluster headers, filter-state overrides, undecodable typed configs and
 	// unknown specifier kinds cannot be claimed and always revert.
-	ClusterDiscoveryReferenced ClusterDiscoveryMode = "REFERENCED"
+	XdsScopingReferenced XdsScopingMode = "REFERENCED"
 )
 
 // Decode implements envconfig.Decoder.
-func (c *ClusterDiscoveryMode) Decode(value string) error {
-	mode := ClusterDiscoveryMode(strings.ToUpper(value))
+func (c *XdsScopingMode) Decode(value string) error {
+	mode := XdsScopingMode(strings.ToUpper(value))
 	switch mode {
-	case ClusterDiscoveryAll, ClusterDiscoveryReferenced:
+	case XdsScopingAll, XdsScopingReferenced:
 		*c = mode
 		return nil
 	default:
-		return fmt.Errorf("invalid cluster discovery mode: %q", value)
+		return fmt.Errorf("invalid xDS scoping mode: %q", value)
 	}
 }
 
@@ -464,7 +464,7 @@ type Settings struct {
 	// reintroduce unbounded withholds. For test and CI; off by default.
 	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
 
-	// ClusterDiscoveryMode selects which backends reach a proxy's CDS.
+	// XdsScopingMode selects which backends reach a proxy's CDS.
 	// Supported values are:
 	//
 	//   - "ALL" (default): every backend in discovery scope becomes a cluster.
@@ -479,8 +479,8 @@ type Settings struct {
 	// worst-case propagation, and neither makes a transition hitless. A gateway
 	// whose routes pick a destination at request time stays unscoped unless a
 	// valid claim accounts for each such selector (see
-	// ClusterDiscoveryReferenced).
-	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
+	// XdsScopingReferenced).
+	XdsScopingMode XdsScopingMode `split_words:"true" default:"ALL"`
 
 	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays
 	// published, in REFERENCED mode only. Removing it at once can let CDS remove it

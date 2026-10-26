@@ -8,7 +8,7 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
-// ClusterScopingDecision is what REFERENCED cluster discovery decides for one
+// ClusterScopingDecision is what REFERENCED xDS scoping decides for one
 // gateway's generated configuration. DecideClusterScoping returns it, so a
 // plugin's tests can check its ClusterEmissionClaim against configuration the
 // plugin generates, without a controller.
@@ -31,7 +31,7 @@ func (d ClusterScopingDecision) Emits(cluster string) bool {
 	return !d.Scoped || d.emitted.emits(d.kept, cluster)
 }
 
-// DecideClusterScoping applies REFERENCED cluster discovery to a gateway's
+// DecideClusterScoping applies REFERENCED xDS scoping to a gateway's
 // routes and listeners as the controller does, with the claims the given
 // plugins make. A plugin's translation-pass ResourcesToAdd, which scoping never
 // filters, is not considered.
@@ -41,7 +41,7 @@ func DecideClusterScoping(
 	listeners []*envoylistenerv3.Listener,
 ) ClusterScopingDecision {
 	claims := collectEmissionClaims(policies)
-	scoping := clusterScoping{mode: apisettings.ClusterDiscoveryReferenced, claims: claims}
+	scoping := clusterScoping{mode: apisettings.XdsScopingReferenced, claims: claims}
 	emitted := emittedClustersFor(scoping, sliceToResources(routes), sliceToResources(listeners))
 	unaccounted := emitted.unaccountedSelectors(claims)
 	return ClusterScopingDecision{

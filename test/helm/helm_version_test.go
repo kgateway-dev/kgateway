@@ -540,9 +540,9 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 	}
 }
 
-func TestControllerClusterDiscovery(t *testing.T) {
-	clusterDiscoveryEnv := []string{
-		"KGW_CLUSTER_DISCOVERY_MODE",
+func TestControllerXdsScoping(t *testing.T) {
+	xdsScopingEnv := []string{
+		"KGW_XDS_SCOPING_MODE",
 		"KGW_CLUSTER_REFERENCE_AHEAD",
 		"KGW_CLUSTER_DEREFERENCE_GRACE",
 	}
@@ -561,13 +561,13 @@ func TestControllerClusterDiscovery(t *testing.T) {
 		{
 			name: "renders configured values",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: REFERENCED
     referenceAhead: 3s
     dereferenceGrace: 30s
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_DISCOVERY_MODE":    "REFERENCED",
+				"KGW_XDS_SCOPING_MODE":          "REFERENCED",
 				"KGW_CLUSTER_REFERENCE_AHEAD":   "3s",
 				"KGW_CLUSTER_DEREFERENCE_GRACE": "30s",
 			},
@@ -575,18 +575,18 @@ func TestControllerClusterDiscovery(t *testing.T) {
 		{
 			name: "upper-cases the mode",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: Referenced
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_DISCOVERY_MODE": "REFERENCED",
+				"KGW_XDS_SCOPING_MODE": "REFERENCED",
 			},
 		},
 		{
 			// A zero duration turns its window off, so it must not be dropped as falsy.
 			name: "renders a zero duration",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     referenceAhead: 0
     dereferenceGrace: "0"
 `,
@@ -596,25 +596,25 @@ func TestControllerClusterDiscovery(t *testing.T) {
 			},
 		},
 		{
-			name: "omits every value when clusterDiscovery is null",
+			name: "omits every value when xdsScoping is null",
 			valuesYAML: `controller:
-  clusterDiscovery: null
+  xdsScoping: null
 `,
 			want: map[string]string{},
 		},
 		{
 			name: "lets extraEnv take precedence per variable",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: ALL
     referenceAhead: 3s
     dereferenceGrace: 5s
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: REFERENCED
+    KGW_XDS_SCOPING_MODE: REFERENCED
     KGW_CLUSTER_DEREFERENCE_GRACE: 10s
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_DISCOVERY_MODE":    "REFERENCED",
+				"KGW_XDS_SCOPING_MODE":          "REFERENCED",
 				"KGW_CLUSTER_REFERENCE_AHEAD":   "3s",
 				"KGW_CLUSTER_DEREFERENCE_GRACE": "10s",
 			},
@@ -624,17 +624,17 @@ func TestControllerClusterDiscovery(t *testing.T) {
 			name: "passes a valid extraEnv mode through unchanged",
 			valuesYAML: `controller:
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: referenced
+    KGW_XDS_SCOPING_MODE: referenced
 `,
 			want: map[string]string{
-				"KGW_CLUSTER_DISCOVERY_MODE": "referenced",
+				"KGW_XDS_SCOPING_MODE": "referenced",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := renderHelmTemplate(t, "kgateway", test.valuesYAML, nil)
 			container := findDeployment(t, output).Spec.Template.Spec.Containers[0]
-			for _, name := range clusterDiscoveryEnv {
+			for _, name := range xdsScopingEnv {
 				var values []string
 				for _, envVar := range container.Env {
 					if envVar.Name == name {
@@ -660,64 +660,64 @@ func TestControllerClusterDiscovery(t *testing.T) {
 		{
 			name: "rejects an unknown mode",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: some
 `,
-			message: "Invalid controller.clusterDiscovery.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xdsScoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			name: "rejects a mode that merely starts with a valid one",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: REFERENCED_ONLY
 `,
-			message: "Invalid controller.clusterDiscovery.mode 'REFERENCED_ONLY'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xdsScoping.mode 'REFERENCED_ONLY'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			name: "rejects an invalid mode that extraEnv overrides",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: some
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: REFERENCED
+    KGW_XDS_SCOPING_MODE: REFERENCED
 `,
-			message: "Invalid controller.clusterDiscovery.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.xdsScoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			name: "rejects an invalid extraEnv mode",
 			valuesYAML: `controller:
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: some
+    KGW_XDS_SCOPING_MODE: some
 `,
-			message: "Invalid controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
-			name: "rejects an invalid extraEnv mode alongside a valid clusterDiscovery mode",
+			name: "rejects an invalid extraEnv mode alongside a valid xdsScoping mode",
 			valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: REFERENCED
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: some
+    KGW_XDS_SCOPING_MODE: some
 `,
-			message: "Invalid controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			// Set but empty is not unset: the controller decodes "" and fails.
 			name: "rejects an empty extraEnv mode",
 			valuesYAML: `controller:
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: ""
+    KGW_XDS_SCOPING_MODE: ""
 `,
-			message: "Invalid controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE ''. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ''. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 		{
 			// The controller upper-cases the mode but does not trim it.
 			name: "rejects an extraEnv mode with surrounding spaces",
 			valuesYAML: `controller:
   extraEnv:
-    KGW_CLUSTER_DISCOVERY_MODE: " REFERENCED "
+    KGW_XDS_SCOPING_MODE: " REFERENCED "
 `,
-			message: "Invalid controller.extraEnv.KGW_CLUSTER_DISCOVERY_MODE ' REFERENCED '. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ' REFERENCED '. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1076,9 +1076,9 @@ controller:
 `,
 	},
 	{
-		name: "cluster-discovery-referenced",
+		name: "xds-scoping-referenced",
 		valuesYAML: `controller:
-  clusterDiscovery:
+  xdsScoping:
     mode: REFERENCED
     referenceAhead: 3s
     dereferenceGrace: 30s

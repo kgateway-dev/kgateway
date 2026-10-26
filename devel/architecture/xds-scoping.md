@@ -1,4 +1,4 @@
-# Scoping cluster discovery to what routes reference
+# xDS scoping
 
 By default kgateway sends every proxy a CDS cluster, and an EDS
 `ClusterLoadAssignment`, for **every** backend in its discovery scope, whether or
@@ -7,9 +7,9 @@ not any route targets it. A cluster with 300 Services and 16 routed ones puts al
 proxy's `/stats` — where each cluster contributes a large family of series
 carrying an `envoy_cluster_name` label.
 
-`KGW_CLUSTER_DISCOVERY_MODE=REFERENCED` scopes CDS and EDS to the clusters the
+`KGW_XDS_SCOPING_MODE=REFERENCED` scopes CDS and EDS to the clusters the
 generated configuration actually references. It is off by default.
-[xDS publication and cluster discovery settings](../../docs/guides/xds-publication-settings.md)
+[xDS publication and scoping settings](../../docs/guides/xds-publication-settings.md)
 summarizes this setting with the publication settings it interacts with.
 
 ## Why the default is emit-all
@@ -204,7 +204,7 @@ very cluster that makes the feature safe.
 
 | Setting | Default | Effect |
 | --- | --- | --- |
-| `KGW_CLUSTER_DISCOVERY_MODE` | `ALL` | `REFERENCED` scopes CDS/EDS to referenced clusters. `ALL` is the pre-existing behavior. |
+| `KGW_XDS_SCOPING_MODE` | `ALL` | `REFERENCED` scopes CDS/EDS to referenced clusters. `ALL` is the pre-existing behavior. |
 | `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` or negative removes immediately and accepts the race. |
 | `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long configuration naming a cluster new to a proxy is held after the controller first publishes that cluster. `0` or negative publishes both together and accepts the blip. |
 

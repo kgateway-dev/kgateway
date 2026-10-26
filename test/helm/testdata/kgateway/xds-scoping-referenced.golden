@@ -389,7 +389,7 @@ spec:
               value: "false"
             - name: KGW_AWS_EC2_REFRESH_INTERVAL
               value: "30s"
-            - name: KGW_CLUSTER_DISCOVERY_MODE
+            - name: KGW_XDS_SCOPING_MODE
               value: "REFERENCED"
             - name: KGW_CLUSTER_REFERENCE_AHEAD
               value: "3s"

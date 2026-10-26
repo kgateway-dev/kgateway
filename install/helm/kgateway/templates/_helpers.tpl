@@ -80,12 +80,12 @@ Supported values: "standard" or "strict" (case-insensitive).
 {{- end }}
 
 {{/*
-Validate a cluster discovery mode and return it upper-cased. Accepts exactly
+Validate an xDS scoping mode and return it upper-cased. Accepts exactly
 what the controller does: any case, but no surrounding spaces, because an
 extraEnv value reaches the controller unchanged.
 Takes a dict: "value" is the mode, "path" names it in the error.
 */}}
-{{- define "kgateway.clusterDiscoveryMode" -}}
+{{- define "kgateway.xdsScopingMode" -}}
 {{- $mode := .value | toString | upper -}}
 {{- if or (eq $mode "ALL") (eq $mode "REFERENCED") -}}
 {{- $mode -}}

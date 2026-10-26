@@ -19,10 +19,10 @@ func TestClusterScopingIsOffByDefault(t *testing.T) {
 	assert.False(t, clusterScopingFrom(apisettings.Settings{}, nil).ScopesClusters(),
 		"the zero Settings must not scope clusters")
 	assert.False(t, clusterScopingFrom(apisettings.Settings{
-		ClusterDiscoveryMode: apisettings.ClusterDiscoveryAll,
+		XdsScopingMode: apisettings.XdsScopingAll,
 	}, nil).ScopesClusters())
 	assert.True(t, clusterScopingFrom(apisettings.Settings{
-		ClusterDiscoveryMode: apisettings.ClusterDiscoveryReferenced,
+		XdsScopingMode: apisettings.XdsScopingReferenced,
 	}, nil).ScopesClusters())
 }
 
@@ -38,10 +38,10 @@ func TestUnscopedModeRunsNoPluginClaims(t *testing.T) {
 			},
 		},
 	}
-	for name, mode := range map[string]apisettings.ClusterDiscoveryMode{"zero": "", "ALL": apisettings.ClusterDiscoveryAll} {
+	for name, mode := range map[string]apisettings.XdsScopingMode{"zero": "", "ALL": apisettings.XdsScopingAll} {
 		t.Run(name, func(t *testing.T) {
 			scoping := clusterScopingFrom(apisettings.Settings{
-				ClusterDiscoveryMode:    mode,
+				XdsScopingMode:          mode,
 				ClusterDereferenceGrace: time.Minute,
 				ClusterReferenceAhead:   time.Minute,
 			}, plugins)
@@ -106,7 +106,7 @@ func TestDisabledScopingLeavesTheGatewayProjectionEmpty(t *testing.T) {
 // configured windows, so coherent builds take the plain publish path.
 func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 	configured := clusterScopingFrom(apisettings.Settings{
-		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryAll,
+		XdsScopingMode:          apisettings.XdsScopingAll,
 		ClusterDereferenceGrace: time.Hour,
 		ClusterReferenceAhead:   time.Hour,
 	}, nil)
@@ -125,7 +125,7 @@ func TestDisabledScopingHasNoTransitionWindows(t *testing.T) {
 // durations must reach the gate.
 func TestScopedClustersUsesTheConfiguredWindows(t *testing.T) {
 	configured := clusterScopingFrom(apisettings.Settings{
-		ClusterDiscoveryMode:    apisettings.ClusterDiscoveryReferenced,
+		XdsScopingMode:          apisettings.XdsScopingReferenced,
 		ClusterDereferenceGrace: 7 * time.Second,
 		ClusterReferenceAhead:   3 * time.Second,
 	}, nil)
