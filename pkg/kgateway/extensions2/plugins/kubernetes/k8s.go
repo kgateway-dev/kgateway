@@ -47,7 +47,7 @@ func NewPluginFromCollections(
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, BuildServiceBackendObjectIR(svc, port.Port, servicePortProtocol(port)))
+			uss = append(uss, BuildServiceBackendObjectIR(svc, port.Port, ptr.OrDefault(port.AppProtocol, port.Name)))
 		}
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
@@ -72,15 +72,6 @@ func NewPluginFromCollections(
 	}
 }
 
-// servicePortProtocol returns the app protocol of a Service port, falling back to the port name. A port named
-// http is too common to be a choice of HTTP/1.1, so only an explicit appProtocol of http selects it.
-func servicePortProtocol(port corev1.ServicePort) string {
-	if port.AppProtocol == nil && strings.EqualFold(port.Name, ir.HTTPAppProtocolName) {
-		return ""
-	}
-	return ptr.OrDefault(port.AppProtocol, port.Name)
-}
-
 func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol string) ir.BackendObjectIR {
 	objSrc := ir.ObjectSource{
 		Kind:      wellknown.ServiceGVK.Kind,
@@ -97,6 +88,10 @@ func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol
 	for _, p := range svc.Spec.Ports {
 		if p.Port == svcPort {
 			backend.PortName = p.Name
+			// Only an explicit appProtocol of http selects HTTP/1.1; ParseAppProtocol treats http as the default.
+			if p.AppProtocol != nil && strings.EqualFold(*p.AppProtocol, ir.HTTPAppProtocolName) {
+				backend.AppProtocol = ir.HTTP1AppProtocol
+			}
 			break
 		}
 	}

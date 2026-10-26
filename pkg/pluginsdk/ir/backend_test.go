@@ -58,14 +58,14 @@ func TestParseAppProtocol(t *testing.T) {
 			expected: HTTP2AppProtocol,
 		},
 		{
-			name:     "http",
+			name:     "http is the default",
 			input:    new("http"),
-			expected: HTTP1AppProtocol,
+			expected: DefaultAppProtocol,
 		},
 		{
-			name:     "HTTP",
+			name:     "HTTP is the default",
 			input:    new("HTTP"),
-			expected: HTTP1AppProtocol,
+			expected: DefaultAppProtocol,
 		},
 		{
 			name:     "https is the default",

@@ -7,6 +7,8 @@ import (
 	networking "istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 // serviceEntryWithStatusAddrs builds a ServiceEntry with a fixed spec and the
@@ -75,4 +77,10 @@ func TestServiceEntryBackendIR_ReactsToAdditionalVIP(t *testing.T) {
 
 	assert.False(t, single.Equals(dual),
 		"gaining an additional auto-allocated address must be detected as a change")
+}
+
+// A ServiceEntry protocol of HTTP only says the port speaks HTTP, so a BackendTLSPolicy can still negotiate HTTP/2 via ALPN.
+func TestServiceEntryBackendIR_HTTPProtocolIsDefault(t *testing.T) {
+	be := BuildServiceEntryBackendObjectIR(serviceEntryWithStatusAddrs(1), "server.server.mesh.internal", 80, "HTTP", nil, "")
+	assert.Equal(t, ir.DefaultAppProtocol, be.AppProtocol, "protocol HTTP must not pin HTTP/1.1")
 }

@@ -100,7 +100,9 @@ const (
 	WebSocketAppProtocol AppProtocol = "ws"
 )
 
-// HTTPAppProtocolName is the IANA and istio app protocol for HTTP/1.1.
+// HTTPAppProtocolName is the IANA and istio app protocol for HTTP/1.1. ParseAppProtocol maps it to
+// DefaultAppProtocol: a port named http or a ServiceEntry protocol of HTTP is too common to be a choice of
+// HTTP/1.1. Only an explicit Service appProtocol of http selects HTTP1AppProtocol.
 const HTTPAppProtocolName = "http"
 
 // kubernetesWssAppProtocol is the GEP-1911 app protocol for WebSocket over TLS.
@@ -108,7 +110,7 @@ const HTTPAppProtocolName = "http"
 const kubernetesWssAppProtocol = "kubernetes.io/wss"
 
 // ParseAppProtocol takes an app protocol string provided on a Backend or Kubernetes Service, and maps it
-// to one of the app protocol types supported by kgateway (http1, http2, websocket, or default).
+// to one of the app protocol types supported by kgateway (http2, websocket, or default).
 // Recognizes http2 app protocols defined by istio (https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/)
 // and GEP-1911 (https://gateway-api.sigs.k8s.io/geps/gep-1911/#api-semantics).
 func ParseAppProtocol(appProtocol *string) AppProtocol {
@@ -121,8 +123,6 @@ func ParseAppProtocol(appProtocol *string) AppProtocol {
 		fallthrough
 	case string(kgateway.AppProtocolKubernetesH2C):
 		return HTTP2AppProtocol
-	case HTTPAppProtocolName:
-		return HTTP1AppProtocol
 	case string(kgateway.AppProtocolKubernetesWs):
 		fallthrough
 	case kubernetesWssAppProtocol:
