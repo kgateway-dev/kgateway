@@ -13,8 +13,9 @@ import (
 // plugin's tests can check its ClusterEmissionClaim against configuration the
 // plugin generates, without a controller.
 type ClusterScopingDecision struct {
-	// Scoped reports whether the gateway's CDS is filtered. When false, every
-	// cluster is emitted.
+	// Scoped reports whether CDS, EDS and backend-owned LDS/SDS resources are
+	// filtered. When false, every backend's cluster, endpoints, listeners and
+	// secrets are emitted.
 	Scoped bool
 	// Unaccounted are the request-time selectors that keep the gateway
 	// unscoped, with any reason, as the controller's warning lists them.

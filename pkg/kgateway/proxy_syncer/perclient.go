@@ -102,7 +102,8 @@ func snapshotPerClient(
 		clusterVersions := clustersForUcc.clusterVersions
 
 		// Filter after shared backend translation, which stays O(backends). EDS
-		// alignment below drops CLAs for clusters removed here.
+		// alignment below drops CLAs for clusters removed here; backend-owned
+		// LDS listeners and SDS secrets are filtered with their clusters too.
 		var filtered bool
 		clusterResources, clusterVersions, filtered = filterClustersToEmitted(
 			scoping,
@@ -110,7 +111,7 @@ func snapshotPerClient(
 			clusterResources,
 			clusterVersions,
 		)
-		// unscopedBy is why this client's CDS is not scoped: the gateway's own
+		// unscopedBy is why this client's xDS scoping is off: the gateway's own
 		// request-time selectors no claim accounts for, else those in a kept
 		// backend's listeners.
 		var unscopedBy []string

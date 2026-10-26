@@ -39,17 +39,21 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
-// XdsScopingMode selects backends for CDS and their corresponding EDS assignments.
+// XdsScopingMode selects backend resources for CDS, EDS, LDS and SDS.
+// Backend-owned listeners and secrets follow their clusters; gateway-level
+// listeners and secrets are unaffected.
 type XdsScopingMode string
 
 const (
 	// XdsScopingAll emits every backend in discovery scope, referenced or not.
+	// Its endpoints, backend-owned listeners and secrets are emitted too.
 	// A retarget to an existing backend is safe because its cluster already
 	// exists, but every proxy carries, and reports stats for, the whole
 	// inventory.
 	XdsScopingAll XdsScopingMode = "ALL"
 	// XdsScopingReferenced emits only referenced clusters, including filter
-	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
+	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS), with their
+	// endpoints, backend-owned listeners and secrets. A gateway
 	// with a request-time selector reverts to ALL, since pruning could silently
 	// select the plugin's fallback, unless every such selector is a cluster
 	// specifier plugin that a valid pluginsdk.ClusterEmissionClaim accounts for.
@@ -464,7 +468,9 @@ type Settings struct {
 	// reintroduce unbounded withholds. For test and CI; off by default.
 	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
 
-	// XdsScopingMode selects which backends reach a proxy's CDS.
+	// XdsScopingMode selects which backend resources reach a proxy's CDS, EDS,
+	// LDS and SDS. Backend-owned listeners and secrets follow their clusters;
+	// gateway-level listeners and secrets are unaffected.
 	// Supported values are:
 	//
 	//   - "ALL" (default): every backend in discovery scope becomes a cluster.

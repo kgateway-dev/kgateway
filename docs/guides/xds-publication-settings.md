@@ -304,11 +304,13 @@ out` for `ClusterLoadAssignment`.
 ### `KGW_XDS_SCOPING_MODE` (default `ALL`)
 
 - **`ALL`** emits a CDS cluster and an EDS assignment for every backend in
-  discovery scope.
+  discovery scope, along with its backend-owned LDS listeners and SDS secrets.
 - **`REFERENCED`** emits only the clusters the generated configuration
   references, including clusters that only filters call, such as ext_authz,
-  ext_proc, rate limit, access log and JWKS clusters. `REFERENCED` is
-  experimental.
+  ext_proc, rate limit, access log and JWKS clusters. EDS assignments and
+  backend-owned LDS listeners and SDS secrets follow their clusters: dropping
+  a backend's cluster drops those resources too. Gateway-level listeners and
+  secrets are unaffected. `REFERENCED` is experimental.
 
 Helm value: `controller.xdsScoping.mode`.
 

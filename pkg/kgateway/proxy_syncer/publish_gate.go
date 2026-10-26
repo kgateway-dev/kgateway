@@ -127,7 +127,7 @@ type publishGate struct {
 	dereferenceGrace time.Duration
 
 	// referenceAhead is how long configuration naming a newly-emitted cluster
-	// is held; nonpositive disables it. Zero without scoped CDS. Written once at
+	// is held; nonpositive disables it. Zero with xDS scoping off. Written once at
 	// construction.
 	referenceAhead time.Duration
 

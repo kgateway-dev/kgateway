@@ -193,8 +193,9 @@ func TestKeepBackendListenerTargets(t *testing.T) {
 }
 
 // TestSnapshotPerClientKeepsClustersBackendListenersName: scoped, a routed
-// tunnel keeps the proxy cluster its listener names, the listener ships in LDS,
-// and EDS follows CDS. An unrouted tunnel's listener and secret do not ship.
+// tunnel keeps the proxy cluster its listener names. Its EDS assignments, LDS
+// listeners and SDS secrets follow CDS. An unrouted tunnel's listener and
+// secret do not ship.
 func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -226,9 +227,9 @@ func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Endpoint].Items)).To(gomega.ConsistOf(toAny(tc.expected)...),
 				"EDS must follow CDS")
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Listener].Items)).To(gomega.ConsistOf(toAny(tc.listeners)...),
-				"a backend's listeners ship with its cluster, and only then")
+				"backend-owned LDS listeners ship with their cluster, and only then")
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Secret].Items)).To(gomega.ConsistOf(toAny(tc.secrets)...),
-				"a backend's secrets ship with its cluster, and only then")
+				"backend-owned SDS secrets ship with their cluster, and only then")
 		})
 	}
 }

@@ -2,13 +2,16 @@
 
 By default kgateway sends every proxy a CDS cluster, and an EDS
 `ClusterLoadAssignment`, for **every** backend in its discovery scope, whether or
-not any route targets it. A cluster with 300 Services and 16 routed ones puts all
+not any route targets it. Backend-owned listeners (LDS) and secrets (SDS) are
+emitted too. A cluster with 300 Services and 16 routed ones puts all
 300 in every proxy's `config_dump`, in every proxy replica's memory, and in every
 proxy's `/stats` — where each cluster contributes a large family of series
 carrying an `envoy_cluster_name` label.
 
-`KGW_XDS_SCOPING_MODE=REFERENCED` scopes CDS and EDS to the clusters the
-generated configuration actually references. It is off by default.
+`KGW_XDS_SCOPING_MODE=REFERENCED` scopes CDS, EDS, and backend-owned LDS and
+SDS resources to the clusters the generated configuration actually references.
+Backend-owned listeners and secrets follow their clusters; gateway-level
+listeners and secrets are unaffected. It is experimental and off by default.
 [xDS publication and scoping settings](../../docs/guides/xds-publication-settings.md)
 summarizes this setting with the publication settings it interacts with.
 
@@ -49,6 +52,11 @@ listeners of each kept backend are walked the same way, and the clusters they
 name are kept and followed in turn. A dropped backend's listeners keep nothing.
 A request-time selector in one of them turns scoping off for that client, as one
 in the gateway's own configuration does.
+
+A kept backend contributes its listeners to LDS and its secrets to SDS. When
+scoping drops a backend's cluster, it also drops that backend's endpoints,
+listeners and secrets. Gateway-level listeners and secrets, and resources added
+by a plugin's translation pass, are not filtered by this feature.
 
 A golden-corpus sweep enforces this: for every translator fixture, every cluster
 the configuration mentions must be in the emitted set, checked against an oracle
@@ -204,7 +212,7 @@ very cluster that makes the feature safe.
 
 | Setting | Default | Effect |
 | --- | --- | --- |
-| `KGW_XDS_SCOPING_MODE` | `ALL` | `REFERENCED` scopes CDS/EDS to referenced clusters. `ALL` is the pre-existing behavior. |
+| `KGW_XDS_SCOPING_MODE` | `ALL` | `REFERENCED` scopes CDS, EDS, and backend-owned LDS/SDS resources to referenced clusters. `ALL` is the pre-existing behavior. |
 | `KGW_CLUSTER_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` or negative removes immediately and accepts the race. |
 | `KGW_CLUSTER_REFERENCE_AHEAD` | `2s` | How long configuration naming a cluster new to a proxy is held after the controller first publishes that cluster. `0` or negative publishes both together and accepts the blip. |
 
