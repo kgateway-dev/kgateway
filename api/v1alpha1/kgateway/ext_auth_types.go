@@ -87,6 +87,17 @@ type ExtAuthProvider struct {
 	// +kubebuilder:default=false
 	FailOpen bool `json:"failOpen,omitempty"`
 
+	// PercentageEnabled specifies the percentage of requests for which the ext auth
+	// filter is enabled, allowing auth traffic to be ramped up gradually, e.g. when
+	// migrating authentication from an application into a gateway ext auth service.
+	// Requests that are not sampled skip the auth call and are allowed through.
+	// When unset, the filter is enabled for all requests matching the attached policies.
+	// Setting this to 0 disables the filter for all requests.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	PercentageEnabled *int32 `json:"percentageEnabled,omitempty"`
+
 	// ClearRouteCache determines if the route cache should be cleared to allow the
 	// external authentication service to correctly affect routing decisions.
 	// +optional

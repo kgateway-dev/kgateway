@@ -204,6 +204,18 @@ func gatewayExtensionBuilder(
 			if gExt.ExtAuth.StatPrefix != nil {
 				p.ExtAuth.StatPrefix = *gExt.ExtAuth.StatPrefix
 			}
+			// Only populate FilterEnabled when the user actually set a percentage. Leaving it
+			// nil when unset preserves Envoy's default (the filter runs for every request), so
+			// existing configs are unaffected. Envoy ANDs this with FilterEnabledMetadata set
+			// above, so the filter only runs for requests that both match an attached policy
+			// and are sampled. The runtime key is scoped by provider name rather than globally
+			// so distinct ExtAuth extensions in the same proxy can be toggled independently.
+			if percent := toFractionalPercent(gExt.ExtAuth.PercentageEnabled); percent != nil {
+				p.ExtAuth.FilterEnabled = &envoycorev3.RuntimeFractionalPercent{
+					RuntimeKey:   fmt.Sprintf("ext_authz.%s.filter_enabled", strings.ReplaceAll(p.Name, "/", ".")),
+					DefaultValue: percent,
+				}
+			}
 			if len(gExt.ExtAuth.HeadersToForward) > 0 {
 				p.ExtAuth.AllowedHeaders = buildStringListMatcher(gExt.ExtAuth.HeadersToForward)
 			}

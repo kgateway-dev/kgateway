@@ -103,6 +103,7 @@ spec:
     clearRouteCache: true
     statusOnError: 400
     statPrefix: my_prefix
+    percentageEnabled: 10
     withRequestBody:
       maxRequestBytes: 420000
       allowPartialMessage: true
