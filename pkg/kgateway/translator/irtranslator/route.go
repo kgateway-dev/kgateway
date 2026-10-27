@@ -962,7 +962,8 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			continue
 		}
 		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
-		policies, _ := mergePolicies(pass, pols)
+		policies, mergeOrigins := mergePolicies(pass, pols)
+		attachable := true
 		for _, pol := range policies {
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
@@ -975,7 +976,15 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			err := pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
+				if errors.Is(err, ir.ErrNotAttachable) {
+					attachable = false
+				}
 			}
+		}
+		// A policy kind that cannot attach to a backendRef stays pending rather than
+		// being reported as attached.
+		if attachable {
+			reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
 		}
 	}
 	return errors.Join(errs...)
