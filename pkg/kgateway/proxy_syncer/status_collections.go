@@ -131,13 +131,15 @@ func (s *ProxySyncer) initStatusInfra(krtopts krtutil.KrtOptions) {
 		}
 	}
 
-	registerStatusWriter(s.statusWriters, wellknown.UDPRouteGVK,
-		routeWriter(cl, f, s.commonCols.RawUDPRoutes, udpRouteReports, wellknown.UDPRouteGVK, wellknown.UDPRouteGVR, controllerName,
-			func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.UDPRoute {
-				return &gwv1.UDPRoute{ObjectMeta: om, Status: gwv1.UDPRouteStatus{RouteStatus: st}}
-			},
-			func(o *gwv1.UDPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-		))
+	for _, gvr := range s.commonCols.UDPRouteWriteVersions() {
+		registerStatusWriter(s.statusWriters, wellknown.UDPRouteGVK,
+			routeWriter(cl, f, s.commonCols.RawUDPRoutes, udpRouteReports, wellknown.UDPRouteGVK, gvr, controllerName,
+				func(om metav1.ObjectMeta, st gwv1.RouteStatus) *gwv1.UDPRoute {
+					return &gwv1.UDPRoute{ObjectMeta: om, Status: gwv1.UDPRouteStatus{RouteStatus: st}}
+				},
+				func(o *gwv1.UDPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
+			))
+	}
 
 	// Both ListenerSet flavors normalize to one collection and one report reducer keyed by the
 	// object's own GVK, but they are written back through different APIs, so each GVK gets its

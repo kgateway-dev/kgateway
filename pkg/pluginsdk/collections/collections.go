@@ -78,6 +78,9 @@ type CommonCollections struct {
 	// fallback for a CommonCollections built without InitCollections.
 	tcpRouteWriteGVRs []schema.GroupVersionResource
 	tlsRouteWriteGVRs []schema.GroupVersionResource
+	// udpRouteV1Unserved is set when the installed UDPRoute CRD serves versions but not v1,
+	// as in Gateway API v1.5. UDPRoute is v1-only, so no status writer is registered then.
+	udpRouteV1Unserved bool
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter
 
@@ -101,6 +104,16 @@ func (c *CommonCollections) TCPRouteWriteVersions() []schema.GroupVersionResourc
 // TLSRouteWriteVersions is TCPRouteWriteVersions for TLSRoutes.
 func (c *CommonCollections) TLSRouteWriteVersions() []schema.GroupVersionResource {
 	return routeWriteVersionsOrDefault(c.tlsRouteWriteGVRs, wellknown.TLSRouteV1GVR)
+}
+
+// UDPRouteWriteVersions returns the UDPRoute API versions status writes may go through. It
+// is empty when the installed CRD does not serve v1, where a writer's v1 watch would never
+// sync and block startup.
+func (c *CommonCollections) UDPRouteWriteVersions() []schema.GroupVersionResource {
+	if c.udpRouteV1Unserved {
+		return nil
+	}
+	return []schema.GroupVersionResource{wellknown.UDPRouteGVR}
 }
 
 func routeWriteVersionsOrDefault(gvrs []schema.GroupVersionResource, fallback schema.GroupVersionResource) []schema.GroupVersionResource {

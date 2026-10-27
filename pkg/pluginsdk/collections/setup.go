@@ -237,6 +237,10 @@ func (c *CommonCollections) InitCollections(
 	// can write, so the two cannot drift apart.
 	c.tcpRouteWriteGVRs = tcpRouteWriteGVRs
 	c.tlsRouteWriteGVRs = tlsRouteWriteGVRs
+	c.udpRouteV1Unserved = servesOnlyOtherVersions(
+		resolveRouteVersions(ctx, versionSource, wellknown.UDPRouteCRDName, []schema.GroupVersionResource{wellknown.UDPRouteGVR}),
+		wellknown.UDPRouteGVR,
+	)
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)
