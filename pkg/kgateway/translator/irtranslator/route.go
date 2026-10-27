@@ -952,7 +952,17 @@ func mergePolicies(pass *TranslationPass, policies []ir.PolicyAtt) ([]ir.PolicyA
 	return policies, nil
 }
 
-func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, ancestorRef gwv1.ParentReference, pCtx *ir.RouteBackendContext) error {
+// backendPolicyAttachment is the attachment of a backendRef's policies of one kind, reported
+// only once the backend is known to receive its share of traffic.
+type backendPolicyAttachment struct {
+	mergeOrigins ir.MergeOrigins
+	policies     []ir.PolicyAtt
+}
+
+// runBackendPolicies applies the policies attached to a backendRef. It returns their
+// attachments, for the caller to report only if the backend is not cut off.
+func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend, ancestorRef gwv1.ParentReference, pCtx *ir.RouteBackendContext) ([]backendPolicyAttachment, error) {
+	var attachments []backendPolicyAttachment
 	var errs []error
 	for _, gk := range in.AttachedPolicies.ApplyOrderedGroupKinds() {
 		pols := in.AttachedPolicies.Policies[gk]
@@ -963,7 +973,6 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 		}
 		reportPolicyAcceptanceStatus(h.reporter, ancestorRef, pols...)
 		policies, mergeOrigins := mergePolicies(pass, pols)
-		attachable := true
 		for _, pol := range policies {
 			// skip plugin application if we encountered any errors while constructing
 			// the policy IR.
@@ -976,18 +985,11 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(in ir.HttpBackend,
 			err := pass.ApplyForRouteBackend(pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
-				if errors.Is(err, ir.ErrNotAttachable) {
-					attachable = false
-				}
 			}
 		}
-		// A policy kind that cannot attach to a backendRef stays pending rather than
-		// being reported as attached.
-		if attachable {
-			reportPolicyAttachmentStatus(h.reporter, ancestorRef, mergeOrigins, pols...)
-		}
+		attachments = append(attachments, backendPolicyAttachment{mergeOrigins: mergeOrigins, policies: pols})
 	}
-	return errors.Join(errs...)
+	return attachments, errors.Join(errs...)
 }
 
 // runBackend lets the plugin of the backend's kind contribute to the route. Unlike policies, it
@@ -1073,6 +1075,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 
 	var clusters []*envoyroutev3.WeightedCluster_ClusterWeight
 	var backendPolicyErrs []error
+	var attachments []backendPolicyAttachment
 	backendsLeft := 0
 	for _, backend := range in.Backends {
 		clusterName := backend.Backend.ClusterName
@@ -1108,7 +1111,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 				h.logger.Error("error processing backends", "error", err)
 			}
 		}
-		err := h.runBackendPolicies(
+		backendAttachments, err := h.runBackendPolicies(
 			backend,
 			ancestorRef,
 			&pCtx,
@@ -1129,6 +1132,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			// TODO: error on status
 			h.logger.Error("error processing backends", "error", err)
 		}
+		attachments = append(attachments, backendAttachments...)
 		if receivesTraffic(backend.Backend) {
 			backendsLeft++
 		}
@@ -1157,6 +1161,13 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		// No backend is left to receive traffic, or a backend plugin set the cluster specifier so
 		// the blackhole cluster would not be used: the route fails closed, like route-level policy errors.
 		routeErr = errors.Join(backendPolicyErrs...)
+	} else {
+		// Only the policies of backends that keep their share of traffic are attached; those of
+		// cut off backends, or of a route that fails closed, stay pending.
+		ancestorRef := routeAncestorRef(in, h.listener.PolicyAncestorRef)
+		for _, a := range attachments {
+			reportPolicyAttachmentStatus(h.reporter, ancestorRef, a.mergeOrigins, a.policies...)
+		}
 	}
 	switch len(clusters) {
 	// case 0:
