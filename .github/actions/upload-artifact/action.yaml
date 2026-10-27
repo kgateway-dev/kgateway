@@ -1,4 +1,5 @@
 name: Upload artifact
+description: Upload workflow artifacts with a unique name for each job.
 
 inputs:
   path:
@@ -16,6 +17,8 @@ runs:
     - name: Get Job ID from GH API
       shell: bash
       id: get-job-id
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         jobs=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id}}/attempts/${{ github.run_attempt }}/jobs)
         job_len=$(echo $jobs | jq -r '[.jobs[] | select(.runner_name=="${{ runner.name }}")] | length')
@@ -27,7 +30,7 @@ runs:
           echo "job_id=$ts" >> $GITHUB_OUTPUT
         fi
     - name: Upload artifacts
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: ${{ inputs.name }}-${{ github.run_id }}-${{ steps.get-job-id.outputs.job_id }}
         path: ${{ inputs.path }}

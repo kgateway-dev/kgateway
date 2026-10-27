@@ -20,7 +20,7 @@ spec:
   serviceAccountName: curl
   containers:
     - name: curl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
+      image: ghcr.io/kgateway-dev/curl:8.20.0
       imagePullPolicy: IfNotPresent
       command:
         - "tail"
@@ -34,43 +34,6 @@ spec:
           cpu: "200m"
           memory: "128Mi"
 ---
-##################################################################################################
-# Notcurl pod - based on the curl pod but with another identity
-##################################################################################################
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: notcurl
----
-# Immutable pod spec fields should be consistent with test/e2e/defaults/testdata/curl_pod.yaml
-# due to https://github.com/kgateway-dev/kgateway/issues/13408.
-apiVersion: v1
-kind: Pod
-metadata:
-  name: notcurl
-  labels:
-    app: notcurl
-    version: v1
-spec:
-  terminationGracePeriodSeconds: 0
-  serviceAccountName: notcurl
-  containers:
-    - name: notcurl
-      image: ghcr.io/kgateway-dev/curl:7.83.1
-      imagePullPolicy: IfNotPresent
-      command:
-        - "tail"
-        - "-f"
-        - "/dev/null"
-      resources:
-        requests:
-          cpu: "100m"
-          memory: "64Mi"
-        limits:
-          cpu: "200m"
-          memory: "128Mi"
----
-
 ##################################################################################################
 # simple HTTP test application (svc-a)
 # NOTE: not captured by the waypoint by default
@@ -195,66 +158,3 @@ spec:
   selector:
     app: svc-b
   type: ClusterIP
----
-##################################################################################################
-# mirrors of the services above, but in ServiceEntry form (se-a.serviceentry.com and se-b.serviceentry.com)
-# NOTE: not captured by the waypoint by default
-##################################################################################################
-apiVersion: networking.istio.io/v1beta1
-kind: ServiceEntry
-metadata:
-  name: se-a
-spec:
-  addresses:
-  - 244.244.0.1
-  hosts:
-  - se-a.serviceentry.com
-  location: MESH_INTERNAL
-  ports:
-  - number: 8080
-    name: http
-    protocol: HTTP
-    targetPort: 5678
-  resolution: STATIC
-  workloadSelector:
-    labels:
-      app: svc-b
----
-apiVersion: networking.istio.io/v1beta1
-kind: ServiceEntry
-metadata:
-  name: se-b
-spec:
-  addresses:
-  - 244.244.0.2
-  hosts:
-  - se-b.serviceentry.com
-  location: MESH_INTERNAL
-  ports:
-  - number: 8080
-    name: http
-    protocol: HTTP
-    targetPort: 5678
-  resolution: STATIC
-  workloadSelector:
-    labels:
-      app: svc-b
-
-##################################################################################################
-# istio allows writing a WorkloadEntry with a network but no address
-# we just include one here and expect it to do nothing
-# this acts as an assertion that we don't push invalid envoy and cause NACKs (due to invalid LbAddr)
-##################################################################################################
-# ---
-# TODO uncomment this to get e2e coverage on our filtering
-# currently it will break zTunnel until we get a new istio release to test against
-# https://github.com/istio/istio/issues/56531
-#
-# apiVersion: networking.istio.io/v1beta1
-# kind: WorkloadEntry
-# metadata:
-#   name: empty-addr-workloadentry
-#   labels:
-#     app: svc-b
-# spec:
-#   network: some-external-network

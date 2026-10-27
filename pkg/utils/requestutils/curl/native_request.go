@@ -145,7 +145,7 @@ func (c *requestConfig) buildURL() string {
 		path = "/" + path
 	}
 
-	baseURL := fmt.Sprintf("%s://%s:%d%s", c.scheme, c.host, c.port, path)
+	baseURL := fmt.Sprintf("%s://%s:%d%s", c.scheme, urlHost(c.host), c.port, path)
 
 	if len(c.queryParameters) > 0 {
 		values := url.Values{}

@@ -1,0 +1,193 @@
+package sharedproto
+
+import (
+	"testing"
+	"time"
+
+	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+)
+
+func withAssertions(t *testing.T, enabled bool) {
+	t.Helper()
+	prev := AssertImmutability
+	AssertImmutability = enabled
+	t.Cleanup(func() { AssertImmutability = prev })
+}
+
+func TestResourceWithTTL_PanicsOnMutation(t *testing.T) {
+	withAssertions(t, true)
+	cluster := &envoyclusterv3.Cluster{Name: "shared"}
+	s := Wrap(cluster)
+
+	require.NotPanics(t, func() { s.ResourceWithTTL() },
+		"an unmutated proto must pass verification")
+
+	// The canonical nasty mistake: mutating the wrapped proto through a
+	// retained raw pointer.
+	cluster.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+
+	require.Panics(t, func() { s.ResourceWithTTL() },
+		"a mutated shared proto must trip the assertion")
+}
+
+func TestResourceWithTTL_VerifiesZeroHash(t *testing.T) {
+	withAssertions(t, true)
+	// Supplying a captured zero for a nonzero-hash message simulates drift
+	// from a resource whose original hash was zero. Zero is a hash, not opt-out.
+	cluster := &envoyclusterv3.Cluster{Name: "nonzero-hash"}
+	require.NotZero(t, utils.HashProto(cluster))
+	s := WrapPrehashed(cluster, 0)
+	require.Panics(t, func() { s.ResourceWithTTL() })
+}
+
+func TestResourceWithTTL_SkipsUncaptured(t *testing.T) {
+	withAssertions(t, false)
+	cluster := &envoyclusterv3.Cluster{Name: "fixture"}
+	s := Wrap(cluster)
+	withAssertions(t, true)
+	cluster.Name = "changed"
+	require.NotPanics(t, func() { s.ResourceWithTTL() }, "enabling assertions later cannot verify an uncaptured hash")
+	var empty Shared[*envoyclusterv3.Cluster]
+	require.NotPanics(t, func() { empty.ResourceWithTTL() })
+}
+
+func TestWrap_RespectsFlag(t *testing.T) {
+	cluster := &envoyclusterv3.Cluster{Name: "c"}
+
+	withAssertions(t, false)
+	require.Zero(t, Wrap(cluster).hash, "capture must be free when assertions are disabled")
+	require.Zero(t, WrapPrehashed(cluster, 42).hash)
+
+	withAssertions(t, true)
+	require.Equal(t, utils.HashProto(cluster), Wrap(cluster).hash,
+		"Wrap must capture the content hash while assertions are enabled")
+	require.Equal(t, uint64(42), WrapPrehashed(cluster, 42).hash)
+}
+
+func TestCloneIsIndependent(t *testing.T) {
+	withAssertions(t, true)
+	cluster := &envoyclusterv3.Cluster{Name: "shared"}
+	s := Wrap(cluster)
+
+	clone := s.Clone()
+	require.NotSame(t, cluster, clone)
+	clone.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+
+	require.NotPanics(t, func() { s.ResourceWithTTL() },
+		"mutating a Clone must not affect the shared proto")
+	assert.Nil(t, cluster.GetOutlierDetection())
+}
+
+func TestCloneEmptyReturnsZeroValue(t *testing.T) {
+	var zero Shared[*envoyclusterv3.Cluster]
+	require.Nil(t, zero.Clone(), "cloning a zero-value wrapper must return the message zero value")
+	require.Nil(t, Wrap[*envoyclusterv3.Cluster](nil).Clone(),
+		"cloning a wrapped typed-nil must return the message zero value")
+}
+
+func TestBorrowForReadAliasesAndStaysCovered(t *testing.T) {
+	withAssertions(t, true)
+	cluster := &envoyclusterv3.Cluster{Name: "shared"}
+	s := Wrap(cluster)
+
+	borrowed := s.BorrowForRead()
+	require.Same(t, cluster, borrowed,
+		"BorrowForRead must lend the shared proto, not a copy — avoiding the copy is the point")
+	require.NotPanics(t, func() { s.ResourceWithTTL() },
+		"reading through a borrow must leave the proto verifiable")
+
+	// A borrower that breaks its contract is not silent: the borrowed pointer is
+	// the one ResourceWithTTL publishes, so the tripwire still catches it.
+	borrowed.OutlierDetection = &envoyclusterv3.OutlierDetection{}
+	require.Panics(t, func() { s.ResourceWithTTL() },
+		"mutating a borrowed proto must trip the assertion")
+}
+
+func TestIdentityHelpers(t *testing.T) {
+	a := &envoyclusterv3.Cluster{Name: "a"}
+	b := &envoyclusterv3.Cluster{Name: "a"} // equal content, distinct instance
+
+	sa, sb := Wrap(a), Wrap(b)
+	require.True(t, Same(sa, Wrap(a)), "Same must report aliasing of one instance")
+	require.False(t, Same(sa, sb), "Same must be identity, not content equality")
+	require.True(t, sa.Is(a))
+	require.False(t, sa.Is(b))
+}
+
+func TestIsNil(t *testing.T) {
+	var zero Shared[*envoyclusterv3.Cluster]
+	require.True(t, zero.IsNil(), "zero-value wrapper carries no proto")
+	require.True(t, Wrap[*envoyclusterv3.Cluster](nil).IsNil(), "wrapped typed-nil is nil")
+	require.False(t, Wrap(&envoyclusterv3.Cluster{}).IsNil())
+}
+
+func TestWithTTLRetainsValueWithoutAliasing(t *testing.T) {
+	withAssertions(t, true)
+	original := Wrap(&envoyclusterv3.Cluster{Name: "expiring"})
+	expiring := original.WithTTL(5 * time.Second)
+	require.True(t, Same(original, expiring), "TTL metadata does not copy the proto")
+	require.Nil(t, original.ResourceWithTTL().TTL, "existing wrappers remain non-expiring")
+	resource := expiring.ResourceWithTTL()
+	require.NotNil(t, resource.TTL)
+	require.Equal(t, 5*time.Second, *resource.TTL)
+	*resource.TTL = time.Hour
+	require.Equal(t, 5*time.Second, *expiring.ResourceWithTTL().TTL, "published TTL pointers cannot mutate wrapper metadata")
+	require.Equal(t, time.Duration(0), *original.WithTTL(0).ResourceWithTTL().TTL, "explicit zero is distinct from absent TTL")
+	expiring.BorrowForRead().Name = "mutated"
+	require.Panics(t, func() { expiring.ResourceWithTTL() }, "TTL retains the mutation tripwire")
+}
+
+func TestInternerUsesContentEqualityWithinHashBuckets(t *testing.T) {
+	withAssertions(t, true)
+	var interner Interner[*envoyclusterv3.Cluster]
+	first := &envoyclusterv3.Cluster{Name: "first"}
+	second := &envoyclusterv3.Cluster{Name: "second"}
+	const collidingHash = 42
+
+	sharedFirst := interner.Intern(first, collidingHash)
+	sharedSecond := interner.Intern(second, collidingHash)
+	sharedFirstCopy := interner.Intern(&envoyclusterv3.Cluster{Name: "first"}, collidingHash)
+
+	require.False(t, Same(sharedFirst, sharedSecond),
+		"distinct protos in the same hash bucket must not alias")
+	require.True(t, Same(sharedFirst, sharedFirstCopy),
+		"equal protos in the same hash bucket must share one wrapper")
+	require.Len(t, interner.byHash[collidingHash], 2,
+		"one collision bucket must retain each distinct proto exactly once")
+	require.Equal(t, utils.HashProto(first), sharedFirst.hash,
+		"a non-content bucket hash must not be reused as the mutation-tripwire hash")
+	require.NotPanics(t, func() { sharedFirst.ResourceWithTTL() })
+}
+
+// A caller-supplied Equal replaces proto.Equal for the bucket scan and nothing
+// else: it decides which existing wrapper is handed back, and a nil hook keeps
+// the default.
+func TestInternerUsesSuppliedEquality(t *testing.T) {
+	withAssertions(t, false)
+	calls := 0
+	interner := Interner[*envoyclusterv3.Cluster]{
+		Equal: func(a, b *envoyclusterv3.Cluster) bool {
+			calls++
+			// Deliberately coarser than proto.Equal: compare names only, so the
+			// test can tell the hook was consulted rather than proto.Equal.
+			return a.GetName() == b.GetName()
+		},
+	}
+	first := interner.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "one"}, 1)
+	second := interner.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "two"}, 1)
+	require.True(t, Same(first, second), "the supplied Equal decided the two candidates were equal")
+	require.Equal(t, 1, calls, "the hook ran once, against the one existing candidate")
+
+	other := interner.Intern(&envoyclusterv3.Cluster{Name: "d"}, 1)
+	require.False(t, Same(first, other), "the supplied Equal decided this candidate differs")
+	require.Len(t, interner.byHash[1], 2)
+
+	var defaulted Interner[*envoyclusterv3.Cluster]
+	a := defaulted.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "one"}, 1)
+	b := defaulted.Intern(&envoyclusterv3.Cluster{Name: "c", AltStatName: "two"}, 1)
+	require.False(t, Same(a, b), "without a hook proto.Equal decides, and these differ")
+}

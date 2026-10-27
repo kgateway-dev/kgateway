@@ -13,17 +13,24 @@ import (
 )
 
 const (
-	gatewayName     = "lambda-gateway"
-	lambdaNamespace = "lambda-test"
+	gatewayName           = "lambda-gateway"
+	assumeRoleGatewayName = "lambda-assume-role-gateway"
+	lambdaNamespace       = "lambda-test"
+
+	// stsServiceIPPlaceholder is replaced with the localstack-sts service's
+	// cluster IP when the assume-role manifest is applied.
+	stsServiceIPPlaceholder = "STS_SERVICE_CLUSTER_IP"
 )
 
 var (
-	setupManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
-	awsCliPodManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "aws-cli.yaml")
-	lambdaBackendManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-backend.yaml")
-	lambdaAsyncManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-async.yaml")
-	lambdaQualifierManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-qualifier.yaml")
-	lambdaFunctionPath      = filepath.Join(fsutils.MustGetThisDir(), "functions", "hello-function.js")
+	setupManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	awsCliPodManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "aws-cli.yaml")
+	lambdaBackendManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-backend.yaml")
+	lambdaAsyncManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-async.yaml")
+	lambdaQualifierManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-qualifier.yaml")
+	lambdaAssumeRoleManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "lambda-assume-role.yaml")
+	stsServiceManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "sts-service.yaml")
+	lambdaFunctionPath       = filepath.Join(fsutils.MustGetThisDir(), "functions", "hello-function.js")
 
 	gatewayObjectMeta = metav1.ObjectMeta{
 		Name:      gatewayName,
@@ -40,6 +47,25 @@ var (
 	proxyServiceMeta = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gatewayName,
+			Namespace: lambdaNamespace,
+		},
+	}
+
+	assumeRoleGatewayObjectMeta = metav1.ObjectMeta{
+		Name:      assumeRoleGatewayName,
+		Namespace: lambdaNamespace,
+	}
+
+	assumeRoleProxyDeploymentMeta = &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      assumeRoleGatewayName,
+			Namespace: lambdaNamespace,
+		},
+	}
+
+	assumeRoleProxyServiceMeta = &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      assumeRoleGatewayName,
 			Namespace: lambdaNamespace,
 		},
 	}

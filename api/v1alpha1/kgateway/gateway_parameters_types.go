@@ -419,6 +419,13 @@ type EnvoyBootstrap struct {
 	//
 	// +optional
 	EnableReadinessProbeProxyProtocol *bool `json:"enableReadinessProbeProxyProtocol,omitempty"`
+
+	// MaxDownstreamConnections caps active downstream connections across all listeners. Unset by default (no limit).
+	// This is bootstrap configuration, so changing it restarts the proxy.
+	//
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MaxDownstreamConnections *int64 `json:"maxDownstreamConnections,omitempty"`
 }
 
 // LogFormat configures Envoy's application log format. Either JSON or Text must be specified.
@@ -482,6 +489,13 @@ func (in *EnvoyBootstrap) GetEnableReadinessProbeProxyProtocol() *bool {
 		return nil
 	}
 	return in.EnableReadinessProbeProxyProtocol
+}
+
+func (in *EnvoyBootstrap) GetMaxDownstreamConnections() *int64 {
+	if in == nil {
+		return nil
+	}
+	return in.MaxDownstreamConnections
 }
 
 func (in *DnsResolver) GetUdpMaxQueries() *int32 {

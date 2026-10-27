@@ -15,6 +15,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/goruntime"
 )
 
 func TestHelmChartVersionAndAppVersion(t *testing.T) {
@@ -337,60 +339,50 @@ func findDeployment(t *testing.T, manifests []byte) appsv1.Deployment {
 func findContainerEnvVar(t *testing.T, container corev1.Container, name string) corev1.EnvVar {
 	t.Helper()
 
-	for _, envVar := range container.Env {
-		if envVar.Name == name {
-			return envVar
-		}
+	envVar, found := lookupContainerEnvVar(container, name)
+	if found {
+		return envVar
 	}
 
 	t.Fatalf("environment variable %q not found", name)
 	return corev1.EnvVar{}
 }
 
+func lookupContainerEnvVar(container corev1.Container, name string) (corev1.EnvVar, bool) {
+	for _, envVar := range container.Env {
+		if envVar.Name == name {
+			return envVar, true
+		}
+	}
+
+	return corev1.EnvVar{}, false
+}
+
 func TestControllerGoMemLimitPercent(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		memory  string
 		percent int
 		want    string
 	}{
-		{name: "binary quantity", memory: "2Gi", percent: 80, want: "1717986918"},
-		{name: "lower percentage boundary", memory: "2Gi", percent: 1, want: "21474836"},
-		{name: "upper percentage boundary", memory: "2Gi", percent: 100, want: "2147483648"},
-		{name: "decimal binary quantity", memory: "1.5Gi", percent: 80, want: "1288490188"},
-		{name: "decimal SI megabytes", memory: "512M", percent: 80, want: "409600000"},
-		{name: "decimal SI gigabyte", memory: "1G", percent: 80, want: "800000000"},
-		{name: "large decimal SI quantity", memory: "48G", percent: 80, want: "38400000000"},
+		{percent: 1, want: "0.01"},
+		{percent: 80, want: "0.80"},
+		{percent: 100, want: "1.00"},
 	} {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d percent", test.percent), func(t *testing.T) {
 			values := fmt.Sprintf(`controller:
-  resources:
-    limits:
-      memory: %s
   goMemLimitPercent: %d
-`, test.memory, test.percent)
+`, test.percent)
 			output := renderHelmTemplate(t, "kgateway", values, nil)
 			deployment := findDeployment(t, output)
-			memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
+			container := deployment.Spec.Template.Spec.Containers[0]
+			memoryLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitEnv)
 			require.Equal(t, test.want, memoryLimit.Value)
 			require.Nil(t, memoryLimit.ValueFrom)
+			_, found := lookupContainerEnvVar(container, "GOMEMLIMIT")
+			require.False(t, found, "GOMEMLIMIT should not mask container-aware configuration")
 		})
 	}
 
-	t.Run("uses deprecated top-level resources when controller resources are unset", func(t *testing.T) {
-		output := renderHelmTemplate(t, "kgateway", `resources:
-  limits:
-    memory: 1Gi
-controller:
-  goMemLimitPercent: 80
-`, nil)
-		deployment := findDeployment(t, output)
-		memoryLimit := findContainerEnvVar(t, deployment.Spec.Template.Spec.Containers[0], "GOMEMLIMIT")
-		require.Equal(t, "858993459", memoryLimit.Value)
-		require.Nil(t, memoryLimit.ValueFrom)
-	})
-
-	t.Run("preserves resourceFieldRef when percentage calculation is disabled", func(t *testing.T) {
+	t.Run("preserves resourceFieldRef when container-aware calculation is disabled", func(t *testing.T) {
 		output := renderHelmTemplate(t, "kgateway", `controller:
   goMemLimitPercent: 0
 `, nil)
@@ -422,6 +414,32 @@ controller:
 		require.Equal(t, 1, count)
 	})
 
+	t.Run("allows extraEnv to configure container awareness directly", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  extraEnv:
+    AUTOMEMLIMIT: "0.75"
+`, nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		autoMemoryLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitEnv)
+		require.Equal(t, "0.75", autoMemoryLimit.Value)
+		_, found := lookupContainerEnvVar(container, "GOMEMLIMIT")
+		require.False(t, found, "GOMEMLIMIT should not mask AUTOMEMLIMIT")
+	})
+
+	t.Run("allows extraEnv to disable container awareness", func(t *testing.T) {
+		output := renderHelmTemplate(t, "kgateway", `controller:
+  extraEnv:
+    AUTOMEMLIMIT: "off"
+`, nil)
+		deployment := findDeployment(t, output)
+		container := deployment.Spec.Template.Spec.Containers[0]
+		autoMemoryLimit := findContainerEnvVar(t, container, goruntime.AutoMemoryLimitEnv)
+		require.Equal(t, "off", autoMemoryLimit.Value)
+		_, found := lookupContainerEnvVar(container, "GOMEMLIMIT")
+		require.False(t, found, "GOMEMLIMIT should not mask an explicit AUTOMEMLIMIT=off")
+	})
+
 	t.Run("allows a null percentage as unset", func(t *testing.T) {
 		output := renderHelmTemplate(t, "kgateway", `controller:
   goMemLimitPercent: null
@@ -444,74 +462,334 @@ controller:
 			valuesYAML: `controller:
   goMemLimitPercent: eighty
 `,
-			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got eighty",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got eighty",
 		},
 		{
 			name: "rejects a fractional percentage",
 			valuesYAML: `controller:
   goMemLimitPercent: 80.5
 `,
-			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got 80.5",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 80.5",
 		},
 		{
 			name: "rejects a boolean percentage",
 			valuesYAML: `controller:
   goMemLimitPercent: true
 `,
-			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got true",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got true",
 		},
 		{
 			name: "rejects a false boolean percentage",
 			valuesYAML: `controller:
   goMemLimitPercent: false
 `,
-			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got false",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got false",
 		},
 		{
 			name: "rejects a negative percentage",
 			valuesYAML: `controller:
   goMemLimitPercent: -1
 `,
-			message: "controller.goMemLimitPercent must be an integer between 1 and 100, got -1",
-		},
-		{
-			name: "requires an explicit memory limit",
-			valuesYAML: `controller:
-  goMemLimitPercent: 80
-`,
-			message: "controller.resources.limits.memory must be set when controller.goMemLimitPercent is set",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got -1",
 		},
 		{
 			name: "rejects a percentage above 100",
 			valuesYAML: `controller:
-  resources:
-    limits:
-      memory: 2Gi
   goMemLimitPercent: 101
 `,
-			message: "goMemLimitPercent must be between 1 and 100",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 101",
 		},
 		{
-			name: "rejects an unsupported memory quantity",
+			name: "rejects an oversized percentage",
 			valuesYAML: `controller:
-  resources:
-    limits:
-      memory: 512Zi
-  goMemLimitPercent: 80
+  goMemLimitPercent: "99999999999999999999"
 `,
-			message: "unsupported memory quantity \"512Zi\"",
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 99999999999999999999",
+		},
+		{
+			name: "rejects a percentage with leading zeros",
+			valuesYAML: `controller:
+  goMemLimitPercent: "007"
+`,
+			message: "controller.goMemLimitPercent must be 0 or an integer between 1 and 100, got 007",
 		},
 		{
 			name: "rejects a custom GOMEMLIMIT conflict",
 			valuesYAML: `controller:
-  resources:
-    limits:
-      memory: 2Gi
   goMemLimitPercent: 80
   extraEnv:
     GOMEMLIMIT: 700MiB
 `,
 			message: "controller.goMemLimitPercent and controller.extraEnv.GOMEMLIMIT cannot both be set",
+		},
+		{
+			name: "rejects a custom AUTOMEMLIMIT conflict",
+			valuesYAML: `controller:
+  goMemLimitPercent: 80
+  extraEnv:
+    AUTOMEMLIMIT: "0.75"
+`,
+			message: "controller.goMemLimitPercent and controller.extraEnv.AUTOMEMLIMIT cannot both be set",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			require.Error(t, err)
+			require.Contains(t, stderr, test.message)
+		})
+	}
+}
+
+func TestControllerXdsScoping(t *testing.T) {
+	xdsScopingEnv := []string{
+		"KGW_XDS_SCOPING_MODE",
+		"KGW_XDS_SCOPING_REFERENCE_AHEAD",
+		"KGW_XDS_SCOPING_DEREFERENCE_GRACE",
+	}
+
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		// want holds each variable's single rendered value; a variable
+		// missing from want must not be rendered at all.
+		want map[string]string
+	}{
+		{
+			name: "renders nothing by default, leaving the controller defaults",
+			want: map[string]string{},
+		},
+		{
+			name: "renders configured values",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED
+      referenceAhead: 3s
+      dereferenceGrace: 30s
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE":              "REFERENCED",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "3s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "30s",
+			},
+		},
+		{
+			name: "upper-cases the mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: Referenced
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE": "REFERENCED",
+			},
+		},
+		{
+			// A zero duration turns its window off, so it must not be dropped as falsy.
+			name: "renders a zero duration",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      referenceAhead: 0
+      dereferenceGrace: "0"
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "0",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "0",
+			},
+		},
+		{
+			name: "renders compound and fractional durations",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      referenceAhead: 1m30s
+      dereferenceGrace: 1.5s
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "1m30s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "1.5s",
+			},
+		},
+		{
+			// A non-zero bare number is invalid, but 0 is not.
+			name: "passes a valid extraEnv zero duration through unchanged",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_REFERENCE_AHEAD: "0"
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: "0"
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "0",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "0",
+			},
+		},
+		{
+			name: "omits every value when xds.scoping is null",
+			valuesYAML: `controller:
+  xds:
+    scoping: null
+`,
+			want: map[string]string{},
+		},
+		{
+			name: "lets extraEnv take precedence per variable",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: ALL
+      referenceAhead: 3s
+      dereferenceGrace: 5s
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: REFERENCED
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: 10s
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE":              "REFERENCED",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "3s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "10s",
+			},
+		},
+		{
+			// The controller accepts any case, so the value is passed through as written.
+			name: "passes a valid extraEnv mode through unchanged",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: referenced
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE": "referenced",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := renderHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			container := findDeployment(t, output).Spec.Template.Spec.Containers[0]
+			for _, name := range xdsScopingEnv {
+				var values []string
+				for _, envVar := range container.Env {
+					if envVar.Name == name {
+						values = append(values, envVar.Value)
+					}
+				}
+
+				want, ok := test.want[name]
+				if !ok {
+					require.Empty(t, values, "%s should not be rendered", name)
+					continue
+				}
+				require.Equal(t, []string{want}, values, "%s should be rendered exactly once", name)
+			}
+		})
+	}
+
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		message    string
+	}{
+		{
+			name: "rejects an unknown mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: some
+`,
+			message: "Invalid controller.xds.scoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects a mode that merely starts with a valid one",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED_ONLY
+`,
+			message: "Invalid controller.xds.scoping.mode 'REFERENCED_ONLY'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects an invalid mode that extraEnv overrides",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: some
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: REFERENCED
+`,
+			message: "Invalid controller.xds.scoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects an invalid extraEnv mode",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: some
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects an invalid extraEnv mode alongside a valid xds.scoping mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: some
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// Set but empty is not unset: the controller decodes "" and fails.
+			name: "rejects an empty extraEnv mode",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: ""
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ''. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// The controller upper-cases the mode but does not trim it.
+			name: "rejects an extraEnv mode with surrounding spaces",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: " REFERENCED "
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ' REFERENCED '. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// A non-string mode is set, not empty, so it is validated rather than skipped.
+			name: "rejects a numeric mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: 0
+`,
+			message: "Invalid controller.xds.scoping.mode '0'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// time.ParseDuration rejects a bare number other than 0.
+			name: "rejects a duration without a unit",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      referenceAhead: 3
+`,
+			message: "Invalid controller.xds.scoping.referenceAhead '3'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+		{
+			name: "rejects an unparseable duration",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      dereferenceGrace: 5 seconds
+`,
+			message: "Invalid controller.xds.scoping.dereferenceGrace '5 seconds'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+		{
+			name: "rejects an invalid extraEnv duration",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: 10
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_DEREFERENCE_GRACE '10'. Must be a duration such as '500ms', '3s' or '0'.",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -546,10 +824,25 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "waypoint-enabled",
+		valuesYAML: `waypoint:
+  enabled: true
+`,
+	},
+	{
 		name: "admin-bind-address",
 		valuesYAML: `controller:
   admin:
     bindAddress: 0.0.0.0
+`,
+	},
+	{
+		name: "leader-election",
+		valuesYAML: `controller:
+  leaderElection:
+    leaseDuration: 30s
+    renewDeadline: 20s
+    retryPeriod: 5s
 `,
 	},
 	{
@@ -867,6 +1160,16 @@ controller:
 		name: "rbac-disabled",
 		valuesYAML: `rbac:
   create: false
+`,
+	},
+	{
+		name: "xds-scoping-referenced",
+		valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED
+      referenceAhead: 3s
+      dereferenceGrace: 30s
 `,
 	},
 }

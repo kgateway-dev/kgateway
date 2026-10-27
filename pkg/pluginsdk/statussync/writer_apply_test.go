@@ -2,7 +2,6 @@ package statussync
 
 import (
 	"context"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -23,25 +22,13 @@ import (
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics"
+	"github.com/kgateway-dev/kgateway/v2/pkg/metrics/metricstest"
 )
 
-type applyResult struct {
-	calls   atomic.Int32
-	lastErr atomic.Value
-}
-
-func (r *applyResult) err() error {
-	v := r.lastErr.Load()
-	if v == nil {
-		return nil
-	}
-	e, _ := v.(error)
-	return e
-}
-
 // newTestWriter wires a Writer against a fake API server holding one HTTPRoute, and returns
-// the writer, a handle on its OnSync observations, and a count of status update attempts.
-func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1.RouteStatus], *applyResult, *gatewayfake.Clientset) {
+// the writer and the fake clientset that records its status update attempts.
+func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1.RouteStatus], *gatewayfake.Clientset) {
 	t.Helper()
 	stop := test.NewStop(t)
 	c := kube.NewFakeClient()
@@ -56,13 +43,12 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 	routes := krt.WrapClient(routesClient, krt.WithStop(stop))
 	c.RunAndWait(stop)
 
-	result := &applyResult{}
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name: "httpRoute",
 		// The writer reads the collection that would have enqueued the route, never the
 		// client it writes through.
 		Current: CollectionSource(routes),
-		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+		Desired: func(Resource, *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{{
 				ParentRef:      gwv1.ParentReference{Name: "gw"},
 				ControllerName: ourController,
@@ -72,12 +58,6 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 			return &gwv1.HTTPRoute{ObjectMeta: om, Status: gwv1.HTTPRouteStatus{RouteStatus: st}}
 		}),
 		GetStatus: func(o *gwv1.HTTPRoute) gwv1.RouteStatus { return o.Status.RouteStatus },
-		OnSync: func(_ Resource, _ *gwv1.HTTPRoute, _ gwv1.RouteStatus, _ time.Duration, err error) {
-			result.calls.Add(1)
-			if err != nil {
-				result.lastErr.Store(err)
-			}
-		},
 	}
 
 	if createRoute {
@@ -85,7 +65,7 @@ func newTestWriter(t *testing.T, createRoute bool) (Writer[*gwv1.HTTPRoute, gwv1
 			return routes.GetKey("default/route") != nil
 		}, 5*time.Second, 10*time.Millisecond, "collection should observe the route")
 	}
-	return writer, result, c.GatewayAPI().(*gatewayfake.Clientset)
+	return writer, c.GatewayAPI().(*gatewayfake.Clientset)
 }
 
 func testRouteResource() Resource {
@@ -109,56 +89,85 @@ func countUpdates(fake *gatewayfake.Clientset) int {
 // informer delivers the newer object, so retrying here would only burn the retry budget and
 // widen the window in which we write stale data.
 func TestApplyStatusSwallowsConflict(t *testing.T) {
-	writer, result, fake := newTestWriter(t, true)
+	writer, fake := newTestWriter(t, true)
 	fake.PrependReactor("update", "httproutes", func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierrors.NewConflict(
 			schema.GroupResource{Group: gwv1.GroupName, Resource: "httproutes"}, "route", nil)
 	})
 
-	writer.ApplyStatus(context.Background(), testRouteResource())
+	result, ok := writer.apply(context.Background(), testRouteResource())
 
-	require.Equal(t, int32(1), result.calls.Load(), "OnSync must run once for a resource with a desired status")
-	require.NoError(t, result.err(), "a conflict is expected and must not be reported as a sync failure")
+	require.True(t, ok, "a resource with a desired status must report an outcome")
+	require.Equal(t, writeResultConflict, result, "a conflict is expected and must not be reported as a failure")
 	require.Equal(t, 1, countUpdates(fake), "a conflict must not be retried")
 }
 
 // A NotFound on write means the object was deleted between our read and our write. There is
 // nothing left to update, so this is not a failure.
 func TestApplyStatusSwallowsNotFound(t *testing.T) {
-	writer, result, fake := newTestWriter(t, true)
+	writer, fake := newTestWriter(t, true)
 	fake.PrependReactor("update", "httproutes", func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierrors.NewNotFound(
 			schema.GroupResource{Group: gwv1.GroupName, Resource: "httproutes"}, "route")
 	})
 
-	writer.ApplyStatus(context.Background(), testRouteResource())
+	result, ok := writer.apply(context.Background(), testRouteResource())
 
-	require.Equal(t, int32(1), result.calls.Load())
-	require.NoError(t, result.err(), "a deleted resource must not be reported as a sync failure")
+	require.True(t, ok)
+	require.Equal(t, writeResultNotFound, result, "a deleted resource must not be reported as a failure")
 	require.Equal(t, 1, countUpdates(fake), "a NotFound must not be retried")
 }
 
 // Transient failures are the one case that must be retried: nothing changes on the informer
 // after a failed write, so no event is guaranteed to re-enqueue the resource.
 func TestApplyStatusRetriesTransientErrorsAndReportsFailure(t *testing.T) {
-	writer, result, fake := newTestWriter(t, true)
+	writer, fake := newTestWriter(t, true)
+	fake.PrependReactor("update", "httproutes", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewTooManyRequests("slow down", 1)
+	})
+
+	result, ok := writer.apply(context.Background(), testRouteResource())
+
+	require.True(t, ok)
+	require.Equal(t, writeResultError, result, "a persistently failing write must surface as an error")
+	require.Equal(t, maxRetryAttempts, countUpdates(fake), "transient failures must exhaust the retry budget")
+}
+
+// ApplyStatus counts one outcome per resource it had a status for, so a write that fails every
+// retry counts once as an error rather than once per attempt. A missing resource has no status
+// to write and is not counted.
+func TestApplyStatusRecordsWriteResult(t *testing.T) {
+	ResetMetrics()
+	writer, fake := newTestWriter(t, true)
 	fake.PrependReactor("update", "httproutes", func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierrors.NewTooManyRequests("slow down", 1)
 	})
 
 	writer.ApplyStatus(context.Background(), testRouteResource())
+	missing := testRouteResource()
+	missing.Name = "missing"
+	writer.ApplyStatus(context.Background(), missing)
 
-	require.Equal(t, int32(1), result.calls.Load())
-	require.Error(t, result.err(), "a persistently failing write must surface as a sync error")
-	require.Equal(t, maxRetryAttempts, countUpdates(fake), "transient failures must exhaust the retry budget")
+	gathered := metricstest.MustGatherMetrics(t)
+	gathered.AssertMetricsInclude("kgateway_status_writes_total", []metricstest.ExpectMetric{
+		&metricstest.ExpectedMetric{
+			Labels: []metrics.Label{
+				{Name: "kind", Value: "HTTPRoute"},
+				{Name: "result", Value: "error"},
+			},
+			Value: 1,
+		},
+	})
+	require.Equal(t, 2, gathered.MetricLength("kgateway_status_writes_total"),
+		"only the zero series from ResetMetrics and the failed write should be recorded")
 }
 
 func TestApplyStatusSkipsMissingResource(t *testing.T) {
-	writer, result, fake := newTestWriter(t, false)
+	writer, fake := newTestWriter(t, false)
 
-	writer.ApplyStatus(context.Background(), testRouteResource())
+	_, ok := writer.apply(context.Background(), testRouteResource())
 
-	require.Zero(t, result.calls.Load(), "OnSync must not run when the object is gone")
+	require.False(t, ok, "a resource that is gone has no outcome to report")
 	require.Zero(t, countUpdates(fake))
 }
 
@@ -185,7 +194,7 @@ func TestApplyStatusReadsTheCollectionNotTheWriteClient(t *testing.T) {
 	writer := Writer[*gwv1.HTTPRoute, gwv1.RouteStatus]{
 		Name:    "httpRoute",
 		Current: CollectionSource(routes),
-		Desired: func(*gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
+		Desired: func(Resource, *gwv1.HTTPRoute) (gwv1.RouteStatus, bool) {
 			return gwv1.RouteStatus{Parents: []gwv1.RouteParentStatus{{
 				ParentRef:      gwv1.ParentReference{Name: "gw"},
 				ControllerName: ourController,

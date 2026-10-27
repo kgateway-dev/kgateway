@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
@@ -92,9 +93,9 @@ func (r *RouteInfo) Clone() *RouteInfo {
 // and the given indexes.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int, ruleName string) string {
 	if ruleName == "" {
-		return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
+		return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d-%d-%s", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx, ruleName)
+	return strings.ToLower(r.GetKind()) + "-" + r.GetName() + "-" + r.GetNamespace() + "-" + strconv.Itoa(ruleIdx) + "-" + strconv.Itoa(matchIdx) + "-" + ruleName
 }
 
 // GetRouteChain recursively resolves all backends for the given route object.
@@ -278,13 +279,8 @@ func (r *gatewayQueries) getDelegatedChildren(
 
 				// Recursively get the route chain for each child route
 				routeInfo := &RouteInfo{
-					Object: &childRoute,
-					ParentRef: gwv1.ParentReference{
-						Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-						Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-						Namespace: new(gwv1.Namespace(parent.Namespace)),
-						Name:      gwv1.ObjectName(parent.Name),
-					},
+					Object:            &childRoute,
+					ParentRef:         childParentRef(&childRoute, parentRef),
 					ListenerParentRef: listenerRef,
 					Children:          r.getDelegatedChildren(kctx, listenerRef, &childRoute, visited),
 				}
@@ -295,6 +291,24 @@ func (r *gatewayQueries) getDelegatedChildren(
 		}
 	}
 	return children
+}
+
+// childParentRef returns the ParentReference a delegatee (child) route is attached to its parent by,
+// and under which its status is reported. When the child names the parent in its parentRefs, that
+// reference is used exactly as written: route status is built by looking up the spec's parentRefs,
+// so a synthesized reference that differs from it (e.g. by an explicit namespace the user omitted)
+// would leave the child without status. Otherwise the child attached implicitly and a fully
+// qualified reference is synthesized.
+func childParentRef(child *ir.HttpRouteIR, parent types.NamespacedName) gwv1.ParentReference {
+	if ref, ok := delegationutils.MatchingParentRef(child.Namespace, child.ParentRefs, parent); ok {
+		return ref
+	}
+	return gwv1.ParentReference{
+		Group:     new(gwv1.Group(wellknown.GatewayGroup)),
+		Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
+		Namespace: new(gwv1.Namespace(parent.Namespace)),
+		Name:      gwv1.ObjectName(parent.Name),
+	}
 }
 
 // fetchRoutesByRef fetches the routes referenced by HTTPBackendOrDelegate
@@ -404,7 +418,7 @@ func GenerateRouteKey(parent client.Object, listenerName string) string {
 	if _, ok := parent.(*gwv1.Gateway); ok {
 		return listenerName
 	}
-	return fmt.Sprintf("%s/%s/%s", parent.GetNamespace(), parent.GetName(), listenerName)
+	return parent.GetNamespace() + "/" + parent.GetName() + "/" + listenerName
 }
 
 func getListeners(resource client.Object) ([]gwv1.Listener, error) {

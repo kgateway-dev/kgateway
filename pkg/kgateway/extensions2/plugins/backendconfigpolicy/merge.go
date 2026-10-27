@@ -5,6 +5,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 )
 
+// mergePolicies merges BackendConfigPolicies in policy precedence order.
+func mergePolicies(pols []ir.PolicyAtt) ir.PolicyAtt {
+	return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
+}
+
 // mergeBackendConfigPolicies merges p2 into p1 field by field. BackendConfigPolicy
 // has an orthogonal field spec (connectTimeout, healthCheck, circuitBreakers,
 // upstreamProxyProtocol etc), so each top level field is merged independently
@@ -38,7 +43,10 @@ func mergeBackendConfigPolicies(
 		mergeDnsRefreshRate,
 		mergeDnsJitter,
 		mergeRespectDnsTtl,
+		mergeDnsLookupFamily,
 		mergeUpstreamProxyProtocol,
+		mergeTunnel,
+		mergeSessionPersistence,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -158,10 +166,35 @@ func mergeRespectDnsTtl(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyR
 	mergeOrigins.SetOne("dns.respectTTL", p2Ref, p2MergeOrigins)
 }
 
+func mergeDnsLookupFamily(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.dnsLookupFamily, p2.dnsLookupFamily, opts) {
+		return
+	}
+	p1.dnsLookupFamily = p2.dnsLookupFamily
+	mergeOrigins.SetOne("dns.lookupFamily", p2Ref, p2MergeOrigins)
+}
+
 func mergeUpstreamProxyProtocol(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
 	if !policy.IsMergeable(p1.upstreamProxyProtocol, p2.upstreamProxyProtocol, opts) {
 		return
 	}
 	p1.upstreamProxyProtocol = p2.upstreamProxyProtocol
 	mergeOrigins.SetOne("upstreamProxyProtocol", p2Ref, p2MergeOrigins)
+}
+
+// mergeTunnel keeps the proxy and credentials from the same policy.
+func mergeTunnel(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.tunnel, p2.tunnel, opts) {
+		return
+	}
+	p1.tunnel = p2.tunnel
+	mergeOrigins.SetOne("tunnel", p2Ref, p2MergeOrigins)
+}
+
+func mergeSessionPersistence(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.sessionPersistence, p2.sessionPersistence, opts) {
+		return
+	}
+	p1.sessionPersistence = p2.sessionPersistence
+	mergeOrigins.SetOne("sessionPersistence", p2Ref, p2MergeOrigins)
 }

@@ -32,7 +32,7 @@ func (v gatewayScopedBackend) Equals(other gatewayScopedBackend) bool {
 	if v.backend == nil || other.backend == nil {
 		return v.backend == other.backend
 	}
-	return v.backend.Equals(*other.backend)
+	return v.backend.Equals(other.backend)
 }
 
 func newGatewayBackendVariants(

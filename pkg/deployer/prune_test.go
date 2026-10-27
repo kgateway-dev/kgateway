@@ -21,7 +21,7 @@ func init() {
 	// Register VPA list kind in the fake scheme so the fake dynamic client
 	// can list VPA resources without panicking. VPA is a custom resource
 	// not included in the standard Kubernetes scheme.
-	kube.FakeIstioScheme.AddKnownTypeWithName(
+	kube.FakeIstioScheme.MustGet().AddKnownTypeWithName(
 		wellknown.VerticalPodAutoscalerGVK.GroupVersion().WithKind("VerticalPodAutoscalerList"),
 		&unstructured.UnstructuredList{},
 	)

@@ -8,6 +8,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
@@ -56,6 +57,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					},
 					CommonHttpProtocolOptions: &kgateway.CommonHttpProtocolOptions{
 						IdleTimeout:              new(metav1.Duration{Duration: 60 * time.Second}),
+						MaxConnectionDuration:    new(metav1.Duration{Duration: 10 * time.Minute}),
 						MaxHeadersCount:          new(int32(100)),
 						MaxStreamDuration:        new(metav1.Duration{Duration: 30 * time.Second}),
 						MaxRequestsPerConnection: new(int32(100)),
@@ -81,6 +83,7 @@ func TestBackendConfigPolicyTranslation(t *testing.T) {
 					"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": mustMessageToAny(t, &envoy_upstreams_http_v3.HttpProtocolOptions{
 						CommonHttpProtocolOptions: &envoycorev3.HttpProtocolOptions{
 							IdleTimeout:              durationpb.New(60 * time.Second),
+							MaxConnectionDuration:    durationpb.New(10 * time.Minute),
 							MaxHeadersCount:          &wrapperspb.UInt32Value{Value: 100},
 							MaxStreamDuration:        durationpb.New(30 * time.Second),
 							MaxRequestsPerConnection: &wrapperspb.UInt32Value{Value: 100},
@@ -576,6 +579,85 @@ func TestBackendConfigPolicyDnsClusterConfig(t *testing.T) {
 		assert.True(t, dnsCluster.GetRespectDnsTtl())
 	})
 
+	// The cluster-wide KGW_DNS_LOOKUP_FAMILY is stamped on the cluster before the
+	// policies run, so a policy that sets lookupFamily must win over it. That is
+	// what lets one backend resolve differently from the rest of the install.
+	t.Run("lookupFamily overrides the family already on the cluster", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					LookupFamily: new(kgateway.DnsLookupFamilyAll),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name: dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{
+						DnsLookupFamily: envoycommondnsv3.DnsLookupFamily_V6_ONLY,
+					}),
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, envoycommondnsv3.DnsLookupFamily_ALL, dnsCluster.GetDnsLookupFamily())
+	})
+
+	t.Run("leaves the family alone when the policy does not set one", func(t *testing.T) {
+		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
+			Spec: kgateway.BackendConfigPolicySpec{
+				DNS: &kgateway.DNS{
+					RespectTTL: new(true),
+				},
+			},
+		})
+		require.Empty(t, errs)
+
+		cluster := &envoyclusterv3.Cluster{
+			ClusterDiscoveryType: &envoyclusterv3.Cluster_ClusterType{
+				ClusterType: &envoyclusterv3.Cluster_CustomClusterType{
+					Name: dnsClusterExtensionName,
+					TypedConfig: mustMessageToAny(t, &envoydnsv3.DnsCluster{
+						DnsLookupFamily: envoycommondnsv3.DnsLookupFamily_V6_ONLY,
+					}),
+				},
+			},
+		}
+
+		processBackend(context.Background(), policyIR, ir.BackendObjectIR{}, cluster)
+
+		var dnsCluster envoydnsv3.DnsCluster
+		err := cluster.GetClusterType().GetTypedConfig().UnmarshalTo(&dnsCluster)
+		require.NoError(t, err)
+		assert.Equal(t, envoycommondnsv3.DnsLookupFamily_V6_ONLY, dnsCluster.GetDnsLookupFamily(),
+			"the cluster-wide default should survive a policy that only sets other DNS fields")
+	})
+
+	t.Run("every API lookupFamily maps to an envoy family", func(t *testing.T) {
+		for family, want := range map[kgateway.DnsLookupFamily]envoycommondnsv3.DnsLookupFamily{
+			kgateway.DnsLookupFamilyIPv4Preferred: envoycommondnsv3.DnsLookupFamily_V4_PREFERRED,
+			kgateway.DnsLookupFamilyIPv4Only:      envoycommondnsv3.DnsLookupFamily_V4_ONLY,
+			kgateway.DnsLookupFamilyIPv6Only:      envoycommondnsv3.DnsLookupFamily_V6_ONLY,
+			kgateway.DnsLookupFamilyIPv6Preferred: envoycommondnsv3.DnsLookupFamily_AUTO,
+			kgateway.DnsLookupFamilyAll:           envoycommondnsv3.DnsLookupFamily_ALL,
+		} {
+			got, err := toDnsLookupFamily(family)
+			require.NoError(t, err, "family %q", family)
+			assert.Equal(t, want, got, "family %q", family)
+		}
+
+		_, err := toDnsLookupFamily(kgateway.DnsLookupFamily("Nonsense"))
+		assert.ErrorContains(t, err, `unknown DNS lookup family "Nonsense"`)
+	})
+
 	t.Run("ignores dns settings for non-dns clusters", func(t *testing.T) {
 		policyIR, errs := translate(nil, nil, &kgateway.BackendConfigPolicy{
 			Spec: kgateway.BackendConfigPolicySpec{
@@ -747,12 +829,18 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		}
 		return inputs
 	}
+	runPlugin := func(plugin backendConfigEndpointPlugin, ucc ir.UniquelyConnectedClient, inputs *endpoints.EndpointsInputs) uint64 {
+		resolver := endpoints.NewEndpointInputsResolver(*inputs)
+		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ucc, resolver)
+		*inputs = resolver.Inputs()
+		return hash
+	}
 
 	t.Run("ignores policies without zoneAware", func(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(false, nil, servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{}, inputs)
 
 		assert.Zero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionPreferSameZone, inputs.EndpointsForBackend.TrafficDistribution)
@@ -763,7 +851,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(true, nil, servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -774,7 +862,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs := withPolicies(newInputs(), newPolicy(true, new(uint32(2)), servicePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -789,7 +877,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs.PriorityInfo = priorityInfo
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -810,7 +898,7 @@ func TestProcessEndpointsZoneAwarePolicy(t *testing.T) {
 		inputs = withPolicies(inputs, newPolicy(true, new(uint32(1)), hostnamePolicyRef))
 		plugin := backendConfigEndpointPlugin{}
 
-		hash := plugin.processEndpoints(krt.TestingDummyContext{}, context.Background(), ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
+		hash := runPlugin(plugin, ir.UniquelyConnectedClient{Locality: ir.PodLocality{Zone: "zone-a"}}, inputs)
 
 		assert.NotZero(t, hash)
 		assert.Equal(t, wellknown.TrafficDistributionAny, inputs.EndpointsForBackend.TrafficDistribution)
@@ -823,4 +911,13 @@ func mustMessageToAny(t *testing.T, msg proto.Message) *anypb.Any {
 	a, err := utils.MessageToAny(msg)
 	require.NoError(t, err, "failed to convert message to Any")
 	return a
+}
+
+func TestBackendConfigPolicyIREqualsTunnel(t *testing.T) {
+	a := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
+	b := &BackendConfigPolicyIR{tunnel: baseHarnessTunnel()}
+	assert.True(t, a.Equals(b), "identical tunnels should be equal")
+
+	b.tunnel = nil
+	assert.False(t, a.Equals(b), "removing the tunnel must change the policy IR")
 }

@@ -80,6 +80,36 @@ Supported values: "standard" or "strict" (case-insensitive).
 {{- end }}
 
 {{/*
+Validate an xDS scoping mode and return it upper-cased. Accepts exactly
+what the controller does: any case, but no surrounding spaces, because an
+extraEnv value reaches the controller unchanged.
+Takes a dict: "value" is the mode, "path" names it in the error.
+*/}}
+{{- define "kgateway.xdsScopingMode" -}}
+{{- $mode := .value | toString | upper -}}
+{{- if or (eq $mode "ALL") (eq $mode "REFERENCED") -}}
+{{- $mode -}}
+{{- else -}}
+{{- printf "ERROR: Invalid %s '%s'. Must be 'ALL' or 'REFERENCED' (case-insensitive)." .path (toString .value) | fail -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Validate an xDS scoping duration and return it as a string. Accepts what the
+controller's time.ParseDuration does: "0", or signed decimal numbers each with
+a unit, such as "500ms" or "1m30s". A bare number other than 0 is rejected.
+Takes a dict: "value" is the duration, "path" names it in the error.
+*/}}
+{{- define "kgateway.xdsScopingDuration" -}}
+{{- $duration := .value | toString -}}
+{{- if regexMatch `^[-+]?(0|(([0-9]+(\.[0-9]*)?|\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$` $duration -}}
+{{- $duration -}}
+{{- else -}}
+{{- printf "ERROR: Invalid %s '%s'. Must be a duration such as '500ms', '3s' or '0'." .path $duration | fail -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Get the image tag with 'v' prefix for semver tags.
 If the input already starts with 'v', return it as-is.
 If the input looks like a semver version (e.g., "1.2.3"), prepend 'v'.
@@ -95,65 +125,3 @@ Otherwise (e.g., "latest", "dev"), return it unchanged.
 {{- $tag -}}
 {{- end -}}
 {{- end }}
-
-{{/*
-Convert a Kubernetes memory quantity to bytes for GOMEMLIMIT percentage calculation.
-Supported suffixes: Ki, Mi, Gi, Ti, Pi, Ei, k, M, G, T, P, E, or no suffix.
-*/}}
-{{- define "kgateway.memToBytes" -}}
-{{- $memory := printf "%v" . -}}
-{{- $number := $memory -}}
-{{- $multiplier := 1.0 -}}
-{{- if hasSuffix "Ki" $memory -}}
-  {{- $number = trimSuffix "Ki" $memory -}}
-  {{- $multiplier = 1024.0 -}}
-{{- else if hasSuffix "Mi" $memory -}}
-  {{- $number = trimSuffix "Mi" $memory -}}
-  {{- $multiplier = 1048576.0 -}}
-{{- else if hasSuffix "Gi" $memory -}}
-  {{- $number = trimSuffix "Gi" $memory -}}
-  {{- $multiplier = 1073741824.0 -}}
-{{- else if hasSuffix "Ti" $memory -}}
-  {{- $number = trimSuffix "Ti" $memory -}}
-  {{- $multiplier = 1099511627776.0 -}}
-{{- else if hasSuffix "Pi" $memory -}}
-  {{- $number = trimSuffix "Pi" $memory -}}
-  {{- $multiplier = 1125899906842624.0 -}}
-{{- else if hasSuffix "Ei" $memory -}}
-  {{- $number = trimSuffix "Ei" $memory -}}
-  {{- $multiplier = 1152921504606846976.0 -}}
-{{- else if hasSuffix "k" $memory -}}
-  {{- $number = trimSuffix "k" $memory -}}
-  {{- $multiplier = 1000.0 -}}
-{{- else if hasSuffix "M" $memory -}}
-  {{- $number = trimSuffix "M" $memory -}}
-  {{- $multiplier = 1000000.0 -}}
-{{- else if hasSuffix "G" $memory -}}
-  {{- $number = trimSuffix "G" $memory -}}
-  {{- $multiplier = 1000000000.0 -}}
-{{- else if hasSuffix "T" $memory -}}
-  {{- $number = trimSuffix "T" $memory -}}
-  {{- $multiplier = 1000000000000.0 -}}
-{{- else if hasSuffix "P" $memory -}}
-  {{- $number = trimSuffix "P" $memory -}}
-  {{- $multiplier = 1000000000000000.0 -}}
-{{- else if hasSuffix "E" $memory -}}
-  {{- $number = trimSuffix "E" $memory -}}
-  {{- $multiplier = 1000000000000000000.0 -}}
-{{- end -}}
-{{- if not (regexMatch "^([0-9]+(\\.[0-9]+)?|\\.[0-9]+)([eE][+-]?[0-9]+)?$" $number) -}}
-  {{- fail (printf "goMemLimitPercent: unsupported memory quantity %q; use a Kubernetes memory quantity such as \"2Gi\", \"1.5Gi\", or \"512M\"" $memory) -}}
-{{- end -}}
-{{- printf "%.0f" (floor (mulf (float64 $number) $multiplier)) -}}
-{{- end -}}
-
-{{/* Compute a byte-valued GOMEMLIMIT from a memory quantity and percentage. */}}
-{{- define "kgateway.goMemLimit" -}}
-{{- $memory := index . 0 -}}
-{{- $percent := int (index . 1) -}}
-{{- if or (lt $percent 1) (gt $percent 100) -}}
-  {{- fail (printf "goMemLimitPercent must be between 1 and 100, got %d" $percent) -}}
-{{- end -}}
-{{- $bytes := include "kgateway.memToBytes" $memory | trim | float64 -}}
-{{- printf "%.0f" (floor (divf (mulf $bytes (float64 $percent)) 100.0)) -}}
-{{- end -}}

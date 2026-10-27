@@ -5,13 +5,13 @@ import (
 	"slices"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	backendconfigpolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendconfigpolicy"
+	backendtlspolicyplugin "github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -26,23 +26,51 @@ type ObjWithAttachedPolicies interface {
 
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-// GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
+// GenerateBackendPolicyReport reports the policies attached to the given
+// backends, attributing base row errors in clusters to the policy they name.
 // Exported for testing.
-func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds map[schema.GroupKind]struct{}) reports.ReportMap {
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithCluster) reports.ReportMap {
 	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
+
+	// Only base rows are attributed; translation stops at the first error.
+	baseErrs := make(map[string]error, len(clusters))
+	for _, c := range clusters {
+		if c.Error != nil && !c.PerClientError {
+			baseErrs[c.Name] = c.Error
+		}
+	}
 
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
 	// ancestor for reporting status
+	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
+		var policyErr *ir.PolicyError
+		errors.As(baseErrs[obj.ClusterName()], &policyErr)
 		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
-		bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+		targetRef := backendAncestorRef(obj.GetObjectSource())
+
+		// BackendTLSPolicy speaks the Gateway API's own condition vocabulary
+		// (Accepted/ResolvedRefs/Conflicted) rather than kgateway's Valid/Attached, and
+		// resolves conflicts the way translation does. The target ancestor reported here is a
+		// fallback: it is the only status an unrouted target, or a Backend used solely by a
+		// GatewayExtension, ever gets. It is reported unconditionally because this collection
+		// cannot see whether a route reaches the target — that is knowable only once both
+		// contribution sources have been reduced, so BuildDesiredPolicyStatus drops these
+		// again for any policy that also has a Gateway ancestor.
+		reportBackendTLSPolicies(reporter, targetRef, obj.GetAttachedPolicies().Policies[btpGK])
+
+		// BackendConfigPolicy settings that are accepted but have no effect, judged on the merged config
+		// applied to this backend and keyed by the policy that supplies the session persistence.
+		bcpPartiallyValid := backendconfigpolicyplugin.PartiallyValidMessages(obj.GetAttachedPolicies().Policies[bcpGK], *obj)
+
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
+			if gk == btpGK {
+				continue
+			}
 			for _, polAtt := range polAtts {
-				if _, excluded := excludedPolicyKinds[polAtt.GroupKind]; excluded {
-					continue
-				}
 				if polAtt.PolicyRef == nil {
 					// the policyRef may be nil in the case of virtual plugins (e.g. istio settings)
 					// since there's no real policy object, we don't need to generate status for it
@@ -55,16 +83,14 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 					Namespace: polAtt.PolicyRef.Namespace,
 					Name:      polAtt.PolicyRef.Name,
 				}
-				ancestorRef := gwv1.ParentReference{
-					Group:     new(gwv1.Group(obj.GetObjectSource().Group)),
-					Kind:      new(gwv1.Kind(obj.GetObjectSource().Kind)),
-					Namespace: new(gwv1.Namespace(obj.GetObjectSource().Namespace)),
-					Name:      gwv1.ObjectName(obj.GetObjectSource().Name),
-				}
+				ancestorRef := targetRef
 				if polAtt.PolicyRef.SectionName != "" {
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+				if len(polAtt.Errors) == 0 && policyErr != nil && policyErr.Ref != nil && policyErr.Ref.ID() == polAtt.PolicyRef.ID() {
+					polAtt.Errors = []error{policyErr.Err}
+				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    string(shared.PolicyConditionAccepted),
@@ -75,12 +101,21 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 					continue
 				}
 
-				r.SetCondition(reportssdk.PolicyCondition{
+				accepted := reportssdk.PolicyCondition{
 					Type:    string(shared.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
 					Reason:  string(shared.PolicyReasonValid),
 					Message: reportssdk.PolicyAcceptedMsg,
-				})
+				}
+				if gk == bcpGK {
+					// Some BackendConfigPolicy settings are accepted but have no effect, in general or
+					// for this backend. Report them with the PartiallyValid reason on this ancestor.
+					if msg, ok := bcpPartiallyValid[polAtt.PolicyRef.ID()]; ok {
+						accepted.Reason = string(shared.PolicyReasonPartiallyValid)
+						accepted.Message = msg
+					}
+				}
+				r.SetCondition(accepted)
 				r.SetCondition(reportssdk.PolicyCondition{
 					Type:    string(shared.PolicyConditionAttached),
 					Status:  metav1.ConditionTrue,
@@ -98,6 +133,49 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, excludedPolicyKinds m
 	}
 
 	return merged
+}
+
+// backendAncestorRef returns the ancestor ref for a policy attached to a backend: the
+// target object itself. Callers add a sectionName for port-specific attachments.
+func backendAncestorRef(src ir.ObjectSource) gwv1.ParentReference {
+	return gwv1.ParentReference{
+		Group:     new(gwv1.Group(src.Group)),
+		Kind:      new(gwv1.Kind(src.Kind)),
+		Namespace: new(gwv1.Namespace(src.Namespace)),
+		Name:      gwv1.ObjectName(src.Name),
+	}
+}
+
+// reportBackendTLSPolicies reports each BackendTLSPolicy in policies against the target it
+// attaches to. The effective policy is chosen by the plugin's MergePolicies on the same
+// unfiltered slice translation hands it, so the target ancestor never disagrees with what is
+// actually applied, or with the Gateway ancestor that supersedes it on a routed target: an
+// older invalid policy still takes precedence, and the newer valid one is Conflicted, not
+// Accepted.
+func reportBackendTLSPolicies(reporter reportssdk.Reporter, targetRef gwv1.ParentReference, policies []ir.PolicyAtt) {
+	if len(policies) == 0 {
+		return
+	}
+	effective := backendtlspolicyplugin.MergePolicies(policies)
+	for _, polAtt := range policies {
+		if polAtt.PolicyRef == nil {
+			continue
+		}
+		key := reportssdk.PolicyKey{
+			Group:     polAtt.PolicyRef.Group,
+			Kind:      polAtt.PolicyRef.Kind,
+			Namespace: polAtt.PolicyRef.Namespace,
+			Name:      polAtt.PolicyRef.Name,
+		}
+		ancestorRef := targetRef
+		if polAtt.PolicyRef.SectionName != "" {
+			ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
+		}
+		r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+		for _, cond := range backendtlspolicyplugin.BuildPolicyConditions(polAtt, &effective) {
+			r.SetCondition(cond)
+		}
+	}
 }
 
 // winningBackendTLSPolicyRef returns the ref of the BackendTLSPolicy whose TLS

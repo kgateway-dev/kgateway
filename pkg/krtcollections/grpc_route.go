@@ -80,7 +80,7 @@ func convertFiltersToHTTP(filters []gwv1.GRPCRouteFilter) []gwv1.HTTPRouteFilter
 
 func convertRulesToHTTP(r gwv1.GRPCRouteRule) gwv1.HTTPRouteRule {
 	return gwv1.HTTPRouteRule{
-		SessionPersistence: r.SessionPersistence,
+		SessionPersistence: r.SessionPersistence, //nolint:staticcheck // SA1019: route-level session persistence is still supported
 	}
 }
 
@@ -162,13 +162,7 @@ func convertGRPCHeadersToHTTP(headers []gwv1.GRPCHeaderMatch) []gwv1.HTTPHeaderM
 func (h *RoutesIndex) convertGRPCBackendsToHTTP(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.GRPCBackendRef) []ir.HttpBackendOrDelegate {
 	httpBackends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	for _, ref := range backendRefs {
-		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := wellknown.BlackholeClusterName
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
-		}
+		backend, clusterName, err := h.resolveRouteBackend(kctx, src, ref.BackendObjectReference)
 		httpBackends = append(httpBackends, ir.HttpBackendOrDelegate{
 			Backend: &ir.BackendRefIR{
 				BackendObject: backend,

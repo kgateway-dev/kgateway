@@ -22,6 +22,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/annotations"
 	eiutils "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
@@ -47,6 +48,13 @@ var (
 	ErrParsingTLSConfig = errors.New("TLS config parse error")
 
 	ErrInvalidValidationSpec = errors.New("invalid validation spec")
+
+	ErrInvalidTLSOptions = errors.New("invalid TLS options")
+
+	ErrVerifySubjectAltNamesNotSupported = fmt.Errorf(
+		"%s is not supported on BackendTLSPolicy: additional SANs would be OR'd with the required spec.validation identity check, weakening it",
+		annotations.VerifySubjectAltNames,
+	)
 )
 
 var (
@@ -64,7 +72,10 @@ type backendTlsPolicy struct {
 	transportSocket *envoycorev3.TransportSocket
 }
 
-var _ ir.PolicyIR = &backendTlsPolicy{}
+var (
+	_ ir.PolicyIR                      = &backendTlsPolicy{}
+	_ ir.UpstreamTLSValidationProvider = &backendTlsPolicy{}
+)
 
 func (d *backendTlsPolicy) CreationTime() time.Time {
 	return d.ct
@@ -76,6 +87,24 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 		return false
 	}
 	return proto.Equal(d.transportSocket, d2.transportSocket)
+}
+
+// UpstreamTLSValidation returns the CA this policy makes Envoy trust, for OIDC discovery. It is
+// read back out of the transport socket so the IR holds no second copy.
+func (d *backendTlsPolicy) UpstreamTLSValidation() *ir.UpstreamTLSValidation {
+	if d == nil || d.transportSocket == nil {
+		// The policy failed to translate.
+		return nil
+	}
+	tlsContext := &envoytlsv3.UpstreamTlsContext{}
+	if typed := d.transportSocket.GetTypedConfig(); typed == nil || typed.UnmarshalTo(tlsContext) != nil {
+		// Not reachable for a socket this plugin built; treat it as configuring nothing.
+		return nil
+	}
+	// A policy selecting the system CA set names no trusted CA, so resolves to the system
+	// trust store.
+	caPEM := tlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()
+	return &ir.UpstreamTLSValidation{CAPEM: caPEM}
 }
 
 func (d *backendTlsPolicy) PolicyHash() uint64 {
@@ -118,10 +147,11 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			backendTlsPolicyGroupKind.GroupKind(): {
-				Name:           "BackendTLSPolicy",
-				Policies:       tlsPolicyCol,
-				ProcessBackend: processBackend,
-				MergePolicies:  MergePolicies,
+				Name:               "BackendTLSPolicy",
+				Policies:           tlsPolicyCol,
+				ProcessBackend:     processBackend,
+				ProcessBaseCluster: processBaseCluster,
+				MergePolicies:      MergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatusWithBuilder(
 					kgwellknown.BackendTLSPolicyGVK,
 					col,
@@ -132,11 +162,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections) sd
 						return &gwv1.BackendTLSPolicy{ObjectMeta: om, Status: st}
 					},
 					BuildDesiredPolicyStatus,
-					// This status reports the Gateway API's own PolicyReasonAccepted, not the
-					// kgateway Valid/Pending vocabulary the standard grading expects.
-					pluginutils.NoConditionErrorMetric,
 				),
-				PolicyStatusFromGatewayReports: true,
 			},
 		},
 	}
@@ -296,6 +322,12 @@ func buildTranslateFunc(
 			return &policyIr, ErrInvalidValidationSpec
 		}
 
+		if err := applyTLSExtensionOptions(spec.Options, tlsContextDefault, validationContext); err != nil {
+			perr := fmt.Errorf("%w: %w", ErrInvalidTLSOptions, err)
+			logger.Error("error applying TLS extension options", "error", perr, "policy_name", policyCR.Name)
+			return &policyIr, perr
+		}
+
 		typedConfig, err := utils.MessageToAny(tlsContextDefault)
 		if err != nil {
 			logger.Error("error converting TLS config to proto", "error", err, "policy", policyCR.Name)
@@ -310,6 +342,42 @@ func buildTranslateFunc(
 
 		return &policyIr, nil
 	}
+}
+
+// applyTLSExtensionOptions applies the same kgateway.dev/* TLS extension annotations supported
+// on a Gateway listener to the UpstreamTlsContext generated for a BackendTLSPolicy.
+// validationContext must be the same CertificateValidationContext already embedded in tlsContext.
+func applyTLSExtensionOptions(
+	options map[gwv1.AnnotationKey]gwv1.AnnotationValue,
+	tlsContext *envoytlsv3.UpstreamTlsContext,
+	validationContext *envoytlsv3.CertificateValidationContext,
+) error {
+	if len(options) == 0 {
+		return nil
+	}
+
+	if _, ok := options[annotations.VerifySubjectAltNames]; ok {
+		return ErrVerifySubjectAltNamesNotSupported
+	}
+
+	extCfg := &ir.TLSConfig{}
+	if err := sslutils.ApplyTLSExtensionOptions(options, extCfg); err != nil {
+		return err
+	}
+
+	common := tlsContext.CommonTlsContext
+	if common.TlsParams == nil {
+		common.TlsParams = &envoytlsv3.TlsParameters{}
+	}
+	sslutils.ApplyTLSParameters(common.TlsParams, extCfg)
+	if len(extCfg.AlpnProtocols) > 0 {
+		common.AlpnProtocols = sslutils.ResolveAlpnProtocols(extCfg.AlpnProtocols, nil)
+	}
+	if len(extCfg.VerifyCertificateHash) > 0 {
+		validationContext.VerifyCertificateHash = extCfg.VerifyCertificateHash
+	}
+
+	return nil
 }
 
 func localObjectRefString(kind string, ref gwv1.LocalObjectReference) string {

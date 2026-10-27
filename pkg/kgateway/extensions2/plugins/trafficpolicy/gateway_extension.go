@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
 	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
@@ -34,7 +35,11 @@ import (
 )
 
 type TrafficPolicyGatewayExtensionIR struct {
-	// +krtEqualsTodo decide whether extension name should affect equality
+	// Name is this extension's KRT key, but it must still be compared: policy IRs embed a
+	// *TrafficPolicyGatewayExtensionIR and delegate to this Equals (see extauth/extproc/jwt/
+	// oauth2/global_rate_limit), and the name reaches the dataplane through providerName() as
+	// the ext_proc/ext_authz filter name and per-route typed-config key. Two identically
+	// configured extensions with different names produce different Envoy config.
 	Name             string
 	ExtAuth          *envoy_ext_authz_v3.ExtAuthz
 	ExtProc          *envoymatchingv3.ExtensionWithMatcher
@@ -52,6 +57,9 @@ func (e TrafficPolicyGatewayExtensionIR) ResourceName() string {
 }
 
 func (e TrafficPolicyGatewayExtensionIR) Equals(other TrafficPolicyGatewayExtensionIR) bool {
+	if e.Name != other.Name {
+		return false
+	}
 	if !proto.Equal(e.ExtAuth, other.ExtAuth) {
 		return false
 	}
@@ -121,7 +129,7 @@ func TranslateGatewayExtensionBuilder(
 	commoncol *collections.CommonCollections,
 ) func(krtctx krt.HandlerContext, gExt ir.GatewayExtension) *TrafficPolicyGatewayExtensionIR {
 	oidcDiscoverer := newOIDCProviderConfigDiscoverer(
-		func() []string { return oidcIssuerURIs(commoncol.GatewayExtensions.List()) },
+		commoncol.GatewayExtensions.List,
 		commoncol.KrtOpts.ToOptions("OIDCDiscoveryTrigger")...,
 	)
 	go oidcDiscoverer.run(ctx)
@@ -183,6 +191,9 @@ func gatewayExtensionBuilder(
 			}
 
 			// Common configuration for both gRPC and HTTP
+			// Emit filter state stats so ext-auth latency can be access-logged
+			// via %FILTER_STATE(ext_auth/<ns>/<name>:FIELD:latency_us)%.
+			p.ExtAuth.EmitFilterStateStats = true
 			if gExt.ExtAuth.WithRequestBody != nil {
 				p.ExtAuth.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
 					MaxRequestBytes:     uint32(gExt.ExtAuth.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
@@ -214,7 +225,7 @@ func gatewayExtensionBuilder(
 			}
 
 			// Use the specialized function for rate limit service resolution
-			rateLimitConfig := buildRateLimitFilter(grpcService, gExt.RateLimit)
+			rateLimitConfig := buildRateLimitFilter(p.Name, grpcService, gExt.RateLimit)
 
 			p.RateLimit = rateLimitConfig
 		case gExt.JWT != nil:
@@ -436,7 +447,10 @@ func buildStringListMatcher(headers []string) *envoymatcherv3.ListStringMatcher 
 }
 
 // FIXME: Should this live here instead of the global rate limit plugin?
-func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *kgateway.RateLimitProvider) *ratev3.RateLimit {
+// providerName is the unique (namespace/name) resource name of the owning GatewayExtension -
+// unlike RateLimitProvider.Domain, it cannot collide across providers, so it is safe to use to
+// scope the filter_enabled/filter_enforced runtime keys below.
+func buildRateLimitFilter(providerName string, grpcService *envoycorev3.GrpcService, rateLimit *kgateway.RateLimitProvider) *ratev3.RateLimit {
 	envoyRateLimit := &ratev3.RateLimit{
 		Domain:          rateLimit.Domain,
 		FailureModeDeny: !rateLimit.FailOpen,
@@ -449,6 +463,27 @@ func buildRateLimitFilter(grpcService *envoycorev3.GrpcService, rateLimit *kgate
 
 	// Set timeout (we expect it always to have a valid value or default due to CRD validation)
 	envoyRateLimit.Timeout = durationpb.New(rateLimit.Timeout.Duration)
+
+	// Only populate FilterEnabled/FilterEnforced when the user actually set the corresponding
+	// percentage. Leaving them nil when unset preserves Envoy's own fallback behavior (consulting
+	// the shared "ratelimit.http_filter_enabled"/"ratelimit.http_filter_enforcing" runtime keys),
+	// so existing configs - and any operator relying on those global keys as a kill switch - are
+	// unaffected. The runtime key is scoped by providerName rather than Domain so distinct
+	// RateLimitProvider extensions in the same proxy can be toggled independently even if they
+	// happen to share a domain.
+	keyScope := strings.ReplaceAll(providerName, "/", ".")
+	if percent := toFractionalPercent(rateLimit.PercentEnabled); percent != nil {
+		envoyRateLimit.FilterEnabled = &envoycorev3.RuntimeFractionalPercent{
+			RuntimeKey:   fmt.Sprintf("ratelimit.%s.filter_enabled", keyScope),
+			DefaultValue: percent,
+		}
+	}
+	if percent := toFractionalPercent(rateLimit.PercentEnforced); percent != nil {
+		envoyRateLimit.FilterEnforced = &envoycorev3.RuntimeFractionalPercent{
+			RuntimeKey:   fmt.Sprintf("ratelimit.%s.filter_enforced", keyScope),
+			DefaultValue: percent,
+		}
+	}
 
 	return envoyRateLimit
 }

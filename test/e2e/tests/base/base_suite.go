@@ -549,15 +549,39 @@ func (s *BaseTestingSuite) ApplyManifests(testCase *TestCase) {
 	// cause.
 	s.prePullImages(testCase)
 
+	transformed := make([]string, 0, len(testCase.ManifestsWithTransform))
+	for manifest, transform := range testCase.ManifestsWithTransform {
+		cur, err := os.ReadFile(manifest)
+		s.Require().NoError(err)
+		transformed = append(transformed, transform(string(cur)))
+	}
+
+	// The Istio client applies each manifest file (and each document of a YAML string)
+	// concurrently, so a Namespace declared in one manifest can land after the resources
+	// another manifest puts in it, failing with `namespaces "x" not found`. Apply every
+	// declared Namespace first; re-applying it with the rest below is a no-op.
+	var namespaces []string
+	for _, manifest := range testCase.Manifests {
+		d, err := os.ReadFile(manifest)
+		s.Require().NoError(err)
+		ns, _ := splitNamespaceResources(s.T(), string(d))
+		namespaces = append(namespaces, ns...)
+	}
+	for _, content := range transformed {
+		ns, _ := splitNamespaceResources(s.T(), content)
+		namespaces = append(namespaces, ns...)
+	}
+	if len(namespaces) > 0 {
+		err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLContents("", namespaces...)
+		s.Require().NoError(err, "namespaces from manifests %v", testCase.Manifests)
+	}
+
 	// apply the manifests
 	err := s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLFiles("", testCase.Manifests...)
 	s.Require().NoError(err, "manifests %v", testCase.Manifests)
 
-	for manifest, transform := range testCase.ManifestsWithTransform {
-		cur, err := os.ReadFile(manifest)
-		s.Require().NoError(err)
-		transformed := transform(string(cur))
-		err = s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLContents("", transformed)
+	for _, content := range transformed {
+		err = s.TestInstallation.ClusterContext.IstioClient.ApplyYAMLContents("", content)
 		s.Require().NoError(err)
 	}
 
@@ -608,7 +632,13 @@ func stripNamespaceResources(t *testing.T, manifests ...string) string {
 // stripNamespaceResourcesFromContent returns the manifest content with any Namespace
 // resources removed.
 func stripNamespaceResourcesFromContent(t *testing.T, content string) string {
-	cfgs := []string{}
+	_, rest := splitNamespaceResources(t, content)
+	return strings.Join(rest, "\n---\n")
+}
+
+// splitNamespaceResources splits the manifest content into its Namespace documents and
+// all other documents. Documents without a kind are dropped.
+func splitNamespaceResources(t *testing.T, content string) (namespaces, rest []string) {
 	for _, y := range yml.SplitString(content) {
 		obj := &unstructured.Unstructured{}
 		_, gvk, err := decUnstructured.Decode([]byte(y), nil, obj)
@@ -616,11 +646,13 @@ func stripNamespaceResourcesFromContent(t *testing.T, content string) string {
 			continue
 		}
 		assert.NoError(t, err)
-		if gvk.Kind != "Namespace" {
-			cfgs = append(cfgs, y)
+		if gvk != nil && gvk.Kind == "Namespace" {
+			namespaces = append(namespaces, y)
+		} else {
+			rest = append(rest, y)
 		}
 	}
-	return strings.Join(cfgs, "\n---\n")
+	return namespaces, rest
 }
 
 // DeleteManifests deletes the non-namespace resources in the manifests (fire-and-forget, no wait).

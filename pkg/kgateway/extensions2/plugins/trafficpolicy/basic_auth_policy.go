@@ -14,7 +14,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
@@ -102,6 +101,7 @@ func (p *trafficPolicyPluginGwPass) handleBasicAuth(
 func constructBasicAuth(
 	krtctx krt.HandlerContext,
 	in *kgateway.TrafficPolicy,
+	from krtcollections.From,
 	out *trafficPolicySpecIr,
 	secrets *krtcollections.SecretIndex,
 ) error {
@@ -127,7 +127,7 @@ func constructBasicAuth(
 		htpasswdData = strings.Join(spec.Users, "\n")
 	} else if spec.SecretRef != nil {
 		// Fetch from secret
-		htpasswdData, err = fetchHtpasswdFromSecret(krtctx, secrets, spec.SecretRef, in.Namespace)
+		htpasswdData, err = fetchHtpasswdFromSecret(krtctx, secrets, spec.SecretRef, from)
 		if err != nil {
 			return fmt.Errorf("basic auth: %w", err)
 		}
@@ -176,10 +176,10 @@ func fetchHtpasswdFromSecret(
 	krtctx krt.HandlerContext,
 	secrets *krtcollections.SecretIndex,
 	secretRef *kgateway.SecretReference,
-	policyNamespace string,
+	from krtcollections.From,
 ) (string, error) {
 	// Determine namespace - use secret's namespace if specified, otherwise policy's namespace
-	namespace := gwv1.Namespace(policyNamespace)
+	namespace := gwv1.Namespace(from.Namespace)
 	if secretRef.Namespace != nil {
 		namespace = *secretRef.Namespace
 	}
@@ -194,12 +194,6 @@ func fetchHtpasswdFromSecret(
 	secretObjRef := gwv1.SecretObjectReference{
 		Name:      secretRef.Name,
 		Namespace: &namespace,
-	}
-
-	// Use TrafficPolicy as the source for reference grants
-	from := krtcollections.From{
-		GroupKind: wellknown.TrafficPolicyGVK.GroupKind(),
-		Namespace: policyNamespace,
 	}
 
 	// Fetch the secret

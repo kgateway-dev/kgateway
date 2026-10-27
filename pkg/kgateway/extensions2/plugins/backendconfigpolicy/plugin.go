@@ -10,6 +10,7 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycommondnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/common/dns/v3"
 	envoydnsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dns/v3"
 	envoyproxyprotocolv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyrawbufferv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
@@ -33,7 +34,6 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
-	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
 	pluginsdkutils "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmputils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/validator"
@@ -59,7 +59,10 @@ type BackendConfigPolicyIR struct {
 	dnsRefreshRate                *durationpb.Duration
 	dnsJitter                     *durationpb.Duration
 	respectDnsTtl                 *bool
+	dnsLookupFamily               *envoycommondnsv3.DnsLookupFamily
 	upstreamProxyProtocol         *envoycorev3.ProxyProtocolConfig
+	tunnel                        *tunnelIR
+	sessionPersistence            *sessionPersistenceIR
 }
 
 var logger = logging.New("plugin/backendconfigpolicy")
@@ -136,7 +139,16 @@ func (d *BackendConfigPolicyIR) Equals(other any) bool {
 	if !cmputils.PointerValsEqual(d.respectDnsTtl, d2.respectDnsTtl) {
 		return false
 	}
+	if !cmputils.PointerValsEqual(d.dnsLookupFamily, d2.dnsLookupFamily) {
+		return false
+	}
 	if !proto.Equal(d.upstreamProxyProtocol, d2.upstreamProxyProtocol) {
+		return false
+	}
+	if !d.tunnel.Equals(d2.tunnel) {
+		return false
+	}
+	if !d.sessionPersistence.Equals(d2.sessionPersistence) {
 		return false
 	}
 	return true
@@ -148,7 +160,10 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 		wellknown.BackendConfigPolicyGVR,
 		kclient.Filter{ObjectFilter: commoncol.Client.ObjectFilter()},
 	)
-	col := krt.WrapClient(cli, commoncol.KrtOpts.ToOptions("BackendConfigPolicy")...)
+	// Expose only redacted policy copies in KRT diagnostics.
+	rawOpts := commoncol.KrtOpts
+	rawOpts.Debugger = nil
+	col := krt.WrapClient(cli, rawOpts.ToOptions("BackendConfigPolicy")...)
 	gk := wellknown.BackendConfigPolicyGVK.GroupKind()
 
 	backendConfigPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, b *kgateway.BackendConfigPolicy) *ir.PolicyWrapper {
@@ -164,7 +179,7 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 				Namespace: b.Namespace,
 				Name:      b.Name,
 			},
-			Policy:     b,
+			Policy:     redactPolicyCredentials(b),
 			PolicyIR:   policyIR,
 			TargetRefs: pluginsdkutils.TargetRefsToPolicyRefs(b.Spec.TargetRefs, b.Spec.TargetSelectors),
 			Errors:     errs,
@@ -178,13 +193,17 @@ func NewPlugin(ctx context.Context, commoncol *collections.CommonCollections, v 
 	return sdk.Plugin{
 		ContributesPolicies: map[schema.GroupKind]sdk.PolicyPlugin{
 			wellknown.BackendConfigPolicyGVK.GroupKind(): {
-				Name:                      "BackendConfigPolicy",
-				Policies:                  backendConfigPolicyCol,
-				ProcessBackend:            processBackend,
-				PerClientProcessEndpoints: endpointPlugin.processEndpoints,
-				MergePolicies: func(pols []ir.PolicyAtt) ir.PolicyAtt {
-					return policy.MergePolicies(sortForMerge(pols), mergeBackendConfigPolicies, "")
-				},
+				Name:                        "BackendConfigPolicy",
+				Policies:                    backendConfigPolicyCol,
+				NewGatewayTranslationPass:   newGatewayTranslationPass,
+				ProcessBackend:              processBackend,
+				ProcessBaseClusterResources: newTunnelHook(commoncol),
+				PerClientEditEndpoints:      endpointPlugin.processEndpoints,
+				// processEndpoints reads only the BackendConfigPolicies attached
+				// to the backend, so a backend with none attached can have its
+				// inline CLA built once on the shared base.
+				PerClientEndpointsMayApply: sdk.AttachedPolicyEndpointsMayApply(wellknown.BackendConfigPolicyGVK.GroupKind()),
+				MergePolicies:              mergePolicies,
 				RegisterPolicyStatus: pluginutils.RegisterPolicyStatus(
 					wellknown.BackendConfigPolicyGVK,
 					col,
@@ -226,6 +245,14 @@ func hasBackendTLSPolicy(backend ir.BackendObjectIR) bool {
 
 func processBackend(_ context.Context, polir ir.PolicyIR, backend ir.BackendObjectIR, out *envoyclusterv3.Cluster) {
 	pol := polir.(*BackendConfigPolicyIR)
+	if pol.sessionPersistence != nil {
+		// Session persistence is applied per route (see ApplyForBackendObjectPolicies). Notes about how it
+		// behaves for this backend are logged here; the ones that need attention are also reported in the
+		// policy status (see PartiallyValidMessages).
+		if note, _ := sessionPersistenceBackendNote(backend); note != "" {
+			logger.Debug("sessionPersistence behaves differently for this backend", "backend", backend.ResourceName(), "note", note)
+		}
+	}
 	if pol.connectTimeout != nil {
 		out.ConnectTimeout = pol.connectTimeout
 	}
@@ -401,15 +428,60 @@ func translate(
 			ir.dnsJitter = durationpb.New(pol.Spec.DNS.Jitter.Duration)
 		}
 		ir.respectDnsTtl = pol.Spec.DNS.RespectTTL
+		if pol.Spec.DNS.LookupFamily != nil {
+			family, err := toDnsLookupFamily(*pol.Spec.DNS.LookupFamily)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				ir.dnsLookupFamily = &family
+			}
+		}
 	}
 	if pol.Spec.UpstreamProxyProtocol != nil {
 		ir.upstreamProxyProtocol = translateUpstreamProxyProtocol(pol.Spec.UpstreamProxyProtocol)
 	}
+	if pol.Spec.Tunnel != nil {
+		tunnel, err := translateTunnel(krtctx, commoncol.Secrets, pol.Namespace, pol.Name, pol.Spec.Tunnel)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		ir.tunnel = tunnel
+	}
+	if pol.Spec.SessionPersistence != nil {
+		sp, err := translateSessionPersistence(pol.Spec.SessionPersistence)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		if sp != nil {
+			sp.absoluteTimeoutIgnored = absoluteTimeoutIgnored(pol.Spec.SessionPersistence)
+		}
+		ir.sessionPersistence = sp
+	}
 	return &ir, errs
 }
 
+// toDnsLookupFamily maps the API enum onto the Envoy one. The API spells the
+// families the way the rest of the Kubernetes API does; the KGW_DNS_LOOKUP_FAMILY
+// setting spells them the way Envoy does.
+func toDnsLookupFamily(family kgateway.DnsLookupFamily) (envoycommondnsv3.DnsLookupFamily, error) {
+	switch family {
+	case kgateway.DnsLookupFamilyIPv4Preferred:
+		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED, nil
+	case kgateway.DnsLookupFamilyIPv4Only:
+		return envoycommondnsv3.DnsLookupFamily_V4_ONLY, nil
+	case kgateway.DnsLookupFamilyIPv6Only:
+		return envoycommondnsv3.DnsLookupFamily_V6_ONLY, nil
+	case kgateway.DnsLookupFamilyIPv6Preferred:
+		return envoycommondnsv3.DnsLookupFamily_AUTO, nil
+	case kgateway.DnsLookupFamilyAll:
+		return envoycommondnsv3.DnsLookupFamily_ALL, nil
+	default:
+		return envoycommondnsv3.DnsLookupFamily_V4_PREFERRED, fmt.Errorf("unknown DNS lookup family %q", family)
+	}
+}
+
 func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Cluster) {
-	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil && pol.respectDnsTtl == nil {
+	if pol.dnsRefreshRate == nil && pol.dnsJitter == nil && pol.respectDnsTtl == nil && pol.dnsLookupFamily == nil {
 		return
 	}
 
@@ -432,6 +504,11 @@ func applyDnsClusterConfig(pol *BackendConfigPolicyIR, out *envoyclusterv3.Clust
 	}
 	if pol.respectDnsTtl != nil {
 		dnsCluster.RespectDnsTtl = *pol.respectDnsTtl
+	}
+	if pol.dnsLookupFamily != nil {
+		// Overrides the cluster-wide default that processDnsLookupFamily already
+		// stamped on this cluster before the policies ran.
+		dnsCluster.DnsLookupFamily = *pol.dnsLookupFamily
 	}
 
 	typedConfig, err := utils.MessageToAny(dnsCluster)
@@ -510,36 +587,35 @@ func TranslateTCPKeepalive(tcpKeepalive *kgateway.TCPKeepalive) *envoycorev3.Tcp
 // zone-aware routing using the backend's already resolved policy attachments.
 type backendConfigEndpointPlugin struct{}
 
-// processEndpoints implements sdk.EndpointPlugin for zone-aware routing.
+// processEndpoints implements sdk.EndpointEditorPlugin for zone-aware routing.
 // BackendConfigPolicy takes precedence over Kubernetes Service traffic distribution.
 func (p *backendConfigEndpointPlugin) processEndpoints(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	ucc ir.UniquelyConnectedClient,
-	out *endpoints.EndpointsInputs,
+	out endpoints.EndpointInputsEditor,
 ) uint64 {
-	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.EndpointsForBackend.AttachedPolicies)
+	pol, bcpIR := selectZoneAwareBackendConfigPolicy(out.PoliciesFor(wellknown.BackendConfigPolicyGVK.GroupKind()))
 	if bcpIR == nil {
 		return 0
 	}
 	// BackendConfigPolicy zoneAware settings take precedence over Service trafficDistribution
 	// settings for the same backend.
-	out.EndpointsForBackend.TrafficDistribution = wellknown.TrafficDistributionAny
+	out.SetTrafficDistribution(wellknown.TrafficDistributionAny)
 
 	hasher := fnv.New64()
-	hasher.Write([]byte(ir.PolicyRefString(pol.PolicyRef)))
-	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation))
+	hasher.Write([]byte(pol.RefString()))
+	hasher.Write(fmt.Appendf(nil, "%v", pol.Generation()))
 	return hasher.Sum64()
 }
 
-func selectZoneAwareBackendConfigPolicy(attachedPolicies ir.AttachedPolicies) (ir.PolicyAtt, *BackendConfigPolicyIR) {
-	policies := attachedPolicies.Policies[wellknown.BackendConfigPolicyGVK.GroupKind()]
+func selectZoneAwareBackendConfigPolicy(policies []endpoints.PolicyView) (endpoints.PolicyView, *BackendConfigPolicyIR) {
 	for _, pol := range policies {
-		bcpIR, ok := pol.PolicyIr.(*BackendConfigPolicyIR)
-		if !ok || len(pol.Errors) > 0 || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
+		bcpIR, ok := pol.PolicyIR().(*BackendConfigPolicyIR)
+		if !ok || pol.HasErrors() || bcpIR.loadBalancerConfig == nil || !bcpIR.loadBalancerConfig.hasZoneAware {
 			continue
 		}
 		return pol, bcpIR
 	}
-	return ir.PolicyAtt{}, nil
+	return endpoints.PolicyView{}, nil
 }

@@ -27,7 +27,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/delegation"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections/metrics"
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
@@ -48,7 +47,40 @@ type NotFoundError struct {
 }
 
 func (n *NotFoundError) Error() string {
-	return fmt.Sprintf("%s %s/%s not found", n.NotFoundObj.Kind, n.NotFoundObj.Namespace, n.NotFoundObj.Name)
+	return n.NotFoundObj.Kind + " " + n.NotFoundObj.Namespace + "/" + n.NotFoundObj.Name + " not found"
+}
+
+// UnsupportedRouteKindError reports a backendRef from a route kind the backend does
+// not support. The backend exists and the reference is permitted; it is the data path
+// that cannot carry it. The route translator reports this as
+// ResolvedRefs=False/InvalidKind and routes the reference to the blackhole cluster
+// rather than programming a cluster that can never carry traffic.
+type UnsupportedRouteKindError struct {
+	Backend   ir.ObjectSource
+	RouteKind schema.GroupKind
+	Supported []schema.GroupKind
+}
+
+func (e *UnsupportedRouteKindError) Error() string {
+	supported := make([]string, 0, len(e.Supported))
+	for _, gk := range e.Supported {
+		supported = append(supported, gk.Kind)
+	}
+	return fmt.Sprintf("%s %s/%s cannot be referenced from a %s; supported route kinds: %s",
+		e.Backend.Kind, e.Backend.Namespace, e.Backend.Name, e.RouteKind.Kind, strings.Join(supported, ", "))
+}
+
+// BackendPortNotFoundError is returned instead of NotFoundError when the referenced
+// backend exists but does not define the referenced port.
+type BackendPortNotFoundError struct {
+	// Named `PortNotFound` so it is easy to find in a krt dump, like NotFoundError.
+	PortNotFoundObj ir.ObjectSource
+	Port            int32
+}
+
+func (e *BackendPortNotFoundError) Error() string {
+	return e.PortNotFoundObj.Kind + " " + e.PortNotFoundObj.Namespace + "/" + e.PortNotFoundObj.Name +
+		" found, but port " + strconv.Itoa(int(e.Port)) + " not defined"
 }
 
 type BackendPortNotAllowedError struct {
@@ -71,6 +103,9 @@ type BackendIndex struct {
 	availableBackendsWithPolicyByGK map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]
 	// aliasIndexWithPolicy indexes the policy-attached backends for a given GK by alias.
 	aliasIndexWithPolicy map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]
+	// nameIndexWithPolicy indexes the policy-attached backends for a given GK by object
+	// source and aliases, without port. Only consulted after a port-exact lookup misses.
+	nameIndexWithPolicy map[schema.GroupKind]krt.Index[ir.ObjectSource, *ir.BackendObjectIR]
 
 	// availableBackendsWithPolicy stores the policy-attached backend collections.
 	// BackendsWithPolicy is the public interface to access this.
@@ -107,6 +142,7 @@ func NewBackendIndex(
 		refgrants:                       refgrants,
 		availableBackendsWithPolicyByGK: map[schema.GroupKind]krt.Collection[*ir.BackendObjectIR]{},
 		aliasIndexWithPolicy:            map[schema.GroupKind]krt.Index[backendKey, *ir.BackendObjectIR]{},
+		nameIndexWithPolicy:             map[schema.GroupKind]krt.Index[ir.ObjectSource, *ir.BackendObjectIR]{},
 		gkAliases:                       map[schema.GroupKind][]schema.GroupKind{},
 		krtopts:                         krtopts,
 	}
@@ -229,8 +265,17 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 		}
 		return aliasKeys
 	})
+	nameIdxWithPolicy := krtpkg.UnnamedIndex(backendsWithPoliciesCol, func(backendObj *ir.BackendObjectIR) []ir.ObjectSource {
+		if backendObj == nil {
+			return nil
+		}
+		keys := make([]ir.ObjectSource, 0, 1+len(backendObj.Aliases))
+		keys = append(keys, backendObj.GetObjectSource())
+		return append(keys, backendObj.Aliases...)
+	})
 	i.availableBackendsWithPolicyByGK[gk] = backendsWithPoliciesCol
 	i.aliasIndexWithPolicy[gk] = idxWithPolicy
+	i.nameIndexWithPolicy[gk] = nameIdxWithPolicy
 	i.availableBackendsWithPolicy = append(i.availableBackendsWithPolicy, backendsWithPoliciesCol)
 	i.backendsRequiringPolicyStatus = append(i.backendsRequiringPolicyStatus, backendsRequiringPolicyStatus)
 
@@ -244,6 +289,10 @@ func (i *BackendIndex) AddBackends(gk schema.GroupKind, col krt.Collection[ir.Ba
 // Service port, and for that port the port-specific BackendTLSPolicy must win over
 // any service-wide BackendTLSPolicy. Other backend policies may merge or use their
 // own precedence rules, so we intentionally do not apply this filtering generically.
+//
+// Known gap: a service-wide BackendTLSPolicy shadowed on every port of its Service (for
+// example a one-port Service that also has a port-specific policy) is present in no
+// backend IR and so reports no status at all.
 func preferPortSpecificBackendTLSPolicies(basePolicies, portPolicies []ir.PolicyAtt) []ir.PolicyAtt {
 	hasPortSpecificBackendTLSPolicy := false
 	for _, policy := range portPolicies {
@@ -286,25 +335,63 @@ func (i *BackendIndex) getBackend(kctx krt.HandlerContext, gk schema.GroupKind, 
 	}
 
 	col := i.availableBackendsWithPolicyByGK[gk]
-	if col == nil {
-		return i.getBackendFromAlias(kctx, gk, n, port)
+	if col != nil {
+		if up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, ""))); up != nil {
+			return *up, nil
+		}
 	}
 
-	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.BackendResourceName(key, port, "")))
-	if up == nil {
-		var (
-			err     error
-			aliasUp *ir.BackendObjectIR
-		)
-		if aliasUp, err = i.getBackendFromAlias(kctx, gk, n, port); err != nil {
-			// getBackendFromAlias returns ErrUnknownBackendKind when there are no aliases
-			// so return our own NotFoundError here
-			return nil, &NotFoundError{NotFoundObj: key}
-		}
+	aliasUp, err := i.getBackendFromAlias(kctx, gk, n, port)
+	if err == nil {
 		return aliasUp, nil
 	}
+	if col == nil && errors.Is(err, ErrUnknownBackendKind) {
+		// no collection and no aliases: nothing serves this kind at all
+		return nil, err
+	}
+	// getBackendFromAlias reports on the alias key, so build the error against the referenced key.
+	return nil, i.notFoundErr(kctx, gk, key, gwport)
+}
 
-	return *up, nil
+// notFoundErr distinguishes a missing backend from one that exists on a different port.
+func (i *BackendIndex) notFoundErr(kctx krt.HandlerContext, gk schema.GroupKind, key ir.ObjectSource, gwport *gwv1.PortNumber) error {
+	// Without a port the lookup used port 0, so a miss means the backend is missing.
+	if gwport != nil && i.hasBackendNamed(kctx, gk, key) {
+		return &BackendPortNotFoundError{PortNotFoundObj: key, Port: int32(*gwport)}
+	}
+	return &NotFoundError{NotFoundObj: key}
+}
+
+// hasBackendNamed reports whether any backend exists under key on any port, checking
+// the referenced kind first and then the kinds that alias it, like getBackend.
+func (i *BackendIndex) hasBackendNamed(kctx krt.HandlerContext, gk schema.GroupKind, key ir.ObjectSource) bool {
+	if i.fetchBackendsNamed(kctx, gk, key) {
+		return true
+	}
+	for _, actualGk := range i.gkAliases[gk] {
+		if actualGk == gk {
+			continue
+		}
+		if i.fetchBackendsNamed(kctx, actualGk, key) {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *BackendIndex) fetchBackendsNamed(kctx krt.HandlerContext, gk schema.GroupKind, key ir.ObjectSource) bool {
+	idx, ok := i.nameIndexWithPolicy[gk]
+	if !ok {
+		return false
+	}
+	// PartialFetch only retriggers when the projected value changes, so the route
+	// is re-translated only when a backend with this name is added or removed.
+	return len(krt.PartialFetchComparable(
+		kctx,
+		i.availableBackendsWithPolicyByGK[gk],
+		func(backendObj *ir.BackendObjectIR) ir.ObjectSource { return backendObj.GetObjectSource() },
+		krt.FilterIndex(idx, key),
+	)) > 0
 }
 
 func (i *BackendIndex) getBackendFromAlias(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, port int32) (*ir.BackendObjectIR, error) {
@@ -395,6 +482,7 @@ type GatewayIndexConfig struct {
 	gatewaysForDeployerTransformationFunc func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer
 	gatewaysForEnvoyTransformationFunc    func(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway
 	byParentRefIndex                      krt.Index[TargetRefIndexKey, *gwv1.ListenerSet]
+	listenerSetIRsByParentRef             krt.Index[TargetRefIndexKey, listenerSetIRRef]
 }
 
 func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption) *GatewayIndex {
@@ -406,16 +494,66 @@ func NewGatewayIndex(config GatewayIndexConfig, opts ...GatewayIndexConfigOption
 		return h
 	}
 
-	h.Gateways = krt.NewCollection(config.Gateways, config.gatewaysForEnvoyTransformationFunc(&config), config.KrtOpts.ToOptions("gateways")...)
+	// Each ListenerSet's listeners and attached policies are built in a collection of their own,
+	// so a change to one ListenerSet rebuilds only that one instead of every ListenerSet on the
+	// Gateway. ir.ListenerSet.Equals compares the source object by version, so a status-only
+	// write to a ListenerSet rebuilds only its IR and stops there.
+	listenerSetIRs := krt.NewCollection(config.ListenerSets, func(kctx krt.HandlerContext, ls *gwv1.ListenerSet) *listenerSetIRRef {
+		// Nothing reads the IR of a ListenerSet under another controller's Gateway, so skip its
+		// policy lookups.
+		if !envoyOwnsParent(kctx, &config, ls) {
+			return nil
+		}
+		return &listenerSetIRRef{listenerSetIR(kctx, config.PolicyIndex, ls)}
+	}, config.KrtOpts.ToOptions("ListenerSetIRs")...)
+	config.listenerSetIRsByParentRef = krtpkg.UnnamedIndex(listenerSetIRs, func(in listenerSetIRRef) []TargetRefIndexKey {
+		return listenerSetParentRefKeys(in.Obj.(*gwv1.ListenerSet))
+	})
+	// The Envoy transformation reads only the Gateway's spec and metadata, so feed it from a
+	// projection that drops status-only writes. Otherwise every Gateway status write re-runs it
+	// over all of the Gateway's ListenerSets, only for Gateway.Equals to discard the result.
+	gatewaySpecs := krt.NewCollection(config.Gateways, func(_ krt.HandlerContext, gw *gwv1.Gateway) *gatewaySpec {
+		return &gatewaySpec{gw: gw}
+	}, config.KrtOpts.ToOptions("GatewaySpecs")...)
+	envoyTransformation := config.gatewaysForEnvoyTransformationFunc(&config)
+	h.Gateways = krt.NewCollection(gatewaySpecs, func(kctx krt.HandlerContext, gw gatewaySpec) *ir.Gateway {
+		return envoyTransformation(kctx, gw.gw)
+	}, config.KrtOpts.ToOptions("gateways")...)
 
 	return h
+}
+
+// gatewaySpec wraps a Gateway so that KRT compares it with ir.VersionEquals rather than by
+// value: a status-only write bumps resourceVersion but leaves generation, labels and
+// annotations alone, so it stops here. The wrapped Gateway is the one from the last change
+// that got through.
+type gatewaySpec struct {
+	gw *gwv1.Gateway
+}
+
+func (g gatewaySpec) ResourceName() string {
+	return krt.GetKey(g.gw)
+}
+
+func (g gatewaySpec) Equals(in gatewaySpec) bool {
+	return ir.VersionEquals(g.gw, in.gw)
+}
+
+// listenerSetIRRef holds a ListenerSet's IR by pointer, so that fetching every ListenerSet on a
+// Gateway copies pointers rather than ir.ListenerSet values.
+type listenerSetIRRef struct {
+	*ir.ListenerSet
+}
+
+func (r listenerSetIRRef) Equals(in listenerSetIRRef) bool {
+	return r.ListenerSet.Equals(*in.ListenerSet)
 }
 
 func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.GatewayForDeployer {
 		// only care about gateways that use a class controlled by us
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) {
+		if gwClass == nil || !config.ControllerNames.Contains(string(gwClass.Spec.ControllerName)) || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
 		ports := sets.New[int32]()
@@ -458,7 +596,7 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 	return func(kctx krt.HandlerContext, gw *gwv1.Gateway) *ir.Gateway {
 		// only care about gateways use a class controlled by envoy
 		gwClass := ptr.Flatten(krt.FetchOne(kctx, config.GatewayClasses, krt.FilterKey(string(gw.Spec.GatewayClassName))))
-		if gwClass == nil || string(gwClass.Spec.ControllerName) != config.EnvoyControllerName {
+		if gwClass == nil || string(gwClass.Spec.ControllerName) != config.EnvoyControllerName || wellknown.IsRetiredWaypointClass(gwClass) {
 			return nil
 		}
 
@@ -499,80 +637,39 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 			logger.Error("unable to parse allowedListeners", "error", err)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
+		listenerSets := config.listenerSetIRsByParentRef.Fetch(kctx, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
 			Namespace: gw.GetNamespace(),
-		}))
+		})
+		// Make room for every ListenerSet listener up front rather than regrowing per ListenerSet.
+		numListeners := len(gwIR.Listeners)
+		for _, ls := range listenerSets {
+			numListeners += len(ls.Listeners)
+		}
+		gwIR.Listeners = append(make([]ir.Listener, 0, numListeners), gwIR.Listeners...)
 
 		// Sort by listener precedence
 		// Ref: https://gateway-api.sigs.k8s.io/geps/gep-1713/#listener-precedence
 		// - ListenerSet ordered by creation time (oldest first)
 		// - ListenerSet ordered alphabetically by “{namespace}/{name}”
-		slices.SortFunc(listenerSets, func(a, b *gwv1.ListenerSet) int {
+		slices.SortFunc(listenerSets, func(a, b listenerSetIRRef) int {
 			// primary sort: creation timestamp (oldest first)
-			if cmp := a.GetCreationTimestamp().Compare(b.GetCreationTimestamp().Time); cmp != 0 {
+			if cmp := a.Obj.GetCreationTimestamp().Compare(b.Obj.GetCreationTimestamp().Time); cmp != 0 {
 				return cmp
 			}
 			// secondary sort: alphabetically by "{namespace}/{name}"
-			nnsString := func(ls *gwv1.ListenerSet) string {
-				return fmt.Sprintf("%s/%s", ls.Namespace, ls.Name)
+			nnsString := func(ls listenerSetIRRef) string {
+				return ls.Namespace + "/" + ls.Name
 			}
 			return strings.Compare(nnsString(a), nnsString(b))
 		})
 
-		// Start the resource sync metrics for all ListenerSets before they are processed,
-		// so they do not have staggered start times.
 		for _, ls := range listenerSets {
-			metrics.StartResourceStatusSync(metrics.ResourceSyncDetails{
-				Namespace: ls.Namespace,
-				Gateway:   gw.GetName(),
-				// TODO: Rename the legacy "XListenerSet" metrics label to "ListenerSet" in a
-				// follow-up cleanup so dashboards, tests, and emitters can be updated together.
-				ResourceType: "XListenerSet",
-				ResourceName: ls.Name,
-			})
-		}
-
-		for _, ls := range listenerSets {
-			if ls.GroupVersionKind().Empty() {
-				ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
-			}
-			lsGVK := ls.GroupVersionKind()
-
-			lsIR := ir.ListenerSet{
-				ObjectSource: ir.ObjectSource{
-					Group:     lsGVK.Group,
-					Kind:      lsGVK.Kind,
-					Namespace: ls.Namespace,
-					Name:      ls.Name,
-				},
-				Obj:       ls,
-				Listeners: make([]ir.Listener, 0),
-			}
-			listenerSetPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
-
-			for _, l := range ls.Spec.Listeners {
-				listenerSpecificPolicies := config.PolicyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
-				// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
-				// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
-				// Ensure the sectioned policies are first
-				listenerPolicies := slices.Clone(listenerSpecificPolicies)
-				listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
-
-				lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
-					Listener:         utils.ToListener(l),
-					Parent:           ls,
-					AttachedPolicies: ToAttachedPolicies(listenerPolicies),
-					PolicyAncestorRef: gwv1.ParentReference{
-						Group:     new(gwv1.Group(lsGVK.Group)),
-						Kind:      new(gwv1.Kind(lsGVK.Kind)),
-						Name:      gwv1.ObjectName(ls.Name),
-						Namespace: new(gwv1.Namespace(ls.Namespace)),
-					},
-				})
-			}
+			// A copy, since Err is set per Gateway.
+			lsIR := *ls.ListenerSet
+			lsGVK := lsIR.Obj.GetObjectKind().GroupVersionKind()
 
 			if gw.Spec.AllowedListeners == nil {
 				lsIR.Err = errors.New("Unable to attach to parent, gateway has not enabled allowedListeners")
@@ -580,9 +677,16 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 				continue
 			}
 
+			// allowedNs is nil if allowedListeners could not be parsed, so deny the attachment.
+			if err != nil {
+				lsIR.Err = errors.New("Unable to parse allowedListeners")
+				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
+				continue
+			}
+
 			// Check if the namespace of the listenerSet is allowed by the gateway
 			// We return the denied list of ls to have their status set to rejected during validation
-			if !allowedNs(kctx, ls.GetNamespace()) {
+			if !allowedNs(kctx, lsIR.Namespace) {
 				lsIR.Err = errors.New("Attachment not allowed")
 				gwIR.DeniedListenerSets[lsGVK] = append(gwIR.DeniedListenerSets[lsGVK], lsIR)
 				continue
@@ -603,6 +707,67 @@ func GatewaysForEnvoyTransformationFunc(config *GatewayIndexConfig) func(kctx kr
 
 		return gwIR
 	}
+}
+
+// envoyOwnsParent reports whether a ListenerSet's parent Gateway has a class that the Envoy
+// controller owns, the check the Envoy Gateway transformation makes. It reads only the Gateway's
+// class name and the class's controller name, so other writes to either do not rebuild the
+// ListenerSet's IR.
+func envoyOwnsParent(kctx krt.HandlerContext, config *GatewayIndexConfig, ls *gwv1.ListenerSet) bool {
+	parent := listenerSetParentRefKeys(ls)[0]
+	className := krt.PartialFetchComparable(kctx, config.Gateways, func(gw *gwv1.Gateway) gwv1.ObjectName {
+		return gw.Spec.GatewayClassName
+	}, krt.FilterKey(parent.Namespace+"/"+parent.Name))
+	if len(className) == 0 {
+		return false
+	}
+	controller := krt.PartialFetchComparable(kctx, config.GatewayClasses, func(gc *gwv1.GatewayClass) gwv1.GatewayController {
+		return gc.Spec.ControllerName
+	}, krt.FilterKey(string(className[0])))
+	return len(controller) > 0 && string(controller[0]) == config.EnvoyControllerName
+}
+
+// listenerSetIR builds a ListenerSet's listeners with the policies attached to them. Whether the
+// parent Gateway admits the ListenerSet is left to the Gateway transformation, which sets Err.
+func listenerSetIR(kctx krt.HandlerContext, policyIndex *PolicyIndex, ls *gwv1.ListenerSet) *ir.ListenerSet {
+	if ls.GroupVersionKind().Empty() {
+		ls.SetGroupVersionKind(wellknown.ListenerSetGVK)
+	}
+	lsGVK := ls.GroupVersionKind()
+
+	lsIR := &ir.ListenerSet{
+		ObjectSource: ir.ObjectSource{
+			Group:     lsGVK.Group,
+			Kind:      lsGVK.Kind,
+			Namespace: ls.Namespace,
+			Name:      ls.Name,
+		},
+		Obj:       ls,
+		Listeners: make([]ir.Listener, 0),
+	}
+	listenerSetPolicies := policyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, "", ls.GetLabels())
+
+	for _, l := range ls.Spec.Listeners {
+		listenerSpecificPolicies := policyIndex.GetTargetingPolicies(kctx, lsIR.ObjectSource, string(l.Name), ls.GetLabels())
+		// The Gateway Polices applies to all listeners but we need to apply them to listeners within the LS.
+		// Since there is no LS equivalent in Envoy, apply them on each listener in the LS.
+		// Ensure the sectioned policies are first
+		listenerPolicies := slices.Clone(listenerSpecificPolicies)
+		listenerPolicies = append(listenerPolicies, listenerSetPolicies...)
+
+		lsIR.Listeners = append(lsIR.Listeners, ir.Listener{
+			Listener:         utils.ToListener(l),
+			Parent:           ls,
+			AttachedPolicies: ToAttachedPolicies(listenerPolicies),
+			PolicyAncestorRef: gwv1.ParentReference{
+				Group:     new(gwv1.Group(lsGVK.Group)),
+				Kind:      new(gwv1.Kind(lsGVK.Kind)),
+				Name:      gwv1.ObjectName(ls.Name),
+				Namespace: new(gwv1.Namespace(ls.Namespace)),
+			},
+		})
+	}
+	return lsIR
 }
 
 func AllowedListenerSet(allowedListeners *gwv1.AllowedListeners, parentNamespace string, namespaces krt.Collection[NamespaceMetadata]) (func(kctx krt.HandlerContext, namespace string) bool, error) {
@@ -642,7 +807,7 @@ type TargetRefIndexKey struct {
 }
 
 func (k TargetRefIndexKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace, k.SectionName)
+	return k.Group + "/" + k.Kind + "/" + k.Name + "/" + k.Namespace + "/" + k.SectionName
 }
 
 // HTTPRouteSelector is used to lookup HttpRouteIR using one of the following ways:
@@ -981,8 +1146,6 @@ func (k refGrantIndexKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", k.RefGrantNs, k.FromNs, k.ToGK.Group, k.ToGK.Kind, k.ToName, k.FromGK.Group, k.FromGK.Kind)
 }
 
-// MARK: RefGrantIndex
-
 type RefGrantIndex struct {
 	refgrants     krt.Collection[*gwv1b1.ReferenceGrant]
 	refGrantIndex krt.Index[refGrantIndexKey, *gwv1b1.ReferenceGrant]
@@ -1131,9 +1294,11 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	h.httpRoutes = krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
+	// Each route collection is debounced where it is built, so Gateway translation sees a burst of route changes as
+	// one batch, whether it reads routes by parent or follows delegation to child routes.
+	h.httpRoutes = debounceForTranslation(krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 		return h.transformHttpRoute(kctx, i)
-	}, krtopts.ToOptions("http-routes-with-policy")...)
+	}, krtopts.ToOptions("http-routes-with-policy")...), krtopts, globalSettings, "http-routes-debounced")
 
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
@@ -1141,17 +1306,17 @@ func NewRoutesIndex(
 
 	var tcpRoutesCollection, tlsRoutesCollection, grpcRoutesCollection krt.Collection[RouteWrapper]
 
-	grpcRoutesCollection = krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
+	grpcRoutesCollection = debounceForTranslation(krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformGRPCRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
+	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...), krtopts, globalSettings, "routes-grpc-routes-debounced")
 
-	tcpRoutesCollection = krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
+	tcpRoutesCollection = debounceForTranslation(krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTcpRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
+	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...), krtopts, globalSettings, "routes-tcp-routes-debounced")
 
-	tlsRoutesCollection = krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
+	tlsRoutesCollection = debounceForTranslation(krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
+	}, krtopts.ToOptions("routes-tls-routes-with-policy")...), krtopts, globalSettings, "routes-tls-routes-debounced")
 
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
@@ -1511,18 +1676,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			continue
 		}
 
-		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendRef.BackendObjectReference)
-
-		// TODO: if we can't find the backend, should we
-		// still use its cluster name in case it comes up later?
-		// if so we need to think about the way create cluster names,
-		// so it only depends on the backend-ref
-		clusterName := wellknown.BlackholeClusterName
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: to}
-		}
+		backend, clusterName, err := h.resolveRouteBackend(kctx, src, ref.BackendRef.BackendObjectReference)
 		backends = append(backends, ir.HttpBackendOrDelegate{
 			Backend: &ir.BackendRefIR{
 				BackendObject: backend,
@@ -1536,16 +1690,41 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 	return backends
 }
 
+// resolveRouteBackend resolves a route rule's backendRef. Every route kind (HTTPRoute,
+// GRPCRoute, TCPRoute, TLSRoute) resolves its backendRefs through here so that the
+// backend's SupportedRouteKinds declaration is enforced uniformly.
+//
+// A resolved backend that does not support the referencing route's kind is rejected with
+// an UnsupportedRouteKindError. On any failure the returned backend is nil and the cluster
+// name is the blackhole cluster, so the route is still programmed but cannot carry traffic.
+func (h *RoutesIndex) resolveRouteBackend(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, string, error) {
+	backend, err := h.backends.GetBackendFromRef(kctx, src, ref)
+	if backend != nil && err == nil {
+		if routeGK := src.GetGroupKind(); !backend.SupportsRouteKind(routeGK) {
+			return nil, wellknown.BlackholeClusterName, &UnsupportedRouteKindError{
+				Backend:   backend.GetObjectSource(),
+				RouteKind: routeGK,
+				Supported: backend.SupportedRouteKinds,
+			}
+		}
+	}
+	// TODO: if we can't find the backend, should we
+	// still use its cluster name in case it comes up later?
+	// if so we need to think about the way create cluster names,
+	// so it only depends on the backend-ref
+	if backend == nil {
+		if err == nil {
+			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref)}
+		}
+		return nil, wellknown.BlackholeClusterName, err
+	}
+	return backend, backend.ClusterName(), err
+}
+
 func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.BackendRef) []ir.BackendRefIR {
 	backends := make([]ir.BackendRefIR, 0, len(i))
 	for _, ref := range i {
-		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
-		clusterName := wellknown.BlackholeClusterName
-		if backend != nil {
-			clusterName = backend.ClusterName()
-		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
-		}
+		backend, clusterName, err := h.resolveRouteBackend(kctx, src, ref.BackendObjectReference)
 		backends = append(backends, ir.BackendRefIR{
 			BackendObject: backend,
 			ClusterName:   clusterName,
@@ -1571,6 +1750,9 @@ func weight(w *int32) uint32 {
 }
 
 func ToAttachedPolicies(policies []ir.PolicyAtt, opts ...ir.PolicyAttachmentOpts) ir.AttachedPolicies {
+	if len(policies) == 0 {
+		return ir.AttachedPolicies{}
+	}
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -1684,6 +1866,9 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 		// Validate all CA certificate references
 		validCARefs := make([]gwv1.ObjectReference, 0)
 		for _, ref := range frontendTLS.Default.Validation.CACertificateRefs {
+			// Normalize "core" to "" before validating and storing the ref, so the
+			// listener translator later resolves it as a core ConfigMap/Secret.
+			ref.Group = gwv1.Group(emptyIfCore(string(ref.Group)))
 			if err := validateCAReferenceType(ref); err != nil {
 				result.DefaultError = errors.Join(result.DefaultError, err)
 			} else {
@@ -1707,6 +1892,7 @@ func getFrontendTLSConfig(frontendTLS *gwv1.FrontendTLSConfig) *ir.FrontendTLSCo
 			// Validate all CA certificate references
 			validCARefs := make([]gwv1.ObjectReference, 0)
 			for _, ref := range portConfig.TLS.Validation.CACertificateRefs {
+				ref.Group = gwv1.Group(emptyIfCore(string(ref.Group)))
 				if err := validateCAReferenceType(ref); err != nil {
 					result.PortErrors[portConfig.Port] = errors.Join(result.PortErrors[portConfig.Port], err)
 				} else {

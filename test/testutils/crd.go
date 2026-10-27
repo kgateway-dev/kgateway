@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -197,12 +198,28 @@ func parseCRDs(path string) ([]*apiextensions.CustomResourceDefinition, error) {
 	// There could be multiple CRDs per file (e.g., for testing)
 	var crds []*apiextensions.CustomResourceDefinition
 	for {
-		raw := new(unstructured.Unstructured)
-		err := decoder.Decode(raw)
+		// Decode to raw JSON first. A CRD directory is not necessarily CRDs only -
+		// the Gateway API ships its kustomization.yaml and a ValidatingAdmissionPolicy
+		// alongside them - and decoding a document with no kind straight into an
+		// Unstructured fails outright.
+		var doc json.RawMessage
+		err := decoder.Decode(&doc)
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return nil, err
+		}
+		if len(doc) == 0 {
+			continue
+		}
+
+		content := map[string]any{}
+		if err := utiljson.Unmarshal(doc, &content); err != nil {
+			return nil, fmt.Errorf("decoding document in %s: %w", path, err)
+		}
+		raw := &unstructured.Unstructured{Object: content}
+		if raw.GetKind() != "CustomResourceDefinition" {
+			continue
 		}
 
 		// Assume all our CRDs are apiextensions.k8s.io/v1

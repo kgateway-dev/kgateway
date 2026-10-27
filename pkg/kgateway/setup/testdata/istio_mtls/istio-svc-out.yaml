@@ -162,6 +162,7 @@ endpoints:
             address: 10.244.1.11
             portValue: 8080
     loadBalancingWeight: 1
+    locality: {}
 - clusterName: kube_gwtest_httpbin_9000
 listeners:
 - address:
@@ -185,7 +186,7 @@ listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   name: listener~8080

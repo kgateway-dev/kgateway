@@ -6,6 +6,9 @@ import (
 	"errors"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"google.golang.org/protobuf/proto"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,9 +27,30 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type (
-	EndpointsInputs = endpoints.EndpointsInputs
-	ProcessBackend  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
-	EndpointPlugin  func(
+	EndpointsInputs      = endpoints.EndpointsInputs
+	EndpointInputsEditor = endpoints.EndpointInputsEditor
+	EndpointSetBuilder   = endpoints.EndpointSetBuilder
+	EndpointView         = endpoints.EndpointView
+	PolicyView           = endpoints.PolicyView
+	ProcessBackend       func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoyclusterv3.Cluster)
+	// EndpointEditorPlugin edits per-client endpoint inputs through a
+	// copy-on-write API. Read-only source state is exposed through accessors;
+	// endpoint rewrites build a replacement set and clone only modified protos.
+	// The returned hash must capture effects not already represented by the
+	// replacement endpoint set's LbEpsEqualityHash or the framework's
+	// load-balancing-context hash.
+	EndpointEditorPlugin func(
+		kctx krt.HandlerContext,
+		ctx context.Context,
+		ucc ir.UniquelyConnectedClient,
+		out EndpointInputsEditor,
+	) uint64
+	// EndpointPlugin is the legacy mutable endpoint hook. Its returned hash must
+	// capture every per-client effect not reflected by the resolved endpoint or
+	// load-balancing-context hashes because those hashes key CLA interning.
+	// Deprecated: use EndpointEditorPlugin. The framework deep-copies all
+	// mutable nested state before invoking this hook.
+	EndpointPlugin func(
 		kctx krt.HandlerContext,
 		ctx context.Context,
 		ucc ir.UniquelyConnectedClient,
@@ -34,10 +58,216 @@ type (
 	) uint64
 )
 
-// TODO: consider changing PerClientProcessBackend to look like this:
-// PerClientProcessBackend  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniquelyConnectedClient, in ir.BackendObjectIR)
-// so that it only attaches the policy to the backend, and doesn't modify the backend (except for attached policies) or the cluster itself.
-// leaving as is for now as this requires better understanding of how krt would handle this.
+// ClusterOverlay carries per-client cluster mutations. Returning nil from a
+// PerClientClusterOverlay means the client/backend pair needs no mutation.
+// Mutate receives a fresh clone and must not retain it after returning. When
+// every applicable overlay leaves the clone equal to the shared base, the pair
+// keeps using the base, so Mutate may leave the cluster unchanged when the
+// decision depends on the cluster itself. Prefer returning nil whenever the
+// decision can be made without the cluster: that skips the clone and the
+// comparison.
+type ClusterOverlay struct {
+	Mutate func(out *envoyclusterv3.Cluster)
+}
+
+// PerClientClusterOverlay decides whether a client/backend pair needs a
+// mutation on top of the shared base cluster, and returns it if so. Returning
+// nil is the common case and keeps the pair on the shared base with nothing
+// allocated for it.
+//
+// Applicable overlays mutate the same clone in (Group, Kind) order for stable
+// proto content. This ordering does not define policy precedence. Each overlay
+// must write only its owned fields and must not depend on another overlay's
+// mutations. The framework does not enforce field ownership.
+// So do not write an overlay that depends on running before or after another,
+// or that expects to observe another's mutation. Confine each overlay to the
+// fields it owns. The overlays satisfy that today -- destrule writes
+// outlier detection, locality LB config and TCP keepalive; waypoint rewrites
+// the discovery type and load assignment -- but the framework does not enforce
+// it. Waypoint owns the discovery-type transition and clears any inherited
+// locality mode when replacing backend endpoints with a service VIP; that
+// redirect cannot use the backend endpoints' locality weights.
+//
+// Fetches through kctx register KRT dependencies. All fields read from in must
+// be covered by the accompanying OverlayInputsHash; otherwise KRT can retain
+// a base row whose backend inputs are stale.
+type PerClientClusterOverlay func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniquelyConnectedClient,
+	in ir.BackendObjectIR,
+) *ClusterOverlay
+
+// OverlayInputsHash hashes every BackendObjectIR field whose change can affect
+// the accompanying per-client cluster hook. KRT retains equal base rows, so
+// omitting an input can leave clients using stale backend state.
+//
+// Inputs fetched through krt.Fetch are tracked separately. Extra hash inputs
+// are safe but cause unnecessary client recomputation.
+//
+// Register it beside PerClientClusterOverlay or PerClientProcessBackend. Hooks
+// without this declaration fall back to comparing backend IR and backing-object
+// version, rerunning clients on every object write. Hooks may apply globally,
+// so the framework cannot infer their applicability from policy attachments.
+// Declaring inputs avoids that fanout without migrating the mutation hook.
+// Use pkg/pluginsdk/overlaytest to check the declaration against the hook.
+type OverlayInputsHash func(in ir.BackendObjectIR) uint64
+
+// ProcessBaseCluster is a client-independent cluster mutation that runs for
+// every backend, whether or not a policy is attached to it. It runs during
+// base translation, after every ProcessBackend hook (so it sees the transport
+// sockets and other fields those policies set, and may wrap them) and before
+// any PerClientClusterOverlay. Hooks from different plugins run in
+// (Group, Kind) order.
+//
+// Use it instead of a PerClientClusterOverlay that would return the same
+// mutation for every client: the result lands once on the shared base rather
+// than on a clone per client. The base is re-translated whenever the backend
+// IR changes, so no input declaration is needed for fields read from in.
+// Fetches through kctx register dependencies of the base translation.
+type ProcessBaseCluster func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	in ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+)
+
+// BaseClusterResources are delivered to every client receiving the base cluster
+// and withdrawn if the cluster fails translation.
+type BaseClusterResources struct {
+	Listeners []*envoylistenerv3.Listener
+	// Secrets are served over SDS, so listeners can reference them instead of
+	// carrying credentials in LDS.
+	Secrets []*envoytlsv3.Secret
+	// Policy is the policy the resources are generated from, if any. The hook's
+	// errors and the resources' strict validation failures are attributed to it,
+	// so a hook sets it even when it returns an error.
+	Policy *ir.AttachedPolicyRef
+}
+
+// ProcessBaseClusterResources runs after all ProcessBaseCluster hooks in
+// (Group, Kind) order. A returned error fails the backend.
+type ProcessBaseClusterResources func(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	in ir.BackendObjectIR,
+	out *envoyclusterv3.Cluster,
+) (BaseClusterResources, error)
+
+// ClusterEmissionClaim declares clusters a plugin's cluster specifier script
+// may pick at request time that the generated configuration never names, so
+// REFERENCED xDS scoping (KGW_XDS_SCOPING_MODE) keeps emitting
+// them. The script typically composes a name from a prefix, a request value and
+// a port, so no walk of the protos can find the candidates.
+//
+// Pruning them fails silently: the plugin normally falls back when its cluster
+// is missing. So an unclaimed request-time selector reverts its whole gateway
+// to emitting every cluster, and a claim lets the gateway stay scoped.
+//
+// A claim is trusted as complete. A cluster the script can pick that the claim
+// does not keep is pruned, and the fallback then takes its traffic unnoticed.
+// Claim only destinations derived from the plugin's own naming; no claim can
+// bound a destination taken freely from the request.
+//
+// A claim can be static, with fixed Names and NamePrefixes, or derive each
+// use's destinations from the configuration the gateway ships
+// (DestinationsFor). Deriving is more precise when the candidates depend on
+// the route, such as its namespace, and it lets the plugin decline a use it
+// did not generate.
+//
+// Also claim the plugin's endpointless placeholder cluster, used to fail
+// closed. Once no route names it, scoping would prune it.
+//
+// proxy_syncer.DecideXdsScoping checks a claim against configuration the
+// plugin generates, without a controller.
+type ClusterEmissionClaim struct {
+	// Selectors are the cluster specifier plugin extension names this claim
+	// accounts for: the `name` of the TypedExtensionConfig in
+	// RouteAction.cluster_specifier_plugin or its inline form. No other selector
+	// can be claimed: a cluster header's destination is whatever the client
+	// sends, and filter-state overrides, undecodable typed configs and unknown
+	// specifier kinds always revert the gateway to emitting every cluster.
+	//
+	// A selector matches on the extension name alone, not its typed_config
+	// type, so use a name the plugin owns, such as one prefixed with its API
+	// group. Under a generic name such as
+	// envoy.router.cluster_specifier_plugin.lua, another plugin's specifier
+	// would count as accounted for, and its candidates would be pruned. Two
+	// plugins claiming one name is logged as an error. DestinationsFor can
+	// also check that a use's config is the plugin's own.
+	//
+	// Without DestinationsFor, a claim accounts for every use of its selectors
+	// only with at least one of Names or NamePrefixes and no rejected prefix.
+	// Otherwise it logs an error and covers nothing: keeping none of a
+	// selector's candidates would prune exactly the clusters it computes.
+	//
+	// Names and NamePrefixes are kept only in gateways that use these
+	// selectors. A claim with destinations but no selectors keeps nothing and
+	// logs an error. A cluster the plugin always needs belongs in its
+	// translation pass's ResourcesToAdd, which scoping never filters.
+	Selectors []string
+	// Names are exact cluster names to keep emitting where Selectors are used.
+	Names []string
+	// NamePrefixes admit clusters whose names start with one of them, where
+	// Selectors are used, for computed names that cannot be enumerated. An
+	// empty prefix is rejected: it would silently re-admit every cluster.
+	NamePrefixes []string
+	// DestinationsFor, when set, decides each use of a claimed selector from
+	// that use's configuration, as generated and shipped.
+	//
+	// It alone decides whether a use is claimed: a use is claimed only if it
+	// returns at least one name or prefix, and Names and NamePrefixes are kept
+	// only together with a use it claims. Return nothing for a config the
+	// plugin did not generate. Then another plugin using the same extension
+	// name leaves that gateway unscoped instead of having its candidates
+	// pruned. A static claim on the same name from another plugin still
+	// accounts for every use.
+	//
+	// It must be pure and cheap: a function of the use alone, with no I/O,
+	// clocks, cluster state or memory between calls, and safe to call
+	// concurrently. It runs when a gateway's configuration is rebuilt, once
+	// per distinct config of a claimed selector. A panic, an empty prefix or
+	// an empty result leaves the use unclaimed, keeps the gateway unscoped,
+	// and is logged with its reason. No check can tell an overly broad prefix
+	// from a precise one, so keep prefixes as narrow as the naming allows.
+	DestinationsFor func(use SelectorUse) ClaimedDestinations
+}
+
+// SelectorUse is one use of a claimed selector in a gateway's generated
+// configuration. It is a struct so fields can be added without breaking
+// plugins.
+type SelectorUse struct {
+	// Name is the cluster specifier plugin extension name, as matched against
+	// Selectors.
+	Name string
+	// Config is the extension's typed_config, decoded: from the route's inline
+	// plugin, or from the cluster_specifier_plugins entry of the
+	// RouteConfiguration the route references it in. It is nil if the
+	// extension carries no typed_config. It is a copy made for this call; do
+	// not keep or modify it.
+	Config proto.Message
+}
+
+// ClaimedDestinations are the clusters one selector use may pick.
+type ClaimedDestinations struct {
+	// Names are exact cluster names.
+	Names []string
+	// NamePrefixes admit clusters whose names start with one of them. An empty
+	// prefix leaves the use unclaimed.
+	NamePrefixes []string
+}
+
+// ClaimEmittedClusters is called once, when the proxy syncer is built and
+// before its caches sync. The claim holds for the controller's lifetime, so
+// derive it from how the plugin names its clusters, not from cluster state;
+// DestinationsFor is how a claim follows each route's configuration.
+// Return the zero value, the usual case, when the plugin routes only to
+// destinations the configuration names.
+type ClaimEmittedClusters func() ClusterEmissionClaim
+
+// PerClientProcessBackend is the legacy eager cluster mutation hook.
+// Deprecated: use PerClientClusterOverlay. Legacy hooks are treated as
+// applicable to every client because they cannot report a no-op cheaply.
 type PerClientProcessBackend func(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -50,17 +280,50 @@ type PerClientProcessBackend func(
 // registers its raw collection, keyed report reducer, and just-in-time writer.
 type PolicyStatusInputs = statussync.RegistrationInputs
 
-// StatusCollections aliases the statussync type for plugin convenience.
-type StatusCollections = statussync.StatusCollections
+// AttachedPolicyEndpointsMayApply is a PerClientEndpointsMayApply for plugins
+// whose endpoint hook reads only policies of gk attached to the backend (via
+// EndpointInputsEditor.PoliciesFor): with none attached, the hook has nothing
+// to act on for any client.
+func AttachedPolicyEndpointsMayApply(gk schema.GroupKind) func(krt.HandlerContext, ir.BackendObjectIR) bool {
+	return func(_ krt.HandlerContext, backend ir.BackendObjectIR) bool {
+		return len(backend.AttachedPolicies.Policies[gk]) > 0
+	}
+}
 
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(tctx ir.GwTranslationCtx, reporter reporter.Reporter) ir.ProxyTranslationPass
 
 	// Backend processing for envoy proxy
-	ProcessBackend            ProcessBackend
-	PerClientProcessBackend   PerClientProcessBackend
+	ProcessBackend ProcessBackend
+	// ProcessBaseCluster runs for every backend after all ProcessBackend
+	// hooks; see ProcessBaseCluster.
+	ProcessBaseCluster          ProcessBaseCluster
+	ProcessBaseClusterResources ProcessBaseClusterResources
+	PerClientClusterOverlay     PerClientClusterOverlay
+	// OverlayInputsHash declares the backend fields the per-client hook reads.
+	// Required for efficient change detection with either hook; absent a
+	// declaration, consumers compare backend IR and backing-object version.
+	OverlayInputsHash OverlayInputsHash
+	// ClaimEmittedClusters declares destinations the configuration never names;
+	// only plugins that pick a destination at request time need it. See
+	// ClusterEmissionClaim.
+	ClaimEmittedClusters ClaimEmittedClusters
+	// Deprecated: use PerClientClusterOverlay.
+	PerClientProcessBackend PerClientProcessBackend
+	PerClientEditEndpoints  EndpointEditorPlugin
+	// Deprecated: use PerClientEditEndpoints.
 	PerClientProcessEndpoints EndpointPlugin
+	// PerClientEndpointsMayApply reports whether the endpoint hook can contribute
+	// to this backend for any client. False skips the hook: it must return zero
+	// and leave inputs unchanged for every client. Nil assumes it may apply.
+	//
+	// If all hooks rule the backend out and prioritization is client-independent,
+	// the framework builds its inline CLA on the shared base. Hooks that only
+	// read their own attached policies can use AttachedPolicyEndpointsMayApply.
+	// Fetch through the supplied base-translation HandlerContext to register
+	// dependencies that invalidate this decision.
+	PerClientEndpointsMayApply func(kctx krt.HandlerContext, backend ir.BackendObjectIR) bool
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext) ir.PolicyIR
@@ -74,10 +337,6 @@ type PolicyPlugin struct {
 	// from the provided report collection and registers it, along with a status writer
 	// for its GVK. Plugins that do not report status may leave this unset.
 	RegisterPolicyStatus func(inputs PolicyStatusInputs)
-
-	// PolicyStatusFromGatewayReports indicates that policy status should be reported from the
-	// Gateway translation report path rather than the backend-only report path.
-	PolicyStatusFromGatewayReports bool
 }
 
 type BackendPlugin struct {

@@ -183,35 +183,49 @@ func (s *testingSuite) TestPreserveHttp1HeaderCase() {
 }
 
 func (s *testingSuite) TestAccessLogEmittedToStdout() {
-	// First: trigger a 404 that SHOULD be logged (filter is GE 400)
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
-		s.Ctx,
-		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
+	// During a rollout the old pod can linger, still Running, while it
+	// terminates. Wait for exactly one live proxy pod so the logs we read come
+	// from the pod that serves the requests.
+	ns := proxyDeployment.ObjectMeta.GetNamespace()
+	var pod string
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		pods, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods(ns).List(s.Ctx, metav1.ListOptions{
+			LabelSelector: testdefaults.WellKnownAppLabel + "=" + proxyDeployment.ObjectMeta.GetName(),
+		})
+		if !assert.NoError(c, err) || !assert.Len(c, pods.Items, 1, "expected exactly one gateway proxy pod") {
+			return
+		}
+		if assert.Nil(c, pods.Items[0].DeletionTimestamp, "the gateway proxy pod should not be terminating") {
+			pod = pods.Items[0].Name
+		}
+	}, 60*time.Second, 1*time.Second)
+
+	// First: trigger a 404 that SHOULD be logged (filter is GE 400).
+	// The unmatched host gets a 404 whether or not the access log is on the
+	// listener yet, so a single request can be served before it is live. Send
+	// inside the poll loop until the 404 access log JSON fields are present.
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		_, err := s.TestInstallation.ClusterContext.Cli.CurlFromPod(
+			s.Ctx,
+			testdefaults.CurlPodExecOpt,
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("not.example.com"), // not matched by HTTPRoute hostnames
 			curl.WithPath("/does-not-exist"),
-		},
-		&matchers.HttpResponse{StatusCode: http.StatusNotFound},
-	)
+		)
+		if !assert.NoError(c, err) {
+			return
+		}
 
-	// Fetch gateway pod logs and verify the 404 access log JSON fields are present
-	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(),
-		testdefaults.WellKnownAppLabel+"="+proxyDeployment.ObjectMeta.GetName(),
-	)
-	s.Require().NoError(err)
-	s.Require().Len(pods, 1)
-
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
-		s.Require().NoError(err)
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, ns, pod)
+		if !assert.NoError(c, err) {
+			return
+		}
 		// Check a few key fields configured in http-listener-policy-access-log.yaml jsonFormat
 		assert.Contains(c, logs, "\"method\":\"GET\"")
 		assert.Contains(c, logs, "\"protocol\":\"HTTP/1.1\"")
 		assert.Contains(c, logs, "\"response_code\":404")
 		assert.Contains(c, logs, "\"path\":\"/does-not-exist\"")
-	}, 30*time.Second, 200*time.Millisecond)
+	}, 30*time.Second, 1*time.Second)
 
 	// Second: trigger a 200 that SHOULD NOT be logged due to filter GE 400
 	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
@@ -228,7 +242,7 @@ func (s *testingSuite) TestAccessLogEmittedToStdout() {
 	// Confirm 200 logs do not appear over a stability window as it isn't being immediately emitted
 	g := gomega.NewWithT(s.T())
 	g.Consistently(func() string {
-		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, proxyDeployment.ObjectMeta.GetNamespace(), pods[0])
+		out, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, ns, pod)
 		s.Require().NoError(err)
 		return out
 	}, 10*time.Second, 200*time.Millisecond).ShouldNot(gomega.ContainSubstring("\"response_code\":200"))

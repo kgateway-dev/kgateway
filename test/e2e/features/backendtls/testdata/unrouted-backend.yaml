@@ -1,0 +1,28 @@
+# A Backend that no route references, with a BackendTLSPolicy attached. kgateway still
+# builds the cluster and applies the TLS config, so the policy reports status against the
+# Backend itself even though no Gateway ancestor exists.
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: unrouted
+  namespace: kgateway-base
+spec:
+  type: Static
+  static:
+    hosts:
+      - host: unrouted.example.com
+        port: 443
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: unrouted-tls-policy
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.kgateway.dev
+    kind: Backend
+    name: unrouted
+  validation:
+    hostname: "unrouted.example.com"
+    wellKnownCACertificates: System

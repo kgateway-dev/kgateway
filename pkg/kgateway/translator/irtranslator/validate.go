@@ -11,6 +11,8 @@ import (
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/regexutils"
@@ -31,6 +33,7 @@ var (
 
 	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
 	ValidRoutePatternError            = fmt.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	RedirectPathControlCharacterError = errors.New("must not contain NUL, CR or LF")
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
 		return fmt.Errorf("path [%s] cannot contain [%s]", s, invalid)
 	}
@@ -120,7 +123,7 @@ func validateEnvoyRoute(r *envoyroutev3.Route) error {
 	validatePath(match.GetPath(), &errs)
 	validatePath(match.GetPrefix(), &errs)
 	validatePath(match.GetPathSeparatedPrefix(), &errs)
-	validatePath(re.GetPathRedirect(), &errs)
+	validateRedirectPath(re.GetPathRedirect(), &errs)
 	validatePath(re.GetHostRedirect(), &errs)
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
@@ -153,6 +156,22 @@ func validateWeightedClusters(clusters []*envoyroutev3.WeightedCluster_ClusterWe
 func validatePath(path string, errs *[]error) {
 	if err := ValidateRoutePath(path); err != nil {
 		*errs = append(*errs, fmt.Errorf("the \"%s\" path is invalid: %w", path, err))
+	}
+}
+
+// validateRedirectPath validates an Envoy path_redirect. Unlike a match path or a prefix
+// rewrite, this is a redirect *target* rather than a path the proxy routes on, so the RFC
+// 3986 pchar rules in ValidateRoutePath do not govern it: it may carry a query string and a
+// fragment, and sequences such as "//" and "/../" are legal here - they matter for path
+// confusion only when matching, and Envoy has its own normalization (merge_slashes,
+// normalize_path) for that. Envoy constrains the field to ^[^\x00\n\r]*$ and nothing more,
+// so mirror exactly that; anything stricter rejects config the proxy would have accepted.
+//
+// The check is still worth making rather than deferring to Envoy: a violation makes Envoy
+// reject the entire RouteConfiguration, whereas failing here costs only the offending route.
+func validateRedirectPath(path string, errs *[]error) {
+	if strings.ContainsAny(path, "\x00\n\r") {
+		*errs = append(*errs, fmt.Errorf("the \"%q\" path is invalid: %w", path, RedirectPathControlCharacterError))
 	}
 }
 
@@ -234,21 +253,85 @@ func validateMatcherOnlyEnvoy(ctx context.Context, route *envoyroutev3.Route, v 
 
 // validateFullRoutes validates a set of complete route configurations in one Envoy invocation.
 func validateFullRoutes(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, &envoyroutev3.RouteConfiguration{
+		VirtualHosts: []*envoyroutev3.VirtualHost{{Name: "placeholder_vhost", Domains: []string{"*"}, Routes: routes}},
+	}, v)
+}
+
+// validateFullRouteConfiguration retains the final scope-level settings as well as
+// routes. Rebuilding only the routes loses inherited filter config and vhost rate limits.
+func validateFullRouteConfiguration(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator) error {
+	return validateRouteConfigurationWithCaller(ctx, config, v, validator.CallerRouteFull)
+}
+
+func validateRouteConfigurationWithCaller(ctx context.Context, config *envoyroutev3.RouteConfiguration, v validator.Validator, caller validator.ValidationCaller) error {
 	builder := bootstrap.New()
-	clusterNames := make([]string, 0)
-	// A batched route bootstrap can reference the same backend cluster from many routes.
-	// Track names here so validation adds only one stub Cluster per unique Envoy cluster name.
-	seenClusterNames := make(map[string]struct{})
-	for _, route := range routes {
-		builder.AddRoute(route)
-		clusterNames = appendClusterNames(clusterNames, seenClusterNames, route)
-	}
-	stubClusters := createStubClusters(clusterNames)
-	for _, cluster := range stubClusters {
+	builder.SetRouteConfiguration(config)
+	for _, cluster := range createStubClusters(routeConfigurationClusterNames(config)) {
 		builder.AddCluster(cluster)
 	}
 
-	return runValidation(ctx, v, builder, validator.CallerRouteFull)
+	return runValidation(ctx, v, builder, caller)
+}
+
+// routeValidationScope preserves inherited configuration and named dependencies
+// while narrowing the routes under validation. It never edits the emitted config.
+type routeValidationScope struct {
+	config *envoyroutev3.RouteConfiguration
+	vhost  *envoyroutev3.VirtualHost
+}
+
+func (s routeValidationScope) configuration(routes []*envoyroutev3.Route) *envoyroutev3.RouteConfiguration {
+	config := cloneWithoutField(s.config, "virtual_hosts")
+	vhost := cloneWithoutField(s.vhost, "routes")
+	vhost.Routes = routes
+	config.VirtualHosts = []*envoyroutev3.VirtualHost{vhost}
+	return config
+}
+
+// cloneWithoutField returns a new message whose fields alias src's, minus the
+// excluded field, so isolating one route copies neither its siblings nor the
+// shared settings. Callers may assign fields on the result but must not mutate
+// anything reachable through it; the copies here are only marshalled. Building a
+// new message avoids modifying src or copying protobuf's internal state.
+func cloneWithoutField[T proto.Message](src T, excluded protoreflect.Name) T {
+	message := src.ProtoReflect()
+	shallow := message.New()
+	message.Range(func(field protoreflect.FieldDescriptor, value protoreflect.Value) bool {
+		if field.Name() != excluded {
+			shallow.Set(field, value)
+		}
+		return true
+	})
+	shallow.SetUnknown(message.GetUnknown())
+	return shallow.Interface().(T)
+}
+
+func (s routeValidationScope) validate(ctx context.Context, routes []*envoyroutev3.Route, v validator.Validator) error {
+	return validateFullRouteConfiguration(ctx, s.configuration(routes), v)
+}
+
+func (s routeValidationScope) validateRoute(ctx context.Context, route *envoyroutev3.Route, v validator.Validator, mode apisettings.ValidationMode) error {
+	if err := validateRoutePreEnvoy(route, mode); err != nil {
+		return err
+	}
+	if mode != apisettings.ValidationStrict {
+		return nil
+	}
+	fullErr := s.validate(ctx, []*envoyroutev3.Route{route}, v)
+	if fullErr == nil {
+		return nil
+	}
+	// Shared settings have already passed validation with a neutral route. Retain
+	// them while distinguishing a bad matcher from a bad action or route override.
+	matcherRoute := &envoyroutev3.Route{
+		Name: route.GetName(), Match: route.GetMatch(),
+		Action: &envoyroutev3.Route_DirectResponse{DirectResponse: &envoyroutev3.DirectResponseAction{Status: 500}},
+	}
+	if err := validateRouteConfigurationWithCaller(ctx, s.configuration([]*envoyroutev3.Route{matcherRoute}), v, validator.CallerRouteMatcher); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidMatcher, err)
+	}
+	return fmt.Errorf("%w: %w", ErrInvalidRoute, fullErr)
 }
 
 func validateGeneratedMatcher(match *envoyroutev3.RouteMatch) (bool, error) {
@@ -382,10 +465,12 @@ func createStubClusters(clusterNames []string) []*envoyclusterv3.Cluster {
 	return clusters
 }
 
-func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *envoyroutev3.Route) []string {
-	if route == nil {
-		return clusterNames
-	}
+// routeConfigurationClusterNames returns every cluster name Envoy resolves when it loads
+// the configuration, once each. Envoy rejects a mirror policy whose cluster is unknown
+// ("unknown shadow cluster"), so mirrors at every scope need stubs as well as route targets.
+func routeConfigurationClusterNames(config *envoyroutev3.RouteConfiguration) []string {
+	var clusterNames []string
+	seen := make(map[string]struct{})
 	appendClusterName := func(name string) {
 		if name == "" {
 			return
@@ -396,6 +481,23 @@ func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *
 		seen[name] = struct{}{}
 		clusterNames = append(clusterNames, name)
 	}
+	appendMirrorClusterNames := func(mirrors []*envoyroutev3.RouteAction_RequestMirrorPolicy) {
+		for _, mirror := range mirrors {
+			appendClusterName(mirror.GetCluster())
+		}
+	}
+	appendMirrorClusterNames(config.GetRequestMirrorPolicies())
+	for _, vhost := range config.GetVirtualHosts() {
+		appendMirrorClusterNames(vhost.GetRequestMirrorPolicies())
+		for _, route := range vhost.GetRoutes() {
+			appendRouteClusterNames(route, appendClusterName)
+			appendMirrorClusterNames(route.GetRoute().GetRequestMirrorPolicies())
+		}
+	}
+	return clusterNames
+}
+
+func appendRouteClusterNames(route *envoyroutev3.Route, appendClusterName func(string)) {
 	switch action := route.GetAction().(type) {
 	case *envoyroutev3.Route_Route:
 		if action.Route != nil {
@@ -411,5 +513,4 @@ func appendClusterNames(clusterNames []string, seen map[string]struct{}, route *
 			}
 		}
 	}
-	return clusterNames
 }

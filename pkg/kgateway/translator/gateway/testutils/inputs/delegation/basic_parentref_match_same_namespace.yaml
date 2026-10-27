@@ -1,0 +1,58 @@
+# This test contains a parent route that delegates to a child route in the same
+# namespace, and the child has a parentRef pointing to the parent that omits the
+# namespace (which defaults to the child's own namespace).
+#
+# Input:
+# - Parent infra/example-route:
+#   - Delegate /a to infra/route-a
+#   - Everything else goes to infra/example-svc
+# - Child infra/route-a (with parentRef example-route, namespace omitted):
+#   - /a/1 goes to infra/example-svc
+#
+# Expected output routes:
+# - /a/1/* -> infra/example-svc
+# - /* -> infra/example-svc
+#
+# Expected status: infra/route-a reports Accepted/ResolvedRefs under its parentRef
+# exactly as written, without a namespace.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: route-a
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: route-a
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-route
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /a/1
+    backendRefs:
+    - name: example-svc
+      port: 80

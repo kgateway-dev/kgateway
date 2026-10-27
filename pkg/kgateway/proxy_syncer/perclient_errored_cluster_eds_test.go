@@ -27,6 +27,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/proxy_syncer/sharedproto"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/xds"
@@ -52,8 +53,8 @@ import (
 // Mechanism, each link verified against the code in this repo:
 //
 //  1. backendconfigpolicy's validateXDS attaches the Envoy validation error to the
-//     PolicyWrapper (plugin.go), so runPolicies -> TranslateBackend returns an
-//     error plus a blackhole cluster (irtranslator/backend.go).
+//     PolicyWrapper (plugin.go), so runPolicies -> TranslateBackendBase records
+//     an error plus a blackhole cluster (irtranslator/backend.go).
 //  2. snapshotPerClient drops errored clusters from the CDS payload (perclient.go:
 //     `if c.Error != nil { ... continue }`), so echo-server's cluster is no longer
 //     sent to Envoy. Envoy removes the cluster and unsubscribes from its EDS
@@ -134,8 +135,8 @@ func TestEndpointUpdatesFlowWhileAnotherClusterErrored(t *testing.T) {
 
 	f := newErroredClusterFixture(t)
 	logs := &capturingXdsLogger{}
-	// Same cache and server construction as setup/controlplane.go: ADS mode,
-	// node-role hasher, unordered ADS (EnableOrderedAds defaults to false).
+	// The ADS cache and server as setup/controlplane.go builds them, without
+	// its secrets cache.
 	cache := envoycache.NewSnapshotCache(true, xds.NewNodeRoleHasher(), logs)
 	envoy := startADSServerAndClient(t, ctx, cache, f.ucc.ResourceName())
 
@@ -199,7 +200,7 @@ func TestEndpointUpdatesFlowWhileAnotherClusterErrored(t *testing.T) {
 // in for the per-client cluster and endpoint collections.
 type erroredClusterFixture struct {
 	ucc         ir.UniquelyConnectedClient
-	clusterCol  krt.StaticCollection[uccWithCluster]
+	clusterCols *testClusterCols
 	endpointCol krt.StaticCollection[UccWithEndpoints]
 	snapshots   krt.Collection[XdsSnapWrapper]
 }
@@ -229,11 +230,14 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 
 	f := &erroredClusterFixture{ucc: ucc}
 
-	f.clusterCol = krt.NewStaticCollection[uccWithCluster](nil, []uccWithCluster{
+	// Neither cluster varies per client, so both are resolved shared bases with
+	// no overlay; breakCluster/restoreCluster swap the base row in place.
+	pcc, cols := newTestPerClientClusters([]uccWithCluster{
 		edsCluster(ucc, reproHealthyCluster, 1),
 		edsCluster(ucc, reproBrokenCluster, 2),
 	})
-	f.endpointCol = krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+	f.clusterCols = cols
+	f.endpointCol = krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		f.endpointsFor(reproHealthyCluster, 1),
 		f.endpointsFor(reproBrokenCluster, 1),
 	})
@@ -243,17 +247,13 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: f.endpointCol,
-			index: krtpkg.UnnamedIndex(f.endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: f.endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(f.endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},
-		PerClientEnvoyClusters{
-			clusters: f.clusterCol,
-			index: krtpkg.UnnamedIndex(f.clusterCol, func(c uccWithCluster) []string {
-				return []string{c.Client.ResourceName()}
-			}),
-		},
+		pcc,
+		clusterScoping{},
 	)
 
 	return f
@@ -266,11 +266,11 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 func (f *erroredClusterFixture) breakCluster(name string) {
 	c := edsCluster(f.ucc, name, 99)
 	c.Error = errors.New(reproValidationErr)
-	f.clusterCol.UpdateObject(c)
+	f.clusterCols.bases.UpdateObject(baseFromCluster(c))
 }
 
 func (f *erroredClusterFixture) restoreCluster(name string) {
-	f.clusterCol.UpdateObject(edsCluster(f.ucc, name, 100))
+	f.clusterCols.bases.UpdateObject(baseFromCluster(edsCluster(f.ucc, name, 100)))
 }
 
 func (f *erroredClusterFixture) updateEndpoints(name string, localities int) {
@@ -292,7 +292,7 @@ func (f *erroredClusterFixture) endpointsFor(name string, localities int) UccWit
 
 	return UccWithEndpoints{
 		Client:        f.ucc,
-		Endpoints:     &envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps},
+		Endpoints:     sharedproto.Wrap(&envoyendpointv3.ClusterLoadAssignment{ClusterName: name, Endpoints: lbEps}),
 		EndpointsHash: hash,
 		endpointsName: name,
 	}
@@ -534,7 +534,7 @@ func edsCluster(ucc ir.UniquelyConnectedClient, name string, version uint64) ucc
 	return uccWithCluster{
 		Client: ucc,
 		Name:   name,
-		Cluster: &envoyclusterv3.Cluster{
+		Cluster: sharedproto.Wrap(&envoyclusterv3.Cluster{
 			Name:                 name,
 			ClusterDiscoveryType: &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS},
 			EdsClusterConfig: &envoyclusterv3.Cluster_EdsClusterConfig{
@@ -543,7 +543,7 @@ func edsCluster(ucc ir.UniquelyConnectedClient, name string, version uint64) ucc
 					ConfigSourceSpecifier: &envoycorev3.ConfigSource_Ads{Ads: &envoycorev3.AggregatedConfigSource{}},
 				},
 			},
-		},
+		}),
 		ClusterVersion: version,
 	}
 }

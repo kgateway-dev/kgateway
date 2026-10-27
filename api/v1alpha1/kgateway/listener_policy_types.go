@@ -120,6 +120,11 @@ type ListenerConfig struct {
 	// +optional
 	HTTPSettings *HTTPSettings `json:"httpSettings,omitempty"`
 
+	// TCPSettings is intended to be used for configuring the Envoy `TcpProxy` network filter that serves
+	// TCP listeners and TLS listeners (both Terminate and Passthrough), such as those backing TCPRoutes and TLSRoutes.
+	// +optional
+	TCPSettings *TCPSettings `json:"tcpSettings,omitempty"`
+
 	// TransportSocketConnectTimeout is the timeout for the transport socket to complete after a new connection is accepted.
 	// If the timeout fires, the connection is closed. Setting this protects Envoy from clients that open connections and
 	// then never complete the TLS handshake. Applied to every filter chain on the listener.
@@ -191,7 +196,7 @@ type HTTPSettings struct {
 	LocalReplies *LocalReplyConfig `json:"localReplies,omitempty"`
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades.html
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
 	// +optional
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
 
@@ -231,6 +236,16 @@ type HTTPSettings struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-merge-slashes
 	// +optional
 	MergeSlashes *bool `json:"mergeSlashes,omitempty"`
+
+	// PathWithEscapedSlashesAction determines how the connection manager handles requests whose
+	// path contains escaped slash sequences (%2F, %2f, %5C, %5c). This runs before path
+	// normalization and slash merging. If unset, Envoy's implementation specific default applies,
+	// which is currently KeepUnchanged: the escaped sequences are passed through to routing as-is,
+	// so a request for /foo%2Fbar does not match a /foo/ prefix.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-path-with-escaped-slashes-action
+	// +kubebuilder:validation:Enum=KeepUnchanged;RejectRequest;UnescapeAndRedirect;UnescapeAndForward
+	// +optional
+	PathWithEscapedSlashesAction *PathWithEscapedSlashesAction `json:"pathWithEscapedSlashesAction,omitempty"`
 
 	// Proxy100Continue determines whether Envoy forwards requests with an
 	// Expect: 100-continue header upstream and proxies upstream 100 Continue
@@ -285,6 +300,16 @@ type HTTPSettings struct {
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	IdleTimeout *metav1.Duration `json:"idleTimeout,omitempty"`
+
+	// MaxConnectionDuration is the maximum duration of a connection, measured from
+	// when the connection was established. When this duration is reached, Envoy starts
+	// the drain sequence. If unset, there is no maximum connection duration.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-connection-duration
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	MaxConnectionDuration *metav1.Duration `json:"maxConnectionDuration,omitempty"`
 
 	// MaxRequestsPerConnection sets the maximum number of requests served over a single downstream
 	// keepalive connection. When the limit is reached, Envoy closes the connection, which forces
@@ -382,6 +407,18 @@ type HTTPSettings struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-strip-trailing-host-dot
 	// +optional
 	StripTrailingHostDot *bool `json:"stripTrailingHostDot,omitempty"`
+}
+
+// TCPSettings configures the Envoy `TcpProxy` network filter.
+type TCPSettings struct {
+	// AccessLog configures per-connection access logging for the `TcpProxy` filter.
+	// It accepts the same configuration as httpSettings.accessLog, except for fields that
+	// only apply to HTTP traffic: the statusCodeFilter, headerFilter, grpcStatusFilter and
+	// traceableFilter filters, and the additional*ToLog fields of grpcService.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/tcp_proxy/v3/tcp_proxy.proto#envoy-v3-api-field-extensions-filters-network-tcp-proxy-v3-tcpproxy-access-log
+	// +kubebuilder:validation:MaxItems=16
+	// +optional
+	AccessLog []AccessLog `json:"accessLog,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -793,9 +830,7 @@ type CELFilter struct {
 // A request will be logged if the runtime key is set and the request's random value is less than the percent_sampled value.
 // Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
 type RuntimeFilter struct {
-	// The runtime key to look up in the runtime implementation. This key determines whether
-	// the access log is enabled. When the runtime key value is set, the filter checks this key
-	// at runtime to decide whether to log each request.
+	// RuntimeKey identifies the runtime setting used to decide whether to log each request.
 	// +required
 	// +kubebuilder:validation:MinLength=1
 	RuntimeKey string `json:"runtimeKey"`
@@ -1080,7 +1115,10 @@ const (
 
 // UpgradeConfig represents configuration for HTTP upgrades.
 type UpgradeConfig struct {
-	// List of upgrade types to enable (e.g. "websocket", "CONNECT", etc.)
+	// EnabledUpgrades lists the HTTP upgrade types to enable, such as "websocket"
+	// and "CONNECT". Enabling "CONNECT" allows CONNECT requests to be proxied
+	// upstream without termination. To terminate CONNECT and forward its payload
+	// as raw TCP data, configure httpUpgrade in a TrafficPolicy.
 	// +kubebuilder:validation:MinItems=1
 	// +optional
 	EnabledUpgrades []string `json:"enabledUpgrades,omitempty"`
@@ -1108,6 +1146,23 @@ const (
 	StripMatchingHostPortMode StripHostPortMode = "MatchingPort"
 	// StripAnyHostPortMode strips any port from the header, regardless of its value.
 	StripAnyHostPortMode StripHostPortMode = "AnyPort"
+)
+
+// PathWithEscapedSlashesAction determines how Envoy handles escaped slash sequences
+// (%2F, %2f, %5C, %5c) in the request path.
+type PathWithEscapedSlashesAction string
+
+const (
+	// PathWithEscapedSlashesActionKeepUnchanged keeps the escaped sequences as-is.
+	PathWithEscapedSlashesActionKeepUnchanged PathWithEscapedSlashesAction = "KeepUnchanged"
+	// PathWithEscapedSlashesActionRejectRequest rejects the request with a 400 status.
+	PathWithEscapedSlashesActionRejectRequest PathWithEscapedSlashesAction = "RejectRequest"
+	// PathWithEscapedSlashesActionUnescapeAndRedirect unescapes the sequences and redirects the
+	// client to the resulting path.
+	PathWithEscapedSlashesActionUnescapeAndRedirect PathWithEscapedSlashesAction = "UnescapeAndRedirect"
+	// PathWithEscapedSlashesActionUnescapeAndForward unescapes the sequences and forwards the
+	// request with the resulting path.
+	PathWithEscapedSlashesActionUnescapeAndForward PathWithEscapedSlashesAction = "UnescapeAndForward"
 )
 
 // EnvoyHealthCheck represents configuration for Envoy's health check filter.
