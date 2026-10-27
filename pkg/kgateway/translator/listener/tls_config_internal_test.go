@@ -55,6 +55,8 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 		name       string
 		validation *ir.ClientCertificateValidationIR
 		wantErr    error
+		// wantCAErr is a CA lookup failure that must be reported alongside wantErr.
+		wantCAErr string
 	}{
 		{
 			name:       "SANs with a Gateway-level CA are accepted",
@@ -68,6 +70,7 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 			name:       "SANs with an unresolved Gateway-level CA in AllowInsecureFallback mode are rejected",
 			validation: &ir.ClientCertificateValidationIR{CACertificateRefs: caRef("missing-ca"), AllowInsecureFallback: true},
 			wantErr:    sslutils.ErrVerifySubjectAltNamesRequiresCA,
+			wantCAErr:  "secret missing-ca not found",
 		},
 	}
 	for _, tt := range tests {
@@ -86,6 +89,9 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 			tlsConfig, err := translateTLSConfig(krt.TestingDummyContext{}, context.Background(), l, tls, queries, tt.validation, "default")
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
+				if tt.wantCAErr != "" {
+					assert.ErrorContains(t, err, tt.wantCAErr, "the CA lookup failure should not be dropped")
+				}
 				assert.Nil(t, tlsConfig, "the listener should fail closed")
 				return
 			}

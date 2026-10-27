@@ -1139,7 +1139,7 @@ func translateTLSConfig(
 					"mode", "optional")
 				// Keep Gateway-level validation if ListenerPolicy fetch fails
 				if !subjectAltNamesHaveCA(tlsConfig) {
-					return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+					return nil, errors.Join(caErr, sslutils.ErrVerifySubjectAltNamesRequiresCA)
 				}
 				return tlsConfig, nil
 			}
@@ -1153,7 +1153,7 @@ func translateTLSConfig(
 	}
 
 	if !subjectAltNamesHaveCA(tlsConfig) {
-		return nil, sslutils.ErrVerifySubjectAltNamesRequiresCA
+		return nil, errors.Join(caErr, sslutils.ErrVerifySubjectAltNamesRequiresCA)
 	}
 
 	return tlsConfig, errors.Join(certErr, caErr)
@@ -1357,6 +1357,7 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	message := "Invalid certificate ref(s)."
 	acceptedReason := gwv1.ListenerReasonInvalid
 	resolvedRefsOK := false
+	var notFoundErr *krtcollections.NotFoundError
 
 	switch {
 	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
@@ -1368,11 +1369,6 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidTlsSecret):
 		message = err.Error()
-	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA):
-		// verify-subject-alt-names requires CA is a TLS configuration issue,
-		// not a certificate reference problem — the secret refs resolved fine.
-		resolvedRefsOK = true
-		message = err.Error()
 	case errors.Is(err, sslutils.ErrInvalidCACertificateRef):
 		reason = sslutils.ListenerReasonInvalidCACertificateRef
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
@@ -1380,6 +1376,13 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 	case errors.Is(err, sslutils.ErrInvalidCACertificateKind):
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
+		message = err.Error()
+	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA) && !errors.As(err, &notFoundErr):
+		// verify-subject-alt-names requires CA is a TLS configuration issue,
+		// not a certificate reference problem — the secret refs resolved fine.
+		// It is checked after the CA ref errors it may be joined with, so an
+		// unresolved CA ref is still reported as one.
+		resolvedRefsOK = true
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):
 		// Unknown TLS extension options are not a certificate reference problem;
@@ -1389,7 +1392,6 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		message = err.Error()
 	}
 
-	var notFoundErr *krtcollections.NotFoundError
 	if errors.As(err, &notFoundErr) {
 		resourceType := notFoundErr.NotFoundObj.Kind
 		if resourceType == "" {
