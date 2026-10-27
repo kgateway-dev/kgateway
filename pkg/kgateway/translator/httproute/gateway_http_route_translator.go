@@ -208,6 +208,7 @@ func setRouteAction(
 		httpBackend := ir.HttpBackend{
 			Backend:          *backend.Backend, // TODO: Nil check?
 			AttachedPolicies: backend.AttachedPolicies,
+			FiltersErr:       backend.FiltersErr,
 		}
 		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
 	}

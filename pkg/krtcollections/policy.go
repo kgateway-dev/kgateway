@@ -1660,21 +1660,23 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 	}
 }
 
-// getBackends resolves the backendRefs of a route rule. The returned error joins the
-// errors resolving the backendRefs' filters (e.g. an ExtensionRef to a missing policy),
-// so that the rule fails closed instead of forwarding without the policy.
+// getBackends resolves the backendRefs of a route rule. An error resolving a backendRef's
+// filters (e.g. an ExtensionRef to a missing policy) is set on that backend, so that only
+// its traffic fails closed instead of forwarding without the policy. A backendRef to a
+// delegated route has no cluster of its own to fail closed, so the returned error joins the
+// errors resolving the filters of such backendRefs, for the whole rule to fail closed.
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) ([]ir.HttpBackendOrDelegate, error) {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
 	var errs []error
 	for _, ref := range backendRefs {
-		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		extensionRefs, filtersErr := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
 		if backendref.IsDelegatedHTTPRoute(ref.BackendRef.BackendObjectReference) {
+			if filtersErr != nil {
+				errs = append(errs, filtersErr)
+			}
 			backends = append(backends, ir.HttpBackendOrDelegate{
 				Delegate:         &to,
 				AttachedPolicies: extensionRefs,
@@ -1691,6 +1693,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 				Err:           err,
 			},
 			AttachedPolicies: extensionRefs,
+			FiltersErr:       filtersErr,
 		})
 	}
 	return backends, errors.Join(errs...)

@@ -19,6 +19,9 @@ import (
 type HttpBackend struct {
 	Backend BackendRefIR
 	AttachedPolicies
+
+	// FiltersErr contains any error resolving the backendRef's filters. See HttpBackendOrDelegate.
+	FiltersErr error
 }
 
 type HttpRouteRuleMatchIR struct {
