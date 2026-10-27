@@ -134,6 +134,17 @@ Routes:
     - '*'
     name: listener~80~*
     routes:
+    - match:
+        pathSeparatedPrefix: /weighted-backendref-request-redirect
+      name: listener~80~*-route-0-httproute-weighted-backendref-request-redirect-infra-0-0-matcher-0
+      route:
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        weightedClusters:
+          clusters:
+          - name: blackhole-cluster
+            weight: 50
+          - name: kube_infra_example-svc-2_80
+            weight: 50
     - directResponse:
         body:
           inlineString: invalid route configuration detected and replaced with a direct
@@ -141,7 +152,18 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /weighted-broken-and-missing-service
-      name: listener~80~*-route-0-httproute-weighted-broken-and-missing-service-infra-0-0-matcher-0
+      name: listener~80~*-route-1-httproute-weighted-broken-and-missing-service-infra-0-0-matcher-0
+    - match:
+        pathSeparatedPrefix: /weighted-backendref-request-mirror
+      name: listener~80~*-route-2-httproute-weighted-backendref-request-mirror-infra-0-0-matcher-0
+      route:
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        weightedClusters:
+          clusters:
+          - name: blackhole-cluster
+            weight: 50
+          - name: kube_infra_example-svc-2_80
+            weight: 50
     - directResponse:
         body:
           inlineString: invalid route configuration detected and replaced with a direct
@@ -149,7 +171,26 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /weighted-broken-and-zero-weight
-      name: listener~80~*-route-1-httproute-weighted-broken-and-zero-weight-infra-0-0-matcher-0
+      name: listener~80~*-route-3-httproute-weighted-broken-and-zero-weight-infra-0-0-matcher-0
+    - match:
+        pathSeparatedPrefix: /weighted-backendref-url-rewrite
+      name: listener~80~*-route-4-httproute-weighted-backendref-url-rewrite-infra-0-0-matcher-0
+      route:
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        weightedClusters:
+          clusters:
+          - name: blackhole-cluster
+            weight: 50
+          - name: kube_infra_example-svc-2_80
+            weight: 50
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        pathSeparatedPrefix: /backendref-url-rewrite
+      name: listener~80~*-route-5-httproute-backendref-url-rewrite-infra-0-0-matcher-0
     - directResponse:
         body:
           inlineString: invalid route configuration detected and replaced with a direct
@@ -157,10 +198,10 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /weighted-all-broken
-      name: listener~80~*-route-2-httproute-weighted-all-broken-infra-0-0-matcher-0
+      name: listener~80~*-route-6-httproute-weighted-all-broken-infra-0-0-matcher-0
     - match:
         pathSeparatedPrefix: /weighted-broken-gcp
-      name: listener~80~*-route-3-httproute-weighted-broken-gcp-infra-0-0-matcher-0
+      name: listener~80~*-route-7-httproute-weighted-broken-gcp-infra-0-0-matcher-0
       route:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         weightedClusters:
@@ -171,7 +212,7 @@ Routes:
             weight: 50
     - match:
         pathSeparatedPrefix: /weighted-partial
-      name: listener~80~*-route-4-httproute-weighted-partial-infra-0-0-matcher-0
+      name: listener~80~*-route-8-httproute-weighted-partial-infra-0-0-matcher-0
       route:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         weightedClusters:
@@ -202,7 +243,7 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /missing-policy
-      name: listener~80~*-route-5-httproute-missing-policy-infra-0-0-matcher-0
+      name: listener~80~*-route-9-httproute-missing-policy-infra-0-0-matcher-0
     - directResponse:
         body:
           inlineString: invalid route configuration detected and replaced with a direct
@@ -210,10 +251,10 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /broken-policy
-      name: listener~80~*-route-6-httproute-broken-policy-infra-0-0-matcher-0
+      name: listener~80~*-route-10-httproute-broken-policy-infra-0-0-matcher-0
     - match:
         pathSeparatedPrefix: /valid-policy
-      name: listener~80~*-route-7-httproute-valid-policy-infra-0-0-matcher-0
+      name: listener~80~*-route-11-httproute-valid-policy-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -237,7 +278,7 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /delegated
-      name: listener~80~*-route-8-httproute-delegating-broken-infra-0-0-matcher-0
+      name: listener~80~*-route-12-httproute-delegating-broken-infra-0-0-matcher-0
 Statuses:
   backends:
     infra/gcp-backend:
@@ -266,7 +307,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 9
+      - attachedRoutes: 13
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -295,6 +336,30 @@ Statuses:
         - group: gateway.networking.k8s.io
           kind: GRPCRoute
   httpRoutes:
+    infra/backendref-url-rewrite:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): URLRewrite filter is not supported on a backendRef:
+            policy is not attachable to this object'
+          reason: RouteRuleReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
     infra/broken-policy:
       parents:
       - conditions:
@@ -398,6 +463,78 @@ Statuses:
             Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/does-not-exist: policy not found
             gateway.kgateway.dev/TrafficPolicy/infra/extauth-missing-extension: extauth: infra/does-not-exist: gateway extension not found
           reason: RouteRuleReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/weighted-backendref-request-mirror:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced 1 of 2 backendRefs of Rule (0): RequestMirror filter
+            is not supported on a backendRef: policy is not attachable to this object'
+          reason: BackendRefReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/weighted-backendref-request-redirect:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced 1 of 2 backendRefs of Rule (0): RequestRedirect filter
+            is not supported on a backendRef: policy is not attachable to this object'
+          reason: BackendRefReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/weighted-backendref-url-rewrite:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced 1 of 2 backendRefs of Rule (0): URLRewrite filter is
+            not supported on a backendRef: policy is not attachable to this object'
+          reason: BackendRefReplaced
           status: "False"
           type: kgateway.dev/Programmed
         - lastTransitionTime: null

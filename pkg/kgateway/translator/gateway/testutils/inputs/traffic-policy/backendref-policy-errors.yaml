@@ -380,3 +380,111 @@ spec:
   - protocol: TCP
     port: 8080
     targetPort: 8080
+
+---
+# Built-in filters that cannot apply to a single weighted backend (URLRewrite, RequestRedirect,
+# RequestMirror) are not attachable to a backendRef, so that backend fails closed instead of
+# forwarding without the filter.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-backendref-url-rewrite
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-backendref-url-rewrite
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /rewritten
+    - name: example-svc-2
+      port: 80
+      weight: 50
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-backendref-request-redirect
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-backendref-request-redirect
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: RequestRedirect
+        requestRedirect:
+          hostname: redirect.example.com
+    - name: example-svc-2
+      port: 80
+      weight: 50
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-backendref-request-mirror
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-backendref-request-mirror
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: RequestMirror
+        requestMirror:
+          backendRef:
+            name: example-svc-2
+            port: 80
+    - name: example-svc-2
+      port: 80
+      weight: 50
+---
+# With a single backend, the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: backendref-url-rewrite
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /backendref-url-rewrite
+    backendRefs:
+    - name: example-svc
+      port: 80
+      filters:
+      - type: URLRewrite
+        urlRewrite:
+          path:
+            type: ReplacePrefixMatch
+            replacePrefixMatch: /rewritten
