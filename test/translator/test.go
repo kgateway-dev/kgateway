@@ -853,7 +853,6 @@ func (tc TestCase) Run(
 	// ensure classes used in tests exist and point at our controller
 	gwClasses := []string{
 		wellknown.DefaultGatewayClassName,
-		wellknown.DefaultWaypointClassName,
 		"example-gateway-class",
 	}
 	for _, className := range gwClasses {

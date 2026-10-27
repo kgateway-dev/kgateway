@@ -4,7 +4,14 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-METALLB_VERSION=${METALLB_VERSION:-v0.13.7}
+# By default, apply the vendored manifest (upstream v0.16.1 with faster startup probes).
+# Set METALLB_VERSION to apply that upstream release instead, or METALLB_MANIFEST to apply
+# any other manifest path or URL.
+if [[ -n "${METALLB_VERSION:-}" ]]; then
+  METALLB_MANIFEST=${METALLB_MANIFEST:-https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml}
+fi
+METALLB_MANIFEST=${METALLB_MANIFEST:-"$(dirname "${BASH_SOURCE[0]}")/metallb.yaml"}
+
 # The IP family of the cluster: ipv4, ipv6, or dual. Determines which of the
 # docker network's subnets the LoadBalancer pool is carved out of.
 IP_FAMILY="${IP_FAMILY:-ipv4}"
@@ -19,9 +26,9 @@ IP_FAMILY="${IP_FAMILY:-ipv4}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-}"
 CLUSTER_SUBNET_V6="${CLUSTER_SUBNET_V6:-}"
 
-echo "installing MetalLB ${METALLB_VERSION} into context $(kubectl config current-context) with ipFamily=${IP_FAMILY}"
+echo "installing MetalLB from ${METALLB_MANIFEST} into context $(kubectl config current-context) with ipFamily=${IP_FAMILY}"
 
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml
+kubectl apply -f "${METALLB_MANIFEST}"
 
 # Wait for MetalLB to become available.
 kubectl rollout status -n metallb-system deployment/controller --timeout 5m
@@ -31,12 +38,13 @@ kubectl wait -n metallb-system pod -l app=metallb --for=condition=Ready --timeou
 # Ready pods are not enough. The IPAddressPool and L2Advertisement CRs below go
 # through MetalLB's own validating webhook, and that only starts admitting once
 # the webhook Service has endpoints; applying before then fails with a
-# connection error.
+# connection error. The Service is webhook-service before v0.14 and
+# metallb-webhook-service after.
 echo "waiting for the MetalLB admission webhook to have endpoints"
 webhook_ready=false
 for _ in $(seq 1 60); do
   if [[ -n "$(kubectl get endpointslices -n metallb-system \
-      -l kubernetes.io/service-name=webhook-service \
+      -l 'kubernetes.io/service-name in (webhook-service,metallb-webhook-service)' \
       -o jsonpath='{.items[*].endpoints[*].addresses[0]}')" ]]; then
     webhook_ready=true
     break
@@ -145,7 +153,7 @@ done
 
 # Apply the IPAddressPool on its own first: the L2Advertisement below names it,
 # and the webhook rejects an advertisement whose pool does not exist yet.
-kubectl apply -f - <<-EOF
+POOL_CONFIG=$(cat <<-EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -155,6 +163,20 @@ spec:
   addresses:
 ${ADDRESS_YAML}
 EOF
+)
+
+# Even with endpoints, the webhook can refuse connections for a second or two
+# while kube-proxy catches up, so retry until it admits the pool.
+for attempt in $(seq 1 60); do
+  if kubectl apply -f - <<<"${POOL_CONFIG}"; then
+    break
+  fi
+  if [[ ${attempt} -eq 60 ]]; then
+    echo "MetalLB webhook did not admit the address pool after 60 attempts" >&2
+    exit 1
+  fi
+  sleep 1
+done
 
 kubectl apply -f - <<-EOF
 apiVersion: metallb.io/v1beta1

@@ -54,8 +54,8 @@ func TestDebouncedCollectionSeedsBeforeSync(t *testing.T) {
 
 func TestDebouncedCollectionBatchesBurst(t *testing.T) {
 	stop := test.NewStop(t)
-	src := krt.NewStaticCollection[debounceItem](nil, nil)
-	out := newDebouncedCollection[debounceItem](src, 200*time.Millisecond, 10*time.Second, stop)
+	src := krt.NewMutableCollection[debounceItem](nil, nil)
+	out := newDebouncedCollection[debounceItem](src.AsCollection(), 200*time.Millisecond, 10*time.Second, stop)
 	require.True(t, out.WaitUntilSynced(stop), "the mirror should sync")
 
 	var batches, events atomic.Int32
@@ -72,7 +72,7 @@ func TestDebouncedCollectionBatchesBurst(t *testing.T) {
 	assert.Eventually(t, func() bool { return events.Load() == n }, 5*time.Second, 10*time.Millisecond,
 		"every change should reach the mirror")
 	assert.Equal(t, int32(1), batches.Load(), "a burst should be delivered as one event set")
-	assert.Equal(t, sortedItems(src), sortedItems(out), "the mirror should match the source after the flush")
+	assert.Equal(t, sortedItems(src.AsCollection()), sortedItems(out), "the mirror should match the source after the flush")
 }
 
 // countedItem counts its Equals calls, to show how many objects a flush compares.
@@ -98,8 +98,8 @@ func TestDebouncedCollectionAppliesALoneChangeByItself(t *testing.T) {
 	for i := range 100 {
 		items = append(items, countedItem{Name: fmt.Sprint("item-", i), Value: i})
 	}
-	src := krt.NewStaticCollection(nil, items)
-	out := newDebouncedCollection[countedItem](src, 10*time.Millisecond, 100*time.Millisecond, stop)
+	src := krt.NewMutableCollection(nil, items)
+	out := newDebouncedCollection[countedItem](src.AsCollection(), 10*time.Millisecond, 100*time.Millisecond, stop)
 	require.True(t, out.WaitUntilSynced(stop), "the mirror should sync")
 
 	var mu sync.Mutex
@@ -134,9 +134,9 @@ func TestDebouncedCollectionAppliesALoneChangeByItself(t *testing.T) {
 
 func TestDebouncedCollectionFlushesWhileChangesKeepArriving(t *testing.T) {
 	stop := test.NewStop(t)
-	src := krt.NewStaticCollection[debounceItem](nil, nil)
+	src := krt.NewMutableCollection[debounceItem](nil, nil)
 	// The window never elapses while changes arrive every 5ms, so only the ceiling can flush.
-	out := newDebouncedCollection[debounceItem](src, 100*time.Millisecond, 200*time.Millisecond, stop)
+	out := newDebouncedCollection[debounceItem](src.AsCollection(), 100*time.Millisecond, 200*time.Millisecond, stop)
 	require.True(t, out.WaitUntilSynced(stop), "the mirror should sync")
 
 	done := make(chan struct{})
@@ -155,11 +155,11 @@ func TestDebouncedCollectionFlushesWhileChangesKeepArriving(t *testing.T) {
 
 func TestDebouncedCollectionConvergesToSource(t *testing.T) {
 	stop := test.NewStop(t)
-	src := krt.NewStaticCollection[debounceItem](nil, nil)
+	src := krt.NewMutableCollection[debounceItem](nil, nil)
 	for i := range 50 {
 		src.UpdateObject(debounceItem{Name: fmt.Sprint("item-", i), Value: i})
 	}
-	out := newDebouncedCollection[debounceItem](src, 5*time.Millisecond, 20*time.Millisecond, stop)
+	out := newDebouncedCollection[debounceItem](src.AsCollection(), 5*time.Millisecond, 20*time.Millisecond, stop)
 	require.True(t, out.WaitUntilSynced(stop), "the mirror should sync")
 
 	// Concurrent updates and deletes, so some land while a flush is reading the source.
@@ -179,6 +179,6 @@ func TestDebouncedCollectionConvergesToSource(t *testing.T) {
 	}
 	wg.Wait()
 
-	assert.Eventually(t, func() bool { return slices.Equal(sortedItems(src), sortedItems(out)) }, 5*time.Second,
+	assert.Eventually(t, func() bool { return slices.Equal(sortedItems(src.AsCollection()), sortedItems(out)) }, 5*time.Second,
 		10*time.Millisecond, "the mirror should converge to the source, including deletes")
 }

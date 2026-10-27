@@ -36,8 +36,9 @@ spec:
       name: "*"
       namespace: a
     sessionPersistence:
-      sessionName: parent-cookie
       type: Cookie
+      cookie:
+        name: parent-cookie
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

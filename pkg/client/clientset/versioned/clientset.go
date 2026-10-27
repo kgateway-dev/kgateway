@@ -13,7 +13,7 @@ import (
 )
 
 type Interface interface {
-	Discovery() discovery.DiscoveryInterface
+	Discovery() discovery.DiscoveryInterfaces
 	GatewayKgateway() gatewaykgateway.GatewayKgatewayInterface
 }
 
@@ -29,7 +29,7 @@ func (c *Clientset) GatewayKgateway() gatewaykgateway.GatewayKgatewayInterface {
 }
 
 // Discovery retrieves the DiscoveryClient
-func (c *Clientset) Discovery() discovery.DiscoveryInterface {
+func (c *Clientset) Discovery() discovery.DiscoveryInterfaces {
 	if c == nil {
 		return nil
 	}

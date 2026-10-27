@@ -9,16 +9,16 @@ import (
 	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 )
 
-// TestDecideClusterScopingRoundTripsADerivedPrefix is how a plugin tests its
+// TestDecideXdsScopingRoundTripsADerivedPrefix is how a plugin tests its
 // claim: generate configuration for a namespace, decide, and expect exactly
 // that namespace's clusters kept. The prefix is exact because neither
 // namespaces nor backend names contain "_".
-func TestDecideClusterScopingRoundTripsADerivedPrefix(t *testing.T) {
+func TestDecideXdsScopingRoundTripsADerivedPrefix(t *testing.T) {
 	plugins := claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors: []string{destinationSelector}, DestinationsFor: destinationsFromMarker,
 	})
 
-	decision := DecideClusterScoping(plugins,
+	decision := DecideXdsScoping(plugins,
 		[]*envoyroutev3.RouteConfiguration{inlineSpecifierRouteConfig(t, destinationLua("gwtest"))}, nil)
 
 	assert.True(t, decision.Scoped, "unaccounted: %v", decision.Unaccounted)
@@ -27,15 +27,15 @@ func TestDecideClusterScopingRoundTripsADerivedPrefix(t *testing.T) {
 	assert.False(t, decision.Emits("backend_other_echo"))
 }
 
-// TestDecideClusterScopingReportsWhyAGatewayIsUnscoped: the decision names the
+// TestDecideXdsScopingReportsWhyAGatewayIsUnscoped: the decision names the
 // unaccounted selector and reason the controller would log, and an unscoped
 // gateway emits everything.
-func TestDecideClusterScopingReportsWhyAGatewayIsUnscoped(t *testing.T) {
+func TestDecideXdsScopingReportsWhyAGatewayIsUnscoped(t *testing.T) {
 	plugins := claimingPlugins(sdk.ClusterEmissionClaim{
 		Selectors: []string{destinationSelector}, DestinationsFor: destinationsFromMarker,
 	})
 
-	decision := DecideClusterScoping(plugins,
+	decision := DecideXdsScoping(plugins,
 		[]*envoyroutev3.RouteConfiguration{inlineSpecifierRouteConfig(t, foreignLua())}, nil)
 
 	assert.False(t, decision.Scoped)

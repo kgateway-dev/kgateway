@@ -232,6 +232,28 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("httproutes with the same hostname intersection sort by route hostname specificity", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/hostname-intersection-precedence.yaml"},
+			outputFile: "http-routing/hostname-intersection-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("httproutes with the same hostname intersection sort by route hostname specificity before matches", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"http-routing/hostname-intersection-precedence-matches.yaml"},
+			outputFile: "http-routing/hostname-intersection-precedence-matches.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("http gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"http-routing/basic.yaml"},
@@ -1375,6 +1397,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("tcp route attached through two parentRefs does not conflict with itself", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tcp-routing/duplicate-parentref.yaml"},
+			outputFile: "tcp-routing/duplicate-parentref.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("tcp gateway with basic routing", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tcp-routing/basic.yaml"},
@@ -1522,6 +1555,28 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"tls-routing/multi-backend.yaml"},
 			outputFile: "tls-routing/multi-backend-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroutes with the same hostname intersection resolve by route hostname specificity", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/hostname-intersection-precedence.yaml"},
+			outputFile: "tls-routing/hostname-intersection-precedence.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("tlsroute losing its SNI domain through two parentRefs is conflicted on both", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"tls-routing/hostname-intersection-precedence-duplicate-parentref.yaml"},
+			outputFile: "tls-routing/hostname-intersection-precedence-duplicate-parentref.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -2402,6 +2457,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("ListenerPolicy with pathWithEscapedSlashesAction", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy-http/path-with-escaped-slashes-action.yaml"},
+			outputFile: "listener-policy-http/path-with-escaped-slashes-action.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("ListenerPolicy with defaultHostForHttp10", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy-http/default-host-for-http10.yaml"},
@@ -2993,6 +3059,17 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"backendconfigpolicy/zone-aware-force.yaml"},
 			outputFile: "backendconfigpolicy/zone-aware-force.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("Backend Config Policy http2 options apply to ALPN negotiated by BackendTLSPolicy", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml"},
+			outputFile: "backendconfigpolicy/http2-alpn-with-backendtlspolicy.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -3595,6 +3672,72 @@ func TestBasic(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-per-listener.yaml"},
 			outputFile: "listener-policy/transport-socket-connect-timeout-per-listener.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with access logs on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-access-log.yaml"},
+			outputFile: "listener-policy/tcp-access-log.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with access logs on TLS terminate and passthrough listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tls-access-log.yaml"},
+			outputFile: "listener-policy/tls-access-log.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy rejects HTTP-only access log filter on TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-access-log-http-only-filter.yaml"},
+			outputFile: "listener-policy/tcp-access-log-http-only-filter.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy and HTTP-only policy targeting a TCP listener", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/tcp-listener-section-policies.yaml"},
+			outputFile: "listener-policy/tcp-listener-section-policies.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy per-port entry keeps the gateway-wide transport socket connect timeout", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-per-port-entry.yaml"},
+			outputFile: "listener-policy/transport-socket-connect-timeout-per-port-entry.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
+	t.Run("ListenerPolicy with per-listener transport socket connect timeout on TLS listeners", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"listener-policy/transport-socket-connect-timeout-tls-listener.yaml"},
+			outputFile: "listener-policy/transport-socket-connect-timeout-tls-listener.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
@@ -4299,9 +4442,9 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
-			name:      "BackendConfigPolicy Invalid TLS Files Non-existent",
+			name:      "BackendConfigPolicy TLS Files On Proxy Only",
 			category:  "backendconfigpolicy",
-			inputFile: "invalid-tlsfiles-nonexistent.yaml",
+			inputFile: "tlsfiles-proxy-only.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
 		{

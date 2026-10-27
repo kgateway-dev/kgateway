@@ -540,6 +540,266 @@ func TestControllerGoMemLimitPercent(t *testing.T) {
 	}
 }
 
+func TestControllerXdsScoping(t *testing.T) {
+	xdsScopingEnv := []string{
+		"KGW_XDS_SCOPING_MODE",
+		"KGW_XDS_SCOPING_REFERENCE_AHEAD",
+		"KGW_XDS_SCOPING_DEREFERENCE_GRACE",
+	}
+
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		// want holds each variable's single rendered value; a variable
+		// missing from want must not be rendered at all.
+		want map[string]string
+	}{
+		{
+			name: "renders nothing by default, leaving the controller defaults",
+			want: map[string]string{},
+		},
+		{
+			name: "renders configured values",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED
+      referenceAhead: 3s
+      dereferenceGrace: 30s
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE":              "REFERENCED",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "3s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "30s",
+			},
+		},
+		{
+			name: "upper-cases the mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: Referenced
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE": "REFERENCED",
+			},
+		},
+		{
+			// A zero duration turns its window off, so it must not be dropped as falsy.
+			name: "renders a zero duration",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      referenceAhead: 0
+      dereferenceGrace: "0"
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "0",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "0",
+			},
+		},
+		{
+			name: "renders compound and fractional durations",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      referenceAhead: 1m30s
+      dereferenceGrace: 1.5s
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "1m30s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "1.5s",
+			},
+		},
+		{
+			// A non-zero bare number is invalid, but 0 is not.
+			name: "passes a valid extraEnv zero duration through unchanged",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_REFERENCE_AHEAD: "0"
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: "0"
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "0",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "0",
+			},
+		},
+		{
+			name: "omits every value when xds.scoping is null",
+			valuesYAML: `controller:
+  xds:
+    scoping: null
+`,
+			want: map[string]string{},
+		},
+		{
+			name: "lets extraEnv take precedence per variable",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: ALL
+      referenceAhead: 3s
+      dereferenceGrace: 5s
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: REFERENCED
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: 10s
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE":              "REFERENCED",
+				"KGW_XDS_SCOPING_REFERENCE_AHEAD":   "3s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "10s",
+			},
+		},
+		{
+			// The controller accepts any case, so the value is passed through as written.
+			name: "passes a valid extraEnv mode through unchanged",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: referenced
+`,
+			want: map[string]string{
+				"KGW_XDS_SCOPING_MODE": "referenced",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := renderHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			container := findDeployment(t, output).Spec.Template.Spec.Containers[0]
+			for _, name := range xdsScopingEnv {
+				var values []string
+				for _, envVar := range container.Env {
+					if envVar.Name == name {
+						values = append(values, envVar.Value)
+					}
+				}
+
+				want, ok := test.want[name]
+				if !ok {
+					require.Empty(t, values, "%s should not be rendered", name)
+					continue
+				}
+				require.Equal(t, []string{want}, values, "%s should be rendered exactly once", name)
+			}
+		})
+	}
+
+	for _, test := range []struct {
+		name       string
+		valuesYAML string
+		message    string
+	}{
+		{
+			name: "rejects an unknown mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: some
+`,
+			message: "Invalid controller.xds.scoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects a mode that merely starts with a valid one",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED_ONLY
+`,
+			message: "Invalid controller.xds.scoping.mode 'REFERENCED_ONLY'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects an invalid mode that extraEnv overrides",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: some
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: REFERENCED
+`,
+			message: "Invalid controller.xds.scoping.mode 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects an invalid extraEnv mode",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: some
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			name: "rejects an invalid extraEnv mode alongside a valid xds.scoping mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: some
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE 'some'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// Set but empty is not unset: the controller decodes "" and fails.
+			name: "rejects an empty extraEnv mode",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: ""
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ''. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// The controller upper-cases the mode but does not trim it.
+			name: "rejects an extraEnv mode with surrounding spaces",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_MODE: " REFERENCED "
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_MODE ' REFERENCED '. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// A non-string mode is set, not empty, so it is validated rather than skipped.
+			name: "rejects a numeric mode",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: 0
+`,
+			message: "Invalid controller.xds.scoping.mode '0'. Must be 'ALL' or 'REFERENCED' (case-insensitive).",
+		},
+		{
+			// time.ParseDuration rejects a bare number other than 0.
+			name: "rejects a duration without a unit",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      referenceAhead: 3
+`,
+			message: "Invalid controller.xds.scoping.referenceAhead '3'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+		{
+			name: "rejects an unparseable duration",
+			valuesYAML: `controller:
+  xds:
+    scoping:
+      dereferenceGrace: 5 seconds
+`,
+			message: "Invalid controller.xds.scoping.dereferenceGrace '5 seconds'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+		{
+			name: "rejects an invalid extraEnv duration",
+			valuesYAML: `controller:
+  extraEnv:
+    KGW_XDS_SCOPING_DEREFERENCE_GRACE: 10
+`,
+			message: "Invalid controller.extraEnv.KGW_XDS_SCOPING_DEREFERENCE_GRACE '10'. Must be a duration such as '500ms', '3s' or '0'.",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, stderr, err := runHelmTemplate(t, "kgateway", test.valuesYAML, nil)
+			require.Error(t, err)
+			require.Contains(t, stderr, test.message)
+		})
+	}
+}
+
 // helmTemplateCase is a single `helm template` scenario, shared by the golden
 // snapshot test and the packaged-chart render parity test.
 type helmTemplateCase struct {
@@ -564,10 +824,25 @@ var helmChartTemplateCases = []helmTemplateCase{
 `,
 	},
 	{
+		name: "waypoint-enabled",
+		valuesYAML: `waypoint:
+  enabled: true
+`,
+	},
+	{
 		name: "admin-bind-address",
 		valuesYAML: `controller:
   admin:
     bindAddress: 0.0.0.0
+`,
+	},
+	{
+		name: "leader-election",
+		valuesYAML: `controller:
+  leaderElection:
+    leaseDuration: 30s
+    renewDeadline: 20s
+    retryPeriod: 5s
 `,
 	},
 	{
@@ -885,6 +1160,16 @@ controller:
 		name: "rbac-disabled",
 		valuesYAML: `rbac:
   create: false
+`,
+	},
+	{
+		name: "xds-scoping-referenced",
+		valuesYAML: `controller:
+  xds:
+    scoping:
+      mode: REFERENCED
+      referenceAhead: 3s
+      dereferenceGrace: 30s
 `,
 	},
 }

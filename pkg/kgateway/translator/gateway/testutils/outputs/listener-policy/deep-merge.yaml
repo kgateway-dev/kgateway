@@ -46,8 +46,10 @@ Listeners:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080].proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
   name: listener~80
   perConnectionBufferLimitBytes: 8192
 - address:
@@ -86,8 +88,10 @@ Listeners:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080].proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
   name: listener~8080
   perConnectionBufferLimitBytes: 65536
 Routes:
@@ -99,8 +103,10 @@ Routes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080].proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
   name: listener~80
   virtualHosts:
   - domains:
@@ -121,8 +127,10 @@ Routes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
+        perPortPolicy[8080].proxyProtocol:
+        - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol2
   name: listener~8080
   virtualHosts:
   - domains:

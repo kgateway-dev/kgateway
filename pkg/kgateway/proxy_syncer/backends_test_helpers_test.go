@@ -51,9 +51,9 @@ func newTestPerClientClusters(initial []uccWithCluster) (PerClientEnvoyClusters,
 		clients = append(clients, client)
 	}
 
-	baseCol := krt.NewStaticCollection[baseEnvoyCluster](nil, bases)
+	baseCol := krt.NewMutableCollection[baseEnvoyCluster](nil, bases)
 	uccs := krt.NewStaticCollection[ir.UniquelyConnectedClient](nil, clients)
-	pcc := newPerClientEnvoyClusters(context.Background(), krtutil.KrtOptions{}, nil, baseCol, uccs)
+	pcc := newPerClientEnvoyClusters(context.Background(), krtutil.KrtOptions{}, nil, baseCol.AsCollection(), uccs)
 	return pcc, &testClusterCols{bases: baseCol}
 }
 
