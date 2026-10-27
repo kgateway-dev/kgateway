@@ -1,4 +1,40 @@
 Clusters:
+- clusterType:
+    name: envoy.clusters.dns
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.clusters.dns.v3.DnsCluster
+      dnsLookupFamily: V4_PREFERRED
+  connectTimeout: 5s
+  loadAssignment:
+    clusterName: backend_infra_gcp-backend_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: example.googleapis.com
+              portValue: 443
+  metadata:
+    typedFilterMetadata:
+      envoy.filters.http.gcp_authn:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.gcp_authn.v3.Audience
+        url: https://example.googleapis.com
+  name: backend_infra_gcp-backend_0
+  transportSocket:
+    name: envoy.transport_sockets.tls
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      sni: example.googleapis.com
+- commonLbConfig:
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  ignoreHealthOnHostRemoval: true
+  name: kube_delegated_child-svc_8080
+  type: EDS
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s
@@ -104,11 +140,38 @@ Routes:
             response.
         status: 500
       match:
+        pathSeparatedPrefix: /weighted-broken-and-missing-service
+      name: listener~80~*-route-0-httproute-weighted-broken-and-missing-service-infra-0-0-matcher-0
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        pathSeparatedPrefix: /weighted-broken-and-zero-weight
+      name: listener~80~*-route-1-httproute-weighted-broken-and-zero-weight-infra-0-0-matcher-0
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
         pathSeparatedPrefix: /weighted-all-broken
-      name: listener~80~*-route-0-httproute-weighted-all-broken-infra-0-0-matcher-0
+      name: listener~80~*-route-2-httproute-weighted-all-broken-infra-0-0-matcher-0
+    - match:
+        pathSeparatedPrefix: /weighted-broken-gcp
+      name: listener~80~*-route-3-httproute-weighted-broken-gcp-infra-0-0-matcher-0
+      route:
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+        weightedClusters:
+          clusters:
+          - name: blackhole-cluster
+            weight: 50
+          - name: kube_infra_example-svc_80
+            weight: 50
     - match:
         pathSeparatedPrefix: /weighted-partial
-      name: listener~80~*-route-1-httproute-weighted-partial-infra-0-0-matcher-0
+      name: listener~80~*-route-4-httproute-weighted-partial-infra-0-0-matcher-0
       route:
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
         weightedClusters:
@@ -139,7 +202,7 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /missing-policy
-      name: listener~80~*-route-2-httproute-missing-policy-infra-0-0-matcher-0
+      name: listener~80~*-route-5-httproute-missing-policy-infra-0-0-matcher-0
     - directResponse:
         body:
           inlineString: invalid route configuration detected and replaced with a direct
@@ -147,10 +210,10 @@ Routes:
         status: 500
       match:
         pathSeparatedPrefix: /broken-policy
-      name: listener~80~*-route-3-httproute-broken-policy-infra-0-0-matcher-0
+      name: listener~80~*-route-6-httproute-broken-policy-infra-0-0-matcher-0
     - match:
         pathSeparatedPrefix: /valid-policy
-      name: listener~80~*-route-4-httproute-valid-policy-infra-0-0-matcher-0
+      name: listener~80~*-route-7-httproute-valid-policy-infra-0-0-matcher-0
       route:
         cluster: kube_infra_example-svc_80
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -167,7 +230,23 @@ Routes:
             value: '{"request":{"body":{"parseAs":"None"},"dynamicMetadata":[{"namespace":"dev.kgateway.auth_policy","key":"auth_succeeded","value":{"stringValue":"true"}}]},"response":{"body":{"parseAs":"None"}}}'
           filterName: rustformation
           perRouteConfigName: rustformation
+    - directResponse:
+        body:
+          inlineString: invalid route configuration detected and replaced with a direct
+            response.
+        status: 500
+      match:
+        pathSeparatedPrefix: /delegated
+      name: listener~80~*-route-8-httproute-delegating-broken-infra-0-0-matcher-0
 Statuses:
+  backends:
+    infra/gcp-backend:
+      conditions:
+      - lastTransitionTime: null
+        message: Backend accepted
+        reason: Accepted
+        status: "True"
+        type: Accepted
   gateways:
     infra/example-gateway:
       conditions:
@@ -187,7 +266,7 @@ Statuses:
         status: "True"
         type: ResolvedRefs
       listeners:
-      - attachedRoutes: 5
+      - attachedRoutes: 9
         conditions:
         - lastTransitionTime: null
           message: Successfully accepted Listener
@@ -222,6 +301,30 @@ Statuses:
         - lastTransitionTime: null
           message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/extauth-missing-extension:
             extauth: infra/does-not-exist: gateway extension not found'
+          reason: RouteRuleReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/delegating-broken:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/does-not-exist:
+            policy not found'
           reason: RouteRuleReplaced
           status: "False"
           type: kgateway.dev/Programmed
@@ -295,6 +398,78 @@ Statuses:
             Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/does-not-exist: policy not found
             gateway.kgateway.dev/TrafficPolicy/infra/extauth-missing-extension: extauth: infra/does-not-exist: gateway extension not found
           reason: RouteRuleReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/weighted-broken-and-missing-service:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: Service infra/missing-svc not found
+          reason: BackendNotFound
+          status: "False"
+          type: ResolvedRefs
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/extauth-missing-extension:
+            extauth: infra/does-not-exist: gateway extension not found'
+          reason: RouteRuleReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/weighted-broken-and-zero-weight:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/extauth-missing-extension:
+            extauth: infra/does-not-exist: gateway extension not found'
+          reason: RouteRuleReplaced
+          status: "False"
+          type: kgateway.dev/Programmed
+        - lastTransitionTime: null
+          message: Successfully accepted Route
+          reason: Accepted
+          status: "True"
+          type: Accepted
+        - lastTransitionTime: null
+          message: Successfully resolved all references
+          reason: ResolvedRefs
+          status: "True"
+          type: ResolvedRefs
+        controllerName: kgateway
+        parentRef:
+          group: ""
+          kind: ""
+          name: example-gateway
+    infra/weighted-broken-gcp:
+      parents:
+      - conditions:
+        - lastTransitionTime: null
+          message: 'Replaced 1 of 2 backendRefs of Rule (0): gateway.kgateway.dev/TrafficPolicy/infra/extauth-missing-extension:
+            extauth: infra/does-not-exist: gateway extension not found'
+          reason: BackendRefReplaced
           status: "False"
           type: kgateway.dev/Programmed
         - lastTransitionTime: null

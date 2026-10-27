@@ -229,3 +229,154 @@ spec:
   - protocol: TCP
     port: 9000
     targetPort: 9000
+---
+# The other backendRef does not resolve, so no backend is left once the failing one is cut off:
+# the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-broken-and-missing-service
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-broken-and-missing-service
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: missing-svc
+      port: 80
+      weight: 50
+---
+# The other backendRef has zero weight, so no backend is left once the failing one is cut off:
+# the whole route fails closed.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-broken-and-zero-weight
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-broken-and-zero-weight
+    backendRefs:
+    - name: example-svc
+      port: 80
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: example-svc-2
+      port: 80
+      weight: 0
+---
+# The GCP backend's policy fails, so its backend plugin does not run: the route gets no host
+# rewrite, and its blackholed share still gets a 500.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weighted-broken-gcp
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /weighted-broken-gcp
+    backendRefs:
+    - name: gcp-backend
+      kind: Backend
+      group: gateway.kgateway.dev
+      weight: 50
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: extauth-missing-extension
+    - name: example-svc
+      port: 80
+      weight: 50
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: gcp-backend
+  namespace: infra
+spec:
+  type: GCP
+  gcp:
+    host: example.googleapis.com
+---
+# A backendRef filter error on a delegated backendRef fails the parent's match closed, and the
+# delegated routes are not translated, so they do not serve without the filter.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: delegating-broken
+  namespace: infra
+spec:
+  parentRefs:
+  - name: example-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /delegated
+    backendRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: "*"
+      namespace: delegated
+      filters:
+      - type: ExtensionRef
+        extensionRef:
+          group: gateway.kgateway.dev
+          kind: TrafficPolicy
+          name: does-not-exist
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: delegated-child
+  namespace: delegated
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /delegated/child
+    backendRefs:
+    - name: child-svc
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: child-svc
+  namespace: delegated
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
