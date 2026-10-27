@@ -379,22 +379,22 @@ func SetRegistry(useBuiltinRegistry bool, r RegistererGatherer) {
 	// Keep controller-runtime's registry for its own registrations, and serve
 	// its metrics alongside ours, which are already registered in registry.
 	metrics.Registry = &builtinRegistry{
-		Registerer: ctrlRegistry,
-		kgateway:   registry,
+		RegistererGatherer: ctrlRegistry,
+		kgateway:           registry,
 	}
 }
 
 // builtinRegistry registers into controller-runtime's registry and gathers
 // from both controller-runtime's registry and the kgateway registry.
 type builtinRegistry struct {
-	prometheus.Registerer
+	metrics.RegistererGatherer
 	kgateway prometheus.Gatherer
 }
 
 // Gather skips kgateway metric families that controller-runtime already
 // gathers, such as the go and process collectors that both register.
 func (b *builtinRegistry) Gather() ([]*dto.MetricFamily, error) {
-	ctrlFamilies, ctrlErr := ctrlRegistry.Gather()
+	ctrlFamilies, ctrlErr := b.RegistererGatherer.Gather()
 	ctrlNames := make(map[string]struct{}, len(ctrlFamilies))
 	for _, f := range ctrlFamilies {
 		ctrlNames[f.GetName()] = struct{}{}
