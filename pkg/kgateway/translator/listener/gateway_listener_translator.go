@@ -1386,7 +1386,7 @@ func translateTLSConfig(
 					"mode", "optional")
 				// Keep Gateway-level validation if ListenerPolicy fetch fails
 				if !subjectAltNamesHaveCA(tlsConfig) {
-					return nil, errors.Join(caErr, sslutils.ErrVerifySubjectAltNamesRequiresCA)
+					return nil, subjectAltNamesCAError(caErr)
 				}
 				return tlsConfig, nil
 			}
@@ -1400,7 +1400,7 @@ func translateTLSConfig(
 	}
 
 	if !subjectAltNamesHaveCA(tlsConfig) {
-		return nil, errors.Join(caErr, sslutils.ErrVerifySubjectAltNamesRequiresCA)
+		return nil, subjectAltNamesCAError(caErr)
 	}
 
 	return tlsConfig, errors.Join(certErr, caErr)
@@ -1414,6 +1414,16 @@ func subjectAltNamesHaveCA(tlsConfig *ir.TLSConfig) bool {
 		return true
 	}
 	return tlsConfig.ClientCertificateValidation != nil && len(tlsConfig.ClientCertificateValidation.CACertificates) > 0
+}
+
+// subjectAltNamesCAError returns the error for SAN verification without a trusted CA. A CA lookup
+// failure is joined in so status reports the unresolved ref; without one, the bare error is
+// returned so reportTLSConfigError can tell the two apart.
+func subjectAltNamesCAError(caErr error) error {
+	if caErr == nil {
+		return sslutils.ErrVerifySubjectAltNamesRequiresCA
+	}
+	return errors.Join(caErr, sslutils.ErrVerifySubjectAltNamesRequiresCA)
 }
 
 // buildCaCertificateReference fetches and extracts a CA certificate from either a ConfigMap or Secret
@@ -1624,11 +1634,11 @@ func reportTLSConfigError(err error, listenerReporter reports.ListenerReporter, 
 		reason = sslutils.ListenerReasonInvalidCACertificateKind
 		acceptedReason = sslutils.ListenerReasonNoValidCACertificate
 		message = err.Error()
-	case errors.Is(err, sslutils.ErrVerifySubjectAltNamesRequiresCA) && !notFound:
+	case err == sslutils.ErrVerifySubjectAltNamesRequiresCA: //nolint:errorlint // a joined CA lookup error must not count as resolved refs
 		// verify-subject-alt-names requires CA is a TLS configuration issue,
 		// not a certificate reference problem — the secret refs resolved fine.
-		// It is checked after the CA ref errors it may be joined with, so an
-		// unresolved CA ref is still reported as one.
+		// Only the bare error qualifies: when it is joined with a CA lookup
+		// failure, that failure is reported as an unresolved ref instead.
 		resolvedRefsOK = true
 		message = err.Error()
 	case errors.Is(err, sslutils.ErrUnknownTLSExtensionOption):

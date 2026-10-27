@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8scert "k8s.io/client-go/util/cert"
@@ -18,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 // secretsByNameQueries resolves Secret references by name, failing for unknown names.
@@ -46,6 +48,10 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 			ObjectSource: ir.ObjectSource{Kind: "Secret", Namespace: "default", Name: "client-ca"},
 			Data:         map[string][]byte{"ca.crt": certPEM},
 		},
+		"malformed-ca": {
+			ObjectSource: ir.ObjectSource{Kind: "Secret", Namespace: "default", Name: "malformed-ca"},
+			Data:         map[string][]byte{"ca.crt": []byte("not a certificate")},
+		},
 	}}
 	caRef := func(name gwv1.ObjectName) []gwv1.ObjectReference {
 		return []gwv1.ObjectReference{{Group: "", Kind: "Secret", Name: name}}
@@ -57,6 +63,8 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 		wantErr    error
 		// wantCAErr is a CA lookup failure that must be reported alongside wantErr.
 		wantCAErr string
+		// wantUnresolvedRefs is whether the listener status reports ResolvedRefs=False.
+		wantUnresolvedRefs bool
 	}{
 		{
 			name:       "SANs with a Gateway-level CA are accepted",
@@ -67,10 +75,18 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 			wantErr: sslutils.ErrVerifySubjectAltNamesRequiresCA,
 		},
 		{
-			name:       "SANs with an unresolved Gateway-level CA in AllowInsecureFallback mode are rejected",
-			validation: &ir.ClientCertificateValidationIR{CACertificateRefs: caRef("missing-ca"), AllowInsecureFallback: true},
-			wantErr:    sslutils.ErrVerifySubjectAltNamesRequiresCA,
-			wantCAErr:  "secret missing-ca not found",
+			name:               "SANs with an unresolved Gateway-level CA in AllowInsecureFallback mode are rejected",
+			validation:         &ir.ClientCertificateValidationIR{CACertificateRefs: caRef("missing-ca"), AllowInsecureFallback: true},
+			wantErr:            sslutils.ErrVerifySubjectAltNamesRequiresCA,
+			wantCAErr:          "secret missing-ca not found",
+			wantUnresolvedRefs: true,
+		},
+		{
+			name:               "SANs with a malformed Gateway-level CA in AllowInsecureFallback mode are rejected",
+			validation:         &ir.ClientCertificateValidationIR{CACertificateRefs: caRef("malformed-ca"), AllowInsecureFallback: true},
+			wantErr:            sslutils.ErrVerifySubjectAltNamesRequiresCA,
+			wantCAErr:          "invalid ca.crt",
+			wantUnresolvedRefs: true,
 		},
 	}
 	for _, tt := range tests {
@@ -93,6 +109,16 @@ func TestTranslateTLSConfigVerifySubjectAltNamesRequiresCA(t *testing.T) {
 					assert.ErrorContains(t, err, tt.wantCAErr, "the CA lookup failure should not be dropped")
 				}
 				assert.Nil(t, tlsConfig, "the listener should fail closed")
+
+				reportMap := reports.NewReportMap()
+				listenerReporter := reports.NewReporter(&reportMap).Gateway(gw).Listener(&l.Listener)
+				reportTLSConfigError(err, listenerReporter, false)
+				resolvedRefs := meta.FindStatusCondition(
+					listenerReporter.(*reports.ListenerReport).Status.Conditions,
+					string(gwv1.ListenerConditionResolvedRefs),
+				)
+				unresolvedRefs := resolvedRefs != nil && resolvedRefs.Status == metav1.ConditionFalse
+				assert.Equal(t, tt.wantUnresolvedRefs, unresolvedRefs, "ResolvedRefs should be False only for a CA lookup failure")
 				return
 			}
 			require.NoError(t, err)
