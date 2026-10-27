@@ -1520,15 +1520,14 @@ func (h *RoutesIndex) transformRules(
 		rulePolicies := h.getBuiltInRulePolicies(r, opts...)
 		policies.Append(rulePolicies)
 
-		backends, backendErr := h.getBackends(kctx, src, r.BackendRefs)
 		ruleOut := ir.HttpRouteRuleIR{
 			ExtensionRefs:    extensionRefs,
 			AttachedPolicies: policies,
-			Backends:         backends,
+			Backends:         h.getBackends(kctx, src, r.BackendRefs),
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
 		}
-		if err := errors.Join(err, backendErr); err != nil {
+		if err != nil {
 			ruleOut.Err = err
 		}
 		rules = append(rules, ruleOut)
@@ -1662,24 +1661,19 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 
 // getBackends resolves the backendRefs of a route rule. An error resolving a backendRef's
 // filters (e.g. an ExtensionRef to a missing policy) is set on that backend, so that only
-// its traffic fails closed instead of forwarding without the policy. A backendRef to a
-// delegated route has no cluster of its own to fail closed, so the returned error joins the
-// errors resolving the filters of such backendRefs, for the whole rule to fail closed.
-func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) ([]ir.HttpBackendOrDelegate, error) {
+// its traffic fails closed instead of forwarding without the policy.
+func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
-	var errs []error
 	for _, ref := range backendRefs {
 		extensionRefs, filtersErr := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
 		if backendref.IsDelegatedHTTPRoute(ref.BackendRef.BackendObjectReference) {
-			if filtersErr != nil {
-				errs = append(errs, filtersErr)
-			}
 			backends = append(backends, ir.HttpBackendOrDelegate{
 				Delegate:         &to,
 				AttachedPolicies: extensionRefs,
+				FiltersErr:       filtersErr,
 			})
 			continue
 		}
@@ -1696,7 +1690,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			FiltersErr:       filtersErr,
 		})
 	}
-	return backends, errors.Join(errs...)
+	return backends
 }
 
 // resolveRouteBackend resolves a route rule's backendRef. Every route kind (HTTPRoute,
