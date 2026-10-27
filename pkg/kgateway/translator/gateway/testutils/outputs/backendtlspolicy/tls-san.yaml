@@ -53,6 +53,13 @@ Clusters:
               SxODgqhtaPnOxQ==
               -----END CERTIFICATE-----
       sni: example.com
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 - clusterType:
     name: envoy.clusters.dns
     typedConfig:
@@ -89,6 +96,13 @@ Clusters:
           validationContextSdsSecretConfig:
             name: SYSTEM_CA_CERT
       sni: example2.com
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 Listeners:
 - address:
     socketAddress:

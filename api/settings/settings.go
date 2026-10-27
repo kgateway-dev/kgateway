@@ -2,12 +2,18 @@ package settings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"k8s.io/client-go/tools/leaderelection"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 )
 
 // ValidationMode determines how invalid routes and policies are handled during translation.
@@ -39,34 +45,38 @@ func (v *ValidationMode) Decode(value string) error {
 	}
 }
 
-// ClusterDiscoveryMode selects backends for CDS and their corresponding EDS assignments.
-type ClusterDiscoveryMode string
+// XdsScopingMode selects backend resources for CDS, EDS, LDS and SDS.
+// Backend-owned listeners and secrets follow their clusters; gateway-level
+// listeners and secrets are unaffected.
+type XdsScopingMode string
 
 const (
-	// ClusterDiscoveryAll emits every backend in discovery scope, referenced or not.
+	// XdsScopingAll emits every backend in discovery scope, referenced or not.
+	// Its endpoints, backend-owned listeners and secrets are emitted too.
 	// A retarget to an existing backend is safe because its cluster already
 	// exists, but every proxy carries, and reports stats for, the whole
 	// inventory.
-	ClusterDiscoveryAll ClusterDiscoveryMode = "ALL"
-	// ClusterDiscoveryReferenced emits only referenced clusters, including filter
-	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS). A gateway
+	XdsScopingAll XdsScopingMode = "ALL"
+	// XdsScopingReferenced emits only referenced clusters, including filter
+	// dependencies (ext_authz, ext_proc, rate limit, access logs, JWKS), with their
+	// endpoints, backend-owned listeners and secrets. A gateway
 	// with a request-time selector reverts to ALL, since pruning could silently
 	// select the plugin's fallback, unless every such selector is a cluster
 	// specifier plugin that a valid pluginsdk.ClusterEmissionClaim accounts for.
 	// Cluster headers, filter-state overrides, undecodable typed configs and
 	// unknown specifier kinds cannot be claimed and always revert.
-	ClusterDiscoveryReferenced ClusterDiscoveryMode = "REFERENCED"
+	XdsScopingReferenced XdsScopingMode = "REFERENCED"
 )
 
 // Decode implements envconfig.Decoder.
-func (c *ClusterDiscoveryMode) Decode(value string) error {
-	mode := ClusterDiscoveryMode(strings.ToUpper(value))
+func (c *XdsScopingMode) Decode(value string) error {
+	mode := XdsScopingMode(strings.ToUpper(value))
 	switch mode {
-	case ClusterDiscoveryAll, ClusterDiscoveryReferenced:
+	case XdsScopingAll, XdsScopingReferenced:
 		*c = mode
 		return nil
 	default:
-		return fmt.Errorf("invalid cluster discovery mode: %q", value)
+		return fmt.Errorf("invalid xDS scoping mode: %q", value)
 	}
 }
 
@@ -273,16 +283,14 @@ type Settings struct {
 	// DefaultImagePullPolicy is the default image pull policy to use for the kgateway image.
 	DefaultImagePullPolicy string `split_words:"true" default:"IfNotPresent"`
 
-	// WaypointLocalBinding will make the waypoint bind to a loopback address,
-	// so that only the zTunnel can make connections to it. This requires the zTunnel
-	// shipped with Istio 1.26.0+.
-	WaypointLocalBinding bool `split_words:"true" default:"false"`
-
 	// IngressUseWaypoints enables the waypoint feature for ingress traffic.
-	// When enabled, backends with the ambient.istio.io/redirection=enabled annotation and
-	// istio.io/ingress-use-waypoint=true label will be redirected through a waypoint proxy.
-	// The feature is enabled by default and can be disabled by setting this to false.
-	IngressUseWaypoints bool `split_words:"true" default:"true"`
+	// When enabled, ingress traffic from ambient-captured gateways (the
+	// ambient.istio.io/redirection=enabled annotation) to Services and ServiceEntries
+	// labeled istio.io/ingress-use-waypoint=true is sent through their Istio waypoint.
+	// The backend must have an Istio waypoint attached and a cluster IP: traffic goes
+	// to the VIP so ztunnel can redirect it, and a headless Service gets a cluster with
+	// no endpoints. See docs/guides/migrating-kgateway-waypoints.md.
+	IngressUseWaypoints bool `split_words:"true" default:"false"`
 
 	// LogLevel specifies the logging level (e.g., "trace", "debug", "info", "warn", "error").
 	// Defaults to "info" if not set.
@@ -350,6 +358,27 @@ type Settings struct {
 	// Controls if leader election is disabled. Defaults to false.
 	DisableLeaderElection bool `split_words:"true" default:"false"`
 
+	// LeaderElectionLeaseDuration is the duration that non-leader candidates will wait
+	// after observing a leadership renewal until attempting to acquire leadership of a
+	// led but unrenewed leader slot. It must be greater than LeaderElectionRenewDeadline.
+	// Only used when leader election is enabled (DisableLeaderElection is false).
+	// Defaults to 15s, matching the controller-runtime default.
+	LeaderElectionLeaseDuration time.Duration `split_words:"true" default:"15s"`
+
+	// LeaderElectionRenewDeadline is the interval between attempts by the acting leader to
+	// renew a leadership slot before it stops leading. It must be greater than
+	// LeaderElectionRetryPeriod and less than LeaderElectionLeaseDuration.
+	// Only used when leader election is enabled (DisableLeaderElection is false).
+	// Defaults to 10s, matching the controller-runtime default.
+	LeaderElectionRenewDeadline time.Duration `split_words:"true" default:"10s"`
+
+	// LeaderElectionRetryPeriod is the duration the leader and non-leaders should wait
+	// between attempting acquisition, and the leader between renewals, of leadership.
+	// It must be less than LeaderElectionRenewDeadline.
+	// Only used when leader election is enabled (DisableLeaderElection is false).
+	// Defaults to 2s, matching the controller-runtime default.
+	LeaderElectionRetryPeriod time.Duration `split_words:"true" default:"2s"`
+
 	// EnableAwsEc2Discovery enables dynamic discovery of AWS EC2 instances for Backend resources.
 	// This is disabled by default and must be explicitly enabled by the controller operator.
 	EnableAwsEc2Discovery bool `split_words:"true" default:"false"`
@@ -371,9 +400,6 @@ type Settings struct {
 	TranslationDebounceMax time.Duration `split_words:"true" default:"100ms"`
 
 	PolicyMerge string `split_words:"true" default:"{}"`
-
-	// EnableWaypoint enables kgateway to translate istio waypoints
-	EnableWaypoint bool `split_words:"true" default:"false"`
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
@@ -464,7 +490,9 @@ type Settings struct {
 	// reintroduce unbounded withholds. For test and CI; off by default.
 	XdsSnapshotConsistencyCheck bool `split_words:"true" default:"false"`
 
-	// ClusterDiscoveryMode selects which backends reach a proxy's CDS.
+	// XdsScopingMode selects which backend resources reach a proxy's CDS, EDS,
+	// LDS and SDS. Backend-owned listeners and secrets follow their clusters;
+	// gateway-level listeners and secrets are unaffected.
 	// Supported values are:
 	//
 	//   - "ALL" (default): every backend in discovery scope becomes a cluster.
@@ -473,17 +501,17 @@ type Settings struct {
 	// REFERENCED shrinks config_dump and per-proxy stats where many Services
 	// are discovered and few are routed. It is experimental: Envoy does not
 	// necessarily apply CDS before RDS within a snapshot, so a cluster entering
-	// or leaving CDS could briefly 503 NC. ClusterReferenceAhead and
-	// ClusterDereferenceGrace narrow the two transitions. Both are elapsed time
-	// from publication, not acknowledgements, so each must exceed the fleet's
+	// or leaving CDS could briefly 503 NC. XdsScopingReferenceAhead and
+	// XdsScopingDereferenceGrace narrow the two transitions. Both are elapsed
+	// time from publication, not acknowledgements, so each must exceed the fleet's
 	// worst-case propagation, and neither makes a transition hitless. A gateway
 	// whose routes pick a destination at request time stays unscoped unless a
 	// valid claim accounts for each such selector (see
-	// ClusterDiscoveryReferenced).
-	ClusterDiscoveryMode ClusterDiscoveryMode `split_words:"true" default:"ALL"`
+	// XdsScopingReferenced).
+	XdsScopingMode XdsScopingMode `split_words:"true" default:"ALL"`
 
-	// ClusterDereferenceGrace is how long a cluster that left the emitted set stays
-	// published, in REFERENCED mode only. Removing it at once can let CDS remove it
+	// XdsScopingDereferenceGrace is how long a cluster that left the emitted set
+	// stays published, in REFERENCED mode only. Removing it at once can let CDS remove it
 	// before RDS updates the route still targeting it, causing 503 NC. The clock
 	// starts when the controller publishes the route update that stops naming the
 	// cluster, not when Envoy gets it. A build held for a new or unready cluster
@@ -494,9 +522,9 @@ type Settings struct {
 	// deleted or fails translation leaves at once, as it does in ALL mode.
 	// Negative values act as 0:
 	// 0 removes immediately and accepts the race.
-	ClusterDereferenceGrace time.Duration `split_words:"true" default:"5s"`
+	XdsScopingDereferenceGrace time.Duration `split_words:"true" default:"5s"`
 
-	// ClusterReferenceAhead is how long routes, listeners and secrets that name
+	// XdsScopingReferenceAhead is how long routes, listeners and secrets that name
 	// a cluster new to a proxy are held after the controller first publishes
 	// that cluster to it, in REFERENCED mode only. A cluster is new when the
 	// proxy's published snapshot lacks it. Clusters only a filter calls count
@@ -520,7 +548,7 @@ type Settings struct {
 	// a stream of new clusters cannot pin updates. With the budget at 0 or
 	// less, a hold still ends when its windows close, but new clusters that
 	// keep arriving can extend it.
-	ClusterReferenceAhead time.Duration `split_words:"true" default:"2s"`
+	XdsScopingReferenceAhead time.Duration `split_words:"true" default:"2s"`
 
 	// ReferenceGrantMode controls how cross-namespace references are validated via ReferenceGrant.
 	// Supported values are:
@@ -530,11 +558,89 @@ type Settings struct {
 	ReferenceGrantMode ReferenceGrantMode `split_words:"true" default:"PERMISSIVE"`
 }
 
+// renamedEnvVars pairs each env var a v2.5.0 beta read with the one that
+// replaced it. envconfig ignores unknown variables, so without this check a
+// setting under its old name would silently fall back to its default.
+var renamedEnvVars = []struct{ from, to string }{
+	{"KGW_CLUSTER_DISCOVERY_MODE", "KGW_XDS_SCOPING_MODE"},
+	{"KGW_CLUSTER_REFERENCE_AHEAD", "KGW_XDS_SCOPING_REFERENCE_AHEAD"},
+	{"KGW_CLUSTER_DEREFERENCE_GRACE", "KGW_XDS_SCOPING_DEREFERENCE_GRACE"},
+}
+
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
 func BuildSettings() (*Settings, error) {
 	settings := &Settings{}
+	var errs []error
+	for _, r := range renamedEnvVars {
+		if _, ok := os.LookupEnv(r.from); ok {
+			errs = append(errs, fmt.Errorf("%s was renamed to %s; set %s instead", r.from, r.to, r.to))
+		}
+	}
+	if err := errors.Join(errs...); err != nil {
+		return settings, err
+	}
 	if err := envconfig.Process("KGW", settings); err != nil {
 		return settings, err
 	}
+	if err := applyDeprecatedEnableWaypoint(settings); err != nil {
+		return settings, err
+	}
+	if err := settings.validateLeaderElection(); err != nil {
+		return settings, err
+	}
 	return settings, nil
+}
+
+// validateLeaderElection mirrors the checks client-go runs when the leader elector is created,
+// so that invalid durations fail when settings are loaded rather than when the manager starts.
+func (s *Settings) validateLeaderElection() error {
+	if s.DisableLeaderElection {
+		return nil
+	}
+	if s.LeaderElectionLeaseDuration <= 0 || s.LeaderElectionRenewDeadline <= 0 || s.LeaderElectionRetryPeriod <= 0 {
+		return fmt.Errorf("leader election durations must be greater than zero: leaseDuration=%s, renewDeadline=%s, retryPeriod=%s",
+			s.LeaderElectionLeaseDuration, s.LeaderElectionRenewDeadline, s.LeaderElectionRetryPeriod)
+	}
+	if s.LeaderElectionLeaseDuration <= s.LeaderElectionRenewDeadline {
+		return fmt.Errorf("leader election leaseDuration (%s) must be greater than renewDeadline (%s)",
+			s.LeaderElectionLeaseDuration, s.LeaderElectionRenewDeadline)
+	}
+	if s.LeaderElectionRenewDeadline <= time.Duration(leaderelection.JitterFactor*float64(s.LeaderElectionRetryPeriod)) {
+		return fmt.Errorf("leader election renewDeadline (%s) must be greater than retryPeriod (%s) * %v",
+			s.LeaderElectionRenewDeadline, s.LeaderElectionRetryPeriod, leaderelection.JitterFactor)
+	}
+	return nil
+}
+
+var logger = logging.New("settings")
+
+const (
+	ingressUseWaypointsEnv = "KGW_INGRESS_USE_WAYPOINTS"
+	// deprecatedEnableWaypointEnv used to turn on the waypoint plugin, which also
+	// enabled ingress-use-waypoint while KGW_INGRESS_USE_WAYPOINTS defaulted to true.
+	deprecatedEnableWaypointEnv = "KGW_ENABLE_WAYPOINT"
+)
+
+// applyDeprecatedEnableWaypoint keeps KGW_ENABLE_WAYPOINT=true working for
+// deployments that don't set KGW_INGRESS_USE_WAYPOINTS, such as raw manifests or
+// a new image running under an older chart. An explicit KGW_INGRESS_USE_WAYPOINTS
+// always wins.
+func applyDeprecatedEnableWaypoint(settings *Settings) error {
+	val, ok := os.LookupEnv(deprecatedEnableWaypointEnv)
+	if !ok {
+		return nil
+	}
+	// Check the override before parsing, so an empty or malformed legacy value
+	// can't block startup when the new variable is set.
+	if _, set := os.LookupEnv(ingressUseWaypointsEnv); set {
+		logger.Warn(deprecatedEnableWaypointEnv+" is deprecated and ignored because "+ingressUseWaypointsEnv+" is set", "value", val)
+		return nil
+	}
+	enabled, err := strconv.ParseBool(val)
+	if err != nil {
+		return fmt.Errorf("envconfig.Process: assigning %s: converting '%s' to type bool: %w", deprecatedEnableWaypointEnv, val, err)
+	}
+	logger.Warn(deprecatedEnableWaypointEnv+" is deprecated; set "+ingressUseWaypointsEnv+" instead", "value", val)
+	settings.IngressUseWaypoints = enabled
+	return nil
 }

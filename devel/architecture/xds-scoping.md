@@ -1,0 +1,276 @@
+# xDS scoping
+
+By default kgateway sends every proxy a CDS cluster, and an EDS
+`ClusterLoadAssignment`, for **every** backend in its discovery scope, whether or
+not any route targets it. Backend-owned listeners (LDS) and secrets (SDS) are
+emitted too. A cluster with 300 Services and 16 routed ones puts all
+300 in every proxy's `config_dump`, in every proxy replica's memory, and in every
+proxy's `/stats` — where each cluster contributes a large family of series
+carrying an `envoy_cluster_name` label.
+
+`KGW_XDS_SCOPING_MODE=REFERENCED` scopes CDS, EDS, and backend-owned LDS and
+SDS resources to the clusters the generated configuration actually references.
+Backend-owned listeners and secrets follow their clusters; gateway-level
+listeners and secrets are unaffected. It is experimental and off by default.
+[xDS publication and scoping settings](../../docs/guides/xds-publication-settings.md)
+summarizes this setting with the publication settings it interacts with.
+
+## Why the default is emit-all
+
+This is not an oversight. Emitting everything is what makes a route retarget
+to an existing backend safe.
+
+For `/foo: service-a -> service-b`, the route update (RDS) and the cluster
+update (CDS) reach Envoy as separate events. If `/foo` starts naming `service-b`
+before `service-b`'s cluster exists, `/foo` returns `503 NC` for the gap.
+Pre-creating a cluster for every Service means a retarget's destination is
+normally already there; only a backend created together with the route that
+names it races. Emit-all is a make-before-break workaround for not having safe
+cluster and route transitions.
+
+Scoping therefore has to supply those transitions, in both directions.
+
+## What counts as referenced
+
+The emitted set is derived from the **generated Envoy configuration**, not from
+route `backendRefs`. That is correct by construction for every destination
+translation actually chose, and it picks up delegation, non-HTTP routes and
+mirrors for free, because they are already in the output.
+
+It deliberately over-approximates. The collector takes every string of every
+message it reaches, including inside `typed_config`, rather than reading named
+fields of message types it knows about. Emitting one cluster nothing uses costs
+a little memory; failing to emit one Envoy needs is a permanent outage with no
+route-level symptom. Ancillary clusters — ext_authz and ext_proc servers, rate
+limit services, access-log gRPC sinks, JWKS sources — are real clusters reached
+only from filter configuration, and they are exactly the population a narrower
+collector would drop.
+
+A backend can also ship listeners with its cluster. A CONNECT tunnel's listener,
+for one, proxies through the proxy backend's cluster, which no route names. The
+listeners of each kept backend are walked the same way, and the clusters they
+name are kept and followed in turn. A dropped backend's listeners keep nothing.
+A request-time selector in one of them turns scoping off for that client, as one
+in the gateway's own configuration does.
+
+A kept backend contributes its listeners to LDS and its secrets to SDS. When
+scoping drops a backend's cluster, it also drops that backend's endpoints,
+listeners and secrets. Gateway-level listeners and secrets, and resources added
+by a plugin's translation pass, are not filtered by this feature.
+
+A golden-corpus sweep enforces this: for every translator fixture, every cluster
+the configuration mentions must be in the emitted set, checked against an oracle
+that walks the fixture YAML rather than production code.
+
+## Transitions
+
+**Adding a destination.** Publishing the new cluster and the route that names it
+in one coherent snapshot is not enough, because Envoy does not necessarily apply
+CDS before RDS within a snapshot, and after a CDS response is sent its watch
+stays closed until Envoy ACKs — so a route update landing in that window reaches
+the wire on the still-open RDS watch, ahead of its destination.
+`KGW_XDS_SCOPING_REFERENCE_AHEAD` holds routes, listeners and secrets at their
+published versions while the new cluster goes out, then releases.
+
+The window is per cluster. It starts when the controller first publishes a
+snapshot carrying the cluster, just before installing it in its xDS cache.
+Installation, the gRPC send, Envoy's ACK, and Envoy applying and warming the
+cluster are separate later events, and the controller observes none of them. A
+cluster counts as new when the published snapshot lacks it, whatever Envoy has,
+so a rebuild inside the window (the new backend's own endpoints arriving, say)
+keeps holding. If the CDS send waits behind an un-ACKed earlier response, or
+the cluster warms slowly, the window can close before the cluster is active,
+and the route can still briefly return 503 NC. Every cluster new to the proxy
+counts, not only route targets: a listener that starts calling a new
+ext_authz, ext_proc, rate limit or JWKS cluster waits for it too. Builds that
+are deferred for an unrelated reason are held the same way. While held, the
+published routes and listeners are what the client is being served, so every
+cluster they name stays published with them, whatever the de-reference grace.
+
+**Removing a destination.** With ordered ADS, the default, a snapshot's CDS
+response is sent before its RDS response, and without it CDS can still arrive
+first. Dropping a cluster in the same snapshot as the route that stopped naming
+it then applies the removal first, and requests on the old route get a 503 NC
+until the route update lands. `KGW_XDS_SCOPING_DEREFERENCE_GRACE` keeps the
+cluster published for a bounded period after the controller publishes the
+route update that stops naming it, giving that update time to land first;
+it cannot make sure the update does. A build held for a new or unready
+cluster does not start the period: the hold keeps the cluster anyway, and
+the period starts at the release. Set this above worst-case RDS propagation
+for your fleet. The grace covers only clusters scoping stopped emitting:
+a cluster whose backend was deleted or fails translation leaves at once,
+as in `ALL`, since a request-time selector would otherwise keep routing to
+the deleted backend.
+
+Ordered ADS does not substitute for either window: it fixes CDS before RDS,
+which is the wrong order for removals, and it does not close the ACK-skew
+window for additions.
+
+Both windows are elapsed time from publication, not acknowledgements: an update
+Envoy rejects, or one parked behind a slow stream, can outlast them, so neither
+makes a transition hitless. Size them above the fleet's worst-case propagation.
+
+## When scoping turns itself off
+
+A route can pick its destination at request time — from a header (on the route,
+on a weighted-cluster entry, or on a mirror policy), or from a cluster specifier
+plugin whose script composes a name — out of a set the configuration never
+enumerates. A TcpProxy's cluster can be overridden through filter state (the
+`sni_cluster` filter, or `set_filter_state` writing `envoy.tcp_proxy.cluster`).
+No walk over the generated protos can find those candidates, nor the clusters
+inside a `typed_config` the controller cannot decode, nor behind a
+`cluster_specifier` kind it does not know.
+
+The same holds for a kept backend's own listeners: a selector in one of them
+reverts the client to every cluster too. A dropped backend's listeners are
+never walked, so one there changes nothing.
+
+Such a gateway reverts to emitting every cluster, a warning is logged when it
+does, naming the selectors and, for a backend's listener, the backend and
+listener, and `kgateway_xds_scoping_disabled_gateways` goes to 1 for it.
+Detection matters more than it looks: a plugin like that usually falls back when
+its computed cluster is absent, so pruning a candidate does not produce a visible
+503 — every affected request quietly goes somewhere else instead. The metric is
+what turns that into something you can alert on.
+
+### Claiming, so one plugin does not cost the whole gateway
+
+A plugin can declare what it may route to, through `ClusterEmissionClaim` in
+`pkg/pluginsdk`. A gateway whose every request-time selector is claimed keeps
+scoping for every other backend, instead of reverting wholesale.
+
+A claim says three things: which selectors it accounts for (matched against the
+extension name the plugin puts in `cluster_specifier_plugin`, in either its
+referenced or inline form), which exact cluster names to keep, and which name
+prefixes to keep for candidates that cannot be enumerated ahead of time.
+
+Selectors match on the extension name alone, not on the type of its
+`typed_config`, so a plugin should use a name it owns, such as one prefixed with
+its API group. Under a generic name such as
+`envoy.router.cluster_specifier_plugin.lua`, another plugin's specifier of the
+same name counts as accounted for, and its candidates are pruned. Matching on
+the type as well would not help two plugins built on the same extension. Two
+plugins claiming one name is logged as an error.
+
+A claim can also derive each use's destinations from the configuration the
+gateway ships, through `DestinationsFor`. The scan resolves every use of a
+claimed selector to its extension's `typed_config`, inline or from the
+RouteConfiguration's `cluster_specifier_plugins`, and the function returns the
+names and prefixes that use may pick. It alone decides whether a use is claimed.
+A use it returns nothing for stays unaccounted, and the claim's own names and
+prefixes are kept only with uses it claims. So a plugin can check that a config
+is one it generated and decline the rest: a name collision then leaves the
+gateway unscoped instead of pruning another plugin's candidates. Deriving also
+makes candidates that depend on the route precise, such as one prefix per
+namespace. The function must be pure and cheap. It runs on each gateway
+rebuild, once per distinct config. A panic, an empty prefix or an empty result
+leaves the use unclaimed, and the unscoped gateway's warning names the reason.
+
+A plugin's unit tests can check its claim without a controller:
+`proxy_syncer.DecideXdsScoping` applies scoping to routes and listeners the
+plugin generates and reports whether the gateway stays scoped, why not, and
+which clusters it keeps. The golden-corpus sweep checks scopability in both
+directions: a fixture with no request-time selector, or only claimed ones, must
+stay scoped, and one with an unclaimed selector must not.
+
+A claim's names and prefixes **belong to its selectors**: they are kept only in
+a gateway whose configuration uses one of them. Claims are collected once for
+the whole controller, so this is what keeps one plugin's candidates out of
+gateways that never use it. A claim with no selectors therefore keeps nothing,
+and an error is logged; a cluster a plugin needs whatever the routes say belongs
+in the resources its translation pass adds, which scoping never filters.
+
+Three more rules are worth knowing. An **empty prefix is rejected**: it would
+re-admit the entire inventory while still reporting the gateway as scoped, which
+is worse than reverting because it is invisible. A claim **accounts for its
+selectors only if it keeps somewhere for them to go** — at least one name or
+prefix, and no rejected prefix — because accounting for a selector while keeping
+none of its candidates would prune exactly the clusters it computes; otherwise
+the claim contributes nothing, its selectors stay unaccounted, and an error is
+logged. And **only cluster specifier plugins can be claimed**: a cluster-header
+selector's destination is whatever the client sends, so nothing a plugin
+declares can bound it, and the other fallbacks above (filter-state overrides,
+undecodable typed configs, unknown specifier kinds) are not something a claim
+describes; such gateways stay unscoped.
+
+Claims are collected once, when the controller starts, before its caches sync,
+and hold for its lifetime: derive them from how the plugin names the clusters it
+computes, not from cluster state. A candidate set that depends on something only
+the route knows, such as its namespace, needs `DestinationsFor`, or a prefix
+that covers every value it could take.
+
+A claim is trusted as complete. A cluster the plugin can compute that the claim
+does not keep is pruned, and the plugin's fallback then takes its traffic with
+no 503 to show for it. Claiming fits destinations derived from the plugin's own
+naming; no claim can bound a destination taken freely from the request.
+
+A claim should also cover the plugin's own resources. A plugin of this shape
+commonly emits an endpointless placeholder cluster so an unmatched request fails
+closed; once no route names that placeholder, scoping would otherwise prune the
+very cluster that makes the feature safe.
+
+## Settings
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| `KGW_XDS_SCOPING_MODE` | `ALL` | `REFERENCED` scopes CDS, EDS, and backend-owned LDS/SDS resources to referenced clusters. `ALL` is the pre-existing behavior. |
+| `KGW_XDS_SCOPING_DEREFERENCE_GRACE` | `5s` | How long a de-referenced cluster stays published. `0` or negative removes immediately and accepts the race. |
+| `KGW_XDS_SCOPING_REFERENCE_AHEAD` | `2s` | How long configuration naming a cluster new to a proxy is held after the controller first publishes that cluster. `0` or negative publishes both together and accepts the blip. |
+
+Both windows are off in `ALL` mode, where every discovered backend is emitted,
+so a cluster enters or leaves CDS only with its backend, never because a route
+started or stopped naming it. With `ALL` set, nothing in this feature runs: the
+emitted set is not computed, no filtering happens, and the publish path is the
+one that existed before the feature.
+
+When `KGW_PER_CLIENT_PUBLISH_BUDGET` is positive, a hold also ends one budget
+after it began, so neither a misconfigured window nor a stream of new clusters
+can pin a client's routing updates. With the budget at 0 or negative, a hold
+still ends when its windows close, but new clusters that keep arriving can
+extend it, and a hold that also waits for an unready cluster waits for it
+indefinitely. A hold the budget cuts short is counted as
+`kgateway_xds_snapshot_perclient_bounded_publishes_total{mode="reference_ahead"}`;
+one whose windows close first is not a bounded publish.
+
+## Metrics
+
+| Metric | Type | Meaning |
+| --- | --- | --- |
+| `kgateway_xds_scoping_dropped_clusters` | gauge | The most clusters any connected proxy group of a gateway has withheld because nothing references them. |
+| `kgateway_xds_scoping_disabled_gateways` | gauge | 1 while any connected proxy group of a gateway reverted to emit-all. Worth an alert. |
+| `kgateway_xds_scoping_transitions_total` | counter | Clusters whose emitted-set change needed a window, by `transition`; one per cluster per window it enters, for each proxy group. |
+
+A proxy group is the proxies of a gateway that share labels and locality; they
+receive one snapshot, and each group keeps its own windows. A gateway whose
+proxies span three zones therefore counts every transition three times, while
+any number of replicas in one zone count once.
+
+How many clusters a gateway's proxies do receive is
+`kgateway_xds_snapshot_resources{resource="Cluster"}`, which counts the published
+snapshot after scoping.
+
+`disabled_gateways` is kept per proxy group and reported for the gateway as
+whether any group is unscoped: groups can differ, since a backend can fail
+translation for one group's proxies alone, and a healthy group must not clear
+another's fallback. `dropped_clusters` is kept per group the same way and
+reported as the most any connected group drops, so a group that reverted to
+emit-all does not hide what the others save. The warning fires when the
+gateway turns unscoped, not on every rebuild. A departing group's state goes
+with it, and both gauges are
+removed when a gateway's last connected proxy goes away, so a deleted gateway
+does not keep a `disabled_gateways` alert firing.
+
+`dropped_clusters` at zero with scoping on means no connected proxy group
+drops anything: the deployment routes to everything it discovers and has
+nothing to gain here. A steadily rising
+`transitions_total{transition="reference_ahead_held"}` means route edits keep
+landing on clusters missing from the proxy's published snapshot, each paying
+the hold once,
+which is a reason to shorten the window rather than a fault.
+
+## What changes for users
+
+Unreferenced Services stop appearing as clusters in `config_dump` and stop
+producing `/stats` series. That is the point, and it is also a visible behavior
+change for anyone whose dashboards assume those clusters exist — which is why
+the feature is opt-in.

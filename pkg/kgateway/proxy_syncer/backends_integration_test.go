@@ -168,11 +168,11 @@ func TestNewPerClientEnvoyClusters_BackendMetadataUpdateRecomputesClients(t *tes
 		ResourceVersion: "1",
 		Generation:      1,
 	}}
-	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
 	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
 
-	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends.AsCollection(), uccs)
 	require.Eventually(t, pcc.HasSynced, time.Second, 10*time.Millisecond)
 
 	require.Eventually(t, func() bool {
@@ -333,11 +333,11 @@ func TestNewPerClientEnvoyClusters_PerClientErrorTracksBackendGeneration(t *test
 	}
 	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "ns", Name: "svc"}, 80, "", "")
 	backend.Obj = serviceAt(1)
-	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{&backend}, krtopts.ToOptions("FinalBackends")...)
 	ucc := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
 	uccs := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{ucc}, krtopts.ToOptions("UCCs")...)
 
-	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends.AsCollection(), uccs)
 	name := backend.ClusterName()
 	statusKey := uccClusterResourceName(ucc, name)
 
@@ -493,7 +493,7 @@ func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *te
 		return &b
 	}
 	backend := serviceBackend("1", nil)
-	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{backend}, krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{backend}, krtopts.ToOptions("FinalBackends")...)
 	clients := []ir.UniquelyConnectedClient{
 		ir.NewUniquelyConnectedClient("a", "ns", nil, ir.PodLocality{}),
 		ir.NewUniquelyConnectedClient("b", "ns", nil, ir.PodLocality{}),
@@ -501,7 +501,7 @@ func TestNewPerClientEnvoyClusters_ResourceVersionOnlyUpdateRerunsNoClient(t *te
 	}
 	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UCCs")...)
 
-	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends.AsCollection(), uccs)
 	for _, ucc := range clients {
 		require.Eventually(t, func() bool { return len(storedClustersForClient(pcc, ucc)) == 1 }, 2*time.Second, 10*time.Millisecond)
 	}
@@ -570,14 +570,14 @@ func TestNewPerClientEnvoyClusters_UndeclaredOverlayRerunsEveryClient(t *testing
 		}}
 		return &b
 	}
-	finalBackends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{serviceBackend("1")}, krtopts.ToOptions("FinalBackends")...)
+	finalBackends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{serviceBackend("1")}, krtopts.ToOptions("FinalBackends")...)
 	clients := []ir.UniquelyConnectedClient{
 		ir.NewUniquelyConnectedClient("a", "ns", nil, ir.PodLocality{}),
 		ir.NewUniquelyConnectedClient("b", "ns", nil, ir.PodLocality{}),
 	}
 	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UCCs")...)
 
-	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends, uccs)
+	pcc := NewPerClientEnvoyClusters(ctx, krtopts, translator, finalBackends.AsCollection(), uccs)
 	for _, ucc := range clients {
 		require.Eventually(t, func() bool { return len(storedClustersForClient(pcc, ucc)) == 1 }, 2*time.Second, 10*time.Millisecond)
 	}
@@ -613,10 +613,10 @@ func TestUndeclaredHooksObserveNilObjectBackendUpdates(t *testing.T) {
 				ContributedPolicies: map[schema.GroupKind]sdk.PolicyPlugin{{Group: "test", Kind: "Undeclared"}: plugin},
 			}
 			opts := krtutil.NewKrtOptions(t.Context().Done(), nil)
-			backends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend}, opts.ToOptions("Backends")...)
+			backends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{&backend}, opts.ToOptions("Backends")...)
 			client := ir.NewUniquelyConnectedClient("client", "ns", nil, ir.PodLocality{})
 			clients := krt.NewStaticCollection(nil, []ir.UniquelyConnectedClient{client}, opts.ToOptions("Clients")...)
-			pcc := NewPerClientEnvoyClusters(t.Context(), opts, translator, backends, clients)
+			pcc := NewPerClientEnvoyClusters(t.Context(), opts, translator, backends.AsCollection(), clients)
 			require.Eventually(t, func() bool {
 				return storedClustersForClient(pcc, client)[backend.ClusterName()].GetAltStatName() == "before"
 			}, 2*time.Second, 10*time.Millisecond)

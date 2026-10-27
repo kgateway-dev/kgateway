@@ -169,8 +169,13 @@ jobs:
           TEST_PKG: ./test/e2e/tests
         run: |
           # Redirect the whole subshell so it holds no handle on this step's output.
-          (make warm-e2e-test; echo $? > "$RUNNER_TEMP/warm-e2e-test.exit") \
-            < /dev/null > "$RUNNER_TEMP/warm-e2e-test.log" 2>&1 &
+          (
+            compile_status=0
+            make warm-e2e-test || compile_status=$?
+            # Rename into place so the waiter never reads a created but empty file.
+            echo "$compile_status" > "$RUNNER_TEMP/warm-e2e-test.exit.tmp"
+            mv "$RUNNER_TEMP/warm-e2e-test.exit.tmp" "$RUNNER_TEMP/warm-e2e-test.exit"
+          ) < /dev/null > "$RUNNER_TEMP/warm-e2e-test.log" 2>&1 &
       # The dotenv action is used to load key-value pairs from files.
       # In this case, the file is specified in the matrix and will contain the versions of the tools to use
       - name: Dotenv Action
