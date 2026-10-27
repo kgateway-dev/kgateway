@@ -481,6 +481,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("TrafficPolicy on backendRef with errors fails closed", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"traffic-policy/backendref-policy-errors.yaml"},
+			outputFile: "traffic-policy/backendref-policy-errors.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	// test the default and fully configured values for gRPC ExtAuth
 	t.Run("TrafficPolicy gRPC ExtAuth Full Config", func(t *testing.T) {
 		test(t, translatorTestCase{

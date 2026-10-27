@@ -1520,14 +1520,15 @@ func (h *RoutesIndex) transformRules(
 		rulePolicies := h.getBuiltInRulePolicies(r, opts...)
 		policies.Append(rulePolicies)
 
+		backends, backendErr := h.getBackends(kctx, src, r.BackendRefs)
 		ruleOut := ir.HttpRouteRuleIR{
 			ExtensionRefs:    extensionRefs,
 			AttachedPolicies: policies,
-			Backends:         h.getBackends(kctx, src, r.BackendRefs),
+			Backends:         backends,
 			Matches:          r.Matches,
 			Name:             emptyIfNil(r.Name),
 		}
-		if err != nil {
+		if err := errors.Join(err, backendErr); err != nil {
 			ruleOut.Err = err
 		}
 		rules = append(rules, ruleOut)
@@ -1659,12 +1660,17 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 	}
 }
 
-func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
+// getBackends resolves the backendRefs of a route rule. The returned error joins the
+// errors resolving the backendRefs' filters (e.g. an ExtensionRef to a missing policy),
+// so that the rule fails closed instead of forwarding without the policy.
+func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) ([]ir.HttpBackendOrDelegate, error) {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
+	var errs []error
 	for _, ref := range backendRefs {
-		// ignore errs as invalid/missing policy for backendRef filters is undefined currently
-		// see: https://github.com/kgateway-dev/kgateway/issues/11897
-		extensionRefs, _ := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
+		extensionRefs, err := h.getExtensionRefs(kctx, src.Namespace, ref.Filters, nil, nil)
+		if err != nil {
+			errs = append(errs, err)
+		}
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
@@ -1687,7 +1693,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			AttachedPolicies: extensionRefs,
 		})
 	}
-	return backends
+	return backends, errors.Join(errs...)
 }
 
 // resolveRouteBackend resolves a route rule's backendRef. Every route kind (HTTPRoute,
