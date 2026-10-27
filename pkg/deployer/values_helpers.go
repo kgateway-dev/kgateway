@@ -105,7 +105,7 @@ func AppendPortValue(gwPorts []HelmPort, port int32, name, protocol string, gwp 
 	// NodePort and LoadBalancer both support explicit node ports; if not set, nil renders nothing.
 	var nodePort *int32 = nil
 	if gwp != nil && gwp.Spec.GetKube().GetService().GetType() != nil {
-		serviceType := *(gwp.Spec.GetKube().GetService().GetType())
+		serviceType := *gwp.Spec.GetKube().GetService().GetType()
 		if serviceType == corev1.ServiceTypeNodePort || serviceType == corev1.ServiceTypeLoadBalancer {
 			if idx := istioslices.IndexFunc(gwp.Spec.GetKube().GetService().GetPorts(), func(p kgateway.Port) bool {
 				return p.GetPort() == port
@@ -134,6 +134,8 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 	var externalTrafficPolicy *string
 	var loadBalancerClass *string
 	var loadBalancerSourceRanges []string
+	var ipFamilies []string
+	var ipFamilyPolicy *string
 
 	if svcConfig != nil {
 		if svcConfig.GetType() != nil {
@@ -145,6 +147,12 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		externalTrafficPolicy = svcConfig.GetExternalTrafficPolicy()
 		loadBalancerClass = svcConfig.GetLoadBalancerClass()
 		loadBalancerSourceRanges = svcConfig.GetLoadBalancerSourceRanges()
+		for _, f := range svcConfig.GetIPFamilies() {
+			ipFamilies = append(ipFamilies, string(f))
+		}
+		if p := svcConfig.GetIPFamilyPolicy(); p != nil {
+			ipFamilyPolicy = new(string(*p))
+		}
 	}
 
 	return &HelmService{
@@ -155,6 +163,8 @@ func GetServiceValues(svcConfig *kgateway.Service) *HelmService {
 		ExternalTrafficPolicy:    externalTrafficPolicy,
 		LoadBalancerClass:        loadBalancerClass,
 		LoadBalancerSourceRanges: loadBalancerSourceRanges,
+		IPFamilies:               ipFamilies,
+		IPFamilyPolicy:           ipFamilyPolicy,
 	}
 }
 

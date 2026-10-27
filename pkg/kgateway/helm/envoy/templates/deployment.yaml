@@ -71,6 +71,15 @@ spec:
         - "--component-log-level"
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
+        {{- $extraArgsStr := join " " ($gateway.extraArgs | default list) }}
+        {{- if not (contains "--drain-time-s" $extraArgsStr) }}
+        - "--drain-time-s"
+        - "60"
+        {{- end }}
+        {{- if not (contains "--drain-strategy" $extraArgsStr) }}
+        - "--drain-strategy"
+        - "immediate"
+        {{- end }}
         {{- with $gateway.extraArgs }}
         {{- range . }}
         - {{ . | quote }}

@@ -194,11 +194,33 @@ controller:
     # Set to `0.0.0.0` only in trusted environments where exposing pprof,
     # logging controls, and config snapshots outside the pod is acceptable.
     bindAddress: localhost
-  # -- Configure TLS settings for the xDS gRPC servers.
+  # -- Configure leader election for the controller. These settings tune how the
+  #    controller acquires and renews the leader lease, which is useful on clusters
+  #    where a slow or unavailable API server would otherwise cause the controller to
+  #    lose leadership. Leave empty to use the controller-runtime defaults
+  #    (leaseDuration 15s, renewDeadline 10s, retryPeriod 2s).
+  leaderElection:
+    # -- Duration that non-leaders wait before attempting to acquire an unrenewed
+    #    leader slot. Must be greater than renewDeadline.
+    leaseDuration: ""
+    # -- Duration the leader retries to renew its lease before it stops leading. Must be
+    #    greater than retryPeriod and less than leaseDuration.
+    renewDeadline: ""
+    # -- Duration between leader election attempts (acquire or renew).
+    retryPeriod: ""
+  # -- Configure the xDS gRPC servers.
   xds:
     tls:
       # -- Enable TLS encryption for xDS communication. When enabled, the xDS server (port 9977) uses TLS. You must create a Secret named 'kgateway-xds-cert' in the kgateway installation namespace. The Secret must be of type 'kubernetes.io/tls' with 'tls.crt', 'tls.key', and 'ca.crt' data fields present.
       enabled: false
+    # -- Scope each gateway proxy's backend resources across CDS, EDS, LDS and SDS. A value left empty sets nothing, so the controller uses its own default. A variable of the same name in `controller.extraEnv` takes precedence over each value here.
+    scoping:
+      # -- `ALL` sends every discovered backend's cluster (CDS), endpoints (EDS), and backend-owned listeners (LDS) and secrets (SDS) to every gateway proxy. `REFERENCED` sends only referenced clusters, including clusters that only filters call, along with their endpoints, backend-owned listeners and secrets. Gateway-level listeners and secrets are unaffected. This shrinks proxy memory, config dumps and per-cluster stats where many Services are discovered and few are routed. `REFERENCED` is experimental. Case-insensitive. The controller default is `ALL`. Sets `KGW_XDS_SCOPING_MODE`.
+      mode: ""
+      # -- With `REFERENCED`, how long routes, listeners and secrets naming a cluster new to a proxy are held after the controller first publishes that cluster. This gives the cluster time to reach Envoy first, but does not guarantee delivery or application order. The controller default is `2s`. Sets `KGW_XDS_SCOPING_REFERENCE_AHEAD`.
+      referenceAhead: ""
+      # -- With `REFERENCED`, how long a cluster stays published after the controller publishes the route update that stops naming it. This gives the update time to reach Envoy before the cluster is removed, but does not guarantee delivery or application order. The controller default is `5s`. Sets `KGW_XDS_SCOPING_DEREFERENCE_GRACE`.
+      dereferenceGrace: ""
   # -- Enable dynamic discovery of AWS EC2 instances for `Backend` resources.
   enableAwsEc2Discovery: false
   # -- Set how often the controller refreshes discovered AWS EC2 instances for `Backend` resources.
@@ -270,9 +292,8 @@ serviceEntriesExclusionLabelSelectors: []
 # -- Map of GatewayClass names to GatewayParameters references that will be set on
 #    the default GatewayClasses managed by kgateway. Each entry must define both the
 #    name and namespace of the GatewayParameters resource.
-#    The default GatewayClasses managed by kgateway are:
+#    The default GatewayClass managed by kgateway is:
 #    - kgateway
-#    - kgateway-waypoint
 #    Example:
 #    gatewayClassParametersRefs:
 #      kgateway:
@@ -287,7 +308,12 @@ gatewayClassParametersRefs: {}
 #     extProc: DeepMerge
 policyMerge: {}
 
-# -- Enable the waypoint integration. This enables kgateway to translate istio waypoints and use kgateway as a waypoint in an Istio Ambient service mesh setup.
+# -- Enable the ingress-use-waypoint integration (sets KGW_INGRESS_USE_WAYPOINTS). Ingress traffic to Services and
+#    ServiceEntries labeled istio.io/ingress-use-waypoint=true is sent to their cluster IP, so ztunnel passes it through
+#    their Istio ambient waypoint. This applies only when the gateway's pods are in the ambient mesh, the backend has an
+#    Istio waypoint attached, and the backend has a cluster IP: a headless Service gets no endpoints and returns 503.
+#    ServiceEntries also need KGW_ENABLE_ISTIO_INTEGRATION=true. Running kgateway as a waypoint is no longer supported.
+#    See docs/guides/migrating-kgateway-waypoints.md.
 waypoint:
   enabled: false
 

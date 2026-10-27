@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.26.9-trixie
+FROM docker.io/library/golang:1.27.3-trixie
 # Pinned Debian package versions break on every point release.
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -80,8 +80,8 @@ ready".
 
 ## Non-Goals
 
-- Reducing the *set* of backends discovered. Scoping CDS/EDS to route-referenced Services is
-  the separate backends axis tracked in #13586.
+- Reducing the *set* of backends emitted. Scoping CDS, EDS, and backend-owned LDS/SDS
+  resources to referenced backends is the separate backends axis tracked in #13586.
 - Reintroducing per-client readiness gates. The first-connect grace period from #14380 remains
   the mechanism that hides the convergence window from a client's first watch.
 - Changing UCC bucketing, `DISABLE_POD_LOCALITY_XDS`, or the local-cluster EDS resource.

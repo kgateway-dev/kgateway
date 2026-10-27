@@ -25,7 +25,7 @@ import (
 
 // newPolicyHarness mirrors NewControlPlane's watch-policy and callback wiring,
 // secrets cache included.
-func newPolicyHarness(t *testing.T, ordered, suppressNackResend, respondOnReconnect bool) *adsHarness {
+func newPolicyHarness(t *testing.T, ordered, respondOnReconnect bool) *adsHarness {
 	t.Helper()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -35,7 +35,7 @@ func newPolicyHarness(t *testing.T, ordered, suppressNackResend, respondOnReconn
 		recv: make(chan *discoveryv3.DiscoveryRequest, 16),
 	}
 	hasher := kgwxds.NewNodeRoleHasher()
-	policy := newWatchPolicy(newSnapshotCache(hasher, nil), hasher, suppressNackResend, respondOnReconnect)
+	policy := newWatchPolicy(newSnapshotCache(hasher, nil), hasher, respondOnReconnect)
 
 	var opts []serverconfig.XDSOption
 	if ordered {
@@ -142,7 +142,7 @@ func TestPlainCacheResendsRejectedResponseOnEveryNack(t *testing.T) {
 func TestNackOfCurrentSnapshotIsNotResent(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
-			h := newPolicyHarness(t, ordered, true, true)
+			h := newPolicyHarness(t, ordered, true)
 			h.setSnapshot(nackSnapshot("1"))
 			h.subscribe(envoyresource.ClusterType)
 			first := h.receiveType(envoyresource.ClusterType, "1")
@@ -170,7 +170,7 @@ func TestNackOfCurrentSnapshotIsNotResent(t *testing.T) {
 }
 
 func TestNackAfterSnapshotChangedIsAnsweredImmediately(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(nackSnapshot("1"))
 	h.subscribe(envoyresource.ClusterType)
 	first := h.receiveType(envoyresource.ClusterType, "1")
@@ -182,7 +182,7 @@ func TestNackAfterSnapshotChangedIsAnsweredImmediately(t *testing.T) {
 }
 
 func TestNackSuppressionLeavesAcksUntouched(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(nackSnapshot("1"))
 	h.subscribeAndAck(envoyresource.ClusterType, "1", 1)
 	h.setSnapshot(nackSnapshot("2"))
@@ -190,7 +190,7 @@ func TestNackSuppressionLeavesAcksUntouched(t *testing.T) {
 }
 
 func TestNackOfNamedTypeIsNotResent(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(nackSnapshot("1"))
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}})
 	first := h.receiveType(envoyresource.EndpointType, "1")
@@ -211,7 +211,7 @@ func TestNackOfNamedTypeIsNotResent(t *testing.T) {
 
 // The client holds v1 and rejects v2: no flood of v2, and v3 still arrives.
 func TestNackOfSecondVersionParksUntilThird(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(nackSnapshot("1"))
 	h.subscribeAndAck(envoyresource.ClusterType, "1", 1)
 
@@ -275,7 +275,7 @@ func TestPlainCacheLeavesReconnectEndpointRequestParkedOnEqualVersionRepublish(t
 func TestReconnectEndpointRequestIsAnsweredWhenSnapshotArrivesAtHeldVersion(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
-			h := newPolicyHarness(t, ordered, true, true)
+			h := newPolicyHarness(t, ordered, true)
 			h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}, VersionInfo: "1"})
 			h.waitForOpenWatches(1)
 			h.setSnapshot(reconnectSnapshot("1"))
@@ -299,7 +299,7 @@ func TestReconnectEndpointRequestIsAnsweredWhenSnapshotArrivesAtHeldVersion(t *t
 }
 
 func TestReconnectEndpointRequestIsAnsweredFromWarmCache(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(reconnectSnapshot("1"))
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}, VersionInfo: "1"})
 	resp := h.receiveType(envoyresource.EndpointType, "1")
@@ -322,7 +322,7 @@ func TestPlainCacheAnswersFreshStreamAtHeldVersionFromWarmCache(t *testing.T) {
 // request parked (harmless, the proxy holds that version); the next version
 // answers.
 func TestReconnectRuleLeavesClusterRequestsToTheCache(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.ClusterType, VersionInfo: "1"})
 	h.waitForOpenWatches(1)
 	h.setSnapshot(reconnectSnapshot("1"))
@@ -333,7 +333,7 @@ func TestReconnectRuleLeavesClusterRequestsToTheCache(t *testing.T) {
 
 // A cold proxy (no held version) and an ordinary ACK are untouched by the rule.
 func TestReconnectRuleIgnoresColdRequestsAndAcks(t *testing.T) {
-	h := newPolicyHarness(t, true, true, true)
+	h := newPolicyHarness(t, true, true)
 	h.setSnapshot(reconnectSnapshot("1"))
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}})
 	first := h.receiveType(envoyresource.EndpointType, "1")
@@ -346,7 +346,7 @@ func TestReconnectRuleIgnoresColdRequestsAndAcks(t *testing.T) {
 
 // With the setting off the reconnect request parks exactly as on the plain cache.
 func TestReconnectRuleDisabledParksLikePlainCache(t *testing.T) {
-	h := newPolicyHarness(t, true, true, false)
+	h := newPolicyHarness(t, true, false)
 	h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: envoyresource.EndpointType, ResourceNames: []string{adsTestCluster}, VersionInfo: "1"})
 	h.waitForOpenWatches(1)
 	h.setSnapshot(reconnectSnapshot("1"))
@@ -367,7 +367,7 @@ func TestParkedNackIsRetried(t *testing.T) {
 	for _, ordered := range []bool{false, true} {
 		t.Run(map[bool]string{false: "default", true: "ordered"}[ordered], func(t *testing.T) {
 			shortenNackRetry(t, 100*time.Millisecond, time.Second)
-			h := newPolicyHarness(t, ordered, true, true)
+			h := newPolicyHarness(t, ordered, true)
 			h.setSnapshot(nackSnapshot("1"))
 			h.subscribe(envoyresource.ClusterType)
 			first := h.receiveType(envoyresource.ClusterType, "1")
@@ -395,7 +395,7 @@ func TestNackRetryDelayBacksOff(t *testing.T) {
 	require.Equal(t, 10*time.Second, nackRetryDelay(5))
 	require.Equal(t, 10*time.Second, nackRetryDelay(1000))
 
-	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, true, false)
+	policy := newWatchPolicy(envoycache.NewSnapshotCache(true, envoycache.IDHash{}, nil), envoycache.IDHash{}, false)
 	node := &envoycorev3.Node{Id: "node"}
 	respond := func(nonce, version string) {
 		policy.onStreamResponse(t.Context(), 1, &discoveryv3.DiscoveryRequest{Node: node}, &discoveryv3.DiscoveryResponse{TypeUrl: envoyresource.ClusterType, Nonce: nonce, VersionInfo: version})
@@ -439,7 +439,7 @@ func TestReconnectWarmedTypeRequestsAreAnsweredWhenSnapshotArrivesAtHeldVersion(
 	for _, tc := range reconnectWarmedTypes {
 		for _, ordered := range []bool{false, true} {
 			t.Run(tc.typeURL+map[bool]string{false: "/default", true: "/ordered"}[ordered], func(t *testing.T) {
-				h := newPolicyHarness(t, ordered, true, true)
+				h := newPolicyHarness(t, ordered, true)
 				h.send(&discoveryv3.DiscoveryRequest{Node: h.node, TypeUrl: tc.typeURL, ResourceNames: []string{tc.name}, VersionInfo: "1"})
 				h.waitForOpenWatches(1)
 				h.setSnapshot(reconnectSnapshotWithSecret("1"))

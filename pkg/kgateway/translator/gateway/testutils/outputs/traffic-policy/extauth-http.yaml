@@ -51,6 +51,7 @@ Listeners:
           name: ext_auth/infra/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -69,6 +70,7 @@ Listeners:
           name: ext_auth/infra/section-name-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -140,6 +142,7 @@ Listeners:
           name: ext_auth/infra/basic-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -224,6 +227,7 @@ Listeners:
           name: ext_auth/infra/basic-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -242,6 +246,7 @@ Listeners:
           name: ext_auth/infra/basic-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
@@ -260,6 +265,7 @@ Listeners:
           name: ext_auth/infra/section-name-gw-extauth
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+            emitFilterStateStats: true
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true

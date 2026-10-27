@@ -136,7 +136,7 @@ var (
 	// Zero - the default - creates none, which is the shape every earlier run
 	// used: the control plane emits a cluster for every backend in scope
 	// regardless of whether anything routes to it, so routes change nothing it
-	// sends. That stops being true under referenced-only cluster discovery,
+	// sends. That stops being true under referenced-only xDS scoping,
 	// where the emitted set is computed by walking the generated routes and
 	// listeners. A fleet with no routes references nothing, so scoping would
 	// collapse every proxy's CDS to approximately empty and report a saving

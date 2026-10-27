@@ -33,7 +33,7 @@ func newDebouncedCollection[T any](
 	maxDelay = max(maxDelay, window)
 
 	seeded := make(chan struct{})
-	out := krt.NewStaticCollection[T](seededSyncer{src: src, seeded: seeded}, nil, opts...)
+	out := krt.NewMutableCollection[T](seededSyncer{src: src, seeded: seeded}, nil, opts...)
 
 	// Every changed key reaches the debouncer, which merges them into one set per flush. Until the debouncer
 	// starts, keys wait in the source's handler queue.
@@ -76,7 +76,7 @@ func newDebouncedCollection[T any](
 			out.Reset(src.List())
 		})
 	}()
-	return out
+	return out.AsCollection()
 }
 
 // debounceForTranslation batches changes to a translation input as configured by the translation debounce settings.

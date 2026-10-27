@@ -48,11 +48,11 @@ func TestRegisterResourceReplaysAndTracksRawObjects(t *testing.T) {
 	stop := test.NewStop(t)
 	gvk := schema.GroupVersionKind{Group: gwv1.GroupName, Version: "v1", Kind: "HTTPRoute"}
 	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "route", Namespace: "default"}}
-	col := krt.NewStaticCollection(nil, []*gwv1.HTTPRoute{route}, krt.WithStop(stop))
+	col := krt.NewMutableCollection(nil, []*gwv1.HTTPRoute{route}, krt.WithStop(stop))
 
 	sources := NewStatusCollections()
 	queue := &recordingQueue{}
-	RegisterResource(sources, gvk, col)
+	RegisterResource(sources, gvk, col.AsCollection())
 	sources.SetQueue(queue)
 
 	want := Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: "default", Name: "route"}}
@@ -113,13 +113,13 @@ func TestResourceReportsReducesAndObservesContributionRemoval(t *testing.T) {
 	first := routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first")
 	second := routeContribution(t, route, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/second"}, "second")
 	other := routeContribution(t, otherRoute, reports.StatusSource{Kind: reports.GatewayStatusSource, Name: "default/first"}, "first")
-	contributions := krt.NewStaticCollection(nil, []reports.StatusContribution{first, second, other}, krt.WithStop(stop))
-	byTarget := krt.NewIndex(contributions, "status-target", func(c reports.StatusContribution) []reports.StatusKey {
+	contributions := krt.NewMutableCollection(nil, []reports.StatusContribution{first, second, other}, krt.WithStop(stop))
+	byTarget := krt.NewIndex(contributions.AsCollection(), "status-target", func(c reports.StatusContribution) []reports.StatusKey {
 		return []reports.StatusKey{c.Target}
 	})
 	reduced := NewResourceReports(
 		objects,
-		contributions,
+		contributions.AsCollection(),
 		byTarget,
 		func(object *gwv1.HTTPRoute) Resource {
 			return Resource{GroupVersionKind: gvk, NamespacedName: types.NamespacedName{Namespace: object.Namespace, Name: object.Name}}

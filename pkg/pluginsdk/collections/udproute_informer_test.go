@@ -24,7 +24,7 @@ import (
 // start a watch against it, or it never syncs and blocks controller startup.
 func TestDelayedUDPRouteInformerDoesNotBlockWhenV1IsNotServed(t *testing.T) {
 	stop := test.NewStop(t)
-	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme)
+	_ = apiextensionsv1.AddToScheme(kube.FakeIstioScheme.MustGet())
 	apiclient.RegisterTypes()
 
 	client := kube.NewFakeClient()

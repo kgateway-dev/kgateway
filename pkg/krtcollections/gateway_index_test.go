@@ -367,14 +367,14 @@ func newGatewayIndexHarness(t *testing.T, gw *gwv1.Gateway, listenerSets []*gwv1
 	}
 
 	config := getConfig(t)
-	h.gateways = krt.NewStaticCollection(nil, []*gwv1.Gateway{gw, h.barrierGW}, config.KrtOpts.ToOptions("Gateways")...)
-	h.listenerSets = krt.NewStaticCollection(nil, append([]*gwv1.ListenerSet{h.barrierLS}, listenerSets...), config.KrtOpts.ToOptions("ListenerSets")...)
-	h.policies = krt.NewStaticCollection(nil, append([]ir.PolicyWrapper{h.barrierPolicy}, policies...), config.KrtOpts.ToOptions("Policies")...)
-	config.Gateways = h.gateways
-	config.ListenerSets = h.listenerSets
+	h.gateways = krt.NewMutableCollection(nil, []*gwv1.Gateway{gw, h.barrierGW}, config.KrtOpts.ToOptions("Gateways")...)
+	h.listenerSets = krt.NewMutableCollection(nil, append([]*gwv1.ListenerSet{h.barrierLS}, listenerSets...), config.KrtOpts.ToOptions("ListenerSets")...)
+	h.policies = krt.NewMutableCollection(nil, append([]ir.PolicyWrapper{h.barrierPolicy}, policies...), config.KrtOpts.ToOptions("Policies")...)
+	config.Gateways = h.gateways.AsCollection()
+	config.ListenerSets = h.listenerSets.AsCollection()
 	config.PolicyIndex = NewPolicyIndex(config.KrtOpts, sdk.ContributesPolicies{
 		wellknown.TrafficPolicyGVK.GroupKind(): {
-			Policies: h.policies,
+			Policies: h.policies.AsCollection(),
 			// Runs once per policy lookup, so it counts them.
 			GlobalPolicies: func(krt.HandlerContext) ir.PolicyIR {
 				h.lookups.Add(1)

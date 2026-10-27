@@ -17,10 +17,17 @@ var (
 	fileSinkManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "filesink.yaml")
 	grpcServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "grpc.yaml")
 	oTelManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "otel.yaml")
+	tcpManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tcp.yaml")
 
 	// Core infrastructure objects that we need to track
 	gatewayObjectMeta = metav1.ObjectMeta{
 		Name:      "gateway",
+		Namespace: "kgateway-base",
+	}
+
+	// TestAccessLogOnTCPListener
+	tcpGatewayObjectMeta = metav1.ObjectMeta{
+		Name:      "tcp-gateway",
 		Namespace: "kgateway-base",
 	}
 
@@ -44,6 +51,9 @@ var (
 		},
 		"TestAccessLogWithOTelSink": {
 			Manifests: []string{oTelManifest},
+		},
+		"TestAccessLogOnTCPListener": {
+			Manifests: []string{tcpManifest},
 		},
 	}
 )

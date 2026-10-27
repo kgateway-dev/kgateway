@@ -3,16 +3,39 @@
 package waypoint
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-var ingressWaypointLabel = "istio.io/ingress-use-waypoint"
+var (
+	ingressWaypointLabel = "istio.io/ingress-use-waypoint"
+
+	// hasHTTPRoute matches a response that went through the waypoint, which
+	// applies the HTTPRoute that adds the traversed-waypoint header.
+	hasHTTPRoute = matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		Headers: map[string]any{
+			"traversed-waypoint": "true",
+		},
+		Body: gstruct.Ignore(),
+	}
+
+	noHTTPRoute = matchers.HttpResponse{
+		StatusCode: http.StatusOK,
+		NotHeaders: []string{
+			"traversed-waypoint",
+		},
+		Body: gstruct.Ignore(),
+	}
+)
 
 func (s *testingSuite) TestIngressHTTPRouteWithoutLabel() {
 	s.setNamespaceWaypointOrFail(testNamespace)

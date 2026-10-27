@@ -237,7 +237,7 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 		edsCluster(ucc, reproBrokenCluster, 2),
 	})
 	f.clusterCols = cols
-	f.endpointCol = krt.NewStaticCollection[UccWithEndpoints](nil, []UccWithEndpoints{
+	f.endpointCol = krt.NewMutableCollection[UccWithEndpoints](nil, []UccWithEndpoints{
 		f.endpointsFor(reproHealthyCluster, 1),
 		f.endpointsFor(reproBrokenCluster, 1),
 	})
@@ -247,8 +247,8 @@ func newErroredClusterFixture(t *testing.T) *erroredClusterFixture {
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: f.endpointCol,
-			index: krtpkg.UnnamedIndex(f.endpointCol, func(ep UccWithEndpoints) []string {
+			endpoints: f.endpointCol.AsCollection(),
+			index: krtpkg.UnnamedIndex(f.endpointCol.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},

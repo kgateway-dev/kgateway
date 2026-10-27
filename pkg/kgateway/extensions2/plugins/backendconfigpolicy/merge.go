@@ -43,8 +43,10 @@ func mergeBackendConfigPolicies(
 		mergeDnsRefreshRate,
 		mergeDnsJitter,
 		mergeRespectDnsTtl,
+		mergeDnsLookupFamily,
 		mergeUpstreamProxyProtocol,
 		mergeTunnel,
+		mergeSessionPersistence,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -164,6 +166,14 @@ func mergeRespectDnsTtl(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyR
 	mergeOrigins.SetOne("dns.respectTTL", p2Ref, p2MergeOrigins)
 }
 
+func mergeDnsLookupFamily(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.dnsLookupFamily, p2.dnsLookupFamily, opts) {
+		return
+	}
+	p1.dnsLookupFamily = p2.dnsLookupFamily
+	mergeOrigins.SetOne("dns.lookupFamily", p2Ref, p2MergeOrigins)
+}
+
 func mergeUpstreamProxyProtocol(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
 	if !policy.IsMergeable(p1.upstreamProxyProtocol, p2.upstreamProxyProtocol, opts) {
 		return
@@ -179,4 +189,12 @@ func mergeTunnel(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2M
 	}
 	p1.tunnel = p2.tunnel
 	mergeOrigins.SetOne("tunnel", p2Ref, p2MergeOrigins)
+}
+
+func mergeSessionPersistence(p1, p2 *BackendConfigPolicyIR, p2Ref *ir.AttachedPolicyRef, p2MergeOrigins ir.MergeOrigins, opts policy.MergeOptions, mergeOrigins ir.MergeOrigins) {
+	if !policy.IsMergeable(p1.sessionPersistence, p2.sessionPersistence, opts) {
+		return
+	}
+	p1.sessionPersistence = p2.sessionPersistence
+	mergeOrigins.SetOne("sessionPersistence", p2Ref, p2MergeOrigins)
 }
