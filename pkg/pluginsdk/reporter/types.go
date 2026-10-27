@@ -38,8 +38,8 @@ const (
 	RouteRuleReplacedReason = "RouteRuleReplaced"
 
 	// BackendRefReplacedReason is used with the Programmed=False condition when some backendRefs
-	// of a route rule are replaced with a 500 due to an error in a policy attached to them, while
-	// the rule's other backendRefs still receive their share of traffic.
+	// of a route rule are replaced with a 500 due to an error translating them (e.g. in a policy
+	// attached to them), while the rule's other backendRefs still receive their share of traffic.
 	BackendRefReplacedReason = "BackendRefReplaced"
 
 	// ListenerReplacedReason is used with the Accepted=False condition when an individual listener
