@@ -140,26 +140,36 @@ func SetupSharedNginxBackend(ctx context.Context, t *testing.T, installation *e2
 	}, 2*time.Minute)
 }
 
-// SetupBaseGateway resolves the LB address for the named Gateway and stores it in BaseGateway.
+// NewGateway resolves the LB address of the named Gateway from its status.
+//
+// GATEWAY_PORT_FORWARD: when set to true, requests go through port-forwards to the Gateway's
+// Service instead, one per destination port, opened on first use and closed when t ends. This
+// exists for hosts that cannot reach LB IPs, e.g. kind on macOS.
+func NewGateway(ctx context.Context, t *testing.T, installation *e2e.TestInstallation, name types.NamespacedName) Gateway {
+	gw := Gateway{
+		NamespacedName: name,
+		Address:        installation.AssertionsT(t).EventuallyGatewayAddress(ctx, name.Name, name.Namespace),
+	}
+	if os.Getenv("GATEWAY_PORT_FORWARD") == "true" {
+		gw.forwards = newPortForwards(installation.ClusterContext.KubeContext, name)
+		testutils.Cleanup(t, gw.forwards.close)
+	}
+	return gw
+}
+
+// SetupBaseGateway resolves the named Gateway with NewGateway and stores it in BaseGateway.
 //
 // GATEWAY_ADDRESS_OVERRIDE: when set, overrides the resolved address. This exists to support
 // environments where the LB IP is not directly reachable from the host (e.g., k3d on macOS using
 // port mapping). The override is applied ONLY here — single-gateway suites that use BaseGateway
 // pick it up automatically. Suites that construct their own common.Gateway values (e.g.,
 // multi-gateway suites that need more than one address) do NOT honor the override, since a single
-// env var cannot disambiguate multiple gateways. Running such suites under k3d is out of scope.
+// env var cannot disambiguate multiple gateways; GATEWAY_PORT_FORWARD covers those when they use
+// NewGateway.
 func SetupBaseGateway(ctx context.Context, t *testing.T, installation *e2e.TestInstallation, name types.NamespacedName) {
-	address := installation.AssertionsT(t).EventuallyGatewayAddress(
-		ctx,
-		name.Name,
-		name.Namespace,
-	)
+	BaseGateway = NewGateway(ctx, t, installation, name)
 	if override := os.Getenv("GATEWAY_ADDRESS_OVERRIDE"); override != "" {
-		address = override
-	}
-	BaseGateway = Gateway{
-		NamespacedName: name,
-		Address:        address,
+		BaseGateway.Address = override
 	}
 }
 

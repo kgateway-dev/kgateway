@@ -57,6 +57,14 @@ func WithContext(ctx context.Context) Option {
 	}
 }
 
+// WithDialContext returns the Option to open connections with dial instead of the default dialer,
+// e.g. to send through a port-forward. Only ExecuteRequest honors it; the curl binary ignores it.
+func WithDialContext(dial func(ctx context.Context, network, addr string) (net.Conn, error)) Option {
+	return func(config *requestConfig) {
+		config.dialContext = dial
+	}
+}
+
 // VerboseOutput returns the Option to emit a verbose output for the  curl request
 // https://curl.se/docs/manpage.html#-v
 func VerboseOutput() Option {
