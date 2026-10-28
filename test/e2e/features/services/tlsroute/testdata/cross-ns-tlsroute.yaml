@@ -2,13 +2,16 @@ apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: TLSRoute
 metadata:
   name: tls-route
+  namespace: tls-cross-ns-client
 spec:
   parentRefs:
-    - name: gateway
+    - name: tls-gateway
+      namespace: tls-route
+      sectionName: listener-8444
   hostnames:
     - "example.com"
   rules:
     - backendRefs:
         - name: backend-svc
-          namespace: cross-namespace-allowed-backend-ns
+          namespace: tls-cross-ns-backend
           port: 443

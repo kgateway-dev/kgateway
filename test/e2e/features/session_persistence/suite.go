@@ -36,10 +36,12 @@ var (
 
 	testCases = map[string]*base.TestCase{
 		"TestCookieSessionPersistence": {
-			Manifests: []string{cookieSessionPersistenceManifest},
+			Manifests:       []string{cookieSessionPersistenceManifest},
+			MinGwApiVersion: base.GwApiRequireRouteSessionPersistence,
 		},
 		"TestHeaderSessionPersistence": {
-			Manifests: []string{headerSessionPersistenceManifest},
+			Manifests:       []string{headerSessionPersistenceManifest},
+			MinGwApiVersion: base.GwApiRequireRouteSessionPersistence,
 		},
 		"TestBackendConfigPolicyCookieSessionPersistence": {
 			Manifests: []string{bcpCookieSessionPersistenceManifest},
@@ -51,7 +53,8 @@ var (
 			Manifests: []string{bcpDynamicRouteManifest},
 		},
 		"TestBackendConfigPolicyOverridesRouteSessionPersistence": {
-			Manifests: []string{bcpOverrideRouteManifest},
+			Manifests:       []string{bcpOverrideRouteManifest},
+			MinGwApiVersion: base.GwApiRequireRouteSessionPersistence,
 		},
 	}
 )
