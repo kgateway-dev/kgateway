@@ -930,6 +930,15 @@ type HealthCheck struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Interval metav1.Duration `json:"interval"`
 
+	// NoTrafficInterval is the time between health checks for a cluster that has
+	// not received any upstream traffic. If unset, Envoy's default of 60 seconds is used.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="noTrafficInterval must be at least 1ms."
+	NoTrafficInterval *metav1.Duration `json:"noTrafficInterval,omitempty"`
+
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
 	// unhealthy.
 	// Note that for HTTP health checks, if a host responds with a code not in ExpectedStatuses or RetriableStatuses,
