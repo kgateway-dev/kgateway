@@ -12,13 +12,14 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	"istio.io/istio/pkg/test/util/retry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
@@ -35,6 +36,15 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
+// gateway resolves the address of the Gateway under test.
+func (s *testingSuite) gateway() *common.Gateway {
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
+	return &gw
+}
+
 func (s *testingSuite) TestOTelTracing() {
 	s.testOTelTracing()
 }
@@ -49,23 +59,21 @@ func (s *testingSuite) testOTelTracing() {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
+	gw := s.gateway()
 	headerValue := strconv.Itoa(rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
 		// make curl request to httpbin service with the custom header
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		gw.SendWithRetry(
 			s.Ctx,
-			defaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHostHeader("www.example.com"),
-				curl.WithHeader("x-header-tag", headerValue),
-				curl.WithPath("/status/200"),
-				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			},
+			s.T(),
 			&matchers.HttpResponse{
 				StatusCode: 200,
 			},
-			20*time.Second,
-			2*time.Second,
+			[]retry.Option{retry.Timeout(20 * time.Second)},
+			curl.WithHostHeader("www.example.com"),
+			curl.WithHeader("x-header-tag", headerValue),
+			curl.WithPort(8080),
+			curl.WithPath("/status/200"),
 		)
 
 		// Example trace found in the otel-collector logs
@@ -116,22 +124,20 @@ func (s *testingSuite) TestRouteTracingCustomAttributes() {
 	// Wait for listener-level tracing policy to be accepted
 	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
+	gw := s.gateway()
 	headerValue := strconv.Itoa(rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		gw.SendWithRetry(
 			s.Ctx,
-			defaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHostHeader("www.example.com"),
-				curl.WithHeader("x-route-header", headerValue),
-				curl.WithPath("/status/200"),
-				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			},
+			s.T(),
 			&matchers.HttpResponse{
 				StatusCode: 200,
 			},
-			20*time.Second,
-			2*time.Second,
+			[]retry.Option{retry.Timeout(20 * time.Second)},
+			curl.WithHostHeader("www.example.com"),
+			curl.WithHeader("x-route-header", headerValue),
+			curl.WithPort(8080),
+			curl.WithPath("/status/200"),
 		)
 
 		expectedLines := []string{
@@ -170,21 +176,19 @@ func (s *testingSuite) TestRouteTracingDisable() {
 	marker := fmt.Sprintf("disable-test-%v", rand.Intn(10000)) //nolint:gosec // G404: Using math/rand for test trace identification is acceptable
 
 	// Make several requests with the unique marker header
+	gw := s.gateway()
 	for range 5 {
-		s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+		gw.SendWithRetry(
 			s.Ctx,
-			defaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHostHeader("www.example.com"),
-				curl.WithHeader("x-header-tag", marker),
-				curl.WithPath("/status/200"),
-				curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-			},
+			s.T(),
 			&matchers.HttpResponse{
 				StatusCode: 200,
 			},
-			20*time.Second,
-			2*time.Second,
+			[]retry.Option{retry.Timeout(20 * time.Second)},
+			curl.WithHostHeader("www.example.com"),
+			curl.WithHeader("x-header-tag", marker),
+			curl.WithPort(8080),
+			curl.WithPath("/status/200"),
 		)
 	}
 
