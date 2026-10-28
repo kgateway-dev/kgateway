@@ -20,10 +20,9 @@ import (
 // UccWithEndpoints holds a CLA keyed by (client, backend). Equal results share
 // one interned proto across clients.
 //
-// It is a single pointer so that it is pointer-shaped: krt.Fetch boxes every
-// row it filters into an interface, and EDS assembly fetches all of a client's
-// rows on every endpoint change. A pointer boxes without allocating and copies
-// in 8 bytes; the full row would allocate and copy each time.
+// It is a single pointer because EDS assembly fetches all of a client's rows on
+// every endpoint change, and krt.Fetch copies each row into a new slice. A
+// pointer copies in 8 bytes; the full row is roughly 170.
 type UccWithEndpoints struct {
 	*uccEndpointsRow
 }
@@ -58,9 +57,11 @@ func uccEndpointsResourceName(client ir.UniquelyConnectedClient, endpointsName s
 }
 
 func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
-	if c.uccEndpointsRow == in.uccEndpointsRow {
-		return true
-	}
+	return c.uccEndpointsRow == in.uccEndpointsRow || c.uccEndpointsRow.Equals(in.uccEndpointsRow)
+}
+
+// Equals lives on the row so that krtequals checks the row's fields.
+func (c *uccEndpointsRow) Equals(in *uccEndpointsRow) bool {
 	return c.Client.Equals(in.Client) &&
 		c.EndpointsHash == in.EndpointsHash &&
 		c.endpointsName == in.endpointsName

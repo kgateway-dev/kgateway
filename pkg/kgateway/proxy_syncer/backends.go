@@ -28,7 +28,7 @@ import (
 // Clients share its read-only Cluster proto and clone it for per-client changes.
 //
 // It is a single pointer for the reason given on [UccWithEndpoints]: every
-// client's transform fetches every base, and krt.Fetch boxes each row.
+// client's transform fetches every base.
 type baseEnvoyCluster struct {
 	*baseClusterRow
 }
@@ -81,9 +81,11 @@ type baseClusterRow struct {
 func (b baseEnvoyCluster) ResourceName() string { return b.Name }
 
 func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
-	if b.baseClusterRow == in.baseClusterRow {
-		return true
-	}
+	return b.baseClusterRow == in.baseClusterRow || b.baseClusterRow.Equals(in.baseClusterRow)
+}
+
+// Equals lives on the row so that krtequals checks the row's fields.
+func (b *baseClusterRow) Equals(in *baseClusterRow) bool {
 	if b.CompareBackendInputs != in.CompareBackendInputs {
 		return false
 	}
