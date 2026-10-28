@@ -53,7 +53,8 @@ jobs:
             refs='[
               {"checkout_ref":"main","display_ref":"main"},
               {"checkout_ref":"v2.3.x","display_ref":"v2.3.x"},
-              {"checkout_ref":"v2.4.x","display_ref":"v2.4.x"}
+              {"checkout_ref":"v2.4.x","display_ref":"v2.4.x"},
+              {"checkout_ref":"v2.5.x","display_ref":"v2.5.x"}
             ]'
           else
             checkout_ref="${INPUT_TARGET_REF:-}"
