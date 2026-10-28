@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strconv"
 	"sync"
 
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
@@ -75,12 +76,6 @@ func WithGatewayControllerName(name string) func(*setup) {
 func WithGatewayClassName(name string) func(*setup) {
 	return func(s *setup) {
 		s.gatewayClassName = name
-	}
-}
-
-func WithWaypointClassName(name string) func(*setup) {
-	return func(s *setup) {
-		s.waypointClassName = name
 	}
 }
 
@@ -187,7 +182,6 @@ type setup struct {
 	gatewayControllerExtension     sdk.GatewayControllerExtension
 	gatewayControllerName          string
 	gatewayClassName               string
-	waypointClassName              string
 	additionalGatewayClasses       map[string]*deployer.GatewayClassInfo
 	extraPlugins                   func(ctx context.Context, commoncol *collections.CommonCollections, mergeSettingsJSON string) []sdk.Plugin
 	helmValuesGeneratorOverride    func(inputs *deployer.Inputs) deployer.HelmValuesGenerator
@@ -217,7 +211,6 @@ func New(opts ...func(*setup)) (*setup, error) {
 	s := &setup{
 		gatewayControllerName: wellknown.DefaultGatewayControllerName,
 		gatewayClassName:      wellknown.DefaultGatewayClassName,
-		waypointClassName:     wellknown.DefaultWaypointClassName,
 		leaderElectionID:      wellknown.LeaderElectionID,
 	}
 	for _, opt := range opts {
@@ -262,6 +255,9 @@ func New(opts ...func(*setup)) (*setup, error) {
 				LeaderElectionNamespace: namespaces.GetPodNamespace(),
 				LeaderElection:          !s.globalSettings.DisableLeaderElection,
 				LeaderElectionID:        leaderElectionID,
+				LeaseDuration:           &s.globalSettings.LeaderElectionLeaseDuration,
+				RenewDeadline:           &s.globalSettings.LeaderElectionRenewDeadline,
+				RetryPeriod:             &s.globalSettings.LeaderElectionRetryPeriod,
 			}
 		}
 	}
@@ -272,7 +268,7 @@ func New(opts ...func(*setup)) (*setup, error) {
 
 	if s.xdsListener == nil {
 		var err error
-		s.xdsListener, err = newXDSListener("0.0.0.0", s.globalSettings.XdsServicePort)
+		s.xdsListener, err = newXDSListener(s.globalSettings.XdsServicePort)
 		if err != nil {
 			logger.Error("error creating xds listener", "error", err)
 			return nil, err
@@ -334,7 +330,7 @@ func (s *setup) Start(ctx context.Context) error {
 	// Extra callbacks go first in the chain, so they receive every hook by
 	// construction instead of through forwarding.
 	xdsCallbacks := ChainCallbacks(s.extraXDSCallbacks, uniqueClientCallbacks)
-	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds, s.globalSettings.XdsSuppressNackResend, s.globalSettings.XdsRespondOnReconnect)
+	cache := NewControlPlane(ctx, s.xdsListener, xdsCallbacks, authenticators, s.globalSettings.XdsAuth, certWatcher, s.globalSettings.EnableOrderedAds, s.globalSettings.XdsRespondOnReconnect)
 
 	setupOpts := &controller.SetupOpts{
 		Cache:          cache,
@@ -392,9 +388,16 @@ func (s *setup) Start(ctx context.Context) error {
 	return mgr.Start(ctx)
 }
 
-func newXDSListener(ip string, port uint32) (net.Listener, error) {
-	bindAddr := net.TCPAddr{IP: net.ParseIP(ip), Port: int(port)}
-	return net.Listen(bindAddr.Network(), bindAddr.String())
+// newXDSListener binds the xDS server to the wildcard address, which accepts
+// both IPv4 and IPv6 proxies.
+//
+// The host is left empty rather than written as "0.0.0.0" only for readability:
+// Go treats every wildcard on the "tcp" network as dual-stack and normalizes the
+// socket to AF_INET6 with IPV6_V6ONLY cleared, so the two are equivalent and
+// neither restricts the server to one family. Serving a single family would mean
+// binding "tcp4" or "tcp6" explicitly; nothing needs that today.
+func newXDSListener(port uint32) (net.Listener, error) {
+	return net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(int(port))))
 }
 
 func (s *setup) buildKgatewayWithConfig(
@@ -419,7 +422,6 @@ func (s *setup) buildKgatewayWithConfig(
 	gatewayClassInfos := controller.GetDefaultClassInfo(
 		setupOpts.GlobalSettings,
 		s.gatewayClassName,
-		s.waypointClassName,
 		s.gatewayControllerName,
 		s.additionalGatewayClasses,
 	)
@@ -429,7 +431,6 @@ func (s *setup) buildKgatewayWithConfig(
 		Manager:                     mgr,
 		ControllerName:              s.gatewayControllerName,
 		GatewayClassName:            s.gatewayClassName,
-		WaypointGatewayClassName:    s.waypointClassName,
 		AdditionalGatewayClasses:    s.additionalGatewayClasses,
 		GatewayClassInfos:           gatewayClassInfos,
 		ExtraPlugins:                s.extraPlugins,

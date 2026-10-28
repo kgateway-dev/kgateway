@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"strings"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -46,7 +47,7 @@ func NewPluginFromCollections(
 	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, BuildServiceBackendObjectIR(svc, port.Port, ptr.OrDefault(port.AppProtocol, port.Name)))
+			uss = append(uss, BuildServiceBackendObjectIR(svc, port.Port, servicePortProtocol(port)))
 		}
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
@@ -69,6 +70,15 @@ func NewPluginFromCollections(
 		// 	GetBackendForRef: getBackendForHostnameRef,
 		// },
 	}
+}
+
+// servicePortProtocol returns the app protocol of a Service port, falling back to the port name. A port named
+// http is too common to be a choice of HTTP/1.1, so only an explicit appProtocol of http selects it.
+func servicePortProtocol(port corev1.ServicePort) string {
+	if port.AppProtocol == nil && strings.EqualFold(port.Name, ir.HTTPAppProtocolName) {
+		return ""
+	}
+	return ptr.OrDefault(port.AppProtocol, port.Name)
 }
 
 func BuildServiceBackendObjectIR(svc *corev1.Service, svcPort int32, svcProtocol string) ir.BackendObjectIR {

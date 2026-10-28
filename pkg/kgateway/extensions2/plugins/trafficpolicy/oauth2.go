@@ -125,6 +125,33 @@ func constructOAuth2(
 	return nil
 }
 
+// upstreamTLSValidationForBackend returns the trust material from the BackendTLSPolicy in
+// effect on backend, picked by the same creation-time/ref winner rule the BackendTLSPolicy
+// plugin merges with, so that discovery trusts what the proxy does. An invalid effective
+// policy is an error rather than a silent fallback to the system trust store.
+// BackendConfigPolicy is not consulted. A nil result means the system trust store.
+func upstreamTLSValidationForBackend(backend *ir.BackendObjectIR) (*ir.UpstreamTLSValidation, error) {
+	if backend == nil {
+		return nil, nil
+	}
+	attached := backend.AttachedPolicies.Policies[wellknown.BackendTLSPolicyGVK.GroupKind()]
+	if len(attached) == 0 {
+		return nil, nil
+	}
+
+	effective := attached[ir.WinnerPolicyIndexByCreationTimeAndRef(attached)]
+	if len(effective.Errors) > 0 {
+		return nil, fmt.Errorf("BackendTLSPolicy in effect on the issuer backend is invalid: %w",
+			errors.Join(effective.Errors...))
+	}
+
+	provider, ok := effective.PolicyIr.(ir.UpstreamTLSValidationProvider)
+	if !ok {
+		return nil, nil
+	}
+	return provider.UpstreamTLSValidation(), nil
+}
+
 func buildOAuth2ProviderConfig(
 	ctx context.Context,
 	krtctx krt.HandlerContext,
@@ -143,6 +170,16 @@ func buildOAuth2ProviderConfig(
 		jwksURI = ptr.Deref(in.JWT.JWKSURI, "").String()
 	}
 
+	// Resolve the backend before discovering, so discovery can trust the CA of its
+	// BackendTLSPolicy.
+	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
+	if err != nil || backend == nil {
+		// Release the entry the previous translation bound; the backend is a tracked krt
+		// input, so its appearance re-runs this transform and binds afresh.
+		discoverer.unbind(ext.ResourceName())
+		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
+	}
+
 	// Only discover if we need to, i.e. when the issuer is set and at least one endpoint is
 	// left for the well-known document to supply.
 	if oidcDiscoveryRequired(in) {
@@ -152,7 +189,13 @@ func buildOAuth2ProviderConfig(
 		// provider that was down at startup would keep this extension (and every
 		// TrafficPolicy referencing it) rejected until the control plane restarted.
 		discoverer.markDependant(krtctx)
-		openidCfg, err := discoverer.get(ctx, *in.IssuerURI)
+		tlsValidation, err := upstreamTLSValidationForBackend(backend)
+		if err != nil {
+			// Same as above: the policy is a tracked input, so fixing it rebinds.
+			discoverer.unbind(ext.ResourceName())
+			return nil, err
+		}
+		openidCfg, err := discoverer.get(ctx, ext.ResourceName(), *in.IssuerURI, tlsValidation)
 		if err != nil {
 			return nil, err
 		}
@@ -175,11 +218,6 @@ func buildOAuth2ProviderConfig(
 	}
 	if authorizationEndpoint == "" {
 		return nil, errors.New("oauth2 authorization endpoint not specified or not found in issuer well-known configuration")
-	}
-
-	backend, err := backends.GetBackendFromRef(krtctx, ext.ObjectSource, in.BackendRef.BackendObjectReference)
-	if err != nil || backend == nil {
-		return nil, fmt.Errorf("error resolving oauth2 backend %v: %w", in.BackendRef.BackendObjectReference, err)
 	}
 
 	// Use a dedicated backend to fetch JWKS if specified, otherwise fall back to the primary backend.

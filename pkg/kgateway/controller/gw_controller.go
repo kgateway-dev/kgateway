@@ -133,7 +133,7 @@ func NewGatewayReconciler(
 			return
 		}
 		// If this GatewayClass is not ours, ignore it
-		if gwClass.Spec.ControllerName != gwv1.GatewayController(r.controllerName) {
+		if gwClass.Spec.ControllerName != gwv1.GatewayController(r.controllerName) || wellknown.IsRetiredWaypointClass(gwClass) {
 			return
 		}
 		for _, g := range r.gwClient.List(metav1.NamespaceAll, labels.Everything()) {
@@ -175,7 +175,7 @@ func NewGatewayReconciler(
 		// For each GatewayClass that references this parameter, find all Gateways using that class
 		for _, gc := range gwClasses {
 			// Only process GatewayClasses managed by our controller
-			if gc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) {
+			if gc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) || wellknown.IsRetiredWaypointClass(gc) {
 				continue
 			}
 			if gc.Spec.ParametersRef != nil &&
@@ -288,6 +288,10 @@ func (r *gatewayReconciler) Reconcile(req types.NamespacedName) (rErr error) {
 	// Only reconcile Gateways for our controller
 	if gwc.Spec.ControllerName != gwv1.GatewayController(r.controllerName) {
 		// Not our GatewayClass at all
+		return nil
+	}
+	if wellknown.IsRetiredWaypointClass(gwc) {
+		logger.Debug("ignoring Gateway of a retired waypoint GatewayClass", "ref", req, "gwclass", gwc.Name)
 		return nil
 	}
 
@@ -523,7 +527,7 @@ func (r *gatewayReconciler) setupTLSCertificateWatch(certWatcher *certwatcher.Ce
 				logger.Error("error getting GatewayClass for Gateway during certificate change", "ref", ref)
 				continue
 			}
-			if gwClass.Spec.ControllerName == gwv1.GatewayController(r.controllerName) {
+			if gwClass.Spec.ControllerName == gwv1.GatewayController(r.controllerName) && !wellknown.IsRetiredWaypointClass(gwClass) {
 				logger.Debug("enqueueing Gateway for reconciliation due to certificate change", "ref", ref)
 				r.queue.AddObject(gw)
 			}

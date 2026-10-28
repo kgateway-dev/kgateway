@@ -181,6 +181,37 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  lookupFamily:
+                    description: |-
+                      LookupFamily selects the address families used to resolve this backend's
+                      hostnames. It applies only to backends resolved through DNS, such as a
+                      Backend with a hostname, and has no effect on Kubernetes Services. When
+                      omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+                      equivalent to IPv4Preferred.
+
+                      For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+                      or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+                      selects IPv4 addresses when available, even if those addresses are
+                      unreachable, so a cluster that reaches all IPv4 destinations this way should
+                      change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+
+                      Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+                      through a host-local IPv4 address and node SNAT, so the default reaches
+                      IPv4-only backends without an override.
+
+                      IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+                      for the preferred family, not when a connection fails. All returns both
+                      families, and for most backends each address becomes a separate endpoint,
+                      so requests sent to an unreachable family fail rather than fall back.
+
+                      Note: This feature is experimental and subject to breaking changes in future releases.
+                    enum:
+                    - IPv4Preferred
+                    - IPv4Only
+                    - IPv6Only
+                    - IPv6Preferred
+                    - All
+                    type: string
                   refreshRate:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
@@ -925,6 +956,119 @@ spec:
                 format: int32
                 minimum: 0
                 type: integer
+              sessionPersistence:
+                description: |-
+                  SessionPersistence pins a client to one endpoint of the backend using a
+                  cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+                  the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+                  splits traffic, it only pins a client to an endpoint within the backend
+                  chosen by the split. When set, it takes precedence over the
+                  sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+
+                  This field is experimental and subject to breaking changes. It mirrors the
+                  experimental Gateway API SessionPersistence type (v1.7).
+                properties:
+                  absoluteTimeout:
+                    description: |-
+                      AbsoluteTimeout defines the absolute timeout of the persistent
+                      session. Once the AbsoluteTimeout duration has elapsed, the
+                      session becomes invalid.
+
+                      Only cookie sessions with lifetimeType Permanent support this field, where it
+                      sets the cookie lifetime. It has no effect for header sessions and for Session
+                      cookies (the default lifetimeType), as the gateway does not track the session
+                      lifetime separately from the cookie.
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                  cookie:
+                    description: |-
+                      Cookie provides configuration settings that are specific
+                      to cookie-based session persistence.
+                    properties:
+                      lifetimeType:
+                        default: Session
+                        description: |-
+                          LifetimeType specifies whether the cookie has a permanent or
+                          session-based lifetime. A permanent cookie persists until its
+                          specified expiry time, defined by the Expires or Max-Age cookie
+                          attributes, while a session cookie is deleted when the current
+                          session ends.
+
+                          When set to "Permanent", AbsoluteTimeout indicates the
+                          cookie's lifetime via the Expires or Max-Age cookie attributes
+                          and is required.
+
+                          When set to "Session", AbsoluteTimeout has no effect, as the
+                          gateway does not track the session lifetime separately from
+                          the cookie.
+
+                          Defaults to "Session".
+                        enum:
+                        - Permanent
+                        - Session
+                        type: string
+                      name:
+                        description: |-
+                          Name defines the name of the cookie used for session persistence.
+                          If not specified, a unique cookie name is generated for each backend.
+                          Users should avoid reusing cookie names to prevent unintended
+                          consequences, such as rejection or unpredictable behavior. Avoid using the
+                          same cookie name for backends in the same traffic split, as clients lose
+                          their session whenever the split switches backends.
+                        maxLength: 256
+                        minLength: 1
+                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                        type: string
+                      path:
+                        default: /
+                        description: Path defines the cookie Path attribute. Defaults
+                          to "/".
+                        maxLength: 1024
+                        type: string
+                    type: object
+                  header:
+                    description: |-
+                      Header provides configuration settings that are specific
+                      to header-based session persistence.
+                    properties:
+                      name:
+                        description: |-
+                          Name defines the name of the header used for session persistence.
+                          The client must include this header in subsequent requests to
+                          maintain the session. Avoid using the same header name for backends in
+                          the same traffic split, as clients lose their session whenever the split
+                          switches backends.
+                        maxLength: 256
+                        minLength: 1
+                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type:
+                    default: Cookie
+                    description: |-
+                      Type defines the type of session persistence such as through
+                      the use of a header or cookie. Defaults to cookie based session
+                      persistence.
+                    enum:
+                    - Cookie
+                    - Header
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: AbsoluteTimeout must be specified when cookie lifetimeType
+                    is Permanent
+                  rule: '!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType
+                    != ''Permanent'' || has(self.absoluteTimeout)'
+                - message: cookie must be nil if type is not Cookie
+                  rule: '!has(self.cookie) || self.type == ''Cookie'''
+                - message: cookie must be specified for Cookie type
+                  rule: self.type != 'Cookie' || has(self.cookie)
+                - message: header must be nil if type is not Header
+                  rule: '!has(self.header) || self.type == ''Header'''
+                - message: header must be specified for Header type
+                  rule: self.type != 'Header' || has(self.header)
               targetRefs:
                 description: TargetRefs specifies the target references to attach
                   the policy to.

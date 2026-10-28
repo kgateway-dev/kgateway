@@ -86,7 +86,7 @@ func TestClusterLoadAssignmentsEqualAgreesWithProtoEqual(t *testing.T) {
 		variant(func(c *envoyendpointv3.ClusterLoadAssignment) { c.Endpoints[0].Proximity = wrapperspb.UInt32(1) }),
 		variant(func(c *envoyendpointv3.ClusterLoadAssignment) {
 			c.Endpoints[0].LbConfig = &envoyendpointv3.LocalityLbEndpoints_LoadBalancerEndpoints{
-				LoadBalancerEndpoints: &envoyendpointv3.LocalityLbEndpoints_LbEndpointList{},
+				LoadBalancerEndpoints: &envoyendpointv3.LocalityLbEndpoints_LbEndpointList{}, //nolint:staticcheck // SA1019: covers equality of the deprecated LbConfig oneof
 			}
 		}),
 		variant(func(c *envoyendpointv3.ClusterLoadAssignment) {

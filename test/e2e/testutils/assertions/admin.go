@@ -38,6 +38,7 @@ func (p *Provider) AssertKgatewayAdminApi(
 		WithReceiver(io.Discard). // adminAssertion can overwrite this
 		WithCurlOptions(
 			curl.WithRetries(3, 0, 10),
+			curl.WithConnectionTimeout(10), // a stalled port-forward fails one poll instead of blocking Eventually
 			curl.WithHostPort(portForwarder.Address()),
 		)
 

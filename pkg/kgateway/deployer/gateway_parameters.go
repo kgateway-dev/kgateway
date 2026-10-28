@@ -261,7 +261,6 @@ func (k *kgatewayParameters) getDefaultGatewayParametersWithFlag(gw *gwv1.Gatewa
 			ControllerName:             string(gwc.Spec.ControllerName),
 			ClassName:                  gwc.GetName(),
 			ImageInfo:                  k.inputs.ImageInfo,
-			WaypointClassName:          k.inputs.WaypointGatewayClassName,
 			OmitDefaultSecurityContext: omitDefaultSecurityContext,
 		})
 	}
@@ -284,6 +283,7 @@ func (k *kgatewayParameters) resolveGatewayClassParameters(gwc *gwv1.GatewayClas
 	gwpName := paramRef.Name
 	if gwpName == "" {
 		err := errors.New("parametersRef.name cannot be empty when parametersRef is specified")
+		//nolint:sloglint // keep the existing log key; renaming it would break log queries
 		logger.Error("could not get gateway parameters for gateway class",
 			"error", err,
 			"gatewayClassName", gwc.GetName(),
@@ -317,7 +317,6 @@ func (k *kgatewayParameters) mergeWithDefaults(gwc *gwv1.GatewayClass, gwp *kgat
 		ControllerName:             string(gwc.Spec.ControllerName),
 		ClassName:                  gwc.GetName(),
 		ImageInfo:                  k.inputs.ImageInfo,
-		WaypointClassName:          k.inputs.WaypointGatewayClassName,
 		OmitDefaultSecurityContext: omitDefaultSecurityContext,
 	})
 	if err != nil {
@@ -353,6 +352,10 @@ func (k *kgatewayParameters) getValues(gw *gwv1.Gateway, gwParam *kgateway.Gatew
 			},
 		},
 	}
+	// The proxy's own listeners (readiness, stats) must bind the same address
+	// family as the translated data-plane listeners; otherwise the kubelet probe
+	// and the metrics scrape reach the pod on an address Envoy is not listening on.
+	gtw.BindIpv6 = new(k.inputs.CommonCollections.Settings.ListenerBindIpv6)
 	deployer.SetInfrastructureMetadataFromGateway(gw, gtw)
 	// construct the default values
 	vals := &deployer.HelmConfig{
