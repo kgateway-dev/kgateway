@@ -75,6 +75,31 @@ func TestTranslateHealthCheck(t *testing.T) {
 			},
 		},
 		{
+			name: "health check with no traffic interval",
+			config: &kgateway.HealthCheck{
+				Timeout:            metav1.Duration{Duration: 5 * time.Second},
+				Interval:           metav1.Duration{Duration: 10 * time.Second},
+				NoTrafficInterval:  &metav1.Duration{Duration: time.Second},
+				UnhealthyThreshold: 3,
+				HealthyThreshold:   2,
+				Http: &kgateway.HealthCheckHttp{
+					Path: "/health",
+				},
+			},
+			expected: &envoycorev3.HealthCheck{
+				Timeout:            durationpb.New(5 * time.Second),
+				Interval:           durationpb.New(10 * time.Second),
+				NoTrafficInterval:  durationpb.New(time.Second),
+				UnhealthyThreshold: &wrapperspb.UInt32Value{Value: 3},
+				HealthyThreshold:   &wrapperspb.UInt32Value{Value: 2},
+				HealthChecker: &envoycorev3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoycorev3.HealthCheck_HttpHealthCheck{
+						Path: "/health",
+					},
+				},
+			},
+		},
+		{
 			name: "gRPC health check",
 			config: &kgateway.HealthCheck{
 				Timeout:            metav1.Duration{Duration: 5 * time.Second},

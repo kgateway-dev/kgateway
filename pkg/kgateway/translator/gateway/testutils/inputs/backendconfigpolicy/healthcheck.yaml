@@ -5,12 +5,12 @@ metadata:
 spec:
   gatewayClassName: kgateway
   listeners:
-  - protocol: HTTP
-    port: 8080
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: All
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: v1
 kind: Service
@@ -39,6 +39,7 @@ spec:
   healthCheck:
     timeout: 3s
     interval: 2s
+    noTrafficInterval: 1s
     unhealthyThreshold: 3
     healthyThreshold: 2
     http:
