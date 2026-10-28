@@ -53,6 +53,21 @@ func TestImagePullerPodNameAvoidsSanitizationCollisions(t *testing.T) {
 	}
 }
 
+func TestImageSet(t *testing.T) {
+	images := newImageSet()
+	if images.has("nginx:1.28.0") {
+		t.Fatal("expected an empty set to not have nginx:1.28.0")
+	}
+
+	images.add("nginx:1.28.0")
+	if !images.has("nginx:1.28.0") {
+		t.Fatal("expected nginx:1.28.0 after adding it")
+	}
+	if images.has("nginx:1.29.0") {
+		t.Fatal("expected a different tag to not be recorded")
+	}
+}
+
 func TestSplitNamespaceResources(t *testing.T) {
 	content := `apiVersion: v1
 kind: Pod

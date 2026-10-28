@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -132,6 +133,33 @@ const (
 	imagePullerPodNameMaxLength = 63
 	imagePullerPodHashLength    = 12
 )
+
+// pulledImages records the images this test process has already pre-pulled.
+// Every suite in the process runs against the same cluster, so later test
+// cases that use the same image skip the puller pod.
+var pulledImages = newImageSet()
+
+type imageSet struct {
+	mu     sync.Mutex
+	images map[string]struct{}
+}
+
+func newImageSet() *imageSet {
+	return &imageSet{images: make(map[string]struct{})}
+}
+
+func (s *imageSet) has(image string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.images[image]
+	return ok
+}
+
+func (s *imageSet) add(image string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.images[image] = struct{}{}
+}
 
 // TestCase defines the manifests and resources used by a test or test suite.
 type TestCase struct {
@@ -472,7 +500,12 @@ func (s *BaseTestingSuite) prePullImages(testCase *TestCase) {
 }
 
 // pullImage creates a temporary pod to pull the given image with a long timeout.
+// Images already pulled by this process are skipped.
 func (s *BaseTestingSuite) pullImage(image string) {
+	if pulledImages.has(image) {
+		return
+	}
+
 	podName := imagePullerPodName(image)
 
 	pullerPod := fmt.Sprintf(`
@@ -504,6 +537,7 @@ spec:
 		// Pod should be Succeeded (completed) or Running (image pulled, command ran)
 		g.Expect(pod.Status.Phase).To(gomega.BeElementOf(corev1.PodSucceeded, corev1.PodRunning, corev1.PodFailed))
 	}).WithTimeout(5*time.Minute).WithPolling(2*time.Second).Should(gomega.Succeed(), "waiting for image %s to be pulled", image)
+	pulledImages.add(image)
 
 	// Clean up the puller pod
 	_ = s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "delete", "pod", podName, "-n", "default", "--ignore-not-found")
