@@ -264,6 +264,24 @@ func NewGauge(opts GaugeOpts, labels []string) Gauge {
 	return g
 }
 
+// NewInfo registers a gauge that always reports 1, with label values fixed for
+// the life of the process, following the Prometheus *_info convention.
+func NewInfo(opts GaugeOpts, labels ...Label) {
+	if opts.Namespace == "" {
+		opts.Namespace = DefaultNamespace
+	}
+	opts.ConstLabels = toPrometheusLabels(labels)
+
+	g := prometheus.NewGaugeFunc(prometheus.GaugeOpts(opts), func() float64 { return 1 })
+
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+
+	if err := registry.Register(g); err != nil {
+		panic("failed to register info metric " + opts.Name + ": " + err.Error())
+	}
+}
+
 // Labels returns the labels associated with the gauge metric.
 func (c *prometheusGauge) Labels() []string {
 	return c.labels
@@ -320,22 +338,22 @@ func GetPromCollector(c any) prometheus.Collector {
 // When disabled, metrics instrumentation will collapse into no-op statements,
 // which can be useful for performance testing, or when metrics are not needed.
 var (
-	disabled uint32
+	disabled atomic.Uint32
 )
 
 // SetActive sets the globally active state for metrics.
 // Setting this does not effect metrics that are already being collected.
 func SetActive(active bool) {
 	if active {
-		atomic.StoreUint32(&disabled, 0)
+		disabled.Store(0)
 	} else {
-		atomic.StoreUint32(&disabled, 1)
+		disabled.Store(1)
 	}
 }
 
 // Active checks if metrics are globally active.
 func Active() bool {
-	return atomic.LoadUint32(&disabled) == 0
+	return disabled.Load() == 0
 }
 
 // RegistererGatherer combines the Registerer and Gatherer interfaces from the

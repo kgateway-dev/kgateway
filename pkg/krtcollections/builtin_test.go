@@ -5,16 +5,28 @@ import (
 
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	stateful_sessionv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
+	stateful_cookie "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	apiannotations "github.com/kgateway-dev/kgateway/v2/api/annotations"
+	apiconditions "github.com/kgateway-dev/kgateway/v2/api/conditions"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/sessionpersistence"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 func TestURLRewriteApply(t *testing.T) {
@@ -1016,4 +1028,356 @@ func TestRequestRedirectLowerPriorityPolicyDoesNotPostProcessWinningRedirect(t *
 		expectedRedirect,
 		outputRoute.GetRedirect(),
 	)
+}
+
+func TestAbsoluteTimeoutIgnored(t *testing.T) {
+	timeout := gwv1.Duration("1h")
+	cookie := gwv1.CookieBasedSessionPersistence
+	header := gwv1.HeaderBasedSessionPersistence
+	permanent := gwv1.PermanentCookieLifetimeType
+	session := gwv1.SessionCookieLifetimeType
+
+	tests := []struct {
+		name string
+		sp   *gwv1.SessionPersistence
+		want bool
+	}{
+		{name: "nil", sp: nil, want: false},
+		{name: "no timeout", sp: &gwv1.SessionPersistence{Type: &cookie, Cookie: &gwv1.CookieConfig{}}, want: false},
+		{
+			name: "permanent cookie",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{LifetimeType: &permanent}},
+			want: false,
+		},
+		{
+			name: "session cookie",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{LifetimeType: &session}},
+			want: true,
+		},
+		{
+			name: "cookie lifetime defaults to session",
+			sp:   &gwv1.SessionPersistence{Type: &cookie, AbsoluteTimeout: &timeout, Cookie: &gwv1.CookieConfig{}},
+			want: true,
+		},
+		{name: "type defaults to cookie", sp: &gwv1.SessionPersistence{AbsoluteTimeout: &timeout}, want: true},
+		{name: "header", sp: &gwv1.SessionPersistence{Type: &header, AbsoluteTimeout: &timeout}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, absoluteTimeoutIgnored(tt.sp))
+		})
+	}
+}
+
+func TestSessionPersistenceBackendPolicyTakesPrecedence(t *testing.T) {
+	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{Cookie: &gwv1.CookieConfig{Name: new(gwv1.CookieName("route-cookie"))}})
+	require.NotNil(t, routeSP)
+	newRoute := func() *envoyroutev3.Route {
+		return &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}}
+	}
+
+	t.Run("route rule applies when the backend has no session persistence", func(t *testing.T) {
+		pass := &builtinPluginGwPass{needStatefulSession: map[string]bool{}}
+		out := newRoute()
+		pass.applyRulePolicy(&ir.RouteContext{FilterChainName: "fc"}, ruleIR{sessionPersistence: routeSP}, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}, out)
+		assert.Contains(t, out.GetTypedPerFilterConfig(), sessionpersistence.FilterName, "route rule session persistence should be set")
+		assert.True(t, pass.needStatefulSession["fc"], "filter chain should need the stateful session filter")
+	})
+
+	t.Run("backend session persistence wins over the route rule", func(t *testing.T) {
+		backendSP, err := sessionpersistence.Build(sessionpersistence.Config{Type: sessionpersistence.Cookie, Name: "policy-cookie"})
+		require.NoError(t, err)
+		pCtx := &ir.RouteContext{FilterChainName: "fc"}
+		pCtx.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSP)
+
+		pass := &builtinPluginGwPass{needStatefulSession: map[string]bool{}}
+		out := newRoute()
+		pass.applyRulePolicy(pCtx, ruleIR{sessionPersistence: routeSP}, policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}, out)
+		assert.NotContains(t, out.GetTypedPerFilterConfig(), sessionpersistence.FilterName, "route rule session persistence should be skipped")
+		assert.Equal(t, backendSP, pCtx.TypedFilterConfig.GetTypedConfig(sessionpersistence.FilterName), "backend session persistence should be kept")
+	})
+}
+
+func unmarshalPerRoute(t *testing.T, a *anypb.Any) *stateful_sessionv3.StatefulSessionPerRoute {
+	t.Helper()
+	if a == nil {
+		return nil
+	}
+	out := &stateful_sessionv3.StatefulSessionPerRoute{}
+	require.NoError(t, a.UnmarshalTo(out))
+	return out
+}
+
+func TestConvertSessionPersistenceCookiePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path *string
+		want string
+	}{
+		{name: "unset defaults to root", path: nil, want: "/"},
+		{name: "empty defaults to root", path: new(""), want: "/"},
+		{name: "set is honored", path: new("/app"), want: "/app"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			perRoute := unmarshalPerRoute(t, convertSessionPersistence(&gwv1.SessionPersistence{Cookie: &gwv1.CookieConfig{Path: tt.path}}))
+			require.NotNil(t, perRoute, "session persistence should be converted")
+			state := &stateful_cookie.CookieBasedSessionState{}
+			require.NoError(t, perRoute.GetStatefulSession().GetSessionState().GetTypedConfig().UnmarshalTo(state))
+			assert.Equal(t, tt.want, state.GetCookie().GetPath())
+		})
+	}
+	assert.Nil(t, convertSessionPersistence(nil), "nil session persistence")
+}
+
+func TestSessionPersistenceToAPI(t *testing.T) {
+	tests := []struct {
+		name string
+		in   *gwv1.SessionPersistence
+		want *kgateway.SessionPersistence
+	}{
+		{
+			name: "defaults",
+			in:   &gwv1.SessionPersistence{},
+			want: &kgateway.SessionPersistence{
+				Type:   new(kgateway.CookieBasedSessionPersistence),
+				Cookie: &kgateway.SessionPersistenceCookieConfig{Name: new(kgateway.CookieName("sessionPersistence"))},
+			},
+		},
+		{
+			name: "cookie fields are copied",
+			in: &gwv1.SessionPersistence{
+				AbsoluteTimeout: new(gwv1.Duration("1h")),
+				Cookie: &gwv1.CookieConfig{
+					Name: new(gwv1.CookieName("s")), Path: new("/app"), LifetimeType: new(gwv1.PermanentCookieLifetimeType),
+				},
+			},
+			want: &kgateway.SessionPersistence{
+				Type:            new(kgateway.CookieBasedSessionPersistence),
+				AbsoluteTimeout: new(gwv1.Duration("1h")),
+				Cookie: &kgateway.SessionPersistenceCookieConfig{
+					Name: new(kgateway.CookieName("s")), Path: new("/app"), LifetimeType: new(kgateway.PermanentCookieLifetimeType),
+				},
+			},
+		},
+		{
+			name: "timeout without lifetime stays a session cookie",
+			in:   &gwv1.SessionPersistence{AbsoluteTimeout: new(gwv1.Duration("1h")), Cookie: &gwv1.CookieConfig{}},
+			want: &kgateway.SessionPersistence{
+				Type:            new(kgateway.CookieBasedSessionPersistence),
+				AbsoluteTimeout: new(gwv1.Duration("1h")),
+				Cookie:          &kgateway.SessionPersistenceCookieConfig{Name: new(kgateway.CookieName("sessionPersistence"))},
+			},
+		},
+		{
+			name: "invalid timeout is dropped",
+			in:   &gwv1.SessionPersistence{AbsoluteTimeout: new(gwv1.Duration("bogus"))},
+			want: &kgateway.SessionPersistence{
+				Type:   new(kgateway.CookieBasedSessionPersistence),
+				Cookie: &kgateway.SessionPersistenceCookieConfig{Name: new(kgateway.CookieName("sessionPersistence"))},
+			},
+		},
+		{
+			name: "header defaults the name",
+			in:   &gwv1.SessionPersistence{Type: new(gwv1.HeaderBasedSessionPersistence), AbsoluteTimeout: new(gwv1.Duration("1h"))},
+			want: &kgateway.SessionPersistence{
+				Type:            new(kgateway.HeaderBasedSessionPersistence),
+				AbsoluteTimeout: new(gwv1.Duration("1h")),
+				Header:          &kgateway.SessionPersistenceHeaderConfig{Name: "x-session-persistence"},
+			},
+		},
+		{
+			name: "header name is copied",
+			in:   &gwv1.SessionPersistence{Type: new(gwv1.HeaderBasedSessionPersistence), Header: &gwv1.HeaderConfig{Name: "x-s"}},
+			want: &kgateway.SessionPersistence{
+				Type:   new(kgateway.HeaderBasedSessionPersistence),
+				Header: &kgateway.SessionPersistenceHeaderConfig{Name: "x-s"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, sessionPersistenceToAPI(tt.in))
+		})
+	}
+}
+
+func TestReportSessionPersistenceOverridden(t *testing.T) {
+	routeSP := convertSessionPersistence(&gwv1.SessionPersistence{Cookie: &gwv1.CookieConfig{Name: new(gwv1.CookieName("route-cookie"))}})
+	backendSP, err := sessionpersistence.Build(sessionpersistence.Config{Type: sessionpersistence.Cookie, Name: "policy-cookie"})
+	require.NoError(t, err)
+	backendSPAny, err := utils.MessageToAny(backendSP)
+	require.NoError(t, err)
+	mergeOpts := policy.MergeOptions{Strategy: policy.AugmentedShallowMerge}
+
+	route := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "r", Namespace: "default", UID: "uid"}}
+	parentRef := gwv1.ParentReference{Name: "gw"}
+	backend := func(name string) ir.HttpBackend {
+		obj := ir.NewBackendObjectIR(ir.ObjectSource{Kind: "Service", Namespace: "default", Name: name}, 8080, "", "")
+		return ir.HttpBackend{Backend: ir.BackendRefIR{ClusterName: obj.ClusterName(), BackendObject: &obj}}
+	}
+	ruleCtx := func(index int, backends ...ir.HttpBackend) *ir.RouteContext {
+		return &ir.RouteContext{FilterChainName: "fc", In: ir.HttpRouteRuleMatchIR{
+			Parent:    &ir.HttpRouteIR{SourceObject: route},
+			ParentRef: parentRef,
+			RuleIndex: index,
+			Backends:  backends,
+		}}
+	}
+	newPass := func() (*builtinPluginGwPass, func() []metav1.Condition) {
+		rm := reports.NewReportMap()
+		rep := reports.NewReporter(&rm)
+		pass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, rep).(*builtinPluginGwPass)
+		return pass, func() []metav1.Condition {
+			return rep.Route(route).ParentRef(&parentRef).(*reports.ParentRefReport).Conditions
+		}
+	}
+	programmed := func(conds []metav1.Condition) *metav1.Condition {
+		return meta.FindStatusCondition(conds, apiconditions.KgatewayConditionProgrammed)
+	}
+	newRoute := func(clusters ...*envoyroutev3.WeightedCluster_ClusterWeight) *envoyroutev3.Route {
+		action := &envoyroutev3.RouteAction{}
+		if len(clusters) > 0 {
+			action.ClusterSpecifier = &envoyroutev3.RouteAction_WeightedClusters{WeightedClusters: &envoyroutev3.WeightedCluster{Clusters: clusters}}
+		}
+		return &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: action}}
+	}
+
+	t.Run("no report without a backend policy", func(t *testing.T) {
+		pass, conds := newPass()
+		pass.applyRulePolicy(ruleCtx(0, backend("a")), ruleIR{sessionPersistence: routeSP}, mergeOpts, newRoute())
+		assert.Nil(t, programmed(conds()), "nothing to report")
+	})
+
+	t.Run("single backend and split report the overridden backends of all rules", func(t *testing.T) {
+		pass, conds := newPass()
+
+		single := ruleCtx(0, backend("a"))
+		single.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSPAny)
+		pass.applyRulePolicy(single, ruleIR{sessionPersistence: routeSP}, mergeOpts, newRoute())
+
+		a, b := backend("a"), backend("b")
+		split := newRoute(
+			&envoyroutev3.WeightedCluster_ClusterWeight{Name: a.Backend.ClusterName, TypedPerFilterConfig: map[string]*anypb.Any{sessionpersistence.FilterName: backendSPAny}},
+			&envoyroutev3.WeightedCluster_ClusterWeight{Name: b.Backend.ClusterName},
+		)
+		pass.applyRulePolicy(ruleCtx(2, a, b), ruleIR{sessionPersistence: routeSP}, mergeOpts, split)
+
+		cond := programmed(conds())
+		require.NotNil(t, cond)
+		assert.Equal(t, metav1.ConditionTrue, cond.Status, "the route is still programmed")
+		assert.Equal(t, apiconditions.KgatewayReasonSessionPersistenceOverridden, cond.Reason)
+		assert.Equal(t, "rule 0: sessionPersistence is overridden by the BackendConfigPolicy of Service default/a; "+
+			"rule 2: sessionPersistence is overridden by the BackendConfigPolicy of Service default/a", cond.Message,
+			"both rules are reported, and only the split backend with a policy")
+	})
+
+	t.Run("does not hide a failed rule", func(t *testing.T) {
+		pass, conds := newPass()
+		pass.reporter.Route(route).ParentRef(&parentRef).SetCondition(reporter.RouteCondition{
+			Type:   gwv1.RouteConditionType(apiconditions.KgatewayConditionProgrammed),
+			Status: metav1.ConditionFalse,
+			Reason: "RouteRuleReplaced",
+		})
+		single := ruleCtx(1, backend("a"))
+		single.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSPAny)
+		pass.applyRulePolicy(single, ruleIR{sessionPersistence: routeSP}, mergeOpts, newRoute())
+		assert.Equal(t, metav1.ConditionFalse, programmed(conds()).Status, "Programmed=False must not be overwritten")
+	})
+
+	t.Run("equal parent refs with different pointers share one message", func(t *testing.T) {
+		// e.g. a delegated child route without parentRefs gets a freshly built parent ref per delegating rule
+		newRef := func() gwv1.ParentReference {
+			return gwv1.ParentReference{
+				Group: new(gwv1.Group("gateway.networking.k8s.io")), Kind: new(gwv1.Kind("Gateway")),
+				Namespace: new(gwv1.Namespace("default")), Name: "gw",
+			}
+		}
+		pass, _ := newPass()
+		for _, index := range []int{0, 1} {
+			ctx := ruleCtx(index, backend("a"))
+			ctx.In.ParentRef = newRef()
+			ctx.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSPAny)
+			pass.applyRulePolicy(ctx, ruleIR{sessionPersistence: routeSP}, mergeOpts, newRoute())
+		}
+		ref := newRef()
+		cond := meta.FindStatusCondition(pass.reporter.Route(route).ParentRef(&ref).(*reports.ParentRefReport).Conditions,
+			apiconditions.KgatewayConditionProgrammed)
+		require.NotNil(t, cond)
+		assert.Equal(t, "rule 0: sessionPersistence is overridden by the BackendConfigPolicy of Service default/a; "+
+			"rule 1: sessionPersistence is overridden by the BackendConfigPolicy of Service default/a", cond.Message,
+			"both rules are reported")
+	})
+
+	t.Run("inherited session persistence is reported on the delegating parent route", func(t *testing.T) {
+		pass, _ := newPass()
+		parentRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "parent", Namespace: "default", UID: "parent-uid"}}
+		parentGatewayRef := gwv1.ParentReference{Name: "gw"}
+		parentPol := &builtinPlugin{rule: ruleIR{sessionPersistence: routeSP}}
+		parentRule := &ir.HttpRouteRuleMatchIR{
+			Parent:    &ir.HttpRouteIR{SourceObject: parentRoute},
+			ParentRef: parentGatewayRef,
+			RuleIndex: 3,
+			AttachedPolicies: ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				ir.VirtualBuiltInGK: {{PolicyIr: parentPol}},
+			}},
+		}
+		child := ruleCtx(0, backend("a"))
+		child.In.DelegatingParent = parentRule
+		child.Policy = parentPol
+		child.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSPAny)
+		require.NoError(t, pass.ApplyForRoute(child, newRoute()))
+
+		parentCond := meta.FindStatusCondition(
+			pass.reporter.Route(parentRoute).ParentRef(&parentGatewayRef).(*reports.ParentRefReport).Conditions,
+			apiconditions.KgatewayConditionProgrammed)
+		require.NotNil(t, parentCond, "the parent route owns the overridden sessionPersistence")
+		assert.Equal(t, "rule 3: sessionPersistence is overridden by the BackendConfigPolicy of Service default/a", parentCond.Message)
+		assert.Nil(t, meta.FindStatusCondition(
+			pass.reporter.Route(route).ParentRef(&parentRef).(*reports.ParentRefReport).Conditions,
+			apiconditions.KgatewayConditionProgrammed), "the child route has no sessionPersistence of its own")
+	})
+
+	t.Run("only the effective rule session persistence is reported", func(t *testing.T) {
+		pass, childConds := newPass()
+		parentRoute := &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Name: "parent", Namespace: "default", UID: "parent-uid"}}
+		parentGatewayRef := gwv1.ParentReference{Name: "gw"}
+		parentPol := &builtinPlugin{rule: ruleIR{sessionPersistence: routeSP}}
+		childPol := &builtinPlugin{rule: ruleIR{sessionPersistence: routeSP}}
+		parentRule := &ir.HttpRouteRuleMatchIR{
+			Parent:    &ir.HttpRouteIR{SourceObject: parentRoute},
+			ParentRef: parentGatewayRef,
+			RuleIndex: 3,
+			AttachedPolicies: ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+				ir.VirtualBuiltInGK: {{PolicyIr: parentPol}},
+			}},
+		}
+		child := ruleCtx(0, backend("a"))
+		child.In.DelegatingParent = parentRule
+		child.In.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			ir.VirtualBuiltInGK: {{PolicyIr: childPol}},
+		}}
+		child.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSPAny)
+		out := newRoute()
+
+		// Rule policies are applied from highest (the child's own) to lowest (inherited) priority.
+		child.Policy = childPol
+		require.NoError(t, pass.ApplyForRoute(child, out))
+		child.Policy = parentPol
+		require.NoError(t, pass.ApplyForRoute(child, out))
+
+		cond := programmed(childConds())
+		require.NotNil(t, cond, "the child rule's own sessionPersistence is the effective one")
+		assert.Equal(t, "rule 0: sessionPersistence is overridden by the BackendConfigPolicy of Service default/a", cond.Message)
+		assert.Nil(t, meta.FindStatusCondition(
+			pass.reporter.Route(parentRoute).ParentRef(&parentGatewayRef).(*reports.ParentRefReport).Conditions,
+			apiconditions.KgatewayConditionProgrammed), "the parent's sessionPersistence would not apply anyway")
+	})
+
+	t.Run("no reporter", func(t *testing.T) {
+		pass := &builtinPluginGwPass{needStatefulSession: map[string]bool{}}
+		single := ruleCtx(0, backend("a"))
+		single.TypedFilterConfig.AddTypedConfig(sessionpersistence.FilterName, backendSPAny)
+		assert.NotPanics(t, func() { pass.applyRulePolicy(single, ruleIR{sessionPersistence: routeSP}, mergeOpts, newRoute()) })
+	})
 }

@@ -71,6 +71,15 @@ spec:
         - "--component-log-level"
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
+        {{- $extraArgsStr := join " " ($gateway.extraArgs | default list) }}
+        {{- if not (contains "--drain-time-s" $extraArgsStr) }}
+        - "--drain-time-s"
+        - "60"
+        {{- end }}
+        {{- if not (contains "--drain-strategy" $extraArgsStr) }}
+        - "--drain-strategy"
+        - "immediate"
+        {{- end }}
         {{- with $gateway.extraArgs }}
         {{- range . }}
         - {{ . | quote }}
@@ -124,13 +133,14 @@ spec:
 {{ toYaml $filteredEnv | indent 8 }}
 {{- end }}
 {{- end }}{{/* if $gateway.env */}}
-        ports:
-        {{- range $p := $gateway.ports }}
-        - name: {{ $p.name }}
-          protocol: {{ $p.protocol }}
-          containerPort: {{ $p.targetPort }}
-        {{- end }}
+        {{- /*
+        Listener ports are deliberately not listed as containerPorts: Envoy binds
+        whatever xDS tells it to, and the Service targets ports by number. Listing
+        them would put every listener port change into the pod template and roll
+        the Deployment.
+        */}}
         {{- if $statsConfig.enabled }}
+        ports:
         - name: http-monitoring
           containerPort: 9091
         {{- end }}

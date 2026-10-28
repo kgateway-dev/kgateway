@@ -26,11 +26,20 @@ type ObjWithAttachedPolicies interface {
 
 var _ ObjWithAttachedPolicies = ir.BackendObjectIR{}
 
-// GenerateBackendPolicyReport generates a report map for all policies attached to the given backends.
+// GenerateBackendPolicyReport reports the policies attached to the given
+// backends, attributing base row errors in clusters to the policy they name.
 // Exported for testing.
-func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
+func GenerateBackendPolicyReport(in []*ir.BackendObjectIR, clusters []uccWithCluster) reports.ReportMap {
 	merged := reports.NewPolicyReportMap()
 	reporter := reports.NewReporter(&merged)
+
+	// Only base rows are attributed; translation stops at the first error.
+	baseErrs := make(map[string]error, len(clusters))
+	for _, c := range clusters {
+		if c.Error != nil && !c.PerClientError {
+			baseErrs[c.Name] = c.Error
+		}
+	}
 
 	// iterate all backends and aggregate all policies attached to them
 	// we track each attachment point of the policy to be tracked as an
@@ -38,6 +47,8 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
 	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
 	for _, obj := range in {
+		var policyErr *ir.PolicyError
+		errors.As(baseErrs[obj.ClusterName()], &policyErr)
 		conflictingBTP := winningBackendTLSPolicyRef(obj.GetAttachedPolicies())
 		targetRef := backendAncestorRef(obj.GetObjectSource())
 
@@ -50,6 +61,10 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 		// contribution sources have been reduced, so BuildDesiredPolicyStatus drops these
 		// again for any policy that also has a Gateway ancestor.
 		reportBackendTLSPolicies(reporter, targetRef, obj.GetAttachedPolicies().Policies[btpGK])
+
+		// BackendConfigPolicy settings that are accepted but have no effect, judged on the merged config
+		// applied to this backend and keyed by the policy that supplies the session persistence.
+		bcpPartiallyValid := backendconfigpolicyplugin.PartiallyValidMessages(obj.GetAttachedPolicies().Policies[bcpGK], *obj)
 
 		for gk, polAtts := range obj.GetAttachedPolicies().Policies {
 			if gk == btpGK {
@@ -73,6 +88,9 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					ancestorRef.SectionName = new(gwv1.SectionName(polAtt.PolicyRef.SectionName))
 				}
 				r := reporter.Policy(key, polAtt.Generation).AncestorRef(ancestorRef)
+				if len(polAtt.Errors) == 0 && policyErr != nil && policyErr.Ref != nil && policyErr.Ref.ID() == polAtt.PolicyRef.ID() {
+					polAtt.Errors = []error{policyErr.Err}
+				}
 				if len(polAtt.Errors) > 0 {
 					r.SetCondition(reportssdk.PolicyCondition{
 						Type:    string(shared.PolicyConditionAccepted),
@@ -83,12 +101,21 @@ func GenerateBackendPolicyReport(in []*ir.BackendObjectIR) reports.ReportMap {
 					continue
 				}
 
-				r.SetCondition(reportssdk.PolicyCondition{
+				accepted := reportssdk.PolicyCondition{
 					Type:    string(shared.PolicyConditionAccepted),
 					Status:  metav1.ConditionTrue,
 					Reason:  string(shared.PolicyReasonValid),
 					Message: reportssdk.PolicyAcceptedMsg,
-				})
+				}
+				if gk == bcpGK {
+					// Some BackendConfigPolicy settings are accepted but have no effect, in general or
+					// for this backend. Report them with the PartiallyValid reason on this ancestor.
+					if msg, ok := bcpPartiallyValid[polAtt.PolicyRef.ID()]; ok {
+						accepted.Reason = string(shared.PolicyReasonPartiallyValid)
+						accepted.Message = msg
+					}
+				}
+				r.SetCondition(accepted)
 				r.SetCondition(reportssdk.PolicyCondition{
 					Type:    string(shared.PolicyConditionAttached),
 					Status:  metav1.ConditionTrue,

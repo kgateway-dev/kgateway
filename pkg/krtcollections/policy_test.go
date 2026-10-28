@@ -82,7 +82,7 @@ func TestRoutesFor(t *testing.T) {
 		},
 	}}
 
-	routes := preRouteIndex(t, []any{
+	inputs := []any{
 		&gwv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{Name: "http-route", Namespace: "default"},
 			Spec: gwv1.HTTPRouteSpec{
@@ -109,14 +109,28 @@ func TestRoutesFor(t *testing.T) {
 				RouteStatus: gwv1.RouteStatus{Parents: parentStatus},
 			},
 		},
-	})
+	}
 
 	nns := types.NamespacedName{Namespace: "default", Name: "example-gateway"}
 	group := wellknown.GatewayGVK.Group
 	kind := wellknown.GatewayGVK.Kind
 
-	rts := routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind)
-	require.Len(t, rts, 2)
+	t.Run("immediate", func(t *testing.T) {
+		routes := preRouteIndex(t, inputs)
+		require.Len(t, routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind), 2)
+	})
+	t.Run("debounced", func(t *testing.T) {
+		routes := preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{Stop: test.NewStop(t)}, apisettings.Settings{
+			TranslationDebounce:    time.Millisecond,
+			TranslationDebounceMax: 10 * time.Millisecond,
+		})
+		require.Len(t, routes.RoutesFor(krt.TestingDummyContext{}, nns, group, kind), 2,
+			"routes should be indexed by parent as soon as the debounced index syncs")
+		require.NotNil(t, routes.FetchHttp(krt.TestingDummyContext{}, "default", "http-route"),
+			"delegation lookups by name should read the debounced HTTPRoutes")
+		require.Len(t, routes.FetchHTTPRoutesBySelector(krt.TestingDummyContext{}, HTTPRouteSelector{Namespace: "default"}), 1,
+			"delegation lookups by selector should read the debounced HTTPRoutes")
+	})
 }
 
 func TestGetBackendDifNsWithRefGrant(t *testing.T) {
@@ -539,10 +553,10 @@ func tcpRouteWithBackendRef(refNs string) *gwv1a2.TCPRoute {
 }
 
 func preRouteIndex(t test.Failer, inputs []any) *RoutesIndex {
-	return preRouteIndexWithSettings(t, inputs, apisettings.Settings{})
+	return preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{}, apisettings.Settings{})
 }
 
-func preRouteIndexWithSettings(t test.Failer, inputs []any, settings apisettings.Settings) *RoutesIndex {
+func preRouteIndexWithSettings(t test.Failer, inputs []any, krtopts krtutil.KrtOptions, settings apisettings.Settings) *RoutesIndex {
 	mock := krttest.NewMock(t, inputs)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 	policyCol := krttest.GetMockCollection[ir.PolicyWrapper](mock)
@@ -571,7 +585,7 @@ func preRouteIndexWithSettings(t test.Failer, inputs []any, settings apisettings
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
 	grpcroutes := krttest.GetMockCollection[*gwv1.GRPCRoute](mock)
-	rtidx := NewRoutesIndex(krtutil.KrtOptions{}, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings)
+	rtidx := NewRoutesIndex(krtopts, httproutes, grpcroutes, tcpproutes, tlsroutes, policies, upstreams, refgrants, settings)
 	services.WaitUntilSynced(nil)
 	backends.WaitUntilSynced(nil)
 	policyCol.WaitUntilSynced(nil)
@@ -603,7 +617,7 @@ func translateRoute(t *testing.T, inputs []any) ir.Route {
 }
 
 func translateRouteWithSettings(t *testing.T, inputs []any, settings apisettings.Settings) ir.Route {
-	rtidx := preRouteIndexWithSettings(t, inputs, settings)
+	rtidx := preRouteIndexWithSettings(t, inputs, krtutil.KrtOptions{}, settings)
 	tcpGk := schema.GroupKind{
 		Group: gwv1a2.GroupName,
 		Kind:  "TCPRoute",
@@ -817,7 +831,7 @@ func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
 
 	t.Run("all BackendIndex Service resolution paths include the selector", func(t *testing.T) {
 		const selector = "app=public"
-		index := preRouteIndexWithSettings(t, nil, apisettings.Settings{ServiceLabelSelector: selector}).backends
+		index := preRouteIndexWithSettings(t, nil, krtutil.KrtOptions{}, apisettings.Settings{ServiceLabelSelector: selector}).backends
 		source := ir.ObjectSource{Group: gwv1.GroupName, Kind: "HTTPRoute", Namespace: "default", Name: "route"}
 		ref := gwv1.BackendObjectReference{Name: "foo", Port: new(gwv1.PortNumber(8080))}
 
@@ -840,4 +854,16 @@ func TestMissingBackendDiscoverySelectorDiagnostics(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestToAttachedPoliciesEmpty(t *testing.T) {
+	assert.Nil(t, ToAttachedPolicies(nil).Policies, "no policies should not allocate a map")
+
+	var merged ir.AttachedPolicies
+	merged.Append(ToAttachedPolicies(nil), ToAttachedPolicies(nil))
+	assert.Nil(t, merged.Policies, "appending empty attachments should not allocate a map")
+
+	gk := schema.GroupKind{Group: "g", Kind: "K"}
+	merged.Append(ToAttachedPolicies([]ir.PolicyAtt{{GroupKind: gk}, {GroupKind: gk}}))
+	assert.Len(t, merged.Policies[gk], 2, "policies should still be grouped by kind")
 }

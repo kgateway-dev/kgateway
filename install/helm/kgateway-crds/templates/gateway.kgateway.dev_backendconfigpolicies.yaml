@@ -181,6 +181,37 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  lookupFamily:
+                    description: |-
+                      LookupFamily selects the address families used to resolve this backend's
+                      hostnames. It applies only to backends resolved through DNS, such as a
+                      Backend with a hostname, and has no effect on Kubernetes Services. When
+                      omitted, KGW_DNS_LOOKUP_FAMILY applies; its default, V4_PREFERRED, is
+                      equivalent to IPv4Preferred.
+
+                      For backends reached through DNS64/NAT64 without IPv4 egress, use IPv6Only
+                      or IPv6Preferred so Envoy can use synthesized AAAA records. IPv4Preferred
+                      selects IPv4 addresses when available, even if those addresses are
+                      unreachable, so a cluster that reaches all IPv4 destinations this way should
+                      change KGW_DNS_LOOKUP_FAMILY rather than override each backend.
+
+                      Amazon EKS IPv6 clusters using the Amazon VPC CNI provide IPv4 egress
+                      through a host-local IPv4 address and node SNAT, so the default reaches
+                      IPv4-only backends without an override.
+
+                      IPv6Preferred and IPv4Preferred fall back only when DNS returns no addresses
+                      for the preferred family, not when a connection fails. All returns both
+                      families, and for most backends each address becomes a separate endpoint,
+                      so requests sent to an unreachable family fail rather than fall back.
+
+                      Note: This feature is experimental and subject to breaking changes in future releases.
+                    enum:
+                    - IPv4Preferred
+                    - IPv4Only
+                    - IPv6Only
+                    - IPv6Preferred
+                    - All
+                    type: string
                   refreshRate:
                     description: |-
                       RefreshRate controls how frequently Envoy polls DNS for this backend's hostnames.
@@ -322,7 +353,7 @@ spec:
                 description: |-
                   Http2ProtocolOptions contains the options necessary to configure HTTP/2 backends.
                   Note: Http2ProtocolOptions can only be applied to HTTP/2 backends.
-                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-msg-config-core-v3-http2protocoloptions) for more details.
                 properties:
                   connectionKeepalive:
                     description: |-
@@ -852,6 +883,14 @@ spec:
                     format: int32
                     minimum: 0
                     type: integer
+                  consecutiveGatewayFailure:
+                    description: |-
+                      The number of consecutive gateway failures (502, 503 and 504 status
+                      codes) before a host is ejected. When set, ejection is always enforced.
+                      When unset, consecutive gateway failure ejection is disabled.
+                    format: int32
+                    minimum: 1
+                    type: integer
                   consecutiveLocalOriginFailure:
                     description: |-
                       The number of consecutive locally originated failures before an ejection
@@ -917,6 +956,119 @@ spec:
                 format: int32
                 minimum: 0
                 type: integer
+              sessionPersistence:
+                description: |-
+                  SessionPersistence pins a client to one endpoint of the backend using a
+                  cookie or header. It applies to HTTPRoutes and GRPCRoutes that reference
+                  the backend, and has no effect on TCPRoutes or TLSRoutes. When a route
+                  splits traffic, it only pins a client to an endpoint within the backend
+                  chosen by the split. When set, it takes precedence over the
+                  sessionPersistence field of an HTTPRoute or GRPCRoute rule.
+
+                  This field is experimental and subject to breaking changes. It mirrors the
+                  experimental Gateway API SessionPersistence type (v1.7).
+                properties:
+                  absoluteTimeout:
+                    description: |-
+                      AbsoluteTimeout defines the absolute timeout of the persistent
+                      session. Once the AbsoluteTimeout duration has elapsed, the
+                      session becomes invalid.
+
+                      Only cookie sessions with lifetimeType Permanent support this field, where it
+                      sets the cookie lifetime. It has no effect for header sessions and for Session
+                      cookies (the default lifetimeType), as the gateway does not track the session
+                      lifetime separately from the cookie.
+                    pattern: ^([0-9]{1,5}(h|m|s|ms)){1,4}$
+                    type: string
+                  cookie:
+                    description: |-
+                      Cookie provides configuration settings that are specific
+                      to cookie-based session persistence.
+                    properties:
+                      lifetimeType:
+                        default: Session
+                        description: |-
+                          LifetimeType specifies whether the cookie has a permanent or
+                          session-based lifetime. A permanent cookie persists until its
+                          specified expiry time, defined by the Expires or Max-Age cookie
+                          attributes, while a session cookie is deleted when the current
+                          session ends.
+
+                          When set to "Permanent", AbsoluteTimeout indicates the
+                          cookie's lifetime via the Expires or Max-Age cookie attributes
+                          and is required.
+
+                          When set to "Session", AbsoluteTimeout has no effect, as the
+                          gateway does not track the session lifetime separately from
+                          the cookie.
+
+                          Defaults to "Session".
+                        enum:
+                        - Permanent
+                        - Session
+                        type: string
+                      name:
+                        description: |-
+                          Name defines the name of the cookie used for session persistence.
+                          If not specified, a unique cookie name is generated for each backend.
+                          Users should avoid reusing cookie names to prevent unintended
+                          consequences, such as rejection or unpredictable behavior. Avoid using the
+                          same cookie name for backends in the same traffic split, as clients lose
+                          their session whenever the split switches backends.
+                        maxLength: 256
+                        minLength: 1
+                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                        type: string
+                      path:
+                        default: /
+                        description: Path defines the cookie Path attribute. Defaults
+                          to "/".
+                        maxLength: 1024
+                        type: string
+                    type: object
+                  header:
+                    description: |-
+                      Header provides configuration settings that are specific
+                      to header-based session persistence.
+                    properties:
+                      name:
+                        description: |-
+                          Name defines the name of the header used for session persistence.
+                          The client must include this header in subsequent requests to
+                          maintain the session. Avoid using the same header name for backends in
+                          the same traffic split, as clients lose their session whenever the split
+                          switches backends.
+                        maxLength: 256
+                        minLength: 1
+                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type:
+                    default: Cookie
+                    description: |-
+                      Type defines the type of session persistence such as through
+                      the use of a header or cookie. Defaults to cookie based session
+                      persistence.
+                    enum:
+                    - Cookie
+                    - Header
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: AbsoluteTimeout must be specified when cookie lifetimeType
+                    is Permanent
+                  rule: '!has(self.cookie) || !has(self.cookie.lifetimeType) || self.cookie.lifetimeType
+                    != ''Permanent'' || has(self.absoluteTimeout)'
+                - message: cookie must be nil if type is not Cookie
+                  rule: '!has(self.cookie) || self.type == ''Cookie'''
+                - message: cookie must be specified for Cookie type
+                  rule: self.type != 'Cookie' || has(self.cookie)
+                - message: header must be nil if type is not Header
+                  rule: '!has(self.header) || self.type == ''Header'''
+                - message: header must be specified for Header type
+                  rule: self.type != 'Header' || has(self.header)
               targetRefs:
                 description: TargetRefs specifies the target references to attach
                   the policy to.
@@ -1036,7 +1188,7 @@ spec:
               tls:
                 description: |-
                   TLS contains the options necessary to configure a backend to use TLS origination.
-                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-sslconfig) for more details.
+                  See [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#envoy-v3-api-msg-extensions-transport-sockets-tls-v3-upstreamtlscontext) for more details.
                 properties:
                   allowRenegotiation:
                     description: |-
@@ -1156,6 +1308,177 @@ spec:
                     wellKnownCACertificates] must be set
                   rule: '[has(self.secretRef),has(self.files),has(self.insecureSkipVerify),has(self.wellKnownCACertificates)].filter(x,x==true).size()
                     == 1'
+              tunnel:
+                description: |-
+                  Tunnel sends Backend connections through an HTTP CONNECT proxy.
+                  Destination TLS uses tls; proxy TLS uses the proxy backend's policy.
+                  Requires Backend targetRefs; targetSelectors are not supported.
+                properties:
+                  headers:
+                    description: |-
+                      Headers are sent only on CONNECT requests. Each requires a name and
+                      exactly one of value or secretRef.
+                    items:
+                      description: |-
+                        HTTPHeader represents a single header name/value pair. Exactly one of value or secretRef must
+                        be set. When using secretRef, name and key interact as follows:
+                          - Both present: name is the header name, key is the Secret data key.
+                          - name absent, key present: the key is also used as the header name.
+                          - name present, key absent: the name is also used as the Secret data key.
+                          - Both absent: every entry in the Secret is injected as a header (data key -> header name).
+                      properties:
+                        name:
+                          description: |-
+                            Name is the HTTP header field name. Name matching is case-insensitive.
+                            (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                            Required when value is set. When secretRef is used, if omitted the Secret data key is
+                            used as the header name; if both name and key are omitted every Secret entry is injected
+                            as a header.
+                          maxLength: 256
+                          minLength: 1
+                          pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                          type: string
+                        secretRef:
+                          description: |-
+                            SecretRef sources the header value from a key in a Kubernetes Secret.
+                            Mutually exclusive with value.
+                          properties:
+                            key:
+                              description: |-
+                                Key is the key within the Secret's data map to use as the header value. When omitted and
+                                the parent HTTPHeader.name is set, that name is used as the key. When both key and name are
+                                omitted, all entries in the Secret are injected as headers.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                            name:
+                              description: Name is the name of the Kubernetes Secret.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the Secret. If omitted, defaults to the namespace of the
+                                referencing policy. Cross-namespace references require a ReferenceGrant in the target
+                                namespace permitting access from the policy's namespace.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        value:
+                          description: |-
+                            Value is an inline string value for the header. Mutually exclusive with secretRef.
+                            Must consist of printable US-ASCII characters. (See https://tools.ietf.org/html/rfc7230#section-3.2.)
+                          maxLength: 4096
+                          minLength: 1
+                          pattern: ^[!-~]+([\t ]?[!-~]+)*$
+                          type: string
+                      type: object
+                      x-kubernetes-validations:
+                      - message: name is required when using an inline value
+                        rule: 'has(self.value) ? has(self.name) : true'
+                      - message: exactly one of the fields in [value secretRef] must
+                          be set
+                        rule: '[has(self.value),has(self.secretRef)].filter(x,x==true).size()
+                          == 1'
+                    maxItems: 16
+                    type: array
+                    x-kubernetes-list-type: atomic
+                    x-kubernetes-validations:
+                    - message: tunnel headers require a name
+                      rule: self.all(h, has(h.name))
+                    - message: tunnel headers cannot set Host
+                      rule: self.all(h, !has(h.name) || h.name.lowerAscii() != 'host')
+                  proxy:
+                    description: Proxy identifies the forward proxy that establishes
+                      the tunnel.
+                    properties:
+                      backendRef:
+                        description: |-
+                          BackendRef references the proxy Service or Backend. CONNECT uses that
+                          backend's HTTP protocol.
+                        properties:
+                          group:
+                            default: ""
+                            description: |-
+                              Group is the group of the referent. For example, "gateway.networking.k8s.io".
+                              When unspecified or empty string, core API group is inferred.
+                            maxLength: 253
+                            pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                            type: string
+                          kind:
+                            default: Service
+                            description: |-
+                              Kind is the Kubernetes resource kind of the referent. For example
+                              "Service".
+
+                              Defaults to "Service" when not specified.
+
+                              ExternalName services can refer to CNAME DNS records that may live
+                              outside of the cluster and as such are difficult to reason about in
+                              terms of conformance. They also may not be safe to forward to (see
+                              CVE-2021-25740 for more information). Implementations SHOULD NOT
+                              support ExternalName Services.
+
+                              Support: Core (Services with a type other than ExternalName)
+
+                              Support: Implementation-specific (Services with type ExternalName)
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                            type: string
+                          name:
+                            description: Name is the name of the referent.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          namespace:
+                            description: |-
+                              Namespace is the namespace of the backend. When unspecified, the local
+                              namespace is inferred.
+
+                              Note that when a namespace different than the local namespace is specified,
+                              a ReferenceGrant object is required in the referent namespace to allow that
+                              namespace's owner to accept the reference. See the ReferenceGrant
+                              documentation for details.
+
+                              Support: Core
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                            type: string
+                          port:
+                            description: |-
+                              Port specifies the destination port number to use for this resource.
+                              Port is required when the referent is a Kubernetes Service. In this
+                              case, the port number is the service port number, not the target port.
+                              For other resources, destination port might be derived from the referent
+                              resource or this field.
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                        required:
+                        - name
+                        type: object
+                        x-kubernetes-validations:
+                        - message: proxy backendRef must reference a Service or a
+                            Backend
+                          rule: (self.group == '' && self.kind == 'Service') || (self.group
+                            == 'gateway.kgateway.dev' && self.kind == 'Backend')
+                        - message: Must have port for Service reference
+                          rule: '(size(self.group) == 0 && self.kind == ''Service'')
+                            ? has(self.port) : true'
+                    required:
+                    - backendRef
+                    type: object
+                required:
+                - proxy
+                type: object
               upstreamProxyProtocol:
                 description: |-
                   UpstreamProxyProtocol configures the PROXY protocol for upstream connections to the backend.
@@ -1177,6 +1500,11 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
+            - message: tunnel does not support targetSelectors
+              rule: '!has(self.tunnel) || !has(self.targetSelectors)'
+            - message: tunnel requires targetRefs that reference Backends
+              rule: '!has(self.tunnel) || (has(self.targetRefs) && self.targetRefs.all(r,
+                r.group == ''gateway.kgateway.dev'' && r.kind == ''Backend''))'
             - message: at most one of the fields in [http1ProtocolOptions http2ProtocolOptions]
                 may be set
               rule: '[has(self.http1ProtocolOptions),has(self.http2ProtocolOptions)].filter(x,x==true).size()

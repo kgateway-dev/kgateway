@@ -2,6 +2,7 @@ package listenerpolicy
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/policy"
@@ -19,9 +20,11 @@ func MergePolicies(
 		return
 	}
 
+	// mergePerPort runs first: it seeds new port entries from p1's default as it was before p2 is
+	// merged into it.
 	mergeFuncs := []func(*ListenerPolicyIR, *ListenerPolicyIR, *ir.AttachedPolicyRef, ir.MergeOrigins, policy.MergeOptions, ir.MergeOrigins){
-		mergeDefault,
 		mergePerPort,
+		mergeDefault,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -39,6 +42,10 @@ func mergeDefault(
 	mergeListenerPolicy("default.", &p1.defaultPolicy, &p2.defaultPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
 }
 
+// mergePerPort merges the per-port entries of p2 into p1. A port entry is used instead of a
+// policy's default, not on top of it (see getPolicy), so each side contributes its effective
+// config for the port: its entry when it has one, otherwise its default. Without this, a
+// policy's entry for a port would hide every other policy's default on that port.
 func mergePerPort(
 	p1, p2 *ListenerPolicyIR,
 	p2Ref *ir.AttachedPolicyRef,
@@ -46,18 +53,48 @@ func mergePerPort(
 	opts policy.MergeOptions,
 	mergeOrigins ir.MergeOrigins,
 ) {
-	for port, p2PortPolicy := range p2.perPortPolicy {
-		if p1PortPolicy, ok := p1.perPortPolicy[port]; ok {
-			f := fmt.Sprintf("perPortPolicy[%d].", port)
-			mergeListenerPolicy(f, &p1PortPolicy, &p2PortPolicy, p2Ref, p2MergeOrigins, opts, mergeOrigins)
-			p1.perPortPolicy[port] = p1PortPolicy
-		} else {
-			f := fmt.Sprintf("perPortPolicy[%d]", port)
-			if p1.perPortPolicy == nil {
-				p1.perPortPolicy = map[uint32]listenerPolicy{}
+	if len(p1.perPortPolicy) == 0 && len(p2.perPortPolicy) == 0 {
+		return
+	}
+	if p1.perPortPolicy == nil {
+		p1.perPortPolicy = map[uint32]listenerPolicy{}
+	}
+	ports := make([]uint32, 0, len(p1.perPortPolicy)+len(p2.perPortPolicy))
+	for port := range p1.perPortPolicy {
+		ports = append(ports, port)
+	}
+	for port := range p2.perPortPolicy {
+		if _, ok := p1.perPortPolicy[port]; !ok {
+			ports = append(ports, port)
+		}
+	}
+
+	for _, port := range ports {
+		origin := fmt.Sprintf("perPortPolicy[%d].", port)
+		p1PortPolicy, ok := p1.perPortPolicy[port]
+		if !ok {
+			p1PortPolicy = p1.defaultPolicy.clone()
+			copyDefaultMergeOrigins(mergeOrigins, mergeOrigins, origin)
+		}
+		p2PortPolicy, ok := p2.perPortPolicy[port]
+		p2PortMergeOrigins := p2MergeOrigins
+		if !ok {
+			p2PortPolicy = p2.defaultPolicy
+			if p2Ref == nil && p2MergeOrigins.IsSet() {
+				p2PortMergeOrigins = ir.MergeOrigins{}
+				copyDefaultMergeOrigins(p2PortMergeOrigins, p2MergeOrigins, origin)
 			}
-			p1.perPortPolicy[port] = p2PortPolicy
-			mergeOrigins.SetOne(f, p2Ref, p2MergeOrigins)
+		}
+		mergeListenerPolicy(origin, &p1PortPolicy, &p2PortPolicy, p2Ref, p2PortMergeOrigins, opts, mergeOrigins)
+		p1.perPortPolicy[port] = p1PortPolicy
+	}
+}
+
+// copyDefaultMergeOrigins records the origins of each "default." field of src under portOrigin in dst.
+func copyDefaultMergeOrigins(dst, src ir.MergeOrigins, portOrigin string) {
+	for field, refs := range src {
+		if f, ok := strings.CutPrefix(field, "default."); ok {
+			dst[portOrigin+f] = refs.Clone()
 		}
 	}
 }
@@ -77,6 +114,7 @@ func mergeListenerPolicy(
 		mergeTransportSocketConnectTimeout,
 		mergeClientCertificateValidation,
 		mergeHttpSettings,
+		mergeTcpSettings,
 	}
 
 	for _, mergeFunc := range mergeFuncs {
@@ -180,4 +218,20 @@ func mergeHttpSettings(
 	}
 	origin += "httpSettings."
 	MergeHttpPolicies(origin, p1.http, p2.http, p2Ref, p2MergeOrigins, opts, mergeOrigins, "" /*no merge settings*/)
+}
+
+func mergeTcpSettings(
+	origin string,
+	p1, p2 *listenerPolicy,
+	p2Ref *ir.AttachedPolicyRef,
+	p2MergeOrigins ir.MergeOrigins,
+	opts policy.MergeOptions,
+	mergeOrigins ir.MergeOrigins,
+) {
+	if !policy.IsMergeable(p1.tcp, p2.tcp, opts) {
+		return
+	}
+
+	p1.tcp = p2.tcp
+	mergeOrigins.SetOne(origin+"tcpSettings", p2Ref, p2MergeOrigins)
 }

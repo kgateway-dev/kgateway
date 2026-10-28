@@ -53,6 +53,12 @@ func (g *Gateway) SendWithRetry(ctx context.Context, t *testing.T, match *matche
 	}, retryOpts...)
 }
 
+// SendOnce curls the gateway once and returns an error if the response does not match,
+// for callers that poll inside their own Eventually loop.
+func (g *Gateway) SendOnce(ctx context.Context, match *matchers.HttpResponse, opts ...curl.Option) error {
+	return g.matchOnce(ctx, g.curlOpts(opts), match)
+}
+
 // SendEventuallyConsistent curls the gateway, waits for the response to eventually match,
 // then asserts the response continues to match over a 3s window polled every 1s.
 // Mirrors assertions.AssertEventuallyConsistentCurlResponse semantics.

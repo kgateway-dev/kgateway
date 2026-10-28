@@ -1,0 +1,54 @@
+package proxy_syncer
+
+import (
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+
+	apisettings "github.com/kgateway-dev/kgateway/v2/api/settings"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
+)
+
+// XdsScopingDecision is what REFERENCED xDS scoping decides for one
+// gateway's generated configuration. DecideXdsScoping returns it, so a
+// plugin's tests can check its ClusterEmissionClaim against configuration the
+// plugin generates, without a controller.
+type XdsScopingDecision struct {
+	// Scoped reports whether CDS, EDS and backend-owned LDS/SDS resources are
+	// filtered. When false, every backend's cluster, endpoints, listeners and
+	// secrets are emitted.
+	Scoped bool
+	// Unaccounted are the request-time selectors that keep the gateway
+	// unscoped, with any reason, as the controller's warning lists them.
+	Unaccounted []string
+
+	emitted emittedClusters
+	kept    claimedSet
+}
+
+// Emits reports whether a cluster with this name, if it exists, reaches the
+// gateway's CDS. On an unscoped gateway every cluster does; on a scoped one,
+// a cluster the configuration names or a claimed use keeps.
+func (d XdsScopingDecision) Emits(cluster string) bool {
+	return !d.Scoped || d.emitted.emits(d.kept, cluster)
+}
+
+// DecideXdsScoping applies REFERENCED xDS scoping to a gateway's
+// routes and listeners as the controller does, with the claims the given
+// plugins make. A plugin's translation-pass ResourcesToAdd, which scoping never
+// filters, is not considered.
+func DecideXdsScoping(
+	policies sdk.ContributesPolicies,
+	routes []*envoyroutev3.RouteConfiguration,
+	listeners []*envoylistenerv3.Listener,
+) XdsScopingDecision {
+	claims := collectEmissionClaims(policies)
+	scoping := clusterScoping{mode: apisettings.XdsScopingReferenced, claims: claims}
+	emitted := emittedClustersFor(scoping, sliceToResources(routes), sliceToResources(listeners))
+	unaccounted := emitted.unaccountedSelectors(claims)
+	return XdsScopingDecision{
+		Scoped:      len(unaccounted) == 0,
+		Unaccounted: unaccounted,
+		emitted:     emitted,
+		kept:        claims.keptFor(emitted),
+	}
+}

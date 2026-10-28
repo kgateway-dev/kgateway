@@ -1,0 +1,9 @@
+# DirectResponse: empty body not allowed
+_err: spec.body in body should be at least 1 chars long
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: DirectResponse
+metadata:
+  name: directresponse
+spec:
+  status: 200
+  body: ""
