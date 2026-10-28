@@ -49,11 +49,6 @@ func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.NoError(err, "can apply "+manifest)
 	}
-
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	// Check that test resources are running
-	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
-		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=gw"}, time.Minute*2)
 }
 
 func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
@@ -66,8 +61,6 @@ func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, manifest)
 		s.NoError(err, "can delete "+manifest)
 	}
-
-	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 }
 
 func (s *istioAutoMtlsTestingSuite) SetupSuite() {
@@ -77,6 +70,13 @@ func (s *istioAutoMtlsTestingSuite) SetupSuite() {
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, httpbinDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{LabelSelector: "app=httpbin"}, time.Minute*2)
+
+	// Every test routes through the same Gateway, so its proxy starts once for the suite
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayManifest)
+	s.NoError(err, "can apply gateway manifest")
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
+		metav1.ListOptions{LabelSelector: defaults.WellKnownAppLabel + "=gw"}, time.Minute*2)
 
 	// We include tests with manual setup here because the cleanup is still automated via AfterTest
 	s.manifests = map[string][]string{
@@ -90,7 +90,12 @@ func (s *istioAutoMtlsTestingSuite) TearDownSuite() {
 	if testutils.ShouldSkipCleanup(s.T()) {
 		return
 	}
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	// The next suite creates its own Gateway with the same name, so wait for this proxy to go away
+	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, gatewayManifest)
+	s.NoError(err, "can delete gateway manifest")
+	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+
+	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
 	s.testInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }
