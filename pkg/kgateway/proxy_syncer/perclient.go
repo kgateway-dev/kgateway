@@ -51,10 +51,16 @@ func snapshotPerClient(
 	scoping clusterScoping,
 	extraEndpointCollections ...PerClientEnvoyEndpoints,
 ) krt.Collection[XdsSnapWrapper] {
-	// PerClientEnvoyClusters stores each client's assembled CDS payload (shared bases plus the client's overlays).
-	clusterSnapshot := clusters.perClient
+	// The three payloads reach the snapshot transform as handles, so its queue,
+	// which falls behind during bursts, pins none of them (see payloadHandle).
+	// The gateway translations and the per-client CDS rows (each client's
+	// shared bases plus its overlays) have other consumers, so they are fronted
+	// rather than changed. The EDS assembly is this transform's alone, so it
+	// emits handles itself.
+	gatewayPayloads := payloadSourceFor(krtopts, "GatewayXdsResourceHandles", mostXdsSnapshots)
+	clusterPayloads := payloadSourceFor(krtopts, "ClusterResourceHandles", clusters.perClient)
 
-	endpointResources := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
+	endpointPayloads := newPayloadSource(krtopts, "EndpointResources", uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *endpointsWithUccName {
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
 		for _, extraEndpoints := range extraEndpointCollections {
 			endpointsForUcc = append(endpointsForUcc, extraEndpoints.FetchEndpointsForClient(kctx, ucc)...)
@@ -76,18 +82,18 @@ func snapshotPerClient(
 			rowHashes:    rowHashes,
 			resourceName: ucc.ResourceName(),
 		}
-	}, krtopts.ToOptions("EndpointResources")...)
+	})
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *XdsSnapWrapper {
 		defer collectXDSTransformMetrics(ucc.ResourceName())(nil)
 
-		listenerRouteSnapshot := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
+		listenerRouteSnapshot, _ := gatewayPayloads.fetch(kctx, ucc.Role)
 		if listenerRouteSnapshot == nil {
 			logger.Debug("snapshot missing", "proxy_key", ucc.Role)
 			return nil
 		}
-		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
-		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
+		clustersForUcc, _ := clusterPayloads.fetch(kctx, ucc.ResourceName())
+		clientEndpointResources, _ := endpointPayloads.fetch(kctx, ucc.ResourceName())
 
 		// A nil row has not been computed yet (the cluster transform also returns
 		// nil with no backends), so there is nothing to publish.
