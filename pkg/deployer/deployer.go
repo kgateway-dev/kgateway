@@ -194,11 +194,12 @@ func (d *Deployer) GetObjsToDeploy(ctx context.Context, obj client.Object) ([]cl
 	if vals == nil {
 		return nil, nil
 	}
+	// Don't log the values themselves: a HelmValuesGenerator can put secrets in them, such
+	// as keys rendered into a Secret.
 	logger.Debug("got deployer helm values",
 		"name", obj.GetName(),
 		"namespace", obj.GetNamespace(),
 		"gvk", obj.GetObjectKind().GroupVersionKind().String(),
-		"values", vals,
 	)
 
 	rname, rns := d.helmReleaseNameAndNamespaceGenerator(obj)
