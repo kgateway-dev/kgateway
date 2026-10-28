@@ -1,0 +1,16 @@
+# One Gateway shared by every test. Each test's route uses its own hostname, so a route
+# still being deleted after one test cannot match requests from the next.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gw-session-persistence
+  namespace: default
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: http
+    port: 8080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
