@@ -31,8 +31,7 @@ func allEnvVarsSet() map[string]string {
 		"KGW_DEFAULT_IMAGE_REGISTRY":                    "my-registry",
 		"KGW_DEFAULT_IMAGE_TAG":                         "my-tag",
 		"KGW_DEFAULT_IMAGE_PULL_POLICY":                 "Always",
-		"KGW_WAYPOINT_LOCAL_BINDING":                    "true",
-		"KGW_INGRESS_USE_WAYPOINTS":                     "false",
+		"KGW_INGRESS_USE_WAYPOINTS":                     "true",
 		"KGW_LOG_LEVEL":                                 "debug",
 		"KGW_DISCOVERY_NAMESPACE_SELECTORS":             `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
 		"KGW_ENABLE_ORDERED_ADS":                        "false",
@@ -44,13 +43,15 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_BUILTIN_DEFAULT_METRICS":            "true",
 		"KGW_GLOBAL_POLICY_NAMESPACE":                   "foo",
 		"KGW_DISABLE_LEADER_ELECTION":                   "true",
+		"KGW_LEADER_ELECTION_LEASE_DURATION":            "30s",
+		"KGW_LEADER_ELECTION_RENEW_DEADLINE":            "20s",
+		"KGW_LEADER_ELECTION_RETRY_PERIOD":              "5s",
 		"KGW_ENABLE_AWS_EC2_DISCOVERY":                  "true",
 		"KGW_AWS_EC2_REFRESH_INTERVAL":                  "45s",
 		"KGW_TRANSLATION_DEBOUNCE":                      "25ms",
 		"KGW_TRANSLATION_DEBOUNCE_MAX":                  "250ms",
 		"KGW_POLICY_MERGE":                              `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
 		"KGW_GATEWAY_CLASS_PARAMETERS_REFS":             `{"kgateway":{"name":"custom-gwp","namespace":"infra"}}`,
-		"KGW_ENABLE_WAYPOINT":                           "true",
 		"KGW_XDS_AUTH":                                  "false",
 		"KGW_XDS_TLS":                                   "true",
 		"KGW_ENABLE_EXPERIMENTAL_GATEWAY_API_FEATURES":  "false",
@@ -62,9 +63,9 @@ func allEnvVarsSet() map[string]string {
 		"KGW_ENABLE_ROUTE_SOURCE_METADATA":              "true",
 		"KGW_SERVICE_ENTRIES_EXCLUSION_LABEL_SELECTORS": `[{"matchLabels":{"example.io/managed-by":"some-controller"}}]`,
 		"KGW_REFERENCE_GRANT_MODE":                      string(ReferenceGrantStrict),
-		"KGW_CLUSTER_DISCOVERY_MODE":                    string(ClusterDiscoveryReferenced),
-		"KGW_CLUSTER_DEREFERENCE_GRACE":                 "30s",
-		"KGW_CLUSTER_REFERENCE_AHEAD":                   "3s",
+		"KGW_XDS_SCOPING_MODE":                          string(XdsScopingReferenced),
+		"KGW_XDS_SCOPING_DEREFERENCE_GRACE":             "30s",
+		"KGW_XDS_SCOPING_REFERENCE_AHEAD":               "3s",
 	}
 }
 
@@ -100,8 +101,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "cr.kgateway.dev",
 				DefaultImageTag:                       "",
 				DefaultImagePullPolicy:                "IfNotPresent",
-				WaypointLocalBinding:                  false,
-				IngressUseWaypoints:                   true,
+				IngressUseWaypoints:                   false,
 				LogLevel:                              "info",
 				DiscoveryNamespaceSelectors:           "[]",
 				EnableOrderedAds:                      true,
@@ -111,18 +111,20 @@ func TestSettings(t *testing.T) {
 				ValidatorMode:                         ValidatorCache,
 				ValidatorCacheSize:                    0,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
-				ClusterDiscoveryMode:                  ClusterDiscoveryAll,
-				ClusterDereferenceGrace:               5 * time.Second,
-				ClusterReferenceAhead:                 2 * time.Second,
+				XdsScopingMode:                        XdsScopingAll,
+				XdsScopingDereferenceGrace:            5 * time.Second,
+				XdsScopingReferenceAhead:              2 * time.Second,
 				EnableBuiltinDefaultMetrics:           false,
 				GlobalPolicyNamespace:                 "",
 				DisableLeaderElection:                 false,
+				LeaderElectionLeaseDuration:           15 * time.Second,
+				LeaderElectionRenewDeadline:           10 * time.Second,
+				LeaderElectionRetryPeriod:             2 * time.Second,
 				EnableAwsEc2Discovery:                 false,
 				AwsEc2RefreshInterval:                 30 * time.Second,
 				TranslationDebounce:                   10 * time.Millisecond,
 				TranslationDebounceMax:                100 * time.Millisecond,
 				PolicyMerge:                           "{}",
-				EnableWaypoint:                        false,
 				XdsAuth:                               true,
 				XdsTLS:                                false,
 				EnableExperimentalGatewayAPIFeatures:  true,
@@ -151,8 +153,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "my-registry",
 				DefaultImageTag:                       "my-tag",
 				DefaultImagePullPolicy:                "Always",
-				WaypointLocalBinding:                  true,
-				IngressUseWaypoints:                   false,
+				IngressUseWaypoints:                   true,
 				LogLevel:                              "debug",
 				DiscoveryNamespaceSelectors:           `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
 				EnableOrderedAds:                      false,
@@ -164,12 +165,14 @@ func TestSettings(t *testing.T) {
 				EnableBuiltinDefaultMetrics:           true,
 				GlobalPolicyNamespace:                 "foo",
 				DisableLeaderElection:                 true,
+				LeaderElectionLeaseDuration:           30 * time.Second,
+				LeaderElectionRenewDeadline:           20 * time.Second,
+				LeaderElectionRetryPeriod:             5 * time.Second,
 				EnableAwsEc2Discovery:                 true,
 				AwsEc2RefreshInterval:                 45 * time.Second,
 				TranslationDebounce:                   25 * time.Millisecond,
 				TranslationDebounceMax:                250 * time.Millisecond,
 				PolicyMerge:                           `{"TrafficPolicy":{"extProc":"DeepMerge"}}`,
-				EnableWaypoint:                        true,
 				XdsAuth:                               false,
 				XdsTLS:                                true,
 				EnableExperimentalGatewayAPIFeatures:  false,
@@ -187,9 +190,9 @@ func TestSettings(t *testing.T) {
 				XdsSnapshotConsistencyCheck: true,
 				EnableRouteSourceMetadata:   true,
 				ReferenceGrantMode:          ReferenceGrantStrict,
-				ClusterDiscoveryMode:        ClusterDiscoveryReferenced,
-				ClusterDereferenceGrace:     30 * time.Second,
-				ClusterReferenceAhead:       3 * time.Second,
+				XdsScopingMode:              XdsScopingReferenced,
+				XdsScopingDereferenceGrace:  30 * time.Second,
+				XdsScopingReferenceAhead:    3 * time.Second,
 			},
 		},
 		{
@@ -228,6 +231,36 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: `invalid validator mode: "invalid"`,
 		},
 		{
+			name: "errors on invalid xDS scoping mode",
+			envVars: map[string]string{
+				"KGW_XDS_SCOPING_MODE": "invalid",
+			},
+			expectedErrorStr: `invalid xDS scoping mode: "invalid"`,
+		},
+		{
+			name: "errors on the pre-rename xDS scoping mode",
+			envVars: map[string]string{
+				"KGW_CLUSTER_DISCOVERY_MODE": "REFERENCED",
+			},
+			expectedErrorStr: "KGW_CLUSTER_DISCOVERY_MODE was renamed to KGW_XDS_SCOPING_MODE; set KGW_XDS_SCOPING_MODE instead",
+		},
+		{
+			name: "errors on the pre-rename reference-ahead window",
+			envVars: map[string]string{
+				"KGW_CLUSTER_REFERENCE_AHEAD": "3s",
+			},
+			expectedErrorStr: "KGW_CLUSTER_REFERENCE_AHEAD was renamed to KGW_XDS_SCOPING_REFERENCE_AHEAD; set KGW_XDS_SCOPING_REFERENCE_AHEAD instead",
+		},
+		{
+			// The old name is stale configuration even when the new one is set too.
+			name: "errors on the pre-rename de-reference grace alongside its replacement",
+			envVars: map[string]string{
+				"KGW_CLUSTER_DEREFERENCE_GRACE":     "30s",
+				"KGW_XDS_SCOPING_DEREFERENCE_GRACE": "30s",
+			},
+			expectedErrorStr: "KGW_CLUSTER_DEREFERENCE_GRACE was renamed to KGW_XDS_SCOPING_DEREFERENCE_GRACE; set KGW_XDS_SCOPING_DEREFERENCE_GRACE instead",
+		},
+		{
 			name: "errors on invalid reference grant mode",
 			envVars: map[string]string{
 				"KGW_REFERENCE_GRANT_MODE": "invalid",
@@ -256,6 +289,34 @@ func TestSettings(t *testing.T) {
 			expectedErrorStr: `time: invalid duration "not-a-duration"`,
 		},
 		{
+			name: "errors on invalid leader election lease duration",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_LEASE_DURATION": "not-a-duration",
+			},
+			expectedErrorStr: `time: invalid duration "not-a-duration"`,
+		},
+		{
+			name: "errors on non-positive leader election duration",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_RETRY_PERIOD": "0s",
+			},
+			expectedErrorStr: "leader election durations must be greater than zero: leaseDuration=15s, renewDeadline=10s, retryPeriod=0s",
+		},
+		{
+			name: "errors when leader election lease duration is not greater than renew deadline",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_LEASE_DURATION": "10s",
+			},
+			expectedErrorStr: "leader election leaseDuration (10s) must be greater than renewDeadline (10s)",
+		},
+		{
+			name: "errors when leader election renew deadline is not greater than retry period with jitter",
+			envVars: map[string]string{
+				"KGW_LEADER_ELECTION_RETRY_PERIOD": "9s",
+			},
+			expectedErrorStr: "leader election renewDeadline (10s) must be greater than retryPeriod (9s) * 1.2",
+		},
+		{
 			name: "ignores other env vars",
 			envVars: map[string]string{
 				"KGW_DOES_NOT_EXIST":         "true",
@@ -273,8 +334,7 @@ func TestSettings(t *testing.T) {
 				DefaultImageRegistry:                  "cr.kgateway.dev",
 				DefaultImageTag:                       "",
 				DefaultImagePullPolicy:                "IfNotPresent",
-				WaypointLocalBinding:                  false,
-				IngressUseWaypoints:                   true,
+				IngressUseWaypoints:                   false,
 				LogLevel:                              "info",
 				DiscoveryNamespaceSelectors:           "[]",
 				EnableOrderedAds:                      true,
@@ -283,14 +343,17 @@ func TestSettings(t *testing.T) {
 				ValidationMode:                        ValidationStandard,
 				ValidatorMode:                         ValidatorCache,
 				ValidatorCacheSize:                    0,
+				LeaderElectionLeaseDuration:           15 * time.Second,
+				LeaderElectionRenewDeadline:           10 * time.Second,
+				LeaderElectionRetryPeriod:             2 * time.Second,
 				EnableAwsEc2Discovery:                 false,
 				AwsEc2RefreshInterval:                 30 * time.Second,
 				TranslationDebounce:                   10 * time.Millisecond,
 				TranslationDebounceMax:                100 * time.Millisecond,
 				ReferenceGrantMode:                    ReferenceGrantPermissive,
-				ClusterDiscoveryMode:                  ClusterDiscoveryAll,
-				ClusterDereferenceGrace:               5 * time.Second,
-				ClusterReferenceAhead:                 2 * time.Second,
+				XdsScopingMode:                        XdsScopingAll,
+				XdsScopingDereferenceGrace:            5 * time.Second,
+				XdsScopingReferenceAhead:              2 * time.Second,
 				PolicyMerge:                           "{}",
 				XdsAuth:                               true,
 				XdsTLS:                                false,
@@ -328,6 +391,16 @@ func TestSettings(t *testing.T) {
 			require.Emptyf(t, diff, "Settings do not match expected values (-expected +got):\n%s", diff)
 		})
 	}
+}
+
+// TestValidateLeaderElectionDisabled tests that leader election durations are not validated when leader election is disabled.
+func TestValidateLeaderElectionDisabled(t *testing.T) {
+	s := &Settings{
+		DisableLeaderElection:       true,
+		LeaderElectionLeaseDuration: time.Second,
+		LeaderElectionRenewDeadline: 10 * time.Second,
+	}
+	require.NoError(t, s.validateLeaderElection(), "invalid durations should be ignored when leader election is disabled")
 }
 
 // TestEnvVarCoverage tests that all settings are tested with non-default values.
@@ -431,4 +504,73 @@ type validateExpectedEnvs struct {
 	FieldSSLConfig string `split_words:"true"`
 	// Field with acronym and split_words:false
 	FieldHTTPConfig string `split_words:"false"`
+}
+
+func TestDeprecatedEnableWaypoint(t *testing.T) {
+	tests := []struct {
+		name    string
+		envVars map[string]string
+		want    bool
+		wantErr string
+	}{
+		{
+			name: "neither set",
+			want: false,
+		},
+		{
+			name:    "deprecated true enables ingress-use-waypoint",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "true"},
+			want:    true,
+		},
+		{
+			name:    "deprecated false leaves it disabled",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "false"},
+			want:    false,
+		},
+		{
+			name:    "explicit false wins over deprecated true",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "true", "KGW_INGRESS_USE_WAYPOINTS": "false"},
+			want:    false,
+		},
+		{
+			name:    "explicit true wins over deprecated false",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "false", "KGW_INGRESS_USE_WAYPOINTS": "true"},
+			want:    true,
+		},
+		{
+			name:    "invalid deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please"},
+			wantErr: "KGW_ENABLE_WAYPOINT",
+		},
+		{
+			name:    "explicit value wins over an empty deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "", "KGW_INGRESS_USE_WAYPOINTS": "true"},
+			want:    true,
+		},
+		{
+			name:    "explicit value wins over a malformed deprecated value",
+			envVars: map[string]string{"KGW_ENABLE_WAYPOINT": "yes please", "KGW_INGRESS_USE_WAYPOINTS": "false"},
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, k := range []string{"KGW_ENABLE_WAYPOINT", "KGW_INGRESS_USE_WAYPOINTS"} {
+				// t.Setenv restores the original value; Unsetenv clears it for this case.
+				t.Setenv(k, "")
+				require.NoError(t, os.Unsetenv(k))
+			}
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
+			s, err := BuildSettings()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, s.IngressUseWaypoints)
+		})
+	}
 }

@@ -11,10 +11,10 @@ import (
 
 // clusterScoping is the referenced-only discovery configuration, resolved once
 // from Settings. ScopesClusters guards every scoping path (emitted-set walk,
-// CDS filtering, transition windows); when false none run and the syncer's
-// snapshot publishes unchanged.
+// CDS/EDS and backend-owned LDS/SDS filtering, transition windows); when false
+// none run and the syncer's snapshot publishes unchanged.
 type clusterScoping struct {
-	mode apisettings.ClusterDiscoveryMode
+	mode apisettings.XdsScopingMode
 	// dereferenceGrace is the de-reference grace. Read it through
 	// DereferenceGrace, which is 0 when scoping is off.
 	dereferenceGrace time.Duration
@@ -28,14 +28,14 @@ type clusterScoping struct {
 }
 
 func clusterScopingFrom(s apisettings.Settings, policies sdk.ContributesPolicies) clusterScoping {
-	if s.ClusterDiscoveryMode != apisettings.ClusterDiscoveryReferenced {
+	if s.XdsScopingMode != apisettings.XdsScopingReferenced {
 		// Unscoped: no transition windows, and no plugin's claim code runs.
-		return clusterScoping{mode: s.ClusterDiscoveryMode}
+		return clusterScoping{mode: s.XdsScopingMode}
 	}
 	return clusterScoping{
-		mode:             s.ClusterDiscoveryMode,
-		dereferenceGrace: s.ClusterDereferenceGrace,
-		referenceAhead:   s.ClusterReferenceAhead,
+		mode:             s.XdsScopingMode,
+		dereferenceGrace: s.XdsScopingDereferenceGrace,
+		referenceAhead:   s.XdsScopingReferenceAhead,
 		claims:           collectEmissionClaims(policies),
 	}
 }
@@ -44,7 +44,7 @@ func clusterScopingFrom(s apisettings.Settings, policies sdk.ContributesPolicies
 // gateway can be scoped and to keep the claimed clusters.
 func (c clusterScoping) Claims() emissionClaims { return c.claims }
 
-// ReferenceAhead is the reference-ahead window, or 0 when CDS is not scoped:
+// ReferenceAhead is the reference-ahead window, or 0 when xDS scoping is off:
 // with every backend emitted, no cluster is new to a client.
 func (c clusterScoping) ReferenceAhead() time.Duration {
 	if !c.ScopesClusters() {
@@ -54,7 +54,7 @@ func (c clusterScoping) ReferenceAhead() time.Duration {
 }
 
 // DereferenceGrace is how long a de-referenced cluster stays published; 0 when
-// CDS is not scoped, where no cluster is ever de-referenced.
+// xDS scoping is off, where no cluster is ever de-referenced.
 func (c clusterScoping) DereferenceGrace() time.Duration {
 	if !c.ScopesClusters() {
 		return 0
@@ -62,13 +62,14 @@ func (c clusterScoping) DereferenceGrace() time.Duration {
 	return c.dereferenceGrace
 }
 
-// ScopesClusters reports whether CDS and EDS are scoped to referenced clusters.
-// False, the default, emits every backend in discovery scope.
+// ScopesClusters reports whether CDS, EDS and backend-owned LDS/SDS resources
+// are scoped to referenced clusters. False, the default, emits every backend
+// in discovery scope with its endpoints, listeners and secrets.
 func (c clusterScoping) ScopesClusters() bool {
-	return c.mode == apisettings.ClusterDiscoveryReferenced
+	return c.mode == apisettings.XdsScopingReferenced
 }
 
-// emittedClustersFor returns the zero value when CDS is not scoped. Nothing
+// emittedClustersFor returns the zero value when xDS scoping is off. Nothing
 // consults it then, and skipping the full proto walk keeps it off the
 // translation path. Otherwise claims with DestinationsFor decide each cluster
 // specifier use here, once per gateway rebuild.
@@ -84,7 +85,7 @@ func emittedClustersFor(scoping clusterScoping, routes, listeners envoycache.Res
 // scopedClusters returns the enabled configuration for tests; the zero value is
 // disabled.
 func scopedClusters() clusterScoping {
-	return clusterScoping{mode: apisettings.ClusterDiscoveryReferenced}
+	return clusterScoping{mode: apisettings.XdsScopingReferenced}
 }
 
 // scopedClustersWithGrace is scopedClusters with a de-reference grace.

@@ -1,8 +1,10 @@
 package proxy_syncer
 
 import (
+	"slices"
 	"strconv"
 	"testing"
+	"time"
 
 	envoyendpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -193,8 +195,9 @@ func TestKeepBackendListenerTargets(t *testing.T) {
 }
 
 // TestSnapshotPerClientKeepsClustersBackendListenersName: scoped, a routed
-// tunnel keeps the proxy cluster its listener names, the listener ships in LDS,
-// and EDS follows CDS. An unrouted tunnel's listener and secret do not ship.
+// tunnel keeps the proxy cluster its listener names. Its EDS assignments, LDS
+// listeners and SDS secrets follow CDS. An unrouted tunnel's listener and
+// secret do not ship.
 func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -226,9 +229,9 @@ func TestSnapshotPerClientKeepsClustersBackendListenersName(t *testing.T) {
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Endpoint].Items)).To(gomega.ConsistOf(toAny(tc.expected)...),
 				"EDS must follow CDS")
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Listener].Items)).To(gomega.ConsistOf(toAny(tc.listeners)...),
-				"a backend's listeners ship with its cluster, and only then")
+				"backend-owned LDS listeners ship with their cluster, and only then")
 			g.Expect(mapKeys(wrap.snap.Resources[envoycachetypes.Secret].Items)).To(gomega.ConsistOf(toAny(tc.secrets)...),
-				"a backend's secrets ship with its cluster, and only then")
+				"backend-owned SDS secrets ship with their cluster, and only then")
 		})
 	}
 }
@@ -289,8 +292,8 @@ func TestSnapshotPerClientReportsABackendListenerFallback(t *testing.T) {
 				{Name: namespaceLabel, Value: "ns"},
 			}
 			gathered := metricstest.MustGatherMetrics(t)
-			assert.Equal(t, tc.dropped, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_dropped_clusters", labels))
-			assert.Equal(t, tc.disabled, gathered.MustGetMetricValueByLabels("kgateway_xds_cluster_scoping_disabled_gateways", labels))
+			assert.Equal(t, tc.dropped, gathered.MustGetMetricValueByLabels("kgateway_xds_scoping_dropped_clusters", labels))
+			assert.Equal(t, tc.disabled, gathered.MustGetMetricValueByLabels("kgateway_xds_scoping_disabled_gateways", labels))
 		})
 	}
 }
@@ -322,7 +325,7 @@ func TestClaimsDoNotCoverABackendListenersSelector(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"tunneled", "proxy", "unreferenced"}, mapKeys(wrap.snap.Resources[envoycachetypes.Cluster].Items))
 	assert.Equal(t, float64(1), metricstest.MustGatherMetrics(t).MustGetMetricValueByLabels(
-		"kgateway_xds_cluster_scoping_disabled_gateways", []metrics.Label{
+		"kgateway_xds_scoping_disabled_gateways", []metrics.Label{
 			{Name: gatewayLabel, Value: gateway},
 			{Name: namespaceLabel, Value: "ns"},
 		}))
@@ -332,6 +335,13 @@ func TestClaimsDoNotCoverABackendListenersSelector(t *testing.T) {
 // routes name routed, over three backends: "tunneled", whose listener is a
 // tunnel through "proxy" behind filters, "proxy", and "unreferenced".
 func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed []string, filters ...proto.Message) XdsSnapWrapper {
+	t.Helper()
+	return eventuallyCoherentWrapper(t, tunnelSnapshots(t, gateway, scoping, routed, nil, filters...))
+}
+
+// tunnelSnapshots is tunnelSnapshot's collection; the clusters in
+// underived have no endpoint row.
+func tunnelSnapshots(t *testing.T, gateway string, scoping clusterScoping, routed, underived []string, filters ...proto.Message) krt.Collection[XdsSnapWrapper] {
 	t.Helper()
 	role := xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, "ns", gateway)
 	ucc := ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
@@ -381,6 +391,9 @@ func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed
 			row.Secrets = wrapBaseResources([]*envoytlsv3.Secret{{Name: "unreferenced-header"}})
 		}
 		clusterRows = append(clusterRows, row)
+		if slices.Contains(underived, name) {
+			continue
+		}
 		endpointRows = append(endpointRows, UccWithEndpoints{&uccEndpointsRow{
 			Client:        ucc,
 			endpointsName: name,
@@ -405,5 +418,24 @@ func tunnelSnapshot(t *testing.T, gateway string, scoping clusterScoping, routed
 		newTestPerClientClustersFromCol(clusterCol, uccs),
 		scoping,
 	)
-	return eventuallyCoherentWrapper(t, snapshots)
+	return snapshots
+}
+
+// The publication gate follows a referenced backend's own listeners: a route to
+// a tunneled backend is not ready while the proxy cluster its tunnel listener
+// sends to has no endpoints, in either discovery mode.
+func TestRouteToATunneledBackendWaitsForItsProxyCluster(t *testing.T) {
+	for name, scoping := range map[string]clusterScoping{"all": {}, "referenced": scopedClusters()} {
+		t.Run(name, func(t *testing.T) {
+			snapshots := tunnelSnapshots(t, "gw-proxy-unready-"+name, scoping, []string{"tunneled"}, []string{"proxy"})
+			gomega.NewWithT(t).Eventually(func() []string {
+				list := snapshots.List()
+				if len(list) != 1 {
+					return nil
+				}
+				return list[0].missingEndpointsReferenced
+			}, time.Second, 20*time.Millisecond).Should(gomega.ConsistOf("proxy"),
+				"the route to the tunneled backend waits for the proxy's endpoints")
+		})
+	}
 }

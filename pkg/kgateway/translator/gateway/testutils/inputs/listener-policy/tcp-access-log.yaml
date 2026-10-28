@@ -1,0 +1,128 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8000
+  - name: http
+    protocol: HTTP
+    port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: example-tcp-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: tcp
+  rules:
+  - backendRefs:
+    - name: tcp-svc
+      port: 8000
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-http-route
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: http
+  rules:
+  - backendRefs:
+    - name: http-svc
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: access-logs
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: example-gateway
+  default:
+    httpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: "http %REQ(:METHOD)% %RESPONSE_CODE%\n"
+    tcpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          jsonFormat:
+            client_addr: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            upstream_host: "%UPSTREAM_HOST%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+            response_flags: "%RESPONSE_FLAGS%"
+      - grpcService:
+          logName: tcp-grpc-accesslog
+          backendRef:
+            name: log-collector
+            port: 9000
+        filter:
+          andFilter:
+          - durationFilter:
+              op: GE
+              value: 100
+          - notHealthCheckFilter: true
+      - openTelemetry:
+          grpcService:
+            logName: tcp-otel-accesslog
+            backendRef:
+              name: otel-collector
+              port: 4317
+          body: "%DOWNSTREAM_REMOTE_ADDRESS% %BYTES_SENT%"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcp-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-svc
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-collector
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 9000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+spec:
+  selector:
+    test: test
+  ports:
+  - protocol: TCP
+    port: 4317

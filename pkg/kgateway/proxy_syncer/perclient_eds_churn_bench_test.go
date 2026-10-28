@@ -66,15 +66,15 @@ func newEDSChurnFixture(b *testing.B, numClients, numBackends int) *edsChurnFixt
 		Listeners:          listeners,
 		ReferencedClusters: collectReferencedClusters(routes, listeners),
 	}})
-	f.endpoints = krt.NewStaticCollection(nil, endpointRows)
+	f.endpoints = krt.NewMutableCollection(nil, endpointRows)
 	clusters, _ := newTestPerClientClusters(clusterRows)
 	f.snapshots = snapshotPerClient(
 		krtopts,
 		uccs,
 		mostXdsSnapshots,
 		PerClientEnvoyEndpoints{
-			endpoints: f.endpoints,
-			index: krtpkg.UnnamedIndex(f.endpoints, func(ep UccWithEndpoints) []string {
+			endpoints: f.endpoints.AsCollection(),
+			index: krtpkg.UnnamedIndex(f.endpoints.AsCollection(), func(ep UccWithEndpoints) []string {
 				return []string{ep.Client.ResourceName()}
 			}),
 		},

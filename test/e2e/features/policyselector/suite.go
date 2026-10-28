@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
@@ -42,33 +43,54 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *tsuite) TestLabelSelector() {
-	// Verify response transformation with TrafficPolicy
-	common.BaseGateway.Send(
-		s.T(),
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Headers:    map[string]any{"x-foo": "bar"},
-		},
-		curl.WithPath("/get"),
-		curl.WithPort(gatewayPort),
-	)
-
-	// Verify access logs with ListenerPolicy
-	pods, err := s.TestInstallation.Actions.Kubectl().GetPodsInNsWithLabel(
-		s.Ctx, "kgateway-base", fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, "gateway"),
-	)
-	s.Require().NoError(err)
-	s.Require().Len(pods, 1)
+	// During a rollout the old pod can linger, still Running, while it
+	// terminates. Wait for exactly one live proxy pod so the logs we read come
+	// from the pod that serves the request.
+	var pod string
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "kgateway-base", pods[0])
-		s.Require().NoError(err)
+		pods, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods("kgateway-base").List(s.Ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", defaults.WellKnownAppLabel, "gateway"),
+		})
+		if !assert.NoError(c, err) || !assert.Len(c, pods.Items, 1, "expected exactly one gateway proxy pod") {
+			return
+		}
+		if assert.Nil(c, pods.Items[0].DeletionTimestamp, "the gateway proxy pod should not be terminating") {
+			pod = pods.Items[0].Name
+		}
+	}, 60*time.Second, 1*time.Second)
+
+	// The response transformation comes from a TrafficPolicy on the route, while
+	// the access log comes from a ListenerPolicy on the listener, and the two
+	// reach Envoy independently. A single request sent once the transformation
+	// is live can still be served by a listener without the access log, so send
+	// inside the poll loop until the access log line shows up.
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		// Verify response transformation with TrafficPolicy
+		err := common.BaseGateway.SendOnce(
+			s.Ctx,
+			&testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Headers:    map[string]any{"x-foo": "bar"},
+			},
+			curl.WithPath("/get"),
+			curl.WithPort(gatewayPort),
+		)
+		if !assert.NoError(c, err) {
+			return
+		}
+
+		// Verify access logs with ListenerPolicy
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "kgateway-base", pod)
+		if !assert.NoError(c, err) {
+			return
+		}
 		// Verify the log contains the expected JSON pattern
 		assert.Contains(c, logs, `"method":"GET"`)
 		assert.Contains(c, logs, `"path":"/get"`)
 		assert.Contains(c, logs, `"protocol":"HTTP/1.1"`)
 		assert.Contains(c, logs, `"response_code":200`)
 		assert.Contains(c, logs, `"backendCluster":"kube_kgateway-base_backend_80"`)
-	}, 30*time.Second, 100*time.Millisecond)
+	}, 30*time.Second, 1*time.Second)
 }
 
 func (s *tsuite) TestGlobalPolicy() {

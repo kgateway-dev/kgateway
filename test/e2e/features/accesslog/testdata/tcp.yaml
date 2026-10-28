@@ -1,0 +1,76 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: tcp-gateway
+  namespace: kgateway-base
+spec:
+  gatewayClassName: kgateway
+  listeners:
+  - name: tcp
+    protocol: TCP
+    port: 8090
+    allowedRoutes:
+      kinds:
+      - kind: TCPRoute
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: httpbin-tcp
+  namespace: kgateway-base
+spec:
+  parentRefs:
+  - name: tcp-gateway
+    sectionName: tcp
+  rules:
+  - backendRefs:
+    - name: httpbin
+      port: 8000
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: ListenerPolicy
+metadata:
+  name: access-logs
+  namespace: kgateway-base
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: tcp-gateway
+  default:
+    tcpSettings:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          jsonFormat:
+            log_type: tcp
+            client_addr: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            upstream_cluster: "%UPSTREAM_CLUSTER%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+      # The collector has no endpoints: this sink only checks that Envoy accepts the
+      # tcp_grpc logger; a rejected listener would never produce the file sink log.
+      - grpcService:
+          logName: tcp-accesslog-service
+          backendRef:
+            name: tcp-access-logger
+            port: 8083
+        filter:
+          durationFilter:
+            op: GE
+            value: 0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tcp-access-logger
+  namespace: kgateway-base
+spec:
+  ports:
+  - appProtocol: kubernetes.io/h2c
+    name: grpc
+    port: 8083
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: tcp-access-logger

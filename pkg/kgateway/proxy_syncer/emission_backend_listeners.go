@@ -23,8 +23,8 @@ import (
 // backend's own listeners, so none accounts for it. Only kept backends'
 // listeners are walked, so a dropped backend's selector changes nothing; they
 // are walked even when kept is already everything translated, so a selector is
-// reported either way. The targets are not routing targets for the publication
-// gate, which reads only the gateway's routes and listeners.
+// reported either way. The publication gate follows the same listeners for
+// readiness, but only to their routing targets (withBackendListenerRoutingTargets).
 //
 // translated and translatedVersions are the unfiltered set, and kept and
 // keptVersions what filterClustersToEmitted retained from it. It returns the
@@ -87,6 +87,46 @@ func keepBackendListenerTargets(
 	}
 	kept.Items = items
 	return kept, versions, true, nil
+}
+
+// withBackendListenerRoutingTargets returns referenced plus the clusters the
+// referenced backends' own listeners route to, followed in turn. A CONNECT
+// tunnel's listener sends to the proxy backend's cluster, which no gateway route
+// or listener names, so a route to the tunneled backend is not ready until that
+// cluster is. It uses the gate's routing-target walk, so a cluster a filter
+// calls does not hold routes. referenced is not modified.
+func withBackendListenerRoutingTargets(
+	referenced map[string]struct{},
+	backendListeners map[string]baseResources[*envoylistenerv3.Listener],
+) map[string]struct{} {
+	var pending []string
+	for name := range referenced {
+		if _, ok := backendListeners[name]; ok {
+			pending = append(pending, name)
+		}
+	}
+	if len(pending) == 0 {
+		return referenced
+	}
+	out := maps.Clone(referenced)
+	for len(pending) > 0 {
+		name := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		for _, l := range backendListeners[name].items {
+			listener := l.BorrowForRead()
+			listeners := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{listener.GetName(): {Resource: listener}}}
+			for target := range collectReferencedClusters(envoycache.Resources{}, listeners) {
+				if _, seen := out[target]; seen {
+					continue
+				}
+				out[target] = struct{}{}
+				if _, ok := backendListeners[target]; ok {
+					pending = append(pending, target)
+				}
+			}
+		}
+	}
+	return out
 }
 
 // listenerTargets walks one backend listener as emittedClustersFor walks a

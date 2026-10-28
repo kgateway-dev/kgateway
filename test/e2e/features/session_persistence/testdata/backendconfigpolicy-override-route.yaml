@@ -27,5 +27,6 @@ spec:
     - name: echo
       port: 8080
     sessionPersistence:
-      sessionName: route-cookie
       type: Cookie
+      cookie:
+        name: route-cookie
