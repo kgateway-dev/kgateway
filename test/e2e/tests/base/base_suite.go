@@ -529,6 +529,7 @@ func (s *BaseTestingSuite) pullImage(image string) {
 		return
 	}
 
+	start := time.Now()
 	pods := cluster.Clientset.CoreV1().Pods("default")
 	pullerPod, err := pods.Create(s.Ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -559,6 +560,7 @@ func (s *BaseTestingSuite) pullImage(image string) {
 		g.Expect(pod.Status.Phase).To(gomega.BeElementOf(corev1.PodSucceeded, corev1.PodRunning, corev1.PodFailed))
 	}).WithTimeout(5*time.Minute).WithPolling(2*time.Second).Should(gomega.Succeed(), "waiting for image %s to be pulled", image)
 	entry.pulled = true
+	s.T().Logf("Pre-pulled image %s in %s", image, time.Since(start).Round(time.Millisecond))
 }
 
 func imagePullerPodName(image string) string {
