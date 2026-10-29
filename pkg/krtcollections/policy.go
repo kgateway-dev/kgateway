@@ -561,7 +561,13 @@ func GatewaysForDeployerTransformationFunc(config *GatewayIndexConfig) func(kctx
 			ports.Insert(l.Port)
 		}
 
-		listenerSets := krt.Fetch(kctx, config.ListenerSets, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
+		// Only the ListenerSets' spec is read, so ignore status-only writes. Otherwise every
+		// ListenerSet status write re-runs this over all of the Gateway's ListenerSets.
+		listenerSets := krt.PartialFetch(kctx, config.ListenerSets, func(ls *gwv1.ListenerSet) *gwv1.ListenerSet {
+			return ls
+		}, func(a, b *gwv1.ListenerSet) bool {
+			return ir.VersionEquals(a, b)
+		}, krt.FilterIndex(config.byParentRefIndex, TargetRefIndexKey{
 			Group:     wellknown.GatewayGroup,
 			Kind:      wellknown.GatewayKind,
 			Name:      gw.GetName(),
