@@ -66,7 +66,7 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.5.0-main
+ROLLING_MAIN_VERSION ?= v2.6.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
