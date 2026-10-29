@@ -3,6 +3,7 @@ package delegation
 import (
 	"path"
 	"reflect"
+	"regexp/syntax"
 	"slices"
 	"strings"
 
@@ -94,7 +95,7 @@ func IsDelegatedRouteMatch(
 		return false
 	}
 	childPath := *child.Path.Value
-	if !strings.HasPrefix(childPath, parentPath) {
+	if !pathMatchWithinPrefix(*child.Path.Type, childPath, parentPath) {
 		return false
 	}
 
@@ -132,6 +133,104 @@ func IsDelegatedRouteMatch(
 	}
 
 	return true
+}
+
+// pathMatchWithinPrefix reports whether every path the child match can match is also
+// matched by the parent's path prefix. A parent only delegates the requests it matches, so
+// a child that can match anything else would take traffic the parent routes elsewhere.
+func pathMatchWithinPrefix(matchType gwv1.PathMatchType, childPath, parentPath string) bool {
+	if matchType != gwv1.PathMatchRegularExpression {
+		return pathWithinPrefix(childPath, parentPath)
+	}
+	re, err := syntax.Parse(childPath, syntax.Perl)
+	if err != nil {
+		return false
+	}
+	return regexWithinPrefix(re, parentPath)
+}
+
+// pathWithinPrefix reports whether a path or path prefix stays inside prefix. A path prefix
+// covers whole path elements, so /a covers /a and /a/b but not /ab.
+func pathWithinPrefix(p, prefix string) bool {
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix == "" {
+		return strings.HasPrefix(p, "/")
+	}
+	if p == prefix {
+		return true
+	}
+	return strings.HasPrefix(p, prefix+"/")
+}
+
+// regexWithinPrefix reports whether every path a regular expression matches stays inside
+// prefix. A regular expression cannot be intersected with the prefix, so it is delegated
+// only when its leading literal already places it inside, for every alternative, and
+// nothing after that literal can extend the last path element.
+func regexWithinPrefix(re *syntax.Regexp, prefix string) bool {
+	if re.Op == syntax.OpAlternate {
+		for _, sub := range re.Sub {
+			if !regexWithinPrefix(sub, prefix) {
+				return false
+			}
+		}
+		return true
+	}
+	literal, extends, ok := leadingLiteral(re)
+	if !ok || !pathWithinPrefix(literal, prefix) {
+		return false
+	}
+	// A literal equal to the prefix that is not the whole expression can continue with any
+	// character, for example /a.* also matches /admin.
+	return !(extends && literal == strings.TrimSuffix(prefix, "/"))
+}
+
+// leadingLiteral returns the literal text every match of re starts with, whether the
+// expression can match more after it, and false when the match can start with something
+// other than a literal.
+func leadingLiteral(re *syntax.Regexp) (literal string, extends, ok bool) {
+	switch re.Op {
+	case syntax.OpLiteral:
+		if re.Flags&syntax.FoldCase != 0 {
+			// A case-insensitive literal can match outside the case-sensitive prefix.
+			return "", false, false
+		}
+		return string(re.Rune), false, true
+	case syntax.OpCapture:
+		return leadingLiteral(re.Sub[0])
+	case syntax.OpConcat:
+		var b strings.Builder
+		for i, sub := range re.Sub {
+			if isZeroWidth(sub) {
+				continue
+			}
+			subLiteral, _, subOK := leadingLiteral(sub)
+			if !subOK {
+				if b.Len() == 0 {
+					return "", false, false
+				}
+				return b.String(), true, true
+			}
+			b.WriteString(subLiteral)
+			return b.String(), i < len(re.Sub)-1, true
+		}
+		return b.String(), false, true
+	}
+	if isZeroWidth(re) {
+		return "", false, true
+	}
+	return "", false, false
+}
+
+// isZeroWidth reports whether re matches an empty string and consumes no path characters.
+func isZeroWidth(re *syntax.Regexp) bool {
+	switch re.Op {
+	case syntax.OpEmptyMatch,
+		syntax.OpBeginLine, syntax.OpEndLine,
+		syntax.OpBeginText, syntax.OpEndText,
+		syntax.OpWordBoundary, syntax.OpNoWordBoundary:
+		return true
+	}
+	return false
 }
 
 // FilterDelegatedRuleMatches returns the matches of one delegatee route rule that
