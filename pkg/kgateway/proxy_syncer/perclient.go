@@ -80,7 +80,7 @@ func snapshotPerClient(
 
 	// The snapshot transform depends on change signals rather than on the three
 	// payloads, so its queue, which falls behind during bursts, pins none of
-	// them (see changeSignal).
+	// them (see changeSignals).
 	gatewaySignals := changeSignals(krtopts, "GatewayXdsResourceSignals", mostXdsSnapshots)
 	clusterSignals := changeSignals(krtopts, "ClusterResourceSignals", clusterSnapshot)
 	endpointSignals := changeSignals(krtopts, "EndpointResourceSignals", endpointResources)
