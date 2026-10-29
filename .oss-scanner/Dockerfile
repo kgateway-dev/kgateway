@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 # The binary validator (strict Envoy config validation) shells out to /usr/local/bin/envoy. Match the ENVOY_IMAGE pin
 # in the Makefile.
-COPY --from=docker.io/envoyproxy/envoy:v1.39.4 /usr/local/bin/envoy /usr/local/bin/envoy
+COPY --from=docker.io/envoyproxy/envoy:v1.39.6 /usr/local/bin/envoy /usr/local/bin/envoy
 COPY . /src
 WORKDIR /src
 # Fetch every module the build, the tests and the tools/ module (setup-envtest, gotestsum) need.
