@@ -29,10 +29,12 @@ var (
 
 	testCases = map[string]*base.TestCase{
 		"TestCookieSessionPersistence": {
-			Manifests: []string{cookieSessionPersistenceManifest},
+			Manifests:       []string{cookieSessionPersistenceManifest},
+			MaxGwApiVersion: base.GwApiMaxLegacyRouteSessionPersistence,
 		},
 		"TestHeaderSessionPersistence": {
-			Manifests: []string{headerSessionPersistenceManifest},
+			Manifests:       []string{headerSessionPersistenceManifest},
+			MaxGwApiVersion: base.GwApiMaxLegacyRouteSessionPersistence,
 		},
 	}
 )
