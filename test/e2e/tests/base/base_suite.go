@@ -129,36 +129,53 @@ var (
 const selfManagedGatewayAnnotation = "e2e.kgateway.dev/self-managed"
 
 const (
-	imagePullerPodPrefix        = "image-puller-"
-	imagePullerPodNameMaxLength = 63
+	imagePullerPodPrefix = "image-puller-"
+	// imagePullerPodNameMaxLength leaves room for the "-" separator and the 5
+	// random characters GenerateName appends within the 63 character limit.
+	imagePullerPodNameMaxLength = 63 - 6
 	imagePullerPodHashLength    = 12
 )
 
-// pulledImages records the images this test process has already pre-pulled.
-// Every suite in the process runs against the same cluster, so later test
-// cases that use the same image skip the puller pod.
+// pulledImages records the images this test process has already pre-pulled
+// to each cluster, so later test cases that use the same image skip the
+// puller pod.
 var pulledImages = newImageSet()
 
+// imageSet holds one entry per (kube context, image). Each entry has its own
+// lock so concurrent pulls of the same image wait for the first one instead
+// of starting a second puller pod, while different images pull in parallel.
 type imageSet struct {
 	mu     sync.Mutex
-	images map[string]struct{}
+	images map[imageKey]*pulledImage
+}
+
+type imageKey struct {
+	kubeContext string
+	image       string
+}
+
+type pulledImage struct {
+	mu     sync.Mutex
+	pulled bool
 }
 
 func newImageSet() *imageSet {
-	return &imageSet{images: make(map[string]struct{})}
+	return &imageSet{images: make(map[imageKey]*pulledImage)}
 }
 
-func (s *imageSet) has(image string) bool {
+// entry returns the entry for image on the cluster behind kubeContext,
+// creating it on first use. Callers hold entry.mu while reading or setting
+// pulled.
+func (s *imageSet) entry(kubeContext, image string) *pulledImage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_, ok := s.images[image]
-	return ok
-}
-
-func (s *imageSet) add(image string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.images[image] = struct{}{}
+	key := imageKey{kubeContext: kubeContext, image: image}
+	e, ok := s.images[key]
+	if !ok {
+		e = &pulledImage{}
+		s.images[key] = e
+	}
+	return e
 }
 
 // TestCase defines the manifests and resources used by a test or test suite.
@@ -500,47 +517,48 @@ func (s *BaseTestingSuite) prePullImages(testCase *TestCase) {
 }
 
 // pullImage creates a temporary pod to pull the given image with a long timeout.
-// Images already pulled by this process are skipped.
+// Images this process already pulled to the cluster are skipped. The pod gets
+// a generated name so concurrent pulls, including from other test processes
+// against the same cluster, never share or delete each other's puller pod.
 func (s *BaseTestingSuite) pullImage(image string) {
-	if pulledImages.has(image) {
+	cluster := s.TestInstallation.ClusterContext
+	entry := pulledImages.entry(cluster.KubeContext, image)
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+	if entry.pulled {
 		return
 	}
 
-	podName := imagePullerPodName(image)
-
-	pullerPod := fmt.Sprintf(`
-apiVersion: v1
-kind: Pod
-metadata:
-  name: %s
-  namespace: default
-spec:
-  restartPolicy: Never
-  terminationGracePeriodSeconds: 0
-  containers:
-  - name: puller
-    image: %s
-    command: ["true"]
-`, podName, image)
-
-	// Apply the puller pod
-	err := s.TestInstallation.Actions.Kubectl().Apply(s.Ctx, []byte(pullerPod))
+	pods := cluster.Clientset.CoreV1().Pods("default")
+	pullerPod, err := pods.Create(s.Ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: imagePullerPodName(image) + "-",
+		},
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: new(int64),
+			Containers: []corev1.Container{{
+				Name:    "puller",
+				Image:   image,
+				Command: []string{"true"},
+			}},
+		},
+	}, metav1.CreateOptions{})
 	if err != nil {
 		s.T().Logf("Warning: failed to create image puller pod for %s: %v", image, err)
 		return
 	}
+	podName := pullerPod.Name
+	defer func() { _ = pods.Delete(s.Ctx, podName, metav1.DeleteOptions{}) }()
 
 	// Wait for the pod to complete (image pulled) with a long timeout (5 minutes)
 	s.TestInstallation.AssertionsT(s.T()).Gomega.Eventually(func(g gomega.Gomega) {
-		pod, err := s.TestInstallation.ClusterContext.Clientset.CoreV1().Pods("default").Get(s.Ctx, podName, metav1.GetOptions{})
+		pod, err := pods.Get(s.Ctx, podName, metav1.GetOptions{})
 		g.Expect(err).NotTo(gomega.HaveOccurred())
 		// Pod should be Succeeded (completed) or Running (image pulled, command ran)
 		g.Expect(pod.Status.Phase).To(gomega.BeElementOf(corev1.PodSucceeded, corev1.PodRunning, corev1.PodFailed))
 	}).WithTimeout(5*time.Minute).WithPolling(2*time.Second).Should(gomega.Succeed(), "waiting for image %s to be pulled", image)
-	pulledImages.add(image)
-
-	// Clean up the puller pod
-	_ = s.TestInstallation.Actions.Kubectl().RunCommand(s.Ctx, "delete", "pod", podName, "-n", "default", "--ignore-not-found")
+	entry.pulled = true
 }
 
 func imagePullerPodName(image string) string {
