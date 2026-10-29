@@ -200,8 +200,21 @@ func TestOIDCDiscovererRunStopsOnContextCancel(t *testing.T) {
 		t.Fatal("run() did not return after context cancellation")
 	}
 
-	// No further polling once the loop has exited.
-	countAfterStop := atomic.LoadInt64(&requestCount)
+	// A poll the loop had already put on the wire when cancel() landed still reaches the test
+	// server's handler, even though client.Do returns "context canceled" without waiting for the
+	// response, so requestCount can tick up once more after run() has returned. Wait for it to
+	// settle rather than assuming that trailing request has already been counted. This cannot
+	// mask a loop that is still running: such a loop polls every failureRetryInterval/2, so it
+	// would never produce two equal samples a settle period apart.
+	var countAfterStop int64
+	require.Eventually(t, func() bool {
+		count := atomic.LoadInt64(&requestCount)
+		settled := count == countAfterStop
+		countAfterStop = count
+		return settled
+	}, 5*time.Second, 50*time.Millisecond, "polling should stop after cancellation")
+
+	// And it stays stopped.
 	time.Sleep(50 * time.Millisecond)
 	r.Equal(countAfterStop, atomic.LoadInt64(&requestCount), "no polling should happen after cancellation")
 }
