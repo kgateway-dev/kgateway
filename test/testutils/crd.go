@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"istio.io/istio/pkg/config/schema/gvr"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
@@ -98,8 +100,17 @@ func GetStructuralSchemas(
 }
 
 // GetStructuralSchemasForAllCharts returns a map of GroupVersionKind to Structural schemas for all CRDs
-// from the kgateway-crds chart.
+// from the kgateway-crds chart. The schemas are built once per process; each call returns a new map,
+// so callers may add to it, but the schemas it points to are shared and must not be modified.
 func GetStructuralSchemasForAllCharts() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
+	schemas, err := allChartsStructuralSchemas()
+	if err != nil {
+		return nil, err
+	}
+	return maps.Clone(schemas), nil
+}
+
+var allChartsStructuralSchemas = sync.OnceValues(func() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
 	gitRoot := GitRootDirectory()
 	kgatewayCRDDir := filepath.Join(gitRoot, CRDPath)
 
@@ -109,7 +120,7 @@ func GetStructuralSchemasForAllCharts() (map[schema.GroupVersionKind]*apiservers
 	}
 
 	return buildStructuralSchemaMap(crds)
-}
+})
 
 // buildStructuralSchemaMap converts a list of CRDs to a map of GVK to structural schemas
 func buildStructuralSchemaMap(crds []*apiextensions.CustomResourceDefinition) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {

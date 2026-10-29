@@ -166,6 +166,112 @@ func TestGatewayIRIgnoresStatusOnlyWrites(t *testing.T) {
 	g.Expect(out.Listeners[1].Port).To(Equal(gwv1.PortNumber(9090)))
 }
 
+// TestGatewayForDeployerIgnoresListenerSetStatusWrites counts runs of the deployer Gateway
+// transformation: a status-only write to a ListenerSet must not re-run it, while a spec change
+// or deletion must.
+func TestGatewayForDeployerIgnoresListenerSetStatusWrites(t *testing.T) {
+	g := NewWithT(t)
+	const barrier = "barrier"
+	ls := testListenerSet("ls", "gw")
+	barrierLS := testListenerSet("barrier-ls", barrier)
+
+	config := getConfig(t)
+	config.PolicyIndex = nil
+	gateways := krt.NewMutableCollection(nil, []*gwv1.Gateway{testGateway("gw"), testGateway(barrier)}, config.KrtOpts.ToOptions("Gateways")...)
+	listenerSets := krt.NewMutableCollection(nil, []*gwv1.ListenerSet{ls, barrierLS}, config.KrtOpts.ToOptions("ListenerSets")...)
+	config.Gateways = gateways.AsCollection()
+	config.ListenerSets = listenerSets.AsCollection()
+	config.GatewayClasses = krt.NewStaticCollection(nil, []*gwv1.GatewayClass{{
+		ObjectMeta: metav1.ObjectMeta{Name: "envoy"},
+		Spec:       gwv1.GatewayClassSpec{ControllerName: "controller-name"},
+	}}, config.KrtOpts.ToOptions("GatewayClasses")...)
+
+	var runs atomic.Int64
+	barrierRuns := make(chan struct{}, 16)
+	countRuns := func(config *GatewayIndexConfig) func(krt.HandlerContext, *gwv1.Gateway) *ir.GatewayForDeployer {
+		transform := GatewaysForDeployerTransformationFunc(config)
+		return func(kctx krt.HandlerContext, in *gwv1.Gateway) *ir.GatewayForDeployer {
+			out := transform(kctx, in)
+			if in.Name == barrier {
+				barrierRuns <- struct{}{}
+			} else {
+				runs.Add(1)
+			}
+			return out
+		}
+	}
+	index := NewGatewayIndex(config, WithGatewayForDeployerTransformationFunc(countRuns))
+	if !index.GatewaysForDeployer.WaitUntilSynced(t.Context().Done()) {
+		t.Fatal("deployer Gateway collection did not sync")
+	}
+	// ListenerSet events are delivered in order, so once a spec write to the barrier's
+	// ListenerSet re-runs the barrier Gateway, every earlier ListenerSet write was handled.
+	awaitBarrier := func() {
+		select {
+		case <-barrierRuns:
+		case <-time.After(time.Minute):
+			t.Fatal("barrier Gateway was not re-run")
+		}
+	}
+	awaitBarrier()
+	flush := func() {
+		barrierLS = bumpGeneration(barrierLS)
+		listenerSets.UpdateObject(barrierLS)
+		awaitBarrier()
+	}
+	ports := func() []int32 {
+		out := index.GatewaysForDeployer.GetKey(ir.ObjectSource{Group: gwv1.GroupName, Kind: wellknown.GatewayKind, Namespace: "default", Name: "gw"}.ResourceName())
+		g.Expect(out).NotTo(BeNil())
+		return out.Ports.List()
+	}
+	g.Expect(ports()).To(ConsistOf(int32(80), int32(8080)))
+
+	steps := []struct {
+		name      string
+		write     func()
+		wantRerun bool
+		wantPorts []int32
+	}{
+		{
+			name: "ListenerSet status",
+			write: func() {
+				ls = updated(ls, func(o *gwv1.ListenerSet) {
+					o.Status.Conditions = []metav1.Condition{{Type: "Accepted", Status: metav1.ConditionTrue}}
+				})
+				listenerSets.UpdateObject(ls)
+			},
+			wantPorts: []int32{80, 8080},
+		},
+		{
+			name: "ListenerSet spec",
+			write: func() {
+				ls = bumpGeneration(ls)
+				ls.Spec.Listeners[0].Port = 9090
+				listenerSets.UpdateObject(ls)
+			},
+			wantRerun: true,
+			wantPorts: []int32{80, 9090},
+		},
+		{
+			name:      "ListenerSet delete",
+			write:     func() { listenerSets.DeleteObject(krt.GetKey(ls)) },
+			wantRerun: true,
+			wantPorts: []int32{80},
+		},
+	}
+	for _, step := range steps {
+		before := runs.Load()
+		step.write()
+		flush()
+		want := before
+		if step.wantRerun {
+			want++
+		}
+		g.Expect(runs.Load()).To(Equal(want), "%s write: wantRerun=%v", step.name, step.wantRerun)
+		g.Expect(ports()).To(ConsistOf(step.wantPorts), "%s write", step.name)
+	}
+}
+
 // TestGatewayIRRebuildsOnlyChangedListenerSets counts policy lookups: creating, changing,
 // deleting or attaching a policy to one ListenerSet looks up policies for that ListenerSet only,
 // while the Gateway IR still carries every ListenerSet's listeners in precedence order.

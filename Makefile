@@ -66,7 +66,7 @@ comma := ,
 # where actual semver is desired.
 VERSION ?= v1.0.1-dev
 export VERSION
-ROLLING_MAIN_VERSION ?= v2.5.0-main
+ROLLING_MAIN_VERSION ?= v2.6.0-main
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
@@ -102,7 +102,7 @@ else
 	OSV_SCANNER_PLATFORM := --platform=linux/amd64
 endif
 
-export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.4
+export ENVOY_IMAGE ?= envoyproxy/envoy:v1.39.6
 
 # ENVOY_IMAGE is used by some of the *-docker targets which are used by CI e2e tests, so figure out the correct image
 # to use base on GOARCH. This doesn't affect goreleaser
