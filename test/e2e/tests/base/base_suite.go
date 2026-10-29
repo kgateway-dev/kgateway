@@ -73,6 +73,9 @@ var (
 	GwApiV1_5_0 = GwApiVersionMustParse("1.5.0")
 	// TCPRoutes was promoted to gateway.networking.k8s.io/v1 in 1.6.0 and is available in the standard channel.
 	GwApiV1_6_0 = GwApiVersionMustParse("1.6.0")
+	// SessionPersistence's cookie and header fields replaced sessionName and cookieConfig in 1.7.0 experimental.
+	// The -0 prerelease makes 1.7.0 release candidates match.
+	GwApiV1_7_0 = GwApiVersionMustParse("1.7.0-0")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -104,6 +107,10 @@ var (
 
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_1_0,
+	}
+
+	GwApiRequireRouteSessionPersistence = map[GwApiChannel]*GwApiVersion{
+		GwApiChannelExperimental: &GwApiV1_7_0,
 	}
 
 	// Gateway.spec.tls.frontend was added in 1.4.0 experimental
