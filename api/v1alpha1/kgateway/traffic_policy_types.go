@@ -504,6 +504,25 @@ type LocalRateLimitPolicy struct {
 	// Defaults to false.
 	// +optional
 	ShareAcrossGateway *bool `json:"shareAcrossGateway,omitempty"`
+
+	// StatPrefix sets the prefix of the local rate limit stats, so they can be split
+	// per route. Envoy emits them as `<statPrefix>.http_local_rate_limit.<stat>`
+	// (for example `rate_limited`). Defaults to `http_local_rate_limiter`, which all
+	// local rate limits share.
+	//
+	// It takes the same characters and template tokens as the TrafficPolicy
+	// `statPrefix` field: `{{route_name}}`, `{{route_namespace}}` and `{{rule_name}}`.
+	// A token with no value is dropped together with its `.` segment, and an empty
+	// result falls back to the default. For example, `{{rule_name}}` has no value for
+	// an unnamed rule. When the policy targets a Gateway or a listener, the route
+	// tokens have no value, because one rate limit config is shared by all its routes.
+	//
+	// For example, `{{route_namespace}}.{{route_name}}` becomes `my-ns.my-route`.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=256
+	// +kubebuilder:validation:Pattern=`^([a-zA-Z0-9_%.-]|\{\{\s*(route_name|route_namespace|rule_name)\s*\}\})+$`
+	StatPrefix *string `json:"statPrefix,omitempty"`
 }
 
 // TokenBucket configures the burst capacity and refill rate of a token bucket.

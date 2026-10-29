@@ -436,7 +436,12 @@ func (p *trafficPolicyPluginGwPass) ApplyForRoute(pCtx *ir.RouteContext, outputR
 	// route metadata from pCtx to resolve its template, so it is applied here
 	// rather than in handlePerRoutePolicies.
 	applyStatPrefix(policy.spec.statPrefix, pCtx, outputRoute)
-	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, policy.spec)
+
+	// The local rate limit stat prefix can also use route tokens. Resolve it on a copy of
+	// the spec, because the policy IR is shared by all routes it applies to.
+	spec := policy.spec
+	spec.localRateLimit = spec.localRateLimit.forRoute(statPrefixRouteVars(pCtx))
+	p.handlePolicies(pCtx.FilterChainName, &pCtx.TypedFilterConfig, spec)
 
 	return nil
 }
