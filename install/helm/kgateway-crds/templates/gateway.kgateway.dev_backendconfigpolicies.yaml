@@ -295,12 +295,25 @@ spec:
                     - path
                     type: object
                   interval:
-                    description: Interval is the time between health checks.
+                    description: Interval is the time between health checks after
+                      the backend receives its first request.
                     maxLength: 32
                     type: string
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                  noTrafficInterval:
+                    description: |-
+                      NoTrafficInterval is the time between health checks before the backend receives
+                      its first request. If unset, uses Envoy's default of 60 seconds.
+                      Must be at least 1ms.
+                    maxLength: 32
+                    type: string
+                    x-kubernetes-validations:
+                    - message: invalid duration value
+                      rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
+                    - message: noTrafficInterval must be at least 1ms
+                      rule: duration(self) >= duration('1ms')
                   timeout:
                     description: |-
                       Timeout is time to wait for a health check response. If the timeout is reached the
