@@ -142,17 +142,20 @@ func NewCommonCollections(
 	}
 
 	// Validate before any informer exists: the API server rejects a malformed selector on every
-	// List, so the informer would never sync and the controller would never go ready.
-	for _, sel := range []struct {
-		value apisettings.LabelSelector
-		watch krtcollections.WatchSelector
-	}{
-		{settings.SecretLabelSelector, krtcollections.SecretWatchSelector("")},
-		{settings.ConfigMapLabelSelector, krtcollections.ConfigMapWatchSelector("")},
-		{settings.ServiceLabelSelector, krtcollections.ServiceWatchSelector("")},
+	// List, so the informer would never sync and the controller would never go ready. Each
+	// selector is pushed to the API server as a watch selector, so objects kgateway is not
+	// expected to resolve never reach the informer cache.
+	for _, watch := range []krtcollections.WatchSelector{
+		krtcollections.SecretWatchSelector(string(settings.SecretLabelSelector)),
+		krtcollections.ConfigMapWatchSelector(string(settings.ConfigMapLabelSelector)),
+		krtcollections.ServiceWatchSelector(string(settings.ServiceLabelSelector)),
 	} {
-		if err := sel.value.Validate(); err != nil {
-			return nil, fmt.Errorf("%s (Helm value %s): %w", sel.watch.EnvVar, sel.watch.HelmValue, err)
+		if err := apisettings.LabelSelector(watch.Selector).Validate(); err != nil {
+			return nil, fmt.Errorf("%s (Helm value %s): %w", watch.EnvVar, watch.HelmValue, err)
+		}
+		if watch.Selector != "" {
+			logger.Info("watching only objects matching the label selector; others are not found when referenced",
+				"setting", watch.HelmValue, "selector", watch.Selector)
 		}
 	}
 
@@ -170,19 +173,6 @@ func NewCommonCollections(
 			return nil, err
 		}
 		kube.SetObjectFilter(client.Core(), discoveryNamespacesFilter)
-	}
-
-	// Each selector is pushed to the API server as a watch selector, so objects kgateway is not
-	// expected to resolve never reach the informer cache.
-	if settings.SecretLabelSelector != "" {
-		logger.Info("watching only Secrets matching the label selector", "selector", settings.SecretLabelSelector)
-	}
-	if settings.ConfigMapLabelSelector != "" {
-		logger.Info("watching only ConfigMaps matching the label selector", "selector", settings.ConfigMapLabelSelector)
-	}
-	if settings.ServiceLabelSelector != "" {
-		logger.Info("watching only Services matching the label selector; others are unavailable as backends",
-			"selector", settings.ServiceLabelSelector)
 	}
 
 	secretClient := kclient.NewFiltered[*corev1.Secret](

@@ -107,8 +107,10 @@ func (v *ValidatorMode) Decode(value string) error {
 // Empty selects everything.
 type LabelSelector string
 
-// Decode implements envconfig.Decoder.
+// Decode implements envconfig.Decoder. Surrounding whitespace is dropped, so a value of only
+// whitespace, which selects everything, decodes as unset rather than as a narrowed watch.
 func (l *LabelSelector) Decode(value string) error {
+	value = strings.TrimSpace(value)
 	if err := LabelSelector(value).Validate(); err != nil {
 		return err
 	}

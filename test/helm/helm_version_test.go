@@ -1239,6 +1239,27 @@ func TestLabelSelectorEnvironmentVariables(t *testing.T) {
 	}
 }
 
+// TestLabelSelectorExtraEnvOverride asserts that a selector variable also set through
+// controller.extraEnv is rendered once, with the extraEnv value, like the other chart settings
+// that extraEnv can override.
+func TestLabelSelectorExtraEnvOverride(t *testing.T) {
+	for field, envVar := range labelSelectorValues {
+		t.Run(field, func(t *testing.T) {
+			valuesYAML := field + ": team=a\ncontroller:\n  extraEnv:\n    " + envVar + ": team=b\n"
+			deployment := findDeployment(t, renderHelmTemplate(t, "kgateway", valuesYAML, nil))
+			require.NotEmpty(t, deployment.Spec.Template.Spec.Containers)
+
+			var values []string
+			for _, variable := range deployment.Spec.Template.Spec.Containers[0].Env {
+				if variable.Name == envVar {
+					values = append(values, variable.Value)
+				}
+			}
+			require.Equal(t, []string{"team=b"}, values, "controller environment should set %s once, from extraEnv", envVar)
+		})
+	}
+}
+
 func TestLabelSelectorsRejectNonStringHelmValues(t *testing.T) {
 	values := map[string]string{
 		"boolean": " true\n",

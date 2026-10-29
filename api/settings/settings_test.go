@@ -557,6 +557,19 @@ func TestLabelSelectorValidate(t *testing.T) {
 	}
 }
 
+func TestLabelSelectorDecodeTrimsWhitespace(t *testing.T) {
+	for value, want := range map[string]LabelSelector{
+		"   ":         "",
+		"\t":          "",
+		" team=a ":    "team=a",
+		"team in (a)": "team in (a)",
+	} {
+		var got LabelSelector
+		require.NoError(t, got.Decode(value), "%q", value)
+		require.Equal(t, want, got, "a whitespace-only selector selects everything and must decode as unset: %q", value)
+	}
+}
+
 func TestDeprecatedEnableWaypoint(t *testing.T) {
 	tests := []struct {
 		name    string

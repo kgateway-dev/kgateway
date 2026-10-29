@@ -66,6 +66,10 @@ type gatewayReconciler struct {
 	svcAccountClient kclient.Client[*corev1.ServiceAccount]
 	configMapClient  kclient.Client[*corev1.ConfigMap]
 
+	// svcLabelSelector is the label selector svcClient watches with; see
+	// ownedObjectLabelSelector. Empty means the watch is unfiltered.
+	svcLabelSelector string
+
 	controllerExtension pluginsdk.GatewayControllerExtension
 
 	queue controllers.Queue
@@ -96,6 +100,7 @@ func NewGatewayReconciler(
 		deploymentClient: kclient.NewFiltered[*appsv1.Deployment](cfg.Client, filter),
 		svcAccountClient: kclient.NewFiltered[*corev1.ServiceAccount](cfg.Client, filter),
 		configMapClient:  kclient.NewFiltered[*corev1.ConfigMap](cfg.Client, configMapFilter),
+		svcLabelSelector: serviceFilter.LabelSelector,
 	}
 
 	// Reuse the parameter client from the deployer to avoid duplicate watches.
@@ -377,6 +382,13 @@ func (r *gatewayReconciler) updateStatus(ctx context.Context, gw *gwv1.Gateway, 
 
 		svc = r.svcClient.Get(svcnns.Name, svcnns.Namespace)
 		if svc == nil {
+			if r.svcLabelSelector != "" {
+				// A GatewayParameters serviceOverlay can relabel the proxy Service out of
+				// this watch, which would otherwise look like a transient cache miss.
+				return fmt.Errorf("Service %s not found for Gateway %s; with serviceLabelSelector set, the gateway "+
+					"controller only watches proxy Services labeled %s, so a serviceOverlay must not change that label",
+					svcnns, kubeutils.NamespacedNameFrom(gw), r.svcLabelSelector)
+			}
 			return fmt.Errorf("Service %s not found for Gateway %s", svcnns, kubeutils.NamespacedNameFrom(gw))
 		}
 

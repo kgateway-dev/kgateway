@@ -47,6 +47,41 @@ Contrast with `discoveryNamespaceSelectors`, which filters on read
 (`kubetypes.DynamicObjectFilter`) so that it can change without restarting watches: it scopes
 *what kgateway acts on*, not what it caches.
 
+## Alongside xDS scoping
+
+`KGW_XDS_SCOPING_MODE=REFERENCED` (Helm `controller.xds.scoping.mode`, from #13586; see
+[xDS scoping](xds-scoping.md)) also cuts the clusters each Envoy receives, so it is easy to
+mistake for `ServiceLabelSelector`. The two filter at opposite ends of the pipeline:
+
+| | `ServiceLabelSelector` | `KGW_XDS_SCOPING_MODE=REFERENCED` |
+| --- | --- | --- |
+| Decided by | The operator's labels | The generated Envoy configuration, per gateway |
+| Filters at | The Service informer | Each proxy's snapshot, after translation |
+| Controller memory | Unmatched Services are never cached or translated | Unchanged: every discovered backend is still cached and translated |
+| Proxy CDS, EDS, and stats | Matched Services, for every gateway | What that gateway references |
+| Backend kinds | Services only | All, including `Backend` and ServiceEntry |
+
+They compose, and a few things are worth knowing before enabling both:
+
+- **The selector is the ceiling.** Scoping only chooses among the backends the selector let
+  through; it cannot bring back an unmatched Service. A gateway that reverts to emit-all
+  (a request-time selector that no plugin claims) still receives only matched Services.
+- **Relabeling a Service out is a deletion, not a de-reference.** To the controller the
+  Service is simply gone, so under `REFERENCED` its cluster leaves at once, as a deleted
+  backend's does: `KGW_XDS_SCOPING_DEREFERENCE_GRACE` covers only clusters scoping stopped
+  emitting. A route still naming the Service turns `BackendNotFound`, in either mode. Move
+  routes off a Service before removing its label. Labeling a Service in is the converse: it
+  arrives as a new backend, and under `REFERENCED` a route naming it is held for
+  `KGW_XDS_SCOPING_REFERENCE_AHEAD` like any other new cluster.
+- **`kgateway_xds_scoping_dropped_clusters` counts only what scoping withheld** from the
+  selected set. Under a tight selector it reads low or zero because the selector already did
+  the work, not because scoping is ineffective.
+  `kgateway_xds_snapshot_resources{resource="Cluster"}` counts what proxies receive under
+  either setting.
+- **Scoping never narrows a watch.** It filters backend-owned SDS resources but leaves
+  gateway-level Secrets alone and does not touch ConfigMaps, so their cache size is up to
+  `SecretLabelSelector` and `ConfigMapLabelSelector` alone.
+
 ## Unmatched references
 
 Every object that a Gateway, HTTPRoute, or kgateway policy references must match its kind's
@@ -60,7 +95,8 @@ While a selector is set, a lookup miss for that kind names the selector and wher
 configured (`krtcollections.SelectorNotFoundError`, which unwraps to `NotFoundError`), so the
 cause shows up in status messages. This covers Service backends resolved through the
 `BackendIndex`, Secrets resolved through the `SecretIndex`, and ConfigMaps resolved through
-the `ConfigMapIndex`.
+the `ConfigMapIndex`. Listener and Gateway status, which rewrite not-found errors into their
+own message, keep the selector through `listener.ResourceNotFoundMessage`.
 
 ## Objects kgateway owns
 
@@ -72,8 +108,11 @@ them is required to. Each is read back through a separate, narrow watch instead:
   `Gateway.status.addresses` from the Service. When a selector is set for the kind,
   `gw_controller.go` selects on `app.kubernetes.io/managed-by=kgateway` instead (see
   `ownedObjectLabelSelector`), which the envoy chart stamps on both and which
-  `service.extraLabels` and `gatewayLabels` cannot override. That is a second informer, sized
-  by the number of Gateways. With no selector set, both watches are unfiltered and share one
+  `service.extraLabels` and `gatewayLabels` cannot override. A GatewayParameters
+  `serviceOverlay` *can* overwrite it; a proxy Service relabeled that way drops out of the
+  watch, so the Gateway is no longer enqueued on Service changes and its `status.addresses`
+  is not updated (the reconcile error says why). That is a second informer, sized by the
+  number of Gateways. With no selector set, both watches are unfiltered and share one
   informer, as before.
 - **The OAuth2 HMAC Secret** (`wellknown.OAuth2HMACSecret`), created by the bootstrap
   controller and read by the OAuth2 policy through `CommonCollections.Secrets`. When
@@ -108,9 +147,13 @@ latter.
 - `ServiceLabelSelector` does not narrow the EndpointSlice watch (see
   `extensions2/plugins/kubernetes/k8s.go`), which stays cluster-wide. Endpoints are joined to
   Service backends, so this is correct — it just leaves the larger share of the memory on the
-  table. Narrowing it would need the Service's labels mirrored onto EndpointSlices, which
-  kgateway does not own.
+  table. The Kubernetes EndpointSlice controller copies a Service's labels (other than its
+  reserved keys) onto the slices it manages, so the same selector could narrow that watch for
+  controller-managed slices; slices from other controllers need not carry them, which is why
+  the watch is left unfiltered for now.
 - The gateway controller also watches Deployments and ServiceAccounts cluster-wide for the
   same parent-enqueue purpose. They could be narrowed with the same `managed-by` selector.
 - Lookups that bypass the indexes, such as the JWT provider's local JWKS ConfigMap lookup in
-  `trafficpolicy/jwt.go`, report the plain not-found error without naming the selector.
+  `trafficpolicy/jwt.go` and the BackendTLSPolicy CA certificate ConfigMap lookup in
+  `backendtlspolicy/plugin.go`, report the plain not-found error without naming the selector.
+  So do policy `targetRefs` to a Service, which report `Service <ns>/<name> not found`.

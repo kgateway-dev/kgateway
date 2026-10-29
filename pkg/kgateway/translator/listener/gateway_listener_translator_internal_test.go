@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -16,6 +18,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/routeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -562,4 +566,84 @@ func TestAppendTlsListenerReportsConflictOnEveryParentRef(t *testing.T) {
 	}
 	assert.Equal(t, []*query.RouteInfo{bySection, &byPort}, conflicted, "each parentRef of the losing route must report the conflict")
 	assert.Len(t, ml.Listeners[0].TcpFilterChains, 1, "only the winning route gets a filter chain")
+}
+
+func TestResourceNotFoundMessage(t *testing.T) {
+	plain := &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{Kind: "Secret", Namespace: "default", Name: "plain"}}
+	narrowed := &krtcollections.SelectorNotFoundError{
+		NotFound:      &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{Kind: "Secret", Namespace: "default", Name: "narrowed"}},
+		WatchSelector: krtcollections.SecretWatchSelector("team=a"),
+	}
+	narrowedMessage := `Secret default/narrowed not found; kgateway only watches Secrets matching label selector "team=a" (Helm value secretLabelSelector, KGW_SECRET_LABEL_SELECTOR); verify the Secret labels match the selector.`
+
+	tests := []struct {
+		name    string
+		err     error
+		want    string
+		wantHit bool
+	}{
+		{name: "unrelated error", err: errors.New("boom")},
+		{name: "plain not found keeps the template", err: plain, want: "Secret default/plain not found.", wantHit: true},
+		{name: "selector not found names the selector", err: fmt.Errorf("wrapped: %w", narrowed), want: narrowedMessage, wantHit: true},
+		{
+			name:    "a joined selector error for another ref does not relabel the first",
+			err:     errors.Join(plain, narrowed),
+			want:    "Secret default/plain not found.",
+			wantHit: true,
+		},
+		{name: "selector error first is reported with its selector", err: errors.Join(narrowed, plain), want: narrowedMessage, wantHit: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := ResourceNotFoundMessage(tt.err)
+			require.Equal(t, tt.wantHit, ok)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestCAConfigMapFetchErrorStatus(t *testing.T) {
+	missing := &krtcollections.NotFoundError{NotFoundObj: ir.ObjectSource{Kind: "ConfigMap", Namespace: "default", Name: "ca"}}
+	narrowed := &krtcollections.SelectorNotFoundError{
+		NotFound:      missing,
+		WatchSelector: krtcollections.ConfigMapWatchSelector("team=a"),
+	}
+
+	tests := []struct {
+		name        string
+		lookupErr   error
+		wantReason  gwv1.ListenerConditionReason
+		wantMessage string
+	}{
+		{
+			name:        "a plain miss keeps the existing message",
+			lookupErr:   missing,
+			wantReason:  sslutils.ListenerReasonInvalidCACertificateRef,
+			wantMessage: "failed to fetch CA certificate ConfigMap ca/default: InvalidCACertificateRef",
+		},
+		{
+			name:        "a selector miss names the selector",
+			lookupErr:   narrowed,
+			wantReason:  sslutils.ListenerReasonInvalidCACertificateRef,
+			wantMessage: `ConfigMap default/ca not found; kgateway only watches ConfigMaps matching label selector "team=a" (Helm value configMapLabelSelector, KGW_CONFIG_MAP_LABEL_SELECTOR); verify the ConfigMap labels match the selector.`,
+		},
+		{
+			name:        "a missing reference grant is not relabeled",
+			lookupErr:   krtcollections.ErrMissingReferenceGrant,
+			wantReason:  gwv1.ListenerReasonRefNotPermitted,
+			wantMessage: "failed to fetch CA certificate ConfigMap ca/default: missing CA certificate reference grant",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lr := &reports.ListenerReport{}
+			reportTLSConfigError(caConfigMapFetchError("ca", "default", tt.lookupErr), lr, false)
+
+			resolvedRefs := meta.FindStatusCondition(lr.Status.Conditions, string(gwv1.ListenerConditionResolvedRefs))
+			require.NotNil(t, resolvedRefs, "ResolvedRefs must be set for a failed CA lookup")
+			assert.Equal(t, metav1.ConditionFalse, resolvedRefs.Status)
+			assert.Equal(t, string(tt.wantReason), resolvedRefs.Reason)
+			assert.Equal(t, tt.wantMessage, resolvedRefs.Message)
+		})
+	}
 }
