@@ -442,8 +442,8 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 
 	// Check version requirements before applying manifests
 	if shouldSkip := s.skipTest(testCase); shouldSkip {
-		s.T().Skipf("Test requires Gateway API %s, but current is %s/%s",
-			testCase.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
+		s.T().Skipf("Test requires Gateway API min %s, max (exclusive) %s, but current is %s/%s",
+			testCase.MinGwApiVersion, testCase.MaxGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
 		return
 	}
 
