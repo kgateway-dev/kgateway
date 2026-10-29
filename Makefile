@@ -1100,7 +1100,7 @@ kind-create: ## Create a KinD cluster. IP_FAMILY=ipv4|ipv6|dual selects the clus
 	$(KIND) export kubeconfig --name $(CLUSTER_NAME)
 
 CONFORMANCE_CHANNEL ?= experimental
-CONFORMANCE_VERSION ?= v1.7.0-rc.3
+CONFORMANCE_VERSION ?= v1.7.0
 .PHONY: gw-api-crds
 gw-api-crds: ## Install the Gateway API CRDs. HACK: Use SSA to avoid the issue with the CRD annotations being too long.
 ifeq ($(shell echo $(CONFORMANCE_VERSION) | grep -q '^v[0-9]' && echo yes),yes)
