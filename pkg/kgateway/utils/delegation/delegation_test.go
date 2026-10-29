@@ -642,6 +642,56 @@ func TestIsDelegatedRouteMatch(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name:   "child regex that can match outside the parent prefix is not delegated",
+			parent: gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:  gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchRegularExpression, "/a/.*|/admin.*")},
+			// Without this the child is emitted ahead of the parent's /admin rule and takes
+			// requests the parent never delegated to it.
+			expected: false,
+		},
+		{
+			name:     "child regex inside the parent prefix is delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchRegularExpression, "/a/.*")},
+			expected: true,
+		},
+		{
+			name:     "child regex that extends the last path element is not delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchRegularExpression, "/a.*")},
+			expected: false,
+		},
+		{
+			name:     "child regex under the root prefix is delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchRegularExpression, "/admin.*")},
+			expected: true,
+		},
+		{
+			name:     "child regex with no leading literal is not delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchRegularExpression, ".*")},
+			expected: false,
+		},
+		{
+			name:     "invalid child regex is not delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchRegularExpression, "/a/(")},
+			expected: false,
+		},
+		{
+			name:     "child prefix that only shares a string prefix is not delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/ab")},
+			expected: false,
+		},
+		{
+			name:     "child exact path at the parent prefix is delegated",
+			parent:   gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchPathPrefix, "/a")},
+			child:    gwv1.HTTPRouteMatch{Path: pathMatch(gwv1.PathMatchExact, "/a")},
+			expected: true,
+		},
 	}
 
 	for _, tc := range testCases {
