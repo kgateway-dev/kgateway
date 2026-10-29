@@ -70,6 +70,9 @@ var (
 	GwApiV1_4_0 = GwApiVersionMustParse("1.4.0")
 	// ListenerSet was promoted to gateway.networking.k8s.io/v1 in 1.5.0 and is available in the standard channel.
 	GwApiV1_5_0 = GwApiVersionMustParse("1.5.0")
+	// SessionPersistence's cookie and header fields replaced sessionName and cookieConfig in 1.7.0 experimental.
+	// The -0 prerelease makes 1.7.0 release candidates match.
+	GwApiV1_7_0 = GwApiVersionMustParse("1.7.0-0")
 
 	GwApiRequireRouteNames = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_2_0,
@@ -100,6 +103,11 @@ var (
 
 	GwApiRequireSessionPersistence = map[GwApiChannel]*GwApiVersion{
 		GwApiChannelExperimental: &GwApiV1_1_0,
+	}
+
+	// Max version for route sessionPersistence manifests that use sessionName and cookieConfig.
+	GwApiMaxLegacyRouteSessionPersistence = map[GwApiChannel]*GwApiVersion{
+		GwApiChannelExperimental: &GwApiV1_7_0,
 	}
 
 	// Gateway.spec.tls.frontend was added in 1.4.0 experimental
@@ -386,8 +394,8 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 
 	// Check version requirements before applying manifests
 	if shouldSkip := s.skipTest(testCase); shouldSkip {
-		s.T().Skipf("Test requires Gateway API %s, but current is %s/%s",
-			testCase.MinGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
+		s.T().Skipf("Test requires Gateway API min %s, max (exclusive) %s, but current is %s/%s",
+			testCase.MinGwApiVersion, testCase.MaxGwApiVersion, s.getCurrentGwApiChannel(), s.getCurrentGwApiVersion())
 		return
 	}
 
