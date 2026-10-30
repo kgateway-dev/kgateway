@@ -26,7 +26,14 @@ import (
 
 // baseEnvoyCluster is the client-independent translation of one backend.
 // Clients share its read-only Cluster proto and clone it for per-client changes.
+//
+// It is a single pointer for the reason given on [UccWithEndpoints]: every
+// client's transform fetches every base.
 type baseEnvoyCluster struct {
+	*baseClusterRow
+}
+
+type baseClusterRow struct {
 	// Name is both the Envoy cluster name and the KRT key; translation always
 	// names the cluster (blackhole included) after BackendObjectIR.ClusterName().
 	Name string
@@ -74,6 +81,11 @@ type baseEnvoyCluster struct {
 func (b baseEnvoyCluster) ResourceName() string { return b.Name }
 
 func (b baseEnvoyCluster) Equals(in baseEnvoyCluster) bool {
+	return b.baseClusterRow == in.baseClusterRow || b.baseClusterRow.Equals(in.baseClusterRow)
+}
+
+// Equals lives on the row so that krtequals checks the row's fields.
+func (b *baseClusterRow) Equals(in *baseClusterRow) bool {
 	if b.CompareBackendInputs != in.CompareBackendInputs {
 		return false
 	}
@@ -582,7 +594,7 @@ func NewPerClientEnvoyClusters(
 		if backendObj.Obj != nil {
 			backendGeneration = backendObj.Obj.GetGeneration()
 		}
-		return &baseEnvoyCluster{
+		return &baseEnvoyCluster{&baseClusterRow{
 			Name:                 name,
 			Cluster:              sharedCluster,
 			ClusterVersion:       clusterVersion,
@@ -595,7 +607,7 @@ func NewPerClientEnvoyClusters(
 			BackendGeneration:    backendGeneration,
 			Backend:              backendObj,
 			Base:                 baseRes,
-		}
+		}}
 	}, krtopts.ToOptions("BaseEnvoyClusters")...)
 
 	return newPerClientEnvoyClusters(ctx, krtopts, translator, base, uccs)
