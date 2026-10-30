@@ -2,6 +2,8 @@ package proxy_syncer
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -865,7 +867,7 @@ func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
 	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
 	walks := 0
 	refsOf := func(routes envoycache.Resources) map[string]struct{} {
-		return memo.get(routes.Items, listeners.Items, func() map[string]struct{} {
+		return memo.get(publishGateTestClient, routes.Items, listeners.Items, func() map[string]struct{} {
 			walks++
 			return collectReferencedClusters(routes, listeners)
 		})
@@ -881,6 +883,66 @@ func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
 	routesB.Version = routesA.Version // a reused label must not alias different content
 	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, refsOf(routesB))
 	assert.Equal(t, 2, walks)
+}
+
+// The memo retains only the routing configs its clients last looked up: an
+// entry is shared by clients on the same config and dropped once none holds it,
+// so a stream of published versions, or a departed client, pins nothing.
+func TestPublishedReferencedClustersMemoRetainsOnlyHeldEntries(t *testing.T) {
+	memo := &referencedClustersMemo{}
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	walks := 0
+	refsOf := func(proxyKey string, routes envoycache.Resources) map[string]struct{} {
+		return memo.get(proxyKey, routes.Items, listeners.Items, func() map[string]struct{} {
+			walks++
+			return collectReferencedClusters(routes, listeners)
+		})
+	}
+
+	shared := routeResourcesForClusters("cluster-a")
+	refsOf("client-1", shared)
+	refsOf("client-2", shared)
+	assert.Equal(t, 1, walks, "clients on the same routing config share its entry")
+	assert.Len(t, memo.entries, 1)
+
+	for i := range 100 {
+		refsOf("client-1", routeResourcesForClusters(fmt.Sprintf("cluster-%d", i)))
+	}
+	assert.Len(t, memo.entries, 2, "client-1 holds only its latest config; client-2 still holds the shared one")
+
+	memo.release("client-2")
+	assert.Len(t, memo.entries, 1, "a released entry no client holds is dropped")
+	memo.release("client-1")
+	assert.Empty(t, memo.entries, "departed clients pin nothing")
+	assert.Empty(t, memo.byProxy)
+
+	refsOf("client-1", shared)
+	assert.Equal(t, 102, walks, "a dropped entry is walked again")
+}
+
+// A departed client releases its memo entry along with the rest of its
+// connection state.
+func TestClientDepartedReleasesPublishedRefs(t *testing.T) {
+	t.Cleanup(func() { publishedRefs.release(publishGateTestClient) })
+	routes := routeResourcesForClusters("cluster-a")
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	publishedRefs.get(publishGateTestClient, routes.Items, listeners.Items, func() map[string]struct{} {
+		return collectReferencedClusters(routes, listeners)
+	})
+	key := [2]uintptr{reflect.ValueOf(routes.Items).Pointer(), reflect.ValueOf(listeners.Items).Pointer()}
+	publishedRefs.mu.Lock()
+	_, held := publishedRefs.entries[key]
+	publishedRefs.mu.Unlock()
+	assert.True(t, held, "the lookup holds an entry")
+
+	newPublishGateTestTranslator(t, false, time.Hour).gate.clientDeparted(publishGateTestClient)
+
+	publishedRefs.mu.Lock()
+	defer publishedRefs.mu.Unlock()
+	_, held = publishedRefs.entries[key]
+	assert.False(t, held, "the departed client's entry is dropped")
+	_, holding := publishedRefs.byProxy[publishGateTestClient]
+	assert.False(t, holding)
 }
 
 // Publication tests model connected clients; their snapshots cannot be reclaimed.

@@ -855,6 +855,7 @@ func (g *publishGate) forgetConnectionLocked(proxyKey string) {
 	delete(g.carriedSince, proxyKey)
 	delete(g.publishedEDS, proxyKey)
 	delete(g.aheadSent, proxyKey)
+	publishedRefs.release(proxyKey)
 }
 
 // connectionStarted forgets the previous connection, as clientDeparted does,
