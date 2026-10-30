@@ -990,6 +990,10 @@ spec:
                     description: |-
                       WithRequestBody allows the request body to be buffered and sent to the auth service.
                       Warning buffering has implications for streaming and therefore performance.
+
+                      PackAsBytes is rejected here: Envoy reads it from the ext_authz filter
+                      configuration, not from the per-route settings, so it only takes effect on
+                      the GatewayExtension that configures the auth service.
                     properties:
                       allowPartialMessage:
                         default: false
@@ -1016,6 +1020,10 @@ spec:
                     required:
                     - maxRequestBytes
                     type: object
+                    x-kubernetes-validations:
+                    - message: packAsBytes only takes effect on GatewayExtension.spec.extAuth.withRequestBody;
+                        Envoy ignores it in a TrafficPolicy
+                      rule: '!has(self.packAsBytes) || !self.packAsBytes'
                 type: object
                 x-kubernetes-validations:
                 - message: exactly one of the fields in [extensionRef disable] must
