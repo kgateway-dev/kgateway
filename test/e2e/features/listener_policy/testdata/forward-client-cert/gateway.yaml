@@ -1,0 +1,90 @@
+# mTLS-terminating Gateway shared by the TestForwardClientCert* tests, applied at
+# suite setup so its proxy is provisioned once. Each test owns one listener and
+# targets it by sectionName; HTTPS listeners get their own filter chain, so a
+# policy on one listener can't affect another. Ports must match types.go.
+# Client-cert validation comes from the forward-client-cert-mtls ListenerPolicy.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw-mtls
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    # TestForwardClientCertBaseline
+    - protocol: HTTPS
+      port: 8443
+      name: mtls-baseline
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # TestForwardClientCertSanitizeSetDefault
+    - protocol: HTTPS
+      port: 8444
+      name: mtls-sanitize-set-default
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # TestForwardClientCertSanitizeSetAll
+    - protocol: HTTPS
+      port: 8445
+      name: mtls-sanitize-set-all
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # TestForwardClientCertAppendForward
+    - protocol: HTTPS
+      port: 8446
+      name: mtls-append-forward
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # TestForwardClientCertSanitize
+    - protocol: HTTPS
+      port: 8447
+      name: mtls-sanitize
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # TestForwardClientCertForwardOnly
+    - protocol: HTTPS
+      port: 8448
+      name: mtls-forward-only
+      hostname: gateway.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: forward-client-cert-server
+      allowedRoutes:
+        namespaces:
+          from: Same

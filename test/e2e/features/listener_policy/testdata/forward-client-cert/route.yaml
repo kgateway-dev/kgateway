@@ -1,4 +1,4 @@
-# Routes traffic on the gw 'mtls-https' listener to the request-id-echo
+# Routes traffic on every gw-mtls listener to the request-id-echo
 # backend. We reuse request-id-echo because it echoes every request header
 # in the response body, which lets us assert on x-forwarded-client-cert.
 apiVersion: gateway.networking.k8s.io/v1
@@ -10,9 +10,34 @@ spec:
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
-      name: gw
+      name: gw-mtls
       namespace: default
-      sectionName: mtls-https
+      sectionName: mtls-baseline
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      namespace: default
+      sectionName: mtls-sanitize-set-default
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      namespace: default
+      sectionName: mtls-sanitize-set-all
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      namespace: default
+      sectionName: mtls-append-forward
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      namespace: default
+      sectionName: mtls-sanitize
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gw-mtls
+      namespace: default
+      sectionName: mtls-forward-only
   hostnames:
     - gateway.local
   rules:
