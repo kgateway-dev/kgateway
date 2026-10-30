@@ -172,6 +172,35 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 	return flipBlocking
 }
 
+// currentDependency returns the current CLA, and its row hash, of a cluster a
+// carried cluster's listeners route to that the build left out but still
+// translates. Under scoping, a missing tunnel row hides the listener that keeps
+// the tunnel's proxy cluster, so the build drops a cluster it translates;
+// carrying the current copy keeps the proxy's endpoints fresh where the
+// published copy would keep the ones from before the row went missing. A
+// cluster that needs no CLA returns a zero one. Only a scoped build missing a
+// referenced cluster sets translatedEndpoints; otherwise, or without a current
+// CLA, the published copy is carried.
+func currentDependency(snapWrap XdsSnapWrapper, name string, dependencies map[string]struct{}) (envoycachetypes.ResourceWithTTL, uint64, bool) {
+	if _, dependency := dependencies[name]; !dependency || snapWrap.translatedEndpoints == nil {
+		return envoycachetypes.ResourceWithTTL{}, 0, false
+	}
+	cluster, translated := snapWrap.translatedClusters[name]
+	if !translated {
+		return envoycachetypes.ResourceWithTTL{}, 0, false
+	}
+	claName, requiresEndpointResource := endpointResourceNameForCluster(cluster)
+	if !requiresEndpointResource {
+		return envoycachetypes.ResourceWithTTL{}, 0, true
+	}
+	cla, ok := snapWrap.translatedEndpoints[claName]
+	hash, hashed := snapWrap.translatedEndpointHashes[claName]
+	if !ok || !hashed {
+		return envoycachetypes.ResourceWithTTL{}, 0, false
+	}
+	return cla, hash, true
+}
+
 // resolveDeferredPerCluster composes the snapshot to publish for a deferred
 // wrapper against the one published on the client's current connection:
 //
@@ -252,6 +281,10 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	// rules.
 	deps := newCarryDependencies(published, composed)
 	pending := slices.Collect(maps.Keys(carryRefs))
+	// dependencies are the clusters carried clusters' listeners route to;
+	// currentHashes the row hashes of CLAs carried from the current translation.
+	var dependencies map[string]struct{}
+	var currentHashes map[string]uint64
 	for len(pending) > 0 {
 		name := pending[len(pending)-1]
 		pending = pending[:len(pending)-1]
@@ -273,7 +306,11 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		if _, ok := clusterItems[name]; ok {
 			continue
 		}
+		currentCLA, currentHash, current := currentDependency(snapWrap, name, dependencies)
 		old, ok := oldClusters[name]
+		if current {
+			old, ok = snapWrap.translatedClusters[name], true
+		}
 		if !ok {
 			continue // neither snapshot has it; the route 503s as it already did
 		}
@@ -288,7 +325,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		// reuse a version for different protos, and a client reconnecting with
 		// that version is never resent the newer content.
 		carryHash ^= utils.HashString(name) ^ utils.HashProto(old.Resource)
-		pending = append(pending, deps.carry(old)...)
+		targets := deps.carry(old)
+		for _, target := range targets {
+			if dependencies == nil {
+				dependencies = make(map[string]struct{})
+			}
+			dependencies[target] = struct{}{}
+		}
+		pending = append(pending, targets...)
 		claName, requiresEndpointResource := endpointResourceNameForCluster(old)
 		if !requiresEndpointResource {
 			continue
@@ -297,6 +341,14 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			// Another built cluster shares this EDS service_name. Keep the
 			// built CLA; the published copy would serve stale endpoints under
 			// the built version.
+			continue
+		}
+		if current {
+			endpointItems[claName] = currentCLA
+			if currentHashes == nil {
+				currentHashes = make(map[string]uint64)
+			}
+			currentHashes[claName] = currentHash
 			continue
 		}
 		if oldCla, ok := oldEndpoints[claName]; ok {
@@ -309,8 +361,17 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			Version: fmt.Sprintf("%s-carry-%d", newClusters.Version, carryHash),
 			Items:   clusterItems,
 		}
-		// Reuse carried contributions so direct and composed publication agree.
-		edsHashes = endpointSetHashes(endpointItems, snapWrap.endpointHashes, lastPublished)
+		// Reuse carried contributions so direct and composed publication agree;
+		// a CLA carried from the current translation contributes its row hash.
+		rowHashes := snapWrap.endpointHashes
+		if len(currentHashes) > 0 {
+			rowHashes = maps.Clone(rowHashes)
+			if rowHashes == nil {
+				rowHashes = make(map[string]uint64, len(currentHashes))
+			}
+			maps.Copy(rowHashes, currentHashes)
+		}
+		edsHashes = endpointSetHashes(endpointItems, rowHashes, lastPublished)
 		composed.Resources[envoycachetypes.Endpoint] = envoycache.Resources{
 			Version: endpointSetVersion(edsHashes),
 			Items:   endpointItems,
