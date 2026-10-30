@@ -23,6 +23,7 @@ var (
 	permissivePeerAuthManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "permissive-peer-auth.yaml")
 	disablePeerAuthManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "disable-peer-auth.yaml")
 
+	gatewayManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
 	k8sRoutingSvcManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-svc.yaml")
 	k8sRoutingBackendManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-backend.yaml")
 

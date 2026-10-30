@@ -1,0 +1,15 @@
+# The Gateway shared by every IstioIntegrationAutoMtls test; each test applies only its
+# PeerAuthentication and route.
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
