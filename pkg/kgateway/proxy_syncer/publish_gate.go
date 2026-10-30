@@ -35,8 +35,18 @@ import (
 // against it would republish old routes, and carrying from it would resurrect
 // deleted backends. A reconnected client goes through first publish.
 //
-// First publish: an unpublished client has nothing to hold or carry, and
-// publishing routes to unready clusters would 503 them, so it is withheld.
+// First publish: an unpublished client has nothing to hold or carry, so it is
+// withheld while its build is deferred. Routes to a cluster missing from CDS
+// fail (503 NC) on any proxy, and routes to a cluster still warming fail on a
+// reconnecting proxy, which applies them at once. A new Envoy waits for
+// endpoints on its own: it starts no listeners until each cluster's CLA
+// arrives or its EDS initial_fetch_timeout (15s) passes, and
+// settleSynthesizedEndpoints leaves underived CLAs out of the first publish.
+// For a new client whose only gaps are underived endpoints, the withhold adds
+// to that wait, so it can take about the budget plus 15s to go Ready. It
+// applies anyway because a new client cannot be told from a reconnecting one
+// when its first build arrives: warmth is read from a listener request, which
+// a new Envoy sends only after its clusters warm.
 // Unbounded, a permanently unready reference leaves the pod without listeners:
 // it never goes Ready and crash-loops, re-triggering the per-client fan-out on
 // every restart. The budget starts when the client's first deferred build
@@ -422,8 +432,8 @@ func (g *publishGate) resolveDeferredLocked(
 	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Not yet published on this connection: nothing to hold or carry, and
-		// publishing would 503 unready routes. Withhold up to the first-publish
-		// budget (firePending).
+		// publishing could fail routes (see publishGate). Withhold up to the
+		// first-publish budget (firePending).
 		g.offerColdLocked(ctx, cache, snapWrap)
 		return nil
 	}
