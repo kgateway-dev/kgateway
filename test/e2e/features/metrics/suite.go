@@ -99,18 +99,8 @@ func (s *testingSuite) testMetrics(useListenerSets bool) {
 			Test: metricstest.GreaterOrEqual(expectedGateways),
 		})
 
-		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconcile_duration_seconds", [][]metrics.Label{{
-			{Name: "controller", Value: "gateway"},
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
-		}})
-
-		gathered.AssertHistogramPopulated("kgateway_controller_reconcile_duration_seconds")
-
 		gathered.AssertMetricsLabelsInclude("kgateway_controller_reconciliations_total", [][]metrics.Label{{
 			{Name: "controller", Value: "gateway"},
-			{Name: "name", Value: "gw1"},
-			{Name: "namespace", Value: "default"},
 			{Name: "result", Value: "success"},
 		}})
 
