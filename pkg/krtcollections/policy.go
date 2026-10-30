@@ -1300,11 +1300,9 @@ func NewRoutesIndex(
 	}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, grpcroutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 
-	// Each route collection is debounced where it is built, so Gateway translation sees a burst of route changes as
-	// one batch, whether it reads routes by parent or follows delegation to child routes.
-	h.httpRoutes = debounceForTranslation(krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
+	h.httpRoutes = krt.NewCollection(httproutes, func(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 		return h.transformHttpRoute(kctx, i)
-	}, krtopts.ToOptions("http-routes-with-policy")...), krtopts, globalSettings, "http-routes-debounced")
+	}, krtopts.ToOptions("http-routes-with-policy")...)
 
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
@@ -1312,17 +1310,17 @@ func NewRoutesIndex(
 
 	var tcpRoutesCollection, tlsRoutesCollection, grpcRoutesCollection krt.Collection[RouteWrapper]
 
-	grpcRoutesCollection = debounceForTranslation(krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
+	grpcRoutesCollection = krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformGRPCRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...), krtopts, globalSettings, "routes-grpc-routes-debounced")
+	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
 
-	tcpRoutesCollection = debounceForTranslation(krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
+	tcpRoutesCollection = krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTcpRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...), krtopts, globalSettings, "routes-tcp-routes-debounced")
+	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
 
-	tlsRoutesCollection = debounceForTranslation(krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
+	tlsRoutesCollection = krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
 		return &RouteWrapper{Route: h.transformTlsRoute(kctx, i)}
-	}, krtopts.ToOptions("routes-tls-routes-with-policy")...), krtopts, globalSettings, "routes-tls-routes-debounced")
+	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
 
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
