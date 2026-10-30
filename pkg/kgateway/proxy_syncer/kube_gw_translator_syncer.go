@@ -6,7 +6,6 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"sync"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -72,105 +71,68 @@ func (s *ProxyTranslator) syncXds(
 	}
 }
 
-// publishedReferencedClusters returns the routing targets of the routes and
-// listeners published to proxyKey. Callers must not modify the shared result.
-func publishedReferencedClusters(proxyKey string, published envoycache.ResourceSnapshot) map[string]struct{} {
-	routes := published.GetResourcesAndTTL(envoyresourcev3.RouteType)
-	listeners := published.GetResourcesAndTTL(envoyresourcev3.ListenerType)
-	return publishedRefs.get(proxyKey, routes, listeners, func() map[string]struct{} {
-		return collectReferencedClusters(envoycache.Resources{Items: routes}, envoycache.Resources{Items: listeners})
-	})
-}
-
-// publishedRefs memoizes publishedReferencedClusters. Collecting targets
-// unmarshals every listener, which under the gate's single lock would
-// serialize all clients' deferred builds. Published routes and listeners
-// change rarely, and published snapshots reuse their translation's immutable
-// item maps, so clients of one Gateway share an entry.
-var publishedRefs = &referencedClustersMemo{}
-
-// referencedClustersMemo keys target sets by the identity of the route and
-// listener item maps. An entry retains its maps, so their addresses cannot be
-// reused and identity implies equal content. Each client holds the entry it
-// last looked up, and an entry is dropped once no client holds it, so the memo
-// retains at most one routing config per connected client.
+// referencedClustersMemo memoizes the routing targets of published routes and
+// listeners. Collecting targets unmarshals every listener under the gate's
+// single lock, which would serialize all clients' deferred builds. Published
+// routes and listeners change rarely, and published snapshots reuse their
+// translation's immutable item maps, so clients of one Gateway share an entry.
+//
+// Entries are keyed by the identity of the route and listener item maps. An
+// entry retains its maps, so their addresses cannot be reused and identity
+// implies equal content. Each client holds the entry it last looked up, and an
+// entry is dropped once no client holds it, so the memo retains at most one
+// routing config per connected client. The gate guards it with its mu.
 type referencedClustersMemo struct {
-	mu      sync.Mutex
 	entries map[[2]uintptr]*referencedClustersEntry
-	byProxy map[string][2]uintptr
+	byProxy map[string]*referencedClustersEntry
 }
 
 type referencedClustersEntry struct {
+	key               [2]uintptr
 	routes, listeners map[string]envoycachetypes.ResourceWithTTL
 	refs              map[string]struct{}
 	holders           int
 }
 
-func (m *referencedClustersMemo) get(
-	proxyKey string,
-	routes, listeners map[string]envoycachetypes.ResourceWithTTL,
-	compute func() map[string]struct{},
-) map[string]struct{} {
-	if routes == nil && listeners == nil {
-		return compute()
+func newReferencedClustersMemo() *referencedClustersMemo {
+	return &referencedClustersMemo{
+		entries: make(map[[2]uintptr]*referencedClustersEntry),
+		byProxy: make(map[string]*referencedClustersEntry),
 	}
-	key := [2]uintptr{reflect.ValueOf(routes).Pointer(), reflect.ValueOf(listeners).Pointer()}
-	m.mu.Lock()
-	entry, ok := m.entries[key]
-	if ok {
-		m.holdLocked(proxyKey, key, entry)
-	}
-	m.mu.Unlock()
-	if ok {
-		return entry.refs
-	}
-	refs := compute()
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if entry, ok = m.entries[key]; !ok {
-		if m.entries == nil {
-			m.entries = make(map[[2]uintptr]*referencedClustersEntry)
-		}
-		entry = &referencedClustersEntry{routes: routes, listeners: listeners, refs: refs}
-		m.entries[key] = entry
-	}
-	m.holdLocked(proxyKey, key, entry)
-	return entry.refs
 }
 
-// holdLocked makes entry the one proxyKey holds, releasing its previous entry.
-func (m *referencedClustersMemo) holdLocked(proxyKey string, key [2]uintptr, entry *referencedClustersEntry) {
-	if prev, ok := m.byProxy[proxyKey]; ok {
-		if prev == key {
-			return
-		}
-		m.releaseLocked(proxyKey)
+// get returns the routing targets of the routes and listeners published to
+// proxyKey. Callers must not modify the shared result.
+func (m *referencedClustersMemo) get(proxyKey string, published envoycache.ResourceSnapshot) map[string]struct{} {
+	routes := published.GetResourcesAndTTL(envoyresourcev3.RouteType)
+	listeners := published.GetResourcesAndTTL(envoyresourcev3.ListenerType)
+	if routes == nil && listeners == nil {
+		return nil
 	}
-	if m.byProxy == nil {
-		m.byProxy = make(map[string][2]uintptr)
+	key := [2]uintptr{reflect.ValueOf(routes).Pointer(), reflect.ValueOf(listeners).Pointer()}
+	entry := m.entries[key]
+	if entry == nil {
+		refs := collectReferencedClusters(envoycache.Resources{Items: routes}, envoycache.Resources{Items: listeners})
+		entry = &referencedClustersEntry{key: key, routes: routes, listeners: listeners, refs: refs}
+		m.entries[key] = entry
 	}
-	m.byProxy[proxyKey] = key
-	entry.holders++
+	if m.byProxy[proxyKey] != entry {
+		m.release(proxyKey)
+		m.byProxy[proxyKey] = entry
+		entry.holders++
+	}
+	return entry.refs
 }
 
 // release drops proxyKey's hold, so a departed client pins nothing.
 func (m *referencedClustersMemo) release(proxyKey string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.releaseLocked(proxyKey)
-}
-
-func (m *referencedClustersMemo) releaseLocked(proxyKey string) {
-	key, ok := m.byProxy[proxyKey]
-	if !ok {
+	entry := m.byProxy[proxyKey]
+	if entry == nil {
 		return
 	}
 	delete(m.byProxy, proxyKey)
-	if entry := m.entries[key]; entry != nil {
-		entry.holders--
-		if entry.holders <= 0 {
-			delete(m.entries, key)
-		}
+	if entry.holders--; entry.holders == 0 {
+		delete(m.entries, entry.key)
 	}
 }
 
@@ -180,8 +142,8 @@ func (m *referencedClustersMemo) releaseLocked(proxyKey string) {
 // Pending blockers remain blocking while the build still reports their
 // cluster or endpoint resources missing. Publishing a listener during the
 // hold can introduce a reference to a blocked cluster without filling that gap.
-func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, pending []string) []string {
-	publishedRefs := publishedReferencedClusters(snapWrap.proxyKey, published)
+// publishedRefs are the routing targets of published's routes and listeners.
+func flipBlockingClusters(publishedRefs map[string]struct{}, snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, pending []string) []string {
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 	var flipBlocking []string
 	pendingSet := stringSet(pending)
@@ -224,21 +186,20 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 //     CLAs, and with what they need that the build lacks (carryDependencies);
 //   - if every other gap was already referenced, the new routes publish, and
 //     underived CLAs keep the client's endpoints (the gate settles them);
-//   - otherwise a never-ready cluster is newly referenced: routes, listeners and
-//     secrets stay published, every published cluster the build lacks is
-//     carried (the held config's whole closure, filter-called clusters
-//     included), and new CDS/EDS still go out so the cluster can warm.
+//   - otherwise flipBlocking (from flipBlockingClusters) names a never-ready
+//     cluster newly referenced: routes, listeners and secrets stay published,
+//     every published cluster the build lacks is carried (the held config's
+//     whole closure, filter-called clusters included), and new CDS/EDS still
+//     go out so the cluster can warm.
 //
 // A carried CLA yields to a built one sharing its EDS service_name. graced
-// clusters are carried too. holdFlips=false, used by the flip-release bound,
+// clusters are carried too. A nil flipBlocking, used by the flip-release bound,
 // publishes despite never-ready gaps so an unready reference cannot pin updates
 // forever (#14352). lastPublished gives each copied CLA's last published hash.
-// pendingBlockers preserves gaps across listeners installed by an earlier hold.
 // Returns the snapshot, the flip-blocking clusters if held (else nil), and the
 // EDS contributions.
-func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, pendingBlockers []string, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
+func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, flipBlocking []string, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
-	flipBlocking := flipBlockingClusters(snapWrap, published, pendingBlockers)
 
 	composed := &envoycache.Snapshot{}
 	*composed = *snapWrap.snap
@@ -250,7 +211,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 	// only missing referenced clusters are carried.
 	carryRefs := make(map[string]struct{})
 	var heldBlocking []string
-	if holdFlips && len(flipBlocking) > 0 {
+	if len(flipBlocking) > 0 {
 		holdType := func(rt envoycachetypes.ResponseType, typeURL envoyresourcev3.Type) {
 			composed.Resources[rt] = envoycache.Resources{
 				Version: published.GetVersion(typeURL),
