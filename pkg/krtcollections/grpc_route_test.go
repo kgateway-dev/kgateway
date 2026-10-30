@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
@@ -540,4 +541,94 @@ func k8sSvcUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir
 		}
 		return uss
 	})
+}
+
+// A GRPCRoute RequestMirror to another namespace must be checked against
+// ReferenceGrants naming GRPCRoute, not HTTPRoute.
+func TestGRPCRouteMirrorReferenceGrant(t *testing.T) {
+	svcGk := schema.GroupKind{Group: "", Kind: "Service"}
+
+	testCases := []struct {
+		name          string
+		grantFromKind gwv1.Kind
+		expectMirror  bool
+	}{
+		{name: "grant_from_grpcroute_allows_mirror", grantFromKind: "GRPCRoute", expectMirror: true},
+		{name: "grant_from_httproute_denies_mirror", grantFromKind: "HTTPRoute", expectMirror: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			route := &gwv1.GRPCRoute{
+				ObjectMeta: metav1.ObjectMeta{Name: "mirror-route", Namespace: "default"},
+				Spec: gwv1.GRPCRouteSpec{
+					Rules: []gwv1.GRPCRouteRule{{
+						Filters: []gwv1.GRPCRouteFilter{{
+							Type: gwv1.GRPCRouteFilterRequestMirror,
+							RequestMirror: &gwv1.HTTPRequestMirrorFilter{
+								BackendRef: gwv1.BackendObjectReference{
+									Name:      "mirror-svc",
+									Namespace: new(gwv1.Namespace("other")),
+									Port:      new(gwv1.PortNumber(8080)),
+								},
+							},
+						}},
+					}},
+				},
+			}
+			svc := &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{Name: "mirror-svc", Namespace: "other"},
+				Spec:       corev1.ServiceSpec{Ports: []corev1.ServicePort{{Name: "grpc", Port: 8080}}},
+			}
+			grant := &gwv1b1.ReferenceGrant{
+				ObjectMeta: metav1.ObjectMeta{Name: "allow-mirror", Namespace: "other"},
+				Spec: gwv1b1.ReferenceGrantSpec{
+					From: []gwv1b1.ReferenceGrantFrom{{
+						Group:     gwv1.GroupName,
+						Kind:      tc.grantFromKind,
+						Namespace: "default",
+					}},
+					To: []gwv1b1.ReferenceGrantTo{{Group: "", Kind: "Service"}},
+				},
+			}
+
+			mock := krttest.NewMock(t, []any{route, svc, grant})
+			services := krttest.GetMockCollection[*corev1.Service](mock)
+			refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*gwv1b1.ReferenceGrant](mock), apisettings.ReferenceGrantPermissive)
+			policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, sdk.ContributesPolicies{}, apisettings.Settings{})
+			backends := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, policies, refgrants)
+			backends.AddBackends(svcGk, k8sSvcUpstreams(services))
+			routesIndex := krtcollections.NewRoutesIndex(
+				krtutil.KrtOptions{},
+				krttest.GetMockCollection[*gwv1.HTTPRoute](mock),
+				krttest.GetMockCollection[*gwv1.GRPCRoute](mock),
+				krttest.GetMockCollection[*gwv1a2.TCPRoute](mock),
+				krttest.GetMockCollection[*gwv1a2.TLSRoute](mock),
+				policies,
+				backends,
+				refgrants,
+				apisettings.Settings{},
+			)
+			services.WaitUntilSynced(context.Background().Done())
+			for !routesIndex.HasSynced() {
+				time.Sleep(time.Second / 10)
+			}
+
+			rw := routesIndex.Fetch(krt.TestingDummyContext{},
+				schema.GroupKind{Group: gwv1.GroupName, Kind: "GRPCRoute"}, route.Namespace, route.Name)
+			require.NotNil(t, rw, "expected the GRPCRoute to be indexed")
+			httpRouteIR, ok := rw.Route.(*ir.HttpRouteIR)
+			require.True(t, ok, "expected route to be HttpRouteIR")
+			require.Len(t, httpRouteIR.Rules, 1)
+
+			atts := httpRouteIR.Rules[0].ExtensionRefs.Policies[ir.VirtualBuiltInGK]
+			require.Len(t, atts, 1, "expected the mirror filter to be attached")
+			cluster := krtcollections.MirrorClusterForTest(atts[0].PolicyIr)
+			if tc.expectMirror {
+				assert.Equal(t, "service_other_mirror-svc_8080", cluster)
+			} else {
+				assert.Empty(t, cluster, "mirror should be denied without a GRPCRoute ReferenceGrant")
+			}
+		})
+	}
 }
