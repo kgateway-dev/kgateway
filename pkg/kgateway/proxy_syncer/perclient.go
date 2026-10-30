@@ -78,16 +78,23 @@ func snapshotPerClient(
 		}
 	}, krtopts.ToOptions("EndpointResources")...)
 
+	// The snapshot transform depends on change signals rather than on the three
+	// payloads, so its queue, which falls behind during bursts, pins none of
+	// them (see changeSignals).
+	gatewaySignals := changeSignals(krtopts, "GatewayXdsResourceSignals", mostXdsSnapshots)
+	clusterSignals := changeSignals(krtopts, "ClusterResourceSignals", clusterSnapshot)
+	endpointSignals := changeSignals(krtopts, "EndpointResourceSignals", endpointResources)
+
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniquelyConnectedClient) *XdsSnapWrapper {
 		defer collectXDSTransformMetrics(ucc.ResourceName())(nil)
 
-		listenerRouteSnapshot := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
+		listenerRouteSnapshot := fetchSignaled(kctx, gatewaySignals, mostXdsSnapshots, ucc.Role)
 		if listenerRouteSnapshot == nil {
 			logger.Debug("snapshot missing", "proxy_key", ucc.Role)
 			return nil
 		}
-		clustersForUcc := krt.FetchOne(kctx, clusterSnapshot, krt.FilterKey(ucc.ResourceName()))
-		clientEndpointResources := krt.FetchOne(kctx, endpointResources, krt.FilterKey(ucc.ResourceName()))
+		clustersForUcc := fetchSignaled(kctx, clusterSignals, clusterSnapshot, ucc.ResourceName())
+		clientEndpointResources := fetchSignaled(kctx, endpointSignals, endpointResources, ucc.ResourceName())
 
 		// A nil row has not been computed yet (the cluster transform also returns
 		// nil with no backends), so there is nothing to publish.
