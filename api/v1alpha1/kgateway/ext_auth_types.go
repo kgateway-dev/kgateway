@@ -18,7 +18,12 @@ type ExtAuthPolicy struct {
 
 	// WithRequestBody allows the request body to be buffered and sent to the auth service.
 	// Warning buffering has implications for streaming and therefore performance.
+	//
+	// PackAsBytes is rejected here: Envoy reads it from the ext_authz filter
+	// configuration, not from the per-route settings, so it only takes effect on
+	// the GatewayExtension that configures the auth service.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="!has(self.packAsBytes) || !self.packAsBytes",message="packAsBytes only takes effect on GatewayExtension.spec.extAuth.withRequestBody; Envoy ignores it in a TrafficPolicy"
 	WithRequestBody *ExtAuthBufferSettings `json:"withRequestBody,omitempty"`
 
 	// Additional context for the auth service.
