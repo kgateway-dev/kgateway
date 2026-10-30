@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -453,7 +454,8 @@ func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil, nil))
 	current := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
 	require.NotNil(t, current)
-	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, nil, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
+	flipBlocking := flipBlockingClusters(pt.gate.publishedRefs.get(publishGateTestClient, current), flipWrap, current, nil)
+	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, flipBlocking, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
 	require.NotEmpty(t, blocking)
 	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking, nil, 0, hashes))
 	pt.gate.mu.Unlock()
@@ -857,30 +859,66 @@ func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
 	assert.False(t, hasCLA)
 }
 
+// publishedWith returns a snapshot publishing routes and listeners.
+func publishedWith(routes, listeners envoycache.Resources) *envoycache.Snapshot {
+	snap := &envoycache.Snapshot{}
+	snap.Resources[envoycachetypes.Route] = routes
+	snap.Resources[envoycachetypes.Listener] = listeners
+	return snap
+}
+
 // The routing-target walk is memoized by map identity: retained maps reuse it,
 // and different content under a reused version label is walked again.
 func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
-	memo := &referencedClustersMemo{}
+	memo := newReferencedClustersMemo()
 	routesA := routeResourcesForClusters("cluster-a")
 	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
-	walks := 0
-	refsOf := func(routes envoycache.Resources) map[string]struct{} {
-		return memo.get(routes.Items, listeners.Items, func() map[string]struct{} {
-			walks++
-			return collectReferencedClusters(routes, listeners)
-		})
-	}
 
-	first := refsOf(routesA)
-	again := refsOf(routesA)
-	assert.Equal(t, map[string]struct{}{"cluster-a": {}}, first)
-	assert.Equal(t, first, again)
-	assert.Equal(t, 1, walks, "the same routing config is walked once")
+	assert.Equal(t, map[string]struct{}{"cluster-a": {}}, memo.get(publishGateTestClient, publishedWith(routesA, listeners)))
+	memo.get("client-2", publishedWith(routesA, listeners))
+	assert.Len(t, memo.entries, 1, "clients on the same routing config share its entry")
+	assert.Equal(t, 2, memo.byProxy["client-2"].holders)
 
 	routesB := routeResourcesForClusters("cluster-b")
 	routesB.Version = routesA.Version // a reused label must not alias different content
-	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, refsOf(routesB))
-	assert.Equal(t, 2, walks)
+	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, memo.get(publishGateTestClient, publishedWith(routesB, listeners)))
+}
+
+// The memo retains only the routing configs its clients last looked up, so a
+// stream of published versions, or a departed client, pins nothing.
+func TestPublishedReferencedClustersMemoRetainsOnlyHeldEntries(t *testing.T) {
+	memo := newReferencedClustersMemo()
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	shared := publishedWith(routeResourcesForClusters("cluster-a"), listeners)
+	memo.get("client-1", shared)
+	memo.get("client-2", shared)
+
+	for i := range 100 {
+		memo.get("client-1", publishedWith(routeResourcesForClusters(fmt.Sprintf("cluster-%d", i)), listeners))
+	}
+	assert.Len(t, memo.entries, 2, "client-1 holds only its latest config; client-2 still holds the shared one")
+
+	memo.release("client-2")
+	assert.Len(t, memo.entries, 1, "a released entry no client holds is dropped")
+	memo.release("client-1")
+	assert.Empty(t, memo.entries, "departed clients pin nothing")
+	assert.Empty(t, memo.byProxy)
+}
+
+// A departed client releases its memo entry along with the rest of its
+// connection state.
+func TestClientDepartedReleasesPublishedRefs(t *testing.T) {
+	gate := newPublishGateTestTranslator(t, false, time.Hour).gate
+	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
+	gate.mu.Lock()
+	gate.publishedRefs.get(publishGateTestClient, publishedWith(routeResourcesForClusters("cluster-a"), listeners))
+	gate.mu.Unlock()
+	require.Len(t, gate.publishedRefs.entries, 1)
+
+	gate.clientDeparted(publishGateTestClient)
+
+	assert.Empty(t, gate.publishedRefs.entries, "the departed client's entry is dropped")
+	assert.Empty(t, gate.publishedRefs.byProxy)
 }
 
 // Publication tests model connected clients; their snapshots cannot be reclaimed.

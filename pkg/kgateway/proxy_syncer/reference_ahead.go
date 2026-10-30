@@ -121,7 +121,7 @@ func (g *publishGate) referenceAheadHoldLocked(
 	for name := range published.GetResourcesAndTTL(envoyresourcev3.ClusterType) {
 		closure[name] = struct{}{}
 	}
-	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, nil, closure, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, nil, closure, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	held := holdRoutingTypes(resolved, published)
 	addBuiltClusterListeners(held, snapWrap.snap)
 	return held, edsHashes
