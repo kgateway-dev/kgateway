@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/leaderelection"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -100,6 +101,32 @@ func (v *ValidatorMode) Decode(value string) error {
 	default:
 		return fmt.Errorf("invalid validator mode: %q", value)
 	}
+}
+
+// LabelSelector is a Kubernetes label selector in its string form, validated on decode.
+// Empty selects everything.
+type LabelSelector string
+
+// Decode implements envconfig.Decoder. Surrounding whitespace is dropped, so a value of only
+// whitespace, which selects everything, decodes as unset rather than as a narrowed watch.
+func (l *LabelSelector) Decode(value string) error {
+	value = strings.TrimSpace(value)
+	if err := LabelSelector(value).Validate(); err != nil {
+		return err
+	}
+	*l = LabelSelector(value)
+	return nil
+}
+
+// Validate reports whether the selector parses. Settings built in code rather than decoded
+// from the environment bypass Decode, so consumers that hand the selector to an informer
+// call this too: the API server rejects a malformed selector on every List, which would keep
+// the informer from ever syncing.
+func (l LabelSelector) Validate() error {
+	if _, err := labels.Parse(string(l)); err != nil {
+		return fmt.Errorf("invalid label selector %q: %w", string(l), err)
+	}
+	return nil
 }
 
 // ReferenceGrantMode controls how strictly cross-namespace references are validated
@@ -408,6 +435,30 @@ type Settings struct {
 
 	// Enables setting the `dev.kgateway.auth_policy:auth_succeeded=true` dynamic metadata on successfully-authenticated routes.
 	EnableAuthMetadata bool `split_words:"true" default:"false"`
+
+	// SecretLabelSelector restricts which Secrets kgateway watches to those matching this
+	// Kubernetes label selector (for example "kgateway.dev/watch=true"). Empty, the default,
+	// watches every Secret. The selector is pushed to the API server, so non-matching Secrets
+	// never reach the informer cache. Every Secret referenced by Gateway API or kgateway
+	// resources must match, otherwise the reference is reported as not found. The OAuth2 HMAC
+	// Secret kgateway creates need not match: it is watched separately by name.
+	SecretLabelSelector LabelSelector `split_words:"true"`
+
+	// ConfigMapLabelSelector restricts which ConfigMaps kgateway watches, with the same
+	// semantics as SecretLabelSelector. The per-proxy ConfigMaps kgateway renders need not
+	// match: the gateway controller watches those separately.
+	ConfigMapLabelSelector LabelSelector `split_words:"true"`
+
+	// ServiceLabelSelector restricts which Services kgateway watches to those matching this
+	// Kubernetes label selector (for example "kgateway.dev/watch=true" or "team in (a,b)").
+	// Empty, the default, watches every Service. The selector is pushed to the API server, so
+	// non-matching Services cost no memory, and because every watched Service becomes a
+	// backend it also bounds the number of clusters kgateway sends to Envoy.
+	//
+	// Route backendRefs to a non-matching Service are reported as not found, and a
+	// non-matching Service is not matched as a waypoint. The proxy Services kgateway renders
+	// need not match: the gateway controller watches those separately.
+	ServiceLabelSelector LabelSelector `split_words:"true"`
 
 	// PerClientPublishBudget bounds how long per-client xDS publication may be
 	// withheld while referenced clusters are not ready. A build whose referenced

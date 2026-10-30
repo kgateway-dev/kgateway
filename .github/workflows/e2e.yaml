@@ -115,7 +115,7 @@ jobs:
           # Oct 28, 2026: ~6 minutes
           - cluster-name: 'cluster-eight'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$|^TestKgateway$$/^ListenerPolicy$$'
+            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestServiceLabelSelector$$|^TestKgateway$$/^FrontendTLS$$|^TestKgateway$$/^ListenerPolicy$$'
             localstack: 'false'
           # Oct 28, 2026: ~5 minutes
           # An IPv6-only cluster over the basic routing suites. This has to be

@@ -22,10 +22,13 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/apiclient"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
+
+var logger = logging.New("pluginsdk/collections")
 
 type CommonCollections struct {
 	Client       apiclient.Client
@@ -138,6 +141,24 @@ func NewCommonCollections(
 		fn(options)
 	}
 
+	// Validate before any informer exists: the API server rejects a malformed selector on every
+	// List, so the informer would never sync and the controller would never go ready. Each
+	// selector is pushed to the API server as a watch selector, so objects kgateway is not
+	// expected to resolve never reach the informer cache.
+	for _, watch := range []krtcollections.WatchSelector{
+		krtcollections.SecretWatchSelector(string(settings.SecretLabelSelector)),
+		krtcollections.ConfigMapWatchSelector(string(settings.ConfigMapLabelSelector)),
+		krtcollections.ServiceWatchSelector(string(settings.ServiceLabelSelector)),
+	} {
+		if err := apisettings.LabelSelector(watch.Selector).Validate(); err != nil {
+			return nil, fmt.Errorf("%s (Helm value %s): %w", watch.EnvVar, watch.HelmValue, err)
+		}
+		if watch.Selector != "" {
+			logger.Info("watching only objects matching the label selector; others are not found when referenced",
+				"setting", watch.HelmValue, "selector", watch.Selector)
+		}
+	}
+
 	// Namespace collection must be initialized first to enable discovery namespace
 	// selectors to be applies as filters to other collections
 	namespaces, nsClient := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
@@ -158,10 +179,31 @@ func NewCommonCollections(
 		client,
 		kclient.Filter{
 			FieldSelector: apiclient.SecretsFieldSelector,
+			LabelSelector: string(settings.SecretLabelSelector),
 			ObjectFilter:  client.ObjectFilter(),
 		},
 	)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(krtOptions.Stop), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
+	if settings.SecretLabelSelector != "" {
+		// kgateway creates the OAuth2 HMAC Secret itself and reads it back through this
+		// collection, and an operator's selector need not match it. Join in a watch scoped to
+		// that one Secret by name. Its filter matches the bootstrap controller's, which creates
+		// the Secret, so the two share an informer. On a key conflict JoinCollection keeps the
+		// first collection's item, which is the same object.
+		hmacClient := kclient.NewFiltered[*corev1.Secret](
+			client,
+			kclient.Filter{
+				ObjectFilter:  client.ObjectFilter(),
+				FieldSelector: "metadata.name=" + wellknown.OAuth2HMACSecret.Name,
+				Namespace:     wellknown.OAuth2HMACSecret.Namespace,
+			},
+		)
+		hmacSecretRaw := krt.WrapClient(hmacClient, krt.WithStop(krtOptions.Stop), krt.WithName("OAuth2HMACSecret"))
+		k8sSecretsRaw = krt.JoinCollection(
+			[]krt.Collection[*corev1.Secret]{k8sSecretsRaw, hmacSecretRaw},
+			krt.WithStop(krtOptions.Stop), krt.WithName("SecretsWithOAuth2HMAC"),
+		)
+	}
 	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 		res := ir.Secret{
 			ObjectSource: ir.ObjectSource{
@@ -187,9 +229,14 @@ func NewCommonCollections(
 	), krtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol, settings.ReferenceGrantMode)
 
+	// The gateway controller opens a Service client of its own for the proxy Services it
+	// renders; see ownedObjectLabelSelector in gw_controller.go for how the two relate.
 	serviceClient := kclient.NewFiltered[*corev1.Service](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		kclient.Filter{
+			LabelSelector: string(settings.ServiceLabelSelector),
+			ObjectFilter:  client.ObjectFilter(),
+		},
 	)
 	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
 
@@ -210,9 +257,14 @@ func NewCommonCollections(
 		serviceEntries = krt.NewStaticCollection[*networkingclient.ServiceEntry](nil, nil, krtOptions.ToOptions("disable/ServiceEntries")...)
 	}
 
+	// The gateway controller opens a ConfigMap client of its own for the proxy ConfigMaps it
+	// renders; see ownedObjectLabelSelector in gw_controller.go for how the two relate.
 	cmClient := kclient.NewFiltered[*corev1.ConfigMap](
 		client,
-		kclient.Filter{ObjectFilter: client.ObjectFilter()},
+		kclient.Filter{
+			LabelSelector: string(settings.ConfigMapLabelSelector),
+			ObjectFilter:  client.ObjectFilter(),
+		},
 	)
 	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
 
@@ -222,10 +274,12 @@ func NewCommonCollections(
 	localityPods, wrappedPods := krtcollections.NewPodsCollection(client, systemNamespaceNetwork, krtOptions)
 
 	return &CommonCollections{
-		Client:                                client,
-		KrtOpts:                               krtOptions,
-		Secrets:                               krtcollections.NewSecretIndex(secrets, refgrants),
-		ConfigMaps:                            krtcollections.NewConfigMapIndex(cfgmaps, refgrants),
+		Client:  client,
+		KrtOpts: krtOptions,
+		Secrets: krtcollections.NewSecretIndex(secrets, refgrants,
+			krtcollections.WithSecretLabelSelector(string(settings.SecretLabelSelector))),
+		ConfigMaps: krtcollections.NewConfigMapIndex(cfgmaps, refgrants,
+			krtcollections.WithConfigMapLabelSelector(string(settings.ConfigMapLabelSelector))),
 		LocalityPods:                          localityPods,
 		WrappedPods:                           wrappedPods,
 		RefGrants:                             refgrants,

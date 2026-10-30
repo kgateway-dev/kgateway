@@ -12,10 +12,28 @@ import (
 type ConfigMapIndex struct {
 	configmaps krt.Collection[*corev1.ConfigMap]
 	refgrants  *RefGrantIndex
+
+	// selector, when set, is named in missing-ConfigMap errors; see SelectorNotFoundError.
+	selector WatchSelector
 }
 
-func NewConfigMapIndex(configmaps krt.Collection[*corev1.ConfigMap], refgrants *RefGrantIndex) *ConfigMapIndex {
-	return &ConfigMapIndex{configmaps: configmaps, refgrants: refgrants}
+// ConfigMapIndexOption configures a ConfigMapIndex.
+type ConfigMapIndexOption func(*ConfigMapIndex)
+
+// WithConfigMapLabelSelector names the active ConfigMap label selector in missing-ConfigMap
+// errors. The selector itself is applied by the ConfigMap informer, not here.
+func WithConfigMapLabelSelector(selector string) ConfigMapIndexOption {
+	return func(c *ConfigMapIndex) {
+		c.selector = ConfigMapWatchSelector(selector)
+	}
+}
+
+func NewConfigMapIndex(configmaps krt.Collection[*corev1.ConfigMap], refgrants *RefGrantIndex, opts ...ConfigMapIndexOption) *ConfigMapIndex {
+	index := &ConfigMapIndex{configmaps: configmaps, refgrants: refgrants}
+	for _, opt := range opts {
+		opt(index)
+	}
+	return index
 }
 
 func (c *ConfigMapIndex) HasSynced() bool {
@@ -55,7 +73,7 @@ func (c *ConfigMapIndex) GetConfigMap(kctx krt.HandlerContext, from From, config
 	}
 	cmPtr := krt.FetchOne(kctx, c.configmaps, krt.FilterObjectName(nn))
 	if cmPtr == nil {
-		return nil, &NotFoundError{NotFoundObj: to}
+		return nil, c.selector.notFound(NotFoundError{NotFoundObj: to})
 	}
 
 	return *cmPtr, nil
