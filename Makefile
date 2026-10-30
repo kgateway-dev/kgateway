@@ -423,7 +423,9 @@ test: ## Run all tests with ginkgo, or only run the test package at {TEST_PKG} i
 # address. This override is honored only for the base gateway resolved by
 # common.SetupBaseGateway; multi-gateway suites that construct their own
 # common.Gateway values cannot disambiguate multiple gateways with a single env
-# var and are therefore out of scope under k3d.
+# var and are therefore out of scope under k3d. Suites that resolve their
+# Gateways with common.NewGateway can instead set GATEWAY_PORT_FORWARD=true to
+# send through port-forwards (also works for kind on macOS).
 CLUSTER_TYPE ?= kind
 SKIP_EXTPROC_SERVER_SETUP ?= false
 

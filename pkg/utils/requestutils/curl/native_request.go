@@ -211,6 +211,10 @@ func (c *requestConfig) buildHTTPClient() *http.Client {
 }
 
 func (c *requestConfig) buildDialer() func(context.Context, string, string) (net.Conn, error) {
+	if c.dialContext != nil {
+		return c.dialContext
+	}
+
 	dialer := &net.Dialer{
 		Timeout: 30 * time.Second,
 	}

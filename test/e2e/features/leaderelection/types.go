@@ -37,7 +37,7 @@ var (
 	}
 
 	setup = base.TestCase{
-		Manifests: []string{e2edefaults.CurlPodManifest, e2edefaults.HttpbinManifest},
+		Manifests: []string{e2edefaults.HttpbinManifest},
 	}
 
 	// test cases
