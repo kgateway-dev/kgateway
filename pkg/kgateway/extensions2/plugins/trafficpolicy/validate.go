@@ -36,7 +36,8 @@ func validateXDS(ctx context.Context, p *TrafficPolicy, v validator.Validator, e
 	// use a fake translation pass to ensure we have the desired typed filter config
 	// on the placeholder vhost.
 	typedPerFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil, enableAuthMetadata).(*trafficPolicyPluginGwPass)
+	// Server-side compression preference does not affect validation, so leave it empty.
+	fakePass := NewGatewayTranslationPass(ir.GwTranslationCtx{}, nil, enableAuthMetadata, "").(*trafficPolicyPluginGwPass)
 
 	// Use a placeholder filter chain name for validation
 	const validationFilterChain = "validation-filter-chain"
