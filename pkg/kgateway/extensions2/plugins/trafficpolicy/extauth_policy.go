@@ -156,7 +156,6 @@ func buildExtAuthPerRouteFilterConfig(
 		checkSettings.WithRequestBody = &envoy_ext_authz_v3.BufferSettings{
 			MaxRequestBytes:     uint32(spec.WithRequestBody.MaxRequestBytes), // nolint:gosec // G115: kubebuilder validation ensures safe for uint32
 			AllowPartialMessage: spec.WithRequestBody.AllowPartialMessage,
-			PackAsBytes:         spec.WithRequestBody.PackAsBytes,
 		}
 	}
 

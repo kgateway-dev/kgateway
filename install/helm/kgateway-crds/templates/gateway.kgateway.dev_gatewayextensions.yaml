@@ -490,6 +490,8 @@ spec:
                           When true, the body is sent as raw bytes in the raw_body field.
                           When false, the body is sent as UTF-8 string in the body field.
                           The default behavior is false.
+                          This setting only takes effect when set on a GatewayExtension. It is not supported on
+                          TrafficPolicy because Envoy does not support per-route pack_as_bytes.
                         type: boolean
                     required:
                     - maxRequestBytes
