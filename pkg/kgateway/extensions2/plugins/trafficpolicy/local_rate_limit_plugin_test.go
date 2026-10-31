@@ -4,14 +4,17 @@ import (
 	"testing"
 	"time"
 
+	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	localratelimitv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	typev3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 )
 
 func TestLocalRateLimitIREquals(t *testing.T) {
@@ -235,4 +238,138 @@ func TestToLocalRateLimitFilterConfigShareAcrossGateway(t *testing.T) {
 			assert.Equal(t, uint32(100), got.GetTokenBucket().GetMaxTokens())
 		})
 	}
+}
+
+func TestLocalRateLimitStatPrefix(t *testing.T) {
+	tokenBucket := &kgateway.TokenBucket{
+		MaxTokens:    10,
+		FillInterval: metav1.Duration{Duration: time.Second},
+	}
+	construct := func(statPrefix *string) *localRateLimitIR {
+		out := &trafficPolicySpecIr{}
+		constructLocalRateLimit(&kgateway.TrafficPolicy{
+			Spec: kgateway.TrafficPolicySpec{
+				RateLimit: &kgateway.RateLimit{
+					Local: &kgateway.LocalRateLimitPolicy{TokenBucket: tokenBucket, StatPrefix: statPrefix},
+				},
+			},
+		}, out)
+		require.NotNil(t, out.localRateLimit)
+		return out.localRateLimit
+	}
+
+	tests := []struct {
+		name         string
+		statPrefix   *string
+		wantPrefix   string
+		wantTemplate string
+	}{
+		{
+			name:       "unset keeps the default prefix",
+			statPrefix: nil,
+			wantPrefix: localRateLimitStatPrefix,
+		},
+		{
+			name:       "literal prefix is set in the IR",
+			statPrefix: new("payments.checkout"),
+			wantPrefix: "payments.checkout",
+		},
+		{
+			name:       "empty segments in a literal prefix are dropped",
+			statPrefix: new(".payments..checkout."),
+			wantPrefix: "payments.checkout",
+		},
+		{
+			name:         "templated prefix keeps the default until resolved per route",
+			statPrefix:   new("{{route_namespace}}.{{route_name}}"),
+			wantPrefix:   localRateLimitStatPrefix,
+			wantTemplate: "{{route_namespace}}.{{route_name}}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := construct(tt.statPrefix)
+			assert.Equal(t, tt.wantPrefix, got.config.GetStatPrefix())
+			assert.Equal(t, tt.wantTemplate, got.statPrefixTemplate)
+		})
+	}
+}
+
+func TestLocalRateLimitIREqualsStatPrefixTemplate(t *testing.T) {
+	config := &localratelimitv3.LocalRateLimit{StatPrefix: localRateLimitStatPrefix}
+	a := &localRateLimitIR{config: config, statPrefixTemplate: "{{route_name}}"}
+	b := &localRateLimitIR{config: config, statPrefixTemplate: "{{route_namespace}}"}
+	c := &localRateLimitIR{config: config, statPrefixTemplate: "{{route_name}}"}
+
+	assert.False(t, a.Equals(b))
+	assert.False(t, b.Equals(a))
+	assert.True(t, a.Equals(c))
+}
+
+func TestLocalRateLimitIRForRoute(t *testing.T) {
+	shared := &localRateLimitIR{
+		config:             &localratelimitv3.LocalRateLimit{StatPrefix: localRateLimitStatPrefix},
+		statPrefixTemplate: "{{route_namespace}}.{{route_name}}.{{rule_name}}",
+	}
+
+	routeA := shared.forRoute("route-a", "ns", "rule0")
+	routeB := shared.forRoute("route-b", "ns", "")
+
+	assert.Equal(t, "ns.route-a.rule0", routeA.config.GetStatPrefix())
+	assert.Equal(t, "ns.route-b", routeB.config.GetStatPrefix(), "an unnamed rule drops its segment")
+	assert.Empty(t, routeA.statPrefixTemplate, "the resolved copy no longer carries a template")
+
+	// The shared IR is used for every route the policy applies to, so it must not change.
+	assert.Equal(t, localRateLimitStatPrefix, shared.config.GetStatPrefix())
+	assert.Equal(t, "{{route_namespace}}.{{route_name}}.{{rule_name}}", shared.statPrefixTemplate)
+
+	t.Run("resolving to an empty prefix falls back to the default", func(t *testing.T) {
+		onlyRule := &localRateLimitIR{
+			config:             &localratelimitv3.LocalRateLimit{StatPrefix: localRateLimitStatPrefix},
+			statPrefixTemplate: "{{rule_name}}",
+		}
+		assert.Equal(t, localRateLimitStatPrefix, onlyRule.forRoute("route-a", "ns", "").config.GetStatPrefix())
+	})
+
+	t.Run("without a template the IR is returned as is", func(t *testing.T) {
+		literal := &localRateLimitIR{config: &localratelimitv3.LocalRateLimit{StatPrefix: "payments"}}
+		assert.Same(t, literal, literal.forRoute("route-a", "ns", "rule0"))
+	})
+
+	t.Run("nil IR stays nil", func(t *testing.T) {
+		var nilIR *localRateLimitIR
+		assert.Nil(t, nilIR.forRoute("route-a", "ns", "rule0"))
+	})
+}
+
+func TestApplyForRouteResolvesLocalRateLimitStatPrefix(t *testing.T) {
+	plugin := &trafficPolicyPluginGwPass{}
+	policy := &TrafficPolicy{spec: trafficPolicySpecIr{
+		localRateLimit: &localRateLimitIR{
+			config:             &localratelimitv3.LocalRateLimit{StatPrefix: localRateLimitStatPrefix},
+			statPrefixTemplate: "{{route_namespace}}.{{route_name}}",
+		},
+	}}
+
+	applyFor := func(routeName string) string {
+		pCtx := &ir.RouteContext{
+			FilterChainName: "listener~80",
+			Policy:          policy,
+			In: ir.HttpRouteRuleMatchIR{
+				Parent: &ir.HttpRouteIR{ObjectSource: ir.ObjectSource{Name: routeName, Namespace: "ns"}},
+			},
+		}
+		out := &envoyroutev3.Route{Action: &envoyroutev3.Route_Route{Route: &envoyroutev3.RouteAction{}}}
+		require.NoError(t, plugin.ApplyForRoute(pCtx, out))
+
+		config, ok := pCtx.TypedFilterConfig.GetTypedConfig(localRateLimitFilterNamePrefix).(*localratelimitv3.LocalRateLimit)
+		require.True(t, ok, "expected a per-route local rate limit config")
+		return config.GetStatPrefix()
+	}
+
+	assert.Equal(t, "ns.route-a", applyFor("route-a"))
+	assert.Equal(t, "ns.route-b", applyFor("route-b"))
+	assert.Equal(t, localRateLimitStatPrefix, policy.spec.localRateLimit.config.GetStatPrefix(),
+		"resolving for a route must not modify the shared policy IR")
 }
