@@ -448,6 +448,18 @@ spec:
                     required:
                     - backendRef
                     type: object
+                  percentageEnabled:
+                    description: |-
+                      PercentageEnabled specifies the percentage of requests for which the ext auth
+                      filter is enabled, allowing auth traffic to be ramped up gradually, e.g. when
+                      migrating authentication from an application into a gateway ext auth service.
+                      Requests that are not sampled skip the auth call and are allowed through.
+                      When unset, the filter is enabled for all requests matching the attached policies.
+                      Setting this to 0 disables the filter for all requests.
+                    format: int32
+                    maximum: 100
+                    minimum: 0
+                    type: integer
                   statPrefix:
                     description: |-
                       StatPrefix is an optional prefix to include when emitting stats from the extauthz filter,
