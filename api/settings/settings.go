@@ -389,7 +389,18 @@ type Settings struct {
 
 	PolicyMerge string `split_words:"true" default:"{}"`
 
-	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental features and APIs
+	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental
+	// Gateway API features and legacy API versions. When disabled, kgateway ignores:
+	//   - the sessionPersistence field of HTTPRoute rules, which is part of the
+	//     experimental channel (the sessionPersistence field of a
+	//     BackendConfigPolicy is not affected),
+	//   - the legacy XListenerSet resource in the gateway.networking.x-k8s.io API
+	//     group, and
+	//   - the pre-v1 API versions of TCPRoutes and TLSRoutes, when the Gateway API
+	//     CRDs do not serve v1.
+	//
+	// Features in the standard channel, such as retry, CORS, ListenerSet, and
+	// TCPRoute v1, work whether this setting is enabled or not.
 	EnableExperimentalGatewayAPIFeatures bool `split_words:"true" default:"true"`
 
 	// EnableRouteSourceMetadata enables attaching dev.kgateway.route_source filter metadata

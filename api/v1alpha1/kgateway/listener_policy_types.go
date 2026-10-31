@@ -181,7 +181,7 @@ type ProxyProtocolConfig struct {
 // +kubebuilder:validation:XValidation:message="forwardClientCertDetails.details requires mode to be AppendForward or SanitizeSet (or unset)",rule="!has(self.forwardClientCertDetails) || !has(self.forwardClientCertDetails.details) || !has(self.forwardClientCertDetails.mode) || self.forwardClientCertDetails.mode == 'AppendForward' || self.forwardClientCertDetails.mode == 'SanitizeSet'"
 type HTTPSettings struct {
 	// AccessLoggingConfig contains various settings for Envoy's access logging service.
-	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
 	// +kubebuilder:validation:MaxItems=16
 	// +optional
 	AccessLog []AccessLog `json:"accessLog,omitempty"`
@@ -196,7 +196,7 @@ type HTTPSettings struct {
 	LocalReplies *LocalReplyConfig `json:"localReplies,omitempty"`
 
 	// UpgradeConfig contains configuration for HTTP upgrades like WebSocket.
-	// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.34.1/intro/arch_overview/http/upgrades
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/upgrades
 	// +optional
 	UpgradeConfig *UpgradeConfig `json:"upgradeConfig,omitempty"`
 
@@ -519,11 +519,11 @@ type FileSink struct {
 	// +required
 	Path string `json:"path"`
 	// the format string by which envoy will format the log lines
-	// https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-strings
 	// +optional
 	StringFormat *string `json:"stringFormat,omitempty"`
 	// the format object by which to envoy will emit the logs in a structured way.
-	// https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#format-dictionaries
 	// +optional
 	JsonFormat *runtime.RawExtension `json:"jsonFormat,omitempty"`
 }
@@ -704,25 +704,25 @@ type AnyValue struct {
 }
 
 // AccessLogFilter represents the top-level filter structure.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-accesslogfilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-accesslogfilter
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type AccessLogFilter struct {
 	*FilterType `json:",inline"` // embedded to allow for validation
 	// Performs a logical "and" operation on the result of each individual filter.
-	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
+	// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter
 	// +kubebuilder:validation:MinItems=2
 	// +optional
 	AndFilter []FilterType `json:"andFilter,omitempty"`
 	// Performs a logical "or" operation on the result of each individual filter.
-	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
+	// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter
 	// +kubebuilder:validation:MinItems=2
 	// +optional
 	OrFilter []FilterType `json:"orFilter,omitempty"`
 }
 
 // FilterType represents the type of filter to apply (only one of these should be set).
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type FilterType struct {
@@ -731,11 +731,11 @@ type FilterType struct {
 	// +optional
 	DurationFilter *DurationFilter `json:"durationFilter,omitempty"`
 	// Filters for requests that are not health check requests.
-	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
+	// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter
 	// +optional
 	NotHealthCheckFilter *bool `json:"notHealthCheckFilter,omitempty"`
 	// Filters for requests that are traceable.
-	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
+	// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter
 	// +optional
 	TraceableFilter *bool `json:"traceableFilter,omitempty"`
 	// +optional
@@ -747,13 +747,13 @@ type FilterType struct {
 	// +optional
 	CELFilter *CELFilter `json:"celFilter,omitempty"`
 	// Filters for random sampling of access logs.
-	// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+	// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
 	// +optional
 	RuntimeFilter *RuntimeFilter `json:"runtimeFilter,omitempty"`
 }
 
 // ComparisonFilter represents a filter based on a comparison.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-comparisonfilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-comparisonfilter
 type ComparisonFilter struct {
 	// +required
 	Op Op `json:"op"`
@@ -777,11 +777,11 @@ const (
 )
 
 // StatusCodeFilter filters based on HTTP status code.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter
 type StatusCodeFilter ComparisonFilter
 
 // DurationFilter filters based on request duration.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter
 type DurationFilter ComparisonFilter
 
 // DenominatorType defines the fraction percentages support several fixed denominator values.
@@ -804,14 +804,14 @@ const (
 )
 
 // HeaderFilter filters requests based on headers.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter
 type HeaderFilter struct {
 	// +required
 	Header gwv1.HTTPHeaderMatch `json:"header"`
 }
 
 // ResponseFlagFilter filters based on response flags.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter
 type ResponseFlagFilter struct {
 	// +kubebuilder:validation:MinItems=1
 	// +required
@@ -821,14 +821,14 @@ type ResponseFlagFilter struct {
 // CELFilter filters requests based on Common Expression Language (CEL).
 type CELFilter struct {
 	// The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true.
-	// see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto
+	// see: https://www.envoyproxy.io/docs/envoy/latest/xds/type/v3/cel.proto#common-expression-language-cel-proto
 	// +required
 	Match string `json:"match"`
 }
 
 // RuntimeFilter filters for random sampling of access logs.
 // A request will be logged if the runtime key is set and the request's random value is less than the percent_sampled value.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-runtimefilter
 type RuntimeFilter struct {
 	// RuntimeKey identifies the runtime setting used to decide whether to log each request.
 	// +required
@@ -848,7 +848,7 @@ type RuntimeFilter struct {
 }
 
 // FractionalPercent represents a fraction as a numerator and denominator.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/type/v3/percent.proto#envoy-v3-api-msg-type-v3-fractionalpercent
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/type/v3/percent.proto#envoy-v3-api-msg-type-v3-fractionalpercent
 type FractionalPercent struct {
 	// Specifies the numerator. Defaults to 0.
 	// +required
@@ -864,7 +864,7 @@ type FractionalPercent struct {
 }
 
 // GrpcStatusFilter filters gRPC requests based on their response status.
-// Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
+// Based on: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status
 type GrpcStatusFilter struct {
 	// +kubebuilder:validation:MinItems=1
 	// +optional

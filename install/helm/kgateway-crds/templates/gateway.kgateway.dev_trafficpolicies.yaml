@@ -1967,8 +1967,22 @@ spec:
                           Defaults to false.
                         type: boolean
                       tokenBucket:
-                        description: TokenBucket configures the local rate limiter's
-                          token bucket.
+                        description: |-
+                          TokenBucket configures the local rate limiter's token bucket.
+
+                          Each Envoy pod keeps its own token buckets. The number of buckets depends on
+                          the resource that the policy targets:
+                            - HTTPRoute: one bucket for each path match of the route. The maxTokens
+                              value applies to each path match separately, and not to the route as a
+                              whole. Path matches in the same rule also get separate buckets, so adding
+                              a path match to the route increases the total that the route admits.
+                            - Gateway: one bucket for the entire Gateway, which all of its routes
+                              share, including routes with different hostnames.
+                            - Gateway listener (sectionName): one bucket for each hostname on the
+                              listener. Routes that share a hostname share a bucket.
+
+                          To enforce a single limit across many routes, target the Gateway. To share
+                          the bucket across the replicas of a Gateway, set shareAcrossGateway.
                         properties:
                           fillInterval:
                             description: |-
