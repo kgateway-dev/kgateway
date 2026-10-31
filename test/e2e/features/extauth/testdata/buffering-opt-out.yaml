@@ -1,0 +1,73 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  namespace: kgateway-base
+  name: buffered-extauth
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 4444
+    withRequestBody:
+      maxRequestBytes: 1024
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: provider-buffered
+spec:
+  parentRefs:
+  - name: gateway
+  hostnames:
+  - provider-buffered.com
+  rules:
+  - backendRefs:
+    - name: backend
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-base
+  name: provider-buffered
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: provider-buffered
+  extAuth:
+    extensionRef:
+      name: buffered-extauth
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: kgateway-base
+  name: buffering-opt-out
+spec:
+  parentRefs:
+  - name: gateway
+  hostnames:
+  - buffering-opt-out.com
+  rules:
+  - backendRefs:
+    - name: backend
+      port: 80
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  namespace: kgateway-base
+  name: buffering-opt-out
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: buffering-opt-out
+  extAuth:
+    extensionRef:
+      name: buffered-extauth
+    disableRequestBodyBuffering: true
