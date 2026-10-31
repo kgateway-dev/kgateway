@@ -33,7 +33,7 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
 - For required fields:
     - Use the `+required` marker.
     - Required fields MUST NOT set the `omitempty` json struct tag.
-- Avoid using slices with pointers (e.g. use `[]string` instead of `[]*string`). See: https://github.com/kubernetes/code-generator/issues/166
+- Avoid using slices with pointers (e.g. use `[]string` instead of `[]*string`).
 - For time duration fields, use the `metav1.Duration` type and use CEL validation rules to ensure it is within the correct range.
 - For constraints across a group of fields, use `+kubebuilder:validation:AtLeastOneOf` or `+kubebuilder:validation:ExactlyOneOf` rather than hand-written CEL.
 
