@@ -11,6 +11,7 @@ import (
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
 //
 // +kubebuilder:validation:ExactlyOneOf=extensionRef;disable
+// +kubebuilder:validation:XValidation:rule="!has(self.withRequestBody) || !self.withRequestBody.packAsBytes",message="withRequestBody.packAsBytes is not supported on TrafficPolicy; set it on the GatewayExtension instead"
 type ExtAuthPolicy struct {
 	// ExtensionRef references the GatewayExtension that should be used for auth.
 	// +optional

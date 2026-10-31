@@ -139,7 +139,6 @@ func TestExtAuthForSpec(t *testing.T) {
 				WithRequestBody: &kgateway.ExtAuthBufferSettings{
 					MaxRequestBytes:     1024,
 					AllowPartialMessage: true,
-					PackAsBytes:         true,
 				},
 			},
 		}}
@@ -152,7 +151,7 @@ func TestExtAuthForSpec(t *testing.T) {
 		require.NotNil(t, extauthPerRoute.GetCheckSettings().WithRequestBody)
 		assert.Equal(t, uint32(1024), extauthPerRoute.GetCheckSettings().WithRequestBody.MaxRequestBytes)
 		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.AllowPartialMessage)
-		assert.True(t, extauthPerRoute.GetCheckSettings().WithRequestBody.PackAsBytes)
+		assert.False(t, extauthPerRoute.GetCheckSettings().WithRequestBody.PackAsBytes)
 	})
 }
 
