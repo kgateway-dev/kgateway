@@ -36,16 +36,16 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestOTelTracing() {
-	s.testOTelTracing()
+	s.testOTelTracing(otelCollectorPod)
 }
 
 func (s *testingSuite) TestOTelTracingSecure() {
-	s.testOTelTracing()
+	s.testOTelTracing(otelCollectorSecurePod)
 }
 
 // testOTelTracing makes a request to the httpbin service
 // and checks if the collector pod logs contain the expected lines
-func (s *testingSuite) testOTelTracing() {
+func (s *testingSuite) testOTelTracing(collectorPod string) {
 	s.TestInstallation.AssertionsT(s.T()).EventuallyListenerPolicyCondition(s.Ctx, "tracing-policy", "default", gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
 	// The headerValue passed is used to differentiate between multiple calls by identifying a unique trace per call
@@ -96,7 +96,7 @@ func (s *testingSuite) testOTelTracing() {
 		}
 
 		// fetch the collector pod logs
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", "otel-collector")
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", collectorPod)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
 
 		// check if the logs match the patterns
@@ -147,7 +147,7 @@ func (s *testingSuite) TestRouteTracingCustomAttributes() {
 			fmt.Sprintf("-> route-request-header: Str(%s)", headerValue),
 		}
 
-		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", "otel-collector")
+		logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", otelCollectorPod)
 		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to get pod logs")
 
 		allMatched := true
@@ -192,7 +192,7 @@ func (s *testingSuite) TestRouteTracingDisable() {
 	time.Sleep(5 * time.Second)
 
 	// Verify that no traces with our unique marker appear in the collector logs
-	logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", "otel-collector")
+	logs, err := s.TestInstallation.Actions.Kubectl().GetContainerLogs(s.Ctx, "default", otelCollectorPod)
 	s.Require().NoError(err, "Failed to get pod logs")
 	s.Require().NotContains(logs, marker, "traces should not be emitted when route tracing is disabled")
 }

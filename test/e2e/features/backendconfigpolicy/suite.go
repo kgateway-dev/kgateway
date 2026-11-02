@@ -73,7 +73,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 		},
 	}
 	return &testingSuite{
-		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{}, testCases),
+		BaseTestingSuite: base.NewBaseTestingSuite(ctx, testInst, base.TestCase{Manifests: []string{backendsManifest}}, testCases),
 	}
 }
 

@@ -4,6 +4,7 @@ package tracing
 
 import (
 	"path/filepath"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +23,10 @@ var (
 	routeTracingPolicyManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-tracing-policy.yaml")
 	routeTracingDisableManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-tracing-disable-policy.yaml")
 
+	// collector Pods (and the Services in front of them) in the default namespace
+	otelCollectorPod       = "otel-collector"
+	otelCollectorSecurePod = "otel-collector-secure"
+
 	// setup objects
 	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -29,25 +34,34 @@ var (
 	}
 	proxyService = &corev1.Service{ObjectMeta: proxyObjectMeta}
 
+	// The plain collector is shared by every test except TestOTelTracingSecure, so it is applied
+	// once here instead of per test: reapplying a bare Pod while the previous test's copy is still
+	// terminating patches the dying Pod instead of creating a new one.
 	setup = base.TestCase{
-		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest},
+		Manifests: []string{e2edefaults.CurlPodManifest, setupManifest, otelCollectorManifest},
 	}
 
 	// test cases
 	testCases = map[string]*base.TestCase{
 		"TestOTelTracing": {
-			Manifests: []string{otelCollectorManifest, policyManifest},
+			Manifests: []string{policyManifest},
 		},
 		"TestOTelTracingSecure": {
-			Manifests: []string{otelCollectorSecureManifest, policyManifest},
+			Manifests: []string{otelCollectorSecureManifest},
+			// same ListenerPolicy, pointed at the TLS collector instead of the shared one
+			ManifestsWithTransform: map[string]func(string) string{
+				policyManifest: func(s string) string {
+					return strings.Replace(s, "name: "+otelCollectorPod+"\n", "name: "+otelCollectorSecurePod+"\n", 1)
+				},
+			},
 			// BackendTLSPolicy moved from experimental to standard in Gateway API 1.4, and the alpha1v3 version is not supported
 			MinGwApiVersion: base.GwApiRequireBackendTLSPolicy,
 		},
 		"TestRouteTracingCustomAttributes": {
-			Manifests: []string{otelCollectorManifest, policyManifest, routeTracingPolicyManifest},
+			Manifests: []string{policyManifest, routeTracingPolicyManifest},
 		},
 		"TestRouteTracingDisable": {
-			Manifests: []string{otelCollectorManifest, policyManifest, routeTracingDisableManifest},
+			Manifests: []string{policyManifest, routeTracingDisableManifest},
 		},
 	}
 )
