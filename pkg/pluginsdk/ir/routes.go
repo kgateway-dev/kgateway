@@ -207,7 +207,7 @@ var _ Route = &TlsRouteIR{}
 type UdpRouteIR struct {
 	ObjectSource `json:",inline"`
 	SourceObject *gwv1.UDPRoute
-	// ParentRefs changes are covered by versionEquals(SourceObject) in Equals.
+	// versionEquals(SourceObject) in Equals covers ParentRefs changes.
 	// +noKrtEquals
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies

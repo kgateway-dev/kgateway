@@ -10,8 +10,11 @@ import (
 	"strconv"
 	"strings"
 
+	udpproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/util/sets"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,6 +34,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	routereports "github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 var logger = logging.New("translator/listener")
@@ -949,16 +953,16 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 		return nil
 	}
 
-	// A UDP listener cannot distinguish between multiple attached routes (there is no SNI to
-	// match on), so only one route can be honored. The oldest route by CreationTimestamp wins,
-	// any others are rejected as conflicting.
+	// A UDP listener cannot tell attached routes apart (UDP has no SNI to match on), so the
+	// listener honors only one route. The oldest route by CreationTimestamp wins, and the others
+	// report a conflict.
 	r := slices.MinFunc(parent.routesWithHosts, func(a, b *query.RouteInfo) int {
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
 	if len(parent.routesWithHosts) > 1 {
 		winner := keyOfRoute(r)
 		for _, other := range parent.routesWithHosts {
-			// The winning route can also be attached through another parentRef;
+			// The winning route can also be attached through another parentRef,
 			// it must not conflict with itself.
 			if keyOfRoute(other) == winner {
 				continue
@@ -994,9 +998,9 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 		backends = append(backends, backend)
 	}
 
-	// A UDPRoute maps to a single udp_proxy, which cannot express more than one rule, so a
-	// multi-rule UDPRoute is rejected. Multiple backendRefs within the single rule are
-	// supported and weighted (see AggregateClusterName below).
+	// A UDPRoute maps to a single udp_proxy, which cannot express more than one rule, so the
+	// translator rejects a multi-rule UDPRoute. The single rule can still weight several
+	// backendRefs (see AggregateClusterName below).
 	condition := reports.RouteCondition{
 		Type:   gwv1.RouteConditionAccepted,
 		Status: metav1.ConditionTrue,
@@ -1027,11 +1031,81 @@ func (uc *udpFilterChain) translateUdpFilterChain(
 		aggregateClusterName = ir.UdpAggregateClusterName(uRoute.Namespace, uRoute.Name)
 	}
 
+	hashPolicy, notApplied := udpBackendPolicies(backends)
+	if len(notApplied) > 0 {
+		for _, parentRefReporter := range parentRefReporters {
+			reportUdpBackendPolicyNotApplied(parentRefReporter, notApplied)
+		}
+	}
+
 	return &ir.UdpIR{
 		FilterChainName:      udpHostName,
 		BackendRefs:          backends,
 		AggregateClusterName: aggregateClusterName,
+		HashPolicy:           hashPolicy,
 	}
+}
+
+// udpBackendPolicies returns the udp_proxy hash policy from the backends' policies and the policy
+// settings the route does not apply. With several backends the route uses the aggregate cluster,
+// which carries none of their cluster settings.
+func udpBackendPolicies(backends []ir.BackendRefIR) (*udpproxyv3.UdpProxyConfig_HashPolicy, []string) {
+	weighted := len(backends) > 1
+	var hashPolicy *udpproxyv3.UdpProxyConfig_HashPolicy
+	notApplied := sets.New[string]()
+	for _, backend := range backends {
+		obj := backend.BackendObject
+		if obj == nil {
+			continue
+		}
+		for _, gk := range obj.AttachedPolicies.ApplyOrderedGroupKinds() {
+			for _, pol := range obj.AttachedPolicies.Policies[gk] {
+				name := udpPolicyName(gk, pol)
+				if weighted {
+					notApplied.Insert(fmt.Sprintf("%s on backend %s is not applied: a UDPRoute with several backendRefs routes to one cluster built from their endpoints, which does not carry per-backend cluster settings",
+						name, obj.GetName()))
+					continue
+				}
+				udpPolicy, ok := pol.PolicyIr.(ir.UdpBackendPolicy)
+				if !ok {
+					continue
+				}
+				settings := udpPolicy.UdpProxy()
+				if hashPolicy == nil {
+					hashPolicy = settings.HashPolicy
+				}
+				if len(settings.Ignored) > 0 {
+					notApplied.Insert(fmt.Sprintf("%s on backend %s: %s have no effect on UDP",
+						name, obj.GetName(), strings.Join(settings.Ignored, ", ")))
+				}
+			}
+		}
+	}
+	return hashPolicy, sets.SortedList(notApplied)
+}
+
+func udpPolicyName(gk schema.GroupKind, pol ir.PolicyAtt) string {
+	if ref := pol.PolicyRef; ref != nil {
+		return fmt.Sprintf("%s %s/%s", ref.Kind, ref.Namespace, ref.Name)
+	}
+	return gk.Kind
+}
+
+// reportUdpBackendPolicyNotApplied keeps the route programmed and names what it does not apply. A
+// route that is not programmed keeps that condition.
+func reportUdpBackendPolicyNotApplied(parentRefReporter reports.ParentRefReporter, notApplied []string) {
+	if prr, ok := parentRefReporter.(*routereports.ParentRefReport); ok {
+		if cond := meta.FindStatusCondition(prr.Conditions, conditions.KgatewayConditionProgrammed); cond != nil &&
+			cond.Status == metav1.ConditionFalse {
+			return
+		}
+	}
+	parentRefReporter.SetCondition(reports.RouteCondition{
+		Type:    gwv1.RouteConditionType(conditions.KgatewayConditionProgrammed),
+		Status:  metav1.ConditionTrue,
+		Reason:  gwv1.RouteConditionReason(conditions.KgatewayReasonBackendPolicyNotApplied),
+		Message: strings.Join(notApplied, ". "),
+	})
 }
 
 // reportBackendErrors reports the backend errors of a TCP or TLS route on the

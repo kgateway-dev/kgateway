@@ -23,8 +23,9 @@ import (
 )
 
 // udpWeightScale scales backendRef weights into per-endpoint load-balancing weights. Envoy only
-// needs proportionality, so a fixed scale is enough.
-const udpWeightScale uint64 = 1000
+// needs proportionality. The scale is large so that splitting a small weight over many endpoints
+// does not round each endpoint up to 1 and skew the shares between backends.
+const udpWeightScale uint64 = 1_000_000
 
 // Invalid weight goes to a blackhole endpoint on the loopback discard port.
 // The Gateway API requires that weight to drop rather than redistribute
@@ -41,8 +42,8 @@ type udpAggregateMember struct {
 }
 
 // udpAggregate describes the synthetic cluster a multi-backend UDPRoute routes to. The struct holds
-// the weighted member backends whose endpoints are unioned, plus the combined weight of any invalid
-// backends.
+// the weighted member backends whose endpoints the cluster unions, plus the combined weight of any
+// invalid backends.
 type udpAggregate struct {
 	clusterName string
 	members     []udpAggregateMember
@@ -64,10 +65,10 @@ func newUdpAggregateCollection(
 	udpRoutes krt.Collection[ir.UdpRouteIR],
 ) krt.Collection[udpAggregate] {
 	return krt.NewCollection(udpRoutes, func(_ krt.HandlerContext, r ir.UdpRouteIR) *udpAggregate {
-		// A multi-backend route uses a synthetic aggregate cluster; a single-backend route targets
-		// its backend directly. The descriptor only supplies the members. Whether a CLA is emitted
-		// for it is gated by the cluster the gateway's CDS actually carries (see
-		// newAcceptedUdpAggregateCollection), so a rejected route's descriptor is simply never used.
+		// A multi-backend route uses a synthetic aggregate cluster. A single-backend route targets
+		// its backend directly. The descriptor only supplies the members.
+		// newAcceptedUdpAggregateCollection decides which clients receive the CLA, so a rejected
+		// route's descriptor goes unused.
 		if len(r.Backends) <= 1 {
 			return nil
 		}
@@ -94,9 +95,9 @@ func newUdpAggregateCollection(
 	}, krtopts.ToOptions("UdpAggregates")...)
 }
 
-// acceptedUdpAggregate names one aggregate cluster a gateway's CDS actually emitted, keyed by that
-// gateway's snapshot role. The CLA is emitted only where the cluster is, so CDS and EDS stay in
-// lockstep. A rejected route or a gateway that does not carry the route gets neither, avoiding the
+// acceptedUdpAggregate names one aggregate cluster in a gateway's CDS, keyed by that gateway's
+// snapshot role. kgateway emits the CLA only where the cluster is, so CDS and EDS stay in lockstep.
+// A rejected route or a gateway that does not carry the route gets neither, which avoids the
 // withhold in issue #14471.
 type acceptedUdpAggregate struct {
 	role        string
@@ -110,7 +111,7 @@ func (a acceptedUdpAggregate) Equals(o acceptedUdpAggregate) bool {
 }
 
 // newAcceptedUdpAggregateCollection reads the aggregate clusters each gateway emitted in its CDS,
-// so the CLA can be scoped to exactly those gateways' clients.
+// so that only those gateways' clients receive the CLA.
 func newAcceptedUdpAggregateCollection(
 	krtopts krtutil.KrtOptions,
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
@@ -129,18 +130,17 @@ func newAcceptedUdpAggregateCollection(
 }
 
 // NewPerClientUdpAggregateEndpoints builds the per-client CLA for each UDP aggregate cluster. A
-// client receives one only when its gateway's CDS carries the matching cluster. The endpoint set is
-// client-independent, the weighted union of the member backends' endpoints.
+// client receives one only when its gateway's CDS carries the matching cluster. Each member's
+// endpoints come from that client's CLA for the member, built by the regular per-client endpoint
+// pipeline, so endpoint plugins, policies and per-client endpoint selection apply as they do for a
+// single backend.
 func NewPerClientUdpAggregateEndpoints(
 	krtopts krtutil.KrtOptions,
 	uccs krt.Collection[ir.UniquelyConnectedClient],
 	aggregates krt.Collection[udpAggregate],
 	mostXdsSnapshots krt.Collection[GatewayXdsResources],
-	backendEndpoints krt.Collection[ir.EndpointsForBackend],
+	memberEndpoints PerClientEnvoyEndpoints,
 ) PerClientEnvoyEndpoints {
-	epByBackend := krtpkg.UnnamedIndex(backendEndpoints, func(e ir.EndpointsForBackend) []string {
-		return []string{e.UpstreamResourceName}
-	})
 	accepted := newAcceptedUdpAggregateCollection(krtopts, mostXdsSnapshots)
 	acceptedByRole := krtpkg.UnnamedIndex(accepted, func(a acceptedUdpAggregate) []string {
 		return []string{a.role}
@@ -154,11 +154,12 @@ func NewPerClientUdpAggregateEndpoints(
 			if agg == nil {
 				continue
 			}
-			cla := buildUdpAggregateLoadAssignment(kctx, *agg, backendEndpoints, epByBackend)
+			members := fetchUdpMemberEndpoints(kctx, ucc, *agg, memberEndpoints)
+			cla := mergeUdpAggregateLoadAssignment(agg.clusterName, members, agg.dropWeight)
 			ret = append(ret, UccWithEndpoints{
 				Client:        ucc,
 				Endpoints:     sharedproto.Wrap(cla),
-				EndpointsHash: hashUdpAggregateLoadAssignment(cla),
+				EndpointsHash: hashUdpAggregate(*agg, members),
 				endpointsName: c.clusterName,
 				resourceName:  uccEndpointsResourceName(ucc, c.clusterName),
 			})
@@ -174,44 +175,49 @@ func NewPerClientUdpAggregateEndpoints(
 		endpoints: endpoints,
 		index:     idx,
 		// A route's descriptor derives its aggregate CLA. A client whose CDS has
-		// the cluster before the row lands waits for it instead of being sent an
-		// empty placeholder over the endpoints it holds.
+		// the cluster before the row lands waits for the row instead of receiving
+		// an empty placeholder over the endpoints it holds.
 		hasSource: func(kctx krt.HandlerContext, claName string) bool {
 			return krt.FetchOne(kctx, aggregates, krt.FilterKey(claName)) != nil
 		},
 	}
 }
 
-// udpMemberEndpoints pairs a member's backendRef weight with its resolved endpoints, decoupling
-// the krt Fetch from the (unit-tested) weight-merge below.
+// udpMemberEndpoints pairs a member's backendRef weight with the client's CLA for that member.
+// cla is nil while the member's row is not built yet. hash is the row's EndpointsHash.
 type udpMemberEndpoints struct {
 	weight uint32
-	efbs   []ir.EndpointsForBackend
+	cla    *envoyendpointv3.ClusterLoadAssignment
+	hash   uint64
 }
 
-func buildUdpAggregateLoadAssignment(
+func fetchUdpMemberEndpoints(
 	kctx krt.HandlerContext,
+	ucc ir.UniquelyConnectedClient,
 	agg udpAggregate,
-	backendEndpoints krt.Collection[ir.EndpointsForBackend],
-	epByBackend krt.Index[string, ir.EndpointsForBackend],
-) *envoyendpointv3.ClusterLoadAssignment {
+	memberEndpoints PerClientEnvoyEndpoints,
+) []udpMemberEndpoints {
 	members := make([]udpMemberEndpoints, 0, len(agg.members))
 	for _, m := range agg.members {
-		members = append(members, udpMemberEndpoints{
-			weight: m.weight,
-			efbs:   krt.Fetch(kctx, backendEndpoints, krt.FilterIndex(epByBackend, m.backendResourceName)),
-		})
+		member := udpMemberEndpoints{weight: m.weight}
+		row := krt.FetchOne(kctx, memberEndpoints.endpoints, krt.FilterKey(uccEndpointsResourceName(ucc, m.backendResourceName)))
+		if row != nil && !row.Endpoints.IsNil() {
+			member.cla = row.Endpoints.BorrowForRead()
+			member.hash = row.EndpointsHash
+		}
+		members = append(members, member)
 	}
-	return mergeUdpAggregateLoadAssignment(agg.clusterName, members, agg.dropWeight)
+	return members
 }
 
-// mergeUdpAggregateLoadAssignment unions the members' endpoints into one weighted CLA. Each
-// endpoint's weight is its member's backendRef weight scaled by udpWeightScale and divided by the
-// member's live endpoint count, so a member's total weight stays proportional to its backendRef
-// weight regardless of replica count. dropWeight is added as a single blackhole endpoint.
+// mergeUdpAggregateLoadAssignment merges the members' CLAs into one weighted CLA at a single
+// priority. Cross-backend weights take precedence over the members' priorities, so locality
+// failover and traffic distribution preferences do not survive the merge. The merge splits each
+// member's backendRef weight over its endpoints by their own weights, so replica count does not
+// change the member's share. A blackhole endpoint carries dropWeight.
 func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndpoints, dropWeight uint32) *envoyendpointv3.ClusterLoadAssignment {
-	// weighted carries an endpoint's uint64 weight so the whole set can be scaled together before the
-	// weights are narrowed to uint32.
+	// weighted holds an endpoint's uint64 weight until the scale-down below narrows the whole set to
+	// uint32.
 	type weighted struct {
 		locality ir.PodLocality
 		ep       *envoyendpointv3.LbEndpoint
@@ -221,46 +227,40 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 	var total uint64
 
 	for _, m := range members {
-		count := 0
-		for _, efb := range m.efbs {
-			for _, eps := range efb.LbEps {
-				count += len(eps)
+		// A member without a row yet adds nothing until the row arrives. Route resolution rejects
+		// backends that never have rows (InlineEndpoints), so dropWeight already counts their weight.
+		if m.cla == nil {
+			continue
+		}
+		var memberTotal uint64
+		for _, lle := range m.cla.GetEndpoints() {
+			for _, ep := range lle.GetLbEndpoints() {
+				memberTotal += endpointLbWeight(ep)
 			}
 		}
 		// A Service with no endpoints is invalid per the UDPRoute spec, so its share drops, not
-		// redistributes. A member with no endpoint rows yet (len(efbs)==0) adds nothing until they
-		// are built. Backends that never have rows (InlineEndpoints) are rejected at route
-		// resolution, so their weight already counts in dropWeight.
-		if count == 0 {
-			if len(m.efbs) > 0 {
-				dropWeight += m.weight
-			}
+		// redistributes.
+		if memberTotal == 0 {
+			dropWeight += m.weight
 			continue
 		}
-		//nolint:gosec // G115: count is a positive endpoint count (guarded > 0 above)
-		perEndpointWeight := (uint64(m.weight) * udpWeightScale) / uint64(count)
-		if perEndpointWeight == 0 {
-			perEndpointWeight = 1
-		}
-		for _, efb := range m.efbs {
-			for locality, eps := range efb.LbEps {
-				for _, ep := range eps {
-					if ep.LbEndpoint == nil {
-						continue
-					}
-					clone := proto.Clone(ep.LbEndpoint).(*envoyendpointv3.LbEndpoint)
-					collected = append(collected, weighted{locality: locality, ep: clone, weight: perEndpointWeight})
-					total += perEndpointWeight
+		for _, lle := range m.cla.GetEndpoints() {
+			loc := lle.GetLocality()
+			locality := ir.PodLocality{Region: loc.GetRegion(), Zone: loc.GetZone(), Subzone: loc.GetSubZone()}
+			for _, ep := range lle.GetLbEndpoints() {
+				w := uint64(m.weight) * udpWeightScale * endpointLbWeight(ep) / memberTotal
+				if w == 0 {
+					w = 1
 				}
+				clone := proto.Clone(ep).(*envoyendpointv3.LbEndpoint)
+				collected = append(collected, weighted{locality: locality, ep: clone, weight: w})
+				total += w
 			}
 		}
 	}
 
 	if dropWeight > 0 {
 		bhWeight := uint64(dropWeight) * udpWeightScale
-		if bhWeight == 0 {
-			bhWeight = 1
-		}
 		collected = append(collected, weighted{ep: blackholeLbEndpoint(), weight: bhWeight})
 		total += bhWeight
 	}
@@ -322,6 +322,14 @@ func mergeUdpAggregateLoadAssignment(clusterName string, members []udpMemberEndp
 	return cla
 }
 
+// endpointLbWeight is an endpoint's load-balancing weight, which Envoy defaults to 1 when unset.
+func endpointLbWeight(ep *envoyendpointv3.LbEndpoint) uint64 {
+	if w := ep.GetLoadBalancingWeight(); w != nil {
+		return uint64(w.GetValue())
+	}
+	return 1
+}
+
 // blackholeLbEndpoint returns an endpoint targeting the loopback discard port. The caller sets its
 // weight alongside the member endpoints so the whole set scales together.
 func blackholeLbEndpoint() *envoyendpointv3.LbEndpoint {
@@ -347,21 +355,20 @@ func lbEndpointSortKey(ep *envoyendpointv3.LbEndpoint) string {
 	return sa.GetAddress() + ":" + strconv.FormatUint(uint64(sa.GetPortValue()), 10)
 }
 
-func hashUdpAggregateLoadAssignment(cla *envoyendpointv3.ClusterLoadAssignment) uint64 {
+// hashUdpAggregate derives the aggregate row's hash from the inputs of its CLA: the members'
+// row hashes, which already carry endpoint content and policy versions, their weights, and the
+// drop weight.
+func hashUdpAggregate(agg udpAggregate, members []udpMemberEndpoints) uint64 {
 	hasher := fnv.New64a()
-	utils.HashStringField(hasher, cla.GetClusterName())
-	for _, lle := range cla.GetEndpoints() {
-		loc := lle.GetLocality()
-		utils.HashStringField(hasher, loc.GetRegion())
-		utils.HashStringField(hasher, loc.GetZone())
-		utils.HashStringField(hasher, loc.GetSubZone())
-		utils.HashStringField(hasher, strconv.FormatUint(uint64(lle.GetLoadBalancingWeight().GetValue()), 10))
-		for _, ep := range lle.GetLbEndpoints() {
-			sa := ep.GetEndpoint().GetAddress().GetSocketAddress()
-			utils.HashStringField(hasher, sa.GetAddress())
-			utils.HashStringField(hasher, strconv.FormatUint(uint64(sa.GetPortValue()), 10))
-			utils.HashStringField(hasher, strconv.FormatUint(uint64(ep.GetLoadBalancingWeight().GetValue()), 10))
+	utils.HashStringField(hasher, agg.clusterName)
+	utils.HashUint64(hasher, uint64(agg.dropWeight))
+	for _, m := range members {
+		utils.HashUint64(hasher, uint64(m.weight))
+		if m.cla == nil {
+			utils.HashStringField(hasher, "pending")
+			continue
 		}
+		utils.HashUint64(hasher, m.hash)
 	}
 	return hasher.Sum64()
 }

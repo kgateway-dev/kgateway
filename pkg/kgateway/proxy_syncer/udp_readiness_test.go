@@ -91,8 +91,8 @@ func TestUdpAggregatePlaceholderWaitsForItsRow(t *testing.T) {
 	gateways := krt.NewStaticCollection(nil, []GatewayXdsResources{gateway})
 	// The aggregate's rows follow a gateway snapshot that has not caught up.
 	lagging := krt.NewMutableCollection(nil, []GatewayXdsResources{{NamespacedName: gateway.NamespacedName}})
-	backendEndpoints := krt.NewStaticCollection(nil, []ir.EndpointsForBackend{
-		{UpstreamResourceName: "be1", LbEps: ir.LocalityLbMap{ir.PodLocality{}: {udpTestEndpoint("10.0.0.1")}}},
+	memberRows := krt.NewStaticCollection(nil, []UccWithEndpoints{
+		udpMemberRow(ucc, "be1", 1, udpMemberCLA(udpEps("10.0.0.1"))),
 	})
 	aggregates := krt.NewStaticCollection(nil, []udpAggregate{
 		{clusterName: aggregate, members: []udpAggregateMember{{backendResourceName: "be1", weight: 1}}},
@@ -105,7 +105,7 @@ func TestUdpAggregatePlaceholderWaitsForItsRow(t *testing.T) {
 	}
 	snapshots := snapshotPerClient(krtutil.KrtOptions{}, uccs, gateways, backendRows,
 		newTestPerClientClustersFromCol(krt.NewStaticCollection[uccWithCluster](nil, nil), uccs), clusterScoping{},
-		NewPerClientUdpAggregateEndpoints(krtutil.KrtOptions{}, uccs, aggregates, lagging.AsCollection(), backendEndpoints))
+		NewPerClientUdpAggregateEndpoints(krtutil.KrtOptions{}, uccs, aggregates, lagging.AsCollection(), udpMemberRows(memberRows)))
 
 	require.Eventually(t, func() bool { return len(snapshots.List()) == 1 }, 2*time.Second, 5*time.Millisecond)
 	wrap := snapshots.List()[0]

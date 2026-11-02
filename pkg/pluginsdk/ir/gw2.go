@@ -2,6 +2,7 @@ package ir
 
 import (
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	udpproxyv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -168,12 +169,30 @@ type UdpIR struct {
 	// status and metrics. UDP listeners have no Envoy filter chain.
 	FilterChainName string
 	BackendRefs     []BackendRefIR
-	// AggregateClusterName, when set, is the route-scoped synthetic cluster the
-	// udp_proxy filter routes to. udp_proxy cannot weight across clusters, so a
-	// UDPRoute with more than one backend routes to a single cluster whose
-	// endpoints are the weighted union of all backends. Empty for single-backend
-	// routes, which target BackendRefs[0].ClusterName directly.
+	// AggregateClusterName is the route-scoped synthetic cluster a multi-backend
+	// route sends udp_proxy to. udp_proxy cannot weight across clusters, so the
+	// cluster's endpoints are the weighted union of all backends. A single-backend
+	// route leaves it empty and targets BackendRefs[0].ClusterName.
 	AggregateClusterName string
+	// HashPolicy is the udp_proxy hash policy for hash-based load balancers, from the backend's
+	// policies. Only a single-backend route sets it.
+	HashPolicy *udpproxyv3.UdpProxyConfig_HashPolicy
+}
+
+// UdpBackendPolicy is the interface a backend policy IR implements when its settings matter to a
+// UDPRoute.
+// udp_proxy picks the host itself and carries no HTTP, so only part of a policy applies to UDP.
+type UdpBackendPolicy interface {
+	// UdpProxy returns what the policy means for udp_proxy.
+	UdpProxy() UdpProxyPolicy
+}
+
+// UdpProxyPolicy is what a backend policy means for a UDPRoute that targets the backend.
+type UdpProxyPolicy struct {
+	// HashPolicy is the udp_proxy hash policy the policy asks for, or nil.
+	HashPolicy *udpproxyv3.UdpProxyConfig_HashPolicy
+	// Ignored names the policy's settings that have no effect on UDP traffic.
+	Ignored []string
 }
 
 // UdpAggregateClusterPrefix marks the synthetic clusters a multi-backend UDPRoute routes to. The

@@ -20,6 +20,7 @@ Listeners:
   - name: envoy.filters.udp_listener.udp_proxy
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
+      idleTimeout: 60s
       matcher:
         onNoMatch:
           action:

@@ -211,8 +211,9 @@ func (c *CommonCollections) InitCollections(
 
 	tlsRoutes := joinRouteCollections(tlsRouteCollections, c.KrtOpts, "TLSRoute")
 
-	// Gated on v1 being served, like TLSRoute v1: Gateway API v1.5 ships a UDPRoute CRD that
-	// serves only v1alpha2, and a v1 watch against it would never sync and block startup.
+	// The UDPRoute watch waits for v1 to be served, like TLSRoute v1. Gateway API v1.5 ships a
+	// UDPRoute CRD that serves only v1alpha2, and a v1 watch against it would never sync and
+	// would block startup.
 	udproutes := krt.WrapClient(
 		newDelayedTypedInformer(ctx, c.Client, wellknown.UDPRouteGVR, func() kclient.Informer[*gwv1.UDPRoute] {
 			return kclient.NewFiltered[*gwv1.UDPRoute](c.Client, filter)
@@ -237,10 +238,13 @@ func (c *CommonCollections) InitCollections(
 	// can write, so the two cannot drift apart.
 	c.tcpRouteWriteGVRs = tcpRouteWriteGVRs
 	c.tlsRouteWriteGVRs = tlsRouteWriteGVRs
-	c.udpRouteV1Unserved = servesOnlyOtherVersions(
-		resolveRouteVersions(ctx, versionSource, wellknown.UDPRouteCRDName, []schema.GroupVersionResource{wellknown.UDPRouteGVR}),
-		wellknown.UDPRouteGVR,
-	)
+	udpRouteServed := resolveRouteVersions(ctx, versionSource, wellknown.UDPRouteCRDName, []schema.GroupVersionResource{wellknown.UDPRouteGVR})
+	c.udpRouteV1Unserved = servesOnlyOtherVersions(udpRouteServed, wellknown.UDPRouteGVR)
+	if c.udpRouteV1Unserved {
+		logger.Warn("UDPRoute CRD does not serve v1, so UDPRoutes are not reconciled. Install Gateway API v1.6.0 or later and restart kgateway",
+			"served", udpRouteServed.UnsortedList(),
+		)
+	}
 
 	backendIndex := krtcollections.NewBackendIndex(c.KrtOpts, policies, c.RefGrants)
 	initBackends(plugins, backendIndex)

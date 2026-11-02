@@ -882,8 +882,8 @@ func initializeCluster(b *ir.BackendObjectIR) *envoyclusterv3.Cluster {
 
 // buildUdpAggregateCluster builds the synthetic EDS cluster a multi-backend UDPRoute routes to.
 // The cluster's endpoints (served separately as a per-client CLA of the same name) are the weighted
-// union of the route's backends. LocalityWeightedLbConfig is always set so Envoy respects the
-// per-locality endpoint weights that carry the backend weighting.
+// union of the route's backends. The cluster always sets LocalityWeightedLbConfig so Envoy respects
+// the per-locality endpoint weights that carry the backend weighting.
 func buildUdpAggregateCluster(name string) *envoyclusterv3.Cluster {
 	return &envoyclusterv3.Cluster{
 		Name:                 name,

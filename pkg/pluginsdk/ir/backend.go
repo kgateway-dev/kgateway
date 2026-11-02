@@ -556,8 +556,8 @@ type GatewayForDeployer struct {
 	ControllerName string
 	// All ports from all listeners
 	Ports smallset.Set[int32]
-	// UDPPorts is the subset of Ports whose listener protocol is UDP, so the proxy Service and
-	// container ports are created with the UDP protocol instead of the default TCP.
+	// UDPPorts is the subset of Ports whose listener protocol is UDP, so the deployer creates the
+	// proxy Service and container ports with the UDP protocol instead of the default TCP.
 	UDPPorts smallset.Set[int32]
 }
 

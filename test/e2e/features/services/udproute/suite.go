@@ -109,6 +109,39 @@ func (s *testingSuite) TestWeightedBackendsUDPRoute() {
 		counts[multiAnswerA], counts[multiAnswerB])
 }
 
+// TestSessionAffinityUDPRoute asserts udp_proxy picks a backend once per session rather than per
+// datagram. Envoy keys a session on the downstream 4-tuple, so every query sent from the same
+// client source port belongs to one session and must reach the same backend of the 80/20 route,
+// while TestWeightedBackendsUDPRoute shows that fresh source ports spread across both.
+func (s *testingSuite) TestSessionAffinityUDPRoute() {
+	testutils.Cleanup(s.T(), func() {
+		s.deleteManifests(multiBackendManifest)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: multiNs}})
+	})
+
+	s.applyManifests(multiNs, multiBackendManifest)
+
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, multiGwName, multiNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyUDPRouteCondition(s.Ctx, multiRouteName, multiNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+	s.assertEventualDigAnswer(multiNs, multiGwName, multiAnswerA)
+	s.assertEventualDigAnswer(multiNs, multiGwName, multiAnswerB)
+
+	// Queries go out back to back, well inside the session idle timeout, so they all reuse the
+	// session the first one opened.
+	for _, srcPort := range []int{40001, 40002, 40003} {
+		var first string
+		for i := range 10 {
+			out := strings.TrimSpace(s.digFrom(multiNs, multiGwName, srcPort))
+			s.Require().NotEmpty(out, "query %d from source port %d got no answer", i, srcPort)
+			if first == "" {
+				first = out
+				continue
+			}
+			s.Require().Equal(first, out, "query %d from source port %d reached another backend than the session's first query", i, srcPort)
+		}
+	}
+}
+
 // TestInvalidBackendDropUDPRoute routes a UDPRoute to one valid backend (weight 20) and one
 // nonexistent backend (weight 80), and asserts the invalid backend's share is dropped rather than
 // redistributed. The valid backend answers a minority of queries and most queries are dropped.
@@ -146,12 +179,21 @@ func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
 // dig runs a single `dig +short` A-record query for queryName through the gateway's UDP listener
 // and returns stdout, the answer IPs one per line, or empty on failure.
 func (s *testingSuite) dig(ns, gwName string) string {
+	return s.digFrom(ns, gwName, 0)
+}
+
+// digFrom is dig sent from a fixed client source port, or from a random one when srcPort is 0.
+func (s *testingSuite) digFrom(ns, gwName string, srcPort int) string {
 	gwAddr := kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: gwName, Namespace: ns})
-	stdout, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx,
+	args := []string{
 		"exec", "-n", ns, clientPodName, "--",
 		"dig", "+short", "+timeout=2", "+tries=1",
-		"@"+gwAddr, "-p", strconv.Itoa(udpListenerPort), queryName, "A",
-	)
+	}
+	if srcPort != 0 {
+		args = append(args, "-b", "0.0.0.0#"+strconv.Itoa(srcPort))
+	}
+	args = append(args, "@"+gwAddr, "-p", strconv.Itoa(udpListenerPort), queryName, "A")
+	stdout, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, args...)
 	if err != nil {
 		return ""
 	}

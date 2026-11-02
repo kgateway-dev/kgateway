@@ -1441,6 +1441,17 @@ func TestBasic(t *testing.T) {
 		})
 	})
 
+	t.Run("udp gateway applies a backend policy per backend count", func(t *testing.T) {
+		test(t, translatorTestCase{
+			inputFiles: []string{"udp-routing/backend-policy.yaml"},
+			outputFile: "udp-routing/backend-policy-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		})
+	})
+
 	t.Run("udp gateway ignores gateway listener policy", func(t *testing.T) {
 		test(t, translatorTestCase{
 			inputFiles: []string{"udp-routing/listener-policy-ignored.yaml"},

@@ -78,8 +78,8 @@ type CommonCollections struct {
 	// fallback for a CommonCollections built without InitCollections.
 	tcpRouteWriteGVRs []schema.GroupVersionResource
 	tlsRouteWriteGVRs []schema.GroupVersionResource
-	// udpRouteV1Unserved is set when the installed UDPRoute CRD serves versions but not v1,
-	// as in Gateway API v1.5. UDPRoute is v1-only, so no status writer is registered then.
+	// udpRouteV1Unserved reports that the installed UDPRoute CRD serves versions but not v1,
+	// as in Gateway API v1.5. UDPRoute is v1-only, so kgateway registers no status writer then.
 	udpRouteV1Unserved bool
 
 	DiscoveryNamespacesFilter kubetypes.DynamicObjectFilter

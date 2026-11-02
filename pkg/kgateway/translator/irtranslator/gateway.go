@@ -215,8 +215,8 @@ func (t *Translator) ComputeListener(
 	}
 
 	// A UDP listener carries a udp_proxy listener filter instead of network filter chains. The UDP
-	// socket address marks the listener as UDP, so no udp_listener_config is needed. kgateway
-	// honors a single UDPRoute per listener, so a UDP listener has at most one chain.
+	// socket address marks the listener as UDP, so the listener needs no udp_listener_config.
+	// kgateway honors a single UDPRoute per listener, so a UDP listener has at most one chain.
 	for _, ufc := range lis.UdpFilterChain {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), fct.computeUdpFilters(ufc)...)
 	}
@@ -242,7 +242,7 @@ func (t *Translator) runListenerPlugins(
 	out *envoylistenerv3.Listener,
 ) {
 	var attachedPolicies ir.AttachedPolicies
-	// Listener policies take precedence over gateway policies, so they are ordered first.
+	// Listener policies take precedence over gateway policies, so listener policies go first.
 	attachedPolicies.Append(l.AttachedPolicies)
 	// Gateway-wide listener policies do not apply to a UDPRoute listener. The gate keys on the
 	// udp_proxy chain, not the UDP socket, so a future HTTP/3-over-QUIC listener still gets them.

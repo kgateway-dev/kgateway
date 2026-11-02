@@ -3,6 +3,7 @@ package irtranslator
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	xdscorev3 "github.com/cncf/xds/go/xds/core/v3"
 	xdsmatcherv3 "github.com/cncf/xds/go/xds/type/matcher/v3"
@@ -18,6 +19,7 @@ import (
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -36,6 +38,9 @@ const (
 	// The go-control-plane wellknown package has no constant for this filter (unlike TCPProxy),
 	// and the registered name differs from the proto type URL's "udp" path segment.
 	UDPProxyFilterName = "envoy.filters.udp_listener.udp_proxy"
+
+	// udpSessionIdleTimeout is Envoy's default, set so the documented behavior does not depend on it.
+	udpSessionIdleTimeout = time.Minute
 )
 
 var defaultDownstreamAlpnProtocols = []string{"h2", "http/1.1"}
@@ -486,12 +491,10 @@ func (h *filterChainTranslator) computeTcpFilters(l ir.TcpIR, listenerReporter s
 	return append(networkFilters, tcpFilter)
 }
 
-// computeUdpFilters builds the udp_proxy listener filter for a UDPRoute-backed listener.
-// Unlike TCP, Envoy's udp_proxy is a listener filter (not a network filter in a filter chain)
-// and routes to a single cluster. The plain `cluster` route specifier is deprecated, so the
-// non-deprecated `matcher` form is used with a match-all action targeting the backend cluster.
-// udp_proxy has no weighted-cluster equivalent, so a multi-backend route targets a synthetic
-// aggregate cluster (AggregateClusterName) whose endpoints are the weighted union of its backends.
+// computeUdpFilters builds the udp_proxy listener filter for a UDPRoute-backed listener. Unlike
+// TCP, udp_proxy is a listener filter and routes to one cluster, through a match-all `matcher`
+// because the `cluster` route specifier is deprecated. udp_proxy has no weighted clusters, so a
+// multi-backend route targets the synthetic AggregateClusterName.
 func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3.ListenerFilter {
 	if h.reporter != nil {
 		for _, backend := range l.BackendRefs {
@@ -512,6 +515,9 @@ func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3
 	routeAny, _ := utils.MessageToAny(&udpproxyv3.Route{Cluster: target})
 	cfg := &udpproxyv3.UdpProxyConfig{
 		StatPrefix: l.FilterChainName,
+		// One host per session, the downstream 4-tuple. See devel/architecture/udproute.md.
+		UsePerPacketLoadBalancing: false,
+		IdleTimeout:               durationpb.New(udpSessionIdleTimeout),
 		RouteSpecifier: &udpproxyv3.UdpProxyConfig_Matcher{
 			Matcher: &xdsmatcherv3.Matcher{
 				OnNoMatch: &xdsmatcherv3.Matcher_OnMatch{
@@ -524,6 +530,10 @@ func (h *filterChainTranslator) computeUdpFilters(l ir.UdpIR) []*envoylistenerv3
 				},
 			},
 		},
+	}
+
+	if l.HashPolicy != nil {
+		cfg.HashPolicies = []*udpproxyv3.UdpProxyConfig_HashPolicy{l.HashPolicy}
 	}
 
 	msg, _ := utils.MessageToAny(cfg)
