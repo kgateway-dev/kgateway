@@ -11,7 +11,7 @@ import (
 
 const (
 	// ctxTimeout bounds the whole suite, timeout bounds individual assertions.
-	ctxTimeout = 5 * time.Minute
+	ctxTimeout = 10 * time.Minute
 	timeout    = 60 * time.Second
 
 	// clientPodName is the in-cluster dnsutils pod the suite execs `dig` from.
@@ -35,9 +35,11 @@ const (
 	multiListener  = "udp"
 	multiAnswerA   = "10.1.1.1"
 	multiAnswerB   = "10.2.2.2"
+	// multiDeploymentB is backend B's Deployment, whose pods carry app=<name>.
+	multiDeploymentB = "coredns-b"
 
 	// Invalid-backend case. One valid backend (weight 20) and one nonexistent backend (weight 80).
-	// The 80% share must be dropped, not redistributed to the valid backend.
+	// The gateway must drop the 80% share, not give it to the valid backend.
 	dropNs          = "udp-drop"
 	dropGwName      = "udp-drop-gw"
 	dropRouteName   = "udp-drop-route"

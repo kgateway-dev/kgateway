@@ -48,6 +48,8 @@ var testCases = map[string]*base.TestCase{
 	"TestSingleBackendUDPRoute":      {},
 	"TestWeightedBackendsUDPRoute":   {},
 	"TestInvalidBackendDropUDPRoute": {},
+	"TestSessionAffinityUDPRoute":    {},
+	"TestEndpointRemovalUDPRoute":    {},
 }
 
 // TestSingleBackendUDPRoute routes a UDPRoute to a single CoreDNS backend and asserts a DNS query
@@ -105,7 +107,7 @@ func (s *testingSuite) TestWeightedBackendsUDPRoute() {
 	s.Assert().Positive(counts[multiAnswerA], "backend A (weight 80) received no traffic")
 	s.Assert().Positive(counts[multiAnswerB], "backend B (weight 20) received no traffic")
 	s.Assert().Greater(counts[multiAnswerA], counts[multiAnswerB],
-		"backend A (weight 80) should receive more traffic than backend B (weight 20); got A=%d B=%d",
+		"backend A (weight 80) should receive more traffic than backend B (weight 20), got A=%d B=%d",
 		counts[multiAnswerA], counts[multiAnswerB])
 }
 
@@ -142,9 +144,53 @@ func (s *testingSuite) TestSessionAffinityUDPRoute() {
 	}
 }
 
+// TestEndpointRemovalUDPRoute scales backend B of the 80/20 route to zero and back. Without
+// endpoints, the gateway drops B's share instead of giving it to A. Once B is back, the route
+// splits traffic again.
+func (s *testingSuite) TestEndpointRemovalUDPRoute() {
+	testutils.Cleanup(s.T(), func() {
+		s.deleteManifests(multiBackendManifest)
+		s.TestInstallation.AssertionsT(s.T()).EventuallyObjectsNotExist(s.Ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: multiNs}})
+	})
+
+	s.applyManifests(multiNs, multiBackendManifest)
+
+	s.TestInstallation.AssertionsT(s.T()).EventuallyGatewayCondition(s.Ctx, multiGwName, multiNs, gwv1.GatewayConditionProgrammed, metav1.ConditionTrue, timeout)
+	s.TestInstallation.AssertionsT(s.T()).EventuallyUDPRouteCondition(s.Ctx, multiRouteName, multiNs, gwv1.RouteConditionAccepted, metav1.ConditionTrue, timeout)
+	s.assertEventualDigAnswer(multiNs, multiGwName, multiAnswerA)
+	s.assertEventualDigAnswer(multiNs, multiGwName, multiAnswerB)
+
+	s.Require().NoError(s.TestInstallation.Actions.Kubectl().Scale(s.Ctx, multiNs, "deployment/"+multiDeploymentB, 0))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsNotExist(s.Ctx, multiNs, metav1.ListOptions{LabelSelector: "app=" + multiDeploymentB}, timeout)
+
+	// Wait until the gateway stops sending sessions to B.
+	gomega.NewWithT(s.T()).Eventually(func(g gomega.Gomega) {
+		g.Expect(s.countDigAnswers(multiNs, multiGwName, 10)).NotTo(gomega.HaveKey(multiAnswerB))
+	}, timeout).Should(gomega.Succeed(), "backend B still answers after scaling it to zero")
+
+	// A keeps its 80% and the gateway drops B's 20%. Loose bounds keep this non-flaky.
+	const queries = 40
+	counts := s.countDigAnswers(multiNs, multiGwName, queries)
+	s.Assert().Zero(counts[multiAnswerB], "backend B has no endpoints but answered")
+	s.Assert().Positive(counts[""], "backend B's share should be dropped, not given to backend A")
+	s.Assert().Greater(counts[multiAnswerA], counts[""],
+		"backend A (weight 80) should answer most queries, got A=%d dropped=%d", counts[multiAnswerA], counts[""])
+
+	s.Require().NoError(s.TestInstallation.Actions.Kubectl().Scale(s.Ctx, multiNs, "deployment/"+multiDeploymentB, 1))
+	s.TestInstallation.AssertionsT(s.T()).EventuallyPodsRunning(s.Ctx, multiNs, metav1.ListOptions{LabelSelector: "app=" + multiDeploymentB}, timeout)
+	s.assertEventualDigAnswer(multiNs, multiGwName, multiAnswerB)
+
+	counts = s.countDigAnswers(multiNs, multiGwName, queries)
+	s.Assert().Positive(counts[multiAnswerB], "backend B (weight 20) received no traffic after it came back")
+	s.Assert().Greater(counts[multiAnswerA], counts[multiAnswerB],
+		"backend A (weight 80) should receive more traffic than backend B (weight 20), got A=%d B=%d",
+		counts[multiAnswerA], counts[multiAnswerB])
+}
+
 // TestInvalidBackendDropUDPRoute routes a UDPRoute to one valid backend (weight 20) and one
-// nonexistent backend (weight 80), and asserts the invalid backend's share is dropped rather than
-// redistributed. The valid backend answers a minority of queries and most queries are dropped.
+// nonexistent backend (weight 80), and asserts that the gateway drops the invalid backend's share
+// instead of redistributing it. The valid backend answers a minority of queries and the gateway
+// drops most of them.
 func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
 	testutils.Cleanup(s.T(), func() {
 		s.deleteManifests(invalidBackendManifest)
@@ -159,9 +205,9 @@ func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
 	// Wait until the valid backend is reachable through the gateway.
 	s.assertEventualDigAnswer(dropNs, dropGwName, dropValidAnswer)
 
-	// The invalid backend has weight 80, so ~80% of queries should be dropped (time out) rather
-	// than routed to the valid backend. Loose assertion (valid answers exist, drops are the
-	// majority) to stay non-flaky.
+	// The invalid backend has weight 80, so about 80% of queries should time out instead of
+	// reaching the valid backend. Loose bounds (valid answers exist, drops are the majority) keep
+	// this non-flaky.
 	const queries = 40
 	valid, dropped := 0, 0
 	for range queries {
@@ -173,7 +219,7 @@ func (s *testingSuite) TestInvalidBackendDropUDPRoute() {
 	}
 	s.Assert().Positive(valid, "valid backend (weight 20) should still answer some queries")
 	s.Assert().Greater(dropped, valid,
-		"the invalid backend's weight-80 share should be dropped (majority); got valid=%d dropped=%d", valid, dropped)
+		"the invalid backend's weight-80 share should be dropped (majority), got valid=%d dropped=%d", valid, dropped)
 }
 
 // dig runs a single `dig +short` A-record query for queryName through the gateway's UDP listener
@@ -198,6 +244,16 @@ func (s *testingSuite) digFrom(ns, gwName string, srcPort int) string {
 		return ""
 	}
 	return stdout
+}
+
+// countDigAnswers sends n queries from fresh source ports and counts them by answer. A query
+// without an answer counts under "".
+func (s *testingSuite) countDigAnswers(ns, gwName string, n int) map[string]int {
+	counts := map[string]int{}
+	for range n {
+		counts[strings.TrimSpace(s.dig(ns, gwName))]++
+	}
+	return counts
 }
 
 // assertEventualDigAnswer retries a DNS query until the answer contains wantIP.
