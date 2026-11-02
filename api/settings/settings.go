@@ -557,14 +557,11 @@ type Settings struct {
 	// - "STRICT": ReferenceGrant required for all cross-namespace references including ExtensionRef.
 	ReferenceGrantMode ReferenceGrantMode `split_words:"true" default:"PERMISSIVE"`
 
-	// CompressionLibraryPreference sets a gateway-wide preference order for response compression
-	// codecs, given as a comma separated list where the first codec is the one used by Envoy in case of tie.
-	// When a client sends several codecs with equal weight in Accept-Encoding (as browsers do) Envoy follows
-	// this order via choose_first instead of the client's order.
-	// A TrafficPolicy still decides which codecs you offer. This sets the order Envoy picks from
-	// when the client has tied codec preferences.
-	// Defaults to Zstd, Brotli, Gzip so a stronger codec wins over gzip without extra configuration.
-	// Set it to an empty string to keep the client's order instead.
+	// CompressionLibraryPreference is a comma separated list of response compression codecs, most
+	// preferred first. When a client accepts several codecs with equal weight, as browsers do, Envoy
+	// picks the most preferred one through choose_first instead of following the client's order. A
+	// TrafficPolicy still decides which codecs a route offers. The default prefers zstd, then brotli,
+	// then gzip. An empty value keeps the client's order.
 	CompressionLibraryPreference string `split_words:"true" default:"zstd,brotli,gzip"`
 }
 

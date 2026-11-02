@@ -198,8 +198,8 @@ func hasCompressorNamed(entries []compressorEntry, filterName string) bool {
 }
 
 // parseCompressionPreference turns the gateway-wide setting into an ordered codec list, most
-// wanted first. Unknown tokens are skipped, and "br" is accepted for brotli since that is the
-// token clients use in Accept-Encoding.
+// preferred first. It skips unknown tokens and accepts "br" for brotli, since clients use that
+// token in Accept-Encoding.
 func parseCompressionPreference(pref string) []kgateway.CompressionLibrary {
 	var out []kgateway.CompressionLibrary
 	for tok := range strings.SplitSeq(pref, ",") {
@@ -215,11 +215,12 @@ func parseCompressionPreference(pref string) []kgateway.CompressionLibrary {
 	return out
 }
 
-// orderCompressorsByPreference returns a copy of entries ordered so the most preferred codec is
-// last, and sets choose_first on every codec named in the preference. Envoy picks the last
-// choose_first codec the client accepts, so the most preferred accepted codec wins when
-// Accept-Encoding weights are equal. Missing codecs from the preference keep choose_first unset and
-// sort first, so they fall back to the client's order.
+// orderCompressorsByPreference orders a copy of entries so the most preferred codec is last, and
+// sets choose_first on every codec named in the preference. Envoy picks the last choose_first codec
+// the client accepts, so the most preferred accepted codec wins when Accept-Encoding weights are
+// equal. Codecs missing from the preference sort first without choose_first, so they follow the
+// client's order. The copy shares its compressor protos with entries, so choose_first changes them
+// in place.
 func orderCompressorsByPreference(entries []compressorEntry, pref []kgateway.CompressionLibrary) []compressorEntry {
 	// rank is higher for more preferred codecs. Missing codecs get 0 and sort first.
 	rank := make(map[kgateway.CompressionLibrary]int, len(pref))
@@ -380,11 +381,9 @@ func decompressorLibraryFor(library kgateway.CompressionLibrary) *envoycorev3.Ty
 
 // HttpFilters wiring is in traffic_policy_plugin.go
 func addCompressionFiltersIfNeeded(staged []filters.StagedHttpFilter, p *trafficPolicyPluginGwPass, fcn string) []filters.StagedHttpFilter {
-	// One disabled-by-default compressor filter per codec. When a gateway-wide preference is set
-	// and a chain offers more than one codec, apply server-side preference: order the chain so the
-	// most preferred codec is last and set choose_first on every preferred codec, so Envoy picks
-	// the most preferred codec the client accepts when Accept-Encoding weights are equal. Without a
-	// preference the order is not significant and the weights only give deterministic output.
+	// One disabled-by-default compressor filter per codec. With a gateway-wide preference and more
+	// than one codec, orderCompressorsByPreference sets the server-side order. Otherwise the order
+	// does not matter and the weights only give deterministic output.
 	entries := p.compressorInChain[fcn]
 	if len(entries) > 1 && len(p.compressionPreference) > 0 {
 		entries = orderCompressorsByPreference(entries, p.compressionPreference)
