@@ -53,7 +53,8 @@ var (
 			Manifests: []string{oTelManifest},
 		},
 		"TestAccessLogOnTCPListener": {
-			Manifests: []string{tcpManifest},
+			Manifests:       []string{tcpManifest},
+			MinGwApiVersion: base.GwApiRequireTcpRoutes,
 		},
 	}
 )
