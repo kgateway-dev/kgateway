@@ -42,6 +42,9 @@ TCPRoute, with these exceptions:
 - Settings that only act on HTTP or TCP have no effect: header and cookie hash policies,
   `sessionPersistence`, `commonHttpProtocolOptions`, `http1ProtocolOptions`, `http2ProtocolOptions`,
   `tls`, `tcpKeepalive`, `upstreamProxyProtocol` and `tunnel`.
+- A BackendTLSPolicy targets the Service, not the route. Without a `sectionName` it also covers the
+  Service's UDP ports, for example on a DNS Service that serves TCP and UDP. The route reports it as
+  not applied.
 
 ## Several backendRefs
 
@@ -57,7 +60,13 @@ backends' endpoints.
   Each backend's share is split over its endpoints in proportion to their own weights.
 - A backend with no endpoints, an invalid backendRef and a backend that keeps its endpoints in its own
   cluster (a Static Backend, for example) do not receive traffic. Their share is dropped, not given to
-  the other backends, as the UDPRoute spec requires.
+  the other backends, as the UDPRoute spec requires. The share goes to a blackhole endpoint, so it is
+  dropped per session like any other pick. A client whose session lands there keeps losing its
+  datagrams until the session idles out.
+- A backend whose endpoints kgateway has not computed yet for a client, for a moment after that
+  client connects, adds nothing to the union until they arrive. Its share briefly goes to the other
+  backends. Withholding the whole CLA would instead hold back every EDS update for that client, and
+  dropping the share would pin those first sessions to the blackhole.
 - The synthetic cluster carries none of the backends' cluster settings: load balancing policy, health
   checks, outlier detection, circuit breakers, timeouts and the like. It also uses no hash policy.
 
