@@ -453,7 +453,7 @@ func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil, nil))
 	current := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
 	require.NotNil(t, current)
-	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
+	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, nil, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
 	require.NotEmpty(t, blocking)
 	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking, nil, 0, hashes))
 	pt.gate.mu.Unlock()

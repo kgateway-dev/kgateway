@@ -132,11 +132,19 @@ func (m *referencedClustersMemo) get(
 // flipBlockingClusters returns the clusters a deferred build would hold its
 // flip for: missing ones the published configuration does not yet reference.
 // Missing clusters still in published CDS are carried instead.
-func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot) []string {
+// Pending blockers remain blocking while the build still reports their
+// cluster or endpoint resources missing. Publishing a listener during the
+// hold can introduce a reference to a blocked cluster without filling that gap.
+func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, pending []string) []string {
 	publishedRefs := publishedReferencedClusters(published)
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 	var flipBlocking []string
+	pendingSet := stringSet(pending)
 	for _, name := range snapWrap.missingReferenced {
+		if _, held := pendingSet[name]; held {
+			flipBlocking = append(flipBlocking, name)
+			continue
+		}
 		if _, wasReferenced := publishedRefs[name]; wasReferenced {
 			continue // already live, including a missing cluster published at budget expiry
 		}
@@ -146,6 +154,10 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 		flipBlocking = append(flipBlocking, name)
 	}
 	for _, name := range snapWrap.missingEndpointsReferenced {
+		if _, held := pendingSet[name]; held {
+			flipBlocking = append(flipBlocking, name)
+			continue
+		}
 		// Previously referenced: the client keeps its endpoints. When scoped, a
 		// dropped backend's listener still ships and can name a cluster scoping
 		// left out of CDS; the client has no endpoints for that one.
@@ -176,11 +188,12 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 // clusters are carried too. holdFlips=false, used by the flip-release bound,
 // publishes despite never-ready gaps so an unready reference cannot pin updates
 // forever (#14352). lastPublished gives each copied CLA's last published hash.
+// pendingBlockers preserves gaps across listeners installed by an earlier hold.
 // Returns the snapshot, the flip-blocking clusters if held (else nil), and the
 // EDS contributions.
-func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
+func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, pendingBlockers []string, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
-	flipBlocking := flipBlockingClusters(snapWrap, published)
+	flipBlocking := flipBlockingClusters(snapWrap, published, pendingBlockers)
 
 	composed := &envoycache.Snapshot{}
 	*composed = *snapWrap.snap

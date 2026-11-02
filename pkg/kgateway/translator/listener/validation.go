@@ -163,7 +163,7 @@ func validateSupportedRoutes(listeners []ir.Listener, reporter reports.Reporter)
 	return validListeners
 }
 
-func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
+func validateListeners(gw *ir.Gateway, reporter reports.Reporter) []ir.Listener {
 	validListeners := validateSupportedRoutes(gw.Listeners, reporter)
 
 	portListeners := map[gwv1.PortNumber]*portProtocol{}
@@ -282,10 +282,7 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 	for port, pp := range portListeners {
 		for _, listener := range pp.listeners {
 			parentReporter := listener.GetParentReporter(reporter)
-			if unsupportedMixedTLSModeConflict(*pp, listener, settings) {
-				parentReporter.ListenerName(string(listener.Name)).SetSupportedKinds([]gwv1.RouteGroupKind{})
-				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
-			} else if protocolConflict(*pp, listener) {
+			if protocolConflict(*pp, listener) {
 				rejectConflictedListener(parentReporter, listener, gwv1.ListenerReasonProtocolConflict, ListenerMessageProtocolConflict)
 			} else if hostNameConflict(*pp, listener) {
 				// If a listener does not have a protocol conflict with one listener,
@@ -355,38 +352,8 @@ func validateListeners(gw *ir.Gateway, reporter reports.Reporter, settings Liste
 }
 
 func validateGateway(consolidatedGateway *ir.Gateway, reporter reports.Reporter) []ir.Listener {
-	return validateGatewayWithSettings(consolidatedGateway, reporter, ListenerTranslatorConfig{
-		EnableExperimentalGatewayAPIFeatures: true,
-	})
-}
-
-func validateGatewayWithSettings(consolidatedGateway *ir.Gateway, reporter reports.Reporter, settings ListenerTranslatorConfig) []ir.Listener {
 	rejectDeniedListenerSets(consolidatedGateway, reporter)
-	return validateListeners(consolidatedGateway, reporter, settings)
-}
-
-func unsupportedMixedTLSModeConflict(portProtocol portProtocol, listener ir.Listener, settings ListenerTranslatorConfig) bool {
-	if settings.EnableExperimentalGatewayAPIFeatures {
-		return false
-	}
-	if listener.Protocol != gwv1.TLSProtocolType {
-		return false
-	}
-
-	hasTerminate := false
-	hasPassthrough := false
-	for _, listenerOnPort := range portProtocol.listeners {
-		if listenerOnPort.Protocol != gwv1.TLSProtocolType || listenerOnPort.TLS == nil || listenerOnPort.TLS.Mode == nil {
-			continue
-		}
-		switch *listenerOnPort.TLS.Mode {
-		case gwv1.TLSModeTerminate:
-			hasTerminate = true
-		case gwv1.TLSModePassthrough:
-			hasPassthrough = true
-		}
-	}
-	return hasTerminate && hasPassthrough
+	return validateListeners(consolidatedGateway, reporter)
 }
 
 func protocolConflict(portProtocol portProtocol, listener ir.Listener) bool {

@@ -42,6 +42,10 @@ package kgateway
 // +kubebuilder:rbac:groups=networking.istio.io,resources=destinationrules,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=serviceentries,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.istio.io,resources=workloadentries,verbs=get;list;watch
+
+// No longer used: kept for one release so controller pods from the previous
+// version, which watch AuthorizationPolicies when waypoint.enabled is set, keep
+// their access while an upgrade rolls out. Remove in the next minor release.
 // +kubebuilder:rbac:groups=security.istio.io,resources=authorizationpolicies,verbs=get;list;watch
 
 // Leases for leader election

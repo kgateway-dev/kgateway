@@ -333,7 +333,7 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes)
 	} else {
-		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, nil, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 		// publishLocked cancels a pending first publish or flip release, whose
 		// timer would otherwise re-publish an older build.
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)

@@ -41,6 +41,13 @@ clusters:
               -----END CERTIFICATE-----
       sni: example.com
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s
@@ -83,6 +90,13 @@ clusters:
               -----END CERTIFICATE-----
       sni: example.com
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      autoConfig:
+        http2ProtocolOptions:
+          allowConnect: true
+        httpProtocolOptions: {}
 - commonLbConfig:
     localityWeightedLbConfig: {}
   connectTimeout: 5s

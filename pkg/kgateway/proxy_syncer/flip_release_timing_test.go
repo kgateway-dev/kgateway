@@ -69,9 +69,9 @@ func TestFlipRelease_BudgetStartsAfterTheHeldSnapshotIsInstalled(t *testing.T) {
 	}, 2*time.Second, 5*time.Millisecond, "the flip is released one budget after the install")
 }
 
-// With the budget off and no reference-ahead, nothing bounds a held flip, so
-// the gate keeps no record of it.
-func TestFlipHold_WithoutBudgetKeepsNoRecord(t *testing.T) {
+// With the budget off, retain blockers for subsequent builds without arming
+// a release timer.
+func TestFlipHold_WithoutBudgetKeepsBlockersWithoutTimer(t *testing.T) {
 	pt := newPublishGateTestTranslator(t, false, 0)
 	heldRouteVersion, flipWrap := flipHoldFixture(t, pt)
 
@@ -79,7 +79,10 @@ func TestFlipHold_WithoutBudgetKeepsNoRecord(t *testing.T) {
 	require.Equal(t, heldRouteVersion, servedSnapshot(t, pt).GetVersion(resourcev3.RouteType), "the flip is held")
 	pt.gate.mu.Lock()
 	defer pt.gate.mu.Unlock()
-	assert.Empty(t, pt.gate.pendingFlips)
+	pending := pt.gate.pendingFlips[publishGateTestClient]
+	require.NotNil(t, pending)
+	assert.Equal(t, []string{"cluster-new"}, pending.blocking)
+	assert.Nil(t, pending.timer)
 }
 
 // With the budget off, an unready flip joining a reference-ahead hold leaves it

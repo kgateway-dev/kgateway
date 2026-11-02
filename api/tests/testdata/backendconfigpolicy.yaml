@@ -159,6 +159,7 @@ _errs:
 - 'spec.commonHttpProtocolOptions.maxStreamDuration: Invalid value: "abc": invalid duration value'
 - 'spec.connectTimeout: Invalid value: "-1s": invalid duration value'
 - 'spec.healthCheck.interval: Invalid value: "b": invalid duration value'
+- 'spec.healthCheck.noTrafficInterval: Invalid value: "0s": noTrafficInterval must be at least 1ms'
 - 'spec.healthCheck.timeout: Invalid value: "a": invalid duration value'
 - 'spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: "1x": invalid duration value'
 - 'spec.http2ProtocolOptions.connectionKeepalive.interval: Invalid value: "string": type conversion error from ''string'' to ''google.protobuf.Duration'' evaluating rule: interval must be at least 1ms'
@@ -186,6 +187,7 @@ spec:
   healthCheck:
     timeout: a
     interval: b
+    noTrafficInterval: 0s
     unhealthyThreshold: 3
     healthyThreshold: 2
     http:
@@ -323,3 +325,23 @@ spec:
   sessionPersistence:
     cookie:
       name: "bad name"
+
+---
+# BackendConfigPolicy: minimum no-traffic interval is accepted
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-minimum-no-traffic-interval
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  healthCheck:
+    timeout: 1s
+    interval: 2s
+    noTrafficInterval: 1ms
+    unhealthyThreshold: 1
+    healthyThreshold: 1
+    http:
+      path: /healthz
