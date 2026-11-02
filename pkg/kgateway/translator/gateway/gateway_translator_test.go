@@ -4000,9 +4000,9 @@ func TestValidation(t *testing.T) {
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
-			name:      "BackendConfigPolicy Invalid TLS Files Non-existent",
+			name:      "BackendConfigPolicy TLS Files On Proxy Only",
 			category:  "backendconfigpolicy",
-			inputFile: "invalid-tlsfiles-nonexistent.yaml",
+			inputFile: "tlsfiles-proxy-only.yaml",
 			minMode:   apisettings.ValidationStandard,
 		},
 		{
