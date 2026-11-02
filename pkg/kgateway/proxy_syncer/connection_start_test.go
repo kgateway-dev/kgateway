@@ -61,7 +61,7 @@ func newConnectionStartFixture(t *testing.T) *connectionStartFixture {
 func (f *connectionStartFixture) build(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
-	return XdsSnapWrapper{snap: snap, proxyKey: f.role}
+	return XdsSnapWrapper{snap: snap, proxyKey: f.role}.withScannedRouting()
 }
 
 func (f *connectionStartFixture) connect(t *testing.T, sid int64) {

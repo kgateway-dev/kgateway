@@ -1248,11 +1248,13 @@ func TestMergeBackendResources(t *testing.T) {
 		{Resource: &envoylistenerv3.Listener{Name: "http", StatPrefix: "gateway"}},
 	})
 	withBackendListener := func(statPrefix string) envoycache.Resources {
-		return mergeBackendResources(gateway, wrapBaseResources([]*envoylistenerv3.Listener{{Name: "tunnel_dest", StatPrefix: statPrefix}}))
+		merged, _ := mergeBackendResources(gateway, wrapBaseResources([]*envoylistenerv3.Listener{{Name: "tunnel_dest", StatPrefix: statPrefix}}))
+		return merged
 	}
 
 	g := gomega.NewWithT(t)
-	g.Expect(mergeBackendResources(gateway, baseResources[*envoylistenerv3.Listener]{})).To(gomega.Equal(gateway),
+	unmerged, _ := mergeBackendResources(gateway, baseResources[*envoylistenerv3.Listener]{})
+	g.Expect(unmerged).To(gomega.Equal(gateway),
 		"without backend resources the Gateway's resources must be used as is")
 
 	merged := withBackendListener("first")

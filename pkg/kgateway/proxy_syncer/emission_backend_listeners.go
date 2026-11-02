@@ -93,8 +93,9 @@ func keepBackendListenerTargets(
 // referenced backends' own listeners route to, followed in turn. A CONNECT
 // tunnel's listener sends to the proxy backend's cluster, which no gateway route
 // or listener names, so a route to the tunneled backend is not ready until that
-// cluster is. It uses the gate's routing-target walk, so a cluster a filter
-// calls does not hold routes. referenced is not modified.
+// cluster is. It reads each listener's routing targets, computed with the
+// listener (wrapBaseResources), so a cluster a filter calls does not hold
+// routes. referenced is not modified.
 func withBackendListenerRoutingTargets(
 	referenced map[string]struct{},
 	backendListeners map[string]baseResources[*envoylistenerv3.Listener],
@@ -113,9 +114,7 @@ func withBackendListenerRoutingTargets(
 		name := pending[len(pending)-1]
 		pending = pending[:len(pending)-1]
 		for _, l := range backendListeners[name].items {
-			listener := l.BorrowForRead()
-			listeners := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{listener.GetName(): {Resource: listener}}}
-			for target := range collectReferencedClusters(envoycache.Resources{}, listeners) {
+			for target := range l.routing {
 				if _, seen := out[target]; seen {
 					continue
 				}

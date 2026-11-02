@@ -115,7 +115,7 @@ func TestPublicationMetrics_InconsistentSnapshotRecorded(t *testing.T) {
 	snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("e1", []envoycachetypes.ResourceWithTTL{
 		{Resource: &envoyendpointv3.ClusterLoadAssignment{ClusterName: "orphan"}},
 	})
-	pt.syncXds(ctx, XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient}.withScannedRouting())
 
 	_, err := pt.xdsCache.GetSnapshot(publishGateTestClient)
 	require.NoError(t, err, "the inconsistent snapshot must still be published")

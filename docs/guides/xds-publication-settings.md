@@ -193,7 +193,10 @@ invariants:
 - every ClusterLoadAssignment and RouteConfiguration is referenced by a cluster
   or listener in the same snapshot, except the assignment for the bootstrap's
   local cluster;
-- every RouteConfiguration a listener names is present.
+- every RouteConfiguration a listener names is present;
+- the routing targets the publication gate records for the snapshot, which it
+  later compares new builds against, match a fresh scan of the snapshot's
+  routes and listeners.
 
 These are structural checks. Envoy never requests an unreferenced assignment
 or route, and the xDS cache answers EDS and RDS requests by the names Envoy

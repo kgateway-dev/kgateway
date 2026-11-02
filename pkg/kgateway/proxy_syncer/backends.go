@@ -255,8 +255,16 @@ func baseClusterVersion(backend *ir.BackendObjectIR, b *irtranslator.BaseCluster
 // baseResources shares immutable resources generated with a cluster, and their
 // hash, across clients.
 type baseResources[M proto.Message] struct {
-	items []sharedproto.Shared[M]
+	items []baseResource[M]
 	hash  uint64
+}
+
+// baseResource is one shared generated resource. For a listener, routing holds
+// its routing targets (listenerRoutingTargets), computed once with the
+// listener so no client build rescans it; it is nil otherwise.
+type baseResource[M proto.Message] struct {
+	sharedproto.Shared[M]
+	routing map[string]struct{}
 }
 
 // keptBackendResources returns the resources generated with the clusters in
@@ -273,16 +281,21 @@ func keptBackendResources[M proto.Message](kept map[string]envoycachetypes.Resou
 	return out
 }
 
-// wrapBaseResources shares generated resources across clients with a content hash.
+// wrapBaseResources shares generated resources across clients with a content
+// hash, and with their routing targets for listeners.
 func wrapBaseResources[M proto.Message](resources []M) baseResources[M] {
 	if len(resources) == 0 {
 		return baseResources[M]{}
 	}
-	out := baseResources[M]{items: make([]sharedproto.Shared[M], 0, len(resources))}
+	out := baseResources[M]{items: make([]baseResource[M], 0, len(resources))}
 	hasher := fnv.New64a()
 	for _, r := range resources {
 		hash := utils.HashProto(r)
-		out.items = append(out.items, sharedproto.WrapPrehashed(r, hash))
+		item := baseResource[M]{Shared: sharedproto.WrapPrehashed(r, hash)}
+		if listener, ok := any(r).(*envoylistenerv3.Listener); ok {
+			item.routing = listenerRoutingTargets(listener)
+		}
+		out.items = append(out.items, item)
 		utils.HashUint64(hasher, hash)
 	}
 	out.hash = hasher.Sum64()

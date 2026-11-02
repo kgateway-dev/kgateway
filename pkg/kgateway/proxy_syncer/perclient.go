@@ -208,10 +208,14 @@ func snapshotPerClient(
 		snapshot.Resources[envoycachetypes.Cluster] = clusterResources
 		snapshot.Resources[envoycachetypes.Endpoint] = endpointRes
 		snapshot.Resources[envoycachetypes.Route] = listenerRouteSnapshot.Routes
-		snapshot.Resources[envoycachetypes.Listener] = mergeBackendResources(listenerRouteSnapshot.Listeners, backendListeners)
-		snapshot.Resources[envoycachetypes.Secret] = mergeBackendResources(listenerRouteSnapshot.Secrets, backendSecrets)
+		listeners, backendRouting := mergeBackendResources(listenerRouteSnapshot.Listeners, backendListeners)
+		snapshot.Resources[envoycachetypes.Listener] = listeners
+		snapshot.Resources[envoycachetypes.Secret], _ = mergeBackendResources(listenerRouteSnapshot.Secrets, backendSecrets)
 		// envoycache.NewResources(version, resource)
 		snap.snap = snapshot
+		// The gateway's targets cover its routes and listeners, which take
+		// precedence over backend listeners of the same name.
+		snap.routing = newRoutingTargets(listenerRouteSnapshot.ReferencedClusters).union(backendRouting)
 		if snap.deferred() {
 			logger.Debug(
 				"snapshot has unready referenced clusters; syncXds will resolve per cluster",
@@ -312,21 +316,39 @@ func snapshotPerClient(
 
 // mergeBackendResources combines Gateway resources with those generated with
 // backend clusters, without mutating shared resources. Gateway resources take
-// precedence on name collisions.
-func mergeBackendResources[M proto.Message](gateway envoycache.Resources, backend baseResources[M]) envoycache.Resources {
+// precedence on name collisions. It also returns the routing targets of the
+// backend resources the result keeps; only listeners have any.
+func mergeBackendResources[M proto.Message](gateway envoycache.Resources, backend baseResources[M]) (envoycache.Resources, routingTargets) {
 	if len(backend.items) == 0 {
-		return gateway
+		return gateway, routingTargets{}
 	}
 	items := make(map[string]envoycachetypes.ResourceWithTTL, len(gateway.Items)+len(backend.items))
+	// Routing follows items: the last backend resource of a name wins.
+	var routing map[string]map[string]struct{}
 	for _, r := range backend.items {
 		res := r.ResourceWithTTL()
-		items[envoycache.GetResourceName(res.Resource)] = res
+		name := envoycache.GetResourceName(res.Resource)
+		items[name] = res
+		if r.routing == nil {
+			delete(routing, name)
+			continue
+		}
+		if routing == nil {
+			routing = make(map[string]map[string]struct{})
+		}
+		routing[name] = r.routing
 	}
 	maps.Copy(items, gateway.Items)
+	var kept []map[string]struct{}
+	for name, targets := range routing {
+		if _, shadowed := gateway.Items[name]; !shadowed {
+			kept = append(kept, targets)
+		}
+	}
 	return envoycache.Resources{
 		Version: fmt.Sprintf("%s-backend-%d", gateway.Version, backend.hash),
 		Items:   items,
-	}
+	}, newRoutingTargets(kept...)
 }
 
 // collectReferencedClusters returns the routing targets of routes and
@@ -346,16 +368,29 @@ func collectReferencedClusters(routes, listeners envoycache.Resources) map[strin
 		}
 	}
 	for _, item := range listeners.Items {
-		listener, ok := item.Resource.(*envoylistenerv3.Listener)
-		if !ok {
-			continue
+		if listener, ok := item.Resource.(*envoylistenerv3.Listener); ok {
+			addListenerTargets(listener, referenced)
 		}
-		for _, filterChain := range listener.GetFilterChains() {
-			addFilterChainTargets(filterChain, referenced)
-		}
-		addFilterChainTargets(listener.GetDefaultFilterChain(), referenced)
 	}
 	return referenced
+}
+
+// listenerRoutingTargets returns one listener's routing targets
+// (collectReferencedClusters), or nil if it has none.
+func listenerRoutingTargets(listener *envoylistenerv3.Listener) map[string]struct{} {
+	referenced := make(map[string]struct{})
+	addListenerTargets(listener, referenced)
+	if len(referenced) == 0 {
+		return nil
+	}
+	return referenced
+}
+
+func addListenerTargets(listener *envoylistenerv3.Listener, referenced map[string]struct{}) {
+	for _, filterChain := range listener.GetFilterChains() {
+		addFilterChainTargets(filterChain, referenced)
+	}
+	addFilterChainTargets(listener.GetDefaultFilterChain(), referenced)
 }
 
 func addRouteConfigurationTargets(routeConfig *envoyroutev3.RouteConfiguration, referenced map[string]struct{}) {

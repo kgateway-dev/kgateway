@@ -185,7 +185,7 @@ func TestReclaimDeparted(t *testing.T) {
 		_, err := cache.GetSnapshot(node)
 		require.NoError(t, err, "a connected client's snapshot must survive")
 
-		require.NoError(t, gate.publish(context.Background(), cache, XdsSnapWrapper{proxyKey: node, snap: v2}))
+		require.NoError(t, gate.publish(context.Background(), cache, XdsSnapWrapper{proxyKey: node, snap: v2}.withScannedRouting()))
 		select {
 		case resp := <-responses:
 			assert.Equal(t, "v2", resp.GetResponseVersion())
@@ -235,7 +235,7 @@ func TestReclaim_PublishAfterDepartureRearms(t *testing.T) {
 
 	snap, err := envoycache.NewSnapshot("v1", map[envoyresourcev3.Type][]envoycachetypes.Resource{envoyresourcev3.ClusterType: {}})
 	require.NoError(t, err)
-	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{proxyKey: node, snap: snap}))
+	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{proxyKey: node, snap: snap}.withScannedRouting()))
 	require.Eventually(t, func() bool {
 		_, err := pt.xdsCache.GetSnapshot(node)
 		return err != nil

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
-	"sync"
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -72,71 +70,15 @@ func (s *ProxyTranslator) syncXds(
 	}
 }
 
-// publishedReferencedClusters returns the routing targets of the published
-// routes and listeners. Callers must not modify the shared result.
-func publishedReferencedClusters(published envoycache.ResourceSnapshot) map[string]struct{} {
-	routes := published.GetResourcesAndTTL(envoyresourcev3.RouteType)
-	listeners := published.GetResourcesAndTTL(envoyresourcev3.ListenerType)
-	return publishedRefs.get(routes, listeners, func() map[string]struct{} {
-		return collectReferencedClusters(envoycache.Resources{Items: routes}, envoycache.Resources{Items: listeners})
-	})
-}
-
-// publishedRefs memoizes publishedReferencedClusters. Collecting targets
-// unmarshals every listener, which under the gate's single lock would
-// serialize all clients' deferred builds. Published routes and listeners
-// change rarely, and published snapshots reuse their translation's immutable
-// item maps.
-var publishedRefs = &referencedClustersMemo{}
-
-// referencedClustersMemo keys target sets by the identity of the route and
-// listener item maps. An entry retains its maps, so their addresses cannot be
-// reused and identity implies equal content. It is cleared at
-// maxReferencedClustersMemo entries.
-type referencedClustersMemo struct {
-	mu      sync.Mutex
-	entries map[[2]uintptr]referencedClustersEntry
-}
-
-type referencedClustersEntry struct {
-	routes, listeners map[string]envoycachetypes.ResourceWithTTL
-	refs              map[string]struct{}
-}
-
-const maxReferencedClustersMemo = 4096
-
-func (m *referencedClustersMemo) get(
-	routes, listeners map[string]envoycachetypes.ResourceWithTTL,
-	compute func() map[string]struct{},
-) map[string]struct{} {
-	if routes == nil && listeners == nil {
-		return compute()
-	}
-	key := [2]uintptr{reflect.ValueOf(routes).Pointer(), reflect.ValueOf(listeners).Pointer()}
-	m.mu.Lock()
-	entry, ok := m.entries[key]
-	m.mu.Unlock()
-	if ok {
-		return entry.refs
-	}
-	refs := compute()
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.entries == nil || len(m.entries) >= maxReferencedClustersMemo {
-		m.entries = make(map[[2]uintptr]referencedClustersEntry)
-	}
-	m.entries[key] = referencedClustersEntry{routes: routes, listeners: listeners, refs: refs}
-	return refs
-}
-
 // flipBlockingClusters returns the clusters a deferred build would hold its
 // flip for: missing ones the published configuration does not yet reference.
-// Missing clusters still in published CDS are carried instead.
+// publishedRouting are the routing targets of published's routes and
+// listeners, recorded when the gate installed it. Missing clusters still in
+// published CDS are carried instead.
 // Pending blockers remain blocking while the build still reports their
 // cluster or endpoint resources missing. Publishing a listener during the
 // hold can introduce a reference to a blocked cluster without filling that gap.
-func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, pending []string) []string {
-	publishedRefs := publishedReferencedClusters(published)
+func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, publishedRouting routingTargets, pending []string) []string {
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
 	var flipBlocking []string
 	pendingSet := stringSet(pending)
@@ -145,7 +87,7 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 			flipBlocking = append(flipBlocking, name)
 			continue
 		}
-		if _, wasReferenced := publishedRefs[name]; wasReferenced {
+		if publishedRouting.has(name) {
 			continue // already live, including a missing cluster published at budget expiry
 		}
 		if _, wasPublished := oldClusters[name]; wasPublished {
@@ -161,7 +103,7 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 		// Previously referenced: the client keeps its endpoints. When scoped, a
 		// dropped backend's listener still ships and can name a cluster scoping
 		// left out of CDS; the client has no endpoints for that one.
-		_, wasReferenced := publishedRefs[name]
+		wasReferenced := publishedRouting.has(name)
 		_, wasPublished := oldClusters[name]
 		if wasReferenced && (wasPublished || !snapWrap.scopesClusters) {
 			continue
@@ -189,14 +131,18 @@ func flipBlockingClusters(snapWrap XdsSnapWrapper, published envoycache.Resource
 // publishes despite never-ready gaps so an unready reference cannot pin updates
 // forever (#14352). lastPublished gives each copied CLA's last published hash.
 // pendingBlockers preserves gaps across listeners installed by an earlier hold.
-// Returns the snapshot, the flip-blocking clusters if held (else nil), and the
-// EDS contributions.
-func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, holdFlips bool, pendingBlockers []string, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (*envoycache.Snapshot, []string, map[string]uint64) {
+// publishedRouting are published's routing targets (flipBlockingClusters).
+// Returns the snapshot with its routing targets, the flip-blocking clusters if
+// held (else nil), and the EDS contributions.
+func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.ResourceSnapshot, publishedRouting routingTargets, holdFlips bool, pendingBlockers []string, graced map[string]struct{}, lastPublished func(string) (uint64, bool)) (routedSnapshot, []string, map[string]uint64) {
 	oldClusters := published.GetResourcesAndTTL(envoyresourcev3.ClusterType)
-	flipBlocking := flipBlockingClusters(snapWrap, published, pendingBlockers)
+	flipBlocking := flipBlockingClusters(snapWrap, published, publishedRouting, pendingBlockers)
 
 	composed := &envoycache.Snapshot{}
 	*composed = *snapWrap.snap
+	// Routes and listeners come wholesale from the build or, held, from the
+	// published snapshot; their targets come with them.
+	routing := snapWrap.routing
 
 	// carryRefs are the clusters whose cluster/CLA pairs the composed snapshot
 	// needs. A held flip needs every published cluster: the held listeners
@@ -215,6 +161,7 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 		holdType(envoycachetypes.Route, envoyresourcev3.RouteType)
 		holdType(envoycachetypes.Listener, envoyresourcev3.ListenerType)
 		holdType(envoycachetypes.Secret, envoyresourcev3.SecretType)
+		routing = publishedRouting
 		logger.Debug("holding route flip until newly-referenced clusters are ready",
 			"proxy_key", snapWrap.proxyKey,
 			"flip_blocking", flipBlocking,
@@ -320,12 +267,12 @@ func resolveDeferredPerCluster(snapWrap XdsSnapWrapper, published envoycache.Res
 			"carried", carried,
 		)
 	}
-	deps.apply(composed)
+	resolved := deps.apply(routedSnapshot{snap: composed, routing: routing})
 	if len(heldBlocking) > 0 {
-		addBuiltClusterListeners(composed, snapWrap.snap)
+		resolved = addBuiltClusterListeners(resolved, snapWrap.snap)
 	}
 
-	return composed, heldBlocking, edsHashes
+	return resolved, heldBlocking, edsHashes
 }
 
 func cloneResourceItems(items map[string]envoycachetypes.ResourceWithTTL) map[string]envoycachetypes.ResourceWithTTL {

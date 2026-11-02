@@ -122,7 +122,7 @@ func (b tunnelBuild) snapshot(t *testing.T) *envoycache.Snapshot {
 }
 
 func (b tunnelBuild) wrapper(t *testing.T, missing ...string) XdsSnapWrapper {
-	return XdsSnapWrapper{snap: b.snapshot(t), proxyKey: publishGateTestClient, missingReferenced: missing}
+	return XdsSnapWrapper{snap: b.snapshot(t), proxyKey: publishGateTestClient, missingReferenced: missing}.withScannedRouting()
 }
 
 // TestCarriedTunnelKeepsWhatItNeeds: when a tunneled backend's row is
@@ -177,7 +177,7 @@ func TestCarryKeepsBuiltDependencies(t *testing.T) {
 	lagging := tunnelBuild{version: "v2", withProxy: true, proxyStatName: "new"}.snapshot(t)
 	// The secret is still built, rotated, by another of its users.
 	lagging.Resources[envoycachetypes.Secret] = envoycache.NewResources("sds-v2", []envoycachetypes.Resource{genericSecret("tunnel_x/h", "new")})
-	pt.syncXds(ctx, XdsSnapWrapper{snap: lagging, proxyKey: publishGateTestClient, missingReferenced: []string{"x"}})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: lagging, proxyKey: publishGateTestClient, missingReferenced: []string{"x"}}.withScannedRouting())
 
 	served := servedSnapshot(t, pt)
 	require.True(t, hasResource(served.Resources[envoycachetypes.Listener].Items, "tunnel_x"))
@@ -259,12 +259,14 @@ func TestCarryDependencyCyclesEnd(t *testing.T) {
 	require.NoError(t, err)
 	build.Resources[envoycachetypes.Route] = routeResourcesForClusters("x")
 
-	composed, _, _ := resolveDeferredPerCluster(XdsSnapWrapper{snap: build, proxyKey: publishGateTestClient, missingReferenced: []string{"x"}}, published, true, nil, nil,
+	resolved, _, _ := resolveDeferredPerCluster(XdsSnapWrapper{snap: build, proxyKey: publishGateTestClient, missingReferenced: []string{"x"}}.withScannedRouting(), published, scannedRoutingTargets(published), true, nil, nil,
 		func(string) (uint64, bool) { return 0, false })
+	composed := resolved.snap
 
 	assert.ElementsMatch(t, []string{"x", "y"}, mapKeys(composed.Resources[envoycachetypes.Cluster].Items))
 	assert.ElementsMatch(t, []string{"listener", "tunnel_x", "tunnel_y"}, mapKeys(composed.Resources[envoycachetypes.Listener].Items))
 	assert.ElementsMatch(t, []string{"sx", "sy"}, mapKeys(composed.Resources[envoycachetypes.Secret].Items))
+	require.NoError(t, routingTargetsError(composed, resolved.routing), "the carried tunnel listeners' targets join the build's")
 }
 
 // A scoped build that stops routing to a tunneled backend drops its cluster
@@ -290,7 +292,7 @@ func TestGracedTunnelKeepsItsListenerAndSecret(t *testing.T) {
 	routes := routeResourcesForClusters("other")
 	routes.Version = "rds-v2"
 	retarget.Resources[envoycachetypes.Route] = routes
-	pt.syncXds(ctx, XdsSnapWrapper{snap: retarget, proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: retarget, proxyKey: publishGateTestClient}.withScannedRouting())
 
 	served := servedSnapshot(t, pt)
 	require.Equal(t, "rds-v2", served.GetVersion(envoyresourcev3.RouteType), "the route update ships")
@@ -325,7 +327,7 @@ func TestHeldFlipPublishesTheListenersItsClustersNeed(t *testing.T) {
 		proxyKey:                   publishGateTestClient,
 		missingEndpointsReferenced: []string{"unready"},
 		synthesizedEndpoints:       []string{"unready"},
-	})
+	}.withScannedRouting())
 
 	served := servedSnapshot(t, pt)
 	require.Equal(t, heldRoutes, served.GetVersion(envoyresourcev3.RouteType), "the flip onto the unready cluster is held")

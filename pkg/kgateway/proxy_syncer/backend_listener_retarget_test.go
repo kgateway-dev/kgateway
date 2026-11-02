@@ -52,7 +52,7 @@ func retargetOntoAClusterOnlyABackendListenerNames(t *testing.T, scoped bool) (s
 	published.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-old", []envoycachetypes.ResourceWithTTL{
 		oldCLA.Endpoints.ResourceWithTTL(),
 	})
-	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
+	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}.withScannedRouting()))
 
 	// Retarget onto proxy before its CLA derives.
 	proxy := edsClusterForClient(ucc, "proxy", 3)
@@ -72,7 +72,7 @@ func retargetOntoAClusterOnlyABackendListenerNames(t *testing.T, scoped bool) (s
 		proxyKey:                   publishGateTestClient,
 		missingEndpointsReferenced: []string{"proxy"},
 		scopesClusters:             scoped,
-	})
+	}.withScannedRouting())
 
 	return servedSnapshot(t, pt), published
 }

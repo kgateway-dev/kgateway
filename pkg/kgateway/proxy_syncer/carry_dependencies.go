@@ -48,6 +48,8 @@ type carryDependencies struct {
 	byAddress                      map[string]string
 	listenersCloned, secretsCloned bool
 	listenerHash, secretHash       uint64
+	// listenerRouting holds the routing targets of the listeners carry added.
+	listenerRouting []map[string]struct{}
 }
 
 func newCarryDependencies(published envoycache.ResourceSnapshot, composed *envoycache.Snapshot) *carryDependencies {
@@ -101,30 +103,36 @@ func (d *carryDependencies) carry(cluster envoycachetypes.ResourceWithTTL) []str
 			d.secretHash ^= utils.HashString(secretName) ^ utils.HashProto(secret.Resource)
 		}
 
-		single := envoycache.Resources{Items: map[string]envoycachetypes.ResourceWithTTL{name: listener}}
-		for target := range collectReferencedClusters(envoycache.Resources{}, single) {
+		l, _ := listener.Resource.(*envoylistenerv3.Listener)
+		routing := listenerRoutingTargets(l)
+		d.listenerRouting = append(d.listenerRouting, routing)
+		for target := range routing {
 			targets = append(targets, target)
 		}
 	}
 	return targets
 }
 
-// apply installs the carried listeners and secrets into composed. Each carried
-// set changes its type's version, as carried clusters do, so a later snapshot
-// without them can never reuse the version.
-func (d *carryDependencies) apply(composed *envoycache.Snapshot) {
+// apply installs the carried listeners and secrets into composed. carry adds
+// only names composed lacks, so composed's routing targets gain the added
+// listeners' and lose nothing. Each carried set changes its type's version, as
+// carried clusters do, so a later snapshot without them can never reuse the
+// version.
+func (d *carryDependencies) apply(composed routedSnapshot) routedSnapshot {
 	if d.listenersCloned {
-		composed.Resources[envoycachetypes.Listener] = envoycache.Resources{
+		composed.snap.Resources[envoycachetypes.Listener] = envoycache.Resources{
 			Version: fmt.Sprintf("%s-carry-%d", d.listeners.Version, d.listenerHash),
 			Items:   d.listeners.Items,
 		}
+		composed.routing = composed.routing.with(d.listenerRouting...)
 	}
 	if d.secretsCloned {
-		composed.Resources[envoycachetypes.Secret] = envoycache.Resources{
+		composed.snap.Resources[envoycachetypes.Secret] = envoycache.Resources{
 			Version: fmt.Sprintf("%s-carry-%d", d.secrets.Version, d.secretHash),
 			Items:   d.secrets.Items,
 		}
 	}
+	return composed
 }
 
 // endpointAddresses lists the listener addresses c's endpoints reach: its
@@ -155,13 +163,14 @@ func (d *carryDependencies) endpointAddresses(c *envoyclusterv3.Cluster) []strin
 // build's clusters go out, so a cluster whose endpoint is a listener its build
 // generates with it (a CONNECT tunnel's pipe) would otherwise point at a socket
 // nothing listens on until the hold ends. As for a carried cluster, a listener
-// or secret the held snapshot already has is kept.
-func addBuiltClusterListeners(held, build *envoycache.Snapshot) {
-	deps := newCarryDependencies(build, held)
-	for _, cluster := range held.Resources[envoycachetypes.Cluster].Items {
+// or secret the held snapshot already has is kept. held.snap is updated in
+// place.
+func addBuiltClusterListeners(held routedSnapshot, build *envoycache.Snapshot) routedSnapshot {
+	deps := newCarryDependencies(build, held.snap)
+	for _, cluster := range held.snap.Resources[envoycachetypes.Cluster].Items {
 		deps.carry(cluster)
 	}
-	deps.apply(held)
+	return deps.apply(held)
 }
 
 // listenerAt returns the published listener reached at address.

@@ -189,7 +189,7 @@ func routedBuild(t *testing.T, version, routeTo string, clusters ...string) XdsS
 	listeners.Version = version
 	wrap.snap.Resources[envoycachetypes.Listener] = listeners
 	wrap.snap.Resources[envoycachetypes.Route] = routeResourcesForClusters(routeTo)
-	return wrap
+	return wrap.withScannedRouting()
 }
 
 // The held routes still name the cluster the build dropped, so it stays

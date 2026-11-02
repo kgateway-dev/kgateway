@@ -24,6 +24,10 @@ var UseDetailedUnmarshalling = !envutils.IsEnvTruthy("DISABLE_DETAILED_SNAP_UNMA
 
 type XdsSnapWrapper struct {
 	snap *envoycache.Snapshot
+	// routing are the routing targets of snap's routes and listeners, from the
+	// parts its inputs computed (routingTargets). Set wherever snap is.
+	// +noKrtEquals derived from snap's routes and listeners, whose versions Equals compares
+	routing routingTargets
 	// erroredClusters lists clusters whose translation failed; resolution never
 	// carries them from the published snapshot. Sorted.
 	erroredClusters []string
@@ -73,9 +77,17 @@ func (p XdsSnapWrapper) deferred() bool {
 	return len(p.missingReferenced) > 0 || len(p.missingEndpointsReferenced) > 0
 }
 
+// WithSnapshot returns p with snap, and with the routing targets a scan of
+// snap's routes and listeners finds.
 func (p XdsSnapWrapper) WithSnapshot(snap *envoycache.Snapshot) XdsSnapWrapper {
 	p.snap = snap
+	p.routing = scannedRoutingTargets(snap)
 	return p
+}
+
+// routed returns the build's snapshot with its routing targets.
+func (p XdsSnapWrapper) routed() routedSnapshot {
+	return routedSnapshot{snap: p.snap, routing: p.routing}
 }
 
 var _ krt.ResourceNamer = XdsSnapWrapper{}

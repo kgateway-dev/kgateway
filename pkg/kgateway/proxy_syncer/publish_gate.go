@@ -135,8 +135,10 @@ type publishGate struct {
 	pending      map[string]*pendingFirstPublish
 	pendingFlips map[string]*pendingFlipRelease
 	// published marks clients the gate has published to on their current
-	// connection. clientDeparted clears the mark; snapshotWithdrawn keeps it.
-	published map[string]struct{}
+	// connection, with the routing targets of the snapshot it installed there.
+	// It names no routes or listeners, so the installed snapshot alone keeps
+	// them alive. clientDeparted clears the mark; snapshotWithdrawn keeps it.
+	published map[string]routingTargets
 	// connGen holds each key's fence generation, adopted in connectionStarted.
 	// setSnapshot installs only while it still matches the fence. Without start
 	// hooks it stays zero.
@@ -223,7 +225,7 @@ func newPublishGate(budget time.Duration, checkConsistency bool, clientState krt
 		referenceAhead:   scoping.ReferenceAhead(),
 		pending:          make(map[string]*pendingFirstPublish),
 		pendingFlips:     make(map[string]*pendingFlipRelease),
-		published:        make(map[string]struct{}),
+		published:        make(map[string]routingTargets),
 		publishedEDS:     make(map[string]map[string]uint64),
 		dereferenced:     make(map[string]*dereferenceState),
 		aheadSent:        make(map[string]map[string]time.Time),
@@ -242,25 +244,31 @@ type coldStreamReader interface {
 }
 
 // connectionSnapshotLocked returns the snapshot last published on the client's
-// current connection, or nil. An entry from an earlier connection says nothing
-// about what the client runs, so it is ignored. Callers must hold g.mu.
-func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, proxyKey string) envoycache.ResourceSnapshot {
-	if _, ok := g.published[proxyKey]; !ok {
-		return nil
+// current connection and the routing targets recorded when it was installed,
+// or nil. An entry from an earlier connection says nothing about what the
+// client runs, so it is ignored. Callers must hold g.mu.
+func (g *publishGate) connectionSnapshotLocked(cache envoycache.SnapshotCache, proxyKey string) (envoycache.ResourceSnapshot, routingTargets) {
+	routing, ok := g.published[proxyKey]
+	if !ok {
+		return nil, routingTargets{}
 	}
 	snap, err := cache.GetSnapshot(proxyKey)
 	if err != nil {
-		return nil
+		return nil, routingTargets{}
 	}
-	return snap
+	return snap, routing
 }
 
 // setSnapshot is the gate's only snapshot-cache write. It settles synthesized
-// CLAs (settleSynthesizedEndpoints) and, with checkConsistency, logs and
-// counts snapshotConsistencyError violations but still publishes: blocking
-// would reintroduce unbounded withholds. Callers must hold g.mu.
-func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, snap *envoycache.Snapshot, synthesized []string, edsHashes map[string]uint64) error {
-	published := g.connectionSnapshotLocked(cache, proxyKey)
+// CLAs (settleSynthesizedEndpoints), which leaves routes and listeners as
+// composed, and records routed's routing targets for the connection only once
+// the snapshot is installed. With checkConsistency, it logs and counts
+// snapshotConsistencyError violations and routing targets that differ from a
+// scan, but still publishes: blocking would reintroduce unbounded withholds.
+// Callers must hold g.mu.
+func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, routed routedSnapshot, synthesized []string, edsHashes map[string]uint64) error {
+	snap := routed.snap
+	published, _ := g.connectionSnapshotLocked(cache, proxyKey)
 	settled := settleSynthesizedEndpoints(snap, synthesized, published)
 	if settled != snap {
 		// Republished assignments keep their contribution; omitted ones add nothing.
@@ -288,6 +296,11 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 				"proxy_key", proxyKey, "error", err)
 			recordInconsistentSnapshot()
 		}
+		if err := routingTargetsError(snap, routed.routing); err != nil {
+			logger.Error("BUG: composed routing targets do not match the per-client snapshot; publishing anyway",
+				"proxy_key", proxyKey, "error", err)
+			recordInconsistentSnapshot()
+		}
 	}
 	if g.beforeInstall != nil {
 		g.beforeInstall(proxyKey)
@@ -306,7 +319,7 @@ func (g *publishGate) setSnapshot(ctx context.Context, cache envoycache.Snapshot
 		logger.Error("installed xds snapshot but failed to answer open watches", "proxy_key", proxyKey, "error", err)
 	}
 	g.publishedEDS[proxyKey] = edsHashes
-	g.published[proxyKey] = struct{}{}
+	g.published[proxyKey] = routed.routing
 	// A publish ends the first-publish and warm withhold episodes.
 	delete(g.coldEpisodes, proxyKey)
 	delete(g.warmEpisodes, proxyKey)
@@ -337,10 +350,10 @@ func (g *publishGate) publish(ctx context.Context, cache envoycache.SnapshotCach
 	if !g.beginBuildLocked(snapWrap) {
 		return nil
 	}
-	return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
+	return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.routed(), snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 }
 
-func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, snap *envoycache.Snapshot, synthesized []string, edsHashes map[string]uint64) error {
+func (g *publishGate) publishLocked(ctx context.Context, cache envoycache.SnapshotCache, proxyKey string, snap routedSnapshot, synthesized []string, edsHashes map[string]uint64) error {
 	if st := g.pending[proxyKey]; st != nil {
 		if st.timer != nil {
 			st.timer.Stop()
@@ -419,7 +432,7 @@ func (g *publishGate) resolveDeferredLocked(
 	cache envoycache.SnapshotCache,
 	snapWrap XdsSnapWrapper,
 ) error {
-	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
+	published, publishedRouting := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Not yet published on this connection: nothing to hold or carry, and
 		// publishing would 503 unready routes. Withhold up to the first-publish
@@ -439,17 +452,17 @@ func (g *publishGate) resolveDeferredLocked(
 	if pf := g.pendingFlips[snapWrap.proxyKey]; pf != nil {
 		pending = pf.blocking
 	}
-	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published, pending)) > 0
+	holding := len(newlyEmitted) > 0 || len(flipBlockingClusters(snapWrap, published, publishedRouting, pending)) > 0
 	graced, opened := g.graceDereferencedClustersLocked(
 		snapWrap.proxyKey, published, snapWrap.snap.Resources[envoycachetypes.Cluster], snapWrap.translatedClusters, holding, now)
-	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, true, pending, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+	resolved, heldBlocking, edsHashes := resolveDeferredPerCluster(snapWrap, published, publishedRouting, true, pending, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 	var publishErr error
 	switch {
 	case len(heldBlocking) > 0:
 		// Publish CDS/EDS while holding the flip, and arm its release timer.
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, resolved, heldBlocking, newlyEmitted, aheadFor, edsHashes)
 	case len(newlyEmitted) > 0:
-		held, aheadHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
+		held, aheadHashes := g.referenceAheadHoldLocked(snapWrap, published, publishedRouting, graced)
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, aheadHashes)
 	default:
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
@@ -578,7 +591,7 @@ func (g *publishGate) firePending(
 		logger.Warn("first-publish budget expired; publishing deferred snapshot so the client can start",
 			"proxy_key", proxyKey, "missing_clusters", wrap.missingReferenced, "missing_endpoint_clusters", wrap.missingEndpointsReferenced)
 	}
-	if err := g.setSnapshot(ctx, cache, proxyKey, wrap.snap, wrap.synthesizedEndpoints, wrap.endpointHashes); err != nil {
+	if err := g.setSnapshot(ctx, cache, proxyKey, wrap.routed(), wrap.synthesizedEndpoints, wrap.endpointHashes); err != nil {
 		logPublishFailure(proxyKey, err)
 		return
 	}
@@ -662,7 +675,7 @@ func (g *publishGate) publishHeldLocked(
 	ctx context.Context,
 	cache envoycache.SnapshotCache,
 	snapWrap XdsSnapWrapper,
-	held *envoycache.Snapshot,
+	held routedSnapshot,
 	unready []string,
 	ahead []string,
 	aheadFor time.Duration,
@@ -791,7 +804,7 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 			delete(sent, name)
 		}
 	}
-	published := g.connectionSnapshotLocked(cache, proxyKey)
+	published, publishedRouting := g.connectionSnapshotLocked(cache, proxyKey)
 	if published == nil {
 		return // nothing published to resolve against; nothing was held
 	}
@@ -800,7 +813,7 @@ func (g *publishGate) releaseFlipLocked(ctx context.Context, cache envoycache.Sn
 	now := time.Now()
 	graced, opened := g.graceDereferencedClustersLocked(
 		proxyKey, published, pf.wrap.snap.Resources[envoycachetypes.Cluster], pf.wrap.translatedClusters, false, now)
-	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, false, nil, graced, g.lastPublishedEDSLocked(proxyKey))
+	released, _, edsHashes := resolveDeferredPerCluster(g.boundCarryLocked(pf.wrap, published, time.Now()), published, publishedRouting, false, nil, graced, g.lastPublishedEDSLocked(proxyKey))
 	// A reference-ahead window closing on its own is expected. Warn and count a
 	// bounded publish only when the budget cut one short.
 	mode := boundedPublishFlipRelease
@@ -1176,7 +1189,7 @@ func (g *publishGate) fireCarryExpiry(ctx context.Context, cache envoycache.Snap
 		return // superseded by a later build, or the client left
 	}
 	delete(g.carryExpiry, proxyKey)
-	if g.connectionSnapshotLocked(cache, proxyKey) == nil {
+	if published, _ := g.connectionSnapshotLocked(cache, proxyKey); published == nil {
 		return // defensive: a reset connection cancels the timer
 	}
 	if err := g.resolveDeferredLocked(ctx, cache, ce.wrap); err != nil {

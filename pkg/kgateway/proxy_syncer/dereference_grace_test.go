@@ -30,7 +30,7 @@ func clusterWrapperV(version string, clusters ...string) XdsSnapWrapper {
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
 	snap.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL(version, clusterItems)
 	snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL(version, endpointItems)
-	return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient}
+	return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient}.withScannedRouting()
 }
 
 func publishedClusterNames(t *testing.T, pt *ProxyTranslator) []string {
@@ -335,7 +335,7 @@ func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 	v1.Resources[envoycachetypes.Route] = routeResourcesForClusters("cluster-a")
 	v1.Resources[envoycachetypes.Cluster] = envoycache.NewResourcesWithTTL("cds-1", []envoycachetypes.ResourceWithTTL{a.Cluster.ResourceWithTTL()})
 	v1.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-1", []envoycachetypes.ResourceWithTTL{endpointsForClient(ucc, "cluster-a", 2).Endpoints.ResourceWithTTL()})
-	pt.syncXds(ctx, XdsSnapWrapper{snap: v1, proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: v1, proxyKey: publishGateTestClient}.withScannedRouting())
 
 	// The route flips to cluster-b before its endpoints are derived: held.
 	v2 := &envoycache.Snapshot{}
@@ -348,7 +348,7 @@ func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 	pt.syncXds(ctx, XdsSnapWrapper{
 		snap: v2, proxyKey: publishGateTestClient,
 		missingEndpointsReferenced: []string{"cluster-b"}, synthesizedEndpoints: []string{"cluster-b"},
-	})
+	}.withScannedRouting())
 	require.Equal(t, "v1", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType), "flip held")
 
 	// cluster-b derives its endpoints: coherent, with cluster-a graced.
@@ -359,7 +359,7 @@ func TestGracedCoherentPublishCancelsAPendingFlipRelease(t *testing.T) {
 	v3.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-3", []envoycachetypes.ResourceWithTTL{
 		endpointsForClient(ucc, "cluster-b", 4).Endpoints.ResourceWithTTL(),
 	})
-	pt.syncXds(ctx, XdsSnapWrapper{snap: v3, proxyKey: publishGateTestClient, endpointHashes: map[string]uint64{"cluster-b": 4}})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: v3, proxyKey: publishGateTestClient, endpointHashes: map[string]uint64{"cluster-b": 4}}.withScannedRouting())
 	require.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType))
 	require.Contains(t, publishedClusterNames(t, pt), "cluster-a", "cluster-a is still graced")
 
@@ -400,7 +400,7 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 				oldEndpoints.Endpoints.ResourceWithTTL(),
 				endpointsForClient(ucc, "cluster-gone", 6).Endpoints.ResourceWithTTL(),
 			})
-			pt.syncXds(ctx, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient})
+			pt.syncXds(ctx, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}.withScannedRouting())
 
 			// The routes stop naming cluster-gone: its 80ms grace opens.
 			dropped := &envoycache.Snapshot{}
@@ -412,7 +412,7 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 			dropped.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-dropped", []envoycachetypes.ResourceWithTTL{
 				oldEndpoints.Endpoints.ResourceWithTTL(),
 			})
-			pt.syncXds(ctx, XdsSnapWrapper{snap: dropped, proxyKey: publishGateTestClient})
+			pt.syncXds(ctx, XdsSnapWrapper{snap: dropped, proxyKey: publishGateTestClient}.withScannedRouting())
 
 			// Routes now name unready cluster-new: the flip is held.
 			flip := &envoycache.Snapshot{}
@@ -427,7 +427,7 @@ func TestGracePruneKeepsAHeldFlipHeld(t *testing.T) {
 			pt.syncXds(ctx, XdsSnapWrapper{
 				snap: flip, proxyKey: publishGateTestClient,
 				missingEndpointsReferenced: []string{"cluster-new"}, synthesizedEndpoints: []string{"cluster-new"},
-			})
+			}.withScannedRouting())
 			require.True(t, snapshotReferencesCluster(servedSnapshot(t, pt), "cluster-old"), "the flip is held")
 
 			time.Sleep(250 * time.Millisecond) // well past cluster-gone's 80ms grace: its prune has run
@@ -454,7 +454,7 @@ func TestFlipReleaseArmsTheGracePrune(t *testing.T) {
 		w := clusterWrapperV(version, clusters...)
 		w.snap.Resources[envoycachetypes.Listener] = listeners
 		w.snap.Resources[envoycachetypes.Route] = routeResourcesForClusters(routeTo)
-		return w
+		return w.withScannedRouting()
 	}
 	pt.syncXds(ctx, build("v0", "cluster-old", "cluster-old"))
 

@@ -51,7 +51,7 @@ func deferredWrapperV(version string) XdsSnapWrapper {
 		snap:              snap,
 		proxyKey:          publishGateTestClient,
 		missingReferenced: []string{"cluster-missing"},
-	}
+	}.withScannedRouting()
 }
 
 // deferredMissingEndpointsWrapperV's only gap is a referenced cluster with no
@@ -65,13 +65,13 @@ func deferredMissingEndpointsWrapperV(version string) XdsSnapWrapper {
 		snap:                       snap,
 		proxyKey:                   publishGateTestClient,
 		missingEndpointsReferenced: []string{"cluster-underived"},
-	}
+	}.withScannedRouting()
 }
 
 func coherentWrapperV(version string) XdsSnapWrapper {
 	snap := &envoycache.Snapshot{}
 	snap.Resources[envoycachetypes.Listener] = envoycache.NewResources(version, nil)
-	return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient}
+	return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient}.withScannedRouting()
 }
 
 func publishedListenerVersion(t *testing.T, pt *ProxyTranslator) (string, bool) {
@@ -233,7 +233,7 @@ func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string
 	published.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-old", []envoycachetypes.ResourceWithTTL{
 		oldCLA.Endpoints.ResourceWithTTL(),
 	})
-	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
+	require.NoError(t, pt.gate.publish(context.Background(), pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}.withScannedRouting()))
 
 	// Retarget to cluster-new before its CLA derives.
 	newCluster := edsClusterForClient(newTestUcc(publishGateTestClient), "cluster-new", 3)
@@ -253,16 +253,26 @@ func flipHoldFixture(t *testing.T, pt *ProxyTranslator) (heldRouteVersion string
 		proxyKey: publishGateTestClient,
 		// Mirror the synthesized placeholder for cluster-new's underived CLA.
 		missingEndpointsReferenced: []string{"cluster-new"},
-	}
+	}.withScannedRouting()
 	return published.GetVersion(resourcev3.RouteType), flipWrap
 }
 
+// servedSnapshot returns the client's installed snapshot. While the gate counts
+// it as published on the connection, it also checks the routing targets the
+// gate recorded for it against a fresh scan of its routes and listeners, so
+// every composition a test drives is checked.
 func servedSnapshot(t *testing.T, pt *ProxyTranslator) *envoycache.Snapshot {
 	t.Helper()
+	pt.gate.mu.Lock()
 	resourceSnapshot, err := pt.xdsCache.GetSnapshot(publishGateTestClient)
+	routing, published := pt.gate.published[publishGateTestClient]
+	pt.gate.mu.Unlock()
 	require.NoError(t, err)
 	snap, ok := resourceSnapshot.(*envoycache.Snapshot)
 	require.True(t, ok)
+	if published {
+		require.NoError(t, routingTargetsError(snap, routing), "recorded routing targets must describe the installed snapshot")
+	}
 	return snap
 }
 
@@ -321,7 +331,7 @@ func TestFlipRelease_MissingClusterDoesNotHoldSubsequentUpdates(t *testing.T) {
 		for _, rt := range []envoycachetypes.ResponseType{envoycachetypes.Route, envoycachetypes.Listener, envoycachetypes.Secret} {
 			updated.Resources[rt].Version = version
 		}
-		flipWrap.snap = &updated
+		flipWrap = flipWrap.WithSnapshot(&updated)
 		pt.syncXds(context.Background(), flipWrap)
 
 		published := servedSnapshot(t, pt)
@@ -450,10 +460,10 @@ func TestFlipRelease_StaleTimerDoesNotReleaseLaterEpisode(t *testing.T) {
 
 	pt.gate.mu.Lock()
 	time.Sleep(budget + 100*time.Millisecond) // the first release timer fired and waits on the lock
-	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, published, nil, nil))
-	current := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
+	require.NoError(t, pt.gate.publishLocked(ctx, pt.xdsCache, publishGateTestClient, routedSnapshot{snap: published, routing: scannedRoutingTargets(published)}, nil, nil))
+	current, currentRouting := pt.gate.connectionSnapshotLocked(pt.xdsCache, publishGateTestClient)
 	require.NotNil(t, current)
-	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, true, nil, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
+	held, blocking, hashes := resolveDeferredPerCluster(flipWrap, current, currentRouting, true, nil, nil, pt.gate.lastPublishedEDSLocked(publishGateTestClient))
 	require.NotEmpty(t, blocking)
 	require.NoError(t, pt.gate.publishHeldLocked(ctx, pt.xdsCache, flipWrap, held, blocking, nil, 0, hashes))
 	pt.gate.mu.Unlock()
@@ -576,13 +586,13 @@ func TestSnapshotRowFlapKeepsConnectionState(t *testing.T) {
 		snap.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-2", []envoycachetypes.ResourceWithTTL{
 			endpointsForClient(ucc, "cluster-a", 3).Endpoints.ResourceWithTTL(),
 		})
-		return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient, missingReferenced: []string{"cluster-b"}}
+		return XdsSnapWrapper{snap: snap, proxyKey: publishGateTestClient, missingReferenced: []string{"cluster-b"}}.withScannedRouting()
 	}
 	ctx := context.Background()
 
 	t.Run("row deleted while connected", func(t *testing.T) {
 		pt := newPublishGateTestTranslator(t, false, time.Hour)
-		pt.syncXds(ctx, XdsSnapWrapper{snap: full(), proxyKey: publishGateTestClient})
+		pt.syncXds(ctx, XdsSnapWrapper{snap: full(), proxyKey: publishGateTestClient}.withScannedRouting())
 		pt.clientSnapshotDeleted(publishGateTestClient, true)
 		pt.syncXds(ctx, lagging())
 		served := servedSnapshot(t, pt)
@@ -593,7 +603,7 @@ func TestSnapshotRowFlapKeepsConnectionState(t *testing.T) {
 	})
 	t.Run("client departed", func(t *testing.T) {
 		pt := newPublishGateTestTranslator(t, false, time.Hour)
-		pt.syncXds(ctx, XdsSnapWrapper{snap: full(), proxyKey: publishGateTestClient})
+		pt.syncXds(ctx, XdsSnapWrapper{snap: full(), proxyKey: publishGateTestClient}.withScannedRouting())
 		pt.clientSnapshotDeleted(publishGateTestClient, false)
 		pt.syncXds(ctx, lagging())
 		assert.Equal(t, "cds-1", servedSnapshot(t, pt).GetVersion(resourcev3.ClusterType),
@@ -704,10 +714,10 @@ func TestCarryOfAMissingClusterIsBounded(t *testing.T) {
 		return snap
 	}
 	lagging := func(version string) XdsSnapWrapper {
-		return XdsSnapWrapper{snap: build(version, "cluster-a"), proxyKey: publishGateTestClient, missingReferenced: []string{"cluster-b"}}
+		return XdsSnapWrapper{snap: build(version, "cluster-a"), proxyKey: publishGateTestClient, missingReferenced: []string{"cluster-b"}}.withScannedRouting()
 	}
 
-	pt.syncXds(ctx, XdsSnapWrapper{snap: build("v1", "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: build("v1", "cluster-a", "cluster-b"), proxyKey: publishGateTestClient}.withScannedRouting())
 	pt.syncXds(ctx, lagging("v2"))
 	require.Contains(t, servedSnapshot(t, pt).Resources[envoycachetypes.Cluster].Items, "cluster-b", "a lagging cluster is carried")
 
@@ -756,11 +766,11 @@ func TestCarryExpiresWithoutAnotherBuild(t *testing.T) {
 	ctx := context.Background()
 	routed := []string{"cluster-a", "cluster-b"}
 
-	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient}.withScannedRouting())
 	pt.syncXds(ctx, XdsSnapWrapper{
 		snap: carryTestBuild(t, "v2", routed, "cluster-a"), proxyKey: publishGateTestClient,
 		missingReferenced: []string{"cluster-b"},
-	})
+	}.withScannedRouting())
 	require.Contains(t, servedSnapshot(t, pt).Resources[envoycachetypes.Cluster].Items, "cluster-b", "a lagging cluster is carried")
 
 	require.Eventually(t, func() bool {
@@ -787,14 +797,14 @@ func TestCarryStartsFreshAfterTheClusterRecovers(t *testing.T) {
 		return XdsSnapWrapper{
 			snap: carryTestBuild(t, version, routed, "cluster-a"), proxyKey: publishGateTestClient,
 			missingReferenced: []string{"cluster-b"},
-		}
+		}.withScannedRouting()
 	}
 
-	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient}.withScannedRouting())
 	pt.syncXds(ctx, lagging("v2"))
 	time.Sleep(30 * time.Millisecond)
 	// Recover in a coherent build.
-	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", routed, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient}.withScannedRouting())
 	time.Sleep(70 * time.Millisecond) // past the first episode's bound
 
 	pt.syncXds(ctx, lagging("v4"))
@@ -814,13 +824,13 @@ func TestCarryExpiryNeverRepublishesAnOlderBuild(t *testing.T) {
 	pt.gate.warmWithholdBound = 20 * time.Millisecond
 	ctx := context.Background()
 
-	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", []string{"cluster-a", "cluster-b"}, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", []string{"cluster-a", "cluster-b"}, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient}.withScannedRouting())
 	pt.syncXds(ctx, XdsSnapWrapper{
 		snap: carryTestBuild(t, "v2", []string{"cluster-a", "cluster-b"}, "cluster-a"), proxyKey: publishGateTestClient,
 		missingReferenced: []string{"cluster-b"},
-	})
+	}.withScannedRouting())
 	// A coherent build removes the missing target.
-	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", []string{"cluster-a"}, "cluster-a"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v3", []string{"cluster-a"}, "cluster-a"), proxyKey: publishGateTestClient}.withScannedRouting())
 
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, "v3", servedSnapshot(t, pt).GetVersion(resourcev3.ListenerType), "the superseded build is not re-published")
@@ -832,11 +842,11 @@ func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
 	pt.gate.warmWithholdBound = 50 * time.Millisecond
 	ctx := context.Background()
 
-	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", []string{"cluster-a", "cluster-b"}, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: carryTestBuild(t, "v1", []string{"cluster-a", "cluster-b"}, "cluster-a", "cluster-b"), proxyKey: publishGateTestClient}.withScannedRouting())
 	pt.syncXds(ctx, XdsSnapWrapper{
 		snap: carryTestBuild(t, "v2", []string{"cluster-a", "cluster-b"}, "cluster-a"), proxyKey: publishGateTestClient,
 		missingReferenced: []string{"cluster-b"},
-	})
+	}.withScannedRouting())
 	pt.gate.mu.Lock()
 	pt.gate.cancelCarryExpiryLocked(publishGateTestClient) // let the held build below observe expiry
 	pt.gate.mu.Unlock()
@@ -848,39 +858,13 @@ func TestHeldFlipDoesNotCarryAnExpiredCluster(t *testing.T) {
 		snap:              carryTestBuild(t, "v3", []string{"cluster-a", "cluster-b", "cluster-new"}, "cluster-a"),
 		proxyKey:          publishGateTestClient,
 		missingReferenced: []string{"cluster-b", "cluster-new"},
-	})
+	}.withScannedRouting())
 	served := servedSnapshot(t, pt)
 	assert.Equal(t, "v2", served.GetVersion(resourcev3.ListenerType), "the flip onto the new cluster is held")
 	assert.Contains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-a", "the held closure is carried")
 	assert.NotContains(t, served.Resources[envoycachetypes.Cluster].Items, "cluster-b", "but not a cluster carried for the bound")
 	_, hasCLA := endpointCount(served, "cluster-b")
 	assert.False(t, hasCLA)
-}
-
-// The routing-target walk is memoized by map identity: retained maps reuse it,
-// and different content under a reused version label is walked again.
-func TestPublishedReferencedClustersIsMemoizedByIdentity(t *testing.T) {
-	memo := &referencedClustersMemo{}
-	routesA := routeResourcesForClusters("cluster-a")
-	listeners := sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
-	walks := 0
-	refsOf := func(routes envoycache.Resources) map[string]struct{} {
-		return memo.get(routes.Items, listeners.Items, func() map[string]struct{} {
-			walks++
-			return collectReferencedClusters(routes, listeners)
-		})
-	}
-
-	first := refsOf(routesA)
-	again := refsOf(routesA)
-	assert.Equal(t, map[string]struct{}{"cluster-a": {}}, first)
-	assert.Equal(t, first, again)
-	assert.Equal(t, 1, walks, "the same routing config is walked once")
-
-	routesB := routeResourcesForClusters("cluster-b")
-	routesB.Version = routesA.Version // a reused label must not alias different content
-	assert.Equal(t, map[string]struct{}{"cluster-b": {}}, refsOf(routesB))
-	assert.Equal(t, 2, walks)
 }
 
 // Publication tests model connected clients; their snapshots cannot be reclaimed.

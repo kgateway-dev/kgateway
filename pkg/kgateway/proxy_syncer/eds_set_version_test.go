@@ -116,7 +116,7 @@ func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
 	require.Nil(t, gate.lastPublishedEDSLocked("client"), "nothing is remembered before the first write")
 	gate.mu.Unlock()
 
-	require.NoError(t, gate.publish(t.Context(), cache, XdsSnapWrapper{proxyKey: "client", snap: snap, endpointHashes: map[string]uint64{"a": 7}}))
+	require.NoError(t, gate.publish(t.Context(), cache, XdsSnapWrapper{proxyKey: "client", snap: snap, endpointHashes: map[string]uint64{"a": 7}}.withScannedRouting()))
 	gate.mu.Lock()
 	lookup := gate.lastPublishedEDSLocked("client")
 	gate.mu.Unlock()
@@ -127,7 +127,7 @@ func TestPublishGateRemembersPublishedEDSHashes(t *testing.T) {
 	_, ok = lookup("b")
 	require.False(t, ok)
 
-	require.NoError(t, gate.publish(t.Context(), cache, XdsSnapWrapper{proxyKey: "client", snap: snap, endpointHashes: map[string]uint64{"a": 8}}))
+	require.NoError(t, gate.publish(t.Context(), cache, XdsSnapWrapper{proxyKey: "client", snap: snap, endpointHashes: map[string]uint64{"a": 8}}.withScannedRouting()))
 	gate.mu.Lock()
 	h, _ = gate.lastPublishedEDSLocked("client")("a")
 	gate.mu.Unlock()
@@ -156,11 +156,11 @@ func TestPublishGatePreservesHashesWhenSettlingEndpoints(t *testing.T) {
 	prior := build(priorHashes)
 	live := endpointsForClient(ucc, "a", 11).Endpoints.ResourceWithTTL()
 	prior.Resources[envoycachetypes.Endpoint].Items["a"] = live
-	require.NoError(t, gate.publish(t.Context(), cache, XdsSnapWrapper{proxyKey: "client", snap: prior, endpointHashes: priorHashes}))
+	require.NoError(t, gate.publish(t.Context(), cache, XdsSnapWrapper{proxyKey: "client", snap: prior, endpointHashes: priorHashes}.withScannedRouting()))
 
 	hashes := map[string]uint64{"a": utils.HashString("a"), "b": 23}
 	next := build(hashes)
-	wrap := XdsSnapWrapper{proxyKey: "client", snap: next, endpointHashes: hashes, synthesizedEndpoints: []string{"a"}}
+	wrap := XdsSnapWrapper{proxyKey: "client", snap: next, endpointHashes: hashes, synthesizedEndpoints: []string{"a"}}.withScannedRouting()
 	require.NoError(t, gate.publish(t.Context(), cache, wrap))
 	served, err := cache.GetSnapshot("client")
 	require.NoError(t, err)

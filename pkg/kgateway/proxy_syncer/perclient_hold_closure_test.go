@@ -60,7 +60,7 @@ func TestHeldFlipKeepsClustersTheHeldListenerCalls(t *testing.T) {
 		endpointsForClient(ucc, "cluster-old", 3).Endpoints.ResourceWithTTL(),
 		endpointsForClient(ucc, "auth-cluster", 4).Endpoints.ResourceWithTTL(),
 	})
-	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
+	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}.withScannedRouting()))
 
 	build := &envoycache.Snapshot{}
 	build.Resources[envoycachetypes.Listener] = sliceToResources([]*envoylistenerv3.Listener{httpListenerWithRDS(t, "listener", "route-config")})
@@ -76,7 +76,7 @@ func TestHeldFlipKeepsClustersTheHeldListenerCalls(t *testing.T) {
 		proxyKey:                   publishGateTestClient,
 		missingEndpointsReferenced: []string{"cluster-new"},
 		synthesizedEndpoints:       []string{"cluster-new"},
-	})
+	}.withScannedRouting())
 
 	served := servedSnapshot(t, pt)
 	require.True(t, snapshotReferencesCluster(served, "cluster-old"), "the flip onto the underived cluster is held")
@@ -107,7 +107,7 @@ func TestCarryKeepsBuiltAssignmentSharedByServiceName(t *testing.T) {
 		[]envoycachetypes.ResourceWithTTL{c1.Cluster.ResourceWithTTL(), c2.Cluster.ResourceWithTTL()})
 	published.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-1",
 		[]envoycachetypes.ResourceWithTTL{endpointsForClient(ucc, "shared", 10).Endpoints.ResourceWithTTL()})
-	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}))
+	require.NoError(t, pt.gate.publish(ctx, pt.xdsCache, XdsSnapWrapper{snap: published, proxyKey: publishGateTestClient}.withScannedRouting()))
 
 	// c1 is carried; c2 is built against the derived empty "shared" assignment.
 	build := &envoycache.Snapshot{}
@@ -117,7 +117,7 @@ func TestCarryKeepsBuiltAssignmentSharedByServiceName(t *testing.T) {
 		[]envoycachetypes.ResourceWithTTL{c2.Cluster.ResourceWithTTL()})
 	build.Resources[envoycachetypes.Endpoint] = envoycache.NewResourcesWithTTL("eds-2",
 		[]envoycachetypes.ResourceWithTTL{emptyEndpointsForClient(ucc, "shared", 20).Endpoints.ResourceWithTTL()})
-	pt.syncXds(ctx, XdsSnapWrapper{snap: build, proxyKey: publishGateTestClient, missingReferenced: []string{"c1"}})
+	pt.syncXds(ctx, XdsSnapWrapper{snap: build, proxyKey: publishGateTestClient, missingReferenced: []string{"c1"}}.withScannedRouting())
 
 	served := servedSnapshot(t, pt)
 	require.True(t, hasResource(served.Resources[envoycachetypes.Cluster].Items, "c1"), "c1 is carried")

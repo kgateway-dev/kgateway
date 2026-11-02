@@ -109,30 +109,30 @@ func (g *publishGate) holdsReferenceAhead() bool { return g.referenceAhead > 0 }
 // their published versions. As in the deferred hold, every published cluster
 // the build lacks is carried. Otherwise a build that also drops a cluster would
 // remove it from under the held configuration, covered only by a de-reference
-// grace that may be 0. Errored clusters are never carried. Callers must hold
-// g.mu.
+// grace that may be 0. Errored clusters are never carried. publishedRouting
+// are published's routing targets. Callers must hold g.mu.
 func (g *publishGate) referenceAheadHoldLocked(
 	snapWrap XdsSnapWrapper,
 	published envoycache.ResourceSnapshot,
+	publishedRouting routingTargets,
 	graced map[string]struct{},
-) (*envoycache.Snapshot, map[string]uint64) {
+) (routedSnapshot, map[string]uint64) {
 	closure := make(map[string]struct{}, len(graced))
 	maps.Copy(closure, graced)
 	for name := range published.GetResourcesAndTTL(envoyresourcev3.ClusterType) {
 		closure[name] = struct{}{}
 	}
-	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, nil, closure, g.lastPublishedEDSLocked(snapWrap.proxyKey))
-	held := holdRoutingTypes(resolved, published)
-	addBuiltClusterListeners(held, snapWrap.snap)
-	return held, edsHashes
+	resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, publishedRouting, false, nil, closure, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+	held := holdRoutingTypes(resolved.snap, published, publishedRouting)
+	return addBuiltClusterListeners(held, snapWrap.snap), edsHashes
 }
 
 // holdRoutingTypes returns snap with routes, listeners and secrets pinned at
 // their published versions and clusters and endpoints as built, the shape of
 // every hold here. The three are pinned together: mixing builds would send a
 // combination the client never had, and Snapshot.Consistent() requires RDS to
-// match LDS.
-func holdRoutingTypes(snap *envoycache.Snapshot, published envoycache.ResourceSnapshot) *envoycache.Snapshot {
+// match LDS. The held routing targets are publishedRouting.
+func holdRoutingTypes(snap *envoycache.Snapshot, published envoycache.ResourceSnapshot, publishedRouting routingTargets) routedSnapshot {
 	held := &envoycache.Snapshot{}
 	*held = *snap
 	for _, t := range []struct {
@@ -148,7 +148,7 @@ func holdRoutingTypes(snap *envoycache.Snapshot, published envoycache.ResourceSn
 			Items:   published.GetResourcesAndTTL(t.typeURL),
 		}
 	}
-	return held
+	return routedSnapshot{snap: held, routing: publishedRouting}
 }
 
 // appliesTransitionGraces reports whether either transition window is

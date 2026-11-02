@@ -175,9 +175,10 @@ They do not show when Envoy receives, accepts or applies them.
   meant for test and CI environments. It has no labels.
 * Counts per-client snapshots that, just before publication, carried an EDS or
   RDS resource nothing in the same snapshot references, or a listener naming a
-  RouteConfiguration the snapshot lacks. go-control-plane withholds an ADS
-  response that carries a resource the client did not request. The snapshot is
-  still published.
+  RouteConfiguration the snapshot lacks, or whose recorded routing targets
+  differ from a scan of its routes and listeners. go-control-plane withholds an
+  ADS response that carries a resource the client did not request. The
+  snapshot is still published.
 * The publication paths keep snapshots consistent by construction, so any
   increment is a kgateway bug. Report it with the error logged alongside it,
   which names the client.

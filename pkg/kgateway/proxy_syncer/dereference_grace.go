@@ -259,7 +259,7 @@ func (g *publishGate) fireDereferencePrune(ctx context.Context, cache envoycache
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
-	if g.connectionSnapshotLocked(cache, proxyKey) == nil {
+	if published, _ := g.connectionSnapshotLocked(cache, proxyKey); published == nil {
 		g.cancelDereferenceTimerLocked(proxyKey)
 		return
 	}
@@ -310,10 +310,10 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 	cache envoycache.SnapshotCache,
 	snapWrap XdsSnapWrapper,
 ) error {
-	published := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
+	published, publishedRouting := g.connectionSnapshotLocked(cache, snapWrap.proxyKey)
 	if published == nil {
 		// Nothing published on this connection: nothing to carry or grace.
-		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
+		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.routed(), snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}
 
 	// Routes, listeners and secrets stay published while the new cluster's CDS
@@ -325,15 +325,15 @@ func (g *publishGate) publishWithTransitionGracesLocked(
 		len(newlyEmitted) > 0, now)
 
 	if len(graced) == 0 && len(newlyEmitted) == 0 {
-		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.snap, snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
+		return g.publishLocked(ctx, cache, snapWrap.proxyKey, snapWrap.routed(), snapWrap.synthesizedEndpoints, snapWrap.endpointHashes)
 	}
 
 	var publishErr error
 	if len(newlyEmitted) > 0 {
-		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, graced)
+		held, edsHashes := g.referenceAheadHoldLocked(snapWrap, published, publishedRouting, graced)
 		publishErr = g.publishHeldLocked(ctx, cache, snapWrap, held, nil, newlyEmitted, aheadFor, edsHashes)
 	} else {
-		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, false, nil, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
+		resolved, _, edsHashes := resolveDeferredPerCluster(snapWrap, published, publishedRouting, false, nil, graced, g.lastPublishedEDSLocked(snapWrap.proxyKey))
 		// publishLocked cancels a pending first publish or flip release, whose
 		// timer would otherwise re-publish an older build.
 		publishErr = g.publishLocked(ctx, cache, snapWrap.proxyKey, resolved, snapWrap.synthesizedEndpoints, edsHashes)
