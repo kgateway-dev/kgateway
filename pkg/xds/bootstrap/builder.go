@@ -203,11 +203,14 @@ func (b *ConfigBuilder) Build() (*envoybootstrapv3.Bootstrap, error) {
 			}},
 		}},
 	}
-	if len(b.clusters) > 0 {
-		staticResources.Clusters = b.clusters
+	// TLS files exist only on the proxy, not where validation runs, so they
+	// are replaced with placeholders. Bad paths or contents surface when the
+	// proxy loads the config.
+	for _, cluster := range b.clusters {
+		staticResources.Clusters = append(staticResources.Clusters, withPlaceholderTLSFiles(cluster))
 	}
-	if len(b.secrets) > 0 {
-		staticResources.Secrets = append(staticResources.Secrets, b.secrets...)
+	for _, secret := range b.secrets {
+		staticResources.Secrets = append(staticResources.Secrets, withPlaceholderTLSFiles(secret))
 	}
 	if clustersReferenceSystemCASecret(b.clusters) && !hasSecretNamed(staticResources.GetSecrets(), eiutils.SystemCaSecretName) {
 		staticResources.Secrets = append(staticResources.Secrets, SystemCAValidationSecretPlaceholder())
