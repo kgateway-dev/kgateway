@@ -75,6 +75,7 @@ type backendTlsPolicy struct {
 var (
 	_ ir.PolicyIR                      = &backendTlsPolicy{}
 	_ ir.UpstreamTLSValidationProvider = &backendTlsPolicy{}
+	_ ir.UdpBackendPolicy              = &backendTlsPolicy{}
 )
 
 func (d *backendTlsPolicy) CreationTime() time.Time {
@@ -87,6 +88,12 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 		return false
 	}
 	return proto.Equal(d.transportSocket, d2.transportSocket)
+}
+
+// UdpProxy implements ir.UdpBackendPolicy. udp_proxy sends datagrams without a transport socket, so
+// the TLS this policy originates does not apply.
+func (d *backendTlsPolicy) UdpProxy() ir.UdpProxyPolicy {
+	return ir.UdpProxyPolicy{Ignored: []string{"validation"}}
 }
 
 // UpstreamTLSValidation returns the CA this policy makes Envoy trust, for OIDC discovery. It is

@@ -1075,7 +1075,7 @@ func udpBackendPolicies(backends []ir.BackendRefIR) (*udpproxyv3.UdpProxyConfig_
 					hashPolicy = settings.HashPolicy
 				}
 				if len(settings.Ignored) > 0 {
-					notApplied.Insert(fmt.Sprintf("%s on backend %s: %s have no effect on UDP",
+					notApplied.Insert(fmt.Sprintf("%s on backend %s sets fields that have no effect on UDP: %s",
 						name, obj.GetName(), strings.Join(settings.Ignored, ", ")))
 				}
 			}

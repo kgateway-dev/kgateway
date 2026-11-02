@@ -191,8 +191,8 @@ Statuses:
           status: "True"
           type: Accepted
         - lastTransitionTime: null
-          message: 'BackendConfigPolicy default/udp-svc-a-policy on backend udp-svc-a:
-            header hashPolicies, tcpKeepalive have no effect on UDP'
+          message: 'BackendConfigPolicy default/udp-svc-a-policy on backend udp-svc-a
+            sets fields that have no effect on UDP: header hashPolicies, tcpKeepalive'
           reason: BackendPolicyNotApplied
           status: "True"
           type: kgateway.dev/Programmed
