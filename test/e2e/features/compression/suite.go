@@ -74,21 +74,28 @@ func (s *testingSuite) TestZstdResponseCompression() {
 }
 
 // Verifies Accept-Encoding negotiation when the TrafficPolicy offers all three codecs
-// (libraries: [Brotli, Gzip, Zstd]). Selection is client-driven, so the codec the client lists
-// first wins the tie, a single accepted codec is used as-is, and an unsupported encoding yields
-// no compression.
+// (libraries: [Brotli, Gzip, Zstd]). The default CompressionLibraryPreference (zstd, brotli, gzip)
+// breaks ties whatever order the client lists the codecs in, client q-values still take priority,
+// a single accepted codec is used as-is, and an unsupported encoding yields no compression.
 func (s *testingSuite) TestResponseCompressionNegotiation() {
-	// Client lists brotli first, so brotli wins the tie.
+	// The client lists brotli first, but zstd is the most preferred codec it accepts.
 	s.assertHeaders("/html",
 		map[string]string{"Accept-Encoding": "br, gzip, zstd"},
+		map[string]any{"Content-Encoding": "zstd"},
+		nil,
+	)
+
+	// Without zstd, brotli beats gzip even when the client lists gzip first.
+	s.assertHeaders("/html",
+		map[string]string{"Accept-Encoding": "gzip, br"},
 		map[string]any{"Content-Encoding": "br"},
 		nil,
 	)
 
-	// Same codecs, reversed client order: zstd now wins. Confirms the tie follows the client.
+	// A higher client q-value wins over the server preference.
 	s.assertHeaders("/html",
-		map[string]string{"Accept-Encoding": "zstd, gzip, br"},
-		map[string]any{"Content-Encoding": "zstd"},
+		map[string]string{"Accept-Encoding": "zstd;q=0.5, gzip;q=1.0"},
+		map[string]any{"Content-Encoding": "gzip"},
 		nil,
 	)
 

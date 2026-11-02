@@ -1348,12 +1348,12 @@ func TestBasic(t *testing.T) {
 	})
 
 	t.Run("TrafficPolicy compression disable is unaffected by gateway-wide server preference", func(t *testing.T) {
-		// A route that opts out disables compressors by their base codec name. Server preference only
-		// reorders the chain and sets choose_first, so it does not rename filters and the disable
-		// still matches. The output must be identical to the same input without a preference set.
+		// Server preference reorders the shared compressor filters and sets choose_first without
+		// renaming them, so a route on the same listener that disables compression still turns
+		// off every codec.
 		test(t, translatorTestCase{
-			inputFiles: []string{"traffic-policy/compression-disable-route.yaml"},
-			outputFile: "traffic-policy/compression-disable-route.yaml",
+			inputFiles: []string{"traffic-policy/compression-preference-disable-route.yaml"},
+			outputFile: "traffic-policy/compression-preference-disable-route.yaml",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
