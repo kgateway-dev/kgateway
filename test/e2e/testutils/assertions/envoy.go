@@ -39,6 +39,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 		WithCurlOptions(
 			curl.WithRetries(10, 1, 10),
 			curl.WithRetryConnectionRefused(true),
+			curl.WithConnectionTimeout(10), // a stalled port-forward fails one poll instead of blocking Eventually
 			curl.WithHostPort(portForwarder.Address()),
 		)
 

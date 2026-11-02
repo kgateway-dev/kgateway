@@ -62,6 +62,24 @@ func (r *ReportMap) PolicyReport(key reporter.PolicyKey) *PolicyReport {
 	return r.policy(key)
 }
 
+// MergePolicyReports folds the policy reports of src into r. When r has no report for a
+// policy, src's report is copied in. When r already has one, src's ancestors are added to it,
+// and for an ancestor both reports carry, src's entry replaces r's. This is the ancestor merge
+// the status reducer applies across contributions, for callers that assemble report maps
+// directly.
+func (r *ReportMap) MergePolicyReports(src ReportMap) {
+	for key, report := range src.Policies {
+		if report == nil {
+			continue
+		}
+		if existing := r.Policies[key]; existing != nil {
+			mergeAncestorReports(existing, report)
+			continue
+		}
+		r.Policies[key] = clonePolicyReport(report)
+	}
+}
+
 func (r *ReportMap) newPolicyReport(key reporter.PolicyKey, observedGeneration int64) *PolicyReport {
 	pr := &PolicyReport{
 		observedGeneration: observedGeneration,
@@ -186,9 +204,9 @@ func BuildPolicyStatus(
 	//
 	// currentStatus is still read above, for LastTransitionTime continuity.
 	//
-	// The sort is not redundant with the merge's: it makes this function's output
-	// deterministic for callers that consume the desired status directly, such as the
-	// golden-output translator tests.
+	// The sort only makes this function's output deterministic for callers that consume the
+	// desired status directly, such as the golden-output translator tests. It does not decide
+	// the published order: the merge keeps the live order and appends new entries.
 	slices.SortStableFunc(status.Ancestors, func(a, b gwv1.PolicyAncestorStatus) int {
 		return strings.Compare(ParentString(a.AncestorRef), ParentString(b.AncestorRef))
 	})

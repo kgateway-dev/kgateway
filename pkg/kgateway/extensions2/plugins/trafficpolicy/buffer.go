@@ -39,7 +39,7 @@ func (b *bufferIR) Equals(other PolicySubIR) bool {
 	if !ok {
 		return false
 	}
-	if b == nil || other == nil {
+	if b == nil || otherBuffer == nil {
 		return b == nil && otherBuffer == nil
 	}
 	if !cmputils.PointerValsEqual(b.filterStage, otherBuffer.filterStage) {

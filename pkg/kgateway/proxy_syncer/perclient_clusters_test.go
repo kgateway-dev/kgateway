@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"sync"
@@ -9,20 +10,27 @@ import (
 	"time"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/translator/irtranslator"
+	sdk "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 )
 
 // Contract and concurrency coverage for NewPerClientEnvoyClusters (the per-client
-// CDS collection). These pin the invariant that the clusters returned for a
-// connected client track (connected-client set) x (finalBackends) across any
-// sequence of client/backend add/remove, plus that a client which stays connected
-// is never left permanently without its clusters while other clients churn.
+// CDS collection). Base clusters are shared across clients, and each connected
+// client has exactly one row: its assembled CDS payload. These pin that a
+// connected client sees all backends across any sequence of client/backend
+// add/remove, that removing one client leaves the others untouched, and that a
+// client which stays connected is never left permanently without its clusters
+// while others churn.
 //
 // Added while investigating #14184 (proxies stranded with empty per-client config).
 // They document the behavior the collection must preserve and pass against the
@@ -32,8 +40,10 @@ func clustersTestTranslator() *irtranslator.BackendTranslator {
 	return &irtranslator.BackendTranslator{
 		ContributedBackends: map[schema.GroupKind]ir.BackendInit{
 			{Group: "", Kind: "Service"}: {
-				InitEnvoyBackend: func(_ context.Context, _ ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
+				InitEnvoyBackend: func(_ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) *ir.EndpointsForBackend {
 					out.ClusterDiscoveryType = &envoyclusterv3.Cluster_Type{Type: envoyclusterv3.Cluster_EDS}
+					// A translated field tests can vary to force a real base change.
+					out.AltStatName = string(in.AppProtocol)
 					return nil
 				},
 			},
@@ -42,12 +52,21 @@ func clustersTestTranslator() *irtranslator.BackendTranslator {
 }
 
 func clustersTestBackend(name string) *ir.BackendObjectIR {
+	return clustersTestBackendWithProtocol(name, "")
+}
+
+// clustersTestBackendWithProtocol is clustersTestBackend with an AppProtocol,
+// which the test translator copies into the cluster's AltStatName. Alternating
+// it is how churn tests make the base row genuinely change; resubmitting an
+// identical backend is absorbed by the base row's Equals and exercises nothing.
+func clustersTestBackendWithProtocol(name, appProtocol string) *ir.BackendObjectIR {
 	b := ir.NewBackendObjectIR(ir.ObjectSource{
 		Group:     "",
 		Kind:      "Service",
 		Namespace: "default",
 		Name:      name,
 	}, 443, "", "")
+	b.AppProtocol = ir.AppProtocol(appProtocol)
 	return &b
 }
 
@@ -55,14 +74,10 @@ func clustersTestClient(role string) ir.UniquelyConnectedClient {
 	return ir.NewUniquelyConnectedClient(role, "", nil, ir.PodLocality{})
 }
 
+// clusterNamesForClient reads the client's stored CDS payload, so it observes what
+// KRT has propagated rather than what FetchClustersForClient would compute now.
 func clusterNamesForClient(c PerClientEnvoyClusters, ucc ir.UniquelyConnectedClient) []string {
-	fetched := c.FetchClustersForClient(krt.TestingDummyContext{}, ucc)
-	names := make([]string, 0, len(fetched))
-	for _, f := range fetched {
-		names = append(names, f.Name)
-	}
-	slices.Sort(names)
-	return names
+	return storedClusterNamesForClient(c, ucc)
 }
 
 func newClustersTestFixture(
@@ -75,9 +90,9 @@ func newClustersTestFixture(
 	t.Cleanup(cancel)
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
 
-	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
-	finalBackends := krt.NewStaticCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
-	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends, uccs)
+	uccs := krt.NewMutableCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
+	finalBackends := krt.NewMutableCollection(nil, backends, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, clustersTestTranslator(), finalBackends.AsCollection(), uccs.AsCollection())
 	return uccs, finalBackends, clusters
 }
 
@@ -131,8 +146,9 @@ func TestPerClientClusters_BackendAddedPropagatesToAllClients(t *testing.T) {
 	eventuallyClusterCount(t, clusters, b, 2)
 }
 
-// Removing a client clears its rows and leaves other clients untouched.
-func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T) {
+// Removing a client leaves other clients untouched and deletes the removed
+// client's row.
+func TestPerClientClusters_ClientRemovedLeavesOthersUnaffected(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	uccs, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
@@ -142,28 +158,37 @@ func TestPerClientClusters_ClientRemovedClearsRowsOthersUnaffected(t *testing.T)
 	eventuallyClusterCount(t, clusters, b, 2)
 
 	uccs.DeleteObject(b.ResourceName())
-	eventuallyClusterCount(t, clusters, b, 0)
+	// The surviving client keeps its full set...
 	eventuallyClusterCount(t, clusters, a, 2)
+	// ...while the disconnected client no longer has a resolved generation.
+	eventuallyClusterCount(t, clusters, b, 0)
 }
 
-// Each client's index entry returns only that client's clusters.
-func TestPerClientClusters_IndexIsolation(t *testing.T) {
+// Each client has its own stored row, keyed by the client, and the rows share
+// the base protos rather than copying them.
+func TestPerClientClusters_RowIsolation(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	_, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
 		[]*ir.BackendObjectIR{clustersTestBackend("b1"), clustersTestBackend("b2")},
 	)
 	eventuallyClusterCount(t, clusters, a, 2)
-	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, a) {
-		require.Equal(t, a.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client a")
-	}
-	for _, fc := range clusters.FetchClustersForClient(krt.TestingDummyContext{}, b) {
-		require.Equal(t, b.ResourceName(), fc.Client.ResourceName(), "index leaked another client's row into client b")
+	eventuallyClusterCount(t, clusters, b, 2)
+	rowA := clusters.perClient.GetKey(a.ResourceName())
+	rowB := clusters.perClient.GetKey(b.ResourceName())
+	require.NotNil(t, rowA)
+	require.NotNil(t, rowB)
+	require.Equal(t, a.ResourceName(), rowA.ResourceName())
+	require.Equal(t, b.ResourceName(), rowB.ResourceName())
+	for name, item := range rowA.clusters.Items {
+		require.Same(t, item.Resource, rowB.clusters.Items[name].Resource,
+			"clients with no overlay must share the base proto, not copies of it")
 	}
 }
 
-// Removing then re-adding the same client restores its full cluster set.
-func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
+// Churning a client through disconnect/reconnect keeps its full cluster set and
+// does not disturb a co-connected client.
+func TestPerClientClusters_ReAddClientKeepsRows(t *testing.T) {
 	a, b := clustersTestClient("role-a"), clustersTestClient("role-b")
 	uccs, _, clusters := newClustersTestFixture(t,
 		[]ir.UniquelyConnectedClient{a, b},
@@ -171,9 +196,12 @@ func TestPerClientClusters_ReAddClientRestoresRows(t *testing.T) {
 	)
 	eventuallyClusterCount(t, clusters, b, 2)
 	uccs.DeleteObject(b.ResourceName())
+	// Observe the disconnect before reconnecting, so the delete and the re-add
+	// cannot coalesce into a no-op and skip the reconnect path under test.
 	eventuallyClusterCount(t, clusters, b, 0)
 	uccs.UpdateObject(b)
 	eventuallyClusterCount(t, clusters, b, 2)
+	eventuallyClusterCount(t, clusters, a, 2)
 }
 
 // A client that stays connected must never be left permanently without its clusters
@@ -209,15 +237,19 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 			}
 		}(g)
 	}
-	// Churn a backend in parallel so per-client rows recompute under client churn.
+	// Churn a backend in parallel so per-client rows recompute under client
+	// churn. Alternate a translated field: an identical resubmission is absorbed
+	// by the base row's Equals and would exercise nothing.
+	var lastProtocol string
 	wg.Go(func() {
-		for {
+		for i := 0; ; i++ {
 			select {
 			case <-stop:
 				return
 			default:
 			}
-			finalBackends.UpdateObject(clustersTestBackend("b4"))
+			lastProtocol = fmt.Sprintf("v%d", i%2)
+			finalBackends.UpdateObject(clustersTestBackendWithProtocol("b4", lastProtocol))
 		}
 	})
 
@@ -225,6 +257,113 @@ func TestPerClientClusters_ConcurrentChurnNeverStrandsStableClient(t *testing.T)
 	close(stop)
 	wg.Wait()
 
-	// The stable client must have all its backends once churn settles.
+	// The stable client must have all its backends once churn settles, and its
+	// stored payload must reflect the last backend update.
 	eventuallyClusterCount(t, clusters, stable, len(backendNames))
+	require.Eventually(t, func() bool {
+		c := storedClustersForClient(clusters, stable)[clustersTestBackend("b4").ClusterName()]
+		return c != nil && c.GetAltStatName() == lastProtocol
+	}, 5*time.Second, 10*time.Millisecond, "the stable client's payload must carry the last backend update")
+}
+
+// tunnelLifecycleTranslator uses AppProtocol for tunnel state and as the
+// credential, which it serves as a secret.
+func tunnelLifecycleTranslator() *irtranslator.BackendTranslator {
+	translator := clustersTestTranslator()
+	translator.ContributedPolicies = map[schema.GroupKind]sdk.PolicyPlugin{
+		{Group: "test.example.io", Kind: "Tunnel"}: {
+			ProcessBaseClusterResources: func(_ krt.HandlerContext, _ context.Context, in ir.BackendObjectIR, out *envoyclusterv3.Cluster) (sdk.BaseClusterResources, error) {
+				switch in.AppProtocol {
+				case "":
+					return sdk.BaseClusterResources{}, nil
+				case "invalid":
+					return sdk.BaseClusterResources{}, errors.New("invalid tunnel")
+				}
+				name := "tunnel_" + out.GetName()
+				return sdk.BaseClusterResources{
+					Listeners: []*envoylistenerv3.Listener{{Name: name}},
+					Secrets: []*envoytlsv3.Secret{{
+						Name: name + "/0",
+						Type: &envoytlsv3.Secret_GenericSecret{GenericSecret: &envoytlsv3.GenericSecret{
+							Secret: &envoycorev3.DataSource{Specifier: &envoycorev3.DataSource_InlineString{InlineString: string(in.AppProtocol)}},
+						}},
+					}},
+				}, nil
+			},
+		},
+	}
+	return translator
+}
+
+// TestBackendListenerLifecycle checks delivery to all clients across tunnel
+// failure, credential rotation, detachment, and backend deletion.
+func TestBackendListenerLifecycle(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
+
+	clients := []ir.UniquelyConnectedClient{clustersTestClient("role-a"), clustersTestClient("role-b")}
+	uccs := krt.NewStaticCollection(nil, clients, krtopts.ToOptions("UniqueClients")...)
+	finalBackends := krt.NewMutableCollection(nil, []*ir.BackendObjectIR{clustersTestBackendWithProtocol("dest", "cred-1")}, krtopts.ToOptions("FinalBackends")...)
+	clusters := NewPerClientEnvoyClusters(ctx, krtopts, tunnelLifecycleTranslator(), finalBackends.AsCollection(), uccs)
+
+	name := clustersTestBackend("dest").ClusterName()
+	listenerName := "tunnel_" + name
+	type state struct {
+		published bool
+		errored   bool
+		listener  bool
+		secret    string
+	}
+	type versions struct{ listeners, secrets uint64 }
+	observe := func(ucc ir.UniquelyConnectedClient) (state, versions) {
+		row := clusters.perClient.GetKey(ucc.ResourceName())
+		if row == nil {
+			return state{}, versions{}
+		}
+		_, published := row.clusters.Items[name]
+		s := state{published: published, errored: slices.Contains(row.erroredClusters, name)}
+		for _, l := range row.listeners.items {
+			s.listener = s.listener || l.BorrowForRead().GetName() == listenerName
+		}
+		for _, r := range row.secrets.items {
+			if secret := r.BorrowForRead(); secret.GetName() == listenerName+"/0" {
+				s.secret = secret.GetGenericSecret().GetSecret().GetInlineString()
+			}
+		}
+		return s, versions{listeners: row.listeners.hash, secrets: row.secrets.hash}
+	}
+	expect := func(step string, want state) map[string]versions {
+		t.Helper()
+		got := map[string]versions{}
+		for _, ucc := range clients {
+			var last state
+			require.Eventuallyf(t, func() bool {
+				last, got[ucc.ResourceName()] = observe(ucc)
+				return last == want
+			}, 5*time.Second, 10*time.Millisecond, "%s: client %s never reached %+v (last: %+v)", step, ucc.ResourceName(), want, last)
+		}
+		return got
+	}
+	update := func(appProtocol string) {
+		finalBackends.UpdateObject(clustersTestBackendWithProtocol("dest", appProtocol))
+	}
+
+	first := expect("valid", state{published: true, listener: true, secret: "cred-1"})
+
+	update("invalid")
+	expect("invalid", state{errored: true})
+
+	update("cred-2")
+	rotated := expect("rotated", state{published: true, listener: true, secret: "cred-2"})
+	for client, v := range rotated {
+		assert.Equal(t, first[client].listeners, v.listeners, "a credential change must not change the listener version for %s", client)
+		assert.NotEqual(t, first[client].secrets, v.secrets, "a credential change must change the secret version for %s", client)
+	}
+
+	update("")
+	expect("detached", state{published: true})
+
+	finalBackends.DeleteObject(clustersTestBackend("dest").ResourceName())
+	expect("deleted", state{})
 }

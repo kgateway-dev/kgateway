@@ -28,8 +28,18 @@ func ChildRouteCanAttachToParentRef(
 	if len(routeParentRefs) == 0 {
 		return true
 	}
+	_, ok := MatchingParentRef(routeNamespace, routeParentRefs, parentRef)
+	return ok
+}
 
-	// validate that the child's parentRefs contains the specified parentRef
+// MatchingParentRef returns the first of the child route's routeParentRefs that references
+// the parent HTTPRoute identified by parentRef, exactly as written in the child's spec.
+// A ParentReference without a namespace refers to the child's own namespace.
+func MatchingParentRef(
+	routeNamespace string,
+	routeParentRefs []gwv1.ParentReference,
+	parentRef types.NamespacedName,
+) (gwv1.ParentReference, bool) {
 	for _, ref := range routeParentRefs {
 		// default to the child's namespace if not specified
 		refNs := routeNamespace
@@ -41,10 +51,10 @@ func ChildRouteCanAttachToParentRef(
 			ref.Kind != nil && *ref.Kind == wellknown.HTTPRouteKind &&
 			string(ref.Name) == parentRef.Name &&
 			refNs == parentRef.Namespace {
-			return true
+			return ref, true
 		}
 	}
-	return false
+	return gwv1.ParentReference{}, false
 }
 
 // ShouldInheritParentMatcher returns true if the inherit-parent-matcher annotation is set

@@ -1,37 +1,25 @@
 package serviceentry
 
 import (
-	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
-	"istio.io/istio/pkg/slices"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils/backendaddress"
 )
 
 // ServiceAddresses returns the addresses of a Kubernetes Service.
-// ClusterIPs are optional in a Service and if exists will include the address of ClusterIP.
-// Value can also be "None" (headless service) in both ClusterIPs and ClusterIP, which are excluded.
+//
+// Deprecated: the helper lives in pkg/kgateway/utils/backendaddress so the
+// kubernetes and waypoint plugins can share it without importing this plugin.
+// This wrapper is kept for existing importers.
 func ServiceAddresses(svc *corev1.Service) []string {
-	var addrs []string
-	if len(svc.Spec.ClusterIPs) > 0 {
-		for _, ip := range svc.Spec.ClusterIPs {
-			if ip != "" && ip != "None" {
-				addrs = append(addrs, ip)
-			}
-		}
-	}
-	if len(addrs) == 0 && len(svc.Spec.ClusterIP) > 0 && svc.Spec.ClusterIP != "None" {
-		addrs = []string{svc.Spec.ClusterIP}
-	}
-	return addrs
+	return backendaddress.ServiceAddresses(svc)
 }
 
-// ServiceEntryAddresses returns the addresses of a ServiceEntry.
-// This includes both manually specified addresses (Spec.Addresses) and auto-allocated addresses (Status.Addresses).
-// Auto-allocated addresses are particularly important for ServiceEntries with ISTIO_META_DNS_AUTO_ALLOCATE enabled.
+// ServiceEntryAddresses returns the addresses of a ServiceEntry, including
+// auto-allocated ones from status.
+//
+// Deprecated: see ServiceAddresses; use pkg/kgateway/utils/backendaddress.
 func ServiceEntryAddresses(se *networkingclient.ServiceEntry) []string {
-	// Combine spec addresses with status addresses (which include auto-allocated IPs)
-	addrs := append(se.Spec.GetAddresses(), slices.Map(se.Status.GetAddresses(), func(a *networkingv1beta1.ServiceEntryAddress) string {
-		return a.Value
-	})...)
-	return addrs
+	return backendaddress.ServiceEntryAddresses(se)
 }

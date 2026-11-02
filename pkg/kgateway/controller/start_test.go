@@ -13,21 +13,13 @@ import (
 func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 	t.Parallel()
 
-	const (
-		standardClass = "kgateway"
-		waypointClass = "kgateway-waypoint"
-	)
+	const standardClass = "kgateway"
 
 	ns := gwv1.Namespace("control-plane")
 	settings := &apisettings.Settings{
-		EnableWaypoint: true,
 		GatewayClassParametersRefs: apisettings.GatewayClassParametersRefs{
 			standardClass: {
 				Name:      "standard-gwp",
-				Namespace: &ns,
-			},
-			waypointClass: {
-				Name:      "waypoint-gwp",
 				Namespace: &ns,
 			},
 		},
@@ -36,7 +28,6 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 	classInfos := GetDefaultClassInfo(
 		settings,
 		standardClass,
-		waypointClass,
 		"ctrl.kgateway.dev",
 		nil,
 	)
@@ -47,11 +38,4 @@ func TestGetDefaultClassInfoAppliesParametersRefs(t *testing.T) {
 	require.Equal(t, gwv1.Namespace("control-plane"), *classInfos[standardClass].ParametersRef.Namespace)
 	require.Equal(t, gwv1.Group(wellknown.GatewayParametersGVK.Group), classInfos[standardClass].ParametersRef.Group)
 	require.Equal(t, gwv1.Kind(wellknown.GatewayParametersGVK.Kind), classInfos[standardClass].ParametersRef.Kind)
-
-	require.NotNil(t, classInfos[waypointClass])
-	require.NotNil(t, classInfos[waypointClass].ParametersRef)
-	require.Equal(t, "waypoint-gwp", classInfos[waypointClass].ParametersRef.Name)
-	require.Equal(t, gwv1.Namespace("control-plane"), *classInfos[waypointClass].ParametersRef.Namespace)
-	require.Equal(t, gwv1.Group(wellknown.GatewayParametersGVK.Group), classInfos[waypointClass].ParametersRef.Group)
-	require.Equal(t, gwv1.Kind(wellknown.GatewayParametersGVK.Kind), classInfos[waypointClass].ParametersRef.Kind)
 }

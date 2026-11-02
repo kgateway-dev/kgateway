@@ -20,6 +20,7 @@ type (
 	ProviderNeededMap               = trafficpolicy.ProviderNeededMap
 	TrafficPolicyGatewayExtensionIR = trafficpolicy.TrafficPolicyGatewayExtensionIR
 	TrafficPolicyMergeOpts          = trafficpolicy.TrafficPolicyMergeOpts
+	TrafficPolicyConstructorOption  = trafficpolicy.TrafficPolicyConstructorOption
 )
 
 var (
@@ -27,14 +28,20 @@ var (
 	EnableFilterPerRoute           = trafficpolicy.EnableFilterPerRoute
 	MergeTrafficPolicies           = trafficpolicy.MergeTrafficPolicies
 	AddDisableFilterIfNeeded       = trafficpolicy.AddDisableFilterIfNeeded
+
+	// WithSourceGroupKind sets the identity a ReferenceGrant has to name for the
+	// cross-namespace references held by a TrafficPolicySpec. See
+	// trafficpolicy.WithSourceGroupKind.
+	WithSourceGroupKind = trafficpolicy.WithSourceGroupKind
 )
 
 // NewTrafficPolicyConstructor creates a traffic policy constructor. This converts a traffic policy into its IR form.
 func NewTrafficPolicyConstructor(
 	ctx context.Context,
 	commoncol *collections.CommonCollections,
+	opts ...trafficpolicy.TrafficPolicyConstructorOption,
 ) *trafficpolicy.TrafficPolicyConstructor {
-	return trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol)
+	return trafficpolicy.NewTrafficPolicyConstructor(ctx, commoncol, opts...)
 }
 
 func NewGatewayTranslationPass(tctx ir.GwTranslationCtx, reporter reporter.Reporter, enableAuthSucceededMetadata bool) ir.ProxyTranslationPass {

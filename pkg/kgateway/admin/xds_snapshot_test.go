@@ -26,10 +26,12 @@ func TestRedactSecrets(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "secret data isredacted",
+			name: "secret data is redacted",
 			in: &cache.Snapshot{
+				// Index by the named response-type constants: their numeric
+				// values shift whenever go-control-plane adds a type.
 				Resources: [types.UnknownType]cache.Resources{
-					{
+					types.Cluster: {
 						Version: "cluster1",
 						Items: map[string]types.ResourceWithTTL{
 							"cluster1": {
@@ -39,7 +41,7 @@ func TestRedactSecrets(t *testing.T) {
 							},
 						},
 					},
-					{
+					types.Endpoint: {
 						Version: "endpoint1",
 						Items: map[string]types.ResourceWithTTL{
 							"endpoint1": {
@@ -49,19 +51,19 @@ func TestRedactSecrets(t *testing.T) {
 							},
 						},
 					},
-					{
+					types.Listener: {
 						Version: "listener",
 					},
-					{
+					types.Route: {
 						Version: "route",
 					},
-					{
+					types.ScopedRoute: {
 						Version: "scopedroute",
 					},
-					{
+					types.VirtualHost: {
 						Version: "virtualhost",
 					},
-					{
+					types.Secret: {
 						Version: "secret1",
 						Items: map[string]types.ResourceWithTTL{
 							"secret-foo": {
@@ -98,7 +100,7 @@ func TestRedactSecrets(t *testing.T) {
 			},
 			want: &cache.Snapshot{
 				Resources: [types.UnknownType]cache.Resources{
-					{
+					types.Cluster: {
 						Version: "cluster1",
 						Items: map[string]types.ResourceWithTTL{
 							"cluster1": {
@@ -108,7 +110,7 @@ func TestRedactSecrets(t *testing.T) {
 							},
 						},
 					},
-					{
+					types.Endpoint: {
 						Version: "endpoint1",
 						Items: map[string]types.ResourceWithTTL{
 							"endpoint1": {
@@ -118,19 +120,19 @@ func TestRedactSecrets(t *testing.T) {
 							},
 						},
 					},
-					{
+					types.Listener: {
 						Version: "listener",
 					},
-					{
+					types.Route: {
 						Version: "route",
 					},
-					{
+					types.ScopedRoute: {
 						Version: "scopedroute",
 					},
-					{
+					types.VirtualHost: {
 						Version: "virtualhost",
 					},
-					{
+					types.Secret: {
 						Version: "secret1",
 						Items: map[string]types.ResourceWithTTL{
 							"secret-foo": {

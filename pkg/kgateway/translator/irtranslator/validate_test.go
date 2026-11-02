@@ -85,6 +85,76 @@ func TestValidateRoute_StrictRouteActionFailure(t *testing.T) {
 	assert.Equal(t, int32(2), v.calls.Load(), "route-action failure pays the disambiguation call")
 }
 
+func TestValidateRedirectPath(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{name: "empty path", path: "", wantErr: false},
+		{name: "simple path", path: "/test", wantErr: false},
+		{name: "path with query params", path: "/test?foo=bar", wantErr: false},
+		{name: "path with multiple query params", path: "/test?foo=bar&baz=qux", wantErr: false},
+		{name: "path with encoded chars", path: "/test?redirect=%2Ffoo", wantErr: false},
+		{name: "path with empty query", path: "/test?", wantErr: false},
+		{name: "path with fragment only no query", path: "/test#section", wantErr: false},
+		{name: "path with hash after query", path: "/test?ref=val#section", wantErr: false},
+		{name: "query with brackets", path: "/test?foo[]=1", wantErr: false},
+		{name: "query with non-ascii byte", path: "/test?foo=\u00e9", wantErr: false},
+		// A redirect target is never matched on, so the sequences ValidateRoutePath rejects for
+		// match paths are all legal here. Envoy accepts them, so kgateway must not be stricter.
+		{name: "double slash", path: "//test", wantErr: false},
+		{name: "dot dot segment", path: "/test/../foo?bar=baz", wantErr: false},
+		{name: "encoded slash", path: "/test%2Ffoo", wantErr: false},
+		{name: "trailing dot dot", path: "/test/..", wantErr: false},
+		// Envoy's own path_redirect constraint is ^[^\x00\n\r]*$, and violating it makes Envoy
+		// reject the whole RouteConfiguration, so catch it before it is sent.
+		{name: "CRLF in query", path: "/test?foo=bar\r\nx-injected: 1", wantErr: true},
+		{name: "CRLF in fragment", path: "/test#frag\r\nx-injected: 1", wantErr: true},
+		{name: "bare LF", path: "/test\nfoo", wantErr: true},
+		{name: "NUL", path: "/test\x00", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var errs []error
+			validateRedirectPath(tt.path, &errs)
+			if tt.wantErr {
+				require.NotEmpty(t, errs, "expected error for path %q", tt.path)
+			} else {
+				require.Empty(t, errs, "unexpected error for path %q: %v", tt.path, errs)
+			}
+		})
+	}
+}
+
+func newRouteWithRedirectPath(redirectPath string) *envoyroutev3.Route {
+	return &envoyroutev3.Route{
+		Name: "r",
+		Match: &envoyroutev3.RouteMatch{
+			PathSpecifier: &envoyroutev3.RouteMatch_Path{Path: "/original"},
+		},
+		Action: &envoyroutev3.Route_Redirect{
+			Redirect: &envoyroutev3.RedirectAction{
+				PathRewriteSpecifier: &envoyroutev3.RedirectAction_PathRedirect{
+					PathRedirect: redirectPath,
+				},
+			},
+		},
+	}
+}
+
+func TestValidateRoute_RedirectPathWithQueryParams(t *testing.T) {
+	v := &countingValidator{}
+	err := validateRoute(context.Background(), newRouteWithRedirectPath("/redirect?foo=bar"), v, apisettings.ValidationStandard)
+	require.NoError(t, err, "redirect path with query params should be valid")
+}
+
+func TestValidateRoute_RedirectPathWithInvalidPath(t *testing.T) {
+	v := &countingValidator{}
+	err := validateRoute(context.Background(), newRouteWithRedirectPath("/redirect\r\nx-injected: 1"), v, apisettings.ValidationStandard)
+	require.Error(t, err, "redirect path with CRLF should be invalid")
+}
+
 func TestValidateRoute_StrictMatcherFailure(t *testing.T) {
 	v := &countingValidator{
 		failureFunc: func(call int) error {

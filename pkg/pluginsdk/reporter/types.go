@@ -4,6 +4,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 )
 
 const (
@@ -18,6 +20,15 @@ const (
 	PolicyMergedMsg = "Merged with other policies in target(s) and attached"
 
 	PolicyOverriddenMsg = "Overridden due to conflict with higher priority policy in target(s)"
+
+	// PolicyTargetNotFoundMsg is the Attached message reported on a policy whose targetRefs
+	// name objects that do not exist.
+	PolicyTargetNotFoundMsg = "Policy is not attached to targets that could not be resolved"
+
+	// PolicyStatusSummaryAncestorName is the kind and name of the synthetic ancestor entry
+	// PolicyStatusSummaryAncestorRef describes. It matches the name agentgateway uses for the
+	// same entry so tooling can match one constant across both.
+	PolicyStatusSummaryAncestorName = "StatusSummary"
 
 	// RouteRuleDroppedReason is used with the Accepted=False condition when the route rule is dropped.
 	RouteRuleDroppedReason = "RouteRuleDropped"
@@ -154,4 +165,41 @@ type ParentRefReporter interface {
 
 type BackendReporter interface {
 	SetCondition(condition BackendCondition)
+}
+
+// PolicyStatusSummaryAncestorRef is the ancestor under which a policy reports findings that
+// belong to the policy as a whole rather than to any Gateway: today, targetRefs that do not
+// resolve. A missing target has no Gateway to report under, and Gateway API gives policy status
+// no home for conditions other than an ancestor entry, so a fixed synthetic entry, one per
+// policy, carries them. Group and kind are explicit because the CRD schema defaults an omitted
+// ancestorRef group to gateway.networking.k8s.io and kind to Gateway, which would make the
+// entry read as a Gateway named StatusSummary. Namespace is omitted so it reads as
+// policy-scoped.
+func PolicyStatusSummaryAncestorRef() gwv1.ParentReference {
+	return gwv1.ParentReference{
+		Group: new(gwv1.Group(kgateway.GroupName)),
+		Kind:  new(gwv1.Kind(PolicyStatusSummaryAncestorName)),
+		Name:  PolicyStatusSummaryAncestorName,
+	}
+}
+
+// IsPolicyStatusSummaryAncestor reports whether an ancestor, given as the fields of its ref,
+// is the one PolicyStatusSummaryAncestorRef describes.
+func IsPolicyStatusSummaryAncestor(group, kind, namespace, name string) bool {
+	return group == kgateway.GroupName &&
+		kind == PolicyStatusSummaryAncestorName &&
+		namespace == "" &&
+		name == PolicyStatusSummaryAncestorName
+}
+
+// IsPolicyStatusSummaryAncestorRef is IsPolicyStatusSummaryAncestor for a ParentReference.
+func IsPolicyStatusSummaryAncestorRef(ref gwv1.ParentReference) bool {
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	return IsPolicyStatusSummaryAncestor(
+		deref((*string)(ref.Group)), deref((*string)(ref.Kind)), deref((*string)(ref.Namespace)), string(ref.Name))
 }

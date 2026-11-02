@@ -126,6 +126,8 @@ spec:
     timeout: "50ms"
     failOpen: false
     xRateLimitHeaders: DraftVersion03
+    percentEnabled: 100
+    percentEnforced: 25
 ---
 apiVersion: v1
 kind: Service

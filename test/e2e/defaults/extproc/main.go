@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io"
 	"log/slog"
@@ -16,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	service_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -74,7 +75,7 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 		}
 
 		req, err := srv.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// envoy has closed the stream. Don't return anything and close this stream entirely
 			return nil
 		}
@@ -166,7 +167,7 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 			resp.Response = &service_ext_proc_v3.ProcessingResponse_ResponseTrailers{}
 
 		default:
-			logger.Info("unknown request type", "request type", v)
+			logger.Info("unknown request type", "request_type", v)
 		}
 
 		// At this point we believe we have created a valid response...
@@ -177,7 +178,6 @@ func (s *server) Process(srv service_ext_proc_v3.ExternalProcessor_ProcessServer
 			logger.Info("send error", "error", err)
 			return err
 		}
-
 	}
 }
 
@@ -232,8 +232,8 @@ func appendDefaultHeader(resp *service_ext_proc_v3.HeadersResponse) {
 	}
 	resp.Response.HeaderMutation.SetHeaders = append(
 		resp.Response.HeaderMutation.SetHeaders,
-		&core_v3.HeaderValueOption{
-			Header: &core_v3.HeaderValue{Key: parts[0], RawValue: []byte(parts[1])},
+		&envoycorev3.HeaderValueOption{
+			Header: &envoycorev3.HeaderValue{Key: parts[0], RawValue: []byte(parts[1])},
 		},
 	)
 }
@@ -269,10 +269,10 @@ func getHeadersResponseFromInstructions(in *service_ext_proc_v3.HttpHeaders) (*s
 
 	// headers
 	if len(instructions.AddHeaders) > 0 || len(instructions.RemoveHeaders) > 0 {
-		var addHeaders []*core_v3.HeaderValueOption
+		var addHeaders []*envoycorev3.HeaderValueOption
 		for k, v := range instructions.AddHeaders {
-			addHeaders = append(addHeaders, &core_v3.HeaderValueOption{
-				Header: &core_v3.HeaderValue{Key: k, RawValue: []byte(v)},
+			addHeaders = append(addHeaders, &envoycorev3.HeaderValueOption{
+				Header: &envoycorev3.HeaderValue{Key: k, RawValue: []byte(v)},
 			})
 		}
 		resp.Response.HeaderMutation = &service_ext_proc_v3.HeaderMutation{
@@ -289,15 +289,15 @@ func getHeadersResponseFromInstructions(in *service_ext_proc_v3.HttpHeaders) (*s
 			resp.Response.HeaderMutation = &service_ext_proc_v3.HeaderMutation{}
 		}
 		resp.Response.HeaderMutation.SetHeaders = append(resp.Response.HeaderMutation.SetHeaders,
-			[]*core_v3.HeaderValueOption{
+			[]*envoycorev3.HeaderValueOption{
 				{
-					Header: &core_v3.HeaderValue{
+					Header: &envoycorev3.HeaderValue{
 						Key:   "content-type",
 						Value: "text/plain",
 					},
 				},
 				{
-					Header: &core_v3.HeaderValue{
+					Header: &envoycorev3.HeaderValue{
 						Key:   "Content-Length",
 						Value: strconv.Itoa(len(body)),
 					},
@@ -312,11 +312,11 @@ func getHeadersResponseFromInstructions(in *service_ext_proc_v3.HttpHeaders) (*s
 
 	// trailers
 	if len(instructions.SetTrailers) > 0 {
-		var setTrailers []*core_v3.HeaderValue
+		var setTrailers []*envoycorev3.HeaderValue
 		for k, v := range instructions.SetTrailers {
-			setTrailers = append(setTrailers, &core_v3.HeaderValue{Key: k, Value: v})
+			setTrailers = append(setTrailers, &envoycorev3.HeaderValue{Key: k, Value: v})
 		}
-		resp.Response.Trailers = &core_v3.HeaderMap{
+		resp.Response.Trailers = &envoycorev3.HeaderMap{
 			Headers: setTrailers,
 		}
 	}

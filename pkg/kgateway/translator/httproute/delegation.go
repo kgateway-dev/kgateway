@@ -11,7 +11,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
-	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	reports "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 )
@@ -78,12 +77,7 @@ func flattenDelegatedRoutes(
 		}
 
 		// Create a new reporter for the child route
-		reporter := baseReporter.Route(childRoute.GetSourceObject()).ParentRef(&gwv1.ParentReference{
-			Group:     new(gwv1.Group(wellknown.GatewayGroup)),
-			Kind:      new(gwv1.Kind(wellknown.HTTPRouteKind)),
-			Name:      gwv1.ObjectName(parentRef.Name),
-			Namespace: new(gwv1.Namespace(parentRef.Namespace)),
-		})
+		reporter := baseReporter.Route(childRoute.GetSourceObject()).ParentRef(&child.ParentRef)
 
 		if err := validateChildRoute(*childRoute); err != nil {
 			reporter.SetCondition(reports.RouteCondition{

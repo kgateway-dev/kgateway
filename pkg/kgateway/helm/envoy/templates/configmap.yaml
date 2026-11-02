@@ -43,6 +43,14 @@ data:
           envoy.restart_features.use_eds_cache_for_ads: true
       - name: admin_layer
         admin_layer: {}
+    {{- with $gateway.maxDownstreamConnections }}
+    overload_manager:
+      resource_monitors:
+        - name: envoy.resource_monitors.global_downstream_max_connections
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+            max_active_downstream_connections: {{ . }}
+    {{- end }}
     node:
       cluster: {{ $localClusterName | quote }}
       metadata:
@@ -95,7 +103,8 @@ data:
       listeners:
       - name: readiness_listener
         address:
-          socket_address: { address: 0.0.0.0, port_value: 8082 }
+          socket_address:
+            {{- include "kgateway.gateway.wildcardSocketAddress" (dict "bindIpv6" $gateway.bindIpv6 "port" 8082) | nindent 12 }}
 {{- if $gateway.enableReadinessProbeProxyProtocol }}
         listener_filters:
           - name: envoy.filters.listener.proxy_protocol
@@ -144,8 +153,7 @@ data:
       - name: prometheus_listener
         address:
           socket_address:
-            address: 0.0.0.0
-            port_value: 9091
+            {{- include "kgateway.gateway.wildcardSocketAddress" (dict "bindIpv6" $gateway.bindIpv6 "port" 9091) | nindent 12 }}
         filter_chains:
           - filters:
             - name: envoy.filters.network.http_connection_manager

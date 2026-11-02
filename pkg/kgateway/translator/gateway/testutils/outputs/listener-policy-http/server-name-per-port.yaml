@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -34,13 +32,13 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: listener~80
         serverName: listener-eighty-server
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~80
 - address:
@@ -64,13 +62,13 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~8080
 Routes:
@@ -78,7 +76,7 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~80
   virtualHosts:
@@ -96,7 +94,7 @@ Routes:
   metadata:
     filterMetadata:
       merge.ListenerPolicy.gateway.kgateway.dev:
-        perPortPolicy[80]:
+        perPortPolicy[80].httpSettings.serverName:
         - gateway.kgateway.dev/ListenerPolicy/default/server-name-per-port
   name: listener~8080
   virtualHosts:

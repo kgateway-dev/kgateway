@@ -323,7 +323,7 @@ func mergeRustformation(
 					Name: RustformationModuleName,
 				},
 				FilterName:         RustformationFilterName,
-				PerRouteConfigName: RustformationFilterName,
+				PerRouteConfigName: RustformationFilterName, //nolint:staticcheck // SA1019: PerRouteConfigName is kept for legacy migration purposes
 				FilterConfig:       filterCfg,
 			}}
 		}
@@ -874,7 +874,7 @@ func mergeHttpACL(
 					Name: httpACLModuleName,
 				},
 				FilterName:         httpACLFilterName,
-				PerRouteConfigName: httpACLFilterName,
+				PerRouteConfigName: httpACLFilterName, //nolint:staticcheck // SA1019: PerRouteConfigName is kept for legacy migration purposes
 				FilterConfig:       filterCfg,
 			}}
 		}

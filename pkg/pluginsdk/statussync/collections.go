@@ -75,7 +75,7 @@ func RegisterKindByObjectGVK[I controllers.Object](
 	opts ...krt.CollectionOption,
 ) krt.Collection[ResourceReports] {
 	return registerKind(s, objects, contributions, byTarget,
-		func(obj I) schema.GroupVersionKind { return objectGVKOrDefault(obj, fallback) },
+		func(obj I) schema.GroupVersionKind { return ObjectGVKOrDefault(obj, fallback) },
 		func() { registerResourceByObjectGVK(s, fallback, objects) },
 		opts...)
 }
@@ -97,7 +97,11 @@ func registerKind[I controllers.Object](
 	return col
 }
 
-func objectGVKOrDefault(obj controllers.Object, fallback schema.GroupVersionKind) schema.GroupVersionKind {
+// ObjectGVKOrDefault returns the GVK recorded in the object's TypeMeta, or fallback when it is
+// empty. Typed informers leave TypeMeta empty, so an object without one is of the collection's
+// native kind; converted objects (for example legacy XListenerSets normalized into the ListenerSet
+// collection) keep their source GVK there.
+func ObjectGVKOrDefault(obj controllers.Object, fallback schema.GroupVersionKind) schema.GroupVersionKind {
 	if gvk := obj.GetObjectKind().GroupVersionKind(); !gvk.Empty() {
 		return gvk
 	}
@@ -224,7 +228,7 @@ func registerResourceByObjectGVK[I controllers.Object](
 	col krt.Collection[I],
 ) {
 	registerResource(s, col, func(obj I) schema.GroupVersionKind {
-		return objectGVKOrDefault(obj, fallback)
+		return ObjectGVKOrDefault(obj, fallback)
 	})
 }
 

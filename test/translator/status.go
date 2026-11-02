@@ -250,24 +250,19 @@ func normalizeBackendStatus(status *kgateway.BackendStatus, time metav1.Time) {
 	}
 }
 
-func compareStatuses(expectedFile string, actualStatuses *Statuses) (string, error) {
-	expectedOutput := &translationResult{}
-	if err := ReadYamlFile(expectedFile, expectedOutput); err != nil {
-		return "", err
+func compareStatuses(expectedStatuses, actualStatuses *Statuses) string {
+	if expectedStatuses == nil && actualStatuses == nil {
+		return ""
 	}
-
-	if expectedOutput.Statuses == nil && actualStatuses == nil {
-		return "", nil
-	}
-	if expectedOutput.Statuses == nil {
-		return "expected no statuses but got some", nil
+	if expectedStatuses == nil {
+		return "expected no statuses but got some"
 	}
 	if actualStatuses == nil {
-		return "expected statuses but got none", nil
+		return "expected statuses but got none"
 	}
 
 	// Sort statuses for consistent comparison
-	expectedSorted := sortStatuses(expectedOutput.Statuses)
+	expectedSorted := sortStatuses(expectedStatuses)
 	actualSorted := sortStatuses(actualStatuses)
 
 	// Use custom comparison options to ignore timestamp differences and handle nil vs empty slice
@@ -277,7 +272,7 @@ func compareStatuses(expectedFile string, actualStatuses *Statuses) (string, err
 		cmpopts.EquateEmpty(),
 	}
 
-	return cmp.Diff(expectedSorted, actualSorted, opts...), nil
+	return cmp.Diff(expectedSorted, actualSorted, opts...)
 }
 
 func sortStatuses(statuses *Statuses) *Statuses {

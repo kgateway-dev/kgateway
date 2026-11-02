@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
@@ -30,16 +29,19 @@ func gatewayStatusContributions(
 	}, krtopts.ToOptions("GatewayStatusContributions")...)
 }
 
+// backendPolicyStatusContributions projects attachments and the base
+// translation errors attributed to policies into policy status.
 func backendPolicyStatusContributions(
 	backends krt.Collection[*ir.BackendObjectIR],
-	excludedPolicyKinds map[schema.GroupKind]struct{},
+	statusClusters krt.Collection[uccWithCluster],
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[reports.StatusContribution] {
-	return krt.NewManyCollection(backends, func(_ krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
+	return krt.NewManyCollection(backends, func(kctx krt.HandlerContext, backend *ir.BackendObjectIR) []reports.StatusContribution {
 		if backend == nil {
 			return nil
 		}
-		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend}, excludedPolicyKinds)
+		baseKey := uccClusterResourceName(ir.UniquelyConnectedClient{}, backend.ClusterName())
+		reportMap := GenerateBackendPolicyReport([]*ir.BackendObjectIR{backend}, krt.Fetch(kctx, statusClusters, krt.FilterKey(baseKey)))
 		// Key on the backend's own resource name, not its ObjectSource's: one Service yields a
 		// BackendObjectIR per port, and ObjectSource.ResourceName() drops both the port and the
 		// extra key. Two ports contributing to the same policy would then emit contributions

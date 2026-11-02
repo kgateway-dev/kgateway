@@ -135,51 +135,28 @@ func (ltm *LoadTestManager) CreateGateways(gatewayNames []string) error {
 	return nil
 }
 
+// WaitForGatewayReadiness blocks until every created gateway reports a Programmed listener.
+// The timeout error reports the last observed listener conditions and proxy pod state.
 func (ltm *LoadTestManager) WaitForGatewayReadiness(timeout time.Duration) error {
 	timeoutCh := time.After(timeout)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
+	blocker := "no gateway status observed yet"
+
 	for {
 		select {
 		case <-timeoutCh:
-			return errors.New("timeout waiting for gateways to be ready")
+			return fmt.Errorf("timeout waiting for gateways to be ready after %v: %s; proxy pods: %s",
+				timeout, blocker, ltm.proxyPodSummary())
 		case <-ticker.C:
 			allReady := true
 
 			for _, gateway := range ltm.createdGateways {
-				namespacedName := types.NamespacedName{
-					Name:      gateway.Name,
-					Namespace: gateway.Namespace,
-				}
-
-				currentGateway := &gwv1.Gateway{}
-				if err := ltm.testInstallation.ClusterContext.Client.Get(ltm.ctx, namespacedName, currentGateway); err != nil {
-					allReady = false
-					break
-				}
-
-				// Check if gateway has listeners and they are ready
-				if len(currentGateway.Status.Listeners) == 0 {
-					allReady = false
-					break
-				}
-
-				ready := false
-				for _, listener := range currentGateway.Status.Listeners {
-					for _, condition := range listener.Conditions {
-						if condition.Type == "Programmed" && condition.Status == "True" {
-							ready = true
-							break
-						}
-					}
-					if ready {
-						break
-					}
-				}
-
+				ready, detail := ltm.gatewayReadiness(gateway)
 				if !ready {
 					allReady = false
+					blocker = detail
 					break
 				}
 			}
@@ -189,6 +166,87 @@ func (ltm *LoadTestManager) WaitForGatewayReadiness(timeout time.Duration) error
 			}
 		}
 	}
+}
+
+// gatewayReadiness reports whether the gateway has a Programmed listener, and
+// if not, why.
+func (ltm *LoadTestManager) gatewayReadiness(gateway *gwv1.Gateway) (bool, string) {
+	namespacedName := types.NamespacedName{
+		Name:      gateway.Name,
+		Namespace: gateway.Namespace,
+	}
+
+	currentGateway := &gwv1.Gateway{}
+	if err := ltm.testInstallation.ClusterContext.Client.Get(ltm.ctx, namespacedName, currentGateway); err != nil {
+		return false, fmt.Sprintf("gateway %s read failed: %v", namespacedName, err)
+	}
+
+	if len(currentGateway.Status.Listeners) == 0 {
+		return false, fmt.Sprintf("gateway %s has no listener status yet (gateway conditions: %s)",
+			namespacedName, formatConditions(currentGateway.Status.Conditions))
+	}
+
+	listenerDetails := make([]string, 0, len(currentGateway.Status.Listeners))
+	for _, listener := range currentGateway.Status.Listeners {
+		for _, condition := range listener.Conditions {
+			if condition.Type == string(gwv1.ListenerConditionProgrammed) && condition.Status == metav1.ConditionTrue {
+				return true, ""
+			}
+		}
+		listenerDetails = append(listenerDetails, fmt.Sprintf("%s=[%s]",
+			listener.Name, formatConditions(listener.Conditions)))
+	}
+
+	return false, fmt.Sprintf("gateway %s has no Programmed listener (listeners: %s)",
+		namespacedName, strings.Join(listenerDetails, " | "))
+}
+
+// proxyPodSummary summarizes the pods in each namespace a gateway was created in.
+func (ltm *LoadTestManager) proxyPodSummary() string {
+	seen := make(map[string]struct{}, len(ltm.createdGateways))
+	snapshots := []string{}
+
+	for _, gateway := range ltm.createdGateways {
+		if _, ok := seen[gateway.Namespace]; ok {
+			continue
+		}
+		seen[gateway.Namespace] = struct{}{}
+
+		pods, err := ltm.testInstallation.ClusterContext.Clientset.CoreV1().
+			Pods(gateway.Namespace).
+			List(ltm.ctx, metav1.ListOptions{})
+		if err != nil {
+			snapshots = append(snapshots, fmt.Sprintf("%s: list pods failed: %v", gateway.Namespace, err))
+			continue
+		}
+		if len(pods.Items) == 0 {
+			snapshots = append(snapshots, gateway.Namespace+": no pods")
+			continue
+		}
+
+		for _, pod := range pods.Items {
+			snapshots = append(snapshots, fmt.Sprintf("%s/%s phase=%s ready=%s",
+				gateway.Namespace, pod.Name, pod.Status.Phase, podReadyStatus(pod)))
+		}
+	}
+
+	if len(snapshots) == 0 {
+		return "none"
+	}
+	return strings.Join(snapshots, " | ")
+}
+
+// formatConditions renders conditions as Type=Status/Reason.
+func formatConditions(conditions []metav1.Condition) string {
+	if len(conditions) == 0 {
+		return "none"
+	}
+
+	parts := make([]string, 0, len(conditions))
+	for _, condition := range conditions {
+		parts = append(parts, fmt.Sprintf("%s=%s/%s", condition.Type, condition.Status, condition.Reason))
+	}
+	return strings.Join(parts, ",")
 }
 
 func (ltm *LoadTestManager) CreateRoutesBatched(config *AttachedRoutesConfig) error {

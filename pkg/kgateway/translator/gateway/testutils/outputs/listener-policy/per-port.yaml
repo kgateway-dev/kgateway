@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_example-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -33,7 +31,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   listenerFilters:
@@ -46,7 +44,7 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~80
 - address:
@@ -70,7 +68,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~8080
-        statPrefix: http
+        statPrefix: http_8080
         useRemoteAddress: true
     name: listener~8080
   metadata:
@@ -78,7 +76,7 @@ Listeners:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~8080
   perConnectionBufferLimitBytes: 65536
@@ -89,7 +87,7 @@ Routes:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~80
   virtualHosts:
@@ -109,7 +107,7 @@ Routes:
       merge.ListenerPolicy.gateway.kgateway.dev:
         default.proxyProtocol:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
-        perPortPolicy[8080]:
+        perPortPolicy[8080].perConnectionBufferLimitBytes:
         - gateway.kgateway.dev/ListenerPolicy/default/proxy-protocol
   name: listener~8080
   virtualHosts:

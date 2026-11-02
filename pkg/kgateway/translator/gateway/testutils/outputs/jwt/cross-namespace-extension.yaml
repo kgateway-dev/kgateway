@@ -9,8 +9,6 @@ Clusters:
   ignoreHealthOnHostRemoval: true
   name: kube_default_backend-svc_80
   type: EDS
-- connectTimeout: 5s
-  name: test-backend-plugin_default_example-svc_80
 Listeners:
 - address:
     socketAddress:
@@ -57,6 +55,7 @@ Listeners:
                                 - claimName: gateway
                                   headerName: x-gateway
                                 clearRouteCache: true
+                                failedStatusInMetadata: failed_status
                                 issuer: https://gateway.example.com
                                 localJwks:
                                   inlineString: '{"keys":[{"use":"sig","kty":"RSA","alg":"RS256","n":"ruK9KacQjDePRyfG7oPIaqAIyCeOCBIGB2nBbDLGp1Szdm7rsWcrzGf7Avpa_ijLV9huoNvpdflld4B-SaT7m3EDDMDUyA4LayJC5JBI10Qfu3Qn8BEpcdN2uRiycXOzgsoIXneXp9hENlS5Vsr3ur5BaBCc-BZZRRaXDTLy6KyD1Pyd6XRsxyZXt_SYOIww0NSt5u0CTyZUGJhQungJpI8Hhrzdf87mLZGZd16dOGObE5LqFwk2prN3D0-owLsA25WJOPZXizxpTB4tPvJuYGATajDpzrHf-WXgOgvwyxaHJSN_fE-eFuRT3ooDaAuytsfYotsn4z_ajdEPSwXYCw","e":"AQAB"}]}'
@@ -100,7 +99,7 @@ Listeners:
             ads: {}
             resourceApiVersion: V3
           routeConfigName: listener~80
-        statPrefix: http
+        statPrefix: http_80
         useRemoteAddress: true
     name: listener~80
   name: listener~80

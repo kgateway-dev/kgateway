@@ -21,6 +21,7 @@ var (
 	outlierDetectionManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "outlierdetection.yaml")
 	missingTargetManifest         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "missing-target.yaml")
 	upstreamProxyProtocolManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-proxy-protocol.yaml")
+	tunnelManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tunnel.yaml")
 
 	// objects
 	proxyObjectMeta = metav1.ObjectMeta{

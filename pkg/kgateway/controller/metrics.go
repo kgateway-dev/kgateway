@@ -38,14 +38,6 @@ var (
 		},
 		[]string{controllerNameLabel, nameLabel, namespaceLabel},
 	)
-	reconciliationsRunning = metrics.NewGauge(
-		metrics.GaugeOpts{
-			Subsystem: controllerSubsystem,
-			Name:      "reconciliations_running",
-			Help:      "Number of reconciliations currently running",
-		},
-		[]string{controllerNameLabel, nameLabel, namespaceLabel},
-	)
 )
 
 // collectReconciliationMetrics is called at the start of a controller reconciliation
@@ -57,12 +49,6 @@ func collectReconciliationMetrics(controllerName string, req types.NamespacedNam
 	}
 
 	start := time.Now()
-
-	reconciliationsRunning.Add(1,
-		metrics.Label{Name: controllerNameLabel, Value: controllerName},
-		metrics.Label{Name: nameLabel, Value: req.Name},
-		metrics.Label{Name: namespaceLabel, Value: req.Namespace},
-	)
 
 	return func(err error) {
 		duration := time.Since(start)
@@ -84,12 +70,6 @@ func collectReconciliationMetrics(controllerName string, req types.NamespacedNam
 			metrics.Label{Name: namespaceLabel, Value: req.Namespace},
 			metrics.Label{Name: resultLabel, Value: result},
 		)
-
-		reconciliationsRunning.Sub(1,
-			metrics.Label{Name: controllerNameLabel, Value: controllerName},
-			metrics.Label{Name: nameLabel, Value: req.Name},
-			metrics.Label{Name: namespaceLabel, Value: req.Namespace},
-		)
 	}
 }
 
@@ -97,6 +77,5 @@ func collectReconciliationMetrics(controllerName string, req types.NamespacedNam
 // This is provided for testing purposes only.
 func ResetMetrics() {
 	reconciliationsTotal.Reset()
-	reconciliationsRunning.Reset()
 	reconcileDuration.Reset()
 }

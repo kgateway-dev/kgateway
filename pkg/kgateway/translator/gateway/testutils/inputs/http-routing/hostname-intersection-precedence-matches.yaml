@@ -1,0 +1,231 @@
+# Mirrors the HTTPRouteMultipleRoutesAttachmentSameHostnameIntersection
+# conformance subtests (kubernetes-sigs/gateway-api#5392). On each listener,
+# the newer route with the more specific hostname sorts before the older route
+# with the less specific hostname, so a request matching both goes to the
+# newer route, while a request matching only the older route still reaches it.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: exact-path
+    protocol: HTTP
+    port: 8080
+    hostname: path.example.com
+  - name: exact-path-header
+    protocol: HTTP
+    port: 8080
+    hostname: header.example.com
+  - name: wildcard-path
+    protocol: HTTP
+    port: 8080
+    hostname: "*.wildcard.test"
+  - name: wildcard-path-header
+    protocol: HTTP
+    port: 8080
+    hostname: "*.header.test"
+---
+# A request to path.example.com/path/prefix/longer goes to exact-path-newer.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wc-path-older
+  creationTimestamp: "2026-01-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: exact-path
+  hostnames:
+  - "*.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path/prefix
+    backendRefs:
+    - name: older-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: exact-path-newer
+  creationTimestamp: "2026-02-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: exact-path
+  hostnames:
+  - path.example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path
+    backendRefs:
+    - name: newer-svc
+      port: 8080
+---
+# A request to header.example.com/path/prefix/longer with Header-A: A and
+# Header-B: B goes to exact-path-header-newer; with only Header-B: B it goes to
+# wc-path-header-older.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wc-path-header-older
+  creationTimestamp: "2026-01-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: exact-path-header
+  hostnames:
+  - "*.example.com"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path/prefix
+      headers:
+      - type: Exact
+        name: Header-B
+        value: B
+    backendRefs:
+    - name: older-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: exact-path-header-newer
+  creationTimestamp: "2026-02-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: exact-path-header
+  hostnames:
+  - header.example.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path
+      headers:
+      - type: Exact
+        name: Header-A
+        value: A
+    backendRefs:
+    - name: newer-svc
+      port: 8080
+---
+# On a wildcard listener, a request to abc.wildcard.test/path/prefix/longer
+# goes to wc-path-newer over the less specific less-specific-wc-path-older.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: less-specific-wc-path-older
+  creationTimestamp: "2026-01-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: wildcard-path
+  hostnames:
+  - "*.test"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path/prefix
+    backendRefs:
+    - name: older-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wc-path-newer
+  creationTimestamp: "2026-02-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: wildcard-path
+  hostnames:
+  - "*.wildcard.test"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path
+    backendRefs:
+    - name: newer-svc
+      port: 8080
+---
+# On a wildcard listener, a request to abc.header.test/path/prefix/longer with
+# Header-A: A and Header-B: B goes to wc-path-header-newer; with only
+# Header-B: B it goes to less-specific-wc-path-header-older.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: less-specific-wc-path-header-older
+  creationTimestamp: "2026-01-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: wildcard-path-header
+  hostnames:
+  - "*.test"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path/prefix
+      headers:
+      - type: Exact
+        name: Header-B
+        value: B
+    backendRefs:
+    - name: older-svc
+      port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wc-path-header-newer
+  creationTimestamp: "2026-02-01T00:00:00Z"
+spec:
+  parentRefs:
+  - name: example-gateway
+    sectionName: wildcard-path-header
+  hostnames:
+  - "*.header.test"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /path
+      headers:
+      - type: Exact
+        name: Header-A
+        value: A
+    backendRefs:
+    - name: newer-svc
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: older-svc
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: newer-svc
+spec:
+  ports:
+  - protocol: TCP
+    port: 8080

@@ -30,6 +30,22 @@ func TestBufferIREquals(t *testing.T) {
 			want: true,
 		},
 		{
+			// The unset side reaches Equals as a nil *bufferIR inside the
+			// PolicySubIR interface, which is not a nil interface.
+			name: "set and unset are not equal",
+			a: &kgateway.Buffer{
+				MaxRequestSize: new(resource.MustParse("1Ki")),
+			},
+			want: false,
+		},
+		{
+			name: "unset and set are not equal",
+			b: &kgateway.Buffer{
+				MaxRequestSize: new(resource.MustParse("1Ki")),
+			},
+			want: false,
+		},
+		{
 			name: "non-nil and not equal",
 			a: &kgateway.Buffer{
 				MaxRequestSize: new(resource.MustParse("1Ki")),

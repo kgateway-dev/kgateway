@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	envoyclusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -241,6 +242,7 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 func buildLambdaFilters(
 	arn string,
 	region string,
+	hostRewrite string,
 	auth *kgateway.AwsAuth,
 	secret *ir.Secret,
 	invokeMode envoy_lambda_v3.Config_InvocationMode,
@@ -254,10 +256,12 @@ func buildLambdaFilters(
 		payloadPassthrough = false
 	}
 
+	// Use the Lambda endpoint authority instead of the client authority or a route-level rewrite.
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
 		Arn:                arn,
 		InvocationMode:     invokeMode,
 		PayloadPassthrough: payloadPassthrough,
+		HostRewrite:        hostRewrite,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lambda config: %w", err)
@@ -334,6 +338,19 @@ type lambdaEndpointConfig struct {
 	useTLS   bool
 }
 
+// authority returns the HTTP authority, omitting only the scheme's default port.
+func (u *lambdaEndpointConfig) authority() string {
+	host := u.hostname
+	if strings.Contains(host, ":") {
+		// url.Hostname() strips the brackets an IPv6 authority needs.
+		host = "[" + host + "]"
+	}
+	if (u.useTLS && u.port == 443) || (!u.useTLS && u.port == 80) {
+		return host
+	}
+	return host + ":" + strconv.FormatUint(uint64(u.port), 10)
+}
+
 // Equals checks if two lambdaEndpointConfig objects are equal.
 func (u *lambdaEndpointConfig) Equals(other *lambdaEndpointConfig) bool {
 	return u.hostname == other.hostname && u.port == other.port && u.useTLS == other.useTLS
@@ -376,23 +393,49 @@ type staticSecretDerivation struct {
 }
 
 // deriveStaticSecret derives the static secret from the given secret.
+//
+// Envoy's InlineCredentialProvider requires access_key_id and secret_access_key
+// to be non-empty (min_len: 1) and imposes no such constraint on session_token.
+// Enforcing the same rules here keeps a malformed Secret from producing a
+// cluster that Envoy rejects, which in the default validation mode discards the
+// entire CDS response. Returned errors name the Secret data key at fault and
+// never include the secret values themselves.
 func deriveStaticSecret(awsSecrets *ir.Secret) (*staticSecretDerivation, error) {
-	var errs []error
-	// validate that the secret has field in string format and has an access_key and secret_key
-	if awsSecrets.Data[wellknown.AccessKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.AccessKey]) {
-		// err is nil here but this is still safe
-		errs = append(errs, errors.New("access_key is not a valid string"))
+	errs := []error{
+		validateSecretDataKey(awsSecrets.Data, wellknown.AccessKey, true),
+		validateSecretDataKey(awsSecrets.Data, wellknown.SecretKey, true),
+		validateSecretDataKey(awsSecrets.Data, wellknown.SessionToken, false),
 	}
-	if awsSecrets.Data[wellknown.SecretKey] == nil || !utf8.Valid(awsSecrets.Data[wellknown.SecretKey]) {
-		errs = append(errs, errors.New("secret_key is not a valid string"))
-	}
-	// Session key is optional, but if it is present, it must be a valid string.
-	if awsSecrets.Data[wellknown.SessionToken] != nil && !utf8.Valid(awsSecrets.Data[wellknown.SessionToken]) {
-		errs = append(errs, errors.New("session_key is not a valid string"))
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
 	}
 	return &staticSecretDerivation{
 		access:  string(awsSecrets.Data[wellknown.AccessKey]),
 		session: string(awsSecrets.Data[wellknown.SessionToken]),
 		secret:  string(awsSecrets.Data[wellknown.SecretKey]),
-	}, errors.Join(errs...)
+	}, nil
+}
+
+// validateSecretDataKey checks the value stored under key in a Secret's data.
+// A required key must be present, non-empty and valid UTF-8; an optional key
+// may be absent or empty but must be valid UTF-8 when set.
+func validateSecretDataKey(data map[string][]byte, key string, required bool) error {
+	value, ok := data[key]
+	if !ok || len(value) == 0 {
+		if required {
+			return fmt.Errorf("secret data key %q is missing or empty", key)
+		}
+		return nil
+	}
+	if !utf8.Valid(value) {
+		return fmt.Errorf("secret data key %q is not a valid UTF-8 string", key)
+	}
+	// Envoy only checks that the credential is non-empty, so a padded or
+	// whitespace-only value is signed as-is and AWS answers with a 403 that does
+	// not point back at the Secret. Reject it here instead of trimming so the
+	// broken Secret gets fixed rather than silently masked.
+	if strings.TrimSpace(string(value)) != string(value) {
+		return fmt.Errorf("secret data key %q has leading or trailing whitespace", key)
+	}
+	return nil
 }

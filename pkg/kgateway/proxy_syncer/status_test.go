@@ -3,17 +3,22 @@ package proxy_syncer
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/shared"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
@@ -180,9 +185,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 		ancestor1TLSPolicyreport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(shared.PolicyConditionAccepted),
+				Type:    string(gwv1.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(shared.PolicyReasonInvalid),
+				Reason:  string(gwv1.PolicyReasonInvalid),
 				Message: "tls-policy error",
 			},
 		},
@@ -199,9 +204,9 @@ func TestBackendPolicyStatus(t *testing.T) {
 		ancestor2TLSPolicyreport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(shared.PolicyConditionAccepted),
+				Type:    string(gwv1.PolicyConditionAccepted),
 				Status:  metav1.ConditionFalse,
-				Reason:  string(shared.PolicyReasonInvalid),
+				Reason:  string(gwv1.PolicyReasonInvalid),
 				Message: "tls-policy error",
 			},
 		},
@@ -265,16 +270,16 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 		ancestorReport.Conditions,
 		[]metav1.Condition{
 			{
-				Type:    string(shared.PolicyConditionAccepted),
+				Type:    string(gwv1.BackendTLSPolicyConditionResolvedRefs),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(shared.PolicyReasonValid),
-				Message: reporter.PolicyAcceptedMsg,
+				Reason:  string(gwv1.BackendTLSPolicyReasonResolvedRefs),
+				Message: "Resolved all references",
 			},
 			{
-				Type:    string(shared.PolicyConditionAttached),
+				Type:    string(gwv1.PolicyConditionAccepted),
 				Status:  metav1.ConditionTrue,
-				Reason:  string(shared.PolicyReasonAttached),
-				Message: reporter.PolicyAttachedMsg,
+				Reason:  string(gwv1.PolicyReasonAccepted),
+				Message: reporter.PolicyAcceptedMsg,
 			},
 		},
 		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
@@ -288,4 +293,215 @@ func TestBackendPolicyStatusWithSectionName(t *testing.T) {
 		NamespacedName: types.NamespacedName{Namespace: "default", Name: "my-svc"},
 	}]
 	a.Nil(ancestorNoSection, "ancestor report without SectionName should not exist")
+}
+
+// A BackendTLSPolicy attached to a kgateway Backend reports against the Backend itself,
+// in the Gateway API's vocabulary, whether or not any route uses that Backend. When two
+// policies target the same Backend the older one wins and the newer one is Conflicted,
+// matching the winner the plugin's MergePolicies picks.
+func TestBackendPolicyStatusBackendTLSPolicyTargetAncestor(t *testing.T) {
+	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
+	newPolicyAtt := func(name string, created time.Time, generation int64) ir.PolicyAtt {
+		return ir.PolicyAtt{
+			GroupKind:  btpGK,
+			Generation: generation,
+			PolicyRef: &ir.AttachedPolicyRef{
+				Group:     btpGK.Group,
+				Kind:      btpGK.Kind,
+				Name:      name,
+				Namespace: "default",
+			},
+			PolicyIr: backendTLSTestPolicyIR{ct: created},
+		}
+	}
+	older := newPolicyAtt("older", time.Unix(100, 0), 3)
+	newer := newPolicyAtt("newer", time.Unix(200, 0), 5)
+
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     wellknown.BackendGVK.Group,
+		Kind:      wellknown.BackendGVK.Kind,
+		Namespace: "default",
+		Name:      "issuer",
+	}, 0, "", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{
+		Policies: map[schema.GroupKind][]ir.PolicyAtt{
+			// newer first: the winner must come from creation time, not attachment order
+			btpGK: {newer, older},
+		},
+	}
+
+	a := assert.New(t)
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
+	a.Len(rm.Policies, 2)
+
+	targetKey := reports.ParentRefKey{
+		Group:          wellknown.BackendGVK.Group,
+		Kind:           wellknown.BackendGVK.Kind,
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "issuer"},
+	}
+	ancestorFor := func(name string) *reports.AncestorRefReport {
+		report := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: name}]
+		if !a.NotNil(report, "policy %s should have a report", name) {
+			return nil
+		}
+		a.Len(report.Ancestors, 1, "policy %s should report only its target as ancestor", name)
+		return report.Ancestors[targetKey]
+	}
+
+	winner := ancestorFor("older")
+	a.NotNil(winner, "winner should be reported against the Backend it targets")
+	a.Empty(cmp.Diff(
+		[]metav1.Condition{
+			{
+				Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+				Status:             metav1.ConditionTrue,
+				Reason:             string(gwv1.BackendTLSPolicyReasonResolvedRefs),
+				Message:            "Resolved all references",
+				ObservedGeneration: 3,
+			},
+			{
+				Type:               string(gwv1.PolicyConditionAccepted),
+				Status:             metav1.ConditionTrue,
+				Reason:             string(gwv1.PolicyReasonAccepted),
+				Message:            reporter.PolicyAcceptedMsg,
+				ObservedGeneration: 3,
+			},
+		},
+		winner.Conditions,
+		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	))
+
+	loser := ancestorFor("newer")
+	a.NotNil(loser, "conflicted policy should still be reported against the Backend it targets")
+	a.Empty(cmp.Diff(
+		[]metav1.Condition{
+			{
+				Type:               string(gwv1.BackendTLSPolicyConditionResolvedRefs),
+				Status:             metav1.ConditionTrue,
+				Reason:             string(gwv1.BackendTLSPolicyReasonResolvedRefs),
+				Message:            "Resolved all references",
+				ObservedGeneration: 5,
+			},
+			{
+				Type:               string(gwv1.PolicyConditionAccepted),
+				Status:             metav1.ConditionFalse,
+				Reason:             string(gwv1.PolicyReasonConflicted),
+				Message:            reporter.PolicyConflictWithHigherPriorityMsg,
+				ObservedGeneration: 5,
+			},
+		},
+		loser.Conditions,
+		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	))
+}
+
+// Conflict resolution on the target ancestor must match translation: the plugin's
+// MergePolicies picks the oldest policy whether or not it is valid, and translation then
+// applies nothing if that winner is invalid. An older invalid policy therefore still takes
+// precedence, and the newer valid one is Conflicted rather than Accepted, exactly as the
+// Gateway ancestor reports it.
+func TestBackendPolicyStatusBackendTLSPolicyInvalidWinnerStillTakesPrecedence(t *testing.T) {
+	btpGK := wellknown.BackendTLSPolicyGVK.GroupKind()
+	olderInvalid := ir.PolicyAtt{
+		GroupKind:  btpGK,
+		Generation: 2,
+		PolicyRef:  &ir.AttachedPolicyRef{Group: btpGK.Group, Kind: btpGK.Kind, Name: "older-invalid", Namespace: "default"},
+		PolicyIr:   backendTLSTestPolicyIR{ct: time.Unix(100, 0)},
+		Errors:     []error{errors.New("bad ca")},
+	}
+	newerValid := ir.PolicyAtt{
+		GroupKind:  btpGK,
+		Generation: 4,
+		PolicyRef:  &ir.AttachedPolicyRef{Group: btpGK.Group, Kind: btpGK.Kind, Name: "newer-valid", Namespace: "default"},
+		PolicyIr:   backendTLSTestPolicyIR{ct: time.Unix(200, 0)},
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{Group: "", Kind: "Service", Namespace: "default", Name: "svc"}, 443, "https", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{btpGK: {newerValid, olderInvalid}}}
+
+	a := assert.New(t)
+	rm := GenerateBackendPolicyReport([]*ir.BackendObjectIR{&backend}, nil)
+	targetKey := reports.ParentRefKey{Group: "", Kind: "Service", NamespacedName: types.NamespacedName{Namespace: "default", Name: "svc"}}
+
+	older := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "older-invalid"}].Ancestors[targetKey]
+	a.NotNil(older)
+	a.Empty(cmp.Diff(
+		[]metav1.Condition{{
+			Type:               string(gwv1.PolicyConditionAccepted),
+			Status:             metav1.ConditionFalse,
+			Reason:             string(gwv1.PolicyReasonInvalid),
+			Message:            "bad ca",
+			ObservedGeneration: 2,
+		}},
+		older.Conditions,
+		cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	))
+
+	newer := rm.Policies[reporter.PolicyKey{Group: btpGK.Group, Kind: btpGK.Kind, Namespace: "default", Name: "newer-valid"}].Ancestors[targetKey]
+	a.NotNil(newer)
+	accepted := findCondition(newer.Conditions, string(gwv1.PolicyConditionAccepted))
+	a.NotNil(accepted, "newer policy should carry an Accepted condition")
+	a.Equal(metav1.ConditionFalse, accepted.Status, "a valid policy that loses to an older invalid one is not applied and must not report Accepted=True")
+	a.Equal(string(gwv1.PolicyReasonConflicted), accepted.Reason)
+}
+
+// TestBackendPolicyStatusReportsAttributedTranslationErrors checks that only
+// the policy responsible for a backend translation failure is rejected.
+func TestBackendPolicyStatusReportsAttributedTranslationErrors(t *testing.T) {
+	const tunnelErr = "tunnel: only Static Backends can be tunneled"
+	bcpGK := wellknown.BackendConfigPolicyGVK.GroupKind()
+	policyRef := func(name string) *ir.AttachedPolicyRef {
+		return &ir.AttachedPolicyRef{Group: bcpGK.Group, Kind: bcpGK.Kind, Namespace: "default", Name: name}
+	}
+	backend := ir.NewBackendObjectIR(ir.ObjectSource{
+		Group:     wellknown.BackendGVK.Group,
+		Kind:      wellknown.BackendGVK.Kind,
+		Namespace: "default",
+		Name:      "external",
+	}, 0, "", "")
+	backend.AttachedPolicies = ir.AttachedPolicies{Policies: map[schema.GroupKind][]ir.PolicyAtt{
+		bcpGK: {
+			{GroupKind: bcpGK, PolicyRef: policyRef("tunnel")},
+			{GroupKind: bcpGK, PolicyRef: policyRef("timeouts")},
+		},
+	}}
+	backends := krt.NewStaticCollection(nil, []*ir.BackendObjectIR{&backend})
+	statusClusters := krt.NewStaticCollection(nil, []uccWithCluster{{
+		Name:  backend.ClusterName(),
+		Error: &ir.PolicyError{Ref: policyRef("tunnel"), Err: errors.New(tunnelErr)},
+	}})
+
+	contributions := backendPolicyStatusContributions(backends, statusClusters, krtutil.KrtOptions{})
+
+	ancestor := reports.ParentRefKey{
+		Group:          wellknown.BackendGVK.Group,
+		Kind:           wellknown.BackendGVK.Kind,
+		NamespacedName: types.NamespacedName{Namespace: "default", Name: "external"},
+	}
+	accepted := func(policy string) *metav1.Condition {
+		for _, c := range contributions.List() {
+			if c.Target.Name != policy || c.Policy == nil || c.Policy.Ancestors[ancestor] == nil {
+				continue
+			}
+			return findCondition(c.Policy.Ancestors[ancestor].Conditions, string(shared.PolicyConditionAccepted))
+		}
+		return nil
+	}
+	require.Eventually(t, func() bool {
+		return accepted("tunnel") != nil && accepted("timeouts") != nil
+	}, 5*time.Second, 10*time.Millisecond, "both policies should be reported for the backend")
+
+	tunnel := accepted("tunnel")
+	assert.Equal(t, metav1.ConditionFalse, tunnel.Status, "the policy the error is attributed to must not be accepted")
+	assert.Equal(t, string(shared.PolicyReasonInvalid), tunnel.Reason)
+	assert.Equal(t, tunnelErr, tunnel.Message, "the message is the error, without repeating the policy")
+	assert.Equal(t, metav1.ConditionTrue, accepted("timeouts").Status, "a policy the error is not attributed to stays accepted")
+}
+
+func findCondition(conds []metav1.Condition, condType string) *metav1.Condition {
+	for i := range conds {
+		if conds[i].Type == condType {
+			return &conds[i]
+		}
+	}
+	return nil
 }

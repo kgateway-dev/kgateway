@@ -62,7 +62,6 @@ type StartConfig struct {
 	Manager                  manager.Manager
 	ControllerName           string
 	GatewayClassName         string
-	WaypointGatewayClassName string
 	AdditionalGatewayClasses map[string]*deployer.GatewayClassInfo
 	GatewayClassInfos        map[string]*deployer.GatewayClassInfo
 
@@ -83,13 +82,20 @@ type StartConfig struct {
 	CommonCollections *collections.CommonCollections
 	AugmentedPods     krt.Collection[krtcollections.LocalityPod]
 	UniqueClients     krt.Collection[ir.UniquelyConnectedClient]
+	// XDSClientState is the third result of NewUniquelyConnectedClients. If
+	// nil, reconnects look cold, departed proxies' snapshots are never
+	// reclaimed (memory grows with proxy churn), and a returning proxy is
+	// answered from its previous snapshot, possibly older than config it got
+	// from another replica, until the next publish to it.
+	XDSClientState krtcollections.XDSClientState
 
 	KrtOptions krtutil.KrtOptions
 
 	// GatewayControllerExtension is an extension that can be used to extend Gateway controller
 	GatewayControllerExtension sdk.GatewayControllerExtension
 
-	// StatusSyncerOptions is the list of options to be passed when creating the StatusSyncer
+	// StatusSyncerOptions configure the status pipeline. They are passed to both the ProxySyncer,
+	// which produces status contributions, and the StatusSyncer, which writes them.
 	StatusSyncerOptions []proxy_syncer.StatusSyncerOption
 }
 
@@ -117,10 +123,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("initializing kgateway extensions")
 
 	var gatedPlugins []sdk.Plugin
-	// Add the waypoint plugin if enabled
-	if cfg.SetupOpts.GlobalSettings.EnableWaypoint {
+	// Add the ingress-use-waypoint plugin if enabled
+	if cfg.SetupOpts.GlobalSettings.IngressUseWaypoints {
 		setupLog.Info("adding the waypoint plugin")
-		gatedPlugins = append(gatedPlugins, waypoint.NewPlugin(ctx, cfg.CommonCollections, cfg.WaypointGatewayClassName))
+		gatedPlugins = append(gatedPlugins, waypoint.NewPlugin(cfg.CommonCollections))
 	}
 	// Append the gatedPlugins to the ExtraPlugins
 	if len(gatedPlugins) != 0 {
@@ -152,6 +158,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.CommonCollections,
 		cfg.SetupOpts.Cache,
 		cfg.Validator,
+		cfg.XDSClientState,
+		cfg.StatusSyncerOptions...,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := cfg.Manager.Add(proxySyncer); err != nil {
@@ -261,7 +269,6 @@ func (c *ControllerBuilder) Build(ctx context.Context) error {
 		DiscoveryNamespaceFilter: c.cfg.Client.ObjectFilter(),
 		CommonCollections:        c.commoncol,
 		GatewayClassName:         c.cfg.GatewayClassName,
-		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
 		CertWatcher:              c.cfg.SetupOpts.CertWatcher,
 	}
 
@@ -296,7 +303,6 @@ func (c *ControllerBuilder) HasSynced() bool {
 func GetDefaultClassInfo(
 	globalSettings *apisettings.Settings,
 	gatewayClassName,
-	waypointGatewayClassName,
 	controllerName string,
 	additionalClassInfos map[string]*deployer.GatewayClassInfo,
 ) map[string]*deployer.GatewayClassInfo {
@@ -311,19 +317,6 @@ func GetDefaultClassInfo(
 		SupportedFeatures: deployer.GetSupportedFeaturesForStandardGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
 	}
 	applyGatewayClassParametersRef(classInfos[gatewayClassName], gatewayClassName, refOverrides)
-	// Only enable waypoint gateway class if it's enabled in the settings and the name isn't empty
-	if globalSettings.EnableWaypoint && waypointGatewayClassName != "" {
-		classInfos[waypointGatewayClassName] = &deployer.GatewayClassInfo{
-			Description: "Specialized class for Istio ambient mesh waypoint proxies.",
-			Labels:      map[string]string{},
-			Annotations: map[string]string{
-				"ambient.istio.io/waypoint-inbound-binding": "PROXY/15088",
-			},
-			ControllerName:    controllerName,
-			SupportedFeatures: deployer.GetSupportedFeaturesForWaypointGateway(globalSettings.EnableExperimentalGatewayAPIFeatures),
-		}
-		applyGatewayClassParametersRef(classInfos[waypointGatewayClassName], waypointGatewayClassName, refOverrides)
-	}
 	maps.Copy(classInfos, additionalClassInfos)
 	return classInfos
 }

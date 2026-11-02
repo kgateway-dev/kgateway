@@ -12,6 +12,7 @@ import (
 	envoylistenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroutev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoytlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -131,6 +132,12 @@ type HcmContext struct {
 	Gateway      GatewayIR
 }
 
+type TcpProxyContext struct {
+	ListenerPort uint32
+	Policy       PolicyIR
+	Gateway      GatewayIR
+}
+
 // ProxyTranslationPass represents a single translation pass for a gateway using envoy. It can hold state
 // for the duration of the translation.
 // Each of the functions here will be called in the order they appear in the interface.
@@ -203,6 +210,11 @@ type ProxyTranslationPass interface {
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
+	// called 1 time per TCP filter chain after listeners and allows tweaking TcpProxy settings.
+	ApplyTcpProxy(
+		pCtx *TcpProxyContext,
+		out *envoytcp.TcpProxy) error
+
 	// ApplyPostListener is called 1 time per listener, after FilterChains are built.
 	// Use this to mutate FilterChain-level fields that depend on the assembled chains.
 	ApplyPostListener(
@@ -212,6 +224,29 @@ type ProxyTranslationPass interface {
 
 	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd() Resources
+}
+
+// BackendObjectPolicyApplier is an optional interface a ProxyTranslationPass can implement to
+// contribute per-route config for policies attached to the backend object itself (via targetRefs
+// or targetSelectors on the policy, e.g. a policy targeting a Service), as opposed to
+// ApplyForRouteBackend which handles policies attached via extensionRef on the BackendRef.
+//
+// ApplyForBackendObjectPolicies is called for every backend in a route that has policies of the
+// plugin's kind attached, with the unmerged attachments. It runs on every route translation, so
+// implementations should return early when none of the policies need per-route config, and only
+// then merge them (skipping a merged policy with errors, like cluster translation does).
+// Note: TypedFilterConfig should be applied in the pCtx and is shared between ApplyForRoute, ApplyForBackend,
+// ApplyForRouteBackend and ApplyForBackendObjectPolicies
+type BackendObjectPolicyApplier interface {
+	ApplyForBackendObjectPolicies(policies []PolicyAtt, pCtx *RouteBackendContext) error
+}
+
+// TcpFilterChainPolicyPass is implemented by a ProxyTranslationPass whose policies can apply to
+// TCP filter chains, through ApplyTcpProxy or ApplyPostListener. A policy targeting a TCP or TLS
+// Gateway listener only gets status for it when AppliesToTcpFilterChain reports that the policy
+// has an effect there; policies of kinds that don't implement this interface never do.
+type TcpFilterChainPolicyPass interface {
+	AppliesToTcpFilterChain(policy PolicyIR, listenerPort uint32) bool
 }
 
 type UnimplementedProxyTranslationPass struct{}
@@ -252,6 +287,10 @@ func (s UnimplementedProxyTranslationPass) HttpFilters(hCtx HttpFiltersContext, 
 }
 
 func (s UnimplementedProxyTranslationPass) ApplyHCM(pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyTcpProxy(pCtx *TcpProxyContext, out *envoytcp.TcpProxy) error {
 	return nil
 }
 
@@ -312,6 +351,12 @@ func (c PolicyWrapper) ResourceName() string {
 }
 
 func versionEquals(a, b metav1.Object) bool {
+	// An IR built without a backing object (test fixtures, synthetic backends)
+	// has no version to compare; two such objects are equal, and one is never
+	// equal to a real object.
+	if a == nil || b == nil {
+		return a == b
+	}
 	var versionEquals bool
 	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
 		versionEquals = a.GetGeneration() == b.GetGeneration()
@@ -349,6 +394,12 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	}
 
 	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR) && c.PrecedenceWeight == in.PrecedenceWeight
+}
+
+// VersionEquals reports whether a and b are the same version of a source object, by the rule
+// the IR Equals methods apply to the objects they hold (see versionEquals).
+func VersionEquals(a, b metav1.Object) bool {
+	return versionEquals(a, b)
 }
 
 var ErrNotAttachable = errors.New("policy is not attachable to this object")

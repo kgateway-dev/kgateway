@@ -78,6 +78,7 @@ func TestSelectedWorkloadFromEntry_PromoteAnnotations(t *testing.T) {
 				tt.promoteKeys,
 				&networking.WorkloadEntry{Address: "1.2.3.4"},
 				nil,
+				"",
 			)
 
 			for k, want := range tt.wantLabel {

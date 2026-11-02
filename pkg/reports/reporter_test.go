@@ -64,6 +64,38 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
 
+		It("should preserve listener conditions set externally", func() {
+			gw := gw()
+			foreign := metav1.Condition{
+				Type:   "gateway.kgateway.dev/SomeCondition",
+				Status: metav1.ConditionFalse,
+				Reason: "Seeded",
+			}
+			gw.Status.Listeners = []gwv1.ListenerStatus{{
+				Name: "http",
+				Conditions: []metav1.Condition{
+					foreign,
+					// owned by our reporter, so it must be replaced rather than preserved
+					{Type: string(gwv1.ListenerConditionAccepted), Status: metav1.ConditionFalse, Reason: "Stale"},
+				},
+			}}
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(*gw, nil)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(5), "4 from the report, 1 from the original status")
+			Expect(meta.FindStatusCondition(status.Listeners[0].Conditions, foreign.Type)).To(HaveValue(Equal(foreign)))
+			accepted := meta.FindStatusCondition(status.Listeners[0].Conditions, string(gwv1.ListenerConditionAccepted))
+			Expect(accepted).NotTo(BeNil())
+			Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+		})
+
 		It("should set insecure frontend validation mode when configured on the default frontend TLS config", func() {
 			gw := gw()
 			gw.Spec.TLS = &gwv1.GatewayTLSConfig{
@@ -745,6 +777,31 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
 			Expect(status.Listeners).To(HaveLen(1))
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+		})
+
+		It("should preserve listener conditions set externally", func() {
+			ls := ls()
+			foreign := metav1.Condition{
+				Type:   "gateway.kgateway.dev/SomeCondition",
+				Status: metav1.ConditionFalse,
+				Reason: "Seeded",
+			}
+			ls.Status.Listeners = []gwv1.ListenerEntryStatus{{
+				Name:       "http",
+				Conditions: []metav1.Condition{foreign},
+			}}
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize ListenerSetReporter to mimic translation loop
+			reporter.ListenerSet(ls)
+
+			status := rm.BuildListenerSetStatus(*ls)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(5), "4 from the report, 1 from the original status")
+			Expect(meta.FindStatusCondition(status.Listeners[0].Conditions, foreign.Type)).To(HaveValue(Equal(foreign)))
 		})
 
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
