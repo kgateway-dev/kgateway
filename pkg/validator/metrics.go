@@ -15,6 +15,7 @@ const (
 	CallerUnknown             ValidationCaller = "unknown"
 	CallerRouteMatcher        ValidationCaller = "route_matcher"
 	CallerRouteFull           ValidationCaller = "route_full"
+	CallerHTTPFilterChain     ValidationCaller = "http_filter_chain"
 	CallerBackend             ValidationCaller = "backend"
 	CallerTrafficPolicy       ValidationCaller = "traffic_policy"
 	CallerBackendConfigPolicy ValidationCaller = "backend_config_policy"
