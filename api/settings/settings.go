@@ -403,8 +403,8 @@ type Settings struct {
 
 	// EnableExperimentalGatewayAPIFeatures enables kgateway to support experimental
 	// Gateway API features and legacy API versions. When disabled, kgateway ignores:
-	//   - the sessionPersistence field of HTTPRoute rules, which is part of the
-	//     experimental channel (the sessionPersistence field of a
+	//   - the sessionPersistence field of HTTPRoute and GRPCRoute rules, which is
+	//     part of the experimental channel (the sessionPersistence field of a
 	//     BackendConfigPolicy is not affected),
 	//   - the legacy XListenerSet resource in the gateway.networking.x-k8s.io API
 	//     group, and
