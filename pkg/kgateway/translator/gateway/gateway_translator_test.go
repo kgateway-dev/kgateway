@@ -4573,6 +4573,10 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "url_rewrite_inherit_parent_matcher.yaml")
 	})
 
+	t.Run("Identical child matches report the shadowed rule", func(t *testing.T) {
+		test(t, "shadowed_child_match.yaml")
+	})
+
 	t.Run("Child with multiple parents", func(t *testing.T) {
 		test(t, "multiple_parents.yaml")
 	})
