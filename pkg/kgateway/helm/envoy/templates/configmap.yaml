@@ -38,9 +38,6 @@ data:
         socket_address: { address: 127.0.0.1, port_value: 19000 }
     layered_runtime:
       layers:
-      - name: static_layer
-        static_layer:
-          envoy.restart_features.use_eds_cache_for_ads: true
       - name: admin_layer
         admin_layer: {}
     {{- with $gateway.maxDownstreamConnections }}
@@ -287,7 +284,11 @@ data:
         {{- if $gateway.istio.enabled }}
         - name: gateway_proxy_sds
           connect_timeout: 0.25s
-          http2_protocol_options: {}
+          typed_extension_protocol_options:
+            envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+              "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+              explicit_http_config:
+                http2_protocol_options: {}
           load_assignment:
             cluster_name: gateway_proxy_sds
             endpoints:

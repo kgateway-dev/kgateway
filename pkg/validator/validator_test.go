@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -19,6 +20,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
@@ -424,6 +426,34 @@ func TestDockerValidator_Validate(t *testing.T) {
 	}
 }
 
+func TestDockerValidator_FailOnWarnings(t *testing.T) {
+	// Envoy accepts a removed runtime guard but logs an envoy_bug (see #14970).
+	// If a future Envoy rejects this guard outright, the default-validator case
+	// below will fail: switch to a guard or field deprecated in that Envoy version.
+	staticLayer, err := structpb.NewStruct(map[string]any{
+		"envoy.restart_features.use_eds_cache_for_ads": true,
+	})
+	require.NoError(t, err)
+	bootstrap := &envoybootstrapv3.Bootstrap{
+		Node: &envoycorev3.Node{
+			Id:      "test-id",
+			Cluster: "test-cluster",
+		},
+		LayeredRuntime: &envoybootstrapv3.LayeredRuntime{
+			Layers: []*envoybootstrapv3.RuntimeLayer{{
+				Name:           "static_layer",
+				LayerSpecifier: &envoybootstrapv3.RuntimeLayer_StaticLayer{StaticLayer: staticLayer},
+			}},
+		},
+	}
+
+	err = NewDocker(FailOnWarnings()).Validate(t.Context(), bootstrap)
+	require.ErrorIs(t, err, ErrInvalidXDS, "FailOnWarnings should reject a config Envoy accepts with an envoy_bug")
+	assert.Contains(t, err.Error(), "Using a removed guard envoy.restart_features.use_eds_cache_for_ads")
+
+	require.NoError(t, NewDocker().Validate(t.Context(), bootstrap), "default validator should only fail when Envoy rejects the config")
+}
+
 func TestExtractEnvoyError(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -517,6 +547,57 @@ more details`,
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestExtractEnvoyWarnings(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name: "info output only",
+			input: `[info] runtime: layers:
+[info]   - name: static_layer
+configuration '/dev/fd/0' OK`,
+			expected: nil,
+		},
+		{
+			name: "removed runtime guard envoy_bug drops stacktrace",
+			input: `[info] runtime: layers:
+[error] envoy bug failure: false. Details: Using a removed guard envoy.restart_features.use_eds_cache_for_ads. In future version of Envoy this will be treated as invalid configuration
+[error] stacktrace for envoy bug
+[error] #0 UNKNOWN [0xaaaae4960eac]
+[error] #1 UNKNOWN [0xaaaae49653d8]
+configuration '/dev/fd/0' OK`,
+			expected: []string{
+				"[error] envoy bug failure: false. Details: Using a removed guard envoy.restart_features.use_eds_cache_for_ads. In future version of Envoy this will be treated as invalid configuration",
+			},
+		},
+		{
+			name: "deprecated field warning with docker noise",
+			input: `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform
+Status: Downloaded newer image for envoyproxy/envoy:v1.39.6
+[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'`,
+			expected: []string{
+				"[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, extractEnvoyWarnings(tt.input))
+		})
+	}
+}
+
+func TestDockerValidator_FailOnWarningsArgs(t *testing.T) {
+	args := NewDocker(FailOnWarnings()).(*dockerValidator).args()
+	assert.Contains(t, strings.Join(args, " "), "-l warning --log-format [%l] %v")
+
+	args = NewDocker().(*dockerValidator).args()
+	assert.Contains(t, strings.Join(args, " "), "-l critical --log-format %v", "default must stay at critical so runtime validation is unchanged")
 }
 
 func TestNormalizeEnvoyError(t *testing.T) {
