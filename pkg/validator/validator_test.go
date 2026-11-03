@@ -20,6 +20,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/xds/bootstrap"
@@ -423,6 +424,34 @@ func TestDockerValidator_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDockerValidator_FailOnWarnings(t *testing.T) {
+	// Envoy accepts a removed runtime guard but logs an envoy_bug (see #14970).
+	// If a future Envoy rejects this guard outright, the default-validator case
+	// below will fail: switch to a guard or field deprecated in that Envoy version.
+	staticLayer, err := structpb.NewStruct(map[string]any{
+		"envoy.restart_features.use_eds_cache_for_ads": true,
+	})
+	require.NoError(t, err)
+	bootstrap := &envoybootstrapv3.Bootstrap{
+		Node: &envoycorev3.Node{
+			Id:      "test-id",
+			Cluster: "test-cluster",
+		},
+		LayeredRuntime: &envoybootstrapv3.LayeredRuntime{
+			Layers: []*envoybootstrapv3.RuntimeLayer{{
+				Name:           "static_layer",
+				LayerSpecifier: &envoybootstrapv3.RuntimeLayer_StaticLayer{StaticLayer: staticLayer},
+			}},
+		},
+	}
+
+	err = NewDocker(FailOnWarnings()).Validate(t.Context(), bootstrap)
+	require.ErrorIs(t, err, ErrInvalidXDS, "FailOnWarnings should reject a config Envoy accepts with an envoy_bug")
+	assert.Contains(t, err.Error(), "Using a removed guard envoy.restart_features.use_eds_cache_for_ads")
+
+	require.NoError(t, NewDocker().Validate(t.Context(), bootstrap), "default validator should only fail when Envoy rejects the config")
 }
 
 func TestExtractEnvoyError(t *testing.T) {
