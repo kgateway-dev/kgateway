@@ -25,9 +25,10 @@ import (
 // land in the same virtual hosts, where Envoy only ever uses the first of them.
 //
 // Only collisions involving a delegated (child) rule are reported; duplicates between
-// a parent's own rules follow the Gateway API tie-breaking rules and are left alone.
-// The shadowed rule stays programmed and reports kgateway.dev/Programmed=True with
-// Reason=RouteRuleShadowed, naming the rule that wins.
+// a parent's own non-delegating rules follow the Gateway API tie-breaking rules and are
+// left alone. The shadowed rule stays programmed and reports kgateway.dev/Programmed=True
+// with Reason=RouteRuleShadowed, naming the rule that wins. When the same child rule is
+// delegated twice, the report goes to the delegating rule whose copy never receives traffic.
 func reportShadowedDelegatedMatches(
 	topLevel *query.RouteInfo,
 	routes []ir.HttpRouteRuleMatchIR,
@@ -66,23 +67,43 @@ func reportShadowedDelegatedMatches(
 		slices.SortStableFunc(group, func(a, b *routeutils.SortableRoute) int { return a.CompareTo(b) })
 		winner := group[0].Route
 		for _, s := range group[1:] {
-			loser := s.Route
-			if winner.DelegatingParent == nil && loser.DelegatingParent == nil {
+			leaf := s.Route
+			if winner.DelegatingParent == nil && leaf.DelegatingParent == nil {
 				continue
 			}
-			src := loser.Parent.SourceObject
+			// When both copies come from the same child rule match, the child is delegated
+			// twice: walk up both delegation chains to the first pair of ancestor rules that
+			// differ, and report the lower-precedence one. Copies that never diverge come
+			// from a single delegating rule and both send traffic to the same child rule, so
+			// nothing is misrouted and they are left alone.
+			w, l := &winner, &leaf
+			for w != nil && l != nil && sameRuleMatch(w, l) {
+				w, l = w.DelegatingParent, l.DelegatingParent
+			}
+			if w == nil || l == nil {
+				continue
+			}
+
+			src := l.Parent.SourceObject
 			key := reportKey{
 				route:     src.GetNamespace() + "/" + src.GetName(),
-				parentRef: statusreports.ParentString(loser.ParentRef),
+				parentRef: statusreports.ParentString(l.ParentRef),
 			}
 			if msgs[key] == nil {
 				msgs[key] = sets.New[string]()
 			}
-			msgs[key].Insert(fmt.Sprintf("rule %s (%s) is shadowed by HTTPRoute %s/%s rule %s, which has an identical effective match and takes precedence",
-				ruleLabel(loser), describeMatch(loser.Match),
-				winner.Parent.Namespace, winner.Parent.Name, ruleLabel(winner)))
+			if l == &leaf {
+				msgs[key].Insert(fmt.Sprintf("rule %s (%s) is shadowed by HTTPRoute %s/%s rule %s, which has an identical effective match and takes precedence",
+					ruleLabel(*l), describeMatch(l.Match),
+					w.Parent.Namespace, w.Parent.Name, ruleLabel(*w)))
+			} else {
+				msgs[key].Insert(fmt.Sprintf("rule %s (%s) delegates HTTPRoute %s/%s rule %s (%s), which HTTPRoute %s/%s rule %s also delegates with an identical effective match and takes precedence; this copy never receives traffic",
+					ruleLabel(*l), describeMatch(l.Match),
+					leaf.Parent.Namespace, leaf.Parent.Name, ruleLabel(leaf), describeMatch(leaf.Match),
+					w.Parent.Namespace, w.Parent.Name, ruleLabel(*w)))
+			}
 
-			parentReport := baseReporter.Route(src).ParentRef(&loser.ParentRef)
+			parentReport := baseReporter.Route(src).ParentRef(&l.ParentRef)
 			// A dropped or replaced rule reports Programmed=False; never hide it.
 			if prr, ok := parentReport.(*statusreports.ParentRefReport); ok {
 				if cond := meta.FindStatusCondition(prr.Conditions, apiconditions.KgatewayConditionProgrammed); cond != nil &&
@@ -139,6 +160,13 @@ func describeMatch(m gwv1.HTTPRouteMatch) string {
 		desc += " with method/header/query matches"
 	}
 	return desc
+}
+
+// sameRuleMatch reports whether a and b were translated from the same match of the
+// same route rule.
+func sameRuleMatch(a, b *ir.HttpRouteRuleMatchIR) bool {
+	return a.Parent.Namespace == b.Parent.Namespace && a.Parent.Name == b.Parent.Name &&
+		a.RuleIndex == b.RuleIndex && a.MatchIndex == b.MatchIndex
 }
 
 func ruleLabel(r ir.HttpRouteRuleMatchIR) string {

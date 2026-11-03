@@ -3,7 +3,12 @@ package httproute
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	statusreports "github.com/kgateway-dev/kgateway/v2/pkg/reports"
 )
 
 func TestMatchKey(t *testing.T) {
@@ -65,5 +70,40 @@ func TestMatchKey(t *testing.T) {
 				t.Errorf("matchKey(a) == matchKey(b) = %v, want %v\na: %s\nb: %s", got, tt.same, matchKey(tt.a), matchKey(tt.b))
 			}
 		})
+	}
+}
+
+func TestReportShadowedDelegatedMatchesSkipsSingleDelegation(t *testing.T) {
+	routeIR := func(ns, name string) *ir.HttpRouteIR {
+		return &ir.HttpRouteIR{
+			ObjectSource: ir.ObjectSource{Group: gwv1.GroupName, Kind: "HTTPRoute", Namespace: ns, Name: name},
+			SourceObject: &gwv1.HTTPRoute{ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: name}},
+		}
+	}
+	parent := routeIR("infra", "parent")
+	child := routeIR("a", "child")
+	gatewayRef := gwv1.ParentReference{Name: "gw"}
+	childRef := gwv1.ParentReference{Kind: new(gwv1.Kind("HTTPRoute")), Name: "parent", Namespace: new(gwv1.Namespace("infra"))}
+
+	// Both copies of the child rule are delegated by the same parent rule, as when one
+	// rule's backendRefs select the same child twice: both copies send traffic to the
+	// same child rule, so nothing is misrouted.
+	delegating := &ir.HttpRouteRuleMatchIR{Parent: parent, ParentRef: gatewayRef, Delegates: true}
+	leaf := ir.HttpRouteRuleMatchIR{
+		Parent:           child,
+		ParentRef:        childRef,
+		DelegatingParent: delegating,
+		Match:            gwv1.HTTPRouteMatch{Path: &gwv1.HTTPPathMatch{Type: new(gwv1.PathMatchPathPrefix), Value: new("/a/1")}},
+	}
+
+	reportMap := statusreports.NewReportMap()
+	reportShadowedDelegatedMatches(&query.RouteInfo{Object: parent}, []ir.HttpRouteRuleMatchIR{leaf, leaf}, statusreports.NewReporter(&reportMap))
+
+	for nn, rr := range reportMap.HTTPRoutes {
+		for ref, prr := range rr.Parents {
+			if len(prr.Conditions) > 0 {
+				t.Errorf("HTTPRoute %v parentRef %v: got conditions %v, want none", nn, ref, prr.Conditions)
+			}
+		}
 	}
 }

@@ -4577,6 +4577,14 @@ func TestRouteDelegation(t *testing.T) {
 		test(t, "shadowed_child_match.yaml")
 	})
 
+	t.Run("A child delegated twice reports the shadowed parent rule", func(t *testing.T) {
+		test(t, "shadowed_duplicate_delegation.yaml")
+	})
+
+	t.Run("A grandchild delegated by two intermediate routes reports the shadowed intermediate", func(t *testing.T) {
+		test(t, "shadowed_duplicate_delegation_multilevel.yaml")
+	})
+
 	t.Run("Child with multiple parents", func(t *testing.T) {
 		test(t, "multiple_parents.yaml")
 	})
