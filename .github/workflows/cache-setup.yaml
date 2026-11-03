@@ -29,7 +29,8 @@ jobs:
   setup-go-caches:
     name: Setup Go Caches
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    # Both primes build from an empty cache (~10 minutes each).
+    timeout-minutes: 45
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,6 +40,12 @@ jobs:
       - name: Prime Go Build Cache
         if: steps.prep-go-runner.outputs.go-build-cache-hit != 'true'
         run: |
+          # Start from an empty build cache. On a go.sum change prep-go-runner
+          # restores the previous generation through its restore-keys fallback,
+          # and saving on top of it would carry every older generation forward:
+          # the cache grew from ~0.9GB to ~3.9GB in a week, and every job that
+          # restores it pays for the extra download and extraction.
+          go clean -cache
           go test -run '^$' ./...
           go test -run '^$' -tags e2e ./...
       - name: Save Go Build Cache
