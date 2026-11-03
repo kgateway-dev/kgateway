@@ -4,7 +4,6 @@ package tracing
 
 import (
 	"path/filepath"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +19,7 @@ var (
 	otelCollectorManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "otel-collector.yaml")
 	otelCollectorSecureManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "otel-collector-secure.yaml")
 	policyManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing-policy.yaml")
+	policySecureManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing-policy-secure.yaml")
 	routeTracingPolicyManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-tracing-policy.yaml")
 	routeTracingDisableManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-tracing-disable-policy.yaml")
 
@@ -47,13 +47,7 @@ var (
 			Manifests: []string{policyManifest},
 		},
 		"TestOTelTracingSecure": {
-			Manifests: []string{otelCollectorSecureManifest},
-			// same ListenerPolicy, pointed at the TLS collector instead of the shared one
-			ManifestsWithTransform: map[string]func(string) string{
-				policyManifest: func(s string) string {
-					return strings.Replace(s, "name: "+otelCollectorPod+"\n", "name: "+otelCollectorSecurePod+"\n", 1)
-				},
-			},
+			Manifests: []string{otelCollectorSecureManifest, policySecureManifest},
 			// BackendTLSPolicy moved from experimental to standard in Gateway API 1.4, and the alpha1v3 version is not supported
 			MinGwApiVersion: base.GwApiRequireBackendTLSPolicy,
 		},
