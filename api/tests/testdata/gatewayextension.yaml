@@ -198,3 +198,32 @@ spec:
             YGATajDpzrHf+WXgOgvwyxaHJSN/fE+eFuRT3ooDaAuytsfYotsn4z/ajdEPSwXY
             CwIDAQAB
             -----END PUBLIC KEY-----
+---
+# GatewayExtension: extAuth accepts a percentageEnabled within 0-100
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-percentage-enabled-valid
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    percentageEnabled: 10
+---
+# GatewayExtension: extAuth rejects a percentageEnabled above 100
+_err: percentageEnabled in body should be less than or equal to 100
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayExtension
+metadata:
+  name: extauth-percentage-enabled-invalid
+spec:
+  type: ExtAuth
+  extAuth:
+    grpcService:
+      backendRef:
+        name: ext-authz
+        port: 9000
+    percentageEnabled: 101

@@ -1722,6 +1722,11 @@ func (in *ExtAuthProvider) DeepCopyInto(out *ExtAuthProvider) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.PercentageEnabled != nil {
+		in, out := &in.PercentageEnabled, &out.PercentageEnabled
+		*out = new(int32)
+		**out = **in
+	}
 	if in.WithRequestBody != nil {
 		in, out := &in.WithRequestBody, &out.WithRequestBody
 		*out = new(ExtAuthBufferSettings)

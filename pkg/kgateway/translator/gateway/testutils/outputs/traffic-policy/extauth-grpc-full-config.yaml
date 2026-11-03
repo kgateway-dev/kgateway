@@ -68,6 +68,10 @@ Listeners:
             clearRouteCache: true
             emitFilterStateStats: true
             failureModeAllow: true
+            filterEnabled:
+              defaultValue:
+                numerator: 10
+              runtimeKey: ext_authz.infra.full-extauth.filter_enabled
             filterEnabledMetadata:
               filter: dev.kgateway.disable_ext_auth
               invert: true
