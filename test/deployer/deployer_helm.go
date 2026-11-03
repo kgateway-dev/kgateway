@@ -127,7 +127,8 @@ func VerifyAllYAMLFilesReferenced(t *testing.T, testDataDir string, testCases []
 	require.Empty(t, unreferenced, "Found YAML files in %s without corresponding test cases: %v", testDataDir, unreferenced)
 }
 
-// VerifyAllEnvoyBootstrapAreValid ensures that envoy bootstrap configs are accepted by envoy.
+// VerifyAllEnvoyBootstrapAreValid ensures that envoy bootstrap configs are accepted by envoy
+// without warnings, so removed runtime guards and deprecated fields fail on the Envoy bump PR.
 func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 	t.Helper()
 
@@ -143,7 +144,10 @@ func VerifyAllEnvoyBootstrapAreValid(t *testing.T, testDataDir string) {
 	var wg sync.WaitGroup
 	var envoyErr error
 	var once sync.Once
-	validator := validator.NewDocker(validator.EtcEnvoyVolume(filepath.Join(testDataDir, "etc-envoy")))
+	validator := validator.NewDocker(
+		validator.EtcEnvoyVolume(filepath.Join(testDataDir, "etc-envoy")),
+		validator.FailOnWarnings(),
+	)
 
 	for _, yamlFile := range yamlFiles {
 		// deserialize the YAML file

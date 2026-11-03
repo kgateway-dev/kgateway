@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	envoybootstrapv3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -517,6 +518,57 @@ more details`,
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestExtractEnvoyWarnings(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name: "info output only",
+			input: `[info] runtime: layers:
+[info]   - name: static_layer
+configuration '/dev/fd/0' OK`,
+			expected: nil,
+		},
+		{
+			name: "removed runtime guard envoy_bug drops stacktrace",
+			input: `[info] runtime: layers:
+[error] envoy bug failure: false. Details: Using a removed guard envoy.restart_features.use_eds_cache_for_ads. In future version of Envoy this will be treated as invalid configuration
+[error] stacktrace for envoy bug
+[error] #0 UNKNOWN [0xaaaae4960eac]
+[error] #1 UNKNOWN [0xaaaae49653d8]
+configuration '/dev/fd/0' OK`,
+			expected: []string{
+				"[error] envoy bug failure: false. Details: Using a removed guard envoy.restart_features.use_eds_cache_for_ads. In future version of Envoy this will be treated as invalid configuration",
+			},
+		},
+		{
+			name: "deprecated field warning with docker noise",
+			input: `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform
+Status: Downloaded newer image for envoyproxy/envoy:v1.39.6
+[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'`,
+			expected: []string{
+				"[warning] Using deprecated option 'envoy.config.core.v3.Foo.bar'",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, extractEnvoyWarnings(tt.input))
+		})
+	}
+}
+
+func TestDockerValidator_FailOnWarningsArgs(t *testing.T) {
+	args := NewDocker(FailOnWarnings()).(*dockerValidator).args()
+	assert.Contains(t, strings.Join(args, " "), "-l warning --log-format [%l] %v")
+
+	args = NewDocker().(*dockerValidator).args()
+	assert.Contains(t, strings.Join(args, " "), "-l critical --log-format %v", "default must stay at critical so runtime validation is unchanged")
 }
 
 func TestNormalizeEnvoyError(t *testing.T) {
