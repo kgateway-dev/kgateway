@@ -9,15 +9,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"istio.io/istio/pkg/test/util/retry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1/kgateway"
 	"github.com/kgateway-dev/kgateway/v2/pkg/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e/common"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -185,19 +186,20 @@ func (s *testingSuite) killLeader(leader string) {
 }
 
 func (s *testingSuite) assertCurlResponseCode(code int) {
-	s.TestInstallation.AssertionsT(s.T()).AssertEventualCurlResponse(
+	gw := common.NewGateway(s.Ctx, s.T(), s.TestInstallation, types.NamespacedName{
+		Name:      proxyObjectMeta.Name,
+		Namespace: proxyObjectMeta.Namespace,
+	})
+	gw.SendWithRetry(
 		s.Ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/status/200"),
-			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
-		},
+		s.T(),
 		&matchers.HttpResponse{
 			StatusCode: code,
 		},
-		20*time.Second,
-		2*time.Second,
+		[]retry.Option{retry.Timeout(20 * time.Second)},
+		curl.WithHostHeader("www.example.com"),
+		curl.WithPort(8080),
+		curl.WithPath("/status/200"),
 	)
 }
 
