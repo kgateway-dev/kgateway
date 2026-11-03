@@ -110,6 +110,47 @@ func (s *testingSuite) TestGRPCRoute() {
 	s.T().Logf("AssertEventualGrpcurlJsonResponseMatches stderr:\n%s", stderr)
 }
 
+// TestGRPCRouteWithACLDeny verifies that a GRPCRoute protected by a TrafficPolicy ACL
+// configured with the denyResponse.headers workaround (specifying grpc-status: 7)
+// properly returns PermissionDenied to the gRPC client.
+//
+// Background:
+// When Envoy's http-acl dynamic module denies a request, Envoy's dynamic module ABI
+// (envoyproxy/envoy#48410) hardcodes grpc_status: 0, which causes Envoy to send
+// HTTP 200 with grpc-status: 0 and an empty body to gRPC clients, surfacing as an EOF error.
+// Until the upstream Envoy fix lands, specifying "grpc-status: 7" under denyResponse.headers
+// ensures Envoy populates the gRPC trailers with status 7 (PermissionDenied) instead of 0 (OK).
+func (s *testingSuite) TestGRPCRouteWithACLDeny() {
+	// Apply the TrafficPolicy with ACL deny and the grpc-status: 7 header workaround
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tpAclDenyManifest, "-n", testNamespace)
+	s.Require().NoError(err, "Failed to apply TrafficPolicy ACL deny manifest")
+
+	// Ensure cleanup after the test completes
+	defer func() {
+		_ = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, tpAclDenyManifest)
+	}()
+
+	grpcurlOptions := []grpcurl.Option{
+		grpcurl.WithAddress(kubeutils.ServiceFQDN(gatewayService.ObjectMeta)),
+		grpcurl.WithPort(gatewayPort),
+		grpcurl.WithAuthority(expectedHostname),
+		grpcurl.WithSymbol(fmt.Sprintf("%s/%s", grpcServiceName, grpcMethodName)),
+		grpcurl.WithPlaintext(),
+	}
+
+	// Assert that grpcurl fails with PermissionDenied (grpc-status: 7)
+	stdout, stderr := s.testInstallation.AssertionsT(s.T()).AssertEventualGrpcurlError(
+		s.ctx,
+		s.execOpts(),
+		grpcurlOptions,
+		"code = PermissionDenied",
+		timeout,
+	)
+
+	s.T().Logf("AssertEventualGrpcurlError stdout:\n%s", stdout)
+	s.T().Logf("AssertEventualGrpcurlError stderr:\n%s", stderr)
+}
+
 func (s *testingSuite) execOpts() kubectl.PodExecOptions {
 	return kubectl.PodExecOptions{
 		Name:      "grpcurl-client", // Default name for the grpcurl client pod

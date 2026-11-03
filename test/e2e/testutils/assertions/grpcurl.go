@@ -101,3 +101,36 @@ func (p *Provider) AssertEventualGrpcurlJsonResponseMatches(
 	}
 	return "", ""
 }
+
+// AssertEventualGrpcurlError expects a failing grpcurl call (non-zero exit code)
+// and asserts that stderr matches the provided expected error substring.
+func (p *Provider) AssertEventualGrpcurlError(
+	ctx context.Context,
+	podOpts kubectl.PodExecOptions,
+	grpcurlOptions []grpcurl.Option,
+	expectedErrSubstring string,
+	timeout ...time.Duration,
+) (stdout, stderr string) {
+	p.EventuallyObjectsExist(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: podOpts.Name, Namespace: podOpts.Namespace},
+	})
+
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+	var resp *kubectl.GrpcurlResponse
+
+	p.Gomega.Eventually(func(g Gomega) {
+		var err error
+		resp, err = p.clusterContext.Cli.GrpcurlFromPod(ctx, podOpts, grpcurlOptions...)
+		g.Expect(err).To(HaveOccurred(), "expected grpcurl command to fail with error")
+		g.Expect(resp.StdErr).To(ContainSubstring(expectedErrSubstring))
+	}).
+		WithTimeout(currentTimeout).
+		WithPolling(pollingInterval).
+		WithContext(ctx).
+		Should(Succeed(), fmt.Sprintf("grpcurl command did not eventually fail with %q", expectedErrSubstring))
+
+	if resp != nil {
+		return resp.StdOut, resp.StdErr
+	}
+	return "", ""
+}
