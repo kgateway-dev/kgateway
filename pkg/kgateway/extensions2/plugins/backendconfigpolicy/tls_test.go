@@ -217,6 +217,15 @@ func TestTranslateTLSConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "TLS config with invalid signature algorithm",
+			tlsConfig: &kgateway.TLS{
+				Parameters: &kgateway.TLSParameters{
+					SignatureAlgorithms: []string{"rsa_pss_rsae_sha256", "not_a_real_algorithm"},
+				},
+			},
+			wantErr: true,
+		},
+		{
 			name: "TLS config with only minVersion parameter",
 			tlsConfig: &kgateway.TLS{
 				Parameters: &kgateway.TLSParameters{

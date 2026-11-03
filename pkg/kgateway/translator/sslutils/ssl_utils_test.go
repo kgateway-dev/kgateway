@@ -73,6 +73,68 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "signature_algorithms_envoy_accepted_forms",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pkcs1_sha256_legacy,RSA+SHA256,ECDSA+SHA384,RSA-PSS+SHA512",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pkcs1_sha256_legacy", "RSA+SHA256", "ECDSA+SHA384", "RSA-PSS+SHA512"},
+			},
+		},
+		{
+			name: "signature_algorithms_trailing_comma",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256,rsa_pss_rsae_sha256,rsa_pkcs1_sha256,",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_multiple_commas",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "ecdsa_secp256r1_sha256,,rsa_pss_rsae_sha256,,rsa_pkcs1_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"ecdsa_secp256r1_sha256", "rsa_pss_rsae_sha256", "rsa_pkcs1_sha256"},
+			},
+		},
+		{
+			name: "signature_algorithms_invalid",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "bogus_alg,rsa_pss_rsae_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pss_rsae_sha256"},
+			},
+			errors: []string{
+				"invalid signature algorithm: bogus_alg",
+			},
+		},
+		{
+			name: "signature_algorithms_multiple_invalid",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "bogus_alg,invalid_algo,rsa_pss_rsae_sha256",
+			},
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pss_rsae_sha256"},
+			},
+			errors: []string{
+				"invalid signature algorithm: bogus_alg",
+				"invalid signature algorithm: invalid_algo",
+			},
+		},
+		{
+			name: "signature_algorithms_typo",
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pss_rsae_sha255",
+			},
+			out: &ir.TLSConfig{},
+			errors: []string{
+				"invalid signature algorithm: rsa_pss_rsae_sha255",
+			},
+		},
+		{
 			name: "subject_alt_names",
 			out: &ir.TLSConfig{
 				VerifySubjectAltNames: []string{"foo", "bar"},
@@ -197,6 +259,57 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 				annotations.EcdhCurves:             "P-384",
 			},
 		},
+		{
+			name: "invalid_signature_algorithm",
+			out:  &ir.TLSConfig{},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "invalid_algo",
+			},
+			errors: []string{
+				"invalid signature algorithm: invalid_algo",
+			},
+		},
+		{
+			name: "signature_algorithms_with_invalid",
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"},
+			},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pkcs1_sha256,invalid_algo,ecdsa_secp256r1_sha256",
+			},
+			errors: []string{
+				"invalid signature algorithm: invalid_algo",
+			},
+		},
+		{
+			name: "signature_algorithms_trailing_comma_filtered",
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"},
+			},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pkcs1_sha256,ecdsa_secp256r1_sha256,",
+			},
+		},
+		{
+			name: "signature_algorithms_multiple_commas_filtered",
+			out: &ir.TLSConfig{
+				SignatureAlgorithms: []string{"rsa_pkcs1_sha256", "ecdsa_secp256r1_sha256"},
+			},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "rsa_pkcs1_sha256,,ecdsa_secp256r1_sha256,",
+			},
+		},
+		{
+			name: "signature_algorithms_all_invalid",
+			out:  &ir.TLSConfig{},
+			in: map[gwv1.AnnotationKey]gwv1.AnnotationValue{
+				annotations.SignatureAlgorithms: "bogus1,bogus2",
+			},
+			errors: []string{
+				"invalid signature algorithm: bogus1",
+				"invalid signature algorithm: bogus2",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -214,6 +327,15 @@ func TestApplyTLSExtensionOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateSignatureAlgorithms(t *testing.T) {
+	assert.NoError(t, ValidateSignatureAlgorithms([]string{"rsa_pss_rsae_sha256", "RSA+SHA256", "rsa_pkcs1_sha256_legacy"}))
+
+	err := ValidateSignatureAlgorithms([]string{"rsa_pss_rsae_sha256", "not_a_real_algorithm", "RSA+SHA224"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid signature algorithm: not_a_real_algorithm")
+	assert.Contains(t, err.Error(), "invalid signature algorithm: RSA+SHA224")
 }
 
 func TestValidateCertificateHash(t *testing.T) {
