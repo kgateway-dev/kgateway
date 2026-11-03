@@ -75,48 +75,49 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step `Run /./.github/actions/kubernetes-e2e-tests` to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time or the GitHub action job time), because it is easier to capture and fairly consistent
         test:
-          # May 29, 2026: ~9 minutes
+          # Oct 28, 2026: ~6 minutes
           - cluster-name: 'cluster-one'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestKgateway$$/^SessionPersistence$$'
+            go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^PathMatching$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^GRPCRouteServices$$|^TestKgateway$$/^SessionPersistence$$|^TestKgateway$$/^Deployer$$'
             localstack: 'false'
-          # May 29, 2026: ~13 minutes
+          # Oct 28, 2026: ~4 minutes
           - cluster-name: 'cluster-two'
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgatewayWaypoint$$'
             localstack: 'false'
-          # May 29, 2026: ~10 minutes
+          # Oct 28, 2026: ~6 minutes
           - cluster-name: 'cluster-three'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^EC2$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^ListenerPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
+            go-test-run-regex: '^TestKgateway$$/^DynamicForwardProxy$$|^TestKgateway$$/^Lambda$$|^TestKgateway$$/^EC2$$|^TestKgateway$$/^AccessLog$$|^TestKgateway$$/^LocalRateLimit$$|^TestKgateway$$/^Cors$$|^TestKgateway$$/^BackendConfigPolicy$$|^TestKgateway$$/^Tracing$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^AdminServer$$|^TestKgateway$$/^FaultInjection$$'
             localstack: 'true'
-          # May 29, 2026: ~8 minutes
+          # Oct 28, 2026: ~7 minutes
           - cluster-name: 'cluster-four'
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgateway$$/^ExtProc$$|^TestKgateway$$/^ExtAuth$$|^TestKgateway$$/^PolicySelector$$|^TestKgateway$$/^Backends$$|^TestKgateway$$/^BackendTLSPolicies$$|^TestKgateway$$/^CSRF$$|^TestKgateway$$/^AutoHostRewrite$$|^TestKgateway$$/^LeaderElection$$|^TestKgateway$$/^Compression$$|^TestKgateway$$/^GlobalRateLimit$$|^TestKgateway$$/^InternalRedirect$$|^TestCustomGWP$$'
             localstack: 'false'
-          # May 29, 2026: ~10 minutes
+          # Oct 28, 2026: ~5 minutes
           - cluster-name: 'cluster-five'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
+            go-test-run-regex: '^TestKgateway$$/^TimeoutRetry$$|^TestKgateway$$/^HeaderModifiers$$|^TestKgateway$$/^RBAC$$|^TestKgateway$$/^HttpACL$$|^TestKgateway$$/^APIKeyAuth$$|^TestKgateway$$/^Transforms$$|^TestRouteReplacement$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^JWT$$|^TestKgateway$$/^BasicAuth$$|^TestKgateway$$/^WebSocket$$'
             localstack: 'false'
-          # May 29, 2026: ~10 minutes
+          # Oct 28, 2026: ~4 minutes
           - cluster-name: 'cluster-six'
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestListenerSet$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgatewayIstioAutoMtls$$|^TestZeroDowntimeRollout$$'
             localstack: 'false'
             ordered-ads: 'true'
-          # May 29, 2026: ~4 minutes
+          # Oct 28, 2026: ~4 minutes
           - cluster-name: 'cluster-seven'
             go-test-args: '-timeout=25m'
             go-test-run-regex: '^TestKgateway$$/^OAuth$$|^TestKgateway$$/^TrafficPolicyStatus$$|^TestKgateway$$/^XdsStarvation$$|^TestKgateway$$/^XdsIdentityRace$$|^TestKgateway$$/^XdsWarming$$'
             localstack: 'false'
             ordered-ads: 'false'
-          # May 29, 2026: ~5 minutes
+          # Oct 28, 2026: ~6 minutes
           - cluster-name: 'cluster-eight'
             go-test-args: '-timeout=25m'
-            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$'
+            go-test-run-regex: '^TestKgatewayMetrics$$|^TestControlPlaneTLS$$|^TestKgateway$$/^FrontendTLS$$|^TestKgateway$$/^ListenerPolicy$$'
             localstack: 'false'
+          # Oct 28, 2026: ~5 minutes
           # An IPv6-only cluster over the basic routing suites. This has to be
           # ipv6-only rather than dual-stack to be worth running: kind's
           # dual-stack mode is IPv4-primary and Services default to SingleStack
@@ -130,6 +131,7 @@ jobs:
             go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^Deployer$$'
             localstack: 'false'
             ip-family: 'ipv6'
+          # Oct 28, 2026: ~2 minutes
           # The DualStack suite is the only thing in the matrix that needs a
           # cluster with both families configured, and it is the only thing that
           # can run on one: kind's dual-stack mode is IPv4-primary and Services
@@ -141,18 +143,18 @@ jobs:
             go-test-run-regex: '^TestKgateway$$/^DualStack$$'
             localstack: 'false'
             ip-family: 'dual'
-          # May 29, 2026: ~4 minutes
+          # Oct 28, 2026: ~1 minute
           - cluster-name: 'cluster-multi-install'
             go-test-args: '-timeout=5m'
             go-test-run-regex: '^TestMultipleInstalls'
             localstack: 'false'
-          # May 29, 2026: ~6 minutes
+          # Oct 28, 2026: ~3 minutes
           # Do NOT add tests to this cluster as it runs an older version of GWAPI which should be bumped to n-1 on an upgrade
           - cluster-name: 'cluster-upgrade'
             go-test-args: '-timeout=10m'
             go-test-run-regex: '^TestUpgrade'
             localstack: 'false'
-            gateway-api-version: 'v1.5.1'
+            gateway-api-version: 'v1.6.2'
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
         version-files:

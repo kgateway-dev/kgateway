@@ -923,12 +923,22 @@ type HealthCheck struct {
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Timeout metav1.Duration `json:"timeout"`
 
-	// Interval is the time between health checks.
+	// Interval is the time between health checks after the backend receives its first request.
 	// +required
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:MaxLength=32
 	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
 	Interval metav1.Duration `json:"interval"`
+
+	// NoTrafficInterval is the time between health checks before the backend receives
+	// its first request. If unset, uses Envoy's default of 60 seconds.
+	// Must be at least 1ms.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:XValidation:rule="matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')",message="invalid duration value"
+	// +kubebuilder:validation:XValidation:rule="duration(self) >= duration('1ms')",message="noTrafficInterval must be at least 1ms"
+	NoTrafficInterval *metav1.Duration `json:"noTrafficInterval,omitempty"`
 
 	// UnhealthyThreshold is the number of consecutive failed health checks that will be considered
 	// unhealthy.

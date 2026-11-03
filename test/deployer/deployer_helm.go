@@ -16,9 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	corev1 "k8s.io/api/core/v1"
+	apiserverschema "k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -216,13 +218,25 @@ func (dt DeployerTester) GetObjects(
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
 	inputFile := filePath + ".yaml"
 
-	gvkToStructuralSchema, err := testutils.GetStructuralSchemas(crdDir)
+	gvkToStructuralSchema, err := structuralSchemas(crdDir)
 	require.NoError(t, err, "error getting structural schemas")
 
 	objs, err := testutils.LoadFromFiles(inputFile, scheme, gvkToStructuralSchema)
 	require.NoError(t, err, "error loading files from input file")
 
 	return objs
+}
+
+// schemaCache holds one structural schema load per CRD directory. The directories
+// a DeployerTester is pointed at are checked-in charts, so a load is good for the
+// whole run, and LoadFromFiles only reads the map.
+var schemaCache sync.Map // crdDir -> func() (map[schema.GroupVersionKind]*apiserverschema.Structural, error)
+
+func structuralSchemas(crdDir string) (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
+	load, _ := schemaCache.LoadOrStore(crdDir, sync.OnceValues(func() (map[schema.GroupVersionKind]*apiserverschema.Structural, error) {
+		return testutils.GetStructuralSchemas(crdDir)
+	}))
+	return load.(func() (map[schema.GroupVersionKind]*apiserverschema.Structural, error))()
 }
 
 func (dt DeployerTester) RunHelmChartTest(
@@ -234,10 +248,22 @@ func (dt DeployerTester) RunHelmChartTest(
 	fakeClient apiclient.Client,
 	envTestCfg *rest.Config,
 ) {
+	dt.RunHelmChartTestWithObjects(t, tt, scheme, dir, dt.GetObjects(t, tt, scheme, dir, crdDir), fakeClient, envTestCfg)
+}
+
+// RunHelmChartTestWithObjects is RunHelmChartTest for a caller that has already
+// loaded the test case's objects with GetObjects, usually to build fakeClient.
+func (dt DeployerTester) RunHelmChartTestWithObjects(
+	t *testing.T,
+	tt HelmTestCase,
+	scheme *runtime.Scheme,
+	dir string,
+	objs []client.Object,
+	fakeClient apiclient.Client,
+	envTestCfg *rest.Config,
+) {
 	filePath := filepath.Join(dir, "testdata/", tt.InputFile)
 	outputFile := filePath + "-out.yaml"
-
-	objs := dt.GetObjects(t, tt, scheme, dir, crdDir)
 
 	commonObjs, gtw := ExtractCommonObjs(t, objs)
 	if gtw == nil {
